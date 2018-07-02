@@ -20,11 +20,12 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
-default = ["bn_openssl", "box_sodium", "sealedbox_sodium", "base58_rust_base58", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests", "pwhash_argon2i13_sodium", "hmacsha256_sodium"]
+default = ["bn_openssl", "box_sodium", "sealedbox_sodium", "base58_rust_base58", "base64_rust_base64", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests", "pwhash_argon2i13_sodium", "hmacsha256_sodium", "memzero_sodium"]
 bn_openssl = ["openssl", "int_traits"]
 box_sodium = ["sodiumoxide"]
 sealedbox_sodium = ["sodiumoxide"]
 base58_rust_base58 = ["rust-base58"]
+base64_rust_base64 = ["base64"]
 xsalsa20_sodium = ["sodiumoxide"]
 chacha20poly1305_ietf_sodium = ["sodiumoxide"]
 pwhash_argon2i13_sodium = ["sodiumoxide"]
@@ -34,6 +35,7 @@ local_nodes_pool = []
 revocation_tests = []
 sodium_static = []
 hmacsha256_sodium = ["sodiumoxide"]
+memzero_sodium = ["sodiumoxide"]
 
 [dependencies]
 indy-crypto = { version = "=0.4.1", optional = true }
@@ -52,7 +54,7 @@ rand = "0.3"
 rusqlite = "0.13.0"
 libsqlite3-sys = "0.9.1"
 rust-base58 = {version = "0.0.4", optional = true}
-base64 = "0.6.0"
+base64 = {version = "0.6.0", optional = true}
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"

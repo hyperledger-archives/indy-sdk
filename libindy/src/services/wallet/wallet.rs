@@ -1,10 +1,10 @@
 extern crate sodiumoxide;
 
+use self::sodiumoxide::utils::memzero;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use utils::crypto::chacha20poly1305_ietf::{TAG_LENGTH, KEY_LENGTH, NONCE_LENGTH, ChaCha20Poly1305IETF,ChaCha20Poly1305IETFKey};
-use utils::crypto::hmacsha256::{HMACSHA256, HMACSHA256Key};
+use utils::crypto::{hmacsha256, chacha20poly1305_ietf};
 
 use errors::wallet::WalletError;
 use errors::common::CommonError;
@@ -15,127 +15,94 @@ use super::encryption::*;
 use super::query_encryption::encrypt_query;
 use super::language;
 use super::WalletRecord;
-use self::sodiumoxide::utils::memzero;
 
-
+#[derive(Serialize, Deserialize)]
 pub(super) struct Keys {
-   pub type_key: ChaCha20Poly1305IETFKey,
-   pub name_key: ChaCha20Poly1305IETFKey,
-   pub value_key: ChaCha20Poly1305IETFKey,
-   pub item_hmac_key: HMACSHA256Key,
-   pub tag_name_key: ChaCha20Poly1305IETFKey,
-   pub tag_value_key: ChaCha20Poly1305IETFKey,
-   pub tags_hmac_key: HMACSHA256Key,
+    pub type_key: chacha20poly1305_ietf::Key,
+    pub name_key: chacha20poly1305_ietf::Key,
+    pub value_key: chacha20poly1305_ietf::Key,
+    pub item_hmac_key: hmacsha256::Key,
+    pub tag_name_key: chacha20poly1305_ietf::Key,
+    pub tag_value_key: chacha20poly1305_ietf::Key,
+    pub tags_hmac_key: hmacsha256::Key,
 }
 
 impl Keys {
-    pub fn new(mut keys_bytes: Vec<u8>) -> Result<Keys, WalletError> {
-        if keys_bytes.len() != KEY_LENGTH * 7 {
-            return Err(WalletError::CommonError(
-                CommonError::InvalidState(format!("Keys vector is of invalid length"))
-            ));
+    pub fn new() -> Keys {
+        Keys {
+            type_key: chacha20poly1305_ietf::gen_key(),
+            name_key: chacha20poly1305_ietf::gen_key(),
+            value_key: chacha20poly1305_ietf::gen_key(),
+            item_hmac_key: hmacsha256::gen_key(),
+            tag_name_key: chacha20poly1305_ietf::gen_key(),
+            tag_value_key: chacha20poly1305_ietf::gen_key(),
+            tags_hmac_key: hmacsha256::gen_key(),
         }
-        let keys = Keys {
-            type_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_bytes[0..32]),
-            name_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_bytes[32..64]),
-            value_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_bytes[64..96]),
-            item_hmac_key: HMACSHA256::clone_key_from_slice(&keys_bytes[96..128]),
-            tag_name_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_bytes[128..160]),
-            tag_value_key: ChaCha20Poly1305IETF::clone_key_from_slice(&keys_bytes[160..192]),
-            tags_hmac_key: HMACSHA256::clone_key_from_slice(&keys_bytes[192..224]),
-        };
-        memzero(&mut keys_bytes[..]);
+    }
 
+    pub fn serialize_encrypted(&self, master_key: &chacha20poly1305_ietf::Key) -> Result<Vec<u8>, WalletError> {
+        extern crate rmp_serde;
+
+        let mut serialized = rmp_serde::to_vec(self)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize keys: {:?}", err)))?;
+
+        let encrypted = encrypt_as_not_searchable(&serialized, master_key);
+
+        memzero(&mut serialized[..]);
+        Ok(encrypted)
+    }
+
+    pub fn deserialize_encrypted(bytes: &[u8], master_key: &chacha20poly1305_ietf::Key) -> Result<Keys, WalletError> {
+        extern crate rmp_serde;
+
+        let mut decrypted = decrypt_merged(bytes, master_key)?;
+
+        let keys: Keys = rmp_serde::from_slice(&decrypted)
+            .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
+
+        memzero(&mut decrypted[..]);
         Ok(keys)
-    }
-
-    pub fn gen_keys(master_key: &ChaCha20Poly1305IETFKey) -> Vec<u8>{
-        let type_key = ChaCha20Poly1305IETF::generate_key();
-        let name_key = ChaCha20Poly1305IETF::generate_key();
-        let value_key = ChaCha20Poly1305IETF::generate_key();
-        let item_hmac_key = HMACSHA256::generate_key();
-        let tag_name_key = ChaCha20Poly1305IETF::generate_key();
-        let tag_value_key = ChaCha20Poly1305IETF::generate_key();
-        let tags_hmac_key = HMACSHA256::generate_key();
-
-        let mut keys: Vec<u8> = Vec::new();
-        keys.extend_from_slice(&type_key.get_bytes());
-        keys.extend_from_slice(&name_key.get_bytes());
-        keys.extend_from_slice(&value_key.get_bytes());
-        keys.extend_from_slice(&item_hmac_key.get_bytes());
-        keys.extend_from_slice(&tag_name_key.get_bytes());
-        keys.extend_from_slice(&tag_value_key.get_bytes());
-        keys.extend_from_slice(&tags_hmac_key.get_bytes());
-
-        let encrypted_keys = encrypt_as_not_searchable(&keys, master_key);
-        memzero(&mut keys[..]);
-
-        encrypted_keys
-    }
-
-    pub fn encrypt(&self, master_key: &ChaCha20Poly1305IETFKey) -> Vec<u8> {
-        let mut keys = Vec::new();
-        keys.extend_from_slice(self.type_key.get_bytes());
-        keys.extend_from_slice(self.name_key.get_bytes());
-        keys.extend_from_slice(self.value_key.get_bytes());
-        keys.extend_from_slice(self.item_hmac_key.get_bytes());
-        keys.extend_from_slice(self.tag_name_key.get_bytes());
-        keys.extend_from_slice(self.tag_value_key.get_bytes());
-        keys.extend_from_slice(self.tags_hmac_key.get_bytes());
-
-        let encrypted_keys = encrypt_as_not_searchable(&keys, master_key);
-        memzero(&mut keys[..]);
-
-        encrypted_keys
     }
 }
 
-
-#[derive(Deserialize, Debug)]
-pub struct WalletRuntimeConfig {}
-
 pub(super) struct Wallet {
-    name: String,
-    pool_name: String,
     storage: Box<storage::WalletStorage>,
     keys: Rc<Keys>,
 }
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct EncryptedValue {
     pub data: Vec<u8>,
-    pub key: Vec<u8>
+    pub key: Vec<u8>,
 }
 
-
-const ENCRYPTED_KEY_LEN: usize = TAG_LENGTH + NONCE_LENGTH + KEY_LENGTH;
+const ENCRYPTED_KEY_LEN: usize = chacha20poly1305_ietf::TAGBYTES + chacha20poly1305_ietf::NONCEBYTES + chacha20poly1305_ietf::KEYBYTES;
 
 impl EncryptedValue {
     pub fn new(data: Vec<u8>, key: Vec<u8>) -> Self {
-        Self {
-            data: data,
-            key: key,
-        }
+        Self { data, key }
     }
 
-    pub fn encrypt(data: &str, key: &ChaCha20Poly1305IETFKey) -> Self {
-        let value_key = ChaCha20Poly1305IETF::generate_key();
+    pub fn encrypt(data: &str, key: &chacha20poly1305_ietf::Key) -> Self {
+        let value_key = chacha20poly1305_ietf::gen_key();
         EncryptedValue::new(
             encrypt_as_not_searchable(data.as_bytes(), &value_key),
-            encrypt_as_not_searchable(value_key.get_bytes(), key)
+            encrypt_as_not_searchable(&value_key[..], key)
         )
     }
 
-    pub fn decrypt(&self, key: &ChaCha20Poly1305IETFKey) -> Result<String, WalletError> {
+    pub fn decrypt(&self, key: &chacha20poly1305_ietf::Key) -> Result<String, WalletError> {
         let mut value_key_bytes = decrypt_merged(&self.key, key)?;
-        if value_key_bytes.len() != KEY_LENGTH {
-            return Err(WalletError::EncryptionError("Value key is not right size".to_string()));
-        }
-        let value_key = ChaCha20Poly1305IETF::clone_key_from_slice(&value_key_bytes[..]);
+
+        let value_key = chacha20poly1305_ietf::Key::from_slice(&value_key_bytes)
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid value key: {:?}", err)))?;
+
         memzero(&mut value_key_bytes[..]);
-        String::from_utf8(decrypt_merged(&self.data, &value_key)?)
-            .map_err(|_| WalletError::CommonError(CommonError::InvalidStructure("Invalid UTF8 string inside of value".to_string())))
+
+        let res = String::from_utf8(decrypt_merged(&self.data, &value_key)?)
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid UTF8 string inside of value: {:?}", err)))?;
+
+        Ok(res)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -152,18 +119,13 @@ impl EncryptedValue {
 
         let value_key = joined_data[..ENCRYPTED_KEY_LEN].to_owned();
         let value = joined_data[ENCRYPTED_KEY_LEN..].to_owned();
-        Ok(EncryptedValue{data: value, key: value_key})
+        Ok(EncryptedValue { data: value, key: value_key })
     }
 }
 
 impl Wallet {
-    pub fn new(name: &str, pool_name: &str, storage: Box<storage::WalletStorage>, keys: Rc<Keys>) -> Wallet {
-        Wallet {
-            name: name.to_string(),
-            pool_name: pool_name.to_string(),
-            storage: storage,
-            keys: keys,
-        }
+    pub fn new(storage: Box<storage::WalletStorage>, keys: Rc<Keys>) -> Wallet {
+        Wallet { storage, keys }
     }
 
     pub fn add(&self, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
@@ -174,7 +136,7 @@ impl Wallet {
         self.storage.add(&etype, &ename, &evalue, &etags)?;
         Ok(())
     }
-    
+
     pub fn add_tags(&self, type_: &str, name: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
         let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
         let encrypted_name = encrypt_as_searchable(name.as_bytes(), &self.keys.name_key, &self.keys.item_hmac_key);
@@ -245,21 +207,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub(super) fn rotate_key(&self, new_master_key: &ChaCha20Poly1305IETFKey) -> Result<(), WalletError> {
-        let new_metadata = self.keys.encrypt(new_master_key);
-        self.storage.set_storage_metadata(&new_metadata)?;
-        Ok(())
-    }
-
-    pub fn get_pool_name(&self) -> String {
-        self.pool_name.clone()
-    }
-
-    pub fn get_name(&self) -> String {
-        self.name.clone()
-    }
-
-    pub (super) fn get_all(&self) -> Result<WalletIterator, WalletError> {
+    pub(super) fn get_all(&self) -> Result<WalletIterator, WalletError> {
         let all_items = self.storage.get_all()?;
         Ok(WalletIterator::new(all_items, Rc::clone(&self.keys)))
     }
@@ -325,22 +273,22 @@ mod tests {
         Wallet::new(name, pool_name, storage, Rc::new(keys))
     }
 
-    fn _get_test_master_key() -> ChaCha20Poly1305IETFKey {
-        ChaCha20Poly1305IETF::clone_key_from_slice(&[
+    fn _get_test_master_key() -> chacha20poly1305_ietf::Key {
+        chacha20poly1305_ietf::Key::new([
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8
-        ][..])
+        ])
     }
 
-    fn _get_test_new_master_key() -> ChaCha20Poly1305IETFKey {
-        ChaCha20Poly1305IETF::clone_key_from_slice(&[
+    fn _get_test_new_master_key() -> chacha20poly1305_ietf::Key {
+        chacha20poly1305_ietf::Key::new([
             2, 2, 3, 4, 5, 6, 7, 8,
             2, 2, 3, 4, 5, 6, 7, 8,
             2, 2, 3, 4, 5, 6, 7, 8,
             2, 2, 3, 4, 5, 6, 7, 8
-        ][..])
+        ])
     }
 
     fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
@@ -399,7 +347,7 @@ mod tests {
         let type_ = "test";
         let name = "name1";
         let value = "value1";
-        let tags: HashMap<String, String>= serde_json::from_str(r#"{"tag1": "tag_value_1"}"#).unwrap();
+        let tags: HashMap<String, String> = serde_json::from_str(r#"{"tag1": "tag_value_1"}"#).unwrap();
         wallet.add(type_, name, value, &tags).unwrap();
         let entity = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
 
@@ -415,7 +363,7 @@ mod tests {
         let type_ = "test";
         let name = "name1";
         let value = "value1";
-        let tags: HashMap<String, String>= serde_json::from_str(r#"{"tag1": "tag_value_1"}"#).unwrap();
+        let tags: HashMap<String, String> = serde_json::from_str(r#"{"tag1": "tag_value_1"}"#).unwrap();
 
         wallet.add(type_, name, value, &tags).unwrap();
         let entity = wallet.get(type_, name, &_fetch_options(false, true, true)).unwrap();
@@ -431,8 +379,8 @@ mod tests {
         let storage = storage_type.open_storage("test_wallet", None, &credentials[..]).unwrap();
         let keys = Keys::new(
             decrypt_merged(// DARKO
-                         &storage.get_storage_metadata().unwrap(),
-                    &_get_test_master_key()
+                           &storage.get_storage_metadata().unwrap(),
+                           &_get_test_master_key()
             ).unwrap()
         ).unwrap();
         let wallet = Wallet::new("test_wallet", "test_pool", storage, Rc::new(keys));
@@ -462,7 +410,7 @@ mod tests {
         let type_ = "test";
         let name = "name1";
         let value = "value1";
-        let tags: HashMap<String, String>= serde_json::from_str(r#"{"tag1": "tag_value_1"}"#).unwrap();
+        let tags: HashMap<String, String> = serde_json::from_str(r#"{"tag1": "tag_value_1"}"#).unwrap();
 
         wallet.add(type_, name, value, &tags).unwrap();
         let res = wallet.add(type_, name, "different_value", &tags);
@@ -482,7 +430,7 @@ mod tests {
         let name = "name";
         let value = "value";
         let new_value = "new_value";
-        let tags: HashMap<String, String>= serde_json::from_str(r#"{}"#).unwrap();
+        let tags: HashMap<String, String> = serde_json::from_str(r#"{}"#).unwrap();
 
         wallet.add(type_, name, value, &tags).unwrap();
         wallet.get(type_, name, r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": false}"##).unwrap();
@@ -501,7 +449,7 @@ mod tests {
         let wrong_name = "wrong_name";
         let value = "value";
         let new_value = "new_value";
-        let tags: HashMap<String, String>= serde_json::from_str(r#"{"tag1":"value1", "tag2":"value2", "~tag3":"value3"}"#).unwrap();
+        let tags: HashMap<String, String> = serde_json::from_str(r#"{"tag1":"value1", "tag2":"value2", "~tag3":"value3"}"#).unwrap();
 
         wallet.add(type_, name, value, &tags).unwrap();
         wallet.get(type_, name, &_fetch_options(false, true, false)).unwrap();
@@ -518,7 +466,7 @@ mod tests {
         let name = "name";
         let value = "value";
         let new_value = "new_value";
-        let tags: HashMap<String, String>= serde_json::from_str(r#"{"tag1":"value1", "tag2":"value2", "~tag3":"value3"}"#).unwrap();
+        let tags: HashMap<String, String> = serde_json::from_str(r#"{"tag1":"value1", "tag2":"value2", "~tag3":"value3"}"#).unwrap();
 
         wallet.add(type_, name, value, &tags).unwrap();
         wallet.get(type_, name, &_fetch_options(false, true, false)).unwrap();
@@ -748,7 +696,7 @@ mod tests {
 
         let res = iterator.next().unwrap().unwrap();
 
-        let expected = WalletRecord{
+        let expected = WalletRecord {
             name: name.to_string(),
             value: Some(value.to_string()),
             tags: Some(tags.clone()),
@@ -982,7 +930,7 @@ mod tests {
     #[test]
     fn wallet_search_single_item_neq_plain() {
         _cleanup();
-        let fetch_options = &_search_options(true, false,false, true, false);
+        let fetch_options = &_search_options(true, false, false, true, false);
         let wallet = _create_wallet();
         let tags: HashMap<String, String> = serde_json::from_str(r#"{"~tag_name":"tag_value"}"#).unwrap();
         wallet.add("test_type_", "foo", "bar", &tags).unwrap();

@@ -858,13 +858,8 @@ impl PoolService {
                 }
             }
         }
-        Ok(pool)
-    }
 
-    pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
-        self.open_pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
-            Err(PoolError::InvalidHandle(format!("Pool doesn't exists for handle {}", handle))),
-            |pool: &Pool| Ok(pool.name.clone()))
+        Ok(pool)
     }
 }
 
