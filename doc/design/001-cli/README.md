@@ -127,7 +127,7 @@ indy> wallet <command>
 #### Wallet create
 Create new wallet with specified name and pool:
 ```
-indy> wallet create <wallet name> pool_name=<pool name> key=<key>
+indy> wallet create <wallet name> key=<key> [storage_type=<storage_type>] [storage_config=<key1:value1,key2:value2>]
 ```
 TODO: Think about custom wallet types support. Now we force default wallet security model.. 
 
@@ -166,7 +166,7 @@ indy> wallet export export_path=<path-to-file> export_key=[<export key>]
 Create new wallet and then import content from the specified file.
 
 ```indy-cli
-indy> wallet import <wallet name> pool_name=<pool name> key=<key> export_path=<path-to-file> export_key=<key used for export>
+indy> wallet import <wallet name> key=<key> export_path=<path-to-file> export_key=<key used for export>  [storage_type=<storage_type>] [storage_config=<key1:value1,key2:value2>]
 
 
 ### Pool management commands
