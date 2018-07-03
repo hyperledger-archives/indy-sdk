@@ -39,22 +39,20 @@ if [ $arch == "arm64" ]; then
     export triplet="aarch64-linux-android"
 fi
 
-ls -R ${folder}
 
 TEMP_ARCH_DIR=./${package}_android_${arch}_zip
 mkdir ${TEMP_ARCH_DIR}
 
 mkdir ${TEMP_ARCH_DIR}/lib
-cp -r ${folder}/include ${TEMP_ARCH_DIR}
-cp -v ${folder}/target/${triplet}/release/libindy.so ${TEMP_ARCH_DIR}/lib/
-cp -v ${folder}/target/${triplet}/release/libindy.a ${TEMP_ARCH_DIR}/lib/
+cp -r runtime_android_build/indy-sdk/${folder}/include ${TEMP_ARCH_DIR}
+cp -v runtime_android_build/indy-sdk/${folder}/target/${triplet}/release/libindy.so ${TEMP_ARCH_DIR}/lib/
+cp -v runtime_android_build/indy-sdk/${folder}/target/${triplet}/release/libindy.a ${TEMP_ARCH_DIR}/lib/
 
 cd ${TEMP_ARCH_DIR} && zip -r ${package}_android_${arch}_${version}.zip ./* && mv ${package}_android_${arch}_${version}.zip .. && cd ..
 
 rm -rf ${TEMP_ARCH_DIR}
 #TODO: Move from test folder in final commit
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
-mkdir /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
 cd /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
 put -r ${package}_android_${arch}_"${version}".zip
 ls -l /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
