@@ -21,6 +21,8 @@ buildNumber="$7"
 [ -z $branchName ] && exit 6
 [ -z $buildNumber ] && exit 7
 
+ls -la
+
 get_triplet_from_arch(){
     if [ -z $1 ]; then
         echo "please provide the arch e.g arm, x86 or arm64"
@@ -43,10 +45,10 @@ TEMP_ARCH_DIR=./${package}_android_${arch}_zip
 mkdir ${TEMP_ARCH_DIR}
 
 mkdir ${TEMP_ARCH_DIR}/lib
-cp -r ${folder}/include ${TEMP_ARCH_DIR}
+cp -r indy-sdk/${folder}/include ${TEMP_ARCH_DIR}
 get_triplet_from_arch ${arch}
-cp ./target/${triplet}/release/*.so ${TEMP_ARCH_DIR}/lib/
-cp ./target/${triplet}/release/*.a ${TEMP_ARCH_DIR}/lib/
+cp indy-sdk/${folder}/target/${triplet}/release/*.so ${TEMP_ARCH_DIR}/lib/
+cp indy-sdk/${folder}/target/target/${triplet}/release/*.a ${TEMP_ARCH_DIR}/lib/
 
 cd ${TEMP_ARCH_DIR} && zip -r ${package}_android_${arch}_${version}.zip ./* && mv ${package}_android_${arch}_${version}.zip .. && cd ..
 
