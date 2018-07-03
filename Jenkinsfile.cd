@@ -587,26 +587,26 @@ def buildAndroid(buildEnv,libIndyVersion) {
         sh "./${ANDROID_SCRIPT_PATH} arm"
     }
     echo 'Publish Libindy android files for arm'
-    androidPublishArtifacts(buildEnv, "lib", libIndyVersion,"arm" )
+    androidPublishArtifacts(buildEnv, libIndyVersion,"arm" )
 
     echo 'Building Libindy android files for x86'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} x86"
     }
     echo 'Publish Libindy android files for x86'
-    androidPublishArtifacts(buildEnv, "lib", libIndyVersion,"x86" )
+    androidPublishArtifacts(buildEnv, libIndyVersion,"x86" )
 
     echo 'Building Libindy android files for arm64'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} arm64"
     }
     echo 'Publish Libindy android files for arm64'
-    androidPublishArtifacts(buildEnv, "lib", libIndyVersion,"arm64" )
+    androidPublishArtifacts(buildEnv, libIndyVersion,"arm64" )
 
 }
 
 
-def androidPublishArtifacts(buildEnv, packageType, packageVersion,arch) {
+def androidPublishArtifacts(buildEnv, packageVersion,arch) {
     buildEnv.inside {
         sh 'chmod -R 777 ci'
 
@@ -614,7 +614,7 @@ def androidPublishArtifacts(buildEnv, packageType, packageVersion,arch) {
 //            Creating directory using SFTP is not working. Hence creating directory using ssh and files are uploaded using SFTP in ci/android-zip-and-upload.sh
             sh "ssh -v -oStrictHostKeyChecking=no -i '$repo_key' repo@192.168.11.115 mkdir -p /var/repository/repos/android/test/libindy/$env.BRANCH_NAME/$packageVersion-$env.BUILD_NUMBER-$arch"
             sh "ssh -v -oStrictHostKeyChecking=no -i '$repo_key' repo@192.168.11.115 mkdir -p /var/repository/repos/android/test/libnullpay/$env.BRANCH_NAME/$packageVersion-$env.BUILD_NUMBER-$arch"
-            sh "ci/android-zip-and-upload.sh $packageName $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER "
+            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER "
         }
     }
 }

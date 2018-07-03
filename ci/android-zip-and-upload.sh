@@ -1,25 +1,22 @@
 #!/bin/bash
 
 if [ "$1" = "--help" ] ; then
-  echo "Usage: <folder> <package> <architecture> <version> <key> <branchName> <number>"
+  echo "Usage: <architecture> <version> <key> <branchName> <number>"
   return
 fi
 
-folder="$1"
-package="$2"
-arch="$3"
-version="$4"
-key="$5"
-branchName="$6"
-buildNumber="$7"
 
-[ -z $folder ] && exit 1
-[ -z $package ] && exit 2
-[ -z $arch ] && exit 3
-[ -z $version ] && exit 4
-[ -z $key ] && exit 5
-[ -z $branchName ] && exit 6
-[ -z $buildNumber ] && exit 7
+arch="$1"
+version="$2"
+key="$3"
+branchName="$4"
+buildNumber="$5"
+
+[ -z $arch ] && exit 1
+[ -z $version ] && exit 2
+[ -z $key ] && exit 3
+[ -z $branchName ] && exit 4
+[ -z $buildNumber ] && exit 5
 
 
 echo "get_triplet_from_arch called with args ${arch}"
