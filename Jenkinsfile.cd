@@ -615,7 +615,7 @@ def androidPublishArtifacts(buildEnv, folder, packageName, packageType, packageV
     buildEnv.inside {
         sh 'chmod -R 777 ci'
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-            sh "ci/android-zip-and-upload.sh $folder $packageName $packageType $packageVersion $arch '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+            sh "ci/android-zip-and-upload.sh $folder $packageName $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
         }
     }
 }

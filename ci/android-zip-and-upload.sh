@@ -7,16 +7,16 @@ fi
 
 folder="$1"
 package="$2"
-version="$3"
-arch="$4"
+arch="$3"
+version="$4"
 key="$5"
 branchName="$6"
 buildNumber="$7"
 
 [ -z $folder ] && exit 1
 [ -z $package ] && exit 2
-[ -z $version ] && exit 3
-[ -z $arch ] && exit 4
+[ -z $arch ] && exit 3
+[ -z $version ] && exit 4
 [ -z $key ] && exit 5
 [ -z $branchName ] && exit 6
 [ -z $buildNumber ] && exit 7
@@ -24,19 +24,20 @@ buildNumber="$7"
 ls -la
 
 get_triplet_from_arch(){
-    if [ -z $1 ]; then
+    echo "get_triplet_from_arch called with args ${arch}"
+    if [ -z $arch ]; then
         echo "please provide the arch e.g arm, x86 or arm64"
         exit 1
     fi
-    if [ $1 == "arm" ]; then
+    if [ $arch == "arm" ]; then
         export triplet="arm-linux-androideabi"
     fi
 
-    if [ $1 == "x86" ]; then
+    if [ $arch == "x86" ]; then
         export triplet="i686-linux-android"
     fi
 
-    if [ $1 == "arm64" ]; then
+    if [ $arch == "arm64" ]; then
         export triplet="aarch64-linux-android"
     fi
 }
@@ -45,10 +46,10 @@ TEMP_ARCH_DIR=./${package}_android_${arch}_zip
 mkdir ${TEMP_ARCH_DIR}
 
 mkdir ${TEMP_ARCH_DIR}/lib
-cp -r indy-sdk/${folder}/include ${TEMP_ARCH_DIR}
-get_triplet_from_arch ${arch}
-cp indy-sdk/${folder}/target/${triplet}/release/*.so ${TEMP_ARCH_DIR}/lib/
-cp indy-sdk/${folder}/target/target/${triplet}/release/*.a ${TEMP_ARCH_DIR}/lib/
+cp -r ${folder}/include ${TEMP_ARCH_DIR}
+get_triplet_from_arch
+cp -v ${folder}/target/${triplet}/release/*.so ${TEMP_ARCH_DIR}/lib/
+cp -v ${folder}/target/${triplet}/release/*.a ${TEMP_ARCH_DIR}/lib/
 
 cd ${TEMP_ARCH_DIR} && zip -r ${package}_android_${arch}_${version}.zip ./* && mv ${package}_android_${arch}_${version}.zip .. && cd ..
 
