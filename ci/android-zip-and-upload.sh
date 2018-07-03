@@ -51,9 +51,9 @@ cd ${TEMP_LIBINDY_ARCH_DIR} && zip -r libindy_android_${arch}_${version}.zip ./*
 rm -rf ${TEMP_LIBINDY_ARCH_DIR}
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
-cd /var/repository/repos/android/test/libindy/$branchName/$version-$buildNumber-$arch
+cd /var/repository/repos/android/libindy/$branchName/$version-$buildNumber
 put -r libindy_android_${arch}_"${version}".zip
-ls -l /var/repository/repos/android/test/libindy/$branchName/$version-$buildNumber-$arch
+ls -l /var/repository/repos/android/libindy/$branchName/$version-$buildNumber
 EOF
 
 #Packaging and uploading Libnullpay
@@ -70,7 +70,7 @@ cd ${TEMP_LIBNULLPAY_ARCH_DIR} && zip -r libnullpay_android_${arch}_${version}.z
 rm -rf ${TEMP_LIBNULLPAY_ARCH_DIR}
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
-cd /var/repository/repos/android/test/libnullpay/$branchName/$version-$buildNumber-$arch
+cd /var/repository/repos/android/libnullpay/$branchName/$version-$buildNumber
 put -r libnullpay_android_${arch}_"${version}".zip
-ls -l /var/repository/repos/android/test/libnullpay/$branchName/$version-$buildNumber-$arch
+ls -l /var/repository/repos/android/libnullpay/$branchName/$version-$buildNumber
 EOF

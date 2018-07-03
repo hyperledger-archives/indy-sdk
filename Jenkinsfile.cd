@@ -612,8 +612,8 @@ def androidPublishArtifacts(buildEnv, packageVersion,arch) {
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
 //            Creating directory using SFTP is not working. Hence creating directory using ssh and files are uploaded using SFTP in ci/android-zip-and-upload.sh
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$repo_key' repo@192.168.11.115 mkdir -p /var/repository/repos/android/test/libindy/$env.BRANCH_NAME/$packageVersion-$env.BUILD_NUMBER-$arch"
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$repo_key' repo@192.168.11.115 mkdir -p /var/repository/repos/android/test/libnullpay/$env.BRANCH_NAME/$packageVersion-$env.BUILD_NUMBER-$arch"
+            sh "ssh -v -oStrictHostKeyChecking=no -i '$repo_key' repo@192.168.11.115 mkdir -p /var/repository/repos/android/libindy/$env.BRANCH_NAME/$packageVersion-$env.BUILD_NUMBER"
+            sh "ssh -v -oStrictHostKeyChecking=no -i '$repo_key' repo@192.168.11.115 mkdir -p /var/repository/repos/android/libnullpay/$env.BRANCH_NAME/$packageVersion-$env.BUILD_NUMBER"
             sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER "
         }
     }
