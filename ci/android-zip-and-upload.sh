@@ -1,4 +1,4 @@
-#!/usr/bin/env bash#!/bin/bash -xe
+#!/bin/bash
 
 if [ "$1" = "--help" ] ; then
   echo "Usage: <folder> <package> <architecture> <version> <key> <branchName> <number>"

@@ -13,11 +13,11 @@ properties([
 ]);
 
 try {
-    testing()
+//    testing()
     publishing()
-    if (acceptanceTesting()) {
+//    if (acceptanceTesting()) {
         releasing()
-    }
+//    }
     notifyingSuccess()
 } catch (err) {
     notifyingFailure()
@@ -453,7 +453,7 @@ def ubuntuPublishing() {
 def androidPublishing(){
     def libindyVersion
 
-    node('android'){
+    node('ubuntu'){
         stage('Publish Android binaries'){
             try{
                 echo 'Publish Android files: Checkout scm'
@@ -463,7 +463,7 @@ def androidPublishing(){
 
                 echo 'Publish Android binaries: Building docker image'
                 buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
-                buildAndroid(buildEnv)
+                buildAndroid(buildEnv,libindyVersion)
 
             }
             finally{
@@ -577,35 +577,43 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
     }
 }
 
-def buildAndroid(buildEnv) {
+def buildAndroid(buildEnv,libIndyVersion) {
+
+    sh 'chmod -R 777 libindy/ci/'
     ANDROID_SCRIPT_PATH = 'libindy/ci/buildAndroid.sh'
+    echo 'Building Libindy android files for arm'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} arm"
+//        stash includes: 'libindy_arm/*', name: 'libindy_arm_binaries'
+//        stash includes: 'indy-sdk/libindy/include', name: 'libindy_headers'
     }
     echo 'Publish Libindy android files for arm'
-    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libindyVersion,"arm" ,"LibindyAndroidArmBuildResult")
+    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libIndyVersion,"arm" )
 
+    echo 'Building Libindy android files for x86'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} x86"
+//        stash includes: 'libindy_x86/*', name: 'libindy_x86_binaries'
+//        stash includes: 'indy-sdk/libindy/include', name: 'libindy_headers'
     }
     echo 'Publish Libindy android files for x86'
-    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libindyVersion,"x86" ,"LibindyAndroidx86BuildResult")
+    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libIndyVersion,"x86" )
 
+    echo 'Building Libindy android files for arm64'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} arm64"
+//        stash includes: 'libindy_arm64/*', name: 'libindy_arm64_binaries'
+//        stash includes: 'indy-sdk/libindy/include', name: 'libindy_headers'
     }
     echo 'Publish Libindy android files for arm64'
-    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libindyVersion,"arm64" ,"LibindyAndroidArm64BuildResult")
+    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libIndyVersion,"arm64" )
 
 }
 
 
-def androidPublishArtifacts(buildEnv, folder, packageName, packageType, packageVersion,arch, stashName) {
+def androidPublishArtifacts(buildEnv, folder, packageName, packageType, packageVersion,arch) {
     buildEnv.inside {
         sh 'chmod -R 777 ci'
-
-        unstash name: stashName
-
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
             sh "ci/android-zip-and-upload.sh $folder $packageName $packageType $packageVersion $arch '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
         }
