@@ -39,7 +39,7 @@ if [ $arch == "arm64" ]; then
     export triplet="aarch64-linux-android"
 fi
 
-ls -la ${folder}/target/${triplet}/release
+ls -R ${folder}
 
 TEMP_ARCH_DIR=./${package}_android_${arch}_zip
 mkdir ${TEMP_ARCH_DIR}
@@ -54,7 +54,7 @@ cd ${TEMP_ARCH_DIR} && zip -r ${package}_android_${arch}_${version}.zip ./* && m
 rm -rf ${TEMP_ARCH_DIR}
 #TODO: Move from test folder in final commit
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
-mkdir -p /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
+mkdir /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
 cd /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
 put -r ${package}_android_${arch}_"${version}".zip
 ls -l /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
