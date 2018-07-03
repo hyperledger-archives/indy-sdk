@@ -513,6 +513,7 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
         unstash name: stashName
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
+
             sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
         }
     }
@@ -584,38 +585,36 @@ def buildAndroid(buildEnv,libIndyVersion) {
     echo 'Building Libindy android files for arm'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} arm"
-//        stash includes: 'libindy_arm/*', name: 'libindy_arm_binaries'
-//        stash includes: 'indy-sdk/libindy/include', name: 'libindy_headers'
     }
     echo 'Publish Libindy android files for arm'
-    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libIndyVersion,"arm" )
+    androidPublishArtifacts(buildEnv, "lib", libIndyVersion,"arm" )
 
     echo 'Building Libindy android files for x86'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} x86"
-//        stash includes: 'libindy_x86/*', name: 'libindy_x86_binaries'
-//        stash includes: 'indy-sdk/libindy/include', name: 'libindy_headers'
     }
     echo 'Publish Libindy android files for x86'
-    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libIndyVersion,"x86" )
+    androidPublishArtifacts(buildEnv, "lib", libIndyVersion,"x86" )
 
     echo 'Building Libindy android files for arm64'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} arm64"
-//        stash includes: 'libindy_arm64/*', name: 'libindy_arm64_binaries'
-//        stash includes: 'indy-sdk/libindy/include', name: 'libindy_headers'
     }
     echo 'Publish Libindy android files for arm64'
-    androidPublishArtifacts(buildEnv, "libindy", "libindy", "lib", libIndyVersion,"arm64" )
+    androidPublishArtifacts(buildEnv, "lib", libIndyVersion,"arm64" )
 
 }
 
 
-def androidPublishArtifacts(buildEnv, folder, packageName, packageType, packageVersion,arch) {
+def androidPublishArtifacts(buildEnv, packageType, packageVersion,arch) {
     buildEnv.inside {
         sh 'chmod -R 777 ci'
+
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-            sh "ci/android-zip-and-upload.sh $folder $packageName $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
+//            Creating directory using SFTP is not working. Hence creating directory using ssh and files are uploaded using SFTP in ci/android-zip-and-upload.sh
+            sh "ssh -v -oStrictHostKeyChecking=no -i '$repo_key' repo@192.168.11.115 mkdir -p /var/repository/repos/android/test/libindy/$env.BRANCH_NAME/$packageVersion-$env.BUILD_NUMBER-$arch"
+            sh "ssh -v -oStrictHostKeyChecking=no -i '$repo_key' repo@192.168.11.115 mkdir -p /var/repository/repos/android/test/libnullpay/$env.BRANCH_NAME/$packageVersion-$env.BUILD_NUMBER-$arch"
+            sh "ci/android-zip-and-upload.sh $packageName $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER "
         }
     }
 }

@@ -40,20 +40,40 @@ if [ $arch == "arm64" ]; then
 fi
 
 
-TEMP_ARCH_DIR=./${package}_android_${arch}_zip
-mkdir ${TEMP_ARCH_DIR}
 
-mkdir ${TEMP_ARCH_DIR}/lib
-cp -r runtime_android_build/indy-sdk/${folder}/include ${TEMP_ARCH_DIR}
-cp -v runtime_android_build/indy-sdk/${folder}/target/${triplet}/release/libindy.so ${TEMP_ARCH_DIR}/lib/
-cp -v runtime_android_build/indy-sdk/${folder}/target/${triplet}/release/libindy.a ${TEMP_ARCH_DIR}/lib/
+#Packaging and uploading Libindy
+TEMP_LIBINDY_ARCH_DIR=./libindy_android_${arch}_zip
 
-cd ${TEMP_ARCH_DIR} && zip -r ${package}_android_${arch}_${version}.zip ./* && mv ${package}_android_${arch}_${version}.zip .. && cd ..
+mkdir ${TEMP_LIBINDY_ARCH_DIR}
+cp -r runtime_android_build/indy-sdk/libindy/include ${TEMP_LIBINDY_ARCH_DIR}
 
-rm -rf ${TEMP_ARCH_DIR}
-#TODO: Move from test folder in final commit
+mkdir -p ${TEMP_LIBINDY_ARCH_DIR}/lib
+cp -v runtime_android_build/indy-sdk/libindy/build_scripts/android/indy-sdk/libindy/target/${triplet}/release/libindy.so ${TEMP_LIBINDY_ARCH_DIR}/lib/
+cp -v runtime_android_build/indy-sdk/libindy/build_scripts/android/indy-sdk/libindy/target/${triplet}/release/libindy.a ${TEMP_LIBINDY_ARCH_DIR}/lib/
+cd ${TEMP_LIBINDY_ARCH_DIR} && zip -r libindy_android_${arch}_${version}.zip ./* && mv libindy_android_${arch}_${version}.zip .. && cd ..
+rm -rf ${TEMP_LIBINDY_ARCH_DIR}
+
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
-cd /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
-put -r ${package}_android_${arch}_"${version}".zip
-ls -l /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
+cd /var/repository/repos/android/test/libindy/$branchName/$version-$buildNumber-$arch
+put -r libindy_android_${arch}_"${version}".zip
+ls -l /var/repository/repos/android/test/libindy/$branchName/$version-$buildNumber-$arch
+EOF
+
+#Packaging and uploading Libnullpay
+TEMP_LIBNULLPAY_ARCH_DIR=./libnullpay_android_${arch}_zip
+
+mkdir ${TEMP_LIBNULLPAY_ARCH_DIR}
+cp -r runtime_android_build/indy-sdk/libnullpay/include ${TEMP_LIBNULLPAY_ARCH_DIR}
+
+mkdir -p ${TEMP_LIBNULLPAY_ARCH_DIR}/lib
+cp -v runtime_android_build/indy-sdk/libnullpay/build_scripts/android/indy-sdk/libnullpay/target/${triplet}/release/libnullpay.so ${TEMP_LIBNULLPAY_ARCH_DIR}/lib/
+cp -v runtime_android_build/indy-sdk/libnullpay/build_scripts/android/indy-sdk/libnullpay/target/${triplet}/release/libnullpay.a ${TEMP_LIBNULLPAY_ARCH_DIR}/lib/
+
+cd ${TEMP_LIBNULLPAY_ARCH_DIR} && zip -r libnullpay_android_${arch}_${version}.zip ./* && mv libnullpay_android_${arch}_${version}.zip .. && cd ..
+rm -rf ${TEMP_LIBNULLPAY_ARCH_DIR}
+
+cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
+cd /var/repository/repos/android/test/libnullpay/$branchName/$version-$buildNumber-$arch
+put -r libnullpay_android_${arch}_"${version}".zip
+ls -l /var/repository/repos/android/test/libnullpay/$branchName/$version-$buildNumber-$arch
 EOF
