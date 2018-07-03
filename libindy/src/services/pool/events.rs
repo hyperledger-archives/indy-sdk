@@ -48,6 +48,7 @@ pub enum NetworkerEvent {
         String, //req_id
         Option<String>, //node_alias
     ),
+    Timeout,
 }
 
 #[derive(Clone, Debug)]

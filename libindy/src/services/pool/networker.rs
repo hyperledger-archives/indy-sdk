@@ -28,6 +28,8 @@ pub struct ZMQNetworker {
     nodes: Vec<RemoteNode>,
 }
 
+const POOL_CON_ACTIVE_TO: i64 = 5;
+
 impl Networker for ZMQNetworker {
     fn new() -> Self {
         ZMQNetworker {
@@ -92,15 +94,35 @@ impl Networker for ZMQNetworker {
                 None
             }
             Some(NetworkerEvent::CleanTimeout(req_id, node_alias)) => {
-                self.req_id_mappings.get(&req_id).map(
+                let idx_pc_to_delete = self.req_id_mappings.get(&req_id).and_then(
                     |idx| {
-                        self.pool_connections.get(idx).map(
+                        let delete = self.pool_connections.get(idx).map(
                             |pc| {
                                 pc.clean_timeout(&req_id, node_alias);
+                                pc.is_orphaned()
                             }
-                        );
+                        ).unwrap_or(false);
+
+                        if delete {
+                            Some(idx)
+                        } else {
+                            None
+                        }
                     }
                 );
+                if let Some(idx) = idx_pc_to_delete {
+                    self.pool_connections.remove(idx);
+                }
+                None
+            }
+            Some(NetworkerEvent::Timeout) => {
+                let pc_to_delete: Vec<i32> = self.pool_connections.iter()
+                    .filter(|(_, v)| v.is_orphaned())
+                    .map(|(k, _)| *k)
+                    .collect();
+                pc_to_delete.iter().for_each(|idx| {
+                    self.pool_connections.remove(idx);
+                });
                 None
             }
             _ => None
@@ -185,13 +207,13 @@ impl PoolConnection {
             .min_by(|&(_, ref val1), &(_, ref val2)| val1.cmp(&val2)){
             ((req_id.to_string(), node_alias.to_string()), timeout)
         } else {
-            (("".to_string(), "".to_string()), ::std::i64::MAX)
+            (("".to_string(), "".to_string()), POOL_CON_ACTIVE_TO * 1000)
         }
     }
 
     fn is_active(&self) -> bool {
         trace!("time worked: {:?}", time::now() - self.time_created);
-        time::now() - self.time_created < Duration::seconds(5)
+        time::now() - self.time_created < Duration::seconds(POOL_CON_ACTIVE_TO)
     }
 
     fn send_request(&self, pe: Option<NetworkerEvent>) {
@@ -229,18 +251,25 @@ impl PoolConnection {
         }
     }
 
-    fn clean_timeout(&self, req_id: &str, node_alias: Option<String>) -> bool {
+    fn clean_timeout(&self, req_id: &str, node_alias: Option<String>) {
         match node_alias {
             Some(node_alias) => {
                 self.timeouts.borrow_mut().remove(&(req_id.to_string(), node_alias));
-                self.timeouts.borrow().is_empty()
             }
             None => {
-                let keys_to_remove: Vec<(String, String)> = self.timeouts.borrow().keys().cloned().filter(|&(ref req_id_timeout, _)| req_id == req_id_timeout).collect();
+                let keys_to_remove: Vec<(String, String)> = self.timeouts.borrow().keys()
+                    .cloned().filter(|&(ref req_id_timeout, _)| req_id == req_id_timeout).collect();
                 keys_to_remove.iter().for_each(|key| {self.timeouts.borrow_mut().remove(key);});
-                self.timeouts.borrow().is_empty()
             }
         }
+    }
+
+    fn has_active_requests(&self) -> bool {
+        !self.timeouts.borrow().is_empty()
+    }
+
+    fn is_orphaned(&self) -> bool {
+        !self.is_active() && !self.has_active_requests()
     }
 }
 
