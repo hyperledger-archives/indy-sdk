@@ -21,7 +21,7 @@ buildNumber="$7"
 [ -z $branchName ] && exit 6
 [ -z $buildNumber ] && exit 7
 
-ls -la
+
 
 get_triplet_from_arch(){
     echo "get_triplet_from_arch called with args ${arch}"
@@ -42,21 +42,23 @@ get_triplet_from_arch(){
     fi
 }
 
+ls -la ${folder}/target/${triplet}/release
+
 TEMP_ARCH_DIR=./${package}_android_${arch}_zip
 mkdir ${TEMP_ARCH_DIR}
 
 mkdir ${TEMP_ARCH_DIR}/lib
 cp -r ${folder}/include ${TEMP_ARCH_DIR}
 get_triplet_from_arch
-cp -v ${folder}/target/${triplet}/release/*.so ${TEMP_ARCH_DIR}/lib/
-cp -v ${folder}/target/${triplet}/release/*.a ${TEMP_ARCH_DIR}/lib/
+cp -v ${folder}/target/${triplet}/release/libindy.so ${TEMP_ARCH_DIR}/lib/
+cp -v ${folder}/target/${triplet}/release/libindy.a ${TEMP_ARCH_DIR}/lib/
 
 cd ${TEMP_ARCH_DIR} && zip -r ${package}_android_${arch}_${version}.zip ./* && mv ${package}_android_${arch}_${version}.zip .. && cd ..
 
 rm -rf ${TEMP_ARCH_DIR}
 #TODO: Move from test folder in final commit
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
-mkdir /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
+mkdir -p /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
 cd /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
 put -r ${package}_android_${arch}_"${version}".zip
 ls -l /var/repository/repos/test/android/$package/$branchName/$version-$buildNumber-$arch
