@@ -43,7 +43,7 @@ impl Networker for ZMQNetworker {
         let mut cnt = 0;
         self.pool_connections.iter().map(|(_, pc)| {
             let ocnt = cnt;
-            cnt = cnt + pc.nodes.len();
+            cnt = cnt + pc.sockets.iter().filter(|s| s.is_some()).count();
             pc.fetch_events(&poll_items[ocnt..cnt])
         }).flat_map(|v| v.into_iter()).collect()
     }
@@ -65,7 +65,7 @@ impl Networker for ZMQNetworker {
                 match num {
                     Some(idx) => {
                         trace!("send request in existing conn");
-                        self.pool_connections.get(&idx).map(|pc| {
+                        self.pool_connections.get_mut(&idx).map(|pc| {
                             pc.send_request(pe);
                         });
                         self.req_id_mappings.insert(req_id.clone(), idx);
@@ -73,7 +73,7 @@ impl Networker for ZMQNetworker {
                     None => {
                         trace!("send request in new conn");
                         let pc_id = SequenceUtils::get_next_id();
-                        let pc = PoolConnection::new(self.nodes.clone());
+                        let mut pc = PoolConnection::new(self.nodes.clone());
                         pc.send_request(pe);
                         self.pool_connections.insert(pc_id, pc);
                         self.req_id_mappings.insert(req_id.clone(), pc_id);
@@ -154,20 +154,15 @@ pub struct PoolConnection {
 
 impl PoolConnection {
     fn new(nodes: Vec<RemoteNode>) -> Self {
+        //TODO shuffle nodes
         let mut sockets: Vec<Option<ZSocket>> = Vec::new();
-        // FIXME restore for _ in 0..nodes.len() { sockets.push(None); }
-        // FIXME should be lazy:
-        let ctx = zmq::Context::new();
-        let key_pair = zmq::CurveKeyPair::new().expect("FIXME");
-        for node in &nodes {
-            sockets.push(Some(node.connect(&ctx, &key_pair).expect("FIXME")))
-        }
+        for _ in 0..nodes.len() { sockets.push(None); }
 
         PoolConnection {
             nodes,
             sockets,
-            ctx,
-            key_pair,
+            ctx: zmq::Context::new(),
+            key_pair: zmq::CurveKeyPair::new().expect("FIXME"),
             resend: RefCell::new(HashMap::new()),
             time_created: time::now(),
             timeouts: RefCell::new(HashMap::new()),
@@ -216,33 +211,32 @@ impl PoolConnection {
         time::now() - self.time_created < Duration::seconds(POOL_CON_ACTIVE_TO)
     }
 
-    fn send_request(&self, pe: Option<NetworkerEvent>) {
+    fn send_request(&mut self, pe: Option<NetworkerEvent>) {
+        trace!("send_request >> pe: {:?}", pe);
         match pe {
             Some(NetworkerEvent::SendOneRequest(msg, req_id)) => {
-                let socket: &ZSocket = self.sockets[0].as_ref().expect("FIXME");
-                trace!("send single {:?}", msg);
-                socket.send_str(&msg, zmq::DONTWAIT).expect("FIXME");
-                trace!("sent");
-                self.timeouts.borrow_mut().insert((req_id.clone(), self.nodes[0].name.clone()), time::now());
+                self._send_msg_to_one_node(0, req_id.clone(), msg.clone());
                 self.resend.borrow_mut().insert(req_id, (0, msg));
             }
             Some(NetworkerEvent::SendAllRequest(msg, req_id)) => {
-                self.sockets.iter().enumerate().for_each(|(i, socket)| {
-                    socket.as_ref().expect("FIXME").send_str(&msg, zmq::DONTWAIT).expect("FIXME");
-                    self.timeouts.borrow_mut().insert((req_id.clone(), self.nodes[i].name.clone()), time::now());
-                });
+                (0..self.nodes.len()).for_each(|idx|
+                    self._send_msg_to_one_node(idx, req_id.clone(), msg.clone()))
             }
             Some(NetworkerEvent::Resend(req_id)) => {
-                if let Some(&mut (ref mut cnt, ref req)) = self.resend.borrow_mut().get_mut(&req_id) {
+                let resend = if let Some(&mut (ref mut cnt, ref req)) = self.resend.borrow_mut().get_mut(&req_id) {
                     *cnt = *cnt + 1;
                     //TODO: FIXME: We can collect consensus just walking through if we are not collecting node aliases on the upper layer.
-                    let socket: &ZSocket = self.sockets[*cnt % self.sockets.len()].as_ref().expect("FIXME");
-                    socket.send_str(&req, zmq::DONTWAIT).expect("FIXME");
-                    self.timeouts.borrow_mut().insert((req_id.clone(), self.nodes[*cnt].name.clone()), time::now());
+                    Some((*cnt % self.nodes.len(), req.clone()))
+                } else {
+                    None
+                };
+                if let Some((idx, req)) = resend {
+                    self._send_msg_to_one_node(idx, req_id, req);
                 }
             }
             _ => ()
         }
+        trace!("send_request <<");
     }
 
     fn extend_timeout(&self, req_id: &str, node_alias: &str) {
@@ -270,6 +264,25 @@ impl PoolConnection {
 
     fn is_orphaned(&self) -> bool {
         !self.is_active() && !self.has_active_requests()
+    }
+
+    fn _send_msg_to_one_node(&mut self, idx: usize, req_id: String, req: String) {
+        trace!("_send_msg_to_one_node >> idx {}, req_id {}, req {}", idx, req_id, req);
+        {
+            let s = self._get_socket(idx);
+            s.send_str(&req, zmq::DONTWAIT).expect("FIXME");
+        }
+        self.timeouts.borrow_mut().insert((req_id, self.nodes[idx].name.clone()), time::now());
+        trace!("_send_msg_to_one_node <<");
+    }
+
+    fn _get_socket(&mut self, idx: usize) -> &ZSocket {
+        if self.sockets[idx].is_none() {
+            debug!("_get_socket: open new socket for node {}", idx);
+            let s: ZSocket = self.nodes[idx].connect(&self.ctx, &self.key_pair).expect("FIXME");
+            self.sockets[idx] = Some(s)
+        }
+        self.sockets[idx].as_ref().unwrap()
     }
 }
 
