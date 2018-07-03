@@ -747,7 +747,7 @@ impl WalletStorageType for PluggedStorageType {
 
         let err = (self.open_handler)(cname.as_ptr(),
                                       config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                      "".as_ptr() as *const i8, // TODO!!!
+                                      "".as_ptr() as *const _, // TODO!!!
                                       credentials.as_ptr(),
                                       &mut handle);
 

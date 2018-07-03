@@ -5,7 +5,7 @@
     * On Mac OS, you must have `libindy.dylib` at `/usr/local/lib/libindy.dylib` before running npm install.
 * Inside `samples/nodejs/`
     * Make sure you have a running ledger with `npm run ledger`. You must have docker installed.
-    * Then run `npm run build` and `npm start`.
+    * Then run `npm install` and `npm start`.
  
 ### Troubleshooting
 
