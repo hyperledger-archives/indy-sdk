@@ -172,8 +172,12 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
 
                 try {
                     def libindyFeatures = "--features sodium_static"
+                    def libindyBuildFeatures = "--features \"fatal_warnings sodium_static\""
 
                     echo "${env_name} Libindy Test: Build"
+                    sh "RUST_BACKTRACE=1 cargo build --release $libindyBuildFeatures"
+
+                    echo "${env_name} Libindy Test: Build tests"
                     sh "RUST_BACKTRACE=1 cargo test --release --no-run $libindyFeatures"
 
                     echo "${env_name} Libindy Test: Run tests"
@@ -236,7 +240,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
         dir('cli') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Indy Cli Test: Build"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
 
                 echo "${env_name} Indy Cli Test: Build Tests"
                 sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run'
@@ -287,7 +291,7 @@ def windowsTesting() {
                                 "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo build --release"
+                            bat "cargo build --release --features fatal_warnings"
                             bat "cargo test --release --no-run"
 
                             echo "Windows Libindy Test: Run tests"
@@ -307,7 +311,7 @@ def windowsTesting() {
                         withEnv([
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo build --release"
+                            bat "cargo build --release --features fatal_warnings"
                             bat "cargo test --release --no-run"
 
                             echo "Windows Libnullpay Test: Run tests"
@@ -335,7 +339,7 @@ def windowsTesting() {
                         withEnv([
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo build --release"
+                            bat "cargo build --release --features fatal_warnings"
 
                             echo "Windows Indy Cli Test: Build tests"
                             bat "cargo test --release $featuresArgs --no-run"
