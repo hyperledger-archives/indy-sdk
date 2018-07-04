@@ -465,6 +465,9 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     PoolEvent::Timeout(req_id, _) => {
                         if let Some(rh) = pool.state.request_handlers.get_mut(&req_id) {
                             rh.process_event(pe.into());
+                        } else if "".eq(&req_id) {
+                            pool.state.networker.borrow_mut()
+                                .process_event(Some(NetworkerEvent::Timeout));
                         }
                         PoolWrapper::Active(pool)
                     }
