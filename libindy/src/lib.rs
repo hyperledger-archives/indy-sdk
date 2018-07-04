@@ -22,6 +22,9 @@ extern crate named_type_derive;
 extern crate rusqlite;
 extern crate sodiumoxide;
 extern crate libsqlite3_sys;
+extern crate rlp;
+extern crate byteorder;
+extern crate time;
 
 // Note that to use macroses from util inside of other modules it must me loaded first!
 #[macro_use]
