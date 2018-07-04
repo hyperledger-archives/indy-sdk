@@ -41,6 +41,4 @@ test('pool', async function (t) {
   await indy.closePoolLedger(poolH)
 
   await indy.deletePoolLedgerConfig(pool.name)
-
-  pool.cleanup()
 })
