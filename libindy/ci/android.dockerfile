@@ -13,13 +13,7 @@ RUN apt-get update -y && apt-get install -y \
     git \
     libtool \
     libzmq3-dev \
-    python3 \
-    openjdk-8-jdk
-
-# Install Gradle
-RUN wget https://services.gradle.org/distributions/gradle-3.4.1-bin.zip
-RUN mkdir /opt/gradle
-RUN unzip -d /opt/gradle gradle-3.4.1-bin.zip
+    python3
 
 # Indy USER
 RUN useradd -ms /bin/bash -u $uid indy
