@@ -27,7 +27,7 @@ pub struct StorageEntity {
 }
 
 impl StorageEntity {
-    fn new(name: Vec<u8>, value: Option<EncryptedValue>, type_: Option<Vec<u8>>, tags: Option<Vec<Tag>>) -> Self {
+    pub fn new(name: Vec<u8>, value: Option<EncryptedValue>, type_: Option<Vec<u8>>, tags: Option<Vec<Tag>>) -> Self {
         Self {
             name: name,
             value: value,

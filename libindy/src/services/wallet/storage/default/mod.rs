@@ -95,8 +95,7 @@ struct TagRetriever<'a> {
     encrypted_tags_stmt: rusqlite::Statement<'a>,
 }
 
-type TagRetrieverOwned = OwningHandle<Rc<rusqlite::Connection>, Box<TagRetriever<'static>>>
-;
+type TagRetrieverOwned = OwningHandle<Rc<rusqlite::Connection>, Box<TagRetriever<'static>>>;
 
 impl<'a> TagRetriever<'a> {
     fn new_owned(conn: Rc<rusqlite::Connection>) -> Result<TagRetrieverOwned, WalletStorageError> {
@@ -283,8 +282,7 @@ impl WalletStorage for SQLiteStorage {
             Err(rusqlite::Error::QueryReturnedNoRows) => return Err(WalletStorageError::ItemNotFound),
             Err(err) => return Err(WalletStorageError::from(err))
         };
-        let value = if options.retrieve_value
-            { Some(EncryptedValue::new(item.1, item.2)) } else { None };
+        let value = if options.retrieve_value { Some(EncryptedValue::new(item.1, item.2)) } else { None };
         let type_ = if options.retrieve_type { Some(type_.clone()) } else { None };
         let tags = if options.retrieve_tags {
             let mut tags = Vec::new();
@@ -929,7 +927,32 @@ mod tests {
         assert_eq!(tags, entity.tags.unwrap());
     }
 
-    // update a value
+    #[test]
+    fn sqlite_storage_get_doesnt_retrieve_if_retrieve_options_false() {
+        _prepare_path();
+        let storage_type = SQLiteStorageType::new();
+        let test_keys = _get_test_keys();
+        let keys = test_keys.clone(); // TODO: fix this
+
+        storage_type.create_storage("test_wallet", None, "", &test_keys).unwrap();
+        let storage = storage_type.open_storage("test_wallet", None, "").unwrap();
+        assert_eq!(keys, test_keys);
+
+        let type_: Vec<u8> = vec![1, 2, 3];
+        let name: Vec<u8> = vec![4, 5, 6];
+        let value = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
+        let mut tags: Vec<Tag> = Vec::new();
+        tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
+        tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
+
+        storage.add(&type_, &name, &value, &tags).unwrap();
+        let entity = storage.get(&type_, &name, r##"{"retrieveType": false, "retrieveValue": false, "retrieveTags": false}"##).unwrap();
+
+        assert!(entity.type_.is_none());
+        assert!(entity.value.is_none());
+        assert!(entity.tags.is_none());
+    }
+
     #[test]
     fn sqlite_storage_cannot_add_twice_the_same_key() {
         _prepare_path();
@@ -959,7 +982,6 @@ mod tests {
         assert_match!(Err(WalletStorageError::ItemAlreadyExists), res);
     }
 
-    // get set for reopen
     #[test]
     fn sqlite_storage_set_get_works_for_reopen() {
         _prepare_path();
@@ -986,7 +1008,6 @@ mod tests {
         assert_eq!(tags, entity.tags.unwrap());
     }
 
-    // get for non-existing key
     #[test]
     fn sqlite_storage_get_works_for_wrong_key() {
         _prepare_path();
@@ -1007,7 +1028,6 @@ mod tests {
         assert_match!(Err(WalletStorageError::ItemNotFound), res)
     }
 
-    // sql cmd inject
     #[test]
     fn sqlite_wallet_storage_sql_cmd_inject() {
         _prepare_path();
@@ -1088,6 +1108,27 @@ mod tests {
 
         storage.add(&type_, &name, &value, &tags).unwrap();
         let res = storage.delete(&type_, &vec![5, 5, 6]);
+        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+    }
+
+    #[test]
+    fn sqlite_storage_delete_returns_error_item_not_found_if_no_such_type() {
+        _prepare_path();
+        let storage_type = SQLiteStorageType::new();
+        let test_keys = _get_test_keys();
+
+        storage_type.create_storage("test_wallet", None, "", &test_keys).unwrap();
+        let storage = storage_type.open_storage("test_wallet", None, "").unwrap();
+
+        let type_: Vec<u8> = vec![1, 2, 3];
+        let name: Vec<u8> = vec![4, 5, 6];
+        let value = EncryptedValue{data: vec![7, 8, 9], key: vec![10, 11, 12]};
+        let mut tags: Vec<Tag> = Vec::new();
+        tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
+        tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value".to_string()));
+
+        storage.add(&type_, &name, &value, &tags).unwrap();
+        let res = storage.delete(&vec![1, 2, 4], &vec![10, 11, 12]);
         assert_match!(Err(WalletStorageError::ItemNotFound), res);
     }
 //
