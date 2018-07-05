@@ -4253,62 +4253,6 @@ NAN_METHOD(importWallet) {
   delete arg2UTF;
 }
 
-void closeWallet_cb(indy_handle_t handle, indy_error_t xerr) {
-  IndyCallback* icb = IndyCallback::getCallback(handle);
-  if(icb != nullptr){
-    icb->cbNone(xerr);
-  }
-}
-NAN_METHOD(closeWallet) {
-  if(info.Length() != 2){
-    return Nan::ThrowError(Nan::New("Expected 2 arguments: closeWallet(wallet_handle, cb(err))").ToLocalChecked());
-  }
-  if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: closeWallet(wallet_handle, cb(err))").ToLocalChecked());
-  }
-  indy_handle_t arg0 = info[0]->Int32Value();
-  if(!info[1]->IsFunction()) {
-    return Nan::ThrowError(Nan::New("closeWallet arg 1 expected callback Function").ToLocalChecked());
-  }
-  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
-  indyCalled(icb, indy_close_wallet(icb->handle, arg0, closeWallet_cb));
-}
-
-void deleteWallet_cb(indy_handle_t handle, indy_error_t xerr) {
-  IndyCallback* icb = IndyCallback::getCallback(handle);
-  if(icb != nullptr){
-    icb->cbNone(xerr);
-  }
-}
-NAN_METHOD(deleteWallet) {
-  if(info.Length() != 3){
-    return Nan::ThrowError(Nan::New("Expected 3 arguments: deleteWallet(name, credentials, cb(err))").ToLocalChecked());
-  }
-  Nan::Utf8String* arg0UTF = nullptr;
-  const char* arg0 = nullptr;
-  if(info[0]->IsString()){
-    arg0UTF = new Nan::Utf8String(info[0]);
-    arg0 = (const char*)(**arg0UTF);
-  } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for name: deleteWallet(name, credentials, cb(err))").ToLocalChecked());
-  }
-  Nan::Utf8String* arg1UTF = nullptr;
-  const char* arg1 = nullptr;
-  if(info[1]->IsString()){
-    arg1UTF = new Nan::Utf8String(info[1]);
-    arg1 = (const char*)(**arg1UTF);
-  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for credentials: deleteWallet(name, credentials, cb(err))").ToLocalChecked());
-  }
-  if(!info[2]->IsFunction()) {
-    return Nan::ThrowError(Nan::New("deleteWallet arg 2 expected callback Function").ToLocalChecked());
-  }
-  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
-  indyCalled(icb, indy_delete_wallet(icb->handle, arg0, arg1, deleteWallet_cb));
-  delete arg0UTF;
-  delete arg1UTF;
-}
-
 NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "issuerCreateSchema", issuerCreateSchema);
   Nan::Export(target, "issuerCreateAndStoreCredentialDef", issuerCreateAndStoreCredentialDef);
