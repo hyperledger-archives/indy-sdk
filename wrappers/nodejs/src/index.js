@@ -295,6 +295,12 @@ indy.signRequest = function signRequest (wh, submitterDid, request, cb) {
   return cb.promise
 }
 
+indy.multiSignRequest = function multiSignRequest (wh, submitterDid, request, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.multiSignRequest(wh, submitterDid, toJson(request), cb)
+  return cb.promise
+}
+
 indy.buildGetDdoRequest = function buildGetDdoRequest (submitterDid, targetDid, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.buildGetDdoRequest(submitterDid, targetDid, cb)
@@ -368,6 +374,12 @@ indy.parseGetCredDefResponse = function parseGetCredDefResponse (getCredDefRespo
 indy.buildNodeRequest = function buildNodeRequest (submitterDid, targetDid, data, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.buildNodeRequest(submitterDid, targetDid, toJson(data), cb)
+  return cb.promise
+}
+
+indy.buildGetValidatorInfoRequest = function buildGetValidatorInfoRequest (submitterDid, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildGetValidatorInfoRequest(submitterDid, cb)
   return cb.promise
 }
 
@@ -449,6 +461,66 @@ indy.parseGetRevocRegDeltaResponse = function parseGetRevocRegDeltaResponse (get
   return cb.promise
 }
 
+indy.addWalletRecord = function addWalletRecord (wh, type, id, value, tags, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.addWalletRecord(wh, type, id, value, toJson(tags), cb)
+  return cb.promise
+}
+
+indy.updateWalletRecordValue = function updateWalletRecordValue (wh, type, id, value, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.updateWalletRecordValue(wh, type, id, value, cb)
+  return cb.promise
+}
+
+indy.updateWalletRecordTags = function updateWalletRecordTags (wh, type, id, tags, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.updateWalletRecordTags(wh, type, id, toJson(tags), cb)
+  return cb.promise
+}
+
+indy.addWalletRecordTags = function addWalletRecordTags (wh, type, id, tags, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.addWalletRecordTags(wh, type, id, toJson(tags), cb)
+  return cb.promise
+}
+
+indy.deleteWalletRecordTags = function deleteWalletRecordTags (wh, type, id, tagNames, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.deleteWalletRecordTags(wh, type, id, toJson(tagNames), cb)
+  return cb.promise
+}
+
+indy.deleteWalletRecord = function deleteWalletRecord (wh, type, id, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.deleteWalletRecord(wh, type, id, cb)
+  return cb.promise
+}
+
+indy.getWalletRecord = function getWalletRecord (wh, type, id, options, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.getWalletRecord(wh, type, id, toJson(options), cb)
+  return cb.promise
+}
+
+indy.openWalletSearch = function openWalletSearch (wh, type, query, options, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.openWalletSearch(wh, type, toJson(query), toJson(options), cb)
+  return cb.promise
+}
+
+indy.fetchWalletSearchNextRecords = function fetchWalletSearchNextRecords (wh, walletSearchHandle, count, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.fetchWalletSearchNextRecords(wh, walletSearchHandle, count, cb)
+  return cb.promise
+}
+
+indy.closeWalletSearch = function closeWalletSearch (walletSearchHandle, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.closeWalletSearch(walletSearchHandle, cb)
+  return cb.promise
+}
+
 indy.isPairwiseExists = function isPairwiseExists (wh, theirDid, cb) {
   cb = wrapIndyCallback(cb)
   capi.isPairwiseExists(wh, theirDid, cb)
@@ -478,6 +550,86 @@ indy.getPairwise = function getPairwise (wh, theirDid, cb) {
 indy.setPairwiseMetadata = function setPairwiseMetadata (wh, theirDid, metadata, cb) {
   cb = wrapIndyCallback(cb)
   capi.setPairwiseMetadata(wh, theirDid, metadata, cb)
+  return cb.promise
+}
+
+indy.createPaymentAddress = function createPaymentAddress (wh, paymentMethod, config, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.createPaymentAddress(wh, paymentMethod, config, cb)
+  return cb.promise
+}
+
+indy.listPaymentAddresses = function listPaymentAddresses (wh, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.listPaymentAddresses(wh, cb)
+  return cb.promise
+}
+
+indy.addRequestFees = function addRequestFees (wh, submitterDid, req, inputs, outputs, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.addRequestFees(wh, submitterDid, toJson(req), toJson(inputs), toJson(outputs), cb)
+  return cb.promise
+}
+
+indy.parseResponseWithFees = function parseResponseWithFees (paymentMethod, resp, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.parseResponseWithFees(paymentMethod, toJson(resp), cb)
+  return cb.promise
+}
+
+indy.buildGetUtxoRequest = function buildGetUtxoRequest (wh, submitterDid, paymentAddress, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.buildGetUtxoRequest(wh, submitterDid, paymentAddress, cb)
+  return cb.promise
+}
+
+indy.parseGetUtxoResponse = function parseGetUtxoResponse (paymentMethod, resp, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.parseGetUtxoResponse(paymentMethod, toJson(resp), cb)
+  return cb.promise
+}
+
+indy.buildPaymentReq = function buildPaymentReq (wh, submitterDid, inputs, outputs, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.buildPaymentReq(wh, submitterDid, toJson(inputs), toJson(outputs), cb)
+  return cb.promise
+}
+
+indy.parsePaymentResponse = function parsePaymentResponse (paymentMethod, resp, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.parsePaymentResponse(paymentMethod, toJson(resp), cb)
+  return cb.promise
+}
+
+indy.buildMintReq = function buildMintReq (wh, submitterDid, outputs, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.buildMintReq(wh, submitterDid, toJson(outputs), cb)
+  return cb.promise
+}
+
+indy.buildSetTxnFeesReq = function buildSetTxnFeesReq (wh, submitterDid, paymentMethod, fees, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildSetTxnFeesReq(wh, submitterDid, paymentMethod, toJson(fees), cb)
+  return cb.promise
+}
+
+indy.buildGetTxnFeesReq = function buildGetTxnFeesReq (wh, submitterDid, paymentMethod, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.buildGetTxnFeesReq(wh, submitterDid, paymentMethod, cb)
+  return cb.promise
+}
+
+indy.parseGetTxnFeesResponse = function parseGetTxnFeesResponse (paymentMethod, resp, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.parseGetTxnFeesResponse(paymentMethod, toJson(resp), cb)
   return cb.promise
 }
 
@@ -535,11 +687,12 @@ indy.openWallet = function openWallet (config, credentials, cb) {
   return cb.promise
 }
 
-indy.closeWallet = function closeWallet (handle, cb) {
+indy.exportWallet = function exportWallet (wh, exportConfig, cb) {
   cb = wrapIndyCallback(cb)
-  capi.closeWallet(handle, cb)
+  capi.exportWallet(wh, toJson(exportConfig), cb)
   return cb.promise
 }
+
 
 indy.deleteWallet = function deleteWallet (config, credentials, cb) {
   cb = wrapIndyCallback(cb)
@@ -547,9 +700,9 @@ indy.deleteWallet = function deleteWallet (config, credentials, cb) {
   return cb.promise
 }
 
-indy.exportWallet = function exportWallet (handle, exportConfigJson, cb) {
+indy.closeWallet = function closeWallet (wh, cb) {
   cb = wrapIndyCallback(cb)
-  capi.exportWallet(handle, toJson(exportConfigJson), cb)
+  capi.closeWallet(wh, cb)
   return cb.promise
 }
 

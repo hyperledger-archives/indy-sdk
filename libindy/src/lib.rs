@@ -1,3 +1,7 @@
+#![cfg_attr(feature = "fatal_warnings", deny(warnings))]
+
+extern crate base64;
+
 #[macro_use]
 extern crate log;
 

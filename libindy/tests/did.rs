@@ -107,7 +107,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let res = DidUtils::key_for_did(pool_handle, wallet_handle, DID);
-            assert_eq!(ErrorCode::CommonInvalidState, res.unwrap_err());
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();

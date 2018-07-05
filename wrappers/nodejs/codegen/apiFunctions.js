@@ -46,6 +46,9 @@ Object.keys(api.functions).forEach(function (name) {
   if (name === 'indy_register_wallet_type') {
     return
   }
+  if (name === 'indy_register_payment_method') {
+    return
+  }
 
   var fn = Object.assign({}, api.functions[name], {
     name: name,

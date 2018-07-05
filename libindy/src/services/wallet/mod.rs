@@ -506,6 +506,7 @@ impl WalletService {
 
         // TODO - this can be refactor to skip the entire wallet_handle ceremony,
         // but in order to do that a lot of WalletService needs to be refactored
+
         self.create_wallet(config, credentials)?;
         let wallet_handle = self.open_wallet(config, credentials)?;
 

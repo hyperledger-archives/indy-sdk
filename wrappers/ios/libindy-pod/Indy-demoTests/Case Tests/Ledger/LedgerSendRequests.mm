@@ -116,6 +116,7 @@
     NSDictionary *request = @{
             @"reqId": @(1491566332010860),
             @"identifier": [TestUtils trusteeDid],
+            @"protocolVersion": @(2),
             @"operation": @{
                     @"type": @"105",
                     @"dest": [TestUtils trusteeDid]

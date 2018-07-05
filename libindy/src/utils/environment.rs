@@ -1,5 +1,6 @@
 use std::env;
 use std::path::PathBuf;
+use std::fs;
 
 pub struct EnvironmentUtils {}
 
@@ -7,8 +8,35 @@ impl EnvironmentUtils {
     pub fn indy_home_path() -> PathBuf {
         // TODO: FIXME: Provide better handling for the unknown home path case!!!
         let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/indy"));
-        path.push(if cfg!(target_os = "ios") { "Documents/.indy_client" } else { ".indy_client" });
+        let mut indy_client_dir = ".indy_client";
+        if cfg!(target_os = "ios"){
+            indy_client_dir = "Documents/.indy_client";
+        }
+        path.push(indy_client_dir);
+
+        if cfg!(target_os = "android"){
+            EnvironmentUtils::android_create_indy_client_dir();
+            path = EnvironmentUtils::android_indy_client_dir_path();
+        }
         path
+    }
+
+    pub fn android_indy_client_dir_path() -> PathBuf{
+        let external_storage= env::var("EXTERNAL_STORAGE");
+        let android_dir :String;
+        match external_storage {
+            Ok (val) => android_dir = val + "/.indy_client",
+            Err(err) => {
+                panic!("Failed to find external storage path {:?}", err)
+            }
+        }
+
+        PathBuf::from(android_dir)
+    }
+
+    pub fn android_create_indy_client_dir(){
+        //Creates directory only if it is not present.
+        fs::create_dir_all(EnvironmentUtils::android_indy_client_dir_path().as_path()).unwrap();
     }
 
     pub fn wallet_home_path() -> PathBuf {

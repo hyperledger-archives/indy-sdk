@@ -1,9 +1,8 @@
 var test = require('ava')
 var indy = require('../')
 var cuid = require('cuid')
-var path = require('path')
 var initTestPool = require('./helpers/initTestPool')
-var indyHomeDir = require('home-dir')('.indy_client')
+var tempy = require('tempy')
 
 test('anoncreds', async function (t) {
   var pool = await initTestPool()
@@ -25,7 +24,7 @@ test('anoncreds', async function (t) {
 
   // Issuer create Revocation Registry
   var tailsWriterConfig = {
-    'base_dir': path.join(indyHomeDir, 'tails'),
+    'base_dir': tempy.directory(),
     'uri_pattern': ''
   }
   var tailsWriterHandle = await indy.openBlobStorageWriter('default', tailsWriterConfig)
