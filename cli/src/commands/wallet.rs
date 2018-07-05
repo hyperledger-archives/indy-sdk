@@ -8,6 +8,12 @@ use serde_json;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
+use std::fs;
+use std::fs::File;
+use utils::environment::EnvironmentUtils;
+use std::io::{Read, Write};
+use std::path::PathBuf;
+
 pub mod group {
     use super::*;
 
@@ -18,38 +24,45 @@ pub mod create_command {
     use super::*;
 
     command!(CommandMetadata::build("create", "Create new wallet with specified name")
-                .add_main_param("name", "The name of new wallet")
-                .add_required_param("pool_name", "The name of associated Indy pool")
+                .add_main_param("name", "Identifier of the wallet")
                 .add_required_deferred_param("key", "Auth key for the wallet")
-                .add_example("wallet create wallet1 pool_name=pool1 key")
-                .add_example("wallet create wallet1 pool_name=pool1 key=key")
+                .add_optional_param("storage_type", "Type of the wallet storage.")
+                .add_optional_param("storage_config", "The list of key:value pairs defined by storage type.")
+                .add_example("wallet create wallet1 key")
+                .add_example("wallet create wallet1 key=key")
+                .add_example("wallet create wallet1 key=key storage_type=default")
+                .add_example("wallet create wallet1 key=key storage_type=default storage_config=key1:value1,key2:value2")
                 .finalize()
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let pool_name = get_str_param("pool_name", params).map_err(error_err!())?;
-        let name = get_str_param("name", params).map_err(error_err!())?;
+        let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
+        let storage_type = get_opt_str_param("storage_type", params).map_err(error_err!())?.unwrap_or("default");
+        let storage_config = get_opt_map_param("storage_config", params).map_err(error_err!())?;
 
+        let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
         let credentials: String = json!({ "key": key.clone() }).to_string();
 
-        trace!("Wallet::create_wallet try: name {}, pool_name {}", name, pool_name);
+        trace!("Wallet::create_wallet try: config {}", config);
 
-        let res = Wallet::create_wallet(pool_name,
-                                        name,
-                                        None,
-                                        None,
+        let res = Wallet::create_wallet(config.as_str(),
                                         credentials.as_str(),
         );
 
         trace!("Wallet::create_wallet return: {:?}", res);
 
         let res = match res {
-            Ok(()) => Ok(println_succ!("Wallet \"{}\" has been created", name)),
-            Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", name)),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Invalid wallet name  \"{}\"", name)),
+            Ok(()) => {
+                _store_wallet_config(id, &config)
+                    .map_err(|err| println_err!("Cannot store wallet \"{}\" config file: {:?}", id, err))?;
+
+                Ok(println_succ!("Wallet \"{}\" has been created", id))
+            }
+            Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", id)),
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Invalid wallet name  \"{}\"", id)),
             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -73,9 +86,12 @@ pub mod open_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let name = get_str_param("name", params).map_err(error_err!())?;
+        let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
         let rekey = get_opt_str_param("rekey", params).map_err(error_err!())?;
+
+        let config = _read_wallet_config(id)
+            .map_err(|_| println_err!("Wallet \"{}\" not found or unavailable", id))?;
 
         let credentials = {
             let mut json = JSONMap::new();
@@ -90,9 +106,9 @@ pub mod open_command {
         let res = Ok(())
             .and_then(|_| {
                 set_active_did(ctx, None);
-                if let Some((handle, name)) = get_opened_wallet(ctx) {
+                if let Some((handle, id)) = get_opened_wallet(ctx) {
                     match Wallet::close_wallet(handle) {
-                        Ok(()) => Ok(println_succ!("Wallet \"{}\" has been closed", name)),
+                        Ok(()) => Ok(println_succ!("Wallet \"{}\" has been closed", id)),
                         Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                     }
                 } else {
@@ -100,18 +116,18 @@ pub mod open_command {
                 }
             })
             .and_then(|_| {
-                match Wallet::open_wallet(name, None, &credentials) {
+                match Wallet::open_wallet(config.as_str(), &credentials.as_str()) {
                     Ok(handle) => {
-                        set_opened_wallet(ctx, Some((handle, name.to_owned())));
-                        Ok(println_succ!("Wallet \"{}\" has been opened", name))
+                        set_opened_wallet(ctx, Some((handle, id.to_owned())));
+                        Ok(println_succ!("Wallet \"{}\" has been opened", id))
                     }
                     Err(err) => {
                         set_opened_wallet(ctx, None);
                         match err {
                             ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid wallet config")),
-                            ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", name)),
-                            ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open wallet \"{}\". Invalid key \"{}\" has been provided", name, key)),
-                            ErrorCode::WalletNotFoundError => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
+                            ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", id)),
+                            ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open wallet \"{}\". Invalid key \"{}\" has been provided", id, key)),
+                            ErrorCode::WalletNotFoundError => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
                             err => Err(println_err!("Indy SDK error occurred {:?}", err)),
                         }
                     }
@@ -149,25 +165,18 @@ pub mod list_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let res = match Wallet::list_wallets() {
-            Ok(wallets) => {
-                let wallets: Vec<serde_json::Value> = serde_json::from_str(&wallets)
-                    .map_err(|_| println_err!("Wrong data has been received"))?;
+        let wallets: Vec<serde_json::Value> = _list_wallets();
 
-                print_list_table(&wallets,
-                                 &vec![("name", "Name"),
-                                       ("pool_name", "Associated pool name"),
-                                       ("type", "Type")],
-                                 "There are no wallets");
+        print_list_table(&wallets,
+                         &vec![("id", "Name"),
+                               ("storage_type", "Type")],
+                         "There are no wallets");
 
-                if let Some((_, cur_wallet)) = get_opened_wallet(ctx) {
-                    println_succ!("Current wallet \"{}\"", cur_wallet);
-                }
-                Ok(())
-            }
-            Err(ErrorCode::CommonIOError) => Err(println_succ!("There are no wallets")),
-            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
-        };
+        if let Some((_, cur_wallet)) = get_opened_wallet(ctx) {
+            println_succ!("Current wallet \"{}\"", cur_wallet);
+        }
+
+        let res = Ok(());
 
         trace!("execute << {:?}", res);
         res
@@ -222,23 +231,31 @@ pub mod delete_command {
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx: {:?} params {:?}", ctx, params);
 
-        let name = get_str_param("name", params).map_err(error_err!())?;
+        let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
+
+        let config = _read_wallet_config(id)
+            .map_err(|_| println_err!("Wallet \"{}\" not found or unavailable", id))?;
 
         let credentials: String = json!({ "key": key }).to_string();
 
-        if let Some((_, opened_wallet_name)) = get_opened_wallet(&ctx) {
+        if let Some((_, opened_wallet_id)) = get_opened_wallet(&ctx) {
             // TODO: Indy-Sdk allows delete opened wallet
-            if name == opened_wallet_name {
-                return Err(println_err!("Wallet {:?} is opened", name));
+            if id == opened_wallet_id {
+                return Err(println_err!("Wallet {:?} is opened", id));
             }
         }
 
-        let res = match Wallet::delete_wallet(name, credentials.as_str()) {
-            Ok(()) => Ok(println_succ!("Wallet \"{}\" has been deleted", name)),
-            Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
-            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Wallet \"{}\" not found or unavailable", name)),
-            Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key \"{}\" has been provided ", name, key)),
+        let res = match Wallet::delete_wallet(config.as_str(), credentials.as_str()) {
+            Ok(()) => {
+                _delete_wallet_config(id)
+                    .map_err(|err| println_err!("Cannot delete \"{}\" config file: {:?}", id, err))?;
+
+                Ok(println_succ!("Wallet \"{}\" has been deleted", id))
+            }
+            Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
+            Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
+            Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key \"{}\" has been provided ", id, key)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -291,42 +308,47 @@ pub mod import_command {
 
     command!(CommandMetadata::build("import", "Create new wallet and then import content from the specified file")
                 .add_main_param("name", "The name of new wallet")
-                .add_required_param("pool_name", "The name of associated Indy pool")
                 .add_required_deferred_param("key", "Auth key for the wallet")
+                .add_optional_param("storage_type", "Type of the wallet storage.")
+                .add_optional_param("storage_config", "The list of key:value pairs defined by storage type.")
                 .add_required_param("export_path", "Path to the file that contains exported wallet content")
                 .add_required_deferred_param("export_key", "Passphrase used to derive export key")
-                .add_example("wallet import wallet1 pool_name=pool1 key export_path=/home/indy/export_wallet export_key")
-                .add_example("wallet import wallet1 pool_name=pool1 key=key export_path=/home/indy/export_wallet export_key=export_key")
+                .add_example("wallet import wallet1 key export_path=/home/indy/export_wallet export_key")
+                .add_example("wallet import wallet1 key=key export_path=/home/indy/export_wallet export_key=export_key")
+                .add_example("wallet import wallet1 key export_path=/home/indy/export_wallet export_key=export_key storage_type=default storage_config=key1:value1,key2:value2")
                 .finalize()
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, params);
 
-        let pool_name = get_str_param("pool_name", params).map_err(error_err!())?;
-        let name = get_str_param("name", params).map_err(error_err!())?;
+        let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
         let export_path = get_str_param("export_path", params).map_err(error_err!())?;
         let export_key = get_str_param("export_key", params).map_err(error_err!())?;
+        let storage_type = get_opt_str_param("storage_type", params).map_err(error_err!())?;
+        let storage_config = get_opt_map_param("storage_config", params).map_err(error_err!())?;
 
+        let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
         let credentials: String = json!({ "key": key.clone() }).to_string();
         let import_config: String = json!({ "path": export_path.clone(), "key": export_key.clone() }).to_string();
 
-        trace!("Wallet::import_wallet try: name {}, pool_name {}, export_path {}", name, pool_name, export_path);
+        trace!("Wallet::import_wallet try: config {}, import_config {}", config, import_config);
 
-        let res = Wallet::import_wallet(pool_name,
-                                        name,
-                                        None,
-                                        None,
+        let res = Wallet::import_wallet(config.as_str(),
                                         credentials.as_str(),
-                                        import_config.as_str()
+                                        import_config.as_str(),
         );
 
         trace!("Wallet::import_wallet return: {:?}", res);
 
         let res = match res {
-            Ok(()) => Ok(println_succ!("Wallet \"{}\" has been created", name)),
-            Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", name)),
+            Ok(()) => {
+                _store_wallet_config(id, &config)
+                    .map_err(|err| println_err!("Cannot store \"{}\" config file: {:?}", id, err))?;
+                Ok(println_succ!("Wallet \"{}\" has been created", id))
+            }
+            Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", id)),
             Err(ErrorCode::CommonIOError) => Err(println_err!("Can not import Wallet from file: \"{}\"", export_path)),
             Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Can not import Wallet: Invalid file format or encryption key")),
             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
@@ -337,12 +359,77 @@ pub mod import_command {
     }
 }
 
+fn _wallets_path() -> PathBuf {
+    let mut path = EnvironmentUtils::indy_home_path();
+    path.push("wallets");
+    path
+}
+
+fn _wallet_config_path(id: &str) -> PathBuf {
+    let mut path = _wallets_path();
+    path.push(id);
+    path.set_extension("json");
+    path
+}
+
+fn _init_wallets_dir(path: &PathBuf) -> Result<(), std::io::Error> {
+    fs::DirBuilder::new()
+        .recursive(true)
+        .create(path)
+}
+
+fn _store_wallet_config(id: &str, config: &str) -> Result<(), std::io::Error> {
+    _init_wallets_dir(&_wallets_path())?;
+
+    let path = _wallet_config_path(id);
+
+    let mut config_file = File::create(path)?;
+    config_file.write_all(config.as_bytes())?;
+    config_file.sync_all()?;
+
+    Ok(())
+}
+
+fn _read_wallet_config(id: &str) -> Result<String, std::io::Error> {
+    let path = _wallet_config_path(id);
+
+    let mut config_json = String::new();
+
+    let mut file = File::open(path)?;
+    file.read_to_string(&mut config_json)?;
+
+    Ok(config_json)
+}
+
+fn _delete_wallet_config(id: &str) -> Result<(), std::io::Error> {
+    let path = _wallet_config_path(id);
+    fs::remove_file(path)
+}
+
+fn _list_wallets() -> Vec<serde_json::Value> {
+    let mut configs: Vec<serde_json::Value> = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(_wallets_path()) {
+        for entry in entries {
+            let file = if let Ok(dir_entry) = entry { dir_entry } else { continue };
+
+            let mut config_json = String::new();
+
+            File::open(file.path()).ok()
+                .and_then(|mut f| f.read_to_string(&mut config_json).ok())
+                .and_then(|_| serde_json::from_str::<serde_json::Value>(config_json.as_str()).ok())
+                .map(|config| configs.push(config));
+        }
+    }
+
+    configs
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
     use utils::test::TestUtils;
     use utils::environment::EnvironmentUtils;
-    use libindy::wallet::Wallet;
     use std::path::PathBuf;
 
     const WALLET: &'static str = "wallet";
@@ -361,16 +448,14 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("pool_name", POOL.to_string());
                 params.insert("key", WALLET_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
 
-            let wallets = get_wallets();
+            let wallets = _list_wallets();
             assert_eq!(1, wallets.len());
 
-            assert_eq!(wallets[0]["name"].as_str().unwrap(), WALLET);
-            assert_eq!(wallets[0]["pool_name"].as_str().unwrap(), POOL);
+            assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
 
             delete_wallet(&ctx);
             TestUtils::cleanup_storage();
@@ -386,25 +471,11 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("pool_name", POOL.to_string());
                 params.insert("key", WALLET_KEY.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             delete_wallet(&ctx);
             TestUtils::cleanup_storage();
-        }
-
-        #[test]
-        pub fn create_works_for_missed_pool_name() {
-            TestUtils::cleanup_storage();
-            let ctx = CommandContext::new();
-            {
-                let cmd = create_command::new();
-                let mut params = CommandParams::new();
-                params.insert("name", WALLET.to_string());
-                params.insert("key", WALLET_KEY.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
-            }
         }
 
         #[test]
@@ -414,9 +485,58 @@ pub mod tests {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("pool_name", POOL.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn create_works_for_type() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let storage_type = "default";
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("storage_type", storage_type.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(1, wallets.len());
+
+            assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
+            assert_eq!(wallets[0]["storage_type"].as_str().unwrap(), storage_type);
+
+            delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn create_works_for_config() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("storage_config", "key:value,key2:value2".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(1, wallets.len());
+
+            assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
+            assert_eq!(wallets[0]["storage_config"].as_object().unwrap(),
+                       serde_json::from_str::<serde_json::Value>(r#"{"key":"value","key2":"value2"}"#).unwrap().as_object().unwrap());
+
+            delete_wallet(&ctx);
             TestUtils::cleanup_storage();
         }
     }
@@ -604,7 +724,7 @@ pub mod tests {
                 params.insert("key", WALLET_KEY.to_string());
                 cmd.execute(&CommandContext::new(), &params).unwrap();
             }
-            let wallets = get_wallets();
+            let wallets = _list_wallets();
             assert_eq!(0, wallets.len());
 
             TestUtils::cleanup_storage();
@@ -724,7 +844,6 @@ pub mod tests {
                 let cmd = import_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", wallet_name.to_string());
-                params.insert("pool_name", POOL.to_string());
                 params.insert("key", WALLET_KEY.to_string());
                 params.insert("export_path", path_str);
                 params.insert("export_key", EXPORT_KEY.to_string());
@@ -767,7 +886,6 @@ pub mod tests {
                 let cmd = import_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("pool_name", POOL.to_string());
                 params.insert("key", WALLET_KEY.to_string());
                 params.insert("export_path", path_str);
                 params.insert("export_key", EXPORT_KEY.to_string());
@@ -795,7 +913,6 @@ pub mod tests {
                 let cmd = import_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", wallet_name.to_string());
-                params.insert("pool_name", POOL.to_string());
                 params.insert("key", WALLET_KEY.to_string());
                 params.insert("export_path", path_str);
                 params.insert("export_key", "other_key".to_string());
@@ -821,7 +938,6 @@ pub mod tests {
                 let cmd = import_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
-                params.insert("pool_name", POOL.to_string());
                 params.insert("key", WALLET_KEY.to_string());
                 params.insert("export_path", path_str);
                 params.insert("export_key", EXPORT_KEY.to_string());
@@ -837,7 +953,6 @@ pub mod tests {
         let create_cmd = create_command::new();
         let mut params = CommandParams::new();
         params.insert("name", WALLET.to_string());
-        params.insert("pool_name", POOL.to_string());
         params.insert("key", WALLET_KEY.to_string());
         create_cmd.execute(&ctx, &params).unwrap();
     }
@@ -847,7 +962,6 @@ pub mod tests {
             let create_cmd = create_command::new();
             let mut params = CommandParams::new();
             params.insert("name", WALLET.to_string());
-            params.insert("pool_name", POOL.to_string());
             params.insert("key", WALLET_KEY.to_string());
             create_cmd.execute(&ctx, &params).unwrap();
         }
@@ -886,11 +1000,6 @@ pub mod tests {
             params.insert("key", WALLET_KEY.to_string());
             cmd.execute(&ctx, &params).unwrap();
         }
-    }
-
-    fn get_wallets() -> Vec<serde_json::Value> {
-        let wallets = Wallet::list_wallets().unwrap();
-        serde_json::from_str(&wallets).unwrap()
     }
 
     pub fn export_wallet_path() -> (PathBuf, String) {
