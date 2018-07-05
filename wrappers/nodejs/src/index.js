@@ -693,7 +693,6 @@ indy.exportWallet = function exportWallet (wh, exportConfig, cb) {
   return cb.promise
 }
 
-
 indy.deleteWallet = function deleteWallet (config, credentials, cb) {
   cb = wrapIndyCallback(cb)
   capi.deleteWallet(toJson(config), toJson(credentials), cb)

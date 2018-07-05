@@ -1,9 +1,10 @@
 var test = require('ava')
 var indy = require('../')
 var cuid = require('cuid')
+var path = require('path')
 var fs = require('fs')
 var initTestPool = require('./helpers/initTestPool')
-var tempy = require('tempy')
+var indyHomeDir = require('home-dir')('.indy_client')
 
 test('wallet', async function (t) {
   var pool = await initTestPool()
@@ -28,12 +29,10 @@ test('wallet', async function (t) {
   var didBeforeExport = await indy.getMyDidWithMeta(handle, did)
 
   var exportPath = path.join(indyHomeDir, 'export_wallet-' + cuid())
-
   var exportConfig = {
     'key': 'export_key',
     'path': exportPath
   }
-
   await indy.exportWallet(handle, exportConfig)
 
   t.is(fs.existsSync(exportPath), true)
