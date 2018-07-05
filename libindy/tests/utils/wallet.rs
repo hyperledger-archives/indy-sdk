@@ -100,8 +100,6 @@ impl WalletUtils {
     }
 
     pub fn create_and_open_wallet(storage_type: Option<&str>) -> Result<i32, ErrorCode> {
-        let wallet_name = format!("default-wallet-name-{}", SequenceUtils::get_next_id());
-
         let config = json!({
             "id": format!("default-wallet_id-{}", SequenceUtils::get_next_id()),
             "storage_type": storage_type.unwrap_or(TYPE)
@@ -131,13 +129,13 @@ impl WalletUtils {
         WalletUtils::open_wallet(&config, WALLET_CREDENTIALS)
     }
 
-    pub fn delete_wallet(wallet_name: &str, credentials: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn delete_wallet(config: &str, credentials: &str) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
-        let wallet_name = CString::new(wallet_name).unwrap();
-        let credentials_str = CString::new(credentials.unwrap_or(WALLET_CREDENTIALS)).unwrap();
+        let config = CString::new(config).unwrap();
+        let credentials = CString::new(credentials).unwrap();
 
-        let err = indy_delete_wallet(command_handle, wallet_name.as_ptr(), credentials_str.as_ptr(), cb);
+        let err = indy_delete_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), cb);
 
         super::results::result_to_empty(err, receiver)
     }

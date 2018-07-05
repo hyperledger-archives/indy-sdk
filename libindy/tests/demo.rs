@@ -80,7 +80,7 @@ fn anoncreds_demo_works() {
     //1. Creates Wallet
     let err =
         indy_create_wallet(create_wallet_command_handle,
-                           CString::new(wallet_config).unwrap().as_ptr(),
+                           CString::new(wallet_config.as_str()).unwrap().as_ptr(),
                            CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_wallet_callback);
 
@@ -91,7 +91,7 @@ fn anoncreds_demo_works() {
     //2. Opens Wallet
     let err =
         indy_open_wallet(open_wallet_command_handle,
-                         CString::new(wallet_config).unwrap().as_ptr(),
+                         CString::new(wallet_config.as_str()).unwrap().as_ptr(),
                          CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_wallet_callback);
 
@@ -108,10 +108,10 @@ fn anoncreds_demo_works() {
     // 3. Issuer create Schema
     let err =
         indy_issuer_create_schema(issuer_create_schema_command_handle,
-                                  CString::new(issuer_did.clone()).unwrap().as_ptr(),
-                                  CString::new(schema_name.clone()).unwrap().as_ptr(),
-                                  CString::new(version.clone()).unwrap().as_ptr(),
-                                  CString::new(attrs.clone()).unwrap().as_ptr(),
+                                  CString::new(issuer_did).unwrap().as_ptr(),
+                                  CString::new(schema_name).unwrap().as_ptr(),
+                                  CString::new(version).unwrap().as_ptr(),
+                                  CString::new(attrs).unwrap().as_ptr(),
                                   issuer_create_schema_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -460,7 +460,7 @@ fn ledger_demo_works() {
     // 3. Create My Wallet
     let err =
         indy_create_wallet(create_my_wallet_command_handle,
-                           CString::new(my_wallet_config).unwrap().as_ptr(),
+                           CString::new(my_wallet_config.as_str()).unwrap().as_ptr(),
                            CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_my_wallet_callback);
 
@@ -471,7 +471,7 @@ fn ledger_demo_works() {
     // 4. Open My Wallet. Gets My wallet handle
     let err =
         indy_open_wallet(open_my_wallet_command_handle,
-                         CString::new(my_wallet_config).unwrap().as_ptr(),
+                         CString::new(my_wallet_config.as_str()).unwrap().as_ptr(),
                          CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_my_wallet_callback);
 
@@ -483,7 +483,7 @@ fn ledger_demo_works() {
     // 5. Create Their Wallet
     let err =
         indy_create_wallet(create_their_wallet_command_handle,
-                           CString::new(their_wallet_config).unwrap().as_ptr(),
+                           CString::new(their_wallet_config.as_str()).unwrap().as_ptr(),
                            CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_their_wallet_callback);
 
@@ -494,7 +494,7 @@ fn ledger_demo_works() {
     // 6. Open Their Wallet. Gets Their wallet handle
     let err =
         indy_open_wallet(open_their_wallet_command_handle,
-                         CString::new(their_wallet_config).unwrap().as_ptr(),
+                         CString::new(their_wallet_config.as_str()).unwrap().as_ptr(),
                          CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_their_wallet_callback);
 
@@ -683,7 +683,7 @@ fn crypto_demo_works() {
     // 1. Create Wallet
     let err =
         indy_create_wallet(create_wallet_command_handle,
-                           CString::new(wallet_config).unwrap().as_ptr(),
+                           CString::new(wallet_config.as_str()).unwrap().as_ptr(),
                            CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_wallet_callback);
 
@@ -694,7 +694,7 @@ fn crypto_demo_works() {
     // 2. Open Wallet. Gets wallet handle
     let err =
         indy_open_wallet(open_wallet_command_handle,
-                         CString::new(wallet_config).unwrap().as_ptr(),
+                         CString::new(wallet_config.as_str()).unwrap().as_ptr(),
                          CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_wallet_callback);
 

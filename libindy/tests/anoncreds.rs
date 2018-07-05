@@ -232,7 +232,7 @@ mod high_cases {
             let (credential_def_json, credential_offer, _, _) = AnoncredsUtils::init_common_wallet();
 
             let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let prover_wallet_handle = WalletUtils::create_and_open_wallet("proverWallet", None).unwrap();
+            let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
 
@@ -1642,7 +1642,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_correct_signature_type() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                 ISSUER_DID,
@@ -1707,7 +1707,7 @@ mod medium_cases {
 
         #[test]
         fn issuer_create_and_store_credential_def_works_for_null_config() {
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             AnoncredsUtils::issuer_create_credential_definition(wallet_handle,
                                                                 DID_MY1,
@@ -2134,10 +2134,10 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Create Issuer wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Create Prover wallet, gets wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3. Issuer creates Schema and Credential Definition
         let (schema_id, schema_json, cred_def_id, cred_def_json) = AnoncredsUtils::multi_steps_issuer_preparation(issuer_wallet_handle,
@@ -2238,14 +2238,22 @@ mod demos {
         WalletUtils::register_wallet_storage(INMEM_TYPE, false).unwrap();
 
         //2. Creates and opens Issuer wallet
-        let issuer_wallet_name = "custom_issuer_wallet";
-        WalletUtils::create_wallet(POOL, issuer_wallet_name, Some(INMEM_TYPE), None, None).unwrap();
-        let issuer_wallet_handle = WalletUtils::open_wallet(issuer_wallet_name, None, None).unwrap();
+        let issuer_wallet_config = json!({
+            "id": "custom_issuer_wallet",
+            "storage_type": INMEM_TYPE,
+        }).to_string();
+
+        WalletUtils::create_wallet(&issuer_wallet_config, WALLET_CREDENTIALS).unwrap();
+        let issuer_wallet_handle = WalletUtils::open_wallet(&issuer_wallet_config, WALLET_CREDENTIALS).unwrap();
 
         //3. Creates and opens Prover wallet
-        let prover_wallet_name = "custom_prover_wallet";
-        WalletUtils::create_wallet(POOL, prover_wallet_name, Some(INMEM_TYPE), None, None).unwrap();
-        let prover_wallet_handle = WalletUtils::open_wallet(prover_wallet_name, None, None).unwrap();
+        let prover_wallet_config = json!({
+            "id": "custom_prover_wallet",
+            "storage_type": INMEM_TYPE,
+        }).to_string();
+
+        WalletUtils::create_wallet(&prover_wallet_config, WALLET_CREDENTIALS).unwrap();
+        let prover_wallet_handle = WalletUtils::open_wallet(&prover_wallet_config, WALLET_CREDENTIALS).unwrap();
 
         //4. Issuer creates Schema and Credential Definition
         let (schema_id, schema_json, cred_def_id, cred_def_json) = AnoncredsUtils::multi_steps_issuer_preparation(issuer_wallet_handle,
@@ -2331,13 +2339,13 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer1 creates wallet, gets wallet handles
-        let issuer_gvt_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_gvt_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Issuer2 creates wallet, gets wallet handles
-        let issuer_xyz_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_xyz_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3. Prover creates wallet, gets wallet handles
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //4. Issuer1 creates GVT Schema and Credential Definition
         let (gvt_schema_id, gvt_schema,
@@ -2463,10 +2471,10 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer creates wallet, gets wallet handles
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Prover creates wallet, gets wallet handles
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3. Issuer creates GVT Schema and Credential Definition
         let (gvt_schema_id, gvt_schema,
@@ -2592,10 +2600,10 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Prover creates wallet, gets wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3 Issuer creates Schema, Credential Definition and Revocation Registry
         let (schema_id, schema_json,
@@ -2721,10 +2729,10 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Prover creates wallet, gets wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3 Issuer creates Schema, Credential Definition and Revocation Registry
         let (schema_id, schema_json,
@@ -2847,7 +2855,7 @@ mod demos {
         TestUtils::cleanup_storage();
 
         // 1. Creates wallet, gets wallet handle
-        let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         // 2. Issuer creates Schema and Credential Definition
         let (schema_id, schema_json, cred_def_id, cred_def_json) = AnoncredsUtils::multi_steps_issuer_preparation(wallet_handle,
@@ -2920,10 +2928,10 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Create Issuer wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Create Prover wallet, gets wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3. Issuer creates Schema and Credential Definition
         let (schema_id, schema_json, cred_def_id, cred_def_json) = AnoncredsUtils::multi_steps_issuer_preparation(issuer_wallet_handle,
@@ -3018,16 +3026,16 @@ mod demos {
         TestUtils::cleanup_storage();
 
         // Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         // Prover1 creates wallet, gets wallet handle
-        let prover1_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover1_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         // Prover2 creates wallet, gets wallet handle
-        let prover2_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover2_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         // Prover3 creates wallet, gets wallet handle
-        let prover3_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover3_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3 Issuer creates Schema, Credential Definition and Revocation Registry
         let (schema_id, schema_json,
@@ -3340,13 +3348,13 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer1 creates wallet, gets wallet handles
-        let issuer_gvt_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_gvt_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Issuer2 creates wallet, gets wallet handles
-        let issuer_abc_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_abc_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3. Prover creates wallet, gets wallet handles
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //4. Issuer creates Schema and Credential Definition
         let (gvt_schema_id, gvt_schema, gvt_cred_def_id, gvt_cred_def_json) = AnoncredsUtils::multi_steps_issuer_preparation(issuer_gvt_wallet_handle,
@@ -3467,13 +3475,13 @@ mod demos {
         TestUtils::cleanup_storage();
 
         // Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         // Prover1 creates wallet, gets wallet handle
-        let prover1_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover1_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         // Prover2 creates wallet, gets wallet handle
-        let prover2_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover2_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         // Issuer creates Schema, Credential Definition and Revocation Registry
         let (schema_id, schema_json,
@@ -3661,10 +3669,10 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Prover creates wallet, gets wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3 Issuer creates Schema, Credential Definition and Revocation Registry
         let (schema_id, schema_json,
@@ -3810,10 +3818,10 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Prover creates wallet, gets wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3 Issuer creates Schema, Credential Definition and Revocation Registry
         let (schema_id, schema_json,
@@ -3957,16 +3965,16 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Prover creates wallet, gets wallet handle
-        let prover_1_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_1_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3. Prover creates wallet, gets wallet handle
-        let prover_2_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_2_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //4. Prover creates wallet, gets wallet handle
-        let prover_3_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_3_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //5 Issuer creates Schema, Credential Definition and Revocation Registry
         let (_, _,
@@ -4045,16 +4053,16 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Prover creates wallet, gets wallet handle
-        let prover_1_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_1_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3. Prover creates wallet, gets wallet handle
-        let prover_2_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_2_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //4. Prover creates wallet, gets wallet handle
-        let prover_3_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_3_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //5 Issuer creates Schema, Credential Definition and Revocation Registry
         let (_, _,
@@ -4131,7 +4139,7 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Issuer creates schema
         let (_, schema_json) = AnoncredsUtils::issuer_create_schema(ISSUER_DID,
@@ -4178,7 +4186,7 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Issuer creates wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2 Issuer creates Schema, Credential Definition and Revocation Registry
         let (_, _,
@@ -4206,10 +4214,10 @@ mod demos {
         TestUtils::cleanup_storage();
 
         //1. Create Issuer wallet, gets wallet handle
-        let issuer_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //2. Create Prover wallet, gets wallet handle
-        let prover_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
         //3. Issuer creates Schema and Credential Definition
         let attr_names = r#"["task1",

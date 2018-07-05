@@ -5,7 +5,7 @@ use indy::api::non_secrets::*;
 
 use utils::callback::CallbackUtils;
 use utils::wallet::WalletUtils;
-use utils::constants::POOL;
+use utils::constants::*;
 use utils::test::TestUtils;
 use utils::types::WalletRecord;
 
@@ -259,8 +259,8 @@ impl NonSecretsUtils {
             TestUtils::cleanup_storage();
 
             //1. Create and Open wallet
-            WalletUtils::create_wallet(POOL, SEARCH_COMMON_WALLET, None, None, None).unwrap();
-            let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, None, None).unwrap();
+            WalletUtils::create_wallet(SEARCH_COMMON_WALLET, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET, WALLET_CREDENTIALS).unwrap();
 
             let record_1 = NonSecretsUtils::record_1();
             NonSecretsUtils::add_wallet_record(wallet_handle,

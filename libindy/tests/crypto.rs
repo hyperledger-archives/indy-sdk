@@ -43,7 +43,7 @@ mod high_cases {
         fn indy_create_key_works_for_seed() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_ope(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
             assert_eq!(verkey.from_base58().unwrap().len(), 32);
@@ -57,7 +57,7 @@ mod high_cases {
         fn indy_create_key_works_without_seed() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
             assert_eq!(verkey.from_base58().unwrap().len(), 32);
@@ -71,7 +71,7 @@ mod high_cases {
         fn indy_create_key_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let res = CryptoUtils::create_key(wallet_handle + 1, None);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
@@ -89,7 +89,7 @@ mod high_cases {
         fn indy_set_key_metadata_works() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
@@ -104,7 +104,7 @@ mod high_cases {
         fn indy_set_key_metadata_works_for_replace() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
@@ -126,7 +126,7 @@ mod high_cases {
         fn indy_set_key_metadata_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
@@ -142,7 +142,7 @@ mod high_cases {
         fn indy_set_key_metadata_works_for_empty_string() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
@@ -158,7 +158,7 @@ mod high_cases {
         fn indy_set_key_metadata_works_for_invalid_key() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let res = CryptoUtils::set_key_metadata(wallet_handle, INVALID_BASE58_VERKEY, METADATA);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
@@ -176,7 +176,7 @@ mod high_cases {
         fn indy_get_key_metadata_works() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
@@ -194,7 +194,7 @@ mod high_cases {
         fn indy_get_key_metadata_works_for_empty_string() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
@@ -212,7 +212,7 @@ mod high_cases {
         fn indy_get_key_metadata_works_for_no_metadata() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
@@ -228,7 +228,7 @@ mod high_cases {
         fn indy_get_key_metadata_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
@@ -250,7 +250,7 @@ mod high_cases {
         fn indy_crypto_sign_works() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let my_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
 
@@ -266,7 +266,7 @@ mod high_cases {
         fn indy_crypto_sign_works_for_unknown_signer() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let res = CryptoUtils::sign(wallet_handle, VERKEY, MESSAGE.as_bytes());
             assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
@@ -280,7 +280,7 @@ mod high_cases {
         fn indy_crypto_sign_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let my_vk = CryptoUtils::create_key(wallet_handle, None).unwrap();
 
@@ -338,7 +338,7 @@ mod high_cases {
         fn indy_crypto_auth_crypt_works_for_created_key() {
             TestUtils::cleanup_storage();
 
-            let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(sender_wallet_handle, Some(MY1_SEED)).unwrap();
 
@@ -353,7 +353,7 @@ mod high_cases {
         fn indy_crypto_auth_crypt_works_for_created_did() {
             TestUtils::cleanup_storage();
 
-            let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let (_, verkey) = DidUtils::create_and_store_my_did(sender_wallet_handle, Some(MY1_SEED)).unwrap();
 
@@ -368,7 +368,7 @@ mod high_cases {
         fn indy_crypto_auth_crypt_works_for_created_did_as_cid() {
             TestUtils::cleanup_storage();
 
-            let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let (_, verkey) = DidUtils::create_my_did(sender_wallet_handle, &format!(r#"{{"seed":"{}", "cid":true}}"#, MY1_SEED)).unwrap();
 
@@ -383,7 +383,7 @@ mod high_cases {
         fn indy_crypto_auth_crypt_works_for_unknown_sender_verkey() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let res = CryptoUtils::auth_crypt(wallet_handle, VERKEY_MY2, VERKEY, MESSAGE.as_bytes());
             assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
@@ -397,7 +397,7 @@ mod high_cases {
         fn indy_crypto_auth_crypt_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
 
@@ -414,7 +414,7 @@ mod high_cases {
         fn indy_crypto_auth_crypt_works_for_invalid_recipient_vk() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
 
@@ -434,8 +434,8 @@ mod high_cases {
         fn indy_crypto_auth_decrypt_works() {
             TestUtils::cleanup_storage();
 
-            let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+            let recipient_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let sender_vk = CryptoUtils::create_key(sender_wallet_handle, Some(MY1_SEED)).unwrap();
             let recipient_vk = CryptoUtils::create_key(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
@@ -456,8 +456,8 @@ mod high_cases {
         fn indy_crypto_auth_decrypt_works_for_invalid_msg() {
             TestUtils::cleanup_storage();
 
-            let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+            let recipient_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let (recipient_did, recipient_vk) = DidUtils::create_and_store_my_did(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
             DidUtils::store_their_did_from_parts(sender_wallet_handle, &recipient_did, &recipient_vk).unwrap();
@@ -477,7 +477,7 @@ mod high_cases {
         fn indy_crypto_auth_decrypt_works_for_unknown_recipient_vk() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let sender_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
 
@@ -495,7 +495,7 @@ mod high_cases {
         fn indy_crypto_auth_decrypt_works_invalid_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let sender_vk = CryptoUtils::create_key(wallet_handle, Some(MY1_SEED)).unwrap();
             let recipient_vk = CryptoUtils::create_key(wallet_handle, Some(MY2_SEED)).unwrap();
@@ -544,8 +544,8 @@ mod high_cases {
         fn indy_crypto_anon_decrypt_works() {
             TestUtils::cleanup_storage();
 
-            let sender_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
-            let recipient_wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+            let recipient_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(recipient_wallet_handle, Some(MY2_SEED)).unwrap();
 
@@ -564,7 +564,7 @@ mod high_cases {
         fn indy_crypto_anon_decrypt_works_for_invalid_msg() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, Some(MY2_SEED)).unwrap();
 
@@ -581,7 +581,7 @@ mod high_cases {
         fn indy_crypto_anon_decrypt_works_for_unknown_verkey() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let encrypted_msg = CryptoUtils::anon_crypt(&VERKEY_TRUSTEE, MESSAGE.as_bytes()).unwrap();
 
@@ -597,7 +597,7 @@ mod high_cases {
         fn indy_crypto_anon_decrypt_works_invalid_handle() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(POOL, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let verkey = CryptoUtils::create_key(wallet_handle, Some(MY2_SEED)).unwrap();
 
@@ -624,8 +624,6 @@ mod load {
     use std::thread;
     use std::time::{Duration, SystemTime};
 
-    use utils::sequence::SequenceUtils;
-
     const AGENT_CNT: usize = 10;
     const DATA_SZ: usize = 10 * 1024;
     const OPERATIONS_CNT: usize = 10;
@@ -647,9 +645,7 @@ mod load {
         let mut agents = Vec::new();
         let mut os_rng = OsRng::new().unwrap();
         for _ in 0..agent_cnt {
-            let wallet_name = format!("load-wallet-name-{}", SequenceUtils::get_next_id());
-            WalletUtils::create_wallet(POOL, &wallet_name, None, None, Some(WALLET_CREDENTIALS)).unwrap();
-            let wallet = WalletUtils::open_wallet(&wallet_name, None, Some(WALLET_CREDENTIALS)).unwrap();
+            let wallet = WalletUtils::create_and_open_default_wallet().unwrap();
             let (_did, verkey) = DidUtils::create_and_store_my_did(wallet, None).unwrap();
             let mut data = vec![0u8; data_sz];
             os_rng.fill_bytes(&mut data.as_mut_slice());

@@ -96,7 +96,7 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             WalletUtils::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            WalletUtils::delete_wallet(WALLET, None).unwrap();
+            WalletUtils::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             WalletUtils::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             TestUtils::cleanup_storage();
@@ -109,7 +109,7 @@ mod high_cases {
             WalletUtils::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
-            WalletUtils::delete_wallet(WALLET, None).unwrap();
+            WalletUtils::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             WalletUtils::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             TestUtils::cleanup_storage();
@@ -121,7 +121,7 @@ mod high_cases {
 
             WalletUtils::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let res = WalletUtils::delete_wallet(WALLET, None);
+            let res = WalletUtils::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidState);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -136,7 +136,7 @@ mod high_cases {
 
             WalletUtils::register_wallet_storage(INMEM_TYPE, false).unwrap();
             WalletUtils::open_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            WalletUtils::delete_wallet(WALLET, None).unwrap();
+            WalletUtils::delete_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             WalletUtils::open_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             TestUtils::cleanup_storage();
@@ -256,7 +256,7 @@ mod high_cases {
             WalletUtils::export_wallet(wallet_handle, &config_json).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
-            WalletUtils::delete_wallet(WALLET, None).unwrap();
+            WalletUtils::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             WalletUtils::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json).unwrap();
 
@@ -341,7 +341,6 @@ mod medium_cases {
         fn indy_create_wallet_works_for_empty_name() {
             TestUtils::cleanup_storage();
 
-            let wallet_name = "";
             let res = WalletUtils::create_wallet(r#"{"id": ""}"#, WALLET_CREDENTIALS);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidParam3);
 
@@ -356,7 +355,7 @@ mod medium_cases {
         fn indy_delete_wallet_works_for_not_created() {
             TestUtils::cleanup_storage();
 
-            let res = WalletUtils::delete_wallet(WALLET, None);
+            let res = WalletUtils::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             TestUtils::cleanup_storage();
@@ -367,8 +366,8 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             WalletUtils::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            WalletUtils::delete_wallet(WALLET, None).unwrap();
-            let res = WalletUtils::delete_wallet(WALLET, None);
+            WalletUtils::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let res = WalletUtils::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             TestUtils::cleanup_storage();
@@ -418,14 +417,14 @@ mod medium_cases {
         fn indy_open_wallet_works_for_two_wallets() {
             TestUtils::cleanup_storage();
 
-            let wallet_name_1 = "indy_open_wallet_works_for_two_wallets1";
-            let wallet_name_2 = "indy_open_wallet_works_for_two_wallets2";
+            let wallet_config_1 = r#"{"id":"indy_open_wallet_works_for_two_wallets1"}"#;
+            let wallet_config_2 = r#"{"id":"indy_open_wallet_works_for_two_wallets2"}"#;
 
-            WalletUtils::create_wallet(POOL, wallet_name_1, None, None, None).unwrap();
-            WalletUtils::create_wallet(POOL, wallet_name_2, None, None, None).unwrap();
+            WalletUtils::create_wallet(wallet_config_1, WALLET_CREDENTIALS).unwrap();
+            WalletUtils::create_wallet(wallet_config_2, WALLET_CREDENTIALS).unwrap();
 
-            let wallet_handle_1 = WalletUtils::open_wallet(wallet_name_1, None, None).unwrap();
-            let wallet_handle_2 = WalletUtils::open_wallet(wallet_name_2, None, None).unwrap();
+            let wallet_handle_1 = WalletUtils::open_wallet(wallet_config_1, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle_2 = WalletUtils::open_wallet(wallet_config_2, WALLET_CREDENTIALS).unwrap();
 
             WalletUtils::close_wallet(wallet_handle_1).unwrap();
             WalletUtils::close_wallet(wallet_handle_2).unwrap();
@@ -437,8 +436,8 @@ mod medium_cases {
         fn indy_open_wallet_works_for_invalid_credentials() {
             TestUtils::cleanup_storage();
 
-            WalletUtils::create_wallet(POOL, WALLET, None, None, Some(r#"{"key":"key"}"#)).unwrap();
-            let res = WalletUtils::open_wallet(WALLET, None, Some(r#"{"key":"other_key"}"#));
+            WalletUtils::create_wallet(WALLET_CONFIG, r#"{"key":"key"}"#).unwrap();
+            let res = WalletUtils::open_wallet(WALLET_CONFIG, r#"{"key":"other_key"}"#);
             assert_eq!(ErrorCode::WalletAccessFailed, res.unwrap_err());
 
             TestUtils::cleanup_storage();
@@ -448,11 +447,11 @@ mod medium_cases {
         fn indy_open_wallet_works_for_changing_credentials() {
             TestUtils::cleanup_storage();
 
-            WalletUtils::create_wallet(POOL, WALLET, None, None, Some(r#"{"key":"key"}"#)).unwrap();
-            let wallet_handle = WalletUtils::open_wallet(WALLET, None, Some(r#"{"key":"key", "rekey":"other_key"}"#)).unwrap();
+            WalletUtils::create_wallet(WALLET_CONFIG, r#"{"key":"key"}"#).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, r#"{"key":"key", "rekey":"other_key"}"#).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            let wallet_handle = WalletUtils::open_wallet(WALLET, None, Some(r#"{"key":"other_key"}"#)).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, r#"{"key":"other_key"}"#).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
@@ -466,7 +465,7 @@ mod medium_cases {
             let config = r#"{"field":"value"}"#;
 
             WalletUtils::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let res = WalletUtils::open_wallet(WALLET, Some(config), None);
+            let res = WalletUtils::open_wallet(config, WALLET_CREDENTIALS);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             TestUtils::cleanup_storage();
@@ -490,7 +489,7 @@ mod medium_cases {
         fn indy_close_wallet_works_for_twice() {
             TestUtils::cleanup_storage();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
             let res = WalletUtils::close_wallet(wallet_handle);
@@ -515,7 +514,7 @@ mod medium_cases {
                 .recursive(true)
                 .create(path).unwrap();
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let res = WalletUtils::export_wallet(wallet_handle, &config_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
@@ -544,7 +543,7 @@ mod medium_cases {
             let path = WalletUtils::export_wallet_path();
             let config_json = WalletUtils::prepare_export_wallet_config(&path);
 
-            let wallet_handle = WalletUtils::create_and_open_wallet(WALLET, None).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
             let res = WalletUtils::export_wallet(wallet_handle + 1, &config_json);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
@@ -564,11 +563,11 @@ mod medium_cases {
             let path = WalletUtils::export_wallet_path();
             let config_json = WalletUtils::prepare_export_wallet_config(&path);
 
-            let wallet_name = "indy_import_wallet_returns_error_if_path_doesnt_exist";
-            let res = WalletUtils::import_wallet(POOL, wallet_name, None, None, None, &config_json);
+            let wallet_config = r#"{"id":"indy_import_wallet_returns_error_if_path_doesnt_exist"}"#;
+            let res = WalletUtils::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
-            let res = WalletUtils::open_wallet(wallet_name, None, None);
+            let res = WalletUtils::open_wallet(wallet_config, WALLET_CREDENTIALS);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletNotFoundError);
 
             TestUtils::cleanup_storage();
@@ -578,7 +577,7 @@ mod medium_cases {
         fn indy_import_wallet_returns_error_if_invalid_config() {
             TestUtils::cleanup_storage();
 
-            let res = WalletUtils::import_wallet(POOL, WALLET, None, None, None, "{}");
+            let res = WalletUtils::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             TestUtils::cleanup_storage();
@@ -599,7 +598,7 @@ mod medium_cases {
             WalletUtils::export_wallet(wallet_handle, &config_json).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
-            WalletUtils::delete_wallet(WALLET, None).unwrap();
+            WalletUtils::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             let json = json!({
                 "path": path.to_str().unwrap(),
@@ -607,7 +606,7 @@ mod medium_cases {
             });
             let config_json = serde_json::to_string(&json).unwrap();
 
-            let res = WalletUtils::import_wallet(POOL, WALLET, None, None, None, &config_json);
+            let res = WalletUtils::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
             TestUtils::cleanup_storage();
@@ -627,7 +626,7 @@ mod medium_cases {
 
             WalletUtils::export_wallet(wallet_handle, &config_json).unwrap();
 
-            let res = WalletUtils::import_wallet(POOL, WALLET, None, None, None, &config_json);
+            let res = WalletUtils::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);
             assert_eq!(ErrorCode::WalletAlreadyExistsError, res.unwrap_err());
 
             WalletUtils::close_wallet(wallet_handle).unwrap();

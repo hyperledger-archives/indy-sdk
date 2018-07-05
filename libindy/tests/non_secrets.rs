@@ -16,6 +16,7 @@ extern crate named_type_derive;
 #[macro_use]
 mod utils;
 
+use utils::constants::WALLET_CREDENTIALS;
 use utils::wallet::WalletUtils;
 use utils::non_secrets::*;
 use utils::test::TestUtils;
