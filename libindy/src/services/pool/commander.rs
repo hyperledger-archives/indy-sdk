@@ -52,8 +52,6 @@ impl Commander {
 
 mod commander_tests {
     use super::*;
-    use utils::sequence::SequenceUtils;
-    use utils;
 
     #[test]
     pub fn commander_new_works() {

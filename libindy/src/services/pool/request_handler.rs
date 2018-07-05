@@ -556,7 +556,7 @@ impl<T: Networker> RequestSMWrapper<T> {
                             },
                             Err(_) => {
                                 request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(request.state.req_id.clone())));
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(request.state.req_id.clone(), None)));
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(request.state.req_id.clone(), Some(node_alias))));
                                 (RequestSMWrapper::CatchupSingle(request), None)
                             }
                         }
@@ -674,15 +674,17 @@ impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
     }
 }
 
+#[cfg(test)]
 #[derive(Debug)]
 pub struct MockRequestHandler {}
 
+#[cfg(test)]
 impl<T: Networker> RequestHandler<T> for MockRequestHandler {
-    fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str) -> Self {
+    fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &Vec<i32>, _nodes: &HashMap<String, Option<VerKey>>, _generator: Option<Generator>, _pool_name: &str) -> Self {
         MockRequestHandler {}
     }
 
-    fn process_event(&mut self, ore: Option<RequestEvent>) -> Option<PoolEvent> {
+    fn process_event(&mut self, _ore: Option<RequestEvent>) -> Option<PoolEvent> {
         None
     }
 

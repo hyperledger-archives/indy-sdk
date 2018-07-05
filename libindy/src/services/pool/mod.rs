@@ -23,7 +23,7 @@ extern crate rmp_serde;
 extern crate indy_crypto;
 
 
-use self::byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
+use self::byteorder::{ByteOrder, LittleEndian};
 use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -35,27 +35,21 @@ use api::ledger::{CustomFree, CustomTransactionParser};
 use errors::pool::PoolError;
 use errors::common::CommonError;
 use self::types::*;
-use utils::crypto::box_::CryptoBox;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
-use services::pool::rust_base58::FromBase58;
 use std::sync::Mutex;
 
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-use services::pool::pool::Pool;
-use services::pool::networker::ZMQNetworker;
-use services::pool::request_handler::RequestHandlerImpl;
+use services::pool::pool::{Pool, ZMQPool};
 use self::zmq::Socket;
 
 lazy_static! {
     static ref REGISTERED_SP_PARSERS: Mutex<HashMap<String, (CustomTransactionParser, CustomFree)>> = Mutex::new(HashMap::new());
 }
 
-pub type PoolWorker = Pool<ZMQNetworker, RequestHandlerImpl<ZMQNetworker>>;
-
 pub struct PoolService {
-    open_pools: RefCell<HashMap<i32, (PoolWorker, zmq::Socket)>>,
-    pending_pools: RefCell<HashMap<i32, (PoolWorker, zmq::Socket)>>,
+    open_pools: RefCell<HashMap<i32, ZMQPool>>,
+    pending_pools: RefCell<HashMap<i32, ZMQPool>>,
 }
 
 impl PoolService {
@@ -116,8 +110,8 @@ impl PoolService {
     }
 
     pub fn delete(&self, name: &str) -> Result<(), PoolError> {
-        for &(ref pool, _) in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
-            if pool.get_name().eq(name) {
+        for ref pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
+            if pool.pool.get_name().eq(name) {
                 return Err(PoolError::CommonError(CommonError::InvalidState("Can't delete pool config - pool is open now".to_string())));
             }
         }
@@ -126,8 +120,8 @@ impl PoolService {
     }
 
     pub fn open(&self, name: &str, _config: Option<&str>) -> Result<i32, PoolError> {
-        for &(ref pool, _) in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
-            if name.eq(pool.get_name()) {
+        for ref pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
+            if name.eq(pool.pool.get_name()) {
                 //TODO change error
                 return Err(PoolError::InvalidHandle("Pool with same name already opened".to_string()));
             }
@@ -149,16 +143,17 @@ impl PoolService {
         new_pool.work(recv_cmd_sock);
         self._send_msg(pool_handle, "connect", &send_cmd_sock);
 
-        self.pending_pools.try_borrow_mut().map_err(CommonError::from)?.insert(new_pool.get_id(), (new_pool, send_cmd_sock));
+        self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
+            .insert(new_pool.get_id(), ZMQPool { pool: new_pool, cmd_socket: send_cmd_sock });
         return Ok(pool_handle);
     }
 
     pub fn add_open_pool(&self, pool_id: i32) -> Result<i32, PoolError> {
-        let (pool, socket) = self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
+        let pool = self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
             .remove(&pool_id)
             .ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", pool_id)))?;
 
-        self.open_pools.try_borrow_mut().map_err(CommonError::from)?.insert(pool_id, (pool, socket));
+        self.open_pools.try_borrow_mut().map_err(CommonError::from)?.insert(pool_id, pool);
 
         Ok(pool_id)
     }
@@ -167,8 +162,8 @@ impl PoolService {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.open_pools.try_borrow().map_err(CommonError::from)?
             .get(&handle)
-            .map(|&(_, ref socket)| {
-                self._send_msg(cmd_id, msg, socket);
+            .map(|ref pool| {
+                self._send_msg(cmd_id, msg, &pool.cmd_socket);
             }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
         Ok(cmd_id)
     }
@@ -196,8 +191,8 @@ impl PoolService {
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.open_pools.try_borrow_mut().map_err(CommonError::from)?
-            .remove(&handle).map(|(_, ref socket)| {
-                self._send_msg(cmd_id, "exit", socket);
+            .remove(&handle).map(|pool| {
+                self._send_msg(cmd_id, "exit", &pool.cmd_socket);
             }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
         Ok(cmd_id)
     }
@@ -205,8 +200,8 @@ impl PoolService {
     pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         self.open_pools.try_borrow_mut().map_err(CommonError::from)?
-            .get(&handle).map(|&(_, ref socket)| {
-                self._send_msg(cmd_id, "refresh", socket);
+            .get(&handle).map(|ref pool| {
+                self._send_msg(cmd_id, "refresh", &pool.cmd_socket);
             }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
         Ok(cmd_id)
     }
@@ -235,7 +230,7 @@ impl PoolService {
     pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
         self.open_pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
             Err(PoolError::InvalidHandle(format!("Pool doesn't exists for handle {}", handle))),
-            |&(ref pool, _)| Ok(pool.get_name().to_string()))
+            |ref pool| Ok(pool.pool.get_name().to_string()))
     }
 }
 

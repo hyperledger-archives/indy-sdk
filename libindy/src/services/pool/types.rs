@@ -534,15 +534,6 @@ pub struct CommandProcess {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum ZMQLoopAction {
-    RequestToSend(RequestToSend),
-    MessageToProcess(MessageToProcess),
-    Terminate(i32),
-    Refresh(i32),
-    Timeout,
-}
-
-#[derive(Debug, PartialEq, Eq)]
 pub struct RequestToSend {
     pub request: String,
     pub id: i32,

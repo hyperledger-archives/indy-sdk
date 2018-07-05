@@ -10,8 +10,8 @@ use services::pool::types::LedgerStatus;
 
 use services::pool::commander::Commander;
 use services::pool::events::*;
-use services::pool::networker::Networker;
-use services::pool::request_handler::RequestHandler;
+use services::pool::networker::{Networker, ZMQNetworker};
+use services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
 use services::pool::merkle_tree_factory;
 use services::pool::rust_base58::{ToBase58, FromBase58};
 use super::indy_crypto::bls::VerKey;
@@ -441,7 +441,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     PoolEvent::SendRequest(cmd_id, _) => {
                         trace!("received request to send");
                         let re: Option<RequestEvent> = pe.into();
-                        let req_id = re.clone().map(|r| r.get_req_id()).expect("FIXME");
+                        let req_id = re.as_ref().map(|r| r.get_req_id()).expect("FIXME");
                         let mut request_handler = R::new(pool.state.networker.clone(), _get_f(pool.state.nodes.len()), &vec![cmd_id], &pool.state.nodes, None, &pool.pool_name);
                         request_handler.process_event(re);
                         pool.state.request_handlers.insert(req_id.to_string(), request_handler);
@@ -450,7 +450,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                     PoolEvent::NodeReply(reply, node) => {
                         trace!("received reply from node {:?}: {:?}", node, reply);
                         let re: Option<RequestEvent> = pe.into();
-                        let req_id = re.clone().map(|r| r.get_req_id()).expect("FIXME");
+                        let req_id = re.as_ref().map(|r| r.get_req_id()).expect("FIXME");
                         let remove = if let Some(rh) = pool.state.request_handlers.get_mut(&req_id) {
                             rh.process_event(re);
                             rh.is_terminal()
@@ -707,6 +707,28 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> Result<(HashMap<String, Option
 fn _close_pool_ack(cmd_id: i32) {
     let pc = PoolCommand::CloseAck(cmd_id, Ok(()));
     CommandExecutor::instance().send(Command::Pool(pc)).unwrap();
+}
+
+pub struct ZMQPool {
+    pub(super) pool: Pool<ZMQNetworker, RequestHandlerImpl<ZMQNetworker>>,
+    pub(super) cmd_socket: zmq::Socket,
+}
+
+impl Drop for ZMQPool {
+    fn drop(&mut self) {
+        info!("Drop started");
+
+        if let Err(err) = self.cmd_socket.send("exit".as_bytes(), zmq::DONTWAIT) {
+            warn!("Can't send exit command to pool worker thread (may be already finished) {}", err);
+        }
+
+        // Option worker type and this kludge is workaround for rust
+        if let Some(worker) = self.pool.worker.take() {
+            info!("Drop wait worker");
+            worker.join().unwrap();
+        }
+        info!("Drop finished");
+    }
 }
 
 #[cfg(test)]

@@ -70,10 +70,12 @@ pub enum PoolEvent {
         MerkleTree,
     ),
     CatchupTargetNotFound(PoolError),
+    #[allow(dead_code)] //FIXME
     PoolOutdated,
     Synced(
         MerkleTree
     ),
+    #[allow(dead_code)] //FIXME
     NodesBlacklisted,
     SendRequest(
         i32, // cmd_id
