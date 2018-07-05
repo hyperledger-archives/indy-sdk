@@ -430,6 +430,18 @@ public abstract class LibVcx {
         /** Retrieve information about a stored credential in user's wallet, including credential id and the credential itself. */
         public int vcx_get_credential(int command_handle, int credential_handle, Callback cb);
 
+        /**
+        * wallet object
+        *
+        * Used for exporting and importing and managing the wallet.
+        */
+
+        /** Export the wallet as an encrypted file */
+        public int vcx_wallet_export(int command_handle, String path, String backup_key, Callback cb);
+
+        /** Import an encrypted file back into the wallet */
+        public int vcx_wallet_import(int command_handle, String path, String backup_key, Callback cb);
+
     }
 
 	/*
