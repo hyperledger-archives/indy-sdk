@@ -1755,6 +1755,45 @@ NAN_METHOD(signRequest) {
   delete arg2UTF;
 }
 
+void multiSignRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(multiSignRequest) {
+  if(info.Length() != 4){
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: multiSignRequest(wallet_handle, submitter_did, request_json, cb(err, signedRequest))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: multiSignRequest(wallet_handle, submitter_did, request_json, cb(err, signedRequest))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: multiSignRequest(wallet_handle, submitter_did, request_json, cb(err, signedRequest))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for request_json: multiSignRequest(wallet_handle, submitter_did, request_json, cb(err, signedRequest))").ToLocalChecked());
+  }
+  if(!info[3]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("multiSignRequest arg 3 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
+  indyCalled(icb, indy_multi_sign_request(icb->handle, arg0, arg1, arg2, multiSignRequest_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+}
+
 void buildGetDdoRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -2247,6 +2286,32 @@ NAN_METHOD(buildNodeRequest) {
   delete arg2UTF;
 }
 
+void buildGetValidatorInfoRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildGetValidatorInfoRequest) {
+  if(info.Length() != 2){
+    return Nan::ThrowError(Nan::New("Expected 2 arguments: buildGetValidatorInfoRequest(submitter_did, cb(err, request))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg0UTF = nullptr;
+  const char* arg0 = nullptr;
+  if(info[0]->IsString()){
+    arg0UTF = new Nan::Utf8String(info[0]);
+    arg0 = (const char*)(**arg0UTF);
+  } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildGetValidatorInfoRequest(submitter_did, cb(err, request))").ToLocalChecked());
+  }
+  if(!info[1]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("buildGetValidatorInfoRequest arg 1 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
+  indyCalled(icb, indy_build_get_validator_info_request(icb->handle, arg0, buildGetValidatorInfoRequest_cb));
+  delete arg0UTF;
+}
+
 void buildGetTxnRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -2265,7 +2330,6 @@ NAN_METHOD(buildGetTxnRequest) {
   } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
     return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildGetTxnRequest(submitter_did, ledger_type, data, cb(err, request))").ToLocalChecked());
   }
-
   Nan::Utf8String* arg1UTF = nullptr;
   const char* arg1 = nullptr;
   if(info[1]->IsString()){
@@ -2274,17 +2338,17 @@ NAN_METHOD(buildGetTxnRequest) {
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
     return Nan::ThrowError(Nan::New("Expected String or null for ledger_type: buildGetTxnRequest(submitter_did, ledger_type, data, cb(err, request))").ToLocalChecked());
   }
-
   if(!info[2]->IsInt32()){
     return Nan::ThrowError(Nan::New("Expected indy_i32_t for data: buildGetTxnRequest(submitter_did, ledger_type, data, cb(err, request))").ToLocalChecked());
   }
   indy_i32_t arg2 = info[2]->Int32Value();
   if(!info[3]->IsFunction()) {
-    return Nan::ThrowError(Nan::New("buildGetTxnRequest arg 2 expected callback Function").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("buildGetTxnRequest arg 3 expected callback Function").ToLocalChecked());
   }
   IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
   indyCalled(icb, indy_build_get_txn_request(icb->handle, arg0, arg1, arg2, buildGetTxnRequest_cb));
   delete arg0UTF;
+  delete arg1UTF;
 }
 
 void buildPoolConfigRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
@@ -2740,6 +2804,440 @@ NAN_METHOD(parseGetRevocRegDeltaResponse) {
   delete arg0UTF;
 }
 
+void addWalletRecord_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(addWalletRecord) {
+  if(info.Length() != 6){
+    return Nan::ThrowError(Nan::New("Expected 6 arguments: addWalletRecord(wallet_handle, type_, id, value, tags_json, cb(err))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: addWalletRecord(wallet_handle, type_, id, value, tags_json, cb(err))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for type_: addWalletRecord(wallet_handle, type_, id, value, tags_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for id: addWalletRecord(wallet_handle, type_, id, value, tags_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for value: addWalletRecord(wallet_handle, type_, id, value, tags_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg4UTF = nullptr;
+  const char* arg4 = nullptr;
+  if(info[4]->IsString()){
+    arg4UTF = new Nan::Utf8String(info[4]);
+    arg4 = (const char*)(**arg4UTF);
+  } else if(!info[4]->IsNull() && !info[4]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for tags_json: addWalletRecord(wallet_handle, type_, id, value, tags_json, cb(err))").ToLocalChecked());
+  }
+  if(!info[5]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("addWalletRecord arg 5 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[5]).ToLocalChecked());
+  indyCalled(icb, indy_add_wallet_record(icb->handle, arg0, arg1, arg2, arg3, arg4, addWalletRecord_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+  delete arg4UTF;
+}
+
+void updateWalletRecordValue_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(updateWalletRecordValue) {
+  if(info.Length() != 5){
+    return Nan::ThrowError(Nan::New("Expected 5 arguments: updateWalletRecordValue(wallet_handle, type_, id, value, cb(err))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: updateWalletRecordValue(wallet_handle, type_, id, value, cb(err))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for type_: updateWalletRecordValue(wallet_handle, type_, id, value, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for id: updateWalletRecordValue(wallet_handle, type_, id, value, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for value: updateWalletRecordValue(wallet_handle, type_, id, value, cb(err))").ToLocalChecked());
+  }
+  if(!info[4]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("updateWalletRecordValue arg 4 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[4]).ToLocalChecked());
+  indyCalled(icb, indy_update_wallet_record_value(icb->handle, arg0, arg1, arg2, arg3, updateWalletRecordValue_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+}
+
+void updateWalletRecordTags_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(updateWalletRecordTags) {
+  if(info.Length() != 5){
+    return Nan::ThrowError(Nan::New("Expected 5 arguments: updateWalletRecordTags(wallet_handle, type_, id, tags_json, cb(err))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: updateWalletRecordTags(wallet_handle, type_, id, tags_json, cb(err))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for type_: updateWalletRecordTags(wallet_handle, type_, id, tags_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for id: updateWalletRecordTags(wallet_handle, type_, id, tags_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for tags_json: updateWalletRecordTags(wallet_handle, type_, id, tags_json, cb(err))").ToLocalChecked());
+  }
+  if(!info[4]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("updateWalletRecordTags arg 4 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[4]).ToLocalChecked());
+  indyCalled(icb, indy_update_wallet_record_tags(icb->handle, arg0, arg1, arg2, arg3, updateWalletRecordTags_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+}
+
+void addWalletRecordTags_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(addWalletRecordTags) {
+  if(info.Length() != 5){
+    return Nan::ThrowError(Nan::New("Expected 5 arguments: addWalletRecordTags(wallet_handle, type_, id, tags_json, cb(err))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: addWalletRecordTags(wallet_handle, type_, id, tags_json, cb(err))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for type_: addWalletRecordTags(wallet_handle, type_, id, tags_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for id: addWalletRecordTags(wallet_handle, type_, id, tags_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for tags_json: addWalletRecordTags(wallet_handle, type_, id, tags_json, cb(err))").ToLocalChecked());
+  }
+  if(!info[4]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("addWalletRecordTags arg 4 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[4]).ToLocalChecked());
+  indyCalled(icb, indy_add_wallet_record_tags(icb->handle, arg0, arg1, arg2, arg3, addWalletRecordTags_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+}
+
+void deleteWalletRecordTags_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(deleteWalletRecordTags) {
+  if(info.Length() != 5){
+    return Nan::ThrowError(Nan::New("Expected 5 arguments: deleteWalletRecordTags(wallet_handle, type_, id, tag_names_json, cb(err))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: deleteWalletRecordTags(wallet_handle, type_, id, tag_names_json, cb(err))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for type_: deleteWalletRecordTags(wallet_handle, type_, id, tag_names_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for id: deleteWalletRecordTags(wallet_handle, type_, id, tag_names_json, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for tag_names_json: deleteWalletRecordTags(wallet_handle, type_, id, tag_names_json, cb(err))").ToLocalChecked());
+  }
+  if(!info[4]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("deleteWalletRecordTags arg 4 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[4]).ToLocalChecked());
+  indyCalled(icb, indy_delete_wallet_record_tags(icb->handle, arg0, arg1, arg2, arg3, deleteWalletRecordTags_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+}
+
+void deleteWalletRecord_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(deleteWalletRecord) {
+  if(info.Length() != 4){
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: deleteWalletRecord(wallet_handle, type_, id, cb(err))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: deleteWalletRecord(wallet_handle, type_, id, cb(err))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for type_: deleteWalletRecord(wallet_handle, type_, id, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for id: deleteWalletRecord(wallet_handle, type_, id, cb(err))").ToLocalChecked());
+  }
+  if(!info[3]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("deleteWalletRecord arg 3 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
+  indyCalled(icb, indy_delete_wallet_record(icb->handle, arg0, arg1, arg2, deleteWalletRecord_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+}
+
+void getWalletRecord_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(getWalletRecord) {
+  if(info.Length() != 5){
+    return Nan::ThrowError(Nan::New("Expected 5 arguments: getWalletRecord(wallet_handle, type_, id, options_json, cb(err, record))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: getWalletRecord(wallet_handle, type_, id, options_json, cb(err, record))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for type_: getWalletRecord(wallet_handle, type_, id, options_json, cb(err, record))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for id: getWalletRecord(wallet_handle, type_, id, options_json, cb(err, record))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for options_json: getWalletRecord(wallet_handle, type_, id, options_json, cb(err, record))").ToLocalChecked());
+  }
+  if(!info[4]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("getWalletRecord arg 4 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[4]).ToLocalChecked());
+  indyCalled(icb, indy_get_wallet_record(icb->handle, arg0, arg1, arg2, arg3, getWalletRecord_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+}
+
+void openWalletSearch_cb(indy_handle_t handle, indy_error_t xerr, indy_handle_t arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbHandle(xerr, arg0);
+  }
+}
+NAN_METHOD(openWalletSearch) {
+  if(info.Length() != 5){
+    return Nan::ThrowError(Nan::New("Expected 5 arguments: openWalletSearch(wallet_handle, type_, query_json, options_json, cb(err, searchHandle))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: openWalletSearch(wallet_handle, type_, query_json, options_json, cb(err, searchHandle))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for type_: openWalletSearch(wallet_handle, type_, query_json, options_json, cb(err, searchHandle))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for query_json: openWalletSearch(wallet_handle, type_, query_json, options_json, cb(err, searchHandle))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for options_json: openWalletSearch(wallet_handle, type_, query_json, options_json, cb(err, searchHandle))").ToLocalChecked());
+  }
+  if(!info[4]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("openWalletSearch arg 4 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[4]).ToLocalChecked());
+  indyCalled(icb, indy_open_wallet_search(icb->handle, arg0, arg1, arg2, arg3, openWalletSearch_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+}
+
+void fetchWalletSearchNextRecords_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(fetchWalletSearchNextRecords) {
+  if(info.Length() != 4){
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: fetchWalletSearchNextRecords(wallet_handle, wallet_search_handle, count, cb(err, records))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: fetchWalletSearchNextRecords(wallet_handle, wallet_search_handle, count, cb(err, records))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  if(!info[1]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_search_handle: fetchWalletSearchNextRecords(wallet_handle, wallet_search_handle, count, cb(err, records))").ToLocalChecked());
+  }
+  indy_handle_t arg1 = info[1]->Int32Value();
+  if(!info[2]->IsUint32()){
+    return Nan::ThrowError(Nan::New("Expected indy_u32_t for count: fetchWalletSearchNextRecords(wallet_handle, wallet_search_handle, count, cb(err, records))").ToLocalChecked());
+  }
+  indy_u32_t arg2 = info[2]->Uint32Value();
+  if(!info[3]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("fetchWalletSearchNextRecords arg 3 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
+  indyCalled(icb, indy_fetch_wallet_search_next_records(icb->handle, arg0, arg1, arg2, fetchWalletSearchNextRecords_cb));
+}
+
+void closeWalletSearch_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(closeWalletSearch) {
+  if(info.Length() != 2){
+    return Nan::ThrowError(Nan::New("Expected 2 arguments: closeWalletSearch(wallet_search_handle, cb(err))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_search_handle: closeWalletSearch(wallet_search_handle, cb(err))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  if(!info[1]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("closeWalletSearch arg 1 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
+  indyCalled(icb, indy_close_wallet_search(icb->handle, arg0, closeWalletSearch_cb));
+}
+
 void isPairwiseExists_cb(indy_handle_t handle, indy_error_t xerr, indy_bool_t arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -2908,6 +3406,476 @@ NAN_METHOD(setPairwiseMetadata) {
   delete arg2UTF;
 }
 
+void createPaymentAddress_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(createPaymentAddress) {
+  if(info.Length() != 4){
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: createPaymentAddress(wallet_handle, payment_method, config, cb(err, paymentAddress))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: createPaymentAddress(wallet_handle, payment_method, config, cb(err, paymentAddress))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for payment_method: createPaymentAddress(wallet_handle, payment_method, config, cb(err, paymentAddress))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for config: createPaymentAddress(wallet_handle, payment_method, config, cb(err, paymentAddress))").ToLocalChecked());
+  }
+  if(!info[3]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("createPaymentAddress arg 3 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
+  indyCalled(icb, indy_create_payment_address(icb->handle, arg0, arg1, arg2, createPaymentAddress_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+}
+
+void listPaymentAddresses_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(listPaymentAddresses) {
+  if(info.Length() != 2){
+    return Nan::ThrowError(Nan::New("Expected 2 arguments: listPaymentAddresses(wallet_handle, cb(err, paymentAddresses))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: listPaymentAddresses(wallet_handle, cb(err, paymentAddresses))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  if(!info[1]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("listPaymentAddresses arg 1 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
+  indyCalled(icb, indy_list_payment_addresses(icb->handle, arg0, listPaymentAddresses_cb));
+}
+
+void addRequestFees_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbStringString(xerr, arg0, arg1);
+  }
+}
+NAN_METHOD(addRequestFees) {
+  if(info.Length() != 6){
+    return Nan::ThrowError(Nan::New("Expected 6 arguments: addRequestFees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, cb(err, [ reqWithFees, paymentMethod ]))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: addRequestFees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, cb(err, [ reqWithFees, paymentMethod ]))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: addRequestFees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, cb(err, [ reqWithFees, paymentMethod ]))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for req_json: addRequestFees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, cb(err, [ reqWithFees, paymentMethod ]))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for inputs_json: addRequestFees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, cb(err, [ reqWithFees, paymentMethod ]))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg4UTF = nullptr;
+  const char* arg4 = nullptr;
+  if(info[4]->IsString()){
+    arg4UTF = new Nan::Utf8String(info[4]);
+    arg4 = (const char*)(**arg4UTF);
+  } else if(!info[4]->IsNull() && !info[4]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for outputs_json: addRequestFees(wallet_handle, submitter_did, req_json, inputs_json, outputs_json, cb(err, [ reqWithFees, paymentMethod ]))").ToLocalChecked());
+  }
+  if(!info[5]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("addRequestFees arg 5 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[5]).ToLocalChecked());
+  indyCalled(icb, indy_add_request_fees(icb->handle, arg0, arg1, arg2, arg3, arg4, addRequestFees_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+  delete arg4UTF;
+}
+
+void parseResponseWithFees_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(parseResponseWithFees) {
+  if(info.Length() != 3){
+    return Nan::ThrowError(Nan::New("Expected 3 arguments: parseResponseWithFees(payment_method, resp_json, cb(err, utxo))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg0UTF = nullptr;
+  const char* arg0 = nullptr;
+  if(info[0]->IsString()){
+    arg0UTF = new Nan::Utf8String(info[0]);
+    arg0 = (const char*)(**arg0UTF);
+  } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for payment_method: parseResponseWithFees(payment_method, resp_json, cb(err, utxo))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for resp_json: parseResponseWithFees(payment_method, resp_json, cb(err, utxo))").ToLocalChecked());
+  }
+  if(!info[2]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("parseResponseWithFees arg 2 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
+  indyCalled(icb, indy_parse_response_with_fees(icb->handle, arg0, arg1, parseResponseWithFees_cb));
+  delete arg0UTF;
+  delete arg1UTF;
+}
+
+void buildGetUtxoRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbStringString(xerr, arg0, arg1);
+  }
+}
+NAN_METHOD(buildGetUtxoRequest) {
+  if(info.Length() != 4){
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: buildGetUtxoRequest(wallet_handle, submitter_did, payment_address, cb(err, [ getUtxoTxn, paymentMethod ]))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: buildGetUtxoRequest(wallet_handle, submitter_did, payment_address, cb(err, [ getUtxoTxn, paymentMethod ]))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildGetUtxoRequest(wallet_handle, submitter_did, payment_address, cb(err, [ getUtxoTxn, paymentMethod ]))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for payment_address: buildGetUtxoRequest(wallet_handle, submitter_did, payment_address, cb(err, [ getUtxoTxn, paymentMethod ]))").ToLocalChecked());
+  }
+  if(!info[3]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("buildGetUtxoRequest arg 3 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
+  indyCalled(icb, indy_build_get_utxo_request(icb->handle, arg0, arg1, arg2, buildGetUtxoRequest_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+}
+
+void parseGetUtxoResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(parseGetUtxoResponse) {
+  if(info.Length() != 3){
+    return Nan::ThrowError(Nan::New("Expected 3 arguments: parseGetUtxoResponse(payment_method, resp_json, cb(err, utxo))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg0UTF = nullptr;
+  const char* arg0 = nullptr;
+  if(info[0]->IsString()){
+    arg0UTF = new Nan::Utf8String(info[0]);
+    arg0 = (const char*)(**arg0UTF);
+  } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for payment_method: parseGetUtxoResponse(payment_method, resp_json, cb(err, utxo))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for resp_json: parseGetUtxoResponse(payment_method, resp_json, cb(err, utxo))").ToLocalChecked());
+  }
+  if(!info[2]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("parseGetUtxoResponse arg 2 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
+  indyCalled(icb, indy_parse_get_utxo_response(icb->handle, arg0, arg1, parseGetUtxoResponse_cb));
+  delete arg0UTF;
+  delete arg1UTF;
+}
+
+void buildPaymentReq_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbStringString(xerr, arg0, arg1);
+  }
+}
+NAN_METHOD(buildPaymentReq) {
+  if(info.Length() != 5){
+    return Nan::ThrowError(Nan::New("Expected 5 arguments: buildPaymentReq(wallet_handle, submitter_did, inputs_json, outputs_json, cb(err, [ paymentReq, paymentMethod ]))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: buildPaymentReq(wallet_handle, submitter_did, inputs_json, outputs_json, cb(err, [ paymentReq, paymentMethod ]))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildPaymentReq(wallet_handle, submitter_did, inputs_json, outputs_json, cb(err, [ paymentReq, paymentMethod ]))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for inputs_json: buildPaymentReq(wallet_handle, submitter_did, inputs_json, outputs_json, cb(err, [ paymentReq, paymentMethod ]))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for outputs_json: buildPaymentReq(wallet_handle, submitter_did, inputs_json, outputs_json, cb(err, [ paymentReq, paymentMethod ]))").ToLocalChecked());
+  }
+  if(!info[4]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("buildPaymentReq arg 4 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[4]).ToLocalChecked());
+  indyCalled(icb, indy_build_payment_req(icb->handle, arg0, arg1, arg2, arg3, buildPaymentReq_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+}
+
+void parsePaymentResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(parsePaymentResponse) {
+  if(info.Length() != 3){
+    return Nan::ThrowError(Nan::New("Expected 3 arguments: parsePaymentResponse(payment_method, resp_json, cb(err, utxo))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg0UTF = nullptr;
+  const char* arg0 = nullptr;
+  if(info[0]->IsString()){
+    arg0UTF = new Nan::Utf8String(info[0]);
+    arg0 = (const char*)(**arg0UTF);
+  } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for payment_method: parsePaymentResponse(payment_method, resp_json, cb(err, utxo))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for resp_json: parsePaymentResponse(payment_method, resp_json, cb(err, utxo))").ToLocalChecked());
+  }
+  if(!info[2]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("parsePaymentResponse arg 2 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
+  indyCalled(icb, indy_parse_payment_response(icb->handle, arg0, arg1, parsePaymentResponse_cb));
+  delete arg0UTF;
+  delete arg1UTF;
+}
+
+void buildMintReq_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbStringString(xerr, arg0, arg1);
+  }
+}
+NAN_METHOD(buildMintReq) {
+  if(info.Length() != 4){
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: buildMintReq(wallet_handle, submitter_did, outputs_json, cb(err, [ mintReq, paymentMethod ]))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: buildMintReq(wallet_handle, submitter_did, outputs_json, cb(err, [ mintReq, paymentMethod ]))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildMintReq(wallet_handle, submitter_did, outputs_json, cb(err, [ mintReq, paymentMethod ]))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for outputs_json: buildMintReq(wallet_handle, submitter_did, outputs_json, cb(err, [ mintReq, paymentMethod ]))").ToLocalChecked());
+  }
+  if(!info[3]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("buildMintReq arg 3 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
+  indyCalled(icb, indy_build_mint_req(icb->handle, arg0, arg1, arg2, buildMintReq_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+}
+
+void buildSetTxnFeesReq_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildSetTxnFeesReq) {
+  if(info.Length() != 5){
+    return Nan::ThrowError(Nan::New("Expected 5 arguments: buildSetTxnFeesReq(wallet_handle, submitter_did, payment_method, fees_json, cb(err, setTxnFees))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: buildSetTxnFeesReq(wallet_handle, submitter_did, payment_method, fees_json, cb(err, setTxnFees))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildSetTxnFeesReq(wallet_handle, submitter_did, payment_method, fees_json, cb(err, setTxnFees))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for payment_method: buildSetTxnFeesReq(wallet_handle, submitter_did, payment_method, fees_json, cb(err, setTxnFees))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg3UTF = nullptr;
+  const char* arg3 = nullptr;
+  if(info[3]->IsString()){
+    arg3UTF = new Nan::Utf8String(info[3]);
+    arg3 = (const char*)(**arg3UTF);
+  } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for fees_json: buildSetTxnFeesReq(wallet_handle, submitter_did, payment_method, fees_json, cb(err, setTxnFees))").ToLocalChecked());
+  }
+  if(!info[4]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("buildSetTxnFeesReq arg 4 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[4]).ToLocalChecked());
+  indyCalled(icb, indy_build_set_txn_fees_req(icb->handle, arg0, arg1, arg2, arg3, buildSetTxnFeesReq_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+  delete arg3UTF;
+}
+
+void buildGetTxnFeesReq_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(buildGetTxnFeesReq) {
+  if(info.Length() != 4){
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: buildGetTxnFeesReq(wallet_handle, submitter_did, payment_method, cb(err, getTxnFees))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: buildGetTxnFeesReq(wallet_handle, submitter_did, payment_method, cb(err, getTxnFees))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildGetTxnFeesReq(wallet_handle, submitter_did, payment_method, cb(err, getTxnFees))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg2UTF = nullptr;
+  const char* arg2 = nullptr;
+  if(info[2]->IsString()){
+    arg2UTF = new Nan::Utf8String(info[2]);
+    arg2 = (const char*)(**arg2UTF);
+  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for payment_method: buildGetTxnFeesReq(wallet_handle, submitter_did, payment_method, cb(err, getTxnFees))").ToLocalChecked());
+  }
+  if(!info[3]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("buildGetTxnFeesReq arg 3 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
+  indyCalled(icb, indy_build_get_txn_fees_req(icb->handle, arg0, arg1, arg2, buildGetTxnFeesReq_cb));
+  delete arg1UTF;
+  delete arg2UTF;
+}
+
+void parseGetTxnFeesResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(parseGetTxnFeesResponse) {
+  if(info.Length() != 3){
+    return Nan::ThrowError(Nan::New("Expected 3 arguments: parseGetTxnFeesResponse(payment_method, resp_json, cb(err, fees))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg0UTF = nullptr;
+  const char* arg0 = nullptr;
+  if(info[0]->IsString()){
+    arg0UTF = new Nan::Utf8String(info[0]);
+    arg0 = (const char*)(**arg0UTF);
+  } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for payment_method: parseGetTxnFeesResponse(payment_method, resp_json, cb(err, fees))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for resp_json: parseGetTxnFeesResponse(payment_method, resp_json, cb(err, fees))").ToLocalChecked());
+  }
+  if(!info[2]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("parseGetTxnFeesResponse arg 2 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
+  indyCalled(icb, indy_parse_get_txn_fees_response(icb->handle, arg0, arg1, parseGetTxnFeesResponse_cb));
+  delete arg0UTF;
+  delete arg1UTF;
+}
+
 void createPoolLedgerConfig_cb(indy_handle_t handle, indy_error_t xerr) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3074,9 +4042,9 @@ NAN_METHOD(setProtocolVersion) {
     return Nan::ThrowError(Nan::New("Expected 2 arguments: setProtocolVersion(protocol_version, cb(err))").ToLocalChecked());
   }
   if(!info[0]->IsUint32()){
-    return Nan::ThrowError(Nan::New("Expected Timestamp for timestamp: setProtocolVersion(protocol_version, cb(err))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected indy_u64_t for protocol_version: setProtocolVersion(protocol_version, cb(err))").ToLocalChecked());
   }
-  long long arg0 = info[0]->Uint32Value();
+  indy_u64_t arg0 = (indy_u64_t)info[0]->Uint32Value();
   if(!info[1]->IsFunction()) {
     return Nan::ThrowError(Nan::New("setProtocolVersion arg 1 expected callback Function").ToLocalChecked());
   }
@@ -3207,62 +4175,6 @@ NAN_METHOD(listWallets) {
   indyCalled(icb, indy_list_wallets(icb->handle, listWallets_cb));
 }
 
-void closeWallet_cb(indy_handle_t handle, indy_error_t xerr) {
-  IndyCallback* icb = IndyCallback::getCallback(handle);
-  if(icb != nullptr){
-    icb->cbNone(xerr);
-  }
-}
-NAN_METHOD(closeWallet) {
-  if(info.Length() != 2){
-    return Nan::ThrowError(Nan::New("Expected 2 arguments: closeWallet(handle, cb(err))").ToLocalChecked());
-  }
-  if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for handle: closeWallet(handle, cb(err))").ToLocalChecked());
-  }
-  indy_handle_t arg0 = info[0]->Int32Value();
-  if(!info[1]->IsFunction()) {
-    return Nan::ThrowError(Nan::New("closeWallet arg 1 expected callback Function").ToLocalChecked());
-  }
-  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
-  indyCalled(icb, indy_close_wallet(icb->handle, arg0, closeWallet_cb));
-}
-
-void deleteWallet_cb(indy_handle_t handle, indy_error_t xerr) {
-  IndyCallback* icb = IndyCallback::getCallback(handle);
-  if(icb != nullptr){
-    icb->cbNone(xerr);
-  }
-}
-NAN_METHOD(deleteWallet) {
-  if(info.Length() != 3){
-    return Nan::ThrowError(Nan::New("Expected 3 arguments: deleteWallet(name, credentials, cb(err))").ToLocalChecked());
-  }
-  Nan::Utf8String* arg0UTF = nullptr;
-  const char* arg0 = nullptr;
-  if(info[0]->IsString()){
-    arg0UTF = new Nan::Utf8String(info[0]);
-    arg0 = (const char*)(**arg0UTF);
-  } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for name: deleteWallet(name, credentials, cb(err))").ToLocalChecked());
-  }
-  Nan::Utf8String* arg1UTF = nullptr;
-  const char* arg1 = nullptr;
-  if(info[1]->IsString()){
-    arg1UTF = new Nan::Utf8String(info[1]);
-    arg1 = (const char*)(**arg1UTF);
-  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for credentials: deleteWallet(name, credentials, cb(err))").ToLocalChecked());
-  }
-  if(!info[2]->IsFunction()) {
-    return Nan::ThrowError(Nan::New("deleteWallet arg 2 expected callback Function").ToLocalChecked());
-  }
-  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
-  indyCalled(icb, indy_delete_wallet(icb->handle, arg0, arg1, deleteWallet_cb));
-  delete arg0UTF;
-  delete arg1UTF;
-}
-
 void exportWallet_cb(indy_handle_t handle, indy_error_t xerr) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -3271,22 +4183,20 @@ void exportWallet_cb(indy_handle_t handle, indy_error_t xerr) {
 }
 NAN_METHOD(exportWallet) {
   if(info.Length() != 3){
-    return Nan::ThrowError(Nan::New("Expected 2 arguments: exportWallet(handle, export_config_json, cb(err))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 3 arguments: exportWallet(wallet_handle, export_config_json, cb(err))").ToLocalChecked());
   }
   if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for handle: exportWallet(handle, export_config_json, cb(err))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: exportWallet(wallet_handle, export_config_json, cb(err))").ToLocalChecked());
   }
   indy_handle_t arg0 = info[0]->Int32Value();
-
   Nan::Utf8String* arg1UTF = nullptr;
   const char* arg1 = nullptr;
   if(info[1]->IsString()){
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for credentials: exportWallet(handle, export_config_json, cb(err))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for export_config_json: exportWallet(wallet_handle, export_config_json, cb(err))").ToLocalChecked());
   }
-
   if(!info[2]->IsFunction()) {
     return Nan::ThrowError(Nan::New("exportWallet arg 2 expected callback Function").ToLocalChecked());
   }
@@ -3303,7 +4213,7 @@ void importWallet_cb(indy_handle_t handle, indy_error_t xerr) {
 }
 NAN_METHOD(importWallet) {
   if(info.Length() != 7){
-    return Nan::ThrowError(Nan::New("Expected 6 arguments: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 7 arguments: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
   }
   Nan::Utf8String* arg0UTF = nullptr;
   const char* arg0 = nullptr;
@@ -3351,7 +4261,7 @@ NAN_METHOD(importWallet) {
     arg5UTF = new Nan::Utf8String(info[5]);
     arg5 = (const char*)(**arg5UTF);
   } else if(!info[5]->IsNull() && !info[5]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for credentials: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for import_config_json: importWallet(pool_name, name, xtype, config, credentials, import_config_json, cb(err))").ToLocalChecked());
   }
   if(!info[6]->IsFunction()) {
     return Nan::ThrowError(Nan::New("importWallet arg 6 expected callback Function").ToLocalChecked());
@@ -3364,6 +4274,62 @@ NAN_METHOD(importWallet) {
   delete arg3UTF;
   delete arg4UTF;
   delete arg5UTF;
+}
+
+void closeWallet_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(closeWallet) {
+  if(info.Length() != 2){
+    return Nan::ThrowError(Nan::New("Expected 2 arguments: closeWallet(wallet_handle, cb(err))").ToLocalChecked());
+  }
+  if(!info[0]->IsNumber()){
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: closeWallet(wallet_handle, cb(err))").ToLocalChecked());
+  }
+  indy_handle_t arg0 = info[0]->Int32Value();
+  if(!info[1]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("closeWallet arg 1 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
+  indyCalled(icb, indy_close_wallet(icb->handle, arg0, closeWallet_cb));
+}
+
+void deleteWallet_cb(indy_handle_t handle, indy_error_t xerr) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbNone(xerr);
+  }
+}
+NAN_METHOD(deleteWallet) {
+  if(info.Length() != 3){
+    return Nan::ThrowError(Nan::New("Expected 3 arguments: deleteWallet(name, credentials, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg0UTF = nullptr;
+  const char* arg0 = nullptr;
+  if(info[0]->IsString()){
+    arg0UTF = new Nan::Utf8String(info[0]);
+    arg0 = (const char*)(**arg0UTF);
+  } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for name: deleteWallet(name, credentials, cb(err))").ToLocalChecked());
+  }
+  Nan::Utf8String* arg1UTF = nullptr;
+  const char* arg1 = nullptr;
+  if(info[1]->IsString()){
+    arg1UTF = new Nan::Utf8String(info[1]);
+    arg1 = (const char*)(**arg1UTF);
+  } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for credentials: deleteWallet(name, credentials, cb(err))").ToLocalChecked());
+  }
+  if(!info[2]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("deleteWallet arg 2 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
+  indyCalled(icb, indy_delete_wallet(icb->handle, arg0, arg1, deleteWallet_cb));
+  delete arg0UTF;
+  delete arg1UTF;
 }
 
 NAN_MODULE_INIT(InitAll) {
@@ -3410,6 +4376,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "signAndSubmitRequest", signAndSubmitRequest);
   Nan::Export(target, "submitRequest", submitRequest);
   Nan::Export(target, "signRequest", signRequest);
+  Nan::Export(target, "multiSignRequest", multiSignRequest);
   Nan::Export(target, "buildGetDdoRequest", buildGetDdoRequest);
   Nan::Export(target, "buildNymRequest", buildNymRequest);
   Nan::Export(target, "buildAttribRequest", buildAttribRequest);
@@ -3422,6 +4389,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildGetCredDefRequest", buildGetCredDefRequest);
   Nan::Export(target, "parseGetCredDefResponse", parseGetCredDefResponse);
   Nan::Export(target, "buildNodeRequest", buildNodeRequest);
+  Nan::Export(target, "buildGetValidatorInfoRequest", buildGetValidatorInfoRequest);
   Nan::Export(target, "buildGetTxnRequest", buildGetTxnRequest);
   Nan::Export(target, "buildPoolConfigRequest", buildPoolConfigRequest);
   Nan::Export(target, "buildPoolRestartRequest", buildPoolRestartRequest);
@@ -3434,11 +4402,33 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "parseGetRevocRegResponse", parseGetRevocRegResponse);
   Nan::Export(target, "buildGetRevocRegDeltaRequest", buildGetRevocRegDeltaRequest);
   Nan::Export(target, "parseGetRevocRegDeltaResponse", parseGetRevocRegDeltaResponse);
+  Nan::Export(target, "addWalletRecord", addWalletRecord);
+  Nan::Export(target, "updateWalletRecordValue", updateWalletRecordValue);
+  Nan::Export(target, "updateWalletRecordTags", updateWalletRecordTags);
+  Nan::Export(target, "addWalletRecordTags", addWalletRecordTags);
+  Nan::Export(target, "deleteWalletRecordTags", deleteWalletRecordTags);
+  Nan::Export(target, "deleteWalletRecord", deleteWalletRecord);
+  Nan::Export(target, "getWalletRecord", getWalletRecord);
+  Nan::Export(target, "openWalletSearch", openWalletSearch);
+  Nan::Export(target, "fetchWalletSearchNextRecords", fetchWalletSearchNextRecords);
+  Nan::Export(target, "closeWalletSearch", closeWalletSearch);
   Nan::Export(target, "isPairwiseExists", isPairwiseExists);
   Nan::Export(target, "createPairwise", createPairwise);
   Nan::Export(target, "listPairwise", listPairwise);
   Nan::Export(target, "getPairwise", getPairwise);
   Nan::Export(target, "setPairwiseMetadata", setPairwiseMetadata);
+  Nan::Export(target, "createPaymentAddress", createPaymentAddress);
+  Nan::Export(target, "listPaymentAddresses", listPaymentAddresses);
+  Nan::Export(target, "addRequestFees", addRequestFees);
+  Nan::Export(target, "parseResponseWithFees", parseResponseWithFees);
+  Nan::Export(target, "buildGetUtxoRequest", buildGetUtxoRequest);
+  Nan::Export(target, "parseGetUtxoResponse", parseGetUtxoResponse);
+  Nan::Export(target, "buildPaymentReq", buildPaymentReq);
+  Nan::Export(target, "parsePaymentResponse", parsePaymentResponse);
+  Nan::Export(target, "buildMintReq", buildMintReq);
+  Nan::Export(target, "buildSetTxnFeesReq", buildSetTxnFeesReq);
+  Nan::Export(target, "buildGetTxnFeesReq", buildGetTxnFeesReq);
+  Nan::Export(target, "parseGetTxnFeesResponse", parseGetTxnFeesResponse);
   Nan::Export(target, "createPoolLedgerConfig", createPoolLedgerConfig);
   Nan::Export(target, "openPoolLedger", openPoolLedger);
   Nan::Export(target, "refreshPoolLedger", refreshPoolLedger);
@@ -3449,9 +4439,9 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "createWallet", createWallet);
   Nan::Export(target, "openWallet", openWallet);
   Nan::Export(target, "listWallets", listWallets);
-  Nan::Export(target, "closeWallet", closeWallet);
-  Nan::Export(target, "deleteWallet", deleteWallet);
   Nan::Export(target, "exportWallet", exportWallet);
   Nan::Export(target, "importWallet", importWallet);
+  Nan::Export(target, "closeWallet", closeWallet);
+  Nan::Export(target, "deleteWallet", deleteWallet);
 }
 NODE_MODULE(indynodejs, InitAll)

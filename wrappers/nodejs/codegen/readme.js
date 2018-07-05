@@ -28,6 +28,7 @@ var toHumanType = function (param) {
 
     case 'indy_u32_t':
     case 'indy_i32_t':
+    case 'indy_u64_t':
       return 'Number'
 
     case 'Buffer':
@@ -188,6 +189,9 @@ function parseDocString (docs) {
       .trim()
     if (section === '') {
       section = 'desc'
+    }
+    if (section === 'return') {
+      section = 'returns'
     }
     if (!keyed.hasOwnProperty(section)) {
       throw new Error('Unsupported doc string section: ' + section)
