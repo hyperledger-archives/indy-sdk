@@ -31,7 +31,7 @@ pub mod create_command {
                 .add_example("wallet create wallet1 key")
                 .add_example("wallet create wallet1 key=key")
                 .add_example("wallet create wallet1 key=key storage_type=default")
-                .add_example("wallet create wallet1 key=key storage_type=default storage_config=key1:value1,key2:value2")
+                .add_example(r#"wallet create wallet1 key=key storage_type=default storage_config={"key1":"value1","key2":"value2"}"#)
                 .finalize()
     );
 
@@ -41,7 +41,7 @@ pub mod create_command {
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
         let storage_type = get_opt_str_param("storage_type", params).map_err(error_err!())?.unwrap_or("default");
-        let storage_config = get_opt_map_param("storage_config", params).map_err(error_err!())?;
+        let storage_config = get_opt_object_param("storage_config", params).map_err(error_err!())?;
 
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
         let credentials: String = json!({ "key": key.clone() }).to_string();
@@ -315,7 +315,7 @@ pub mod import_command {
                 .add_required_deferred_param("export_key", "Passphrase used to derive export key")
                 .add_example("wallet import wallet1 key export_path=/home/indy/export_wallet export_key")
                 .add_example("wallet import wallet1 key=key export_path=/home/indy/export_wallet export_key=export_key")
-                .add_example("wallet import wallet1 key export_path=/home/indy/export_wallet export_key=export_key storage_type=default storage_config=key1:value1,key2:value2")
+                .add_example(r#"wallet import wallet1 key export_path=/home/indy/export_wallet export_key=export_key storage_type=default storage_config={"key1":"value1","key2":"value2"}"#)
                 .finalize()
     );
 
@@ -327,7 +327,7 @@ pub mod import_command {
         let export_path = get_str_param("export_path", params).map_err(error_err!())?;
         let export_key = get_str_param("export_key", params).map_err(error_err!())?;
         let storage_type = get_opt_str_param("storage_type", params).map_err(error_err!())?;
-        let storage_config = get_opt_map_param("storage_config", params).map_err(error_err!())?;
+        let storage_config = get_opt_object_param("storage_config", params).map_err(error_err!())?;
 
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
         let credentials: String = json!({ "key": key.clone() }).to_string();
@@ -519,13 +519,13 @@ pub mod tests {
         pub fn create_works_for_config() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
-
+            let config = r#"{"key":"value","key2":"value2"}"#;
             {
                 let cmd = create_command::new();
                 let mut params = CommandParams::new();
                 params.insert("name", WALLET.to_string());
                 params.insert("key", WALLET_KEY.to_string());
-                params.insert("storage_config", "key:value,key2:value2".to_string());
+                params.insert("storage_config", config.to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
 
@@ -534,7 +534,7 @@ pub mod tests {
 
             assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
             assert_eq!(wallets[0]["storage_config"].as_object().unwrap(),
-                       serde_json::from_str::<serde_json::Value>(r#"{"key":"value","key2":"value2"}"#).unwrap().as_object().unwrap());
+                       serde_json::from_str::<serde_json::Value>(config).unwrap().as_object().unwrap());
 
             delete_wallet(&ctx);
             TestUtils::cleanup_storage();
@@ -945,6 +945,44 @@ pub mod tests {
             }
 
             close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn import_works_for_config() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_MY1);
+
+            let (_, path_str) = export_wallet_path();
+            export_wallet(&ctx, &path_str);
+            close_and_delete_wallet(&ctx);
+
+            let config = r#"{"key":"value"}"#;
+
+            // import wallet
+            {
+                let cmd = import_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("export_path", path_str);
+                params.insert("export_key", EXPORT_KEY.to_string());
+                params.insert("export_key", EXPORT_KEY.to_string());
+                params.insert("storage_config", config.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(1, wallets.len());
+
+            assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
+            assert_eq!(wallets[0]["storage_config"].as_object().unwrap(),
+                       serde_json::from_str::<serde_json::Value>(config).unwrap().as_object().unwrap());
+
             TestUtils::cleanup_storage();
         }
     }

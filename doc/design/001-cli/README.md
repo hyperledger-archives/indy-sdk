@@ -127,7 +127,7 @@ indy> wallet <command>
 #### Wallet create
 Create new wallet with specified name and pool:
 ```
-indy> wallet create <wallet name> key=<key> [storage_type=<storage_type>] [storage_config=<key1:value1,key2:value2>]
+indy> wallet create <wallet name> key=<key> [storage_type=<storage_type>] [storage_config={config json}]
 ```
 TODO: Think about custom wallet types support. Now we force default wallet security model.. 
 

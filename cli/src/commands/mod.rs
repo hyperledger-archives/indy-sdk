@@ -13,7 +13,6 @@ use self::regex::Regex;
 use command_executor::{CommandContext, CommandParams};
 
 use std;
-use std::collections::HashMap;
 
 pub fn get_str_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<&'a str, ()> {
     match params.get(name) {
@@ -107,31 +106,6 @@ pub fn get_opt_str_array_param<'a>(name: &'a str, params: &'a CommandParams) -> 
     }
 }
 
-pub fn get_opt_map_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<HashMap<String, String>>, ()> {
-    match get_opt_str_array_param(name, params) {
-        Ok(Some(pairs)) => {
-            let mut map: HashMap<String, String> = HashMap::new();
-
-            for pair in pairs {
-                let parts = pair.split(":").collect::<Vec<&str>>();
-
-                if parts.len() != 2 {
-                    return Err(println_err!("Can't parse map param \"{}\"", name))
-                }
-
-                let key = parts[0];
-                let value = parts[1];
-
-                map.insert(key.to_string(), value.to_string());
-            }
-
-            Ok(Some(map))
-        },
-        Ok(None) => Ok(None),
-        Err(err) => Err(err)
-    }
-}
-
 pub fn get_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<serde_json::Value, ()> {
     match params.get(name) {
         Some(v) => Ok(serde_json::from_str(v).map_err(|err|
@@ -140,6 +114,13 @@ pub fn get_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<
             println_err!("No required \"{}\" parameter present", name);
             Err(())
         }
+    }
+}
+
+pub fn get_opt_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<serde_json::Value>, ()> {
+    match params.get(name) {
+        Some(_) => Ok(Some(get_object_param(name, params)?)),
+        None => Ok(None)
     }
 }
 
