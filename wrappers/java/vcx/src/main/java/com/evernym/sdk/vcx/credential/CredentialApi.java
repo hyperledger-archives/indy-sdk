@@ -244,6 +244,4 @@ public class CredentialApi extends VcxJava.API {
 
         return future;
     }
-
-
 }

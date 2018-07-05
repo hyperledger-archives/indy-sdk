@@ -579,4 +579,44 @@ completion:(void (^)(NSError *error))completion
        });
    }
 }
+
+
+- (void)exportWallet:(NSString *)exportPath
+            encryptWith:(NSString *)encryptionKey
+           completion:(void (^)(NSError *error, NSInteger exportHandle))completion {
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+   const char * export_path=[exportPath cString];
+   const char * encryption_key = [encryptionKey cString];
+    ret = vcx_wallet_export(handle, export_path, encryption_key, VcxWrapperCommonCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+       
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+   }
+}
+
+- (void)importWallet:(NSString *)importPath
+            encryptWith:(NSString *)encryptionKey
+           completion:(void (^)(NSError *error, NSInteger importHandle))completion {
+   vcx_error_t ret;
+   vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+   const char * import_path=[importPath cString];
+   const char * encryption_key = [encryptionKey cString];
+    ret = vcx_wallet_import(handle, import_path, encryption_key, VcxWrapperCommonCallback);
+
+   if( ret != 0 )
+   {
+       [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+       
+       dispatch_async(dispatch_get_main_queue(), ^{
+           completion([NSError errorFromVcxError: ret], 0);
+       });
+   }
+}
+
 @end
