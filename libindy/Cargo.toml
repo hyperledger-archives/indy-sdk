@@ -35,6 +35,9 @@ revocation_tests = []
 sodium_static = []
 hmacsha256_sodium = ["sodiumoxide"]
 
+# Causes the build to fail on all warnings
+fatal_warnings = []
+
 [dependencies]
 indy-crypto = { git = "https://github.com/mikelodder7/indy-crypto.git", optional = true }
 int_traits = { version = "0.1.1", optional = true }

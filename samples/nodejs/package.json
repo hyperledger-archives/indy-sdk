@@ -7,7 +7,6 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node gettingStarted.js",
-    "build": "cd ../../wrappers/nodejs && npm run prepare && npm install && npm rebuild && cd ../../samples/nodejs/ && npm install",
     "ledger": "cd ../../ && docker build -f ci/indy-pool.dockerfile -t indy_pool . && docker run --name indy_pool -itd -p 9701-9708:9701-9708 indy_pool"
   },
   "repository": {

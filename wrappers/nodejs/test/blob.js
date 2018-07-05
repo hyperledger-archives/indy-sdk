@@ -1,11 +1,10 @@
 var test = require('ava')
-var path = require('path')
 var indy = require('../')
-var indyHomeDir = require('home-dir')('.indy_client')
+var tempy = require('tempy')
 
 test('blob_storage', async function (t) {
   var config = {
-    'base_dir': path.join(indyHomeDir, 'tails'),
+    'base_dir': tempy.directory(),
     'uri_pattern': ''
   }
 
