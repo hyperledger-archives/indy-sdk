@@ -16,6 +16,7 @@ extern crate named_type_derive;
 #[macro_use]
 mod utils;
 
+use utils::environment::EnvironmentUtils;
 use utils::inmem_wallet::InmemWallet;
 use utils::wallet::WalletUtils;
 use utils::test::TestUtils;
@@ -52,6 +53,23 @@ mod high_cases {
             TestUtils::cleanup_storage();
 
             WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_create_wallet_works_for_custom_path() {
+            TestUtils::cleanup_storage();
+
+            let config = json!({
+                "id": "wallet_1",
+                "storage_type": "default",
+                "storage_config": {
+                    "path": _custom_path(),
+                }
+            }).to_string();
+
+            WalletUtils::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -98,6 +116,25 @@ mod high_cases {
             WalletUtils::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             WalletUtils::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             WalletUtils::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_delete_wallet_works_for_custom_path() {
+            TestUtils::cleanup_storage();
+
+            let config = json!({
+                "id": "wallet_1",
+                "storage_type": "default",
+                "storage_config": {
+                    "path": _custom_path(),
+                }
+            }).to_string();
+
+            WalletUtils::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            WalletUtils::delete_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            WalletUtils::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
 
             TestUtils::cleanup_storage();
         }
@@ -153,6 +190,26 @@ mod high_cases {
 
             WalletUtils::create_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_open_wallet_works_for_custom_path() {
+            TestUtils::cleanup_storage();
+
+            let config = json!({
+                "id": "wallet_1",
+                "storage_type": "default",
+                "storage_config": {
+                    "path": _custom_path(),
+                }
+            }).to_string();
+
+            WalletUtils::create_wallet(&config, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(&config, WALLET_CREDENTIALS).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -633,5 +690,11 @@ mod medium_cases {
             TestUtils::cleanup_storage();
         }
     }
+}
+
+fn _custom_path() -> String {
+    let mut path = EnvironmentUtils::tmp_path();
+    path.push("custom_wallet_path");
+    path.to_str().unwrap().to_owned()
 }
 

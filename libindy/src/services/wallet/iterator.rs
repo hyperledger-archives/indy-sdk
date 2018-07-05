@@ -25,7 +25,7 @@ impl WalletIterator {
     pub fn next(&mut self) -> Result<Option<WalletRecord>, WalletError> {
         let next_storage_entity = self.storage_iterator.next()?;
         if let Some(next_storage_entity) = next_storage_entity {
-            let decrypted_name = decrypt_merged(&next_storage_entity.name, &self.keys.name_key)?;
+            let decrypted_name = decrypt_merged(&next_storage_entity.id, &self.keys.name_key)?;
             let name = String::from_utf8(decrypted_name)?;
 
             let type_ = match next_storage_entity.type_ {

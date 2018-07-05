@@ -18,17 +18,17 @@ pub enum TagName {
 }
 
 #[derive(Clone, Debug)]
-pub struct StorageEntity {
-    pub name: Vec<u8>,
+pub struct StorageRecord {
+    pub id: Vec<u8>,
     pub value: Option<EncryptedValue>,
     pub type_: Option<Vec<u8>>,
     pub tags: Option<Vec<Tag>>,
 }
 
-impl StorageEntity {
-    fn new(name: Vec<u8>, value: Option<EncryptedValue>, type_: Option<Vec<u8>>, tags: Option<Vec<Tag>>) -> Self {
+impl StorageRecord {
+    fn new(id: Vec<u8>, value: Option<EncryptedValue>, type_: Option<Vec<u8>>, tags: Option<Vec<Tag>>) -> Self {
         Self {
-            name,
+            id,
             value,
             type_,
             tags,
@@ -37,18 +37,18 @@ impl StorageEntity {
 }
 
 pub trait StorageIterator {
-    fn next(&mut self) -> Result<Option<StorageEntity>, WalletStorageError>;
+    fn next(&mut self) -> Result<Option<StorageRecord>, WalletStorageError>;
     fn get_total_count(&self) -> Result<Option<usize>, WalletStorageError>;
 }
 
 pub trait WalletStorage {
-    fn get(&self, type_: &[u8], name: &[u8], options: &str) -> Result<StorageEntity, WalletStorageError>;
-    fn add(&self, type_: &[u8], name: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError>;
-    fn update(&self, type_: &[u8], name: &[u8], value: &EncryptedValue) -> Result<(), WalletStorageError>;
-    fn add_tags(&self, type_: &[u8], name: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError>;
-    fn update_tags(&self, type_: &[u8], name: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError>;
-    fn delete_tags(&self, type_: &[u8], name: &[u8], tag_names: &[TagName]) -> Result<(), WalletStorageError>;
-    fn delete(&self, type_: &[u8], name: &[u8]) -> Result<(), WalletStorageError>;
+    fn get(&self, type_: &[u8], id: &[u8], options: &str) -> Result<StorageRecord, WalletStorageError>;
+    fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError>;
+    fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> Result<(), WalletStorageError>;
+    fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError>;
+    fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError>;
+    fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> Result<(), WalletStorageError>;
+    fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), WalletStorageError>;
     fn get_storage_metadata(&self) -> Result<Vec<u8>, WalletStorageError>;
     fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), WalletStorageError>;
     fn get_all(&self) -> Result<Box<StorageIterator>, WalletStorageError>;

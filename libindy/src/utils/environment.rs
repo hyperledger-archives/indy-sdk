@@ -17,12 +17,6 @@ impl EnvironmentUtils {
         path
     }
 
-    pub fn wallet_path(wallet_name: &str) -> PathBuf {
-        let mut path = EnvironmentUtils::wallet_home_path();
-        path.push(wallet_name);
-        path
-    }
-
     pub fn pool_home_path() -> PathBuf {
         let mut path = EnvironmentUtils::indy_home_path();
         path.push("pool");
@@ -74,16 +68,6 @@ mod tests {
         assert!(path.has_root());
         assert!(path.to_string_lossy().contains(".indy_client"));
         assert!(path.to_string_lossy().contains("wallet"));
-    }
-
-    #[test]
-    fn wallet_path_works() {
-        let path = EnvironmentUtils::wallet_path("wallet1");
-
-        assert!(path.is_absolute());
-        assert!(path.has_root());
-        assert!(path.to_string_lossy().contains(".indy_client"));
-        assert!(path.to_string_lossy().contains("wallet1"));
     }
 
     #[test]
