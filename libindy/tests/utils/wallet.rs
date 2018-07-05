@@ -125,6 +125,7 @@ impl WalletUtils {
             "storage_type": INMEM_TYPE
         }).to_string();
 
+        WalletUtils::register_wallet_storage("inmem", false).unwrap();
         WalletUtils::create_wallet(&config, WALLET_CREDENTIALS)?;
         WalletUtils::open_wallet(&config, WALLET_CREDENTIALS)
     }
