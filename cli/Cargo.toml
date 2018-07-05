@@ -1,10 +1,13 @@
 [package]
 name = "indy-cli"
-version = "0.1.0"
+version = "1.5.0"
 authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
 
 [features]
 nullpay_plugin = []
+
+# Causes the build to fail on all warnings
+fatal_warnings = []
 
 [dependencies]
 ansi_term = "0.10"

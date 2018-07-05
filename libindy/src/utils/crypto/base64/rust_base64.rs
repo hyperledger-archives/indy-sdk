@@ -18,14 +18,14 @@ mod tests {
     #[test]
     fn encode_works() {
         let result = encode(&[1, 2, 3]);
-        assert_eq!("Ldp", &result, "Got unexpected data");
+        assert_eq!("AQID", &result);
     }
 
     #[test]
     fn decode_works() {
-        let result = decode("Ldp");
+        let result = decode("AQID");
 
         assert!(result.is_ok(), "Got error");
-        assert_eq!(&[1, 2, 3], &result.unwrap()[..], "Get unexpected data");
+        assert_eq!(&[1, 2, 3], &result.unwrap()[..]);
     }
 }

@@ -5,7 +5,7 @@ use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
 use utils::crypto::memzero::memzero;
 
 use super::{Keys, WalletRecord};
-use super::storage::{Tag, TagName, StorageEntity};
+use super::storage::{Tag, TagName, StorageRecord};
 
 use errors::wallet::WalletError;
 
@@ -129,8 +129,8 @@ pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &chacha20poly
     }
 }
 
-pub(super) fn decrypt_storage_record(record: &StorageEntity, keys: &Keys) -> Result<WalletRecord, WalletError> {
-    let decrypted_name = decrypt_merged(&record.name, &keys.name_key)?;
+pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Result<WalletRecord, WalletError> {
+    let decrypted_name = decrypt_merged(&record.id, &keys.name_key)?;
     let decrypted_name = String::from_utf8(decrypted_name)?;
 
     let decrypted_value = match record.value {

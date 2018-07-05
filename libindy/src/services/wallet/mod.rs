@@ -155,6 +155,10 @@ impl WalletService {
         let credentials: Credentials = serde_json::from_str(credentials)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize credentials: {:?}", err)))?;
 
+        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == config.id) {
+            Err(CommonError::InvalidState(format!("Wallet has to be closed before deleting: {:?}", config.id)))?
+        }
+
         let storage_types = self.storage_types.borrow();
 
         let storage_type = {
@@ -217,6 +221,10 @@ impl WalletService {
         let credentials: Credentials = serde_json::from_str(credentials)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize credentials: {:?}", err)))?;
 
+        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == config.id) {
+            Err(WalletError::AlreadyOpened(config.id.clone()))?
+        }
+
         let storage_types = self.storage_types.borrow();
 
         let storage_type = {
@@ -255,6 +263,7 @@ impl WalletService {
 
         // Rotate master key
         if let Some(rekey) = credentials.rekey {
+
             let metadata = {
                 let master_key_salt = encryption::gen_master_key_salt()?;
                 let master_key = encryption::derive_master_key(&rekey, &master_key_salt)?;
@@ -268,10 +277,10 @@ impl WalletService {
                     .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err)))?
             };
 
-            storage.set_storage_metadata(&metadata)?
+            storage.set_storage_metadata(&metadata)?;
         }
 
-        let wallet = Wallet::new(storage, Rc::new(keys));
+        let wallet = Wallet::new(config.id, storage, Rc::new(keys));
 
         let wallet_handle = SequenceUtils::get_next_id();
         let mut wallets = self.wallets.borrow_mut();
@@ -497,14 +506,21 @@ impl WalletService {
 
         // TODO - this can be refactor to skip the entire wallet_handle ceremony,
         // but in order to do that a lot of WalletService needs to be refactored
+
         self.create_wallet(config, credentials)?;
         let wallet_handle = self.open_wallet(config, credentials)?;
-        let wallets = self.wallets.borrow();
-        let wallet = wallets
-            .get(&wallet_handle)
-            .ok_or(WalletError::InvalidHandle(wallet_handle.to_string()))?; // This should never happen
 
-        import(wallet, &mut export_file, &export_config.key)?;
+        {
+            // to finish self.wallets borrowing
+            let wallets = self.wallets.borrow();
+            let wallet = wallets
+                .get(&wallet_handle)
+                .ok_or(WalletError::InvalidHandle(wallet_handle.to_string()))?; // This should never happen
+
+            import(wallet, &mut export_file, &export_config.key)?;
+        }
+
+        self.close_wallet(wallet_handle)?;
         Ok(())
     }
 
@@ -515,7 +531,7 @@ impl WalletService {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WalletRecord {
     #[serde(rename = "id")]
     name: String,
@@ -523,6 +539,18 @@ pub struct WalletRecord {
     type_: Option<String>,
     value: Option<String>,
     tags: Option<HashMap<String, String>>
+}
+
+impl Ord for WalletRecord {
+    fn cmp(&self, other: &Self) -> ::std::cmp::Ordering {
+        (&self.type_, &self.name).cmp(&(&other.type_, &other.name))
+    }
+}
+
+impl PartialOrd for WalletRecord {
+    fn partial_cmp(&self, other: &Self) -> Option<::std::cmp::Ordering> {
+        (&self.type_, &self.name).partial_cmp(&(&other.type_, &other.name))
+    }
 }
 
 impl WalletRecord {
@@ -695,7 +723,803 @@ mod tests {
     use utils::inmem_wallet::InmemWallet;
     use utils::test::TestUtils;
 
-    type Tags = HashMap<String, String>;
+    #[test]
+    fn wallet_service_new_works() {
+        WalletService::new();
+    }
+
+    #[test]
+    fn wallet_service_register_type_works() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+    }
+
+    #[test]
+    fn wallet_service_create_wallet_works() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config_default(), &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_create_works_for_plugged() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_create_wallet_works_for_none_type() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_create_wallet_works_for_unknown_type() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        let res = wallet_service.create_wallet(&_config_unknown(), &_credentials());
+        assert_match!(Err(WalletError::UnknownType(_)), res);
+    }
+
+    #[test]
+    fn wallet_service_create_wallet_works_for_twice() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+
+        let res = wallet_service.create_wallet(&_config(), &_credentials());
+        assert_match!(Err(WalletError::AlreadyExists(_)), res);
+    }
+
+    #[test]
+    fn wallet_service_delete_wallet_works() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        wallet_service.delete_wallet(&_config(), &_credentials()).unwrap();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_delete_works_for_plugged() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        wallet_service.delete_wallet(&_config_inmem(), &_credentials()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_delete_wallet_returns_error_if_wallet_opened() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        let res = wallet_service.delete_wallet(&_config(), &_credentials());
+
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidState(_))), res);
+    }
+
+    #[test]
+    fn wallet_service_open_wallet_works() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        // cleanup
+        wallet_service.close_wallet(handle).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_open_unknown_wallet() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        let res = wallet_service.open_wallet(&_config(), &_credentials());
+        assert_match!(Err(WalletError::NotFound(_)), res);
+    }
+
+    #[test]
+    fn wallet_service_open_works_for_plugged() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_open_wallet_without_master_key_in_credentials_returns_error() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let res = wallet_service.open_wallet(&_config(), "{}");
+        assert_match!(Err(WalletError::CommonError(_)), res);
+    }
+
+    #[test]
+    fn wallet_service_close_wallet_works() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        wallet_service.close_wallet(wallet_handle).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_close_works_for_plugged() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+        wallet_service.close_wallet(wallet_handle).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_add_record_works() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+    }
+
+    #[test]
+    fn wallet_service_add_record_works_for_plugged() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+    }
+
+    #[test]
+    fn wallet_service_get_record_works_for_id_only() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
+
+        assert!(record.get_value().is_none());
+        assert!(record.get_type().is_none());
+        assert!(record.get_tags().is_none());
+    }
+
+    #[test]
+    fn wallet_service_get_record_works_for_plugged_for_id_only() {
+        TestUtils::cleanup_indy_home();
+        InmemWallet::cleanup();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
+
+        assert!(record.get_value().is_none());
+        assert!(record.get_type().is_none());
+        assert!(record.get_tags().is_none());
+    }
+
+    #[test]
+    fn wallet_service_get_record_works_for_id_value() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
+
+        assert_eq!("value1", record.get_value().unwrap());
+        assert!(record.get_type().is_none());
+        assert!(record.get_tags().is_none());
+    }
+
+    #[test]
+    fn wallet_service_get_record_works_for_plugged_for_id_value() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
+
+        assert_eq!("value1", record.get_value().unwrap());
+        assert!(record.get_type().is_none());
+        assert!(record.get_tags().is_none());
+    }
+
+    #[test]
+    fn wallet_service_get_record_works_for_all_fields() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        let mut tags = HashMap::new();
+        tags.insert(String::from("1"), String::from("some"));
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &tags).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
+        assert_eq!(&tags, record.get_tags().unwrap());
+    }
+
+    #[test]
+    fn wallet_service_get_record_works_for_plugged_for_for_all_fields() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let tags = serde_json::from_str(r#"{"1":"some"}"#).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &tags).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
+        assert_eq!(tags, record.get_tags().unwrap().clone());
+    }
+
+    #[test]
+    fn wallet_service_add_get_works_for_reopen() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
+        assert_eq!("value1", record.get_value().unwrap());
+    }
+
+    #[test]
+    fn wallet_service_get_works_for_unknown() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        let res = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false));
+
+        assert_match!(Err(WalletError::ItemNotFound), res);
+    }
+
+    #[test]
+    fn wallet_service_get_works_for_plugged_and_unknown() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+
+        let res = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false));
+        assert_match!(Err(WalletError::ItemNotFound), res);
+    }
+
+    /**
+     * Update tests
+    */
+    #[test]
+    fn wallet_service_update() {
+        _cleanup();
+
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let new_value = "new_value";
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
+        assert_eq!(value, record.get_value().unwrap());
+
+        wallet_service.update_record_value(wallet_handle, type_, name, new_value).unwrap();
+        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
+        assert_eq!(new_value, record.get_value().unwrap());
+    }
+
+    #[test]
+    fn wallet_service_update_for_plugged() {
+        _cleanup();
+
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let new_value = "new_value";
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
+        assert_eq!(value, record.get_value().unwrap());
+
+        wallet_service.update_record_value(wallet_handle, type_, name, new_value).unwrap();
+        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
+        assert_eq!(new_value, record.get_value().unwrap());
+    }
+
+    /**
+     * Delete tests
+    */
+    #[test]
+    fn wallet_service_delete_record() {
+        _cleanup();
+
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let new_value = "new_value";
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
+        assert_eq!(value, record.get_value().unwrap());
+
+        wallet_service.delete_record(wallet_handle, type_, name).unwrap();
+        let res = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false));
+        assert_match!(Err(WalletError::ItemNotFound), res);
+    }
+
+    #[test]
+    fn wallet_service_delete_record_for_plugged() {
+        _cleanup();
+
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let new_value = "new_value";
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
+        assert_eq!(value, record.get_value().unwrap());
+
+        wallet_service.delete_record(wallet_handle, type_, name).unwrap();
+        let res = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false));
+        assert_match!(Err(WalletError::ItemNotFound), res);
+    }
+
+    /**
+     * Add tags tests
+     */
+    #[test]
+    fn wallet_service_add_tags() {
+        _cleanup();
+
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1"}"#).unwrap();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
+
+        let new_tags = serde_json::from_str(r#"{"tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+        wallet_service.add_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
+
+        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
+
+        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+        let retrieved_tags = item.tags.unwrap();
+        assert_eq!(expected_tags, retrieved_tags);
+    }
+
+    #[test]
+    fn wallet_service_add_tags_for_plugged() {
+        _cleanup();
+
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let new_value = "new_value";
+        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1"}"#).unwrap();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
+
+        let new_tags = serde_json::from_str(r#"{"tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+        wallet_service.add_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
+
+        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
+
+        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+        let retrieved_tags = item.tags.unwrap();
+        assert_eq!(expected_tags, retrieved_tags);
+    }
+
+    /**
+     * Update tags tests
+     */
+    #[test]
+    fn wallet_service_update_tags() {
+        _cleanup();
+
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+        let wallet_service = WalletService::new();
+
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
+
+        let new_tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
+
+        wallet_service.update_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
+        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
+        let retrieved_tags = item.tags.unwrap();
+        assert_eq!(new_tags, retrieved_tags);
+    }
+
+    #[test]
+    fn wallet_service_update_tags_for_plugged() {
+        _cleanup();
+
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let new_value = "new_value";
+        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+        let wallet_service = WalletService::new();
+
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
+
+        let new_tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
+
+        wallet_service.update_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
+
+        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
+        let retrieved_tags = item.tags.unwrap();
+        assert_eq!(new_tags, retrieved_tags);
+    }
+
+    /**
+     * Delete tags tests
+     */
+    #[test]
+    fn wallet_service_delete_tags() {
+        _cleanup();
+
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
+
+        let wallet_service = WalletService::new();
+
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
+
+        let tag_names = vec!["tag_name_1", "~tag_name_3"];
+        wallet_service.delete_record_tags(wallet_handle, type_, name, &tag_names).unwrap();
+
+        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
+
+        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_2":"new_tag_value_2"}"#).unwrap();
+        let retrieved_tags = item.tags.unwrap();
+        assert_eq!(expected_tags, retrieved_tags);
+    }
+
+
+    #[test]
+    fn wallet_service_delete_tags_for_plugged() {
+        _cleanup();
+
+        let type_ = "type";
+        let name = "name";
+        let value = "value";
+        let new_value = "new_value";
+        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
+
+        let tag_names = vec!["tag_name_1", "~tag_name_3"];
+        wallet_service.delete_record_tags(wallet_handle, type_, name, &tag_names).unwrap();
+
+        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
+
+        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_2":"new_tag_value_2"}"#).unwrap();
+        let retrieved_tags = item.tags.unwrap();
+        assert_eq!(expected_tags, retrieved_tags);
+    }
+
+    #[test]
+    fn wallet_service_search_records_works() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.add_record(wallet_handle, "type", "key2", "value2", &HashMap::new()).unwrap();
+        wallet_service.add_record(wallet_handle, "type3", "key3", "value3", &HashMap::new()).unwrap();
+
+        let mut search = wallet_service.search_records(wallet_handle, "type3", "{}", &_fetch_options(true, true, true)).unwrap();
+
+        let record = search.fetch_next_record().unwrap().unwrap();
+        assert_eq!("value3", record.get_value().unwrap());
+        assert_eq!(HashMap::new(), record.get_tags().unwrap().clone());
+
+        assert!(search.fetch_next_record().unwrap().is_none());
+    }
+
+    #[test]
+    fn wallet_service_search_records_works_for_plugged_wallet() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        _register_inmem_wallet(&wallet_service);
+
+        wallet_service.create_wallet(&_config_inmem(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.add_record(wallet_handle, "type", "key2", "value2", &HashMap::new()).unwrap();
+        wallet_service.add_record(wallet_handle, "type3", "key3", "value3", &HashMap::new()).unwrap();
+
+        let mut search = wallet_service.search_records(wallet_handle, "type3", "{}", &_fetch_options(true, true, true)).unwrap();
+
+        let record = search.fetch_next_record().unwrap().unwrap();
+        assert_eq!("value3", record.get_value().unwrap());
+        assert_eq!(HashMap::new(), record.get_tags().unwrap().clone());
+
+        assert!(search.fetch_next_record().unwrap().is_none());
+    }
+
+    /**
+        Key rotation test
+    */
+    #[test]
+    fn wallet_service_key_rotation() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_rekey_credentials()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        // Access failed for old key
+        let res = wallet_service.open_wallet(&_config(), &_credentials());
+        assert_match!(Err(WalletError::AccessFailed(_)), res);
+
+        // Works ok with new key when reopening
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_for_new_key()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
+    }
+
+    #[test]
+    fn wallet_service_export_wallet_when_empty() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        let export_config = _export_config();
+        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
+
+        assert!(Path::new(&_export_file_path()).exists());
+    }
+
+    #[test]
+    fn wallet_service_export_wallet_1_item() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        let export_config = _export_config();
+        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
+        assert!(Path::new(&_export_file_path()).exists());
+    }
+
+    #[test]
+    fn wallet_service_export_wallet_returns_error_if_file_exists() {
+        _cleanup();
+
+        {
+            fs::create_dir_all(_export_file_path().parent().unwrap()).unwrap();
+            fs::File::create(_export_file_path()).unwrap();
+        }
+
+        assert!(_export_file_path().exists());
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        let res = wallet_service.export_wallet(wallet_handle, &_export_config(), 0);
+        assert_match!(Err(WalletError::CommonError(CommonError::IOError(_))), res);
+    }
+
+    #[test]
+    fn wallet_service_export_wallet_returns_error_if_wrong_handle() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        let res = wallet_service.export_wallet(wallet_handle + 1, &_export_config(), 0);
+        assert_match!(Err(WalletError::InvalidHandle(_)), res);
+        assert!(!_export_file_path().exists());
+    }
+
+    #[test]
+    fn wallet_service_export_import_wallet_1_item() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        wallet_service.export_wallet(wallet_handle, &_export_config(), 0).unwrap();
+        assert!(_export_file_path().exists());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+        wallet_service.delete_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.import_wallet(&_config(), &_credentials(), &_export_config()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+    }
+
+    #[test]
+    fn wallet_service_export_import_wallet_if_empty() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.export_wallet(wallet_handle, &_export_config(), 0).unwrap();
+        assert!(_export_file_path().exists());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+        wallet_service.delete_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.import_wallet(&_config(), &_credentials(), &_export_config()).unwrap();
+        wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_export_import_returns_error_if_path_missing() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+
+        let res = wallet_service.import_wallet(&_config(), &_credentials(), &_export_config());
+        assert_match!(Err(WalletError::CommonError(CommonError::IOError(_))), res);
+
+        let res = wallet_service.open_wallet(&_config(), &_credentials());
+        assert_match!(Err(_), res);
+    }
 
     fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
         json!({
@@ -705,24 +1529,24 @@ mod tests {
         }).to_string()
     }
 
-    fn _config(id: &str) -> String {
-        json!({"id": id}).to_string()
+    fn _config() -> String {
+        json!({"id": "w1"}).to_string()
     }
 
-    fn _config_default(id: &str) -> String {
-        json!({"id": id, "storage_type": "default"}).to_string()
+    fn _config_default() -> String {
+        json!({"id": "w1", "storage_type": "default"}).to_string()
     }
 
-    fn _config_inmem(id: &str) -> String {
-        json!({"id": id, "storage_type": "inmem"}).to_string()
+    fn _config_inmem() -> String {
+        json!({"id": "w1", "storage_type": "inmem"}).to_string()
     }
 
-    fn _config_unknown(id: &str) -> String {
-        json!({"id": id, "storage_type": "unknown"}).to_string()
+    fn _config_unknown() -> String {
+        json!({"id": "w1", "storage_type": "unknown"}).to_string()
     }
 
     fn _credentials() -> String {
-        json!({"key": "mykey"}).to_string()
+        json!({"key": "my_key"}).to_string()
     }
 
     fn _rekey_credentials() -> String {
@@ -731,6 +1555,19 @@ mod tests {
 
     fn _credentials_for_new_key() -> String {
         json!({"key": "my_new_key"}).to_string()
+    }
+
+    fn _export_file_path() -> PathBuf {
+        let mut path = EnvironmentUtils::tmp_file_path("export_tests");
+        path.push("export_test");
+        path
+    }
+
+    fn _export_config() -> String {
+        json!({
+            "path": _export_file_path().to_str().unwrap(),
+            "key": "export_key",
+        }).to_string()
     }
 
     fn _cleanup() {
@@ -768,826 +1605,5 @@ mod tests {
                 InmemWallet::free_search
             )
             .unwrap();
-    }
-
-    #[test]
-    fn wallet_service_new_works() {
-        WalletService::new();
-    }
-
-    #[test]
-    fn wallet_service_register_type_works() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-    }
-
-    #[test]
-    fn wallet_service_create_wallet_works() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config_default("w1"), &_credentials()).unwrap();
-    }
-
-    #[test]
-    fn wallet_service_create_works_for_plugged() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-    }
-
-    #[test]
-    fn wallet_service_create_wallet_works_for_none_type() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-    }
-
-    #[test]
-    fn wallet_service_create_wallet_works_for_unknown_type() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        let res = wallet_service.create_wallet(&_config_unknown("w1"), &_credentials());
-        assert_match!(Err(WalletError::UnknownType(_)), res);
-    }
-
-    #[test]
-    fn wallet_service_create_wallet_works_for_twice() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        let res = wallet_service.create_wallet(&_config("w1"), &_credentials());
-        assert_match!(Err(WalletError::AlreadyExists(_)), res);
-    }
-
-    #[test]
-    fn wallet_service_delete_wallet_works() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        wallet_service.delete_wallet(&_config("w1"), &_credentials()).unwrap();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-    }
-
-    #[test]
-    fn wallet_service_delete_works_for_plugged() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        wallet_service.delete_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-    }
-
-    #[test]
-    fn wallet_service_delete_wallet_returns_error_if_wallet_opened() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        let res = wallet_service.delete_wallet(&_config("w1"), &_credentials());
-
-        assert_match!(Err(WalletError::CommonError(CommonError::InvalidState(_))), res);
-    }
-
-    #[test]
-    fn wallet_service_open_wallet_works() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        // cleanup
-        wallet_service.close_wallet(handle).unwrap();
-    }
-
-    #[test]
-    fn wallet_service_open_unknown_wallet() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        let res = wallet_service.open_wallet(&_config("unknown"), &_credentials());
-        assert_match!(Err(WalletError::NotFound(_)), res);
-    }
-
-    #[test]
-    fn wallet_service_open_works_for_plugged() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-    }
-
-    #[test]
-    fn wallet_service_open_wallet_without_master_key_in_credentials_returns_error() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let res = wallet_service.open_wallet(&_config("w1"), "{}");
-        assert_match!(Err(WalletError::CommonError(_)), res);
-    }
-
-    #[test]
-    fn wallet_service_close_wallet_works() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-        wallet_service.close_wallet(wallet_handle).unwrap();
-
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-        wallet_service.close_wallet(wallet_handle).unwrap();
-    }
-
-    #[test]
-    fn wallet_service_close_works_for_plugged() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        wallet_service.close_wallet(wallet_handle).unwrap();
-
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        wallet_service.close_wallet(wallet_handle).unwrap();
-    }
-
-    #[test]
-    fn wallet_service_add_record_works() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
-    }
-
-    #[test]
-    fn wallet_service_add_record_works_for_plugged() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
-    }
-
-    #[test]
-    fn wallet_service_get_record_works_for_id_only() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
-
-        assert!(record.get_value().is_none());
-        assert!(record.get_type().is_none());
-        assert!(record.get_tags().is_none());
-    }
-
-    #[test]
-    fn wallet_service_get_record_works_for_plugged_for_id_only() {
-        TestUtils::cleanup_indy_home();
-        InmemWallet::cleanup();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
-
-        assert!(record.get_value().is_none());
-        assert!(record.get_type().is_none());
-        assert!(record.get_tags().is_none());
-    }
-
-    #[test]
-    fn wallet_service_get_record_works_for_id_value() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
-
-        assert_eq!("value1", record.get_value().unwrap());
-        assert!(record.get_type().is_none());
-        assert!(record.get_tags().is_none());
-    }
-
-    #[test]
-    fn wallet_service_get_record_works_for_plugged_for_id_value() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
-
-        assert_eq!("value1", record.get_value().unwrap());
-        assert!(record.get_type().is_none());
-        assert!(record.get_tags().is_none());
-    }
-
-    #[test]
-    fn wallet_service_get_record_works_for_all_fields() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-        let mut tags = HashMap::new();
-        tags.insert(String::from("1"), String::from("some"));
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &tags).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
-
-        assert_eq!("type", record.get_type().unwrap());
-        assert_eq!("value1", record.get_value().unwrap());
-        assert_eq!(&tags, record.get_tags().unwrap());
-    }
-
-    #[test]
-    fn wallet_service_get_record_works_for_plugged_for_for_all_fields() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let tags = serde_json::from_str(r#"{"1":"some"}"#).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &tags).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
-
-        assert_eq!("type", record.get_type().unwrap());
-        assert_eq!("value1", record.get_value().unwrap());
-        assert_eq!(tags, record.get_tags().unwrap().clone());
-    }
-
-    #[test]
-    fn wallet_service_add_get_works_for_reopen() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        wallet_service.close_wallet(wallet_handle).unwrap();
-
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
-        assert_eq!("value1", record.get_value().unwrap());
-    }
-
-    #[test]
-    fn wallet_service_get_works_for_unknown() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        let res = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false));
-
-        assert_match!(Err(WalletError::ItemNotFound), res);
-    }
-
-    #[test]
-    fn wallet_service_get_works_for_plugged_and_unknown() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-
-        let res = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false));
-        assert_match!(Err(WalletError::ItemNotFound), res);
-    }
-
-    /**
-     * Update tests
-    */
-    #[test]
-    fn wallet_service_update() {
-        _cleanup();
-
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let new_value = "new_value";
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
-        assert_eq!(value, record.get_value().unwrap());
-
-        wallet_service.update_record_value(wallet_handle, type_, name, new_value).unwrap();
-        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
-        assert_eq!(new_value, record.get_value().unwrap());
-    }
-
-    #[test]
-    fn wallet_service_update_for_plugged() {
-        _cleanup();
-
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let new_value = "new_value";
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
-        assert_eq!(value, record.get_value().unwrap());
-
-        wallet_service.update_record_value(wallet_handle, type_, name, new_value).unwrap();
-        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
-        assert_eq!(new_value, record.get_value().unwrap());
-    }
-
-    /**
-     * Delete tests
-    */
-    #[test]
-    fn wallet_service_delete_record() {
-        _cleanup();
-
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let new_value = "new_value";
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
-        assert_eq!(value, record.get_value().unwrap());
-
-        wallet_service.delete_record(wallet_handle, type_, name).unwrap();
-        let res = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false));
-        assert_match!(Err(WalletError::ItemNotFound), res);
-    }
-
-    #[test]
-    fn wallet_service_delete_record_for_plugged() {
-        _cleanup();
-
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let new_value = "new_value";
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
-        assert_eq!(value, record.get_value().unwrap());
-
-        wallet_service.delete_record(wallet_handle, type_, name).unwrap();
-        let res = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false));
-        assert_match!(Err(WalletError::ItemNotFound), res);
-    }
-
-    /**
-     * Add tags tests
-     */
-    #[test]
-    fn wallet_service_add_tags() {
-        _cleanup();
-
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1"}"#).unwrap();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
-
-        let new_tags = serde_json::from_str(r#"{"tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
-        wallet_service.add_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
-
-        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
-
-        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
-        let retrieved_tags = item.tags.unwrap();
-        assert_eq!(expected_tags, retrieved_tags);
-    }
-
-    #[test]
-    fn wallet_service_add_tags_for_plugged() {
-        _cleanup();
-
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let new_value = "new_value";
-        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1"}"#).unwrap();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
-
-        let new_tags = serde_json::from_str(r#"{"tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
-        wallet_service.add_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
-
-        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
-
-        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
-        let retrieved_tags = item.tags.unwrap();
-        assert_eq!(expected_tags, retrieved_tags);
-    }
-
-    /**
-     * Update tags tests
-     */
-    #[test]
-    fn wallet_service_update_tags() {
-        _cleanup();
-
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
-        let wallet_service = WalletService::new();
-
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
-
-        let new_tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
-
-        wallet_service.update_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
-        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
-        let retrieved_tags = item.tags.unwrap();
-        assert_eq!(new_tags, retrieved_tags);
-    }
-
-    #[test]
-    fn wallet_service_update_tags_for_plugged() {
-        _cleanup();
-
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let new_value = "new_value";
-        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
-        let wallet_service = WalletService::new();
-
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
-
-        let new_tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
-
-        wallet_service.update_record_tags(wallet_handle, type_, name, &new_tags).unwrap();
-
-        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
-        let retrieved_tags = item.tags.unwrap();
-        assert_eq!(new_tags, retrieved_tags);
-    }
-
-    /**
-     * Delete tags tests
-     */
-    #[test]
-    fn wallet_service_delete_tags() {
-        _cleanup();
-
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
-
-        let wallet_service = WalletService::new();
-
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
-
-        let tag_names = vec!["tag_name_1", "~tag_name_3"];
-        wallet_service.delete_record_tags(wallet_handle, type_, name, &tag_names).unwrap();
-
-        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
-
-        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_2":"new_tag_value_2"}"#).unwrap();
-        let retrieved_tags = item.tags.unwrap();
-        assert_eq!(expected_tags, retrieved_tags);
-    }
-
-
-    #[test]
-    fn wallet_service_delete_tags_for_plugged() {
-        _cleanup();
-
-        let type_ = "type";
-        let name = "name";
-        let value = "value";
-        let new_value = "new_value";
-        let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
-
-        let tag_names = vec!["tag_name_1", "~tag_name_3"];
-        wallet_service.delete_record_tags(wallet_handle, type_, name, &tag_names).unwrap();
-
-        let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
-
-        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_2":"new_tag_value_2"}"#).unwrap();
-        let retrieved_tags = item.tags.unwrap();
-        assert_eq!(expected_tags, retrieved_tags);
-    }
-
-    #[test]
-    fn wallet_service_search_records_works() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        wallet_service.add_record(wallet_handle, "type", "key2", "value2", &HashMap::new()).unwrap();
-        wallet_service.add_record(wallet_handle, "type3", "key3", "value3", &HashMap::new()).unwrap();
-
-        let mut search = wallet_service.search_records(wallet_handle, "type3", "{}", &_fetch_options(true, true, true)).unwrap();
-
-        let record = search.fetch_next_record().unwrap().unwrap();
-        assert_eq!("value3", record.get_value().unwrap());
-        assert_eq!(HashMap::new(), record.get_tags().unwrap().clone());
-
-        assert!(search.fetch_next_record().unwrap().is_none());
-    }
-
-    #[test]
-    fn wallet_service_search_records_works_for_plugged_wallet() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        _register_inmem_wallet(&wallet_service);
-
-        wallet_service.create_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        wallet_service.add_record(wallet_handle, "type", "key2", "value2", &HashMap::new()).unwrap();
-        wallet_service.add_record(wallet_handle, "type3", "key3", "value3", &HashMap::new()).unwrap();
-
-        let mut search = wallet_service.search_records(wallet_handle, "type3", "{}", &_fetch_options(true, true, true)).unwrap();
-
-        let record = search.fetch_next_record().unwrap().unwrap();
-        assert_eq!("value3", record.get_value().unwrap());
-        assert_eq!(HashMap::new(), record.get_tags().unwrap().clone());
-
-        assert!(search.fetch_next_record().unwrap().is_none());
-    }
-
-    /**
-        Key rotation test
-    */
-    #[test]
-    fn wallet_service_key_rotation() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
-        assert_eq!("type", record.get_type().unwrap());
-        assert_eq!("value1", record.get_value().unwrap());
-
-        wallet_service.close_wallet(wallet_handle).unwrap();
-
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_rekey_credentials()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
-        assert_eq!("type", record.get_type().unwrap());
-        assert_eq!("value1", record.get_value().unwrap());
-        wallet_service.close_wallet(wallet_handle).unwrap();
-
-        // Access failed for old key
-        let res = wallet_service.open_wallet(&_config("w1"), &_credentials());
-        assert_match!(Err(WalletError::AccessFailed(_)), res);
-
-        // Works ok with new key when reopening
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials_for_new_key()).unwrap();
-        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
-        assert_eq!("type", record.get_type().unwrap());
-        assert_eq!("value1", record.get_value().unwrap());
-    }
-
-    /**
-        Export/Import tests
-    */
-
-    fn _get_export_file_path() -> PathBuf {
-        let mut path = EnvironmentUtils::tmp_file_path("export_tests");
-        path.push("export_test");
-        path
-    }
-
-    fn _get_export_config() -> String {
-        let json = json!({
-            "path": _get_export_file_path().to_str().unwrap(),
-            "key": "export_key",
-        });
-        serde_json::to_string(&json).unwrap()
-    }
-
-    #[test]
-    fn wallet_service_export_wallet_when_empty() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        let export_config = _get_export_config();
-        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
-
-        assert!(Path::new(&_get_export_file_path()).exists());
-    }
-
-    #[test]
-    fn wallet_service_export_wallet_1_item() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
-
-        let export_config = _get_export_config();
-        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
-        assert!(Path::new(&_get_export_file_path()).exists());
-    }
-
-    #[test]
-    fn wallet_service_export_wallet_returns_error_if_file_exists() {
-        _cleanup();
-
-        let export_file_path = _get_export_file_path();
-        fs::File::create(Path::new(&export_file_path)).unwrap();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        let export_config = _get_export_config();
-        let res = wallet_service.export_wallet(wallet_handle, &export_config, 0);
-        assert_match!(Err(WalletError::CommonError(CommonError::IOError(_))), res);
-        assert!(Path::new(&_get_export_file_path()).exists());
-    }
-
-    #[test]
-    fn wallet_service_export_wallet_returns_error_if_wrong_handle() {
-        _cleanup();
-
-        let export_file_path = _get_export_file_path();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        let export_config = _get_export_config();
-        let res = wallet_service.export_wallet(wallet_handle + 1, &export_config, 0);
-        assert_match!(Err(WalletError::InvalidHandle(_)), res);
-        assert!(!Path::new(&_get_export_file_path()).exists());
-    }
-
-    #[test]
-    fn wallet_service_export_import_wallet_1_item() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
-        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
-
-        let export_config = _get_export_config();
-        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
-        assert!(Path::new(&_get_export_file_path()).exists());
-
-        wallet_service.close_wallet(wallet_handle).unwrap();
-        wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
-
-        wallet_service.import_wallet(&_config("w2"), &_credentials(), &export_config).unwrap();
-        let wallet_handle_2 = wallet_service.open_wallet(&_config("w2"), &_credentials()).unwrap();
-        wallet_service.get_record(wallet_handle_2, "type", "key1", "{}").unwrap();
-    }
-
-    #[test]
-    fn wallet_service_export_import_wallet_if_empty() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config("w1"), &_credentials()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-
-        let export_config = _get_export_config();
-        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
-        assert!(Path::new(&_get_export_file_path()).exists());
-
-        wallet_service.close_wallet(wallet_handle).unwrap();
-        wallet_service.delete_wallet("test_wallet", &_credentials()).unwrap();
-
-        wallet_service.import_wallet(&_config("w1"), &_credentials(), &export_config).unwrap();
-        wallet_service.open_wallet(&_config("w1"), &_credentials()).unwrap();
-    }
-
-    #[test]
-    fn wallet_service_export_import_returns_error_if_path_missing() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-
-        let export_config = _get_export_config();
-
-        let res = wallet_service.import_wallet(&_config("w1"), &_credentials(), &export_config);
-        assert_match!(Err(WalletError::CommonError(CommonError::IOError(_))), res);
-
-        let res = wallet_service.open_wallet(&_config("w1"), &_credentials());
-        assert_match!(Err(_), res);
     }
 }
