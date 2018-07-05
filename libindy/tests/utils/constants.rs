@@ -46,5 +46,5 @@ pub const REVOC_REG_TYPE: &'static str = "CL_ACCUM";
 pub const WALLET_CREDENTIALS: &'static str = r#"{"key":"key"}"#;
 pub const WALLET_CONFIG: &'static str = r#"{"id":"wallet_1"}"#;
 pub const DEFAULT_WALLET_CONFIG: &'static str = r#"{"id":"wallet_1","storage_type":"default"}"#;
-pub const INMEM_WALLET_CONFIG: &'static str = r#"{"id":"wallet_1","storage_type":"default"}"#;
+pub const INMEM_WALLET_CONFIG: &'static str = r#"{"id":"wallet_1","storage_type":"inmem"}"#;
 pub const UNKNOWN_WALLET_CONFIG: &'static str = r#"{"id":"wallet_1","storage_type":"unknown"}"#;

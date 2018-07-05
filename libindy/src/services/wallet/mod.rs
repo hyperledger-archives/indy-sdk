@@ -106,6 +106,10 @@ impl WalletService {
         let credentials: Credentials = serde_json::from_str(credentials)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize credentials: {:?}", err)))?;
 
+        if config.id.is_empty() {
+            Err(CommonError::InvalidStructure("Wallet id is empty".to_string()))?
+        }
+
         let storage_types = self.storage_types.borrow();
 
         let storage_type = {
@@ -220,6 +224,10 @@ impl WalletService {
 
         let credentials: Credentials = serde_json::from_str(credentials)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize credentials: {:?}", err)))?;
+
+        if config.id.is_empty() {
+            Err(CommonError::InvalidStructure("Wallet id is empty".to_string()))?
+        }
 
         if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == config.id) {
             Err(WalletError::AlreadyOpened(config.id.clone()))?
@@ -510,18 +518,23 @@ impl WalletService {
         self.create_wallet(config, credentials)?;
         let wallet_handle = self.open_wallet(config, credentials)?;
 
-        {
+        let res = {
             // to finish self.wallets borrowing
             let wallets = self.wallets.borrow();
             let wallet = wallets
                 .get(&wallet_handle)
                 .ok_or(WalletError::InvalidHandle(wallet_handle.to_string()))?; // This should never happen
 
-            import(wallet, &mut export_file, &export_config.key)?;
-        }
+            import(wallet, &mut export_file, &export_config.key)
+        };
 
         self.close_wallet(wallet_handle)?;
-        Ok(())
+
+        if res.is_err() {
+            self.delete_wallet(config, credentials)?;
+        }
+
+        res
     }
 
     pub const PREFIX: &'static str = "Indy";

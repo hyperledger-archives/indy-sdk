@@ -172,9 +172,9 @@ mod high_cases {
             InmemWallet::cleanup();
 
             WalletUtils::register_wallet_storage(INMEM_TYPE, false).unwrap();
-            WalletUtils::open_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            WalletUtils::create_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             WalletUtils::delete_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            WalletUtils::open_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            WalletUtils::create_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             TestUtils::cleanup_storage();
             InmemWallet::cleanup();
@@ -222,8 +222,8 @@ mod high_cases {
             InmemWallet::cleanup();
 
             WalletUtils::register_wallet_storage(INMEM_TYPE, false).unwrap();
-            WalletUtils::open_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            WalletUtils::create_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
@@ -256,12 +256,12 @@ mod high_cases {
             InmemWallet::cleanup();
 
             WalletUtils::register_wallet_storage(INMEM_TYPE, false).unwrap();
-            WalletUtils::open_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            WalletUtils::create_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            let wallet_handle = WalletUtils::open_wallet(INMEM_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
             TestUtils::cleanup_storage();
@@ -389,7 +389,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = WalletUtils::create_wallet(WALLET_CONFIG, r#"{}"#);
-            assert_eq!(res.unwrap_err(), ErrorCode::WalletInputError);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             TestUtils::cleanup_storage();
         }
@@ -399,7 +399,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = WalletUtils::create_wallet(r#"{"id": ""}"#, WALLET_CREDENTIALS);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidParam3);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             TestUtils::cleanup_storage();
         }
@@ -657,11 +657,10 @@ mod medium_cases {
             WalletUtils::close_wallet(wallet_handle).unwrap();
             WalletUtils::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let json = json!({
+            let config_json = json!({
                 "path": path.to_str().unwrap(),
                 "key": "other_key",
-            });
-            let config_json = serde_json::to_string(&json).unwrap();
+            }).to_string();
 
             let res = WalletUtils::import_wallet(WALLET_CONFIG, WALLET_CREDENTIALS, &config_json);
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
