@@ -53,6 +53,7 @@ impl Networker for ZMQNetworker {
             Some(NetworkerEvent::SendAllRequest(_, req_id)) | Some(NetworkerEvent::SendOneRequest(_, req_id)) | Some(NetworkerEvent::Resend(req_id)) => {
                 trace!("current mappings: {:?}", self.req_id_mappings);
                 let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
+                    // TODO simplify: we can check only last connection as others are already full  or in-active
                     self.req_id_mappings.values()
                         .fold(HashMap::new(), |mut acc, pc_id| {
                             *acc.entry(pc_id).or_insert(0) += 1;
@@ -87,32 +88,42 @@ impl Networker for ZMQNetworker {
             }
             Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)) => {
                 self.req_id_mappings.get(&req_id).map(
-                    |idx| {self.pool_connections.get(idx).map(
-                        |pc| {pc.extend_timeout(&req_id, &node_alias);}
-                    );}
+                    |idx| {
+                        self.pool_connections.get(idx).map(
+                            |pc| { pc.extend_timeout(&req_id, &node_alias); }
+                        );
+                    }
                 );
                 None
             }
             Some(NetworkerEvent::CleanTimeout(req_id, node_alias)) => {
-                let idx_pc_to_delete = self.req_id_mappings.get(&req_id).and_then(
-                    |idx| {
-                        let delete = self.pool_connections.get(idx).map(
-                            |pc| {
-                                pc.clean_timeout(&req_id, node_alias);
-                                pc.is_orphaned()
-                            }
-                        ).unwrap_or(false);
+                {
+                    let idx_pc_to_delete = self.req_id_mappings.get(&req_id).and_then(
+                        |idx| {
+                            let delete = self.pool_connections.get(idx).map(
+                                |pc| {
+                                    pc.clean_timeout(&req_id, node_alias.clone());
+                                    pc.is_orphaned()
+                                }
+                            ).unwrap_or(false);
 
-                        if delete {
-                            Some(idx)
-                        } else {
-                            None
+                            if delete {
+                                Some(idx)
+                            } else {
+                                None
+                            }
                         }
+                    );
+                    if let Some(idx) = idx_pc_to_delete {
+                        trace!("removing pool connection {}", idx);
+                        self.pool_connections.remove(idx);
                     }
-                );
-                if let Some(idx) = idx_pc_to_delete {
-                    self.pool_connections.remove(idx);
                 }
+
+                if node_alias.is_none() {
+                    self.req_id_mappings.remove(&req_id);
+                }
+
                 None
             }
             Some(NetworkerEvent::Timeout) => {
@@ -121,6 +132,7 @@ impl Networker for ZMQNetworker {
                     .map(|(k, _)| *k)
                     .collect();
                 pc_to_delete.iter().for_each(|idx| {
+                    trace!("removing pool connection {}", idx);
                     self.pool_connections.remove(idx);
                 });
                 None
@@ -228,6 +240,7 @@ impl PoolConnection {
                     //TODO: FIXME: We can collect consensus just walking through if we are not collecting node aliases on the upper layer.
                     Some((*cnt % self.nodes.len(), req.clone()))
                 } else {
+                    error!("Unknown req_id for resending {}", req_id); //FIXME handle at RH level
                     None
                 };
                 if let Some((idx, req)) = resend {

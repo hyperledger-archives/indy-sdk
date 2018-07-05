@@ -471,17 +471,17 @@ impl<T: Networker> RequestSMWrapper<T> {
                             };
 
                             if cnt > request.f || _check_state_proof(&result, request.f, &request.generator, &request.nodes, &raw_msg) {
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias.clone()))));
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 _send_ok_replies(&request.cmd_ids, &raw_msg);
                                 (RequestSMWrapper::Finish(request.into()), None)
                             } else {
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id.clone(), Some(node_alias))));
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                                 (RequestSMWrapper::Single(request), None)
                             }
                         } else {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id.clone(), Some(node_alias))));
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
+                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestSMWrapper::Single(request), None)
                         }
                     }
@@ -500,8 +500,8 @@ impl<T: Networker> RequestSMWrapper<T> {
                         }
                     }
                     RequestEvent::Timeout(req_id, node_alias) => {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id.clone(), Some(node_alias))));
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id)));
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                         (RequestSMWrapper::Single(request), None)
                     }
                     RequestEvent::Terminate => {
@@ -555,15 +555,15 @@ impl<T: Networker> RequestSMWrapper<T> {
                                 (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced(merkle)))
                             },
                             Err(_) => {
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(request.state.req_id.clone(), None)));
                                 request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(request.state.req_id.clone())));
+                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(request.state.req_id.clone(), None)));
                                 (RequestSMWrapper::CatchupSingle(request), None)
                             }
                         }
                     }
                     RequestEvent::Timeout(req_id, node_alias) => {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                         request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(request.state.req_id.clone())));
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                         (RequestSMWrapper::CatchupSingle(request), None)
                     }
                     RequestEvent::Terminate => {
