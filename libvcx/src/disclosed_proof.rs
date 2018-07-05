@@ -409,7 +409,7 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
                                                               &agent_vk).map_err(|ec| ProofError::CommonError(ec))?;
 
     if message.msg_type.eq("proofReq") {
-        let msg_data = match message.payload {
+        let (_, msg_data) = match message.payload {
             Some(ref data) => {
                 let data = to_u8(data);
                 crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice()).map_err(|ec| ProofError::CommonError(ec))?
@@ -448,7 +448,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
         if msg.sender_did.eq(&my_did){ continue; }
 
         if msg.msg_type.eq("proofReq") {
-            let msg_data = match msg.payload {
+            let (_, msg_data) = match msg.payload {
                 Some(ref data) => {
                     let data = to_u8(data);
                     crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice())

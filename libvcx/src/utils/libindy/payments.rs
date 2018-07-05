@@ -412,7 +412,7 @@ pub mod tests {
         println!("{}", fees);
         assert!(fees.contains(r#""101":2"#));
         assert!(fees.contains(r#""1":1"#));
-        tests::cleanup_dev_env(name);
+        ::utils::devsetup::tests::cleanup_dev_env(name);
     }
 
     #[test]

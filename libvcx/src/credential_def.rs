@@ -6,7 +6,6 @@ use utils::error;
 use settings;
 use schema::LedgerSchema;
 use utils::constants::{ CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE };
-use utils::libindy::SigTypes;
 use utils::libindy::payments::{pay_for_txn, PaymentTxn};
 use utils::libindy::anoncreds::{libindy_create_and_store_credential_def};
 use utils::libindy::ledger::{libindy_submit_request,
@@ -80,7 +79,7 @@ pub fn create_new_credentialdef(source_id: String,
     let (id, payment_txn) = _create_and_store_credential_def( &issuer_did,
                                                    &schema_json,
                                                    &tag,
-                                                   Some(SigTypes::CL),
+                                                   None,
                                                    &config_json)?;
 
     let new_cred_def = CredentialDef {
@@ -100,7 +99,7 @@ pub fn create_new_credentialdef(source_id: String,
 fn _create_and_store_credential_def(issuer_did: &str,
                                    schema_json: &str,
                                    tag: &str,
-                                   sig_type: Option<SigTypes>,
+                                   sig_type: Option<&str>,
                                    config_json: &str) -> Result<(String, Option<PaymentTxn>), CredDefError> {
     if settings::test_indy_mode_enabled() {
         return Ok((CRED_DEF_ID.to_string(), Some(PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"paymentAddress":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap())));
@@ -219,7 +218,6 @@ pub mod tests {
     #[test]
     fn test_get_cred_def() {
         set_default_and_enable_test_mode();
-        let sig_type = Some(SigTypes::CL);
 
         let (id, cred_def_json) = retrieve_credential_def(CRED_DEF_ID).unwrap();
         assert_eq!(&id, CRED_DEF_ID);
@@ -258,7 +256,6 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_create_credential_def_real";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        ::utils::libindy::payments::tests::token_setup(None, None);
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
@@ -283,7 +280,7 @@ pub mod tests {
         assert!(init_wallet("test_credential_def").unwrap() > 0);
         let wallet_handle = get_wallet_handle();
         let config = r#"{"support_revocation":false}"#;
-        let (id, _) = _create_and_store_credential_def(SCHEMAS_JSON, ISSUER_DID, "tag_1",Some(SigTypes::CL), config).unwrap();
+        let (id, _) = _create_and_store_credential_def(SCHEMAS_JSON, ISSUER_DID, "tag_1",None, config).unwrap();
         delete_wallet("test_credential_def").unwrap();
         assert_eq!(id, CRED_DEF_ID);
     }
@@ -294,9 +291,16 @@ pub mod tests {
         let wallet_name = "a_test_wallet";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         let wallet_handle = get_wallet_handle();
-        let (schema_id, _, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
-
+        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
         let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+
+        let handle = create_new_credentialdef("1".to_string(),
+                                              "name".to_string(),
+                                              my_did.clone(),
+                                              schema_id.clone(),
+                                              "tag_1".to_string(),
+                                              r#"{"support_revocation":false}"#.to_string()).unwrap();
+
         let rc = create_new_credentialdef("1".to_string(),
                                           "name".to_string(),
                                           my_did,

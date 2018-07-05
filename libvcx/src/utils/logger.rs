@@ -8,6 +8,7 @@ extern crate android_logger;
 use settings;
 use std::sync::{Once, ONCE_INIT};
 use std::env;
+#[allow(unused_imports)]
 use self::log::{Level};
 #[cfg(target_os = "android")]
 use self::android_logger::Filter;
@@ -79,8 +80,6 @@ impl LoggerUtils {
             }
         });
     }
-
-
 }
 
 #[cfg(test)]

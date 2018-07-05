@@ -9,8 +9,38 @@ use utils::error;
 use utils::error::error_string;
 use error::ToErrorCode;
 use utils::libindy::payments::{pay_a_payee, get_wallet_token_info, create_address};
-use utils::libindy::wallet::{export, import, indy_add_wallet_record, indy_get_wallet_record, indy_update_wallet_record_value, indy_delete_wallet_record, get_wallet_handle};
+use utils::libindy::wallet::{export, import, get_wallet_handle};
 use std::path::Path;
+
+extern {
+    pub fn indy_add_wallet_record(command_handle: i32,
+                                  wallet_handle: i32,
+                                  type_: *const c_char,
+                                  id: *const c_char,
+                                  value: *const c_char,
+                                  tags_json: *const c_char,
+                                  cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
+
+    pub fn indy_get_wallet_record(command_handle: i32,
+                                  wallet_handle: i32,
+                                  type_: *const c_char,
+                                  id: *const c_char,
+                                  options_json: *const c_char,
+                                  cb: Option<extern fn(command_handle_: i32, err: i32, record_json: *const c_char)>) -> i32;
+
+    pub fn indy_update_wallet_record_value(command_handle: i32,
+                                           wallet_handle: i32,
+                                           type_: *const c_char,
+                                           id: *const c_char,
+                                           value: *const c_char,
+                                           cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
+
+    pub fn indy_delete_wallet_record(command_handle: i32,
+                                     wallet_handle: i32,
+                                     type_: *const c_char,
+                                     id: *const c_char,
+                                     cb: Option<extern fn(command_handle_: i32, err: i32)>) -> i32;
+}
 
 /// Get the total balance from all addresses contained in the configured wallet
 ///

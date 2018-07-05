@@ -81,8 +81,6 @@ impl UpdateProfileData{
     }
 
     pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
-        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
-
         let data = match self.msgpack() {
             Ok(x) => x,
             Err(x) => return Err(x),
@@ -91,7 +89,7 @@ impl UpdateProfileData{
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(UPDATE_PROFILE_RESPONSE.to_vec()); }
 
         let mut result = Vec::new();
-        match httpclient::post_u8(&data, &url) {
+        match httpclient::post_u8(&data) {
             Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
             Ok(response) => {
                 let response = parse_update_profile_response(response)?;
@@ -147,7 +145,7 @@ mod tests {
     use super::*;
     use messages::update_data;
     use utils::libindy::wallet;
-    use utils::libindy::signus::SignusUtils;
+    use utils::libindy::signus::create_and_store_my_did;
 
     #[test]
     fn test_update_data_post() {
@@ -170,9 +168,9 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let my_wallet = wallet::init_wallet("garbage").unwrap();
 
-        let (agent_did, agent_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = SignusUtils::create_and_store_my_did(my_wallet, Some(MY3_SEED)).unwrap();
+        let (agent_did, agent_vk) = create_and_store_my_did(my_wallet, Some(MY2_SEED)).unwrap();
+        let (my_did, my_vk) = create_and_store_my_did(my_wallet, Some(MY1_SEED)).unwrap();
+        let (agency_did, agency_vk) = create_and_store_my_did(my_wallet, Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);

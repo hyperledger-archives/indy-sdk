@@ -75,42 +75,12 @@ mod tests {
     #[test]
     fn test_real_proof() {
         settings::set_defaults();
-        //BE INSTITUTION AND GENERATE INVITE FOR CONSUMER
 	    setup_local_env("test_real_proof");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let alice = connection::build_connection("alice").unwrap();
-        connection::connect(alice, Some("{}".to_string())).unwrap();
-        let details = connection::get_invite_details(alice, false).unwrap();
-        println!("sending connection invite");
-        //BE CONSUMER AND ACCEPT INVITE FROM INSTITUTION
-        set_consumer();
-        let faber = connection::build_connection_with_invite("faber", &details).unwrap();
-        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, connection::get_state(faber));
-        assert_eq!(VcxStateType::VcxStateOfferSent as u32, connection::get_state(alice));
-        connection::connect(faber, Some("{}".to_string())).unwrap();
-        println!("accepting connection invite");
-        //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
-        set_institution();
-        thread::sleep(Duration::from_millis(2000));
-        connection::update_state(alice).unwrap();
-        assert_eq!(VcxStateType::VcxStateAccepted as u32, connection::get_state(alice));
+        let (faber, alice) = ::connection::tests::create_connected_connections();
         // AS INSTITUTION SEND CREDENTIAL OFFER
         println!("creating schema/credential_def and paying fees");
-        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
-        let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
-        let schema_version: String = format!("{}.{}",rand::thread_rng().gen::<u32>().to_string(),
-                                             rand::thread_rng().gen::<u32>().to_string());
-        let schema = ::schema::create_new_schema("id", institution_did.clone(), schema_name.clone(),schema_version, data).unwrap();
-        let schema_id = ::schema::get_schema_id(schema).unwrap();
-
-        let handle = ::credential_def::create_new_credentialdef("1".to_string(),
-                                                  schema_name,
-                                                  institution_did.clone(),
-                                                  schema_id.clone(),
-                                                  "tag_1".to_string(),
-                                                  r#"{"support_revocation":false}"#.to_string()).unwrap();
-
-        let cred_def_id = ::credential_def::get_cred_def_id(handle).unwrap();
+        let (schema_id, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
         let credential_offer = issuer_credential::issuer_credential_create(cred_def_id.clone(),
                                                             "1".to_string(),

@@ -222,7 +222,7 @@ pub fn unbundle_from_agency(message: Vec<u8>) -> Result<Vec<Vec<u8>>, u32> {
 
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
 
-    let data = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &message[..])?;
+    let (_, data) = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &message[..])?;
 
     debug!("deserializing {:?}", data);
     let bundle:Bundled<Vec<u8>> = bundle_from_u8(data)?;

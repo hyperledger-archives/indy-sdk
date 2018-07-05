@@ -15,8 +15,7 @@ describe('Connection:', () => {
       await connectionCreate()
     })
 
-    // TODO: Enable me once https://evernym.atlassian.net/browse/EN-662 is resolved
-    it.skip('success: parallel', async () => {
+    it('success: parallel', async () => {
       const numConnections = 50
       const data = dataConnectionCreate()
       await Promise.all(new Array(numConnections).fill(0).map(() => connectionCreate(data)))

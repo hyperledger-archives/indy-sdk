@@ -72,7 +72,6 @@ impl DeleteConnection {
         }
     }
     pub fn send_secure(&mut self) -> Result<Vec<String>, u32> {
-        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
         let data = match self.msgpack() {
             Ok(x) => x,
             Err(x) => return Err(x),
@@ -81,7 +80,7 @@ impl DeleteConnection {
         if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(DELETE_CONNECTION_RESPONSE.to_vec()); }
 
         let mut result = Vec::new();
-        match httpclient::post_u8(&data, &url) {
+        match httpclient::post_u8(&data) {
             Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
             Ok(response) => {
                 let response = self.parse_response_as_delete_connection_payload(&response)?;
