@@ -56,9 +56,7 @@ pub const MY2_SEED: &'static str = "00000000000000000000000000000My2";
 pub const MY3_SEED: &'static str = "00000000000000000000000000000My3";
 #[cfg(test)]
 pub const MY4_SEED: &'static str = "00000000000000000000000000000My4";
-#[cfg(test)]
 pub const DID: &'static str = "FhrSrYtQcw3p9xwf7NYemf";
-#[cfg(test)]
 pub const VERKEY: &'static str = "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE";
 #[cfg(test)]
 pub static INDY_PROOF_REQ_JSON: &str = r#"{ "nonce":"123432421212", "name":"proof_req_1", "version":"0.1", "requested_attributes":{ "attr1_referent":{ "name":"name" }, "attr2_referent":{ "name":"sex" }, "attr3_referent":{"name":"phone"} }, "requested_predicates":{ "predicate1_referent":{"name":"age","p_type":">=","p_value":18} } }"#;

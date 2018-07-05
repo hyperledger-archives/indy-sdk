@@ -6,7 +6,7 @@ extern crate libc;
 
 use utils::libindy::wallet;
 use utils::error;
-use utils::libindy::signus::SignusUtils;
+use utils::libindy::signus::create_and_store_my_did;
 use utils::libindy::crypto;
 use utils::json::mapped_key_rewrite;
 use api::VcxStateType;
@@ -409,7 +409,7 @@ fn create_connection(source_id: &str) -> Result<u32, ConnectionError> {
 }
 
 fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
-    let (my_did, my_verkey) = match SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(),None) {
+    let (my_did, my_verkey) = match create_and_store_my_did(wallet::get_wallet_handle(),None) {
         Ok(y) => y,
         Err(x) => {
             error!("could not create DID/VK: {}", x);
@@ -492,8 +492,8 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<Sender
 
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
     let payload = messages::to_u8(message.payload.as_ref().unwrap());
-    // TODO: Refactor Error
-    let payload = crypto::parse_msg(wallet::get_wallet_handle(),&my_vk,&payload).map_err(|e| {ConnectionError::CommonError(e)})?;
+    // TODO: check returned verkey
+    let (_, payload) = crypto::parse_msg(wallet::get_wallet_handle(),&my_vk,&payload).map_err(|e| {ConnectionError::CommonError(e)})?;
 
     trace!("deserializing GetMsgResponse: {:?}", payload);
 
@@ -747,7 +747,7 @@ fn unabbrv_event_detail(val: Value) -> Result<Value, u32> {
 
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use utils::constants::*;
     use utils::httpclient;
     use messages::get_message::*;
@@ -756,6 +756,25 @@ mod tests {
     use utils::constants::INVITE_DETAIL_STRING;
     use super::*;
     use rand::Rng;
+
+    pub fn create_connected_connections() -> (u32, u32) {
+        let alice = build_connection("alice").unwrap();
+        connect(alice, Some("{}".to_string())).unwrap();
+        let details = get_invite_details(alice, false).unwrap();
+        println!("sending connection invite");
+        //BE CONSUMER AND ACCEPT INVITE FROM INSTITUTION
+        ::utils::devsetup::tests::set_consumer();
+        let faber = build_connection_with_invite("faber", &details).unwrap();
+        assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(faber));
+        connect(faber, Some("{}".to_string())).unwrap();
+        println!("accepting connection invite");
+        //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
+        ::utils::devsetup::tests::set_institution();
+        thread::sleep(Duration::from_millis(2000));
+        update_state(alice).unwrap();
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(alice));
+        (faber, alice)
+    }
 
     #[test]
     fn test_build_connection(){
@@ -1147,5 +1166,4 @@ mod tests {
         assert_eq!(set_invite_details(1, details).err(), Some(ConnectionError::InvalidHandle()));
         assert_eq!(set_pw_verkey(1, "blah").err(), Some(ConnectionError::InvalidHandle()));
     }
-
 }

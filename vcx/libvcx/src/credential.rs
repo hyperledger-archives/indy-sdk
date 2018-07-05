@@ -191,7 +191,7 @@ impl Credential {
                 match msg.payload {
                     Some(ref data) => {
                         let data = to_u8(data);
-                        let data = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice())?;
+                        let (_, data) = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice())?;
 
                         let credential = extract_json_payload(&data)?;
 
@@ -419,7 +419,7 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<
                                                               &agent_vk).map_err(|ec| CredentialError::CommonError(ec))?;
 
     if message.msg_type.eq("credOffer") {
-        let msg_data = match message.payload {
+        let (_, msg_data) = match message.payload {
             Some(ref data) => {
                 let data = to_u8(data);
                 crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice()).map_err(|ec| CredentialError::CommonError(ec))?
@@ -458,7 +458,7 @@ pub fn get_credential_offer_messages(connection_handle: u32, match_name: Option<
 
     for msg in payload {
         if msg.msg_type.eq("credOffer") {
-            let msg_data = match msg.payload {
+            let (_, msg_data) = match msg.payload {
                 Some(ref data) => {
                     let data = to_u8(data);
                     crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice()).map_err(|ec| CredentialError::CommonError(ec))?
@@ -685,7 +685,7 @@ pub mod tests {
     fn test_pay_for_credential_with_sufficient_funds() {
         use utils::devsetup;
         let test_name = "test_pay_for_credential_with_sufficient_funds";
-        tests::setup_ledger_env(test_name);
+        devsetup::tests::setup_ledger_env(test_name);
         let cred = create_credential_with_price(25);
         assert!(cred.is_payment_required());
         let payment = serde_json::to_string(&cred.submit_payment().unwrap().0).unwrap();
@@ -711,6 +711,7 @@ pub mod tests {
     #[test]
     fn test_pay_for_credential_with_insufficient_funds() {
         use utils::devsetup;
+        use error::payment::PaymentError;
         let test_name = "test_pay_for_credential_with_insufficient_funds";
         devsetup::tests::setup_ledger_env(test_name);
         let cred = create_credential_with_price(10000000000);

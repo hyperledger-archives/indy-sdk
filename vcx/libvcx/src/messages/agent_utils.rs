@@ -9,7 +9,7 @@ use settings;
 use utils::constants::*;
 use utils::error;
 use utils::libindy::wallet;
-use utils::libindy::signus::SignusUtils;
+use utils::libindy::signus::create_and_store_my_did;
 use utils::httpclient;
 use messages::{Bundled, MsgType, bundle_for_agency, unbundle_from_agency};
 
@@ -73,6 +73,7 @@ pub fn connect_register_provision(endpoint: &str,
                                   logo: Option<String>,
                                   path: Option<String>) -> Result<String,u32> {
 
+    trace!("***Registering with agency");
     let (wallet_name_string, wallet_name) = match wallet_name {
         Some(x) => (format!("\"wallet_name\":\"{}\",", x), x),
         None => ("".to_string(), settings::DEFAULT_WALLET_NAME.to_string()),
@@ -86,6 +87,7 @@ pub fn connect_register_provision(endpoint: &str,
     settings::set_config_value(settings::CONFIG_WALLET_KEY, &wallet_key);
 
     wallet::init_wallet(&wallet_name)?;
+    trace!("initialized wallet");
 
     match ::utils::libindy::anoncreds::libindy_prover_create_master_secret(::settings::DEFAULT_LINK_SECRET_ALIAS) {
         Ok(_) => (),
@@ -113,7 +115,7 @@ pub fn connect_register_provision(endpoint: &str,
     };
 
     let seed_opt = if seed.len() > 0 {Some(seed.as_ref())} else {None};
-    let (my_did, my_vk) = SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), seed_opt)?;
+    let (my_did, my_vk) = create_and_store_my_did(wallet::get_wallet_handle(), seed_opt)?;
 
     let issuer_seed = match issuer_seed {
         Some(x) => x,
@@ -121,7 +123,7 @@ pub fn connect_register_provision(endpoint: &str,
     };
 
     let issuer_seed_opt = if issuer_seed.len() > 0 {Some(issuer_seed.as_ref())} else {None};
-    let (issuer_did, issuer_vk) = SignusUtils::create_and_store_my_did(wallet::get_wallet_handle(), issuer_seed_opt)?;
+    let (issuer_did, issuer_vk) = create_and_store_my_did(wallet::get_wallet_handle(), issuer_seed_opt)?;
 
     settings::set_config_value(settings::CONFIG_INSTITUTION_DID,&my_did);
     settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY,&my_vk);
@@ -134,7 +136,7 @@ pub fn connect_register_provision(endpoint: &str,
 
     /* STEP 1 - CONNECT */
 
-    let url = format!("{}/agency/msg", endpoint);
+    trace!("Connecting to Agency");
     let payload = ConnectMsg {
         msg_type: MsgType { name: "CONNECT".to_string(), ver: "1.0".to_string(), },
         from_did: my_did.to_string(),
@@ -142,7 +144,7 @@ pub fn connect_register_provision(endpoint: &str,
     };
     let data = Bundled::create(encode::to_vec_named(&payload).unwrap()).encode()?;
     let data = bundle_for_agency(data, &agency_did)?;
-    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
+    let data = unbundle_from_agency(httpclient::post_u8(&data).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
 
     trace!("deserializing connect response: {:?}", data);
     let mut de = Deserializer::new(&data[0][..]);
@@ -162,7 +164,7 @@ pub fn connect_register_provision(endpoint: &str,
     let data = encode::to_vec_named(&payload).unwrap();
     let data = Bundled::create(data).encode().unwrap();
     let data = bundle_for_agency(data, &agency_pw_did)?;
-    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
+    let data = unbundle_from_agency(httpclient::post_u8(&data).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
 
     trace!("deserializing register response: {:?}", data);
     let mut de = Deserializer::new(&data[0][..]);
@@ -176,7 +178,7 @@ pub fn connect_register_provision(endpoint: &str,
     let data = encode::to_vec_named(&payload).unwrap();
     let data = Bundled::create(data).encode().unwrap();
     let data = bundle_for_agency(data, &agency_pw_did)?;
-    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
+    let data = unbundle_from_agency(httpclient::post_u8(&data).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
 
     trace!("deserializing provision response: {:?}", data);
     let mut de = Deserializer::new(&data[0][..]);
@@ -232,12 +234,11 @@ pub fn update_agent_info(id: &str, value: &str) -> Result<(), u32> {
 
     let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
     let endpoint = settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT)?;
-    let url = format!("{}/agency/msg", endpoint);
 
     let data = encode::to_vec_named(&new_config).unwrap();
     let data = Bundled::create(data).encode().unwrap();
     let data = bundle_for_agency(data, &to_did)?;
-    let data = unbundle_from_agency(httpclient::post_u8(&data,&url).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
+    let data = unbundle_from_agency(httpclient::post_u8(&data).map_err(|e|error::INVALID_HTTP_RESPONSE.code_num).unwrap())?;
 
     Ok(())
 }

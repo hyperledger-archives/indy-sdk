@@ -71,14 +71,12 @@ impl GetMessages{
     }
 
     pub fn send_secure(&mut self) -> Result<Vec<Message>, u32> {
-        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
-
         let data = match self.msgpack() {
             Ok(x) => x,
             Err(x) => return Err(x),
         };
 
-        match httpclient::post_u8(&data, &url) {
+        match httpclient::post_u8(&data) {
             Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
             Ok(response) => if settings::test_agency_mode_enabled() && response.len() == 0 {
                 return Ok(Vec::new());
@@ -249,7 +247,9 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     // this will work for both credReq and proof types
     if message.status_code == MessagePending.as_string() && !message.payload.is_none() {
         let data = to_u8(message.payload.as_ref().unwrap());
-        crypto::parse_msg(wallet::get_wallet_handle(), &pw_vk, &data)
+	// TOD: check returned verkey
+        let (_, msg) = crypto::parse_msg(wallet::get_wallet_handle(), &pw_vk, &data)?;
+	Ok(msg)
     }
     else {
         Err(error::INVALID_HTTP_RESPONSE.code_num)
