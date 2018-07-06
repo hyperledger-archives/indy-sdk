@@ -1,43 +1,41 @@
 extern crate sodiumoxide;
 extern crate libc;
 extern crate errno;
+extern crate serde;
 
 use errors::common::CommonError;
 
 use self::sodiumoxide::crypto::pwhash;
 use self::libc::{size_t, c_ulonglong, c_int};
 
-pub struct PwhashArgon2i13 {}
+pub const SALTBYTES: usize = pwhash::SALTBYTES;
 
-impl PwhashArgon2i13 {
-    pub const SALTBYTES: usize = pwhash::SALTBYTES;
+sodium_type!(Salt, pwhash::Salt, SALTBYTES);
 
-    pub fn gen_salt() -> [u8; pwhash::SALTBYTES] {
-        let pwhash::Salt(salt) = pwhash::gen_salt();
-        salt
-    }
+pub fn gen_salt() -> Salt {
+    Salt(pwhash::gen_salt())
+}
 
-    pub fn derive_key<'a>(key: &'a mut [u8], passwd: &[u8], salt: &[u8; pwhash::SALTBYTES]) -> Result<&'a [u8], CommonError> {
-        let opslimit = unsafe { crypto_pwhash_opslimit_moderate() };
-        let memlimit = unsafe { crypto_pwhash_memlimit_moderate() };
-        let alg = unsafe { crypto_pwhash_alg_argon2i13() };
+pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt) -> Result<&'a [u8], CommonError> {
+    let opslimit = unsafe { crypto_pwhash_opslimit_moderate() };
+    let memlimit = unsafe { crypto_pwhash_memlimit_moderate() };
+    let alg = unsafe { crypto_pwhash_alg_argon2i13() };
 
-        let res = unsafe {
-            crypto_pwhash(key.as_mut_ptr(),
-                          key.len() as c_ulonglong,
-                          passwd.as_ptr(),
-                          passwd.len() as c_ulonglong,
-                          salt,
-                          opslimit as c_ulonglong,
-                          memlimit,
-                          alg)
-        };
+    let res = unsafe {
+        crypto_pwhash(key.as_mut_ptr(),
+                      key.len() as c_ulonglong,
+                      passwd.as_ptr(),
+                      passwd.len() as c_ulonglong,
+                      (salt.0).0.as_ptr(),
+                      opslimit as c_ulonglong,
+                      memlimit,
+                      alg)
+    };
 
-        if res == 0 {
-            Ok(key)
-        } else {
-            Err(CommonError::InvalidStructure(format!("{:?}", errno::errno())))
-        }
+    if res == 0 {
+        Ok(key)
+    } else {
+        Err(CommonError::InvalidStructure(format!("{:?}", errno::errno())))
     }
 }
 
@@ -50,7 +48,7 @@ extern {
                      outlen: c_ulonglong,
                      passwd: *const u8,
                      passwdlen: c_ulonglong,
-                     salt: *const [u8; 32], // SODIUM_CRYPTO_PWHASH_SALTBYTES
+                     salt: *const u8, // SODIUM_CRYPTO_PWHASH_SALTBYTES
                      opslimit: c_ulonglong,
                      memlimit: size_t,
                      alg: c_int) -> c_int;
@@ -60,15 +58,30 @@ extern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use self::sodiumoxide::crypto::secretbox;
-    use utils::crypto::chacha20poly1305_ietf;
+    use rmp_serde;
 
     #[test]
-    fn crypto_pwhash_works() {
-        let passwd = b"Correct Horse Battery Staple";
-        let secretbox::Key(ref mut kb) = secretbox::Key([0; chacha20poly1305_ietf::KEY_LENGTH]);
-        let pwhash::Salt(ref salt) = pwhash::gen_salt();
+    fn get_salt_works() {
+        let salt = gen_salt();
+        assert_eq!(salt[..].len(), SALTBYTES)
+    }
 
-        let _key = PwhashArgon2i13::derive_key(kb, passwd, salt).unwrap();
+    #[test]
+    fn salt_serialize_deserialize_works() {
+        let salt = gen_salt();
+        let serialized = rmp_serde::to_vec(&salt).unwrap();
+        let deserialized: Salt = rmp_serde::from_slice(&serialized).unwrap();
+
+        assert_eq!(serialized.len(), SALTBYTES + 2);
+        assert_eq!(salt, deserialized)
+    }
+
+    #[test]
+    fn pwhash_works() {
+        let passwd = b"Correct Horse Battery Staple";
+        let mut key = [0u8; 64];
+
+        let salt = gen_salt();
+        let _key = pwhash(&mut key, passwd, &salt).unwrap();
     }
 }

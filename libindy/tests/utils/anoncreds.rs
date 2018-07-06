@@ -33,7 +33,7 @@ pub static mut CREDENTIAL_DEF_JSON: &'static str = "";
 pub static mut CREDENTIAL_OFFER_JSON: &'static str = "";
 pub static mut CREDENTIAL_REQUEST_JSON: &'static str = "";
 pub static mut CREDENTIAL_JSON: &'static str = "";
-pub const ANONCREDS_COMMON_WALLET: &'static str = "ANONCREDS_COMMON_WALLET";
+pub const ANONCREDS_WALLET_CONFIG: &'static str = r#"{"id": "anoncreds_wallet"}"#;
 pub const COMMON_MASTER_SECRET: &'static str = "common_master_secret_name";
 pub const CREDENTIAL1_ID: &'static str = "credential1_id";
 pub const CREDENTIAL2_ID: &'static str = "credential2_id";
@@ -667,8 +667,8 @@ impl AnoncredsUtils {
                 PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
                 //1. Create and Open wallet
-                WalletUtils::create_wallet(POOL, ANONCREDS_COMMON_WALLET, None, None, None).unwrap();
-                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_COMMON_WALLET, None, None).unwrap();
+                WalletUtils::create_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
                 //2. Issuer1 Creates GVT CredentialDefinition
                 let (issuer1_gvt_cred_deg_id, issuer1_gvt_credential_def_json) =

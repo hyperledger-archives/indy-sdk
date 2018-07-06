@@ -1,6 +1,3 @@
-extern crate indy_crypto;
-extern crate serde_json;
-
 use errors::common::CommonError;
 use errors::did::DidError;
 use errors::wallet::WalletError;
@@ -10,11 +7,11 @@ use domain::crypto::did::{MyDidInfo, Did, TheirDidInfo, TheirDid, TemporaryDid, 
 use domain::ledger::response::Reply;
 use domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
 use domain::ledger::attrib::{GetAttrReplyResult, AttribData, Endpoint};
-use services::pool::PoolService;
 use services::wallet::{WalletService, RecordOptions, SearchOptions};
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 
+use serde_json;
 use std::error::Error;
 use std::rc::Rc;
 use std::str;
@@ -24,10 +21,7 @@ use commands::ledger::LedgerCommand;
 use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
-use utils::crypto::base58::Base58;
-use self::indy_crypto::utils::json::{JsonEncodable, JsonDecodable};
-
-use super::utils::check_wallet_and_pool_handles_consistency;
+use utils::crypto::base58;
 
 pub enum DidCommand {
     CreateAndStoreMyDid(
@@ -105,10 +99,6 @@ macro_rules! ensure_their_did {
     ($self_:ident, $wallet_handle:ident, $pool_handle:ident, $their_did:ident, $deferred_cmd:expr, $cb:ident) => (match $self_._wallet_get_their_did($wallet_handle, &$their_did) {
           Ok(val) => val,
           Err(WalletError::ItemNotFound) => {
-
-              check_wallet_and_pool_handles_consistency!($self_.wallet_service, $self_.pool_service,
-                                                         $wallet_handle, $pool_handle, $cb);
-
               // No their their_did present in the wallet. Defer this command until it is fetched from ledger.
               return $self_._fetch_their_did_from_ledger($wallet_handle, $pool_handle, &$their_did, $deferred_cmd);
             }
@@ -117,7 +107,6 @@ macro_rules! ensure_their_did {
 }
 
 pub struct DidCommandExecutor {
-    pool_service: Rc<PoolService>,
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
     ledger_service: Rc<LedgerService>,
@@ -125,12 +114,10 @@ pub struct DidCommandExecutor {
 }
 
 impl DidCommandExecutor {
-    pub fn new(pool_service: Rc<PoolService>,
-               wallet_service: Rc<WalletService>,
+    pub fn new(wallet_service: Rc<WalletService>,
                crypto_service: Rc<CryptoService>,
                ledger_service: Rc<LedgerService>) -> DidCommandExecutor {
         DidCommandExecutor {
-            pool_service,
             wallet_service,
             crypto_service,
             ledger_service,
@@ -208,7 +195,7 @@ impl DidCommandExecutor {
                                my_did_info_json: &str) -> Result<(String, String), IndyError> {
         debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, my_did_info_json);
 
-        let my_did_info = MyDidInfo::from_json(&my_did_info_json)
+        let my_did_info: MyDidInfo = serde_json::from_str(&my_did_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidStructure(
@@ -238,7 +225,7 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(my_did)?;
 
-        let key_info: KeyInfo = KeyInfo::from_json(key_info_json)
+        let key_info: KeyInfo = serde_json::from_str(key_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidStructure(format!("Invalid KeyInfo json: {}", err.description())))?;
@@ -284,7 +271,7 @@ impl DidCommandExecutor {
                        their_did_info_json: &str) -> Result<(), IndyError> {
         debug!("store_their_did >>> wallet_handle: {:?}, their_did_info_json: {:?}", wallet_handle, their_did_info_json);
 
-        let their_did_info = TheirDidInfo::from_json(their_did_info_json)
+        let their_did_info: TheirDidInfo = serde_json::from_str(their_did_info_json)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidStructure(format!("Invalid TheirDidInfo json: {}", err.description())))?;
@@ -305,8 +292,8 @@ impl DidCommandExecutor {
 
         let did_record = self.wallet_service.get_indy_record::<Did>(wallet_handle, &my_did, &RecordOptions::full())?;
 
-        let did = did_record.get_value()
-            .and_then(|tags_json| Did::from_json(&tags_json).ok())
+        let did: Did = did_record.get_value()
+            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
             .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", my_did)))?;
 
         let meta: Option<String> = did_record.get_tags()
@@ -318,7 +305,7 @@ impl DidCommandExecutor {
             metadata: meta
         };
 
-        let res = did_with_meta.to_json()
+        let res = serde_json::to_string(&did_with_meta)
             .map_err(|err|
                 IndyError::CommonError(CommonError::InvalidState(format!("Can't serialize DID {}", err))))?;
 
@@ -338,8 +325,8 @@ impl DidCommandExecutor {
         while let Some(did_record) = did_search.fetch_next_record()? {
             let did_id = did_record.get_id();
 
-            let did = did_record.get_value()
-                .and_then(|tags_json| Did::from_json(&tags_json).ok())
+            let did: Did = did_record.get_value()
+                .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
                 .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", did_id)))?;
 
             let meta: Option<String> = did_record.get_tags()
@@ -434,11 +421,10 @@ impl DidCommandExecutor {
 
         let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
 
-        let res = self.wallet_service.upsert_indy_object(wallet_handle, &did, &endpoint)?;
+        self.wallet_service.upsert_indy_object(wallet_handle, &did, &endpoint)?;
 
-        debug!("set_endpoint_for_did <<< res: {:?}", res);
-
-        Ok(res)
+        debug!("set_endpoint_for_did <<<");
+        Ok(())
     }
 
     fn get_endpoint_for_did(&self,
@@ -456,9 +442,6 @@ impl DidCommandExecutor {
         match endpoint {
             Ok(endpoint) => cb(Ok((endpoint.ha, endpoint.verkey))),
             Err(WalletError::ItemNotFound) => {
-                check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                           wallet_handle, pool_handle, cb);
-
                 return self._fetch_attrib_from_ledger(wallet_handle,
                                                       pool_handle,
                                                       &did,
@@ -517,13 +500,13 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&did)?;
         self.crypto_service.validate_key(&verkey)?;
 
-        let did = Base58::decode(&did)?;
-        let dverkey = Base58::decode(&verkey)?;
+        let did = base58::decode(&did)?;
+        let dverkey = base58::decode(&verkey)?;
 
         let (first_part, second_part) = dverkey.split_at(16);
 
         let res = if first_part.eq(did.as_slice()) {
-            format!("~{}", Base58::encode(second_part))
+            format!("~{}", base58::encode(second_part))
         } else {
             verkey
         };
@@ -546,14 +529,14 @@ impl DidCommandExecutor {
 
         let get_nym_reply = get_nym_reply_result?;
 
-        let get_nym_response: Reply<GetNymReplyResult> = Reply::from_json(&get_nym_reply)
+        let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_reply)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid GetNymReplyResult json: {:?}", err)))?;
 
         let their_did_info = match get_nym_response.result() {
             GetNymReplyResult::GetNymReplyResultV0(res) => {
                 if let Some(data) = &res.data {
-                    let gen_nym_result_data = GetNymResultDataV0::from_json(data)
+                    let gen_nym_result_data: GetNymResultDataV0 = serde_json::from_str(data)
                         .map_err(map_err_trace!())
                         .map_err(|_| CommonError::InvalidState("Invalid GetNymResultData json".to_string()))?;
 
@@ -587,7 +570,7 @@ impl DidCommandExecutor {
 
         let get_attrib_reply = get_attrib_reply_result?;
 
-        let get_attrib_reply: Reply<GetAttrReplyResult> = Reply::from_json(&get_attrib_reply)
+        let get_attrib_reply: Reply<GetAttrReplyResult> = serde_json::from_str(&get_attrib_reply)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid GetAttrReplyResult json {:?}", err)))?;
 
@@ -596,7 +579,7 @@ impl DidCommandExecutor {
             GetAttrReplyResult::GetAttrReplyResultV1(res) => (res.txn.data.raw, res.txn.data.did)
         };
 
-        let attrib_data = AttribData::from_json(&raw)
+        let attrib_data: AttribData = serde_json::from_str(&raw)
             .map_err(map_err_trace!())
             .map_err(|err| CommonError::InvalidState(format!("Invalid GetAttReply json: {:?}", err)))?;
 

@@ -3,8 +3,7 @@ import json
 import pytest
 
 from indy import anoncreds
-from tests.conftest import path_home as x_path_home, pool_name as x_pool_name, wallet_type as x_wallet_type, \
-    wallet_runtime_config as x_wallet_runtime_config, credentials as x_credentials, \
+from tests.conftest import path_home as x_path_home, credentials as x_credentials, \
     wallet_handle_cleanup as x_wallet_handle_cleanup, wallet_handle as x_wallet_handle, xwallet as x_xwallet
 
 
@@ -16,23 +15,8 @@ def path_home():
 
 
 @pytest.fixture(scope="session")
-def pool_name():
-    return x_pool_name()
-
-
-@pytest.fixture(scope="session")
-def wallet_name():
-    return 'anoncreds_common_wallet'
-
-
-@pytest.fixture(scope="session")
-def wallet_type():
-    return x_wallet_type()
-
-
-@pytest.fixture(scope="session")
-def wallet_runtime_config():
-    return x_wallet_runtime_config()
+def wallet_config():
+    return '{"id":"anoncreds_common_wallet"}'
 
 
 @pytest.fixture(scope="session")
@@ -47,8 +31,9 @@ def xwallet_cleanup():
 
 # noinspection PyUnusedLocal
 @pytest.fixture(scope="session")
-def xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, credential):
-    xwallet_gen = x_xwallet(event_loop, pool_name, wallet_name, wallet_type, xwallet_cleanup, path_home, credential)
+
+def xwallet(event_loop, xwallet_cleanup, path_home, wallet_config, credential):
+    xwallet_gen = x_xwallet(event_loop, xwallet_cleanup, path_home, wallet_config, credential)
     yield next(xwallet_gen)
     next(xwallet_gen)
 
@@ -59,9 +44,9 @@ def wallet_handle_cleanup():
 
 
 @pytest.fixture(scope="session")
-def wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, credential, wallet_handle_cleanup):
+def wallet_handle(event_loop, xwallet, wallet_config, credential, wallet_handle_cleanup):
     wallet_handle_gen = \
-        x_wallet_handle(event_loop, wallet_name, xwallet, wallet_runtime_config, credential, wallet_handle_cleanup)
+        x_wallet_handle(event_loop, xwallet, wallet_config, credential, wallet_handle_cleanup)
     yield next(wallet_handle_gen)
     next(wallet_handle_gen)
 
