@@ -95,8 +95,13 @@ describe('Schema:', () => {
   describe('serialize:', () => {
     it('success', async () => {
       const schema = await schemaCreate()
-      const data = await schema.serialize()
+      const serialized = await schema.serialize()
+      assert.ok(serialized)
+      assert.property(serialized, 'version')
+      assert.property(serialized, 'data')
+      const { data, version } = serialized
       assert.ok(data)
+      assert.ok(version)
       assert.equal(data.source_id, schema.sourceId)
     })
 
@@ -110,7 +115,7 @@ describe('Schema:', () => {
       const schema = await schemaCreate()
       const data = await schema.serialize()
       assert.ok(data)
-      assert.equal(data.source_id, schema.sourceId)
+      assert.equal(data.data.source_id, schema.sourceId)
       assert.equal(await schema.release(), VCXCode.SUCCESS)
       const error = await shouldThrow(() => schema.serialize())
       assert.equal(error.vcxCode, VCXCode.INVALID_SCHEMA_HANDLE)
@@ -128,7 +133,7 @@ describe('Schema:', () => {
     })
 
     it('throws: incorrect data', async () => {
-      const error = await shouldThrow(async () => Schema.deserialize({ source_id: 'Invalid' } as any))
+      const error = await shouldThrow(async () => Schema.deserialize({ data: { source_id: 'Invalid' } } as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
     })
   })

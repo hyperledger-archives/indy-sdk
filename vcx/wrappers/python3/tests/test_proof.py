@@ -31,8 +31,8 @@ async def test_create_proof():
 async def test_serialize():
     proof = await Proof.create(source_id, name, requested_attrs)
     data = await proof.serialize()
-    assert data.get('source_id') == source_id
-    assert data.get('name') == name
+    assert data.get('data').get('source_id') == source_id
+    assert data.get('data').get('name') == name
 
 
 @pytest.mark.asyncio
@@ -50,9 +50,9 @@ async def test_serialize_with_bad_handle():
 async def test_deserialize():
     proof = await Proof.create(source_id, name, requested_attrs)
     data = await proof.serialize()
-    data['state'] = State.OfferSent
+    data['data']['state'] = State.OfferSent
     proof2 = await Proof.deserialize(data)
-    assert proof2.source_id == data.get('source_id')
+    assert proof2.source_id == data.get('data').get('source_id')
     assert await proof2.get_state() == State.OfferSent
 
 
@@ -60,7 +60,7 @@ async def test_deserialize():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_deserialize_with_invalid_data():
     with pytest.raises(VcxError) as e:
-        data = {'invalid': -99}
+        data = {'version': "1.0", 'data':{'invalid': -99}}
         await Proof.deserialize(data)
     assert ErrorCode.InvalidJson == e.value.error_code
     assert 'Invalid JSON string' == e.value.error_msg
@@ -152,9 +152,9 @@ async def test_get_proof_with_invalid_proof():
     await connection.connect(phone_number)
     proof = await Proof.create(source_id, name, requested_attrs)
     data = await proof.serialize()
-    data['proof'] = {'version': '1.0', 'to_did': None, 'from_did': None, 'proof_request_id': None, "libindy_proof": "{\"proof_data\":123}"}
-    data['state'] = State.Accepted
-    data['proof_state'] = ProofState.Invalid
+    data['data']['proof'] = {'version': '1.0', 'to_did': None, 'from_did': None, 'proof_request_id': None, "libindy_proof": "{\"proof_data\":123}"}
+    data['data']['state'] = State.Accepted
+    data['data']['proof_state'] = ProofState.Invalid
     proof2 = await Proof.deserialize(data)
     await proof2.update_state()
     proof_data = await proof2.get_proof(connection)

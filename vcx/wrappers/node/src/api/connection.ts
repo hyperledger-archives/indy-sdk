@@ -2,7 +2,7 @@ import * as ffi from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
-import { StateType } from './common'
+import { ISerializedData, StateType } from './common'
 import { VCXBaseWithState } from './vcx-base-with-state'
 
 /**
@@ -94,13 +94,14 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    * @static
    * @async
    * @function deserialize
-   * @param {IConnectionData} connectionData - contains the information that will be used to build a connection object
+   * @param {ISerializedData<IConnectionData>} connectionData - contains the information
+   * that will be used to build a connection object
    * @example <caption>Example of Connection Data </caption>
    * {source_id:"234",handle:560373036,pw_did:"did",pw_verkey:"verkey",did_endpoint:"",state:2,uuid:"",endpoint:"",
    * invite_detail:{e:"",rid:"",sakdp:"",sn:"",sD:"",lu:"",sVk:"",tn:""}}
    * @returns {Promise<Connection>} A Connection Object
    */
-  public static async deserialize (connectionData: IConnectionData) {
+  public static async deserialize (connectionData: ISerializedData<IConnectionData>) {
     const connection = await super._deserialize(Connection, connectionData)
     return connection
   }

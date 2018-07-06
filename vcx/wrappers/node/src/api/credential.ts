@@ -3,6 +3,7 @@ import { Callback } from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
+import { ISerializedData } from './common'
 import { Connection } from './connection'
 import { VCXBaseWithState } from './vcx-base-with-state'
 import { VCXPaymentTxn } from './vcx-payment-txn'
@@ -166,7 +167,7 @@ export class Credential extends VCXPaymentTxn(CredentialBase) {
     }
   }
 
-  public static async deserialize (credentialData: ICredentialStructData) {
+  public static async deserialize (credentialData: ISerializedData<ICredentialStructData>) {
     const credential = await super._deserialize<Credential, {}>(Credential, credentialData)
     return credential
   }

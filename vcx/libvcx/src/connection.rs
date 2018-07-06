@@ -23,6 +23,7 @@ use utils::json::KeyMatch;
 use error::connection::ConnectionError;
 use error::ToErrorCode;
 use object_cache::ObjectCache;
+use utils::constants::DEFAULT_SERIALIZE_VERSION;
 
 lazy_static! {
     static ref CONNECTION_MAP: ObjectCache<Connection> = Default::default();
@@ -214,6 +215,21 @@ impl Connection {
         } else {
             true
         }
+    }
+
+    fn from_str(s: &str) -> Result<Self, ConnectionError> {
+        let s:Value = serde_json::from_str(&s)
+            .or(Err(ConnectionError::InvalidJson()))?;
+        let connection: Connection = serde_json::from_value(s["data"].clone())
+            .or(Err(ConnectionError::InvalidJson()))?;
+        Ok(connection)
+    }
+
+    fn to_string(&self) -> String {
+        json!({
+            "version": DEFAULT_SERIALIZE_VERSION,
+            "data": json!(self),
+        }).to_string()
     }
 }
 
@@ -573,12 +589,12 @@ pub fn connect(handle: u32, options: Option<String>) -> Result<u32, ConnectionEr
 pub fn to_string(handle: u32) -> Result<String,u32> {
     CONNECTION_MAP.get(handle, |t| {
         // TODO: Make this an error.to_error_code and back again?
-        serde_json::to_string(&t).or(Err(1))
+        Ok(Connection::to_string(&t))
     }).or(Err(error::INVALID_CONNECTION_HANDLE.code_num))
 }
 
 pub fn from_string(connection_data: &str) -> Result<u32, ConnectionError> {
-    let derived_connection: Connection = match serde_json::from_str(connection_data) {
+    let derived_connection: Connection = match Connection::from_str(connection_data) {
         Ok(x) => x,
         Err(_) => return Err(ConnectionError::CommonError(error::INVALID_JSON.code_num)),
     };

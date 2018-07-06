@@ -2,6 +2,7 @@ import * as ffi from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
+import { ISerializedData } from './common'
 import { VCXBase } from './vcx-base'
 import { VCXPaymentTxn } from './vcx-payment-txn'
 
@@ -160,15 +161,17 @@ export class CredentialDef extends VCXPaymentTxn(CredentialDefBase) {
    * @static
    * @async
    * @function deserialize
-   * @param {ICredentialDefData} data - data obtained by serialize api. Used to build a credentialdef object.
+   * @param {ISerialziedData<ICredentialDefData>} data - data obtained by serialize api.
+   * Used to build a credentialdef object.
    * @returns {Promise<credentialDef>} A credentialDef Object
    */
-  public static async deserialize (data: ICredentialDefData) {
+  public static async deserialize (credentialDef: ISerializedData<ICredentialDefData>) {
     // Todo: update the ICredentialDefObj
+    const { data: { name } } = credentialDef
     const credentialDefParams = {
-      name: data.name,
+      name,
       schemaId: null
     }
-    return super._deserialize(CredentialDef, data, credentialDefParams)
+    return super._deserialize(CredentialDef, credentialDef, credentialDefParams)
   }
 }

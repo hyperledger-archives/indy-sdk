@@ -3,6 +3,7 @@ import { Callback } from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
+import { ISerializedData } from './common'
 import { Connection } from './connection'
 import { VCXBaseWithState } from './vcx-base-with-state'
 
@@ -96,7 +97,7 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
     }
   }
 
-  public static async deserialize (data: IDisclosedProofData) {
+  public static async deserialize (data: ISerializedData<IDisclosedProofData>) {
     try {
       const newObj = await super._deserialize<DisclosedProof, {}>(DisclosedProof, data)
       return newObj

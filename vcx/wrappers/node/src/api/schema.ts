@@ -3,6 +3,7 @@ import * as ffi from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
+import { ISerializedData } from './common'
 import { VCXBase } from './vcx-base'
 import { VCXPaymentTxn } from './vcx-payment-txn'
 
@@ -153,14 +154,16 @@ export class Schema extends VCXPaymentTxn(SchemaBase) {
    * @static
    * @async
    * @function deserialize
-   * @param {ISchemaSerializedData} schema - contains the information that will be used to build a Schema object
+   * @param {ISerializedData<ISchemaSerializedData>} schema - contains the information that will
+   * be used to build a Schema object
    * @returns {Promise<Schema>} A Schema Object
    */
-  public static async deserialize (schema: ISchemaSerializedData) {
+  public static async deserialize (schema: ISerializedData<ISchemaSerializedData>) {
+    const { data: { name, schema_id, version, data } } = schema
     const schemaParams = {
-      name: schema.name,
-      schemaAttrs: { name: schema.name, version: schema.version, attrNames: schema.data },
-      schemaId: schema.schema_id
+      name,
+      schemaAttrs: { name, version, attrNames: data },
+      schemaId: schema_id
     }
     return super._deserialize<Schema, ISchemaParams>(Schema, schema, schemaParams)
   }

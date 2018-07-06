@@ -42,11 +42,11 @@ class IssuerCredential(VcxStateful):
     async def deserialize(data: dict):
         issuer_credential = await IssuerCredential._deserialize("vcx_issuer_credential_deserialize",
                                                       json.dumps(data),
-                                                      data.get('source_id'),
-                                                      data.get('price'),
-                                                      data.get('credential_attributes'),
-                                                      data.get('schema_seq_no'),
-                                                      data.get('credential_request'))
+                                                      data.get('data').get('source_id'),
+                                                      data.get('data').get('price'),
+                                                      data.get('data').get('credential_attributes'),
+                                                      data.get('data').get('schema_seq_no'),
+                                                      data.get('data').get('credential_request'))
         return issuer_credential
 
     async def serialize(self) -> dict:

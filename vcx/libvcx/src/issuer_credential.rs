@@ -16,6 +16,8 @@ use utils::{error,
             openssl::encode
 };
 use error::{ issuer_cred::IssuerCredError, ToErrorCode, payment::PaymentError};
+use utils::constants::DEFAULT_SERIALIZE_VERSION;
+use serde_json::Value;
 use object_cache::ObjectCache;
 
 lazy_static! {
@@ -339,6 +341,19 @@ impl IssuerCredential {
             outputs: Vec::new(),
         })
     }
+
+    pub fn to_string(&self) -> String {
+        json!({
+            "version": DEFAULT_SERIALIZE_VERSION,
+            "data": json!(self),
+        }).to_string()
+    }
+
+    fn from_str(s: &str) -> Result<IssuerCredential, IssuerCredError> {
+        let data: Value = serde_json::from_str(&s)?;
+        let cred = serde_json::from_value(data["data"].clone())?;
+        Ok(cred)
+    }
 }
 
 pub fn encode_attributes(attributes: &str) -> Result<String, IssuerCredError> {
@@ -498,19 +513,14 @@ pub fn is_valid_handle(handle: u32) -> bool {
 
 pub fn to_string(handle: u32) -> Result<String, IssuerCredError> {
     ISSUER_CREDENTIAL_MAP.get(handle,|i|{
-        serde_json::to_string(&i).map_err(|ec|error::INVALID_JSON.code_num)
+        Ok(IssuerCredential::to_string(&i))
     }).map_err(|ec|IssuerCredError::CommonError(ec))
 }
 
-pub fn from_string(credential_data: &str) -> Result<u32, IssuerCredError> {
-    let derived_credential: IssuerCredential = match serde_json::from_str(credential_data) {
-        Ok(x) => x,
-        Err(_) => return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num)),
-    };
-
+pub fn from_string(credential_data: &str) -> Result<u32,IssuerCredError> {
+    let derived_credential: IssuerCredential = IssuerCredential::from_str(credential_data)?;
     let source_id = derived_credential.source_id.clone();
-    let new_handle = ISSUER_CREDENTIAL_MAP.add(derived_credential).map_err(|ec|IssuerCredError::CommonError(ec))?;
-
+    let new_handle = ISSUER_CREDENTIAL_MAP.add(derived_credential).map_err(|ec| IssuerCredError::CommonError(ec))?;
     Ok(new_handle)
 }
 
@@ -842,6 +852,8 @@ pub mod tests {
                                          "{\"attr\":\"value\"}".to_owned(),
 					 1,).unwrap();
         let string = to_string(handle).unwrap();
+        let value: serde_json::Value = serde_json::from_str(&string).unwrap();
+        assert_eq!(value["version"], "1.0");
         assert!(!string.is_empty());
         assert!(release(handle).is_ok());
         let new_handle = from_string(&string).unwrap();
@@ -899,8 +911,8 @@ pub mod tests {
         let string = to_string(handle).unwrap();
         fn get_state_from_string(s: String) -> u32 {
             let json: serde_json::Value = serde_json::from_str(&s).unwrap();
-            if json["state"].is_number() {
-                return json["state"].as_u64().unwrap() as u32
+            if json["data"]["state"].is_number() {
+                return json["data"]["state"].as_u64().unwrap() as u32
             }
             0
         }

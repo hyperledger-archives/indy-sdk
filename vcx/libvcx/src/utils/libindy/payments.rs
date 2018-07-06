@@ -18,7 +18,7 @@ use settings;
 
 static NULL_PAYMENT: &str = "null";
 static EMPTY_CONFIG: &str = "{}";
-static FEES: &str = r#"{"0":1, "1":1, "101":2, "102":42, "103":1999998889, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
+static DEFAULT_FEES: &str = r#"{"0":1, "1":1, "101":2, "102":42, "103":1999998889, "104":0, "105":0, "106":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 static PARSED_TXN_PAYMENT_RESPONSE: &str = r#"[{"amount":4,"extra":null,"input":"["pov:null:1","pov:null:2"]"}]"#;
 
 static PAYMENT_INIT: Once = ONCE_INIT;
@@ -172,7 +172,7 @@ pub fn get_wallet_token_info() -> Result<WalletInfo, u32> {
 }
 
 pub fn get_ledger_fees() -> Result<String, u32> {
-    if settings::test_indy_mode_enabled() { return Ok(FEES.to_string()); }
+    if settings::test_indy_mode_enabled() { return Ok(DEFAULT_FEES.to_string()); }
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
@@ -181,11 +181,13 @@ pub fn get_ledger_fees() -> Result<String, u32> {
         Err(x) => return Err(map_rust_indy_sdk_error_code(x)),
     };
 
-    Payment::parse_get_txn_fees_response(NULL_PAYMENT, &response)
-        .map_err(map_rust_indy_sdk_error_code)
+    let res = Payment::parse_get_txn_fees_response(NULL_PAYMENT, &response)
+        .map_err(map_rust_indy_sdk_error_code);
+    res
 }
 
 pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(PaymentTxn, String), u32> {
+    debug!("pay_for_txn(req: {}, txn_type: {})", req, txn_type);
     if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"paymentAddress":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
 
     let txn_price = get_txn_price(txn_type)?;
@@ -320,7 +322,7 @@ pub fn mint_tokens(number_of_addresses: Option<u32>, tokens_per_address: Option<
 // This is used for testing purposes only!!!
 pub fn set_ledger_fees(fees: Option<String>) -> Result<(), u32> {
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-    let fees = fees.unwrap_or(FEES.to_string());
+    let fees = fees.unwrap_or(DEFAULT_FEES.to_string());
 
     match Payment::build_set_txn_fees_req(get_wallet_handle() as i32, &did, NULL_PAYMENT, &fees) {
         Ok(txn) => match libindy_sign_and_submit_request(&did, &txn) {
@@ -641,4 +643,5 @@ pub mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(name);
         assert_eq!(start_wallet.balance, 5720045);
     }
+
 }

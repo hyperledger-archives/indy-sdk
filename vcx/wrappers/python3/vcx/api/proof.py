@@ -42,7 +42,7 @@ class Proof(VcxStateful):
     async def deserialize(data: dict):
         return await Proof._deserialize("vcx_proof_deserialize",
                                         json.dumps(data),
-                                        data.get('source_id'))
+                                        data.get('data').get('source_id'))
 
     async def serialize(self) -> dict:
         return await self._serialize(Proof, 'vcx_proof_serialize')

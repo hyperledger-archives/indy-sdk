@@ -98,10 +98,10 @@ class Schema(VcxBase):
             # Todo: Find better way to access attr_names. Potential for issues.
             schema = await Schema._deserialize("vcx_schema_deserialize",
                                                json.dumps(data),
-                                               data['source_id'],
-                                               data['name'],
-                                               data['version'],
-                                               data['data'])
+                                               data['data']['source_id'],
+                                               data['data']['name'],
+                                               data['data']['version'],
+                                               data['data']['data'])
 
             schema.schema_id = await schema.get_schema_id()
             return schema

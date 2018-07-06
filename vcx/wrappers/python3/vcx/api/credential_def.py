@@ -81,9 +81,9 @@ class CredentialDef(VcxBase):
         try:
             credential_def = await CredentialDef._deserialize("vcx_credentialdef_deserialize",
                                                               json.dumps(data),
-                                                              data['source_id'],
-                                                              data['name'],
-                                                              data['id'])
+                                                              data['data']['source_id'],
+                                                              data['data']['name'],
+                                                              data['data']['id'])
             return credential_def
         except KeyError:
             raise VcxError(ErrorCode.InvalidCredentialDef, error_message(ErrorCode.InvalidCredentialDef))

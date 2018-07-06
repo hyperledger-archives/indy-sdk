@@ -28,8 +28,8 @@ async def test_create_issuer_credential():
 async def test_serialize():
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_id, name, price)
     data = await issuer_credential.serialize()
-    assert data.get('source_id') == source_id
-    assert data.get('credential_name') == name
+    assert data.get('data').get('source_id') == source_id
+    assert data.get('data').get('credential_name') == name
 
 
 @pytest.mark.asyncio
@@ -48,18 +48,17 @@ async def test_serialize_with_bad_handle():
 async def test_deserialize():
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_id, name, price)
     data = await issuer_credential.serialize()
-    data['handle'] = 99999
-    data['state'] = State.Expired
+    data['data']['handle'] = 99999
+    data['data']['state'] = State.Expired
     issuer_credential2 = await IssuerCredential.deserialize(data)
-    assert issuer_credential2.source_id == data.get('source_id')
-    assert await issuer_credential2.get_state() == State.Expired
+    assert issuer_credential2.source_id == data.get('data').get('source_id')
 
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_deserialize_with_invalid_data():
     with pytest.raises(VcxError) as e:
-        data = {'invalid': -99}
+        data = {'data': { 'invalid': -99 } }
         await IssuerCredential.deserialize(data)
     assert ErrorCode.InvalidJson == e.value.error_code
     assert 'Invalid JSON string' == e.value.error_msg
@@ -70,6 +69,7 @@ async def test_deserialize_with_invalid_data():
 async def test_serialize_deserialize_and_then_serialize():
     issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_id, name, price)
     data1 = await issuer_credential.serialize()
+    print("data1: %s" %  data1)
     issuer_credential2 = await IssuerCredential.deserialize(data1)
     data2 = await issuer_credential2.serialize()
     assert data1 == data2
@@ -132,7 +132,7 @@ async def test_send_offer_with_invalid_state():
         await connection.connect(phone_number)
         issuer_credential = await IssuerCredential.create(source_id, attrs, cred_def_id, name, price)
         data = await issuer_credential.serialize()
-        data['state'] = State.Expired
+        data['data']['state'] = State.Expired
         issuer_credential2 = await IssuerCredential.deserialize(data)
         await issuer_credential2.send_offer(connection)
     assert ErrorCode.NotReady == e.value.error_code
@@ -159,7 +159,7 @@ async def test_send_credential():
     assert await issuer_credential.update_state() == State.OfferSent
     # simulate consumer sending credential_req
     data = await issuer_credential.serialize()
-    data['state'] = State.RequestReceived
+    data['data']['state'] = State.RequestReceived
     issuer_credential2 = await issuer_credential.deserialize(data)
     await issuer_credential2.send_credential(connection)
     assert await issuer_credential2.get_state() == State.Accepted

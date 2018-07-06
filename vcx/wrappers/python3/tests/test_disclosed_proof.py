@@ -78,6 +78,11 @@ proof_json = {
     "agent_vk": None
   }
 
+proof_with_version = {
+    "version": "1.0",
+    "data": proof_json
+}
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_create_disclosed_proof():
@@ -103,7 +108,7 @@ async def test_create_disclosed_proof_with_msgid():
 async def test_serialize():
     disclosed_proof = await DisclosedProof.create(source_id, request)
     data = await disclosed_proof.serialize()
-    assert data.get('source_id') == source_id
+    assert data.get('data').get('source_id') == source_id
 
 
 @pytest.mark.asyncio
@@ -121,9 +126,9 @@ async def test_serialize_with_bad_handle():
 async def test_deserialize():
     disclosed_proof = await DisclosedProof.create(source_id, request)
     data = await disclosed_proof.serialize()
-    data['state'] = State.Expired
+    data['data']['state'] = State.Expired
     disclosed_proof2 = await DisclosedProof.deserialize(data)
-    assert disclosed_proof2.source_id == data.get('source_id')
+    assert disclosed_proof2.source_id == data.get('data').get('source_id')
     assert await disclosed_proof2.get_state() == State.Expired
 
 
@@ -131,7 +136,7 @@ async def test_deserialize():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_deserialize_with_invalid_data():
     with pytest.raises(VcxError) as e:
-        data = {'invalid': -99}
+        data = {'version': '1.0', "data": {'invalid': -99}}
         await DisclosedProof.deserialize(data)
     assert ErrorCode.InvalidJson == e.value.error_code
 
@@ -186,7 +191,7 @@ async def test_disclosed_proof_release():
 async def test_send_proof():
     connection = await Connection.create(source_id)
     await connection.connect(phone_number)
-    disclosed_proof = await DisclosedProof.deserialize(proof_json)
+    disclosed_proof = await DisclosedProof.deserialize(proof_with_version)
     await disclosed_proof.send_proof(connection)
     assert await disclosed_proof.get_state() == State.Accepted
 

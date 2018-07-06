@@ -21,8 +21,8 @@ async def test_create_credential_def():
 async def test_serialize():
     credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
     data = await credential_def.serialize()
-    assert data['source_id'] == source_id
-    assert data['name'] == name
+    assert data['data']['source_id'] == source_id
+    assert data['data']['name'] == name
 
 
 @pytest.mark.asyncio
@@ -41,7 +41,7 @@ async def test_deserialize():
     credential_def = await CredentialDef.create(source_id, name, schema_id, 0)
     data = await credential_def.serialize()
     credential_def2 = await CredentialDef.deserialize(data)
-    assert credential_def2.source_id == data.get('source_id')
+    assert credential_def2.source_id == data.get('data').get('source_id')
 
 
 @pytest.mark.asyncio
