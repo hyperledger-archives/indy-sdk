@@ -324,11 +324,11 @@ impl Networker for MockNetworker {
         MockNetworker {}
     }
 
-    fn fetch_events(&self, poll_items: &[zmq::PollItem]) -> Vec<PoolEvent> {
+    fn fetch_events(&self, _poll_items: &[zmq::PollItem]) -> Vec<PoolEvent> {
         unimplemented!()
     }
 
-    fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
+    fn process_event(&mut self, _pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
         None
     }
 

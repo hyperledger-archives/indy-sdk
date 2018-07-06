@@ -461,8 +461,6 @@ mod tests {
     extern crate libc;
 
     use self::hex::FromHex;
-    use time::Duration;
-    use time;
     use std::os::raw::c_char;
 
     #[test]

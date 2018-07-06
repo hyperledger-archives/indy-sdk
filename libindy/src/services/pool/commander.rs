@@ -50,8 +50,10 @@ impl Commander {
     }
 }
 
+#[cfg(test)]
 mod commander_tests {
     use super::*;
+    use utils::sequence::SequenceUtils;
 
     #[test]
     pub fn commander_new_works() {
@@ -100,7 +102,7 @@ mod commander_tests {
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "exit";
         send_cmd_sock.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
-        assert_match!(Some(PoolEvent::Close(cmd_id)), cmd.fetch_events());
+        assert_match!(Some(PoolEvent::Close(cmd_id_)), cmd.fetch_events(), cmd_id_, cmd_id);
     }
 
     #[test]
@@ -114,7 +116,7 @@ mod commander_tests {
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "refresh";
         send_cmd_sock.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
-        assert_match!(Some(PoolEvent::Refresh(cmd_id)), cmd.fetch_events());
+        assert_match!(Some(PoolEvent::Refresh(cmd_id_)), cmd.fetch_events(), cmd_id_, cmd_id);
     }
 
     #[test]
@@ -128,7 +130,7 @@ mod commander_tests {
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "connect";
         send_cmd_sock.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
-        assert_match!(Some(PoolEvent::CheckCache(cmd_id)), cmd.fetch_events());
+        assert_match!(Some(PoolEvent::CheckCache(cmd_id_)), cmd.fetch_events(), cmd_id_, cmd_id);
     }
 
     #[test]
@@ -142,7 +144,9 @@ mod commander_tests {
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "test";
         send_cmd_sock.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
-        assert_match!(Some(PoolEvent::SendRequest(cmd_id, msg)), cmd.fetch_events());
+        assert_match!(Some(PoolEvent::SendRequest(cmd_id_, msg_)), cmd.fetch_events(),
+                      cmd_id_, cmd_id,
+                      msg_, msg);
     }
 
     fn _create_pair_of_sockets(addr: &str) -> (zmq::Socket, zmq::Socket) {

@@ -168,44 +168,40 @@ impl RequestEvent {
     }
 }
 
-impl From<(String, String, Message)> for RequestEvent {
-    fn from((raw_msg, node_alias, msg): (String, String, Message)) -> Self {
-        match msg {
-            //TODO: REMOVE UNWRAP!!!!!
-            Message::CatchupReq(req) => RequestEvent::CatchupReq(MerkleTree::from_vec(Vec::new()).unwrap(), 0, vec![]),
-            Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep, node_alias),
-            Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias), None),
-            Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),
-            Message::Reply(rep) => {
-                let req_id = rep.req_id();
-                RequestEvent::Reply(rep, raw_msg, node_alias,req_id.to_string())
-            }
-            Message::ReqACK(rep) => {
-                let req_id = rep.req_id();
-                RequestEvent::ReqACK(rep, raw_msg, node_alias, req_id.to_string())
-            }
-            Message::ReqNACK(rep) => {
-                let req_id = rep.req_id();
-                RequestEvent::ReqNACK(rep, raw_msg, node_alias, req_id.to_string())
-            },
-            Message::Reject(rep) => {
-                let req_id = rep.req_id();
-                RequestEvent::Reject(rep, raw_msg, node_alias, req_id.to_string())
-            },
-            Message::PoolLedgerTxns(_) => RequestEvent::PoolLedgerTxns,
-            Message::Ping => RequestEvent::Ping,
-            Message::Pong => RequestEvent::Pong,
-        }
-    }
-}
-
 impl Into<Option<RequestEvent>> for PoolEvent {
     fn into(self) -> Option<RequestEvent> {
         match self {
             PoolEvent::NodeReply(msg, node_alias) => {
-                _parse_msg(&msg).map(|parsed| (msg, node_alias, parsed).into())
+                _parse_msg(&msg).map(|parsed|
+                    match parsed {
+                        //TODO change mapping for CatchupReq. May be return None
+                        //TODO: REMOVE UNWRAP!!!!!
+                        Message::CatchupReq(_) => RequestEvent::CatchupReq(MerkleTree::from_vec(Vec::new()).unwrap(), 0, vec![]),
+                        Message::CatchupRep(rep) => RequestEvent::CatchupRep(rep, node_alias),
+                        Message::LedgerStatus(ls) => RequestEvent::LedgerStatus(ls, Some(node_alias), None),
+                        Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),
+                        Message::Reply(rep) => {
+                            let req_id = rep.req_id();
+                            RequestEvent::Reply(rep, msg, node_alias,req_id.to_string())
+                        }
+                        Message::ReqACK(rep) => {
+                            let req_id = rep.req_id();
+                            RequestEvent::ReqACK(rep, msg, node_alias, req_id.to_string())
+                        }
+                        Message::ReqNACK(rep) => {
+                            let req_id = rep.req_id();
+                            RequestEvent::ReqNACK(rep, msg, node_alias, req_id.to_string())
+                        },
+                        Message::Reject(rep) => {
+                            let req_id = rep.req_id();
+                            RequestEvent::Reject(rep, msg, node_alias, req_id.to_string())
+                        },
+                        Message::PoolLedgerTxns(_) => RequestEvent::PoolLedgerTxns,
+                        Message::Ping => RequestEvent::Ping,
+                        Message::Pong => RequestEvent::Pong,
+                    })
             },
-            PoolEvent::SendRequest(cmd_id, msg) => {
+            PoolEvent::SendRequest(_, msg) => {
                 let req_id = _parse_req_id_and_op(&msg);
                 match req_id {
                     Ok((ref req_id, ref op)) if REQUESTS_FOR_STATE_PROOFS.contains(&op.as_str()) => Some(RequestEvent::CustomSingleRequest(msg, Ok(req_id.clone()))), //FIXME check plugged also
@@ -234,10 +230,7 @@ impl Into<Option<NetworkerEvent>> for RequestEvent {
 }
 
 fn _parse_msg(msg: &str) -> Option<Message> {
-    match Message::from_raw_str(msg).map_err(map_err_trace!()) {
-        Ok(msg) => Some(msg),
-        _ => None
-    }
+    Message::from_raw_str(msg).map_err(map_err_trace!()).ok()
 }
 
 fn _parse_req_id_and_op(msg: &str) -> Result<(String, String), CommonError> {

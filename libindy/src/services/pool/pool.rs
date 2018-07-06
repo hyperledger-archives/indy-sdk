@@ -444,7 +444,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolWrapper<T, R> {
                         let req_id = re.as_ref().map(|r| r.get_req_id()).expect("FIXME");
                         let mut request_handler = R::new(pool.state.networker.clone(), _get_f(pool.state.nodes.len()), &vec![cmd_id], &pool.state.nodes, None, &pool.pool_name);
                         request_handler.process_event(re);
-                        pool.state.request_handlers.insert(req_id.to_string(), request_handler);
+                        pool.state.request_handlers.insert(req_id.to_string(), request_handler); //FIXME check already exists
                         PoolWrapper::Active(pool)
                     }
                     PoolEvent::NodeReply(reply, node) => {
@@ -714,6 +714,15 @@ pub struct ZMQPool {
     pub(super) cmd_socket: zmq::Socket,
 }
 
+impl ZMQPool {
+    pub fn new(pool: Pool<ZMQNetworker, RequestHandlerImpl<ZMQNetworker>>, cmd_socket: zmq::Socket) -> ZMQPool {
+        ZMQPool {
+            pool,
+            cmd_socket,
+        }
+    }
+}
+
 impl Drop for ZMQPool {
     fn drop(&mut self) {
         info!("Drop started");
@@ -744,7 +753,7 @@ mod tests {
 
         #[test]
         pub fn pool_new_works() {
-            let p: Pool<MockNetworker, MockRequestHandler> = Pool::new("pool", 1);
+            let _p: Pool<MockNetworker, MockRequestHandler> = Pool::new("pool", 1);
         }
 
         #[test]
@@ -774,7 +783,7 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_new_initialization_works() {
-            let p: PoolWrapper<MockNetworker, MockRequestHandler> = PoolWrapper::Initialization(PoolSM::new(Rc::new(RefCell::new(MockNetworker::new())), "name", 1));
+            let _p: PoolWrapper<MockNetworker, MockRequestHandler> = PoolWrapper::Initialization(PoolSM::new(Rc::new(RefCell::new(MockNetworker::new())), "name", 1));
         }
 
         #[test]

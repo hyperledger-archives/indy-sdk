@@ -144,7 +144,7 @@ impl PoolService {
         self._send_msg(pool_handle, "connect", &send_cmd_sock);
 
         self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
-            .insert(new_pool.get_id(), ZMQPool { pool: new_pool, cmd_socket: send_cmd_sock });
+            .insert(new_pool.get_id(), ZMQPool::new(new_pool, send_cmd_sock));
         return Ok(pool_handle);
     }
 
@@ -240,9 +240,6 @@ mod tests {
     use utils::test::TestUtils;
     use domain::ledger::request::ProtocolVersion;
     use std::thread;
-    use services::ledger::merkletree::merkletree::MerkleTree;
-    use time::Duration;
-    use std::marker::PhantomData;
 
     pub const NODE1: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","client_ip":"10.0.0.2","client_port":9702,"node_ip":"10.0.0.2","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"},"metadata":{"from":"Th7MpTaRZVRYnPiabds81Y"},"type":"0"},"txnMetadata":{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"},"ver":"1"}"#;
     const TEST_PROTOCOL_VERSION: usize = 2;
@@ -254,7 +251,6 @@ mod tests {
     mod pool_service {
         use super::*;
         use std::path;
-        use std::marker::PhantomData;
         use api::ErrorCode;
         use std::os::raw::c_char;
 
@@ -285,7 +281,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.open_pools.borrow_mut().insert(pool_id, (Pool::new("", pool_id), send_soc));
+            ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id), send_soc));
             let cmd_id = ps.close(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
             assert_eq!(recv.len(), 2);
@@ -304,7 +300,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.open_pools.borrow_mut().insert(pool_id, (Pool::new("", pool_id), send_soc));
+            ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id), send_soc));
             let cmd_id = ps.refresh(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
             assert_eq!(recv.len(), 2);
@@ -342,7 +338,7 @@ mod tests {
             send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
 
             let pool = Pool::new(pool_name, pool_id);
-            ps.open_pools.borrow_mut().insert(pool_id, (pool, send_cmd_sock));
+            ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
 
             fs::create_dir_all(path.as_path()).unwrap();
             assert!(path.exists());
@@ -364,7 +360,7 @@ mod tests {
             send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
             let pool = Pool::new(name, 0);
             let ps = PoolService::new();
-            ps.open_pools.borrow_mut().insert(-1, (pool, send_cmd_sock));
+            ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
             let test_data = "str_instead_of_tx_json";
             ps.send_tx(-1, test_data).unwrap();
             assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
@@ -378,7 +374,7 @@ mod tests {
             let zmq_ctx = zmq::Context::new();
             let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
             let pool = Pool::new(name, 0);
-            ps.open_pools.borrow_mut().insert(-1, (pool, send_cmd_sock));
+            ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
             assert_eq!(ps.get_pool_name(-1).unwrap(), name);
         }
 
@@ -414,10 +410,10 @@ mod tests {
         fn pool_register_sp_parser_works() {
             TestUtils::cleanup_storage();
             REGISTERED_SP_PARSERS.lock().unwrap().clear();
-            extern fn test_sp(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode {
+            extern fn test_sp(_reply_from_node: *const c_char, _parsed_sp: *mut *const c_char) -> ErrorCode {
                 ErrorCode::Success
             }
-            extern fn test_free(data: *const c_char) -> ErrorCode {
+            extern fn test_free(_data: *const c_char) -> ErrorCode {
                 ErrorCode::Success
             }
             PoolService::register_sp_parser("test", test_sp, test_free).unwrap();
@@ -427,10 +423,10 @@ mod tests {
         fn pool_get_sp_parser_works() {
             TestUtils::cleanup_storage();
             REGISTERED_SP_PARSERS.lock().unwrap().clear();
-            extern fn test_sp(reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode {
+            extern fn test_sp(_reply_from_node: *const c_char, _parsed_sp: *mut *const c_char) -> ErrorCode {
                 ErrorCode::Success
             }
-            extern fn test_free(data: *const c_char) -> ErrorCode {
+            extern fn test_free(_data: *const c_char) -> ErrorCode {
                 ErrorCode::Success
             }
             PoolService::register_sp_parser("test", test_sp, test_free).unwrap();
@@ -452,7 +448,7 @@ mod tests {
             let zmq_ctx = zmq::Context::new();
             let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
             let pool = Pool::new(name, 0);
-            ps.pending_pools.borrow_mut().insert(-1, (pool, send_cmd_sock));
+            ps.pending_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
             assert_match!(Ok(-1), ps.add_open_pool(-1));
         }
 
@@ -498,7 +494,7 @@ mod tests {
 
             let mut pool = Pool::new(pool_name, -1);
             pool.work(recv_cmd_sock);
-            ps.open_pools.borrow_mut().insert(-1, (pool, send_cmd_sock));
+            ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
             thread::sleep(time::Duration::from_secs(1));
             ps.close(-1).unwrap();
             thread::sleep(time::Duration::from_secs(1));
@@ -575,10 +571,12 @@ mod tests {
 //        handle.join().expect("join");
 //    }
 
+    #[allow(dead_code)] //FIXME
     mod nodes_emulator {
         extern crate sodiumoxide;
 
-        use services::pool::rust_base58::ToBase58;
+        use services::pool::rust_base58::{FromBase58, ToBase58};
+        use utils::crypto::box_::CryptoBox;
         use std::thread;
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
