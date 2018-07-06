@@ -64,7 +64,7 @@ class Credential(VcxStateful):
     async def deserialize(data: dict):
         credential = await Credential._deserialize("vcx_credential_deserialize",
                                                    json.dumps(data),
-                                                   data.get('source_id'))
+                                                   data.get('data').get('source_id'))
         return credential
 
     @staticmethod

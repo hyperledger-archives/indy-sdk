@@ -494,7 +494,9 @@ mod tests {
     use settings;
     use connection;
     use api::VcxStateType;
-    use utils::constants::{DEFAULT_SERIALIZED_PROOF};
+    use utils::constants::DEFAULT_SERIALIZE_VERSION;
+    use utils::libindy::return_types_u32;
+    use serde_json::Value;
 
     pub const BAD_PROOF_REQUEST: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","claim": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","claim_name": "Account Certificate","claim_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
 
@@ -600,14 +602,26 @@ mod tests {
     }
 
     #[test]
-    fn test_vcx_disclosed_proof_serialize() {
+    fn test_vcx_disclosed_proof_serialize_and_deserialize() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
-        assert_eq!(vcx_disclosed_proof_serialize(0,
+        assert_eq!(vcx_disclosed_proof_serialize(cb.command_handle,
                                        handle,
-                                       Some(serialize_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+                                       Some(cb.get_callback())), error::SUCCESS.code_num);
+        let s = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
+        let j:Value = serde_json::from_str(&s).unwrap();
+        assert_eq!(j["version"], DEFAULT_SERIALIZE_VERSION);
+
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_deserialize(cb.command_handle,
+                                                   CString::new(s).unwrap().into_raw(),
+                                                   Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+
+        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        assert!(handle > 0);
     }
 
     extern "C" fn send_proof_cb(command_handle: u32, err: u32) {
@@ -631,28 +645,6 @@ mod tests {
     extern "C" fn init_cb(command_handle: u32, err: u32) {
         if err != 0 {panic!("create_cb failed: {}", err)}
         println!("successfully called init_cb")
-    }
-
-    extern "C" fn deserialize_cb(command_handle: u32, err: u32, proof_handle: u32) {
-        fn formatter(original: &str) -> String {
-            let original_json: serde_json::Value = serde_json::from_str(&original).unwrap();
-            serde_json::to_string(&original_json).unwrap()
-        }
-        assert_eq!(err, 0);
-        assert!(proof_handle > 0);
-        println!("successfully called deserialize_cb");
-        let original = formatter(DEFAULT_SERIALIZED_PROOF);
-        let new = formatter(&disclosed_proof::to_string(proof_handle).unwrap());
-        assert_eq!(original, new);
-    }
-
-    #[test]
-    fn test_vcx_proof_deserialize_succeeds() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let string = DEFAULT_SERIALIZED_PROOF;
-        vcx_disclosed_proof_deserialize(0,CString::new(string).unwrap().into_raw(), Some(deserialize_cb));
-        thread::sleep(Duration::from_millis(200));
     }
 
     extern "C" fn get_requests_cb(command_handle: u32, err:u32, requests: *const c_char) {
@@ -682,7 +674,7 @@ mod tests {
     fn test_vcx_proof_get_state() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = disclosed_proof::from_string(DEFAULT_SERIALIZED_PROOF).unwrap();
+        let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
         assert!(handle > 0);
         let rc = vcx_disclosed_proof_get_state(0,handle,Some(get_state_cb));
         assert_eq!(rc, error::SUCCESS.code_num);
@@ -693,12 +685,18 @@ mod tests {
     fn test_vcx_disclosed_proof_retrieve_credentials() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-
-        assert_eq!(vcx_disclosed_proof_create_with_request(0,
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
                                                            CString::new("test_create").unwrap().into_raw(),
                                                            CString::new(::utils::constants::PROOF_REQUEST_JSON).unwrap().into_raw(),
-                                                           Some(create_and_retrieve_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+                                                           Some(cb.get_callback())), error::SUCCESS.code_num);
+        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_retrieve_credentials(cb.command_handle,
+                                                            handle,
+                                                            Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        let credentials = cb.receive(None).unwrap().unwrap();
     }
 
     #[test]

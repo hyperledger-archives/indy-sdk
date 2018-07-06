@@ -1,6 +1,8 @@
 use std::fmt;
 use utils::error::{NO_PAYMENT_INFORMATION, OBJECT_CACHE_ERROR, INVALID_CREDENTIAL_JSON, NOT_READY, INVALID_ISSUER_CREDENTIAL_HANDLE, INVALID_CREDENTIAL_REQUEST, INVALID_JSON};
 use error::ToErrorCode;
+use serde_json;
+
 #[derive(Debug)]
 pub enum IssuerCredError {
     CommonError(u32),
@@ -45,5 +47,11 @@ impl ToErrorCode for IssuerCredError {
 impl PartialEq for IssuerCredError {
     fn eq(&self, other: &IssuerCredError) -> bool {
         self.to_error_code() == other.to_error_code()
+    }
+}
+
+impl From<serde_json::Error> for IssuerCredError {
+    fn from(err:serde_json::Error) -> Self {
+        IssuerCredError::InvalidJson()
     }
 }

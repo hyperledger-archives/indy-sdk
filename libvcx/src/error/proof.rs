@@ -1,6 +1,6 @@
 use std::fmt;
 use error::ToErrorCode;
-use utils::error::{INVALID_PROOF_HANDLE, INVALID_PROOF, INVALID_PROOF_CREDENTIAL_DATA, INVALID_SCHEMA,
+use utils::error::{INVALID_JSON, INVALID_PROOF_HANDLE, INVALID_PROOF, INVALID_PROOF_CREDENTIAL_DATA, INVALID_SCHEMA,
 NOT_READY, INVALID_CONNECTION_HANDLE, CONNECTION_ERROR, FAILED_PROOF_COMPLIANCE, CREATE_PROOF_ERROR };
 
 
@@ -17,6 +17,7 @@ pub enum ProofError{
     CreateProofError(),
     InvalidConnection(),
     FailedProofCompliance(),
+    InvalidJson(),
     CommonError(u32),
 }
 
@@ -33,6 +34,7 @@ impl fmt::Display for ProofError {
             ProofError::FailedProofCompliance() => write!(f, "{}", FAILED_PROOF_COMPLIANCE.message),
             ProofError::CreateProofError() => write!(f, "{}", CREATE_PROOF_ERROR.message),
             ProofError::ProofMessageError(x) => write!(f, "Proof Error: Message Error value: , {}", x),
+            ProofError::InvalidJson() => write!(f, "{}", INVALID_JSON.message),
             ProofError::CommonError(x) => write!(f, "This Proof Error Common Error had value: {}", x),
         }
     }
@@ -56,6 +58,7 @@ impl ToErrorCode for ProofError {
             ProofError::ProofNotReadyError() => NOT_READY.code_num,
             ProofError::ProofConnectionError() => INVALID_CONNECTION_HANDLE.code_num,
             ProofError::FailedProofCompliance() => FAILED_PROOF_COMPLIANCE.code_num,
+            ProofError::InvalidJson() => INVALID_JSON.code_num,
             ProofError::ProofMessageError(x) => x,
             ProofError::CommonError(x) => x,
         }

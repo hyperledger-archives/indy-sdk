@@ -21,7 +21,7 @@ use utils::libindy::crypto;
 
 use settings;
 use utils::httpclient;
-use utils::constants::{ SEND_MESSAGE_RESPONSE, CREDS_FROM_PROOF_REQ };
+use utils::constants::{ DEFAULT_SERIALIZE_VERSION, SEND_MESSAGE_RESPONSE, CREDS_FROM_PROOF_REQ };
 
 use serde_json::{Value};
 
@@ -297,6 +297,19 @@ impl DisclosedProof {
 
     fn set_source_id(&mut self, id: &str) { self.source_id = id.to_string(); }
     fn get_source_id(&self) -> &String { &self.source_id }
+    fn to_string(&self) -> String {
+        json!({
+            "version": DEFAULT_SERIALIZE_VERSION,
+            "data": json!(self),
+        }).to_string()
+    }
+    fn from_str(s: &str) -> Result<DisclosedProof, ProofError> {
+        let s:Value = serde_json::from_str(&s)
+            .or(Err(ProofError::InvalidJson()))?;
+        let proof: DisclosedProof= serde_json::from_value(s["data"].clone())
+            .or(Err(ProofError::InvalidJson()))?;
+        Ok(proof)
+    }
 }
 
 //********************************************
@@ -340,15 +353,12 @@ pub fn update_state(handle: u32) -> Result<u32, u32> {
 
 pub fn to_string(handle: u32) -> Result<String, u32> {
     HANDLE_MAP.get(handle, |obj|{
-        serde_json::to_string(&obj).map_err(|e|{
-            warn!("Unable to serialize: {:?}", e);
-            error::SERIALIZATION_ERROR.code_num
-        })
+        Ok(DisclosedProof::to_string(&obj))
     })
 }
 
 pub fn from_string(proof_data: &str) -> Result<u32, ProofError> {
-    let derived_proof: DisclosedProof = match serde_json::from_str(proof_data) {
+    let derived_proof: DisclosedProof = match DisclosedProof::from_str(proof_data) {
         Ok(x) => x,
         Err(y) => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
     };
@@ -528,8 +538,9 @@ mod tests {
         settings::set_defaults();
         let handle = create_proof("id".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
         let serialized = to_string(handle).unwrap();
-        println!("serizlied: {}", serialized);
-        from_string(&serialized).unwrap();
+        let j:Value = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(j["version"], "1.0");
+        DisclosedProof::from_str(&serialized).unwrap();
     }
 
     #[test]
@@ -634,7 +645,7 @@ mod tests {
     fn test_retrieve_credentials() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_retrieve_creds_disclosed_proof";
+        let wallet_name = "test_retrieve_credentials";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         ::utils::libindy::payments::mint_tokens(None, Some(10000000)).unwrap();
         ::utils::libindy::anoncreds::tests::create_and_store_credential();
@@ -647,7 +658,6 @@ mod tests {
         proof.proof_request = Some(proof_req);
 
         let retrieved_creds = proof.retrieve_credentials().unwrap();
-        println!("retrieved_creds: {}", retrieved_creds);
         assert!(retrieved_creds.len() > 500);
 
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
@@ -657,7 +667,7 @@ mod tests {
     fn test_retrieve_credentials_fails_with_no_proof_req() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_retrieve_creds_disclosed_proof";
+        let wallet_name = "retrieve_credentials_fails_with_no_proof_req";
 
         let proof: DisclosedProof = Default::default();
         assert_eq!(proof.retrieve_credentials(), Err(ProofError::ProofNotReadyError()));
@@ -714,8 +724,13 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_proof() {
+        use utils::libindy::wallet::delete_wallet;
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_generate_proof";
+        match delete_wallet(wallet_name) {
+            Ok(_) => {},
+            Err(_) => {},
+        };
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (schema_id, _, cred_def_id, _, _, _, _, cred_id) = ::utils::libindy::anoncreds::tests::create_and_store_credential();

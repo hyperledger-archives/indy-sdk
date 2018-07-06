@@ -20,8 +20,13 @@ describe('CredentialDef:', () => {
   describe('serialize:', () => {
     it('success', async () => {
       const credentialDef = await credentialDefCreate()
-      const data = await credentialDef.serialize()
+      const serialized = await credentialDef.serialize()
+      assert.ok(serialized)
+      assert.property(serialized, 'version')
+      assert.property(serialized, 'data')
+      const { data, version } = serialized
       assert.ok(data)
+      assert.ok(version)
       assert.equal(data.source_id, credentialDef.sourceId)
     })
 
@@ -35,7 +40,7 @@ describe('CredentialDef:', () => {
       const credentialDef = await credentialDefCreate()
       const data = await credentialDef.serialize()
       assert.ok(data)
-      assert.equal(data.source_id, credentialDef.sourceId)
+      assert.equal(data.data.source_id, credentialDef.sourceId)
       assert.equal(await credentialDef.release(), VCXCode.SUCCESS)
       const error = await shouldThrow(() => credentialDef.serialize())
       assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_DEF_HANDLE)
@@ -53,8 +58,8 @@ describe('CredentialDef:', () => {
     })
 
     it('throws: incorrect data', async () => {
-      const error = await shouldThrow(async () => CredentialDef.deserialize({ source_id: 'Invalid' } as any))
-      assert.equal(error.vcxCode, VCXCode.INVALID_CREDENTIAL_DEF)
+      const error = await shouldThrow(async () => CredentialDef.deserialize({ data: { source_id: 'Invalid' } } as any))
+      assert.equal(error.vcxCode, VCXCode.CREATE_CREDENTIAL_DEF_ERR)
     })
   })
 

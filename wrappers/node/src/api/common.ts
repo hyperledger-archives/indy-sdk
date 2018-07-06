@@ -93,7 +93,12 @@ export interface IInitVCXOptions {
 
 export interface IUTXO {
   paymentAddress: string,
-  amount: number,
+  amount: string,
   extra?: string,
   txo?: string
+}
+
+export interface ISerializedData<T> {
+  version: string,
+  data: T
 }

@@ -44,7 +44,11 @@ impl Default for CredentialDef {
 impl CredentialDef {
 
     pub fn from_str(input: &str) -> Result<CredentialDef, CredDefError> {
-        serde_json::from_str(&input).or(Err(CredDefError::CreateCredDefError()))
+        CredentialDef::from_string_with_version(&input).or(Err(CredDefError::CreateCredDefError()))
+    }
+
+    pub fn to_string(&self) -> String {
+        self.to_string_with_version()
     }
 
     pub fn get_source_id(&self) -> &String { &self.source_id }
@@ -61,6 +65,20 @@ impl CredentialDef {
         } else {
             Err(error::NOT_READY.code_num)
         }
+    }
+
+    fn to_string_with_version(&self) -> String {
+        json!({
+            "version": "1.0",
+            "data": json!(self),
+        }).to_string()
+    }
+
+    fn from_string_with_version(data: &str) -> Result<CredentialDef, CredDefError> {
+        let values:serde_json::Value = serde_json::from_str(data).unwrap();
+        let version = values["version"].to_string();
+        let data = values["data"].to_string();
+        serde_json::from_str(&data).or(Err(CredDefError::CreateCredDefError()))
     }
 }
 
@@ -152,17 +170,13 @@ pub fn is_valid_handle(handle: u32) -> bool {
 }
 
 pub fn to_string(handle: u32) -> Result<String, u32> {
-    CREDENTIALDEF_MAP.get(handle, |c| {
-        serde_json::to_string(&c).map_err(|ec|error::INVALID_JSON.code_num)
+    CREDENTIALDEF_MAP.get(handle, |cd| {
+        Ok(CredentialDef::to_string_with_version(&cd))
     })
 }
 
 pub fn from_string(credentialdef_data: &str) -> Result<u32, CredDefError> {
-    let derived_credentialdef: CredentialDef = serde_json::from_str(credentialdef_data)
-        .map_err(|err| {
-            error!("{} with: {}", error::INVALID_CREDENTIAL_DEF_JSON.message, err);
-            CredDefError::CommonError(error::INVALID_CREDENTIAL_DEF_JSON.code_num)
-        })?;
+    let derived_credentialdef: CredentialDef = CredentialDef::from_str(credentialdef_data)?;
     let source_id = derived_credentialdef.source_id.clone();
     let new_handle = CREDENTIALDEF_MAP.add(derived_credentialdef).map_err(|ec|CredDefError::CommonError(ec))?;
 
@@ -289,6 +303,10 @@ pub mod tests {
     #[test]
     fn test_create_credential_def_fails_when_already_created() {
         let wallet_name = "a_test_wallet";
+        match delete_wallet(wallet_name) {
+            Ok(_) => {},
+            Err(_) => {},
+        };
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         let wallet_handle = get_wallet_handle();
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
@@ -317,7 +335,7 @@ pub mod tests {
         set_default_and_enable_test_mode();
         let handle = create_new_credentialdef("SourceId".to_string(),
                                               CREDENTIAL_DEF_NAME.to_string(),
-                                            ISSUER_DID.to_string(),
+                                              ISSUER_DID.to_string(),
                                               SCHEMA_ID.to_string(),
                                               "tag".to_string(),
                                               "{}".to_string()).unwrap();
@@ -330,12 +348,13 @@ pub mod tests {
 
         let handle = create_new_credentialdef("SourceId".to_string(),
                                               CREDENTIAL_DEF_NAME.to_string(),
-                                            ISSUER_DID.to_string(),
+                                              ISSUER_DID.to_string(),
                                               SCHEMA_ID.to_string(),
                                               "tag".to_string(),
                                               "{}".to_string()).unwrap();
         let credential_string = to_string(handle).unwrap();
-        assert!(!credential_string.is_empty());
+        let credential_values: serde_json::Value = serde_json::from_str(&credential_string).unwrap();
+        assert_eq!(credential_values["version"].clone(), "1.0");
     }
 
     #[test]
@@ -352,8 +371,8 @@ pub mod tests {
         release(handle).unwrap();
         let new_handle = from_string(&credentialdef_data).unwrap();
         let new_credentialdef_data = to_string(new_handle).unwrap();
-        let credentialdef1: CredentialDef = serde_json::from_str(&credentialdef_data).unwrap();
-        let credentialdef2: CredentialDef = serde_json::from_str(&new_credentialdef_data).unwrap();
+        let credentialdef1: CredentialDef = CredentialDef::from_str(&credentialdef_data).unwrap();
+        let credentialdef2: CredentialDef = CredentialDef::from_str(&new_credentialdef_data).unwrap();
         assert_eq!(credentialdef1,credentialdef2);
         assert_eq!(CredentialDef::from_str("{}").err(), Some(CredDefError::CreateCredDefError()));
     }

@@ -29,8 +29,8 @@ async def test_create_sets_schema_attrs():
 async def test_serialize():
     schema = await Schema.create(source_id, name, version, attrs, 0)
     data = await schema.serialize()
-    assert data.get('source_id') == source_id
-    assert data.get('name') == name
+    assert data.get('data').get('source_id') == source_id
+    assert data.get('data').get('name') == name
     assert schema.attrs == attrs
 
 
@@ -50,7 +50,7 @@ async def test_deserialize_and_payment_txn():
     schema = await Schema.create(source_id, name, version, attrs, 0)
     data = await schema.serialize()
     schema2 = await Schema.deserialize(data)
-    assert schema2.source_id == data.get('source_id')
+    assert schema2.source_id == data.get('data').get('source_id')
     txn = await schema.get_payment_txn()
     assert txn
 
@@ -98,16 +98,19 @@ async def test_lookup():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_get_schema_id_and_attributes():
     data = {
-        "handle": 1553363118,
-        "schema_id": "id1",
-        "source_id": "Planet Express",
-        "data": ["name", "account"],
-        "name": "Account Ledger",
-        "version": "1.1.1",
-        "sequence_num": 481
+        "data": {
+            "handle": 1553363118,
+            "schema_id": "id1",
+            "source_id": "Planet Express",
+            "data": ["name", "account"],
+            "name": "Account Ledger",
+            "version": "1.1.1",
+            "sequence_num": 481
+        },
+        "version": "1.0"
     }
     schema = await Schema.deserialize(data)
     assert isinstance(schema, Schema)
     seq_number = await schema.get_schema_id()
     assert seq_number == 'id1'
-    assert schema.attrs == data['data']
+    assert schema.attrs == data['data']['data']

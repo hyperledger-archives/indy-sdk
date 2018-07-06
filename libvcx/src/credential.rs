@@ -27,7 +27,7 @@ use connection;
 
 use settings;
 use utils::httpclient;
-use utils::constants::{ SEND_MESSAGE_RESPONSE };
+use utils::constants::{ SEND_MESSAGE_RESPONSE, DEFAULT_SERIALIZE_VERSION };
 
 use error::{ToErrorCode, credential::CredentialError};
 use serde_json::Value;
@@ -323,6 +323,21 @@ impl Credential {
     fn get_payment_info(&self) -> Result<Option<PaymentInfo>, CredentialError> {
         Ok(self.payment_info.clone())
     }
+
+    fn to_string(&self) -> String {
+        json!({
+            "version": DEFAULT_SERIALIZE_VERSION,
+            "data": json!(self),
+        }).to_string()
+    }
+
+    fn from_str(s: &str) -> Result<Credential, CredentialError> {
+        let s:Value = serde_json::from_str(&s)
+            .or(Err(CredentialError::InvalidCredentialJson()))?;
+        let obj: Credential = serde_json::from_value(s["data"].clone())
+            .or(Err(CredentialError::InvalidCredentialJson()))?;
+        Ok(obj)
+    }
 }
 
 //********************************************
@@ -523,10 +538,7 @@ pub fn is_valid_handle(handle: u32) -> bool {
 
 pub fn to_string(handle: u32) -> Result<String, u32> {
     HANDLE_MAP.get(handle, |obj|{
-        serde_json::to_string(&obj).map_err(|e|{
-            warn!("Unable to serialize: {:?}", e);
-            error::SERIALIZATION_ERROR.code_num
-        })
+        Ok(Credential::to_string(&obj))
     })
 }
 
@@ -537,7 +549,7 @@ pub fn get_source_id(handle: u32) -> Result<String, CredentialError> {
 }
 
 pub fn from_string(credential_data: &str) -> Result<u32, u32> {
-    let credential: Credential = match serde_json::from_str(credential_data) {
+    let credential: Credential = match Credential::from_str(credential_data) {
         Ok(x) => x,
         Err(y) => return Err(error::INVALID_JSON.code_num),
     };
@@ -591,7 +603,7 @@ pub mod tests {
     }
 
     fn create_credential_with_price(price:u64) -> Credential{
-        let mut cred: Credential = serde_json::from_str(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
+        let mut cred: Credential = Credential::from_str(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         cred.payment_info = Some(PaymentInfo {
             payment_required: "one-time".to_string(),
             payment_addr: "pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j".to_string(),
@@ -627,13 +639,13 @@ pub mod tests {
         release(handle).unwrap();
         assert_eq!(release(handle).err(), Some(CredentialError::InvalidHandle()));
         let handle = from_string(&credential_string).unwrap();
-        let cred1: Credential = serde_json::from_str(&credential_string).unwrap();
+        let cred1: Credential = Credential::from_str(&credential_string).unwrap();
         assert_eq!(cred1.get_state(), 3);
-        let cred2: Credential = serde_json::from_str(&to_string(handle).unwrap()).unwrap();
+        let cred2: Credential = Credential::from_str(&to_string(handle).unwrap()).unwrap();
         assert!(!cred1.is_payment_required());
         assert_eq!(cred1, cred2);
         let handle = from_string(DEFAULT_SERIALIZED_CREDENTIAL_PAYMENT_REQUIRED).unwrap();
-        let payment_required_credential: Credential = serde_json::from_str(&to_string(handle).unwrap()).unwrap();
+        let payment_required_credential: Credential = Credential::from_str(&to_string(handle).unwrap()).unwrap();
         assert!(payment_required_credential.is_payment_required())
     }
 
@@ -700,7 +712,7 @@ pub mod tests {
         use utils::devsetup;
         let test_name = "test_pay_for_non_premium_credential";
         devsetup::tests::setup_ledger_env(test_name);
-        let cred: Credential = serde_json::from_str(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
+        let cred: Credential = Credential::from_str(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         assert!(cred.payment_info.is_none());
         assert_eq!(cred.submit_payment().err(), Some(CredentialError::NoPaymentInformation()));
         devsetup::tests::cleanup_dev_env(test_name);
@@ -740,13 +752,10 @@ pub mod tests {
     fn test_get_credential() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-
         let handle = from_string(::utils::constants::DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         let offer_string = get_credential_offer(handle).unwrap();
-        println!("{}", offer_string);
-        let handle = from_string(r#"{"source_id":"test_credential_serialize_deserialize","state":4,"credential_name":null,"credential_request":null,"credential_offer":null,"msg_uid":null,"agent_did":null,"agent_vk":null,"my_did":null,"my_vk":null,"their_did":null,"their_vk":null,"cred_id":null,"credential":"something","payment_info":null}"#).unwrap();
+        let handle = from_string(::utils::constants::FULL_CREDENTIAL_SERIALIZED).unwrap();
         let cred_string = get_credential(handle).unwrap();
-        println!("{}", cred_string);
     }
 
     #[cfg(feature = "pool_tests")]

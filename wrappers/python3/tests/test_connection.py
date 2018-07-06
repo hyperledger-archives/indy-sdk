@@ -51,8 +51,8 @@ async def test_call_to_connect_state_not_initialized():
         connection = await Connection.create(source_id)
         await connection.connect(phone_number)
         data = await connection.serialize()
-        data['state'] = 0
-        data['handle'] = random.randint(900, 99999)
+        data['data']['state'] = 0
+        data['data']['handle'] = random.randint(900, 99999)
         connection2 = await Connection.deserialize(data)
         await connection2.connect(phone_number)
     assert ErrorCode.ConnectionError == e.value.error_code
@@ -64,7 +64,7 @@ async def test_serialize():
     connection = await Connection.create(source_id)
     await connection.connect(phone_number)
     data = await connection.serialize()
-    assert data.get('source_id') == source_id
+    assert data.get('data').get('source_id') == source_id
 
 
 @pytest.mark.asyncio

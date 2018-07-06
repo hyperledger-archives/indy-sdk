@@ -3,7 +3,7 @@ import { Callback } from 'ffi'
 import { VCXInternalError } from '../errors'
 import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
-import { StateType } from './common'
+import { ISerializedData, StateType } from './common'
 import { Connection } from './connection'
 import { VCXBaseWithState } from './vcx-base-with-state'
 import { VCXPaymentTxn } from './vcx-payment-txn'
@@ -210,17 +210,19 @@ export class IssuerCredential extends VCXPaymentTxn(IssuerCredentialBase) {
  * @static
  * @async
  * @function deserialize
- * @param {IIssuerCredentialData} credentialData - Data from the serialize api. Used to create IssuerCredential Object
+ * @param {ISerializedData<IIssuerCredentialData>} credentialData - Data from the serialize api.
+ * Used to create IssuerCredential Object
  * @returns {Promise<IssuerCredential>} An Issuer credential Object
  */
-  public static async deserialize (credentialData: IIssuerCredentialData) {
+  public static async deserialize (credentialData: ISerializedData<IIssuerCredentialData>) {
     try {
-      const attr = JSON.parse(credentialData.credential_attributes)
+      const { data: { credential_name, price, credential_attributes, cred_def_id } } = credentialData
+      const attr: IIssuerCredentialVCXAttributes = JSON.parse(credential_attributes)
       const params: IIssuerCredentialParams = {
         attr,
-        credDefId: credentialData.cred_def_id,
-        credentialName: credentialData.credential_name,
-        price: credentialData.price
+        credDefId: cred_def_id,
+        credentialName: credential_name,
+        price
       }
       const credential = await super._deserialize<IssuerCredential, IIssuerCredentialParams>(
         IssuerCredential,

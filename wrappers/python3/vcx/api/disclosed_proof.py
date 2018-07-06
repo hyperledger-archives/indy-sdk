@@ -63,7 +63,7 @@ class DisclosedProof(VcxStateful):
     async def deserialize(data: dict):
         disclosed_proof = await DisclosedProof._deserialize("vcx_disclosed_proof_deserialize",
                                                       json.dumps(data),
-                                                      data.get('source_id'))
+                                                      data.get('data').get('source_id'))
         return disclosed_proof
 
     @staticmethod

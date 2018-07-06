@@ -82,8 +82,13 @@ describe('Credential:', () => {
   describe('serialize:', () => {
     it('success', async () => {
       const credential = await credentialCreateWithOffer()
-      const data = await credential.serialize()
+      const serialized = await credential.serialize()
+      assert.ok(serialized)
+      assert.property(serialized, 'version')
+      assert.property(serialized, 'data')
+      const { data, version } = serialized
       assert.ok(data)
+      assert.ok(version)
       assert.equal(data.source_id, credential.sourceId)
     })
 
@@ -95,7 +100,7 @@ describe('Credential:', () => {
 
     it('throws: credential released', async () => {
       const credential = await credentialCreateWithOffer()
-      const data = await credential.serialize()
+      const { data } = await credential.serialize()
       assert.ok(data)
       assert.equal(data.source_id, credential.sourceId)
       assert.equal(await credential.release(), VCXCode.SUCCESS)
@@ -115,7 +120,8 @@ describe('Credential:', () => {
     })
 
     it('throws: incorrect data', async () => {
-      const error = await shouldThrow(async () => Credential.deserialize({ source_id: 'Invalid' } as any))
+      const error = await shouldThrow(async () => Credential.deserialize({
+        data: { source_id: 'Invalid' } } as any))
       assert.equal(error.vcxCode, VCXCode.INVALID_JSON)
     })
   })

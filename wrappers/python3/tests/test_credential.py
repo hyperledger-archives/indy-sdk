@@ -97,6 +97,10 @@ credential_json = {
    }
   }
 
+credential_json_versioned = {
+    'version': "1.0",
+    'data': credential_json
+}
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -125,7 +129,7 @@ async def test_create_credential_with_msgid():
 async def test_serialize():
     credential = await Credential.create(source_id, offer)
     data = await credential.serialize()
-    assert data.get('source_id') == source_id
+    assert data.get('data').get('source_id') == source_id
 
 
 @pytest.mark.asyncio
@@ -143,9 +147,9 @@ async def test_serialize_with_bad_handle():
 async def test_deserialize():
     credential = await Credential.create(source_id, offer)
     data = await credential.serialize()
-    data['state'] = State.Expired
+    data['data']['state'] = State.Expired
     credential2 = await Credential.deserialize(data)
-    assert credential2.source_id == data.get('source_id')
+    assert credential2.source_id == data.get('data').get('source_id')
     assert await credential2.get_state() == State.Expired
 
 
@@ -153,7 +157,7 @@ async def test_deserialize():
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_deserialize_with_invalid_data():
     with pytest.raises(VcxError) as e:
-        data = {'invalid': -99}
+        data = {'data':{'invalid': -99}}
         await Credential.deserialize(data)
     assert ErrorCode.InvalidJson == e.value.error_code
 
@@ -209,7 +213,7 @@ async def test_send_request():
     connection = await Connection.create(source_id)
     await connection.connect(phone_number)
     cred_with_msg_id = credential_json
-    credential = await Credential.deserialize(credential_json)
+    credential = await Credential.deserialize(credential_json_versioned)
     await credential.send_request(connection, 0)
     assert await credential.update_state() == State.OfferSent
 

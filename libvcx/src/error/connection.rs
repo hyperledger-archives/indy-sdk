@@ -4,7 +4,7 @@ use error::ToErrorCode;
 use std::error::Error;
 use utils::error::{ INVALID_CONNECTION_HANDLE,
                    CONNECTION_ERROR, NOT_READY,
-                   INVALID_INVITE_DETAILS, INVALID_MSGPACK,
+                   INVALID_INVITE_DETAILS, INVALID_MSGPACK, INVALID_JSON,
                    UNKNOWN_LIBINDY_ERROR, CANNOT_DELETE_CONNECTION, CREATE_CONNECTION_ERROR,
                    INVALID_WALLET_SETUP, COMMON_ERROR };
 
@@ -17,6 +17,7 @@ pub enum ConnectionError {
     InvalidHandle(),
     InvalidWalletSetup(),
     InvalidMessagePack(),
+    InvalidJson(),
     CannotDeleteConnection(),
     CommonError(u32),
 }
@@ -33,6 +34,7 @@ impl fmt::Display for ConnectionError {
             ConnectionError::InvalidMessagePack() => write!(f, "{}", INVALID_MSGPACK.message),
             ConnectionError::InvalidWalletSetup() => write!(f, "{}", INVALID_WALLET_SETUP.message),
             ConnectionError::CannotDeleteConnection() => write!(f, "{}", CANNOT_DELETE_CONNECTION.message),
+            ConnectionError::InvalidJson() => write!(f, "{}", INVALID_JSON.message),
             ConnectionError::CommonError(x) => connection_message(f, x),
         }
     }
@@ -56,6 +58,7 @@ impl Error for ConnectionError {
             ConnectionError::InviteDetailError() => None,
             ConnectionError::InvalidMessagePack() => None,
             ConnectionError::InvalidWalletSetup() => None,
+            ConnectionError::InvalidJson() => None,
             ConnectionError::CannotDeleteConnection() => None,
             ConnectionError::CommonError(x) => None,
         }
@@ -72,6 +75,7 @@ impl Error for ConnectionError {
             ConnectionError::InviteDetailError() => INVALID_INVITE_DETAILS.message,
             ConnectionError::InvalidWalletSetup() => INVALID_WALLET_SETUP.message,
             ConnectionError::CannotDeleteConnection() => CANNOT_DELETE_CONNECTION.message,
+            ConnectionError::InvalidJson() => INVALID_JSON.message,
             ConnectionError::CommonError(x) => COMMON_ERROR.message,
         }
     }
@@ -88,6 +92,7 @@ impl ToErrorCode for ConnectionError {
            ConnectionError::CannotDeleteConnection() => CANNOT_DELETE_CONNECTION.code_num,
            ConnectionError::CreateError(key) => CREATE_CONNECTION_ERROR.code_num,
            ConnectionError::InvalidWalletSetup() => INVALID_WALLET_SETUP.code_num,
+           ConnectionError::InvalidJson() => INVALID_JSON.code_num,
            ConnectionError::CommonError(x) => x,
        }
    }
