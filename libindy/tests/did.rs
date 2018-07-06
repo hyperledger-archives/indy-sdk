@@ -1069,6 +1069,36 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_store_their_did_works_for_is_802() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            let identity_json = json!({
+                "did": DID,
+                "verkey": VERKEY,
+            }).to_string();
+
+            // 1. Try 'storeTheirDid' operation with say did1 and verkey1
+            DidUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            // 2. Repeat above operation (with same did and ver key used in #1)
+            // but this time catch and swallow the exception (it will throw the exception WalletItemAlreadyExistsException)
+            let res = DidUtils::store_their_did(wallet_handle, &identity_json);
+            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err());
+
+            // 3. Then, now if you try 'storeTheirDid' operation
+            // (either with same did and verkey or you can choose different did and verkey),
+            // in IS-802 it fails with error 'Storage error occurred during wallet operation.'
+            let res = DidUtils::store_their_did(wallet_handle, &identity_json);
+            assert_eq!(ErrorCode::WalletItemAlreadyExists, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod replace_keys {
