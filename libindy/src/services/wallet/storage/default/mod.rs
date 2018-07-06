@@ -858,6 +858,21 @@ mod tests {
     }
 
     #[test]
+    fn sqlite_storage_add_works_for_is_802() {
+        _cleanup();
+
+        let storage = _storage();
+
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+
+        let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags());
+        assert_match!(Err(WalletStorageError::ItemAlreadyExists), res);
+
+        let res = storage.add(&_type1(), &_id1(), &_value1(), &_tags());
+        assert_match!(Err(WalletStorageError::ItemAlreadyExists), res);
+    }
+
+    #[test]
     fn sqlite_storage_set_get_works() {
         _cleanup();
 
