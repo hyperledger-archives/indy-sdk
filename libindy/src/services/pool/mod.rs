@@ -141,7 +141,7 @@ impl PoolService {
         send_cmd_sock.connect(inproc_sock_name.as_str())?;
 
         new_pool.work(recv_cmd_sock);
-        self._send_msg(pool_handle, "connect", &send_cmd_sock);
+        self._send_msg(pool_handle, "connect", &send_cmd_sock)?;
 
         self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
             .insert(new_pool.get_id(), ZMQPool::new(new_pool, send_cmd_sock));
@@ -160,11 +160,13 @@ impl PoolService {
 
     pub fn send_tx(&self, handle: i32, msg: &str) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.open_pools.try_borrow().map_err(CommonError::from)?
-            .get(&handle)
-            .map(|ref pool| {
-                self._send_msg(cmd_id, msg, &pool.cmd_socket);
-            }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
+
+        let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
+        match pools.get(&handle) {
+            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket)?,
+            None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
+        }
+
         Ok(cmd_id)
     }
 
@@ -190,26 +192,32 @@ impl PoolService {
 
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.open_pools.try_borrow_mut().map_err(CommonError::from)?
-            .remove(&handle).map(|pool| {
-                self._send_msg(cmd_id, "exit", &pool.cmd_socket);
-            }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
+
+        let mut pools = self.open_pools.try_borrow_mut().map_err(CommonError::from)?;
+        match pools.remove(&handle) {
+            Some(ref pool) => self._send_msg(cmd_id, "exit", &pool.cmd_socket)?,
+            None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
+        }
+
         Ok(cmd_id)
     }
 
     pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
-        self.open_pools.try_borrow_mut().map_err(CommonError::from)?
-            .get(&handle).map(|ref pool| {
-                self._send_msg(cmd_id, "refresh", &pool.cmd_socket);
-            }).ok_or(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))?;
+
+        let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
+        match pools.get(&handle) {
+            Some(ref pool) => self._send_msg(cmd_id, "refresh", &pool.cmd_socket)?,
+            None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
+        };
+
         Ok(cmd_id)
     }
 
-    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket) {
+    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket) -> Result<(), PoolError> {
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
-        socket.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
+        Ok(socket.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT)?)
     }
 
     pub fn list(&self) -> Result<Vec<serde_json::Value>, PoolError> {
@@ -364,6 +372,21 @@ mod tests {
             let test_data = "str_instead_of_tx_json";
             ps.send_tx(-1, test_data).unwrap();
             assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
+        }
+
+        #[test]
+        fn pool_send_tx_works_for_closed_socket() {
+            TestUtils::cleanup_storage();
+
+            let name = "test";
+            let zmq_ctx = zmq::Context::new();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+
+            let pool = Pool::new(name, 0);
+            let ps = PoolService::new();
+            ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
+            let res = ps.send_tx(-1, "test_data");
+            assert_match!(Err(PoolError::CommonError(CommonError::IOError(_))), res);
         }
 
         #[test]
@@ -571,8 +594,7 @@ mod tests {
 //        handle.join().expect("join");
 //    }
 
-    #[allow(dead_code)] //FIXME
-    mod nodes_emulator {
+    pub mod nodes_emulator {
         extern crate sodiumoxide;
 
         use services::pool::rust_base58::{FromBase58, ToBase58};
@@ -580,20 +602,15 @@ mod tests {
         use std::thread;
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
+        use sodiumoxide::crypto::sign::ed25519::PublicKey;
 
-        pub static POLL_TIMEOUT: i64 = 5_000; /* in ms */
+        pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 
-        pub fn start() -> (NodeTransactionV1, thread::JoinHandle<Vec<String>>) {
-            let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = CryptoBox::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
-            let skc = CryptoBox::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
-            let ctx = zmq::Context::new();
-            let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
-
+        pub fn node() -> NodeTransactionV1 {
             let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
                                      &SignKey::new(None).unwrap()).unwrap().as_bytes().to_base58();
 
-            let gt = NodeTransactionV1 {
+            NodeTransactionV1 {
                 txn: Txn {
                     txn_type: "1".to_string(),
                     protocol_version: None,
@@ -601,13 +618,13 @@ mod tests {
                         data: NodeData {
                             alias: "n1".to_string(),
                             client_ip: Some("127.0.0.1".to_string()),
-                            client_port: Some(9700),
-                            node_ip: Some("".to_string()),
+                            client_port: Some(9000),
+                            node_ip: Some(String::new()),
                             node_port: Some(0),
                             services: Some(vec!["VALIDATOR".to_string()]),
-                            blskey: Some(blskey),
+                            blskey: Some(blskey.to_string()),
                         },
-                        dest: (&vk.0 as &[u8]).to_base58(),
+                        dest: "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv".to_string(),
                         verkey: None,
                     },
                     metadata: TxnMetadata { req_id: None, from: String::new() },
@@ -619,26 +636,81 @@ mod tests {
                 },
                 req_signature: ReqSignature { type_: None, values: None },
                 ver: String::new(),
-            };
-            let addr = format!("tcp://{}:{}", gt.txn.data.data.client_ip.clone().unwrap(), gt.txn.data.data.client_port.clone().unwrap());
+            }
+        }
+
+        pub fn node_2() -> NodeTransactionV1 {
+            let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
+                                     &SignKey::new(None).unwrap()).unwrap().as_bytes().to_base58();
+
+            NodeTransactionV1 {
+                txn: Txn {
+                    txn_type: "1".to_string(),
+                    protocol_version: None,
+                    data: TxnData {
+                        data: NodeData {
+                            alias: "n2".to_string(),
+                            client_ip: Some("127.0.0.1".to_string()),
+                            client_port: Some(9001),
+                            node_ip: Some(String::new()),
+                            node_port: Some(0),
+                            services: Some(vec!["VALIDATOR".to_string()]),
+                            blskey: Some(blskey.to_string()),
+                        },
+                        dest: "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv".to_string(),
+                        verkey: None,
+                    },
+                    metadata: TxnMetadata { req_id: None, from: String::new() },
+                },
+                txn_metadata: Metadata {
+                    creation_time: None,
+                    seq_no: None,
+                    txn_id: None,
+                },
+                req_signature: ReqSignature { type_: None, values: None },
+                ver: String::new(),
+            }
+        }
+
+        pub fn start(gt: &mut NodeTransactionV1) -> thread::JoinHandle<Vec<String>> {
+            let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
+            let pkc = CryptoBox::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
+            let skc = CryptoBox::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
+            let ctx = zmq::Context::new();
+            let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
+
+            gt.txn.data.dest = (&vk.0 as &[u8]).to_base58();
+
             s.set_curve_publickey(&zmq::z85_encode(pkc.as_slice()).unwrap()).expect("set public key");
             s.set_curve_secretkey(&zmq::z85_encode(skc.as_slice()).unwrap()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");
-            s.bind(addr.as_str()).expect("bind");
+
+            s.bind("tcp://127.0.0.1:*").expect("bind");
+
+            let parts = s.get_last_endpoint().unwrap().unwrap();
+            let parts = parts.rsplit(":").collect::<Vec<&str>>();
+
+            gt.txn.data.data.client_port = Some(parts[0].parse::<u64>().unwrap());
+
             let handle = thread::spawn(move || {
                 let mut received_msgs: Vec<String> = Vec::new();
-                let poll_res = s.poll(zmq::POLLIN, POLL_TIMEOUT).expect("poll");
-                if poll_res == 1 {
-                    let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
-                    trace!("Node emulator poll recv {:?}", v);
-                    s.send_multipart(&[v[0].as_slice(), "po".as_bytes()], zmq::DONTWAIT).expect("send mulp");
-                    received_msgs.push(String::from_utf8(v[1].clone()).unwrap());
-                } else {
-                    warn!("Node emulator poll return {}", poll_res)
+
+                loop {
+                    let poll_res = s.poll(zmq::POLLIN, POLL_TIMEOUT).expect("poll");
+                    if poll_res == 1 {
+                        let v = s.recv_multipart(zmq::DONTWAIT).expect("recv mulp");
+                        trace!("Node emulator poll recv {:?}", v);
+                        s.send_multipart(&[v[0].as_slice(), "po".as_bytes()], zmq::DONTWAIT).expect("send mulp");
+                        received_msgs.push(String::from_utf8(v[1].clone()).unwrap());
+                    } else {
+                        warn!("Node emulator poll return {}", poll_res);
+                        break
+                    }
                 }
+
                 received_msgs
             });
-            (gt, handle)
+            handle
         }
     }
 }
