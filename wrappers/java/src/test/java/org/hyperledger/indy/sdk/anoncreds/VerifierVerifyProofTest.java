@@ -57,7 +57,7 @@ public class VerifierVerifyProofTest extends AnoncredsIntegrationTest {
 			"       }" +
 			"   }," +
 			"   \"requested_proof\":{" +
-			"       \"revealed_attrs\":{\"attr1_referent\":{\"sub_proof_index\":0,\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"}},\"self_attested_attrs\":{},\"unrevealed_attrs\":{},\"predicates\":{}},\"identifiers\":[{\"schema_id\":\"NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0\",\"cred_def_id\":\"NcYxiDXkpYi6ov5FcYDi1e:3:CL:NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0\",\"rev_reg_id\":null,\"timestamp\":null}" +
+			"       \"revealed_attrs\":{\"attr1_referent\":{\"sub_proof_index\":0,\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"}},\"self_attested_attrs\":{},\"unrevealed_attrs\":{},\"predicates\":{}},\"identifiers\":[{\"schema_id\": \"\",\"cred_def_id\": \"\",\"rev_reg_id\":null,\"timestamp\":null}" +
 			"   ]" +
 			"}\n";
 
