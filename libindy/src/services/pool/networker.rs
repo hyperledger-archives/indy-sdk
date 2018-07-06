@@ -352,7 +352,6 @@ mod networker_tests {
     use services::pool::tests::nodes_emulator;
     use utils::crypto::box_::CryptoBox;
     use services::pool::rust_base58::FromBase58;
-    use std::ops::Sub;
     use std;
     use std::thread;
 
@@ -372,6 +371,7 @@ mod networker_tests {
     #[cfg(test)]
     mod networker {
         use super::*;
+        use std::ops::Sub;
 
         #[test]
         pub fn networker_new_works() {
@@ -592,13 +592,13 @@ mod networker_tests {
 
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
 
-            let ((req_id, node_alias), timeout) = networker.get_timeout();
+            let (_, timeout) = networker.get_timeout();
 
             assert_eq!(::std::i64::MAX, timeout);
 
             networker.process_event(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string())));
 
-            let ((req_id, node_alias), timeout) = networker.get_timeout();
+            let (_, timeout) = networker.get_timeout();
 
             assert_ne!(::std::i64::MAX, timeout);
         }
@@ -630,6 +630,7 @@ mod networker_tests {
     #[cfg(test)]
     mod pool_connection {
         use super::*;
+        use std::ops::Sub;
 
         #[test]
         fn pool_connection_new_works() {
