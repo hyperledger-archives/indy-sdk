@@ -42,7 +42,7 @@ use self::openssl::hash::{MessageDigest, Hasher};
 use self::sodiumoxide::crypto::secretbox;
 
 use utils::domain::anoncreds::schema::{Schema, SchemaV1};
-use utils::domain::anoncreds::credential_definition::{CredentialDefinitionV1};
+use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinitionV1;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistryV1;
 use utils::domain::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
@@ -808,18 +808,19 @@ mod high_cases {
                   "primary":{
                      "n":"1",
                      "s":"2",
-                     "rms":"3",
-                     "r":{"name":"1"},
+                     "r":{"name":"1","master_secret":"3"},
                      "rctxt":"1",
                      "z":"1"
                   }
                }
             }"#;
 
-            let expected_result = r#""operation":{"ref":1,"data":{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"},"rctxt":"1","z":"1"}},"type":"102","signature_type":"CL","tag":"TAG_1"}"#;
+            let expected_result = r#"{"ref":1,"data":{"primary":{"n":"1","s":"2","r":{"name":"1","master_secret":"3"},"rctxt":"1","z":"1"}},"type":"102","signature_type":"CL","tag":"TAG_1"}"#;
 
             let cred_def_request = LedgerUtils::build_cred_def_txn(IDENTIFIER, cred_def_json).unwrap();
-            assert!(cred_def_request.contains(&expected_result));
+
+            assert_eq!(serde_json::from_str::<serde_json::Value>(&cred_def_request).unwrap()["operation"].as_object().unwrap(),
+                       serde_json::from_str::<serde_json::Value>(&expected_result).unwrap().as_object().unwrap());
         }
 
         #[test]
