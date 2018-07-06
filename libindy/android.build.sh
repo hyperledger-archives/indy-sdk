@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 WORKDIR=${PWD}
+BUILD_FOLDER= "$(realpath "${WORKDIR}/../android_build")"
 DOWNLOAD_PREBUILTS="0"
-BUILD_FOLDER=${WORKDIR}/android_build
 
 while getopts ":d" opt; do
     case ${opt} in
@@ -80,6 +80,7 @@ build_for_arch(){
         export ABI="x86"
         execute_build_steps
     fi
+###    cleanup
 
 }
 
@@ -88,12 +89,12 @@ download_and_unzip_dependencies_for_all_architectures(){
     pushd ${BUILD_FOLDER}
         if [ ! -d "indy-android-dependencies" ] ; then
             git clone https://github.com/evernym/indy-android-dependencies.git
-            pushd indy-android-dependencies/prebuilt/
+            pushd ${BUILD_FOLDER}/indy-android-dependencies/prebuilt/
                 git checkout tags/v1.0.1
                 find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -qq -d "$(dirname "FILENAME")" "FILENAME"'
             popd
-            ln -sf indy-android-dependencies/prebuilt dependencies
         fi
+        ln -sf ${BUILD_FOLDER}/indy-android-dependencies/prebuilt dependencies
         export OPENSSL_DIR=${BUILD_FOLDER}/dependencies/openssl/openssl_${TARGET_ARCH}
         export SODIUM_DIR=${BUILD_FOLDER}/dependencies/sodium/libsodium_${TARGET_ARCH}
         export LIBZMQ_DIR=${BUILD_FOLDER}/dependencies/zmq/libzmq_${TARGET_ARCH}
@@ -149,7 +150,17 @@ setup_dependencies(){
     fi
 }
 
+create_standalone_toolchain_and_rust_target(){
+    #will only create toolchain if not already created
+    python3 ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py \
+    --arch ${TARGET_ARCH} \
+    --api ${TARGET_API} \
+    --stl=gnustl \
+    --install-dir ${TOOLCHAIN_DIR}
 
+    # add rust target
+    rustup target add ${TRIPLET}
+}
 
 download_and_setup_toolchain(){
     if [ "$(uname)" == "Darwin" ]; then
@@ -181,6 +192,7 @@ download_and_setup_toolchain(){
         export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
         popd
     fi
+
 }
 
 
@@ -192,11 +204,11 @@ set_env_vars(){
     export RUST_LOG=indy=trace
     export RUST_TEST_THREADS=1
     export RUST_BACKTRACE=1
-    export OPENSSL_DIR=${WORKDIR}/${OPENSSL_DIR}
-    export SODIUM_LIB_DIR=${WORKDIR}/${SODIUM_DIR}/lib
-    export SODIUM_INCLUDE_DIR=${WORKDIR}/${SODIUM_DIR}/include
-    export LIBZMQ_LIB_DIR=${WORKDIR}/${LIBZMQ_DIR}/lib
-    export LIBZMQ_INCLUDE_DIR=${WORKDIR}/${LIBZMQ_DIR}/include
+    export OPENSSL_DIR=${OPENSSL_DIR}
+    export SODIUM_LIB_DIR=${SODIUM_DIR}/lib
+    export SODIUM_INCLUDE_DIR=${SODIUM_DIR}/include
+    export LIBZMQ_LIB_DIR=${LIBZMQ_DIR}/lib
+    export LIBZMQ_INCLUDE_DIR=${LIBZMQ_DIR}/include
     export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH}
     export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
     export PKG_CONFIG_ALLOW_CROSS=1
@@ -207,23 +219,23 @@ set_env_vars(){
     export RANLIB=${TOOLCHAIN_DIR}/bin/${TRIPLET}-ranlib
     export TARGET=android
     export OPENSSL_STATIC=1
+
+cat << EOF > ${WORKDIR}/.cargo/config
+[target.${TRIPLET}]
+ar = "${AR}"
+linker = "${CC}"
+runner = "./run-on-adroid.sh"
+[build]
+target-dir = "${BUILD_FOLDER}"
+EOF
+
 }
 
 
 
 
 
-create_standalone_toolchain_and_rust_target(){
-    #will only create toolchain if not already created
-    python3 ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py \
-    --arch ${TARGET_ARCH} \
-    --api ${TARGET_API} \
-    --stl=gnustl \
-    --install-dir ${TOOLCHAIN_DIR}
 
-    # add rust target
-    rustup target add ${TRIPLET}
-}
 
 
 
@@ -291,18 +303,19 @@ test(){
     popd
 }
 
-cleanup(){
-    rm -rf ${BUILD_FOLDER}/indy-android-dependencies
-}
+#cleanup(){
+##    rm -rf ${BUILD_FOLDER}
+#
+#}
 
 execute_build_steps(){
         setup_dependencies
         download_and_setup_toolchain
         set_env_vars
         create_standalone_toolchain_and_rust_target
-        build
         test
-        package_library
+#        build
+#        package_library
 }
 
 build_for_arch $@

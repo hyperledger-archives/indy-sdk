@@ -1,15 +1,6 @@
-[target.aarch64-linux-android]
-linker = "aarch64-linux-android-gcc"
-runner = "./run-on-adroid.sh"
-
-[target.arm-linux-androideabi]
-linker = "arm-linux-androideabi-gcc"
-runner = "./run-on-adroid.sh"
-
 [target.i686-linux-android]
-linker = "/home/vagrant/Work/repos/faisal00813/indy-sdk/libindy/build_scripts/android/toolchains/linux/x86/bin/i686-linux-android-clang"
-runner = "/home/vagrant/Work/repos/faisal00813/indy-sdk/libindy/build_scripts/android/indy-sdk/libindy/run-on-android.sh"
-
-[target.x86_64-linux-android]
-linker = "x86_64-linux-android-gcc"
+ar = "/home/vagrant/Work/repos/faisal00813/indy-sdk/libindy/../android_build/toolchains/linux/x86/bin/i686-linux-android-ar"
+linker = "/home/vagrant/Work/repos/faisal00813/indy-sdk/libindy/../android_build/toolchains/linux/x86/bin/i686-linux-android-clang"
 runner = "./run-on-adroid.sh"
+[build]
+target-dir = "/home/vagrant/Work/repos/faisal00813/indy-sdk/libindy/../android_build"

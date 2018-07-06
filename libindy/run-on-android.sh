@@ -1,12 +1,13 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-set -e
-EXE="$1"
-EXE_NAME=`basename $EXE`
+#set -e
+
 
 TARGET_ARCH="x86"
 TARGET_API="21"
 CROSS_COMPILE="i686-linux-android"
+EXE="$1"
+EXE_NAME=`basename $EXE`
 echo ">> in runner script"
 WORKDIR=${PWD}
 
