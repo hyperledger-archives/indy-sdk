@@ -54,7 +54,7 @@ impl Networker for ZMQNetworker {
             Some(NetworkerEvent::SendAllRequest(_, req_id)) | Some(NetworkerEvent::SendOneRequest(_, req_id)) | Some(NetworkerEvent::Resend(req_id)) => {
                 let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
                     self.pool_connections.iter().next_back().and_then(|(pc_idx, pc)| {
-                        if pc.is_active() && pc.req_cnt < MAX_REQ_PER_POOL_CON {
+                        if pc.is_active() && pc.req_cnt < MAX_REQ_PER_POOL_CON && pc.nodes.eq(&self.nodes) {
                             Some(*pc_idx)
                         } else {
                             None
@@ -83,6 +83,7 @@ impl Networker for ZMQNetworker {
                 None
             }
             Some(NetworkerEvent::NodesStateUpdated(nodes)) => {
+                trace!("ZMQNetworker::process_event: nodes_updated {:?}", nodes);
                 self.nodes = nodes;
                 None
             }
@@ -167,6 +168,8 @@ pub struct PoolConnection {
 
 impl PoolConnection {
     fn new(nodes: Vec<RemoteNode>) -> Self {
+        trace!("PoolConnection::new: from nodes {:?}", nodes);
+
         //TODO shuffle nodes
         let mut sockets: Vec<Option<ZSocket>> = Vec::new();
         for _ in 0..nodes.len() { sockets.push(None); }
