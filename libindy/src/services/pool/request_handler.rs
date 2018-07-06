@@ -87,7 +87,6 @@ impl RequestState for FinishState {
 }
 
 struct FullState<T: Networker> {
-    nack_cnt: HashSet<String>,
     accum_reply: Option<HashableValue>,
     networker: Rc<RefCell<T>>,
 }
@@ -216,7 +215,6 @@ impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<FullState<T>> {
             generator: val.generator,
             pool_name: val.pool_name,
             state: FullState {
-                nack_cnt: HashSet::new(),
                 accum_reply: None,
                 networker: val.state.networker.clone(),
             },
@@ -574,50 +572,49 @@ impl<T: Networker> RequestSMWrapper<T> {
                 }
             }
             RequestSMWrapper::Full(mut request) => {
-                match re {
-                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
-                        let first_resp = request.state.accum_reply.is_none();
-                        if first_resp {
-                            request.state.accum_reply = Some(HashableValue {
-                                inner: json!({node_alias.clone(): raw_msg})
-                            })
-                        } else {
-                            request.state.accum_reply.as_mut().unwrap()
-                                .inner.as_object_mut().unwrap()
-                                .insert(node_alias.clone(), SJsonValue::from(raw_msg));
-                        }
+                let single_node_result = match re {
+                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::Reject(_, raw_msg, node_alias, req_id) => Some((req_id, node_alias, raw_msg)),
+                    RequestEvent::Timeout(req_id, node_alias) => Some((req_id, node_alias, "timeout".to_string())),
 
-                        let reply_cnt = request.state.accum_reply.as_ref().unwrap()
-                            .inner.as_object().unwrap().len();
-
-                        if reply_cnt == request.nodes.len() {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            let reply = request.state.accum_reply.as_ref().unwrap().inner.to_string();
-                            _send_ok_replies(&request.cmd_ids, &reply);
-                            (RequestSMWrapper::Finish(request.into()), None)
-                        } else {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestSMWrapper::Full(request), None)
-                        }
-                    }
                     RequestEvent::ReqACK(_, _, node_alias, req_id) => {
                         request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
-                        (RequestSMWrapper::Full(request), None)
-                    }
-                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
-                        if _parse_nack(&mut request.state.nack_cnt, request.f, &raw_msg, &request.cmd_ids, &node_alias) {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestSMWrapper::Finish(request.into()), None)
-                        } else {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestSMWrapper::Full(request), None)
-                        }
+                        None
                     }
                     RequestEvent::Terminate => {
                         _finish_request(&request.cmd_ids);
-                        (RequestSMWrapper::Finish(request.into()), None)
+                        return (RequestSMWrapper::Finish(request.into()), None)
                     }
-                    _ => (RequestSMWrapper::Full(request), None)
+                    _ => None,
+                };
+
+                if let Some((req_id, node_alias, node_result)) = single_node_result {
+                    let first_resp = request.state.accum_reply.is_none();
+                    if first_resp {
+                        request.state.accum_reply = Some(HashableValue {
+                            inner: json!({node_alias.clone(): node_result})
+                        })
+                    } else {
+                        request.state.accum_reply.as_mut().unwrap()
+                            .inner.as_object_mut().unwrap()
+                            .insert(node_alias.clone(), SJsonValue::from(node_result));
+                    }
+
+                    let reply_cnt = request.state.accum_reply.as_ref().unwrap()
+                        .inner.as_object().unwrap().len();
+
+                    if reply_cnt == request.nodes.len() {
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+                        let reply = request.state.accum_reply.as_ref().unwrap().inner.to_string();
+                        _send_ok_replies(&request.cmd_ids, &reply);
+                        (RequestSMWrapper::Finish(request.into()), None)
+                    } else {
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                        (RequestSMWrapper::Full(request), None)
+                    }
+                } else {
+                    (RequestSMWrapper::Full(request), None)
                 }
             }
             RequestSMWrapper::Finish(request) => (RequestSMWrapper::Finish(request), None)

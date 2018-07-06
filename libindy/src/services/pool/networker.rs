@@ -8,7 +8,7 @@ use errors::common::CommonError;
 use errors::pool::PoolError;
 use services::pool::events::*;
 use services::pool::types::*;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::cell::RefCell;
 use super::time::Duration;
 use utils::sequence::SequenceUtils;
@@ -24,17 +24,18 @@ pub trait Networker {
 
 pub struct ZMQNetworker {
     req_id_mappings: HashMap<String, i32>,
-    pool_connections: HashMap<i32, PoolConnection>,
+    pool_connections: BTreeMap<i32, PoolConnection>,
     nodes: Vec<RemoteNode>,
 }
 
 const POOL_CON_ACTIVE_TO: i64 = 5;
+const MAX_REQ_PER_POOL_CON: usize = 5;
 
 impl Networker for ZMQNetworker {
     fn new() -> Self {
         ZMQNetworker {
             req_id_mappings: HashMap::new(),
-            pool_connections: HashMap::new(),
+            pool_connections: BTreeMap::new(),
             nodes: Vec::new(),
         }
     }
@@ -52,15 +53,13 @@ impl Networker for ZMQNetworker {
         match pe.clone() {
             Some(NetworkerEvent::SendAllRequest(_, req_id)) | Some(NetworkerEvent::SendOneRequest(_, req_id)) | Some(NetworkerEvent::Resend(req_id)) => {
                 let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
-                    // TODO simplify: we can check only last connection as others are already full  or in-active
-                    self.req_id_mappings.values()
-                        .fold(HashMap::new(), |mut acc, pc_id| {
-                            *acc.entry(pc_id).or_insert(0) += 1;
-                            acc
-                        }).iter()
-                        .filter(|&(pc_id, cnt)|
-                            cnt < &5 && self.pool_connections.get(pc_id).map(|pc| pc.is_active()).unwrap_or(false))
-                        .last().map(|(pc_id, _)| **pc_id)
+                    self.pool_connections.iter().next_back().and_then(|(pc_idx, pc)| {
+                        if pc.is_active() && pc.req_cnt < MAX_REQ_PER_POOL_CON {
+                            Some(*pc_idx)
+                        } else {
+                            None
+                        }
+                    })
                 });
                 match num {
                     Some(idx) => {
@@ -163,6 +162,7 @@ pub struct PoolConnection {
     resend: RefCell<HashMap<String, (usize, String)>>,
     timeouts: RefCell<HashMap<(String, String), Tm>>,
     time_created: time::Tm,
+    req_cnt: usize,
 }
 
 impl PoolConnection {
@@ -179,6 +179,7 @@ impl PoolConnection {
             resend: RefCell::new(HashMap::new()),
             time_created: time::now(),
             timeouts: RefCell::new(HashMap::new()),
+            req_cnt: 0,
         }
     }
 
@@ -228,10 +229,12 @@ impl PoolConnection {
         trace!("send_request >> pe: {:?}", pe);
         match pe {
             Some(NetworkerEvent::SendOneRequest(msg, req_id)) => {
+                self.req_cnt += 1;
                 self._send_msg_to_one_node(0, req_id.clone(), msg.clone())?;
                 self.resend.borrow_mut().insert(req_id, (0, msg));
             }
             Some(NetworkerEvent::SendAllRequest(msg, req_id)) => {
+                self.req_cnt += 1;
                 for idx in 0..self.nodes.len() {
                     self._send_msg_to_one_node(idx, req_id.clone(), msg.clone())?;
                 }
@@ -352,7 +355,6 @@ mod networker_tests {
     use services::pool::tests::nodes_emulator;
     use utils::crypto::box_::CryptoBox;
     use services::pool::rust_base58::FromBase58;
-    use std::ops::Sub;
     use std;
     use std::thread;
 
@@ -372,6 +374,7 @@ mod networker_tests {
     #[cfg(test)]
     mod networker {
         use super::*;
+        use std::ops::Sub;
 
         #[test]
         pub fn networker_new_works() {
@@ -546,8 +549,7 @@ mod networker_tests {
         }
 
         #[test]
-        #[ignore] //TODO: FIXME
-        fn networker_process_second_request_after_cleaning_timout_works() {
+        fn networker_process_second_request_after_cleaning_timeout_works() {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);
 
@@ -592,13 +594,13 @@ mod networker_tests {
 
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn])));
 
-            let ((req_id, node_alias), timeout) = networker.get_timeout();
+            let (_, timeout) = networker.get_timeout();
 
             assert_eq!(::std::i64::MAX, timeout);
 
             networker.process_event(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string())));
 
-            let ((req_id, node_alias), timeout) = networker.get_timeout();
+            let (_, timeout) = networker.get_timeout();
 
             assert_ne!(::std::i64::MAX, timeout);
         }
@@ -630,6 +632,7 @@ mod networker_tests {
     #[cfg(test)]
     mod pool_connection {
         use super::*;
+        use std::ops::Sub;
 
         #[test]
         fn pool_connection_new_works() {

@@ -602,7 +602,6 @@ mod tests {
         use std::thread;
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
-        use sodiumoxide::crypto::sign::ed25519::PublicKey;
 
         pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 
