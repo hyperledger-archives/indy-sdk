@@ -333,8 +333,8 @@ mod tests {
     use std::ffi::CString;
     use std::time::Duration;
     use settings;
-    use utils::constants::{ TRUSTEE_SEED, SCHEMA_ID, SCHEMA_WITH_VERSION, DEFAULT_SCHEMA_ATTRS, DEFAULT_SCHEMA_ID, DEFAULT_SCHEMA_NAME };
-    use utils::libindy::{ return_types_u32, payments, pool, wallet };
+    use utils::constants::{ SCHEMA_ID, SCHEMA_WITH_VERSION, DEFAULT_SCHEMA_ATTRS, DEFAULT_SCHEMA_ID, DEFAULT_SCHEMA_NAME };
+    use utils::libindy::return_types_u32;
 
     fn set_default_and_enable_test_mode() {
         settings::set_defaults();
@@ -481,17 +481,9 @@ mod tests {
     fn test_vcx_schema_serialize_contains_version() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        payments::init_payments().unwrap();
-        let pool_handle = pool::open_sandbox_pool();
-        let wallet_name = &settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
+	let wallet_name = "vcx_schema_serialize_contains_version";
+	::utils::devsetup::tests::setup_ledger_env(wallet_name);
         let pool_name = &settings::get_config_value(settings::CONFIG_POOL_NAME).unwrap();
-        wallet::delete_wallet(wallet_name).unwrap_or(());
-        let wallet_handle = wallet::init_wallet(wallet_name).unwrap();
-        let (my_did, my_verkey) = SignusUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
-        settings::set_config_value(settings::CONFIG_INSTITUTION_VERKEY, &my_verkey);
-        payments::set_ledger_fees(None).unwrap();
-        payments::mint_tokens(Some(1), Some(1000)).unwrap();
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let schema_name= format!("TestSchema-{}", rand::thread_rng().gen::<u32>());
         let source_id = "Test Source ID";
@@ -516,6 +508,6 @@ mod tests {
         let schema:CreateSchema = serde_json::from_value(j["data"].clone()).unwrap();
         assert_eq!(j["version"], "1.0");
         assert_eq!(schema.get_source_id(), source_id);
-        wallet::delete_wallet(wallet_name).unwrap();
+	::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 }

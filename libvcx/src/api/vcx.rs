@@ -163,21 +163,21 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
     ::credential::release_all();
 
     if delete {
-        match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
-            Ok(w) => match wallet::delete_wallet(&w) {
-                Ok(_) => (),
-                Err(_) => (),
-            },
+        let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME)
+            .unwrap_or(settings::DEFAULT_POOL_NAME.to_string());
+
+        let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME)
+            .unwrap_or(settings::DEFAULT_WALLET_NAME.to_string());
+
+        match wallet::delete_wallet(&wallet_name) {
+            Ok(_) => (),
             Err(_) => (),
         };
 
-        match settings::get_config_value(settings::CONFIG_POOL_NAME) {
-            Ok(p) => match pool::delete(&p) {
-                Ok(_) => (),
-                Err(_) => (),
-            }
+        match pool::delete(&pool_name) {
+            Ok(_) => (),
             Err(_) => (),
-        }
+        };
     }
 
     settings::clear_config();
