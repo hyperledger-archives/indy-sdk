@@ -8,18 +8,18 @@ pub mod constants;
 
 macro_rules! safe_wallet_create {
     ($x:ident) => {
-        match Wallet::delete($x, None) {
+        match Wallet::delete($x, r#"{"key":""}"#) {
             Ok(..) => {},
             Err(..) => {}
         };
-        Wallet::create("pool1", $x, None, None, None).unwrap();
+        Wallet::create($x, r#"{"key":""}"#).unwrap();
     }
 }
 
 macro_rules! wallet_cleanup {
     ($x:ident, $y:ident) => {
         Wallet::close($x).unwrap();
-        Wallet::delete($y, None).unwrap();
+        Wallet::delete($y, r#"{"key":""}"#).unwrap();
     }
 }
 
