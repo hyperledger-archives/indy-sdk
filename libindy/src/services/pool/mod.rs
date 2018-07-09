@@ -222,13 +222,15 @@ impl PoolService {
 
     pub fn list(&self) -> Result<Vec<serde_json::Value>, PoolError> {
         let mut pool = Vec::new();
-
         let pool_home_path = EnvironmentUtils::pool_home_path();
-        for entry in fs::read_dir(pool_home_path)? {
-            let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue; };
-            if let Some(pool_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
-                let json = json!({"pool":pool_name.to_owned()});
-                pool.push(json);
+
+        if let Ok(entries) = fs::read_dir(pool_home_path) {
+            for entry in entries {
+                let dir_entry = if let Ok(dir_entry) = entry { dir_entry } else { continue };
+                if let Some(pool_name) = dir_entry.path().file_name().and_then(|os_str| os_str.to_str()) {
+                    let json = json!({"pool":pool_name.to_owned()});
+                    pool.push(json);
+                }
             }
         }
 
