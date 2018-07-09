@@ -153,7 +153,8 @@ export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_x86_64/lib; echo "AND
 #export LIBZMQ_INCLUDE_DIR=$WORK_DIR/libzmq-android/zmq/libzmq_x86_64/include; echo "LIBZMQ_INCLUDE_DIR: $LIBZMQ_INCLUDE_DIR"
 export ANDROID_SQLITE_LIB=$WORK_DIR/libsqlite3-android/sqlite3-android/obj/local/x86_64; echo "ANDROID_SQLITE_LIB: $ANDROID_SQLITE_LIB"
 sed -i .bak 's/\"\"\.as_ptr() as \*const u8/\"\"\.as_ptr() as \*const i8/' src/services/wallet/storage/plugged/mod.rs
-cargo build --target x86_64-linux-android
+# cargo build --target x86_64-linux-android
+cargo build --target x86_64-linux-android --release
 echo "-----------------------------------------------------------------------------------------------"
 
 # This builds the library for code that runs in OSX
@@ -242,8 +243,10 @@ export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_x86_64/lib; echo "AND
 #export LIBZMQ_LIB_DIR=$ANDROID_ZMQ_LIB; echo "LIBZMQ_LIB_DIR: $LIBZMQ_LIB_DIR"
 #export LIBZMQ_INCLUDE_DIR=$WORK_DIR/libzmq-android/zmq/libzmq_x86_64/include; echo "LIBZMQ_INCLUDE_DIR: $LIBZMQ_INCLUDE_DIR"
 export ANDROID_SQLITE_LIB=$WORK_DIR/libsqlite3-android/x86_64; echo "ANDROID_SQLITE_LIB: $ANDROID_SQLITE_LIB"
-export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/x86_64-linux-android/debug; echo "LIBINDY_DIR: $LIBINDY_DIR"
-cargo build --target x86_64-linux-android
+# export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/x86_64-linux-android/debug; echo "LIBINDY_DIR: $LIBINDY_DIR"
+export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/x86_64-linux-android/release; echo "LIBINDY_DIR: $LIBINDY_DIR"
+# cargo build --target x86_64-linux-android
+cargo build --target x86_64-linux-android --release
 echo "-----------------------------------------------------------------------------------------------"
 
 # This builds the library for code that runs in OSX

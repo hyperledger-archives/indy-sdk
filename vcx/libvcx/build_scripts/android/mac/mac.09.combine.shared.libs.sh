@@ -39,7 +39,7 @@ do
     libvcx.a \
     libzmq.a \
     libsodium.a \
-    $NDK_DIR/${ndk_arch}/${cross_compile}/${LIB_FOLDER}/libstdc++.a \
+    $NDK_DIR/${ndk_arch}/${cross_compile}/${LIB_FOLDER}/libgnustl_shared.so \
     $NDK_DIR/${ndk_arch}/sysroot/usr/${LIB_FOLDER}/libz.so \
     $NDK_DIR/${ndk_arch}/sysroot/usr/${LIB_FOLDER}/libm.a \
     $NDK_DIR/${ndk_arch}/sysroot/usr/${LIB_FOLDER}/liblog.so \
@@ -47,6 +47,6 @@ do
     echo "Created $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/${target_arch}/libvcx.so"
     cd $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs
     rm libvcxall_${target_arch}.zip
-    zip -r libvcxall_${target_arch}.zip ${target_arch}
-    echo "Created $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/libvcxall_${target_arch}.zip"
+    # zip -r libvcxall_${target_arch}.zip ${target_arch}
+    # echo "Created $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/libvcxall_${target_arch}.zip"
 done

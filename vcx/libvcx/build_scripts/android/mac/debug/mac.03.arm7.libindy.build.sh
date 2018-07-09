@@ -117,7 +117,8 @@ export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_armv7/lib; echo "ANDR
 export ANDROID_SQLITE_LIB=$WORK_DIR/libsqlite3-android/sqlite3-android/obj/local/armeabi-v7a; echo "ANDROID_SQLITE_LIB: $ANDROID_SQLITE_LIB"
 export RUST_BACKTRACE=1
 sed -i .bak 's/\"\"\.as_ptr() as \*const i8/\"\"\.as_ptr() as \*const u8/' src/services/wallet/storage/plugged/mod.rs
-cargo build --target armv7-linux-androideabi
+cargo build --target armv7-linux-androideabi --release
+# cargo build --target armv7-linux-androideabi
 echo "-----------------------------------------------------------------------------------------------"
 
 # KS: Commenting it out because we want to debug only on armv7 based device/simulator
@@ -207,9 +208,11 @@ export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_armv7/lib; echo "ANDR
 #export LIBZMQ_LIB_DIR=$ANDROID_ZMQ_LIB; echo "LIBZMQ_LIB_DIR: $LIBZMQ_LIB_DIR"
 #export LIBZMQ_INCLUDE_DIR=$WORK_DIR/libzmq-android/zmq/libzmq_armv7/include; echo "LIBZMQ_INCLUDE_DIR: $LIBZMQ_INCLUDE_DIR"
 export ANDROID_SQLITE_LIB=$WORK_DIR/libsqlite3-android/armeabi-v7a; echo "ANDROID_SQLITE_LIB: $ANDROID_SQLITE_LIB"
-export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/armv7-linux-androideabi/debug; echo "LIBINDY_DIR: $LIBINDY_DIR"
+export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/armv7-linux-androideabi/release; echo "LIBINDY_DIR: $LIBINDY_DIR"
+# export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/armv7-linux-androideabi/debug; echo "LIBINDY_DIR: $LIBINDY_DIR"
 export RUST_BACKTRACE=full
-cargo build --target armv7-linux-androideabi
+# cargo build --target armv7-linux-androideabi
+cargo build --target armv7-linux-androideabi --release
 echo "-----------------------------------------------------------------------------------------------"
 
 # KS: Commenting it out because we want to debug only on armv7 based device/simulator

@@ -59,6 +59,8 @@ export ANDROID_SODIUM_LIB=$WORK_DIR/libzmq-android/libsodium/libsodium_x86_64/li
 export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_x86_64/lib
 export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/x86_64-linux-android/release
 export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/x86_64-linux-android/release
+# export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/x86_64-linux-android/debug
+# export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/x86_64-linux-android/debug
 cargo build --target x86_64-linux-android
 
 # This builds the library for code that runs in OSX
