@@ -510,38 +510,35 @@ impl<T: Networker> RequestSMWrapper<T> {
                 }
             }
             RequestSMWrapper::CatchupConsensus(mut request) => {
-                match re {
+                let node_result = match re {
                     RequestEvent::LedgerStatus(ls, Some(node_alias), _) => {
-                        let (finished, result) = _process_catchup_target(ls.merkleRoot.clone(), ls.txnSeqNo, None, &node_alias, &mut request);
-                        let req_id = ls.merkleRoot;
-                        if finished {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestSMWrapper::Finish(request.into()), result)
-                        } else {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestSMWrapper::CatchupConsensus(request), result)
-                        }
+                        Some((ls.merkleRoot.clone(), ls.txnSeqNo, None, node_alias, ls.merkleRoot))
                     }
                     RequestEvent::ConsistencyProof(cp, node_alias) => {
-                        let (finished, result) = _process_catchup_target(cp.newMerkleRoot, cp.seqNoEnd, Some(cp.hashes), &node_alias, &mut request);
-                        let req_id = cp.oldMerkleRoot;
-                        if finished {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestSMWrapper::Finish(request.into()), result)
-                        } else {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestSMWrapper::CatchupConsensus(request), result)
-                        }
+                        Some((cp.newMerkleRoot, cp.seqNoEnd, Some(cp.hashes), node_alias, cp.oldMerkleRoot))
                     }
                     RequestEvent::Timeout(req_id, node_alias) => {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                        (RequestSMWrapper::CatchupConsensus(request), None)
+                        Some(("timeout".to_string(), 0, None, node_alias, req_id))
                     }
+
                     RequestEvent::Terminate => {
                         _finish_request(&request.cmd_ids);
-                        (RequestSMWrapper::Finish(request.into()), None)
+                        return (RequestSMWrapper::Finish(request.into()), None)
                     }
-                    _ => (RequestSMWrapper::CatchupConsensus(request), None)
+                    _ => None
+                };
+
+                if let Some((mt_root, sz, cons_proof, node_alias, req_id)) = node_result {
+                    let (finished, result) = _process_catchup_target(mt_root, sz, cons_proof, &node_alias, &mut request);
+                    if finished {
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+                        (RequestSMWrapper::Finish(request.into()), result)
+                    } else {
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                        (RequestSMWrapper::CatchupConsensus(request), result)
+                    }
+                } else {
+                    (RequestSMWrapper::CatchupConsensus(request), None)
                 }
             }
             RequestSMWrapper::CatchupSingle(mut request) => {

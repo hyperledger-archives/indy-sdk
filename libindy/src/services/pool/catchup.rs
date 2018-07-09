@@ -23,6 +23,9 @@ pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Opt
                                        pool_name: &str) -> Result<CatchupProgress, PoolError> {
     if let Some((most_popular_vote, votes_cnt)) = nodes_votes.iter().map(|(key, val)| (key, val.len())).max_by_key(|entry| entry.1) {
         if votes_cnt == node_count - f {
+            if most_popular_vote.0.eq("timeout") {
+                return Err(PoolError::Timeout)
+            }
             return _try_to_catch_up(most_popular_vote, merkle_tree).or_else(|err| {
                 if merkle_tree_factory::drop_cache(pool_name).is_ok() {
                     let merkle_tree = merkle_tree_factory::create(pool_name)?;
