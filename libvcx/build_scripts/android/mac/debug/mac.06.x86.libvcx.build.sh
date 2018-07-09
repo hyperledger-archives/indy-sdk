@@ -51,7 +51,10 @@ export ANDROID_SODIUM_LIB=$WORK_DIR/libzmq-android/libsodium/libsodium_x86/lib
 export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_x86/lib
 export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/i686-linux-android/release
 export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/i686-linux-android/release
+# export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/i686-linux-android/debug
+# export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/i686-linux-android/debug
 cargo build --target i686-linux-android
+# cargo build --target i686-linux-android --release
 
 # KS: Commenting it out because we want to debug only on armv7 based device/simulator
 
