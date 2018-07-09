@@ -1,6 +1,0 @@
-[target.i686-linux-android]
-ar = "/home/vagrant/Work/repos/faisal00813/indy-sdk/libindy/../android_build/toolchains/linux/x86/bin/i686-linux-android-ar"
-linker = "/home/vagrant/Work/repos/faisal00813/indy-sdk/libindy/../android_build/toolchains/linux/x86/bin/i686-linux-android-clang"
-runner = "./run-on-adroid.sh"
-[build]
-target-dir = "/home/vagrant/Work/repos/faisal00813/indy-sdk/libindy/../android_build"

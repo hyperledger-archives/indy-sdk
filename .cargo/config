@@ -1,0 +1,11 @@
+[target.i686-linux-android]
+ar = "android_build/toolchains/linux/x86/bin/i686-linux-android-ar"
+linker = "android_build/toolchains/linux/x86/bin/i686-linux-android-clang"
+
+[target.arm-linux-androideabi]
+ar = "android_build/toolchains/linux/arm/bin/arm-linux-androideabi-ar"
+linker = "android_build/toolchains/linux/arm/bin/arm-linux-androideabi-clang"
+
+[target.aarch64-linux-android]
+ar = "android_build/toolchains/linux/arm64/bin/aarch64-linux-android-ar"
+linker = "android_build/toolchains/linux/arm64/bin/aarch64-linux-android-clang"
