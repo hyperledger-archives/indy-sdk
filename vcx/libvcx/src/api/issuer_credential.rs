@@ -454,7 +454,7 @@ mod tests {
     use settings;
     use connection;
     use api::VcxStateType;
-    use utils::constants::{CRED_DEF_ID, DEFAULT_SERIALIZED_ISSUER_CREDENTIAL, CREDENTIAL_REQ_STRING, DEFAULT_SERIALIZE_VERSION};
+    use utils::constants::{CRED_DEF_ID, DEFAULT_SERIALIZED_ISSUER_CREDENTIAL, CREDENTIAL_REQ_STRING};
     use credential_request::CredentialRequest;
     use error::issuer_cred::IssuerCredError;
     use utils::libindy::return_types_u32;

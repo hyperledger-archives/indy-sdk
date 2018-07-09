@@ -292,7 +292,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_verify_proof";
-        wallet::delete_wallet(wallet_name).unwrap_or(());
+        ::utils::libindy::wallet::delete_wallet(wallet_name).unwrap_or(());
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         let (schemas, cred_defs, proof_req, proof) = create_proof();
 
