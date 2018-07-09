@@ -33,12 +33,14 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		// 2. Create and Open My Wallet
-		Wallet.createWallet(poolName, "myWallet", TYPE, null, CREDENTIALS).get();
-		Wallet myWallet = Wallet.openWallet("myWallet", null, CREDENTIALS).get();
+		String myWalletConfig = new JSONObject().put("id", "myWallet").toString();
+		Wallet.createWallet(myWalletConfig, WALLET_CREDENTIALS).get();
+		Wallet myWallet = Wallet.openWallet(myWalletConfig, WALLET_CREDENTIALS).get();
 
 		// 3. Create and Open Trustee Wallet
-		Wallet.createWallet(poolName, "theirWallet", TYPE, null, CREDENTIALS).get();
-		Wallet trusteeWallet = Wallet.openWallet("theirWallet", null, CREDENTIALS).get();
+		String theirWalletConfig = new JSONObject().put("id", "theirWallet").toString();
+		Wallet.createWallet(theirWalletConfig, WALLET_CREDENTIALS).get();
+		Wallet trusteeWallet = Wallet.openWallet(theirWalletConfig, WALLET_CREDENTIALS).get();
 
 		// 4. Create My Did
 		CreateAndStoreMyDidResult createMyDidResult = Did.createAndStoreMyDid(myWallet, "{}").get();
@@ -69,11 +71,11 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 
 		// 8. Close and delete My Wallet
 		myWallet.closeWallet().get();
-		Wallet.deleteWallet("myWallet", CREDENTIALS).get();
+		Wallet.deleteWallet(myWalletConfig, WALLET_CREDENTIALS).get();
 
 		// 9. Close and delete Their Wallet
 		trusteeWallet.closeWallet().get();
-		Wallet.deleteWallet("theirWallet", CREDENTIALS).get();
+		Wallet.deleteWallet(theirWalletConfig, WALLET_CREDENTIALS).get();
 
 		// 10. Close Pool
 		pool.closePoolLedger().get();

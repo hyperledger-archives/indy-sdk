@@ -11,13 +11,13 @@ public class IndyIntegrationTestWithSingleWallet extends IndyIntegrationTest {
 
 	@Before
 	public void createWallet() throws Exception {
-		Wallet.createWallet(POOL, WALLET, TYPE, null, CREDENTIALS).get();
-		this.wallet = Wallet.openWallet(WALLET, null, CREDENTIALS).get();
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		this.wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 	}
 
 	@After
 	public void deleteWallet() throws Exception {
 		wallet.closeWallet().get();
-		Wallet.deleteWallet(WALLET, CREDENTIALS).get();
+		Wallet.deleteWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 	}
 }

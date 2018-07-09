@@ -1,17 +1,14 @@
 extern crate digest;
 extern crate hex;
 extern crate rand;
-extern crate rust_base58;
 extern crate sha2;
 extern crate time;
 extern crate rmp_serde;
 extern crate indy_crypto;
 
-use base64;
 use self::digest::{FixedOutput, Input};
 use self::hex::ToHex;
 use self::rand::Rng;
-use self::rust_base58::FromBase58;
 use self::time::{Duration, Tm};
 use serde_json;
 use serde_json::Value as SJsonValue;
@@ -27,6 +24,7 @@ use commands::ledger::LedgerCommand;
 use errors::pool::PoolError;
 use errors::common::CommonError;
 use super::types::*;
+use utils::crypto::{base64, base58};
 use domain::ledger::constants;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::PoolService;
@@ -577,7 +575,7 @@ impl TransactionHandler {
             }
 
             let proof_nodes = unwrap_or_return!(base64::decode(&parsed_sp.proof_nodes), false);
-            let root_hash = unwrap_or_return!(parsed_sp.root_hash.from_base58(), false);
+            let root_hash = unwrap_or_return!(base58::decode(&parsed_sp.root_hash), false);
             match parsed_sp.kvs_to_verify {
                 KeyValuesInSP::Simple(kvs) => {
                     for (k, v) in kvs.kvs {
@@ -669,7 +667,7 @@ impl TransactionHandler {
 impl Default for TransactionHandler {
     fn default() -> Self {
         TransactionHandler {
-            gen: Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),
+            gen: Generator::from_bytes(&base58::decode("3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX").unwrap()).unwrap(),
             pending_commands: HashMap::new(),
             f: 0,
             nodes: Vec::new(),

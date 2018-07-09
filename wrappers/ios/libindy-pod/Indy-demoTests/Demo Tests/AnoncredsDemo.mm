@@ -30,17 +30,13 @@
 
 - (void)testAnoncredsDemo {
     // 1. Create wallet
-    NSString *walletName = @"issuer_wallet";
+    NSString *walletConfig = @"{\"id\":\"issuer_wallet\"}";
     IndyHandle walletHandle;
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:walletName
-                                                           xtype:[TestUtils defaultType]
-                                                          config:nil];
+    ret = [[WalletUtils sharedInstance] createWalletWithConfig:walletConfig];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createWalletWithPoolName() failed!");
 
     // 2. Open wallet
-    ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
-                                                    config:nil
+    ret = [[WalletUtils sharedInstance] openWalletWithConfig:walletConfig
                                                  outHandle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::openWalletWithName() failed!");
 
@@ -416,15 +412,11 @@
     IndyHandle proverWalletHandle = 0;
 
     //1. Create Issuer wallet, get wallet handle
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&issuerWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&issuerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Create Prover wallet, get wallet handle
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&proverWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     // 3. Issuer create Schema

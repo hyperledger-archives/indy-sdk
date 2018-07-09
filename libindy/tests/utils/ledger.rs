@@ -536,7 +536,7 @@ impl LedgerUtils {
                 let pool_name = "COMMON_ENTITIES_POOL";
                 let pool_handle = PoolUtils::create_and_open_pool_ledger(pool_name).unwrap();
 
-                let wallet_handle = WalletUtils::create_and_open_wallet(pool_name, None).unwrap();
+                let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
                 let (issuer_did, _) = DidUtils::create_store_and_publish_my_did_from_trustee(wallet_handle, pool_handle).unwrap();
 

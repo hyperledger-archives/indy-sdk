@@ -15,8 +15,8 @@ public class CloseWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testCloseWalletWorks() throws Exception {
-		Wallet.createWallet(POOL, WALLET, TYPE, null, CREDENTIALS).get();
-		Wallet wallet = Wallet.openWallet(WALLET, null, CREDENTIALS).get();
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 
 		wallet.closeWallet().get();
 	}
@@ -26,8 +26,8 @@ public class CloseWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidWalletException.class));
 
-		Wallet.createWallet(POOL, WALLET, TYPE, null, CREDENTIALS).get();
-		Wallet wallet = Wallet.openWallet(WALLET, null, CREDENTIALS).get();
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 
 		wallet.closeWallet().get();
 		wallet.closeWallet().get();
@@ -36,19 +36,19 @@ public class CloseWalletTest extends IndyIntegrationTest {
 	@Test
 	@Ignore
 	public void testCloseWalletWorksForPlugged() throws Exception {
-		Wallet.createWallet(POOL, WALLET, "inmem", null, CREDENTIALS).get();
+		Wallet.createWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
 
-		Wallet wallet = Wallet.openWallet(WALLET, null, CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
 		wallet.closeWallet().get();
 	}
 
 	@Test
 	public void testAutoCloseWorks() throws Exception {
-		Wallet.createWallet(POOL, WALLET, TYPE, null, CREDENTIALS);
-		try (Wallet wallet = Wallet.openWallet(WALLET, null, CREDENTIALS).get()) {
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS);
+		try (Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get()) {
 			assertNotNull(wallet);
 		}
-		Wallet wallet = Wallet.openWallet(WALLET, null, CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 		wallet.closeWallet().get();
 	}
 }
