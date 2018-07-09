@@ -509,36 +509,54 @@ impl<T: Networker> RequestSMWrapper<T> {
                     _ => (RequestSMWrapper::Single(request), None)
                 }
             }
+            RequestSMWrapper::Full(request) => {
+                match re {
+                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) |
+                    RequestEvent::Reject(_, raw_msg, node_alias, req_id) =>
+                        (RequestSMWrapper::_full_request_handle_consensus_state(
+                            request, req_id, node_alias, raw_msg), None),
+                    RequestEvent::Timeout(req_id, node_alias) =>
+                        (RequestSMWrapper::_full_request_handle_consensus_state(
+                            request, req_id, node_alias, "timeout".to_string()), None),
+
+                    RequestEvent::ReqACK(_, _, node_alias, req_id) => {
+                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
+                        (RequestSMWrapper::Full(request), None)
+                    }
+                    RequestEvent::Terminate => {
+                        _finish_request(&request.cmd_ids);
+                        (RequestSMWrapper::Finish(request.into()), None)
+                    }
+                    _ => (RequestSMWrapper::Full(request), None),
+                }
+            }
             RequestSMWrapper::CatchupConsensus(mut request) => {
-                let node_result = match re {
+                match re {
                     RequestEvent::LedgerStatus(ls, Some(node_alias), _) => {
-                        Some((ls.merkleRoot.clone(), ls.txnSeqNo, None, node_alias, ls.merkleRoot))
+                        RequestSMWrapper::_catchup_target_handle_consensus_state(
+                            request,
+                            ls.merkleRoot.clone(), ls.txnSeqNo, None,
+                            node_alias, ls.merkleRoot)
                     }
                     RequestEvent::ConsistencyProof(cp, node_alias) => {
-                        Some((cp.newMerkleRoot, cp.seqNoEnd, Some(cp.hashes), node_alias, cp.oldMerkleRoot))
+                        RequestSMWrapper::_catchup_target_handle_consensus_state(
+                            request,
+                            cp.newMerkleRoot, cp.seqNoEnd, Some(cp.hashes),
+                            node_alias, cp.oldMerkleRoot)
                     }
                     RequestEvent::Timeout(req_id, node_alias) => {
-                        Some(("timeout".to_string(), 0, None, node_alias, req_id))
+                        RequestSMWrapper::_catchup_target_handle_consensus_state(
+                            request,
+                            "timeout".to_string(), 0, None,
+                            node_alias, req_id)
                     }
 
                     RequestEvent::Terminate => {
                         _finish_request(&request.cmd_ids);
-                        return (RequestSMWrapper::Finish(request.into()), None)
+                        (RequestSMWrapper::Finish(request.into()), None)
                     }
-                    _ => None
-                };
-
-                if let Some((mt_root, sz, cons_proof, node_alias, req_id)) = node_result {
-                    let (finished, result) = _process_catchup_target(mt_root, sz, cons_proof, &node_alias, &mut request);
-                    if finished {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                        (RequestSMWrapper::Finish(request.into()), result)
-                    } else {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                        (RequestSMWrapper::CatchupConsensus(request), result)
-                    }
-                } else {
-                    (RequestSMWrapper::CatchupConsensus(request), None)
+                    _ => (RequestSMWrapper::CatchupConsensus(request), None)
                 }
             }
             RequestSMWrapper::CatchupSingle(mut request) => {
@@ -568,52 +586,6 @@ impl<T: Networker> RequestSMWrapper<T> {
                     _ => (RequestSMWrapper::CatchupSingle(request), None)
                 }
             }
-            RequestSMWrapper::Full(mut request) => {
-                let single_node_result = match re {
-                    RequestEvent::Reply(_, raw_msg, node_alias, req_id) |
-                    RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) |
-                    RequestEvent::Reject(_, raw_msg, node_alias, req_id) => Some((req_id, node_alias, raw_msg)),
-                    RequestEvent::Timeout(req_id, node_alias) => Some((req_id, node_alias, "timeout".to_string())),
-
-                    RequestEvent::ReqACK(_, _, node_alias, req_id) => {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
-                        None
-                    }
-                    RequestEvent::Terminate => {
-                        _finish_request(&request.cmd_ids);
-                        return (RequestSMWrapper::Finish(request.into()), None)
-                    }
-                    _ => None,
-                };
-
-                if let Some((req_id, node_alias, node_result)) = single_node_result {
-                    let first_resp = request.state.accum_reply.is_none();
-                    if first_resp {
-                        request.state.accum_reply = Some(HashableValue {
-                            inner: json!({node_alias.clone(): node_result})
-                        })
-                    } else {
-                        request.state.accum_reply.as_mut().unwrap()
-                            .inner.as_object_mut().unwrap()
-                            .insert(node_alias.clone(), SJsonValue::from(node_result));
-                    }
-
-                    let reply_cnt = request.state.accum_reply.as_ref().unwrap()
-                        .inner.as_object().unwrap().len();
-
-                    if reply_cnt == request.nodes.len() {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                        let reply = request.state.accum_reply.as_ref().unwrap().inner.to_string();
-                        _send_ok_replies(&request.cmd_ids, &reply);
-                        (RequestSMWrapper::Finish(request.into()), None)
-                    } else {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                        (RequestSMWrapper::Full(request), None)
-                    }
-                } else {
-                    (RequestSMWrapper::Full(request), None)
-                }
-            }
             RequestSMWrapper::Finish(request) => (RequestSMWrapper::Finish(request), None)
         }
     }
@@ -627,6 +599,46 @@ impl<T: Networker> RequestSMWrapper<T> {
             &RequestSMWrapper::CatchupSingle(ref request) => request.state.is_terminal(),
             &RequestSMWrapper::CatchupConsensus(ref request) => request.state.is_terminal(),
             &RequestSMWrapper::Full(ref request) => request.state.is_terminal(),
+        }
+    }
+
+    fn _full_request_handle_consensus_state(mut request: RequestSM<FullState<T>>,
+                                            req_id: String, node_alias: String, node_result: String) -> Self {
+        let is_first_resp = request.state.accum_reply.is_none();
+        if is_first_resp {
+            request.state.accum_reply = Some(HashableValue {
+                inner: json!({node_alias.clone(): node_result})
+            })
+        } else {
+            request.state.accum_reply.as_mut().unwrap()
+                .inner.as_object_mut().unwrap()
+                .insert(node_alias.clone(), SJsonValue::from(node_result));
+        }
+
+        let reply_cnt = request.state.accum_reply.as_ref().unwrap()
+            .inner.as_object().unwrap().len();
+
+        if reply_cnt == request.nodes.len() {
+            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+            let reply = request.state.accum_reply.as_ref().unwrap().inner.to_string();
+            _send_ok_replies(&request.cmd_ids, &reply);
+            RequestSMWrapper::Finish(request.into())
+        } else {
+            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+            RequestSMWrapper::Full(request)
+        }
+    }
+
+    fn _catchup_target_handle_consensus_state(mut request: RequestSM<CatchupConsensusState<T>>,
+                                              mt_root: String, sz: usize, cons_proof: Option<Vec<String>>,
+                                              node_alias: String, req_id: String) -> (Self, Option<PoolEvent>) {
+        let (finished, result) = _process_catchup_target(mt_root, sz, cons_proof, &node_alias, &mut request);
+        if finished {
+            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+            (RequestSMWrapper::Finish(request.into()), result)
+        } else {
+            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+            (RequestSMWrapper::CatchupConsensus(request), result)
         }
     }
 }
