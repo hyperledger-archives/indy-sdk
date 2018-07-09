@@ -1282,10 +1282,18 @@ mod tests {
 
         #[test]
         fn request_handler_process_timeout_event_from_catchup_consensus_state_works() {
-            let mut request_handler = _request_handler(0, 1);
+            let mut request_handler = _request_handler(1, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_timeout_event_from_catchup_consensus_state_works_for_all_timeouts() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
         }
 
         #[test]
