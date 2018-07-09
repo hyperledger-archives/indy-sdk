@@ -765,7 +765,7 @@ mod tests {
     use services::pool::types::{Message, Reply, ReplyV1, ReplyResultV1, ReplyTxnV1, ResponseMetadata};
     use utils::test::TestUtils;
     use services::pool::networker::MockNetworker;
-    use services::pool::request_handler::MockRequestHandler;
+    use services::pool::request_handler::tests::MockRequestHandler;
 
     mod pool {
         use super::*;
