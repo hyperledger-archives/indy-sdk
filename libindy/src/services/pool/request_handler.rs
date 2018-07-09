@@ -794,3 +794,693 @@ fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_ke
         None => false
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use services::pool::networker::MockNetworker;
+    use services::pool::types::{LedgerStatus, Reply, ReplyV1, ReplyResultV1, ReplyTxnV1, ResponseMetadata, Response, ResponseV1, ConsistencyProof};
+    use services::ledger::merkletree::tree::Tree;
+    use utils::test::TestUtils;
+
+    const MESSAGE: &'static str = "message";
+    const REQ_ID: &'static str = "1";
+    const NODE: &'static str = "n1";
+    const NODE_2: &'static str = "n2";
+    const SIMPLE_REPLY: &'static str = r#"{"result":{}}"#;
+    const POOL: &'static str = "pool1";
+
+    impl Default for LedgerStatus {
+        fn default() -> Self {
+            LedgerStatus {
+                txnSeqNo: 0,
+                merkleRoot: String::new(),
+                ledgerId: 0,
+                ppSeqNo: None,
+                viewNo: None,
+                protocolVersion: None,
+            }
+        }
+    }
+
+    impl Default for MerkleTree {
+        fn default() -> Self {
+            MerkleTree {
+                root: Tree::Empty { hash: Vec::new() },
+                height: 0,
+                count: 0,
+                nodes_count: 0,
+            }
+        }
+    }
+
+    impl Default for Reply {
+        fn default() -> Self {
+            Reply::ReplyV1(ReplyV1 { result: ReplyResultV1 { txn: ReplyTxnV1 { metadata: ResponseMetadata { req_id: 1 } } } })
+        }
+    }
+
+    impl Default for Response {
+        fn default() -> Self {
+            Response::ResponseV1(ResponseV1 { metadata: ResponseMetadata { req_id: 1 } })
+        }
+    }
+
+    impl Default for ConsistencyProof {
+        fn default() -> Self {
+            ConsistencyProof {
+                seqNoEnd: 0,
+                seqNoStart: 0,
+                ledgerId: 0,
+                hashes: Vec::new(),
+                oldMerkleRoot: String::new(),
+                newMerkleRoot: String::new(),
+            }
+        }
+    }
+
+    impl Default for CatchupRep {
+        fn default() -> Self {
+            CatchupRep {
+                ledgerId: 0,
+                consProof: Vec::new(),
+                txns: HashMap::new(),
+            }
+        }
+    }
+
+    fn _request_handler(f: usize, nodes_cnt: usize) -> RequestHandlerImpl<MockNetworker> {
+        let networker = Rc::new(RefCell::new(MockNetworker::new()));
+
+        let mut default_nodes: HashMap<String, Option<VerKey>> = HashMap::new();
+        default_nodes.insert(NODE.to_string(), None);
+
+        let node_names = vec![NODE, NODE_2, "n3"];
+        let mut nodes: HashMap<String, Option<VerKey>> = HashMap::new();
+
+        for i in 0..nodes_cnt{
+            nodes.insert(node_names[i].to_string(), None);
+        }
+
+        RequestHandlerImpl::new(networker,
+                                f,
+                                &vec![],
+                                &nodes,
+                                None,
+                                POOL)
+    }
+
+    // required because of dumping txns to cache
+    fn _create_pool(content: Option<String>) {
+        use utils::environment::EnvironmentUtils;
+        use std::fs;
+        use std::fs::File;
+        use std::io::Write;
+
+        let mut path = EnvironmentUtils::pool_path(POOL);
+
+        path.push(POOL);
+        path.set_extension("txn");
+
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+
+        let mut file = File::create(path).unwrap();
+        file.write_all(content.unwrap_or("{}".to_string()).as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn request_handler_new_works() {
+        let request_handler = _request_handler(0, 1);
+        assert_match!(RequestSMWrapper::Start(_), request_handler.request_wrapper.unwrap());
+    }
+
+    #[test]
+    fn request_handler_process_event_works() {
+        let mut request_handler = _request_handler(0, 1);
+        request_handler.process_event(None);
+    }
+
+    mod start {
+        use super::*;
+
+        #[test]
+        fn request_handler_process_ledger_status_event_from_start_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_catchup_req_event_from_start_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
+            assert_match!(RequestSMWrapper::CatchupSingle(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_catchup_req_event_from_start_works_for_no_transactions_to_catchup() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 0, vec![])));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_custom_single_req_event_from_start_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_custom_single_req_event_from_start_works_for_error() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Err(CommonError::InvalidStructure(String::new())))));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_consensus_full_req_event_from_start_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_consensus_full_req_event_from_start_works_for_error() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), Err(CommonError::InvalidStructure(String::new())))));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_custom_consensus_req_event_from_start_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_custom_consensus_req_event_from_start_works_for_error() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Err(CommonError::InvalidStructure(String::new())))));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_other_event_from_start_works_for_error() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
+            assert_match!(RequestSMWrapper::Start(_), request_handler.request_wrapper.unwrap());
+        }
+
+    }
+
+    mod consensus_state{
+        use super::*;
+
+        #[test]
+        fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reachable() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_not_reachable() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":{}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{}"#.to_string(), NODE_2.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reply_event_from_consensus_state_works_for_invalid_message() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reqack_event_from_consensus_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_reached() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_reachable() {
+            let mut request_handler = _request_handler(1, 3);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_not_reachable() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":{}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reject_event_from_consensus_state_works_for_consensus_reached() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reject_event_from_consensus_state_works_for_consensus_reachable() {
+            let mut request_handler = _request_handler(1, 3);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reject_event_from_consensus_state_works_for_consensus_not_reachable() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":{}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_timeout_event_from_consensus_state_works_for_consensus_reachable() {
+            let mut request_handler = _request_handler(1, 3);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Timeout(NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_timeout_event_from_consensus_state_works_for_consensus_not_reachable() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Timeout(NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_terminate_event_from_consensus_state_works_for_consensus_not_reachable() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Terminate));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_other_event_from_consensus_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Ping));
+            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+        }
+    }
+
+    mod single {
+        use super::*;
+
+        #[test]
+        fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reply_event_from_single_state_works_for_state_proof() {
+            // Register custom state proof parser
+            {
+                use services::pool::{PoolService, REGISTERED_SP_PARSERS};
+                use api::ErrorCode;
+                use std::os::raw::c_char;
+                use std::ffi::CString;
+
+                REGISTERED_SP_PARSERS.lock().unwrap().clear();
+
+                extern fn test_sp(_reply_from_node: *const c_char, parsed_sp: *mut *const c_char) -> ErrorCode {
+                    let sp: CString = CString::new("[]").unwrap();
+                    unsafe { *parsed_sp = sp.into_raw(); }
+                    ErrorCode::Success
+                }
+                extern fn test_free(_data: *const c_char) -> ErrorCode {
+                    ErrorCode::Success
+                }
+                PoolService::register_sp_parser("test", test_sp, test_free).unwrap();
+            }
+
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result": {"type":"test"}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reply_event_from_single_state_works_for_not_completed() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reply_event_from_single_state_works_for_invalid_message() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reqack_event_from_single_state_works() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reqnack_event_from_single_state_works_for_completed() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reqnack_event_from_single_state_works_for_not_completed() {
+            let mut request_handler = _request_handler(1, 3);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reject_event_from_single_state_works_for_completed() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reject_event_from_single_state_works_for_not_completed() {
+            let mut request_handler = _request_handler(1, 3);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_timeout_event_from_single_state_works() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
+            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_terminate_event_from_single_state_works() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Terminate));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_other_event_from_single_state_works() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Pong));
+            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+        }
+    }
+
+    mod catchup_consensus {
+        use super::*;
+
+        #[test]
+        fn request_handler_process_ledger_status_event_from_catchup_consensus_state_works_for_catchup_completed() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_ledger_status_event_from_catchup_consensus_state_works_for_catchup_not_completed() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_consistency_proof_event_from_catchup_consensus_state_works_for_catchup_completed() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            request_handler.process_event(Some(RequestEvent::ConsistencyProof(ConsistencyProof::default(), NODE.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_consistency_proof_event_from_catchup_consensus_state_works_for_catchup_not_completed() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            request_handler.process_event(Some(RequestEvent::ConsistencyProof(ConsistencyProof::default(), NODE.to_string())));
+            assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_timeout_event_from_catchup_consensus_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
+            assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_terminate_event_from_catchup_consensus_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            request_handler.process_event(Some(RequestEvent::Terminate));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_other_event_from_catchup_consensus_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            request_handler.process_event(Some(RequestEvent::Pong));
+            assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+        }
+    }
+
+    mod catchup_single {
+        use super::*;
+
+        #[test]
+        fn request_handler_process_catchup_reply_event_from_catchup_single_state_works() {
+            TestUtils::cleanup_indy_home();
+            _create_pool(None);
+
+            let mut request_handler = _request_handler(0, 1);
+
+            let mt = MerkleTree {
+                root: Tree::Leaf {
+                    hash: vec![144, 26, 156, 60, 166, 79, 255, 53, 172, 15, 42, 186, 99, 222, 43, 53, 230, 243, 151, 105, 0, 233, 90, 151, 103, 149, 22, 172, 76, 124, 247, 62],
+                    value: vec![132, 172, 114, 101, 113, 83, 105, 103, 110, 97, 116, 117, 114, 101, 128, 163, 116, 120, 110, 131, 164, 100, 97, 116, 97, 130, 164, 100, 97, 116, 97, 135, 165, 97, 108, 105, 97, 115, 165, 78, 111, 100, 101, 49, 166, 98, 108, 115, 107, 101, 121, 217, 175, 52, 78, 56, 97, 85, 78, 72, 83, 103, 106, 81, 86, 103, 107, 112, 109, 56, 110, 104, 78, 69, 102, 68, 102, 54, 116, 120, 72, 122, 110, 111, 89, 82, 69, 103, 57, 107, 105, 114, 109, 74, 114, 107, 105, 118, 103, 76, 52, 111, 83, 69, 105, 109, 70, 70, 54, 110, 115, 81, 54, 77, 52, 49, 81, 118, 104, 77, 50, 90, 51, 51, 110, 118, 101, 115, 53, 118, 102, 83, 110, 57, 110, 49, 85, 119, 78, 70, 74, 66, 89, 116, 87, 86, 110, 72, 89, 77, 65, 84, 110, 55, 54, 118, 76, 117, 76, 51, 122, 85, 56, 56, 75, 121, 101, 65, 89, 99, 72, 102, 115, 105, 104, 51, 72, 101, 54, 85, 72, 99, 88, 68, 120, 99, 97, 101, 99, 72, 86, 122, 54, 106, 104, 67, 89, 122, 49, 80, 50, 85, 90, 110, 50, 98, 68, 86, 114, 117, 76, 53, 119, 88, 112, 101, 104, 103, 66, 102, 66, 97, 76, 75, 109, 51, 66, 97, 169, 99, 108, 105, 101, 110, 116, 95, 105, 112, 168, 49, 48, 46, 48, 46, 48, 46, 50, 171, 99, 108, 105, 101, 110, 116, 95, 112, 111, 114, 116, 205, 37, 230, 167, 110, 111, 100, 101, 95, 105, 112, 168, 49, 48, 46, 48, 46, 48, 46, 50, 169, 110, 111, 100, 101, 95, 112, 111, 114, 116, 205, 37, 229, 168, 115, 101, 114, 118, 105, 99, 101, 115, 145, 169, 86, 65, 76, 73, 68, 65, 84, 79, 82, 164, 100, 101, 115, 116, 217, 44, 71, 119, 54, 112, 68, 76, 104, 99, 66, 99, 111, 81, 101, 115, 78, 55, 50, 113, 102, 111, 116, 84, 103, 70, 97, 55, 99, 98, 117, 113, 90, 112, 107, 88, 51, 88, 111, 54, 112, 76, 104, 80, 104, 118, 168, 109, 101, 116, 97, 100, 97, 116, 97, 129, 164, 102, 114, 111, 109, 182, 84, 104, 55, 77, 112, 84, 97, 82, 90, 86, 82, 89, 110, 80, 105, 97, 98, 100, 115, 56, 49, 89, 164, 116, 121, 112, 101, 161, 48, 171, 116, 120, 110, 77, 101, 116, 97, 100, 97, 116, 97, 130, 165, 115, 101, 113, 78, 111, 1, 165, 116, 120, 110, 73, 100, 217, 64, 102, 101, 97, 56, 50, 101, 49, 48, 101, 56, 57, 52, 52, 49, 57, 102, 101, 50, 98, 101, 97, 55, 100, 57, 54, 50, 57, 54, 97, 54, 100, 52, 54, 102, 53, 48, 102, 57, 51, 102, 57, 101, 101, 100, 97, 57, 53, 52, 101, 99, 52, 54, 49, 98, 50, 101, 100, 50, 57, 53, 48, 98, 54, 50, 163, 118, 101, 114, 161, 49]
+                },
+                height: 0,
+                count: 1,
+                nodes_count: 0,
+            };
+
+            request_handler.process_event(Some(RequestEvent::CatchupReq(mt, 2, vec![55, 104, 239, 91, 37, 160, 29, 25, 192, 253, 166, 135, 242, 53, 75, 41, 224, 4, 130, 27, 206, 133, 87, 231, 0, 133, 55, 159, 83, 105, 7, 237])));
+
+            let mut txns: HashMap<String, SJsonValue> = HashMap::new();
+            txns.insert("2".to_string(), serde_json::from_str::<SJsonValue>(r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node2","client_port":9704,"blskey":"37rAPpXVoxzKhz7d9gkUe52XuXryuLXoM6P6LbWDB7LSbG62Lsb33sfG7zqS8TK1MXwuCHj1FKNzVpsnafmqLG1vXN88rt38mNFs9TENzm4QHdBzsvCuoBnPH7rpYYDo9DZNJePaDvRvqJKByCabubJz3XXKbEeshzpz4Ma5QYpJqjk","node_port":9703,"node_ip":"10.0.0.2","services":["VALIDATOR"],"client_ip":"10.0.0.2"},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"},"metadata":{"from":"EbP4aYNeTHL6q385GuVpRV"},"type":"0"},"txnMetadata":{"seqNo":2,"txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc"},"ver":"1"}"#).unwrap());
+
+            let cr = CatchupRep { ledgerId: 0, consProof: Vec::new(), txns };
+
+            request_handler.process_event(Some(RequestEvent::CatchupRep(cr, "Node1".to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            TestUtils::cleanup_indy_home();
+        }
+
+        #[test]
+        fn request_handler_process_catchup_reply_event_from_catchup_single_state_works_for_error() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
+            request_handler.process_event(Some(RequestEvent::CatchupRep(CatchupRep::default(), NODE.to_string())));
+            assert_match!(RequestSMWrapper::CatchupSingle(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_timeout_event_from_catchup_single_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
+            request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
+            assert_match!(RequestSMWrapper::CatchupSingle(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_terminate_event_from_catchup_single_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
+            request_handler.process_event(Some(RequestEvent::Terminate));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_other_event_from_catchup_single_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
+            request_handler.process_event(Some(RequestEvent::Pong));
+            assert_match!(RequestSMWrapper::CatchupSingle(_), request_handler.request_wrapper.unwrap());
+        }
+    }
+
+    mod full {
+        use super::*;
+
+        #[test]
+        fn request_handler_process_reply_event_from_full_state_works_for_completed() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reply_event_from_full_state_works_for_not_completed() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reply_event_from_full_state_works_for_different_replies() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":"11"}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":"22"}"#.to_string(), "n2".to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reqnack_event_from_full_state_works_for_completed() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reqnack_event_from_full_state_works_for_not_completed() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reject_event_from_full_state_works_for_completed() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reject_event_from_full_state_works_for_not_completed() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_timeout_event_from_full_state_works_for_completed() {
+            let mut request_handler = _request_handler(1, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_timeout_event_from_full_state_works_for_not_completed() {
+            let mut request_handler = _request_handler(1, 2);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
+            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_reqack_event_from_full_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_terminate_event_from_full_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Terminate));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+
+        #[test]
+        fn request_handler_process_other_event_from_full_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Pong));
+            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+        }
+    }
+
+    mod finish {
+        use super::*;
+
+        #[test]
+        fn request_handler_process_event_from_finish_state_works() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::Terminate));
+            request_handler.process_event(Some(RequestEvent::Ping));
+            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+        }
+    }
+}

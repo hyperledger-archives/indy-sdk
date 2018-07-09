@@ -353,7 +353,7 @@ impl Networker for MockNetworker {
 
 
 #[cfg(test)]
-mod networker_tests {
+pub mod networker_tests {
     use super::*;
     use services::pool::tests::nodes_emulator;
     use utils::crypto::box_::CryptoBox;
@@ -365,7 +365,7 @@ mod networker_tests {
     const MESSAGE: &'static str = "msg";
     const NODE_NAME: &'static str = "n1";
 
-    fn _remote_node(txn: &NodeTransactionV1) -> RemoteNode {
+    pub fn _remote_node(txn: &NodeTransactionV1) -> RemoteNode {
         RemoteNode {
             public_key: CryptoBox::vk_to_curve25519(&txn.txn.data.dest.as_str().from_base58().unwrap()).unwrap(),
             zaddr: format!("tcp://{}:{}", txn.txn.data.data.client_ip.clone().unwrap(), txn.txn.data.data.client_port.clone().unwrap()),
