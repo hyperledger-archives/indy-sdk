@@ -11,19 +11,21 @@ use std::panic;
 mod utils;
 
 use utils::{export_config_json, export_path};
+use utils::constants::DEFAULT_CREDENTIALS;
 
 mod tests {
     use super::*;
 
+
     #[test]
     fn create_delete_wallet_works() {
-        let wallet_name = "create_delete_wallet_works";
-        match Wallet::create("pool1", wallet_name, None, None, None) {
-            Ok(..) => assert!(Wallet::delete(wallet_name, None).is_ok()),
+        let wallet_name = r#"{"id":"create_delete_wallet_works"}"#;
+        match Wallet::create(wallet_name, DEFAULT_CREDENTIALS) {
+            Ok(..) => assert!(Wallet::delete(wallet_name, DEFAULT_CREDENTIALS).is_ok()),
             Err(e) => match e {
                 ErrorCode::WalletAlreadyExistsError => {
                     //This is ok, just delete
-                    assert!(Wallet::delete(wallet_name, None).is_ok())
+                    assert!(Wallet::delete(wallet_name, DEFAULT_CREDENTIALS).is_ok())
                 }
                 _ => {
                     panic!("{:#?}", e)
@@ -34,21 +36,21 @@ mod tests {
 
     #[test]
     fn open_close_wallet_works() {
-        let wallet_name = "open_wallet_works";
+        let wallet_name = r#"{"id":"open_wallet_works"}"#;
         let open_closure = || {
-            match Wallet::open(wallet_name, None, None) {
+            match Wallet::open(wallet_name, DEFAULT_CREDENTIALS) {
                 Ok(handle) => {
                     Wallet::close(handle).unwrap();
-                    Wallet::delete(wallet_name, None).unwrap();
+                    Wallet::delete(wallet_name, DEFAULT_CREDENTIALS).unwrap();
                 },
                 Err(e) => {
-                    Wallet::delete(wallet_name, None).unwrap();
+                    Wallet::delete(wallet_name, DEFAULT_CREDENTIALS).unwrap();
                     panic!("{:#?}", e);
                 }
             }
         };
 
-        match Wallet::create("pool1", wallet_name, None, None, None) {
+        match Wallet::create(wallet_name, DEFAULT_CREDENTIALS) {
             Err(e) => match e {
                 ErrorCode::WalletAlreadyExistsError => {
                     open_closure()
@@ -61,10 +63,10 @@ mod tests {
 
     #[test]
     fn export_import_wallet_works() {
-        let wallet_name = "export_import_wallet_works";
+        let wallet_name = r#"{"id":"export_import_wallet_works"}"#;
 
         let open_closure = || {
-            match Wallet::open(wallet_name, None, None) {
+            match Wallet::open(wallet_name, DEFAULT_CREDENTIALS) {
                 Ok(handle) => {
                     Did::new(handle, "{}").unwrap();
 
@@ -73,16 +75,16 @@ mod tests {
                     assert!(Path::new(&export_path(wallet_name)).exists());
 
                     Wallet::close(handle).unwrap();
-                    Wallet::delete(wallet_name, None).unwrap();
+                    Wallet::delete(wallet_name, DEFAULT_CREDENTIALS).unwrap();
                 },
                 Err(e) => {
-                    Wallet::delete(wallet_name, None).unwrap();
+                    Wallet::delete(wallet_name, DEFAULT_CREDENTIALS).unwrap();
                     panic!("{:#?}", e);
                 }
             }
         };
 
-        match Wallet::create("pool1", wallet_name, None, None, None) {
+        match Wallet::create(wallet_name, DEFAULT_CREDENTIALS) {
             Err(e) => match e {
                 ErrorCode::WalletAlreadyExistsError => {
                     open_closure()
