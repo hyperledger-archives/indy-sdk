@@ -188,7 +188,7 @@ impl WalletCommandExecutor {
     fn _delete(&self,
                config: &str,
                credentials: &str) -> Result<()> {
-        trace!("_delete >>> config: {:?}, credentials: {:?}", config, credentials);
+        trace!("_delete >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
 
         let res = self.wallet_service.delete_wallet(config, credentials)?;
 
