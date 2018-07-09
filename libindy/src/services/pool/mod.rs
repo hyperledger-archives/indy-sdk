@@ -234,12 +234,6 @@ impl PoolService {
 
         Ok(pool)
     }
-
-    pub fn get_pool_name(&self, handle: i32) -> Result<String, PoolError> {
-        self.open_pools.try_borrow().map_err(CommonError::from)?.get(&handle).map_or(
-            Err(PoolError::InvalidHandle(format!("Pool doesn't exists for handle {}", handle))),
-            |ref pool| Ok(pool.pool.get_name().to_string()))
-    }
 }
 
 #[cfg(test)]
@@ -387,25 +381,6 @@ mod tests {
             ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
             let res = ps.send_tx(-1, "test_data");
             assert_match!(Err(PoolError::CommonError(CommonError::IOError(_))), res);
-        }
-
-        #[test]
-        fn pool_get_pool_name_works() {
-            TestUtils::cleanup_storage();
-            let name = "test";
-            let ps = PoolService::new();
-            let zmq_ctx = zmq::Context::new();
-            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-            let pool = Pool::new(name, 0);
-            ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
-            assert_eq!(ps.get_pool_name(-1).unwrap(), name);
-        }
-
-        #[test]
-        fn pool_get_pool_name_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
-            let ps = PoolService::new();
-            assert_match!(Err(PoolError::InvalidHandle(_)), ps.get_pool_name(-1));
         }
 
         #[test]
@@ -602,7 +577,6 @@ mod tests {
         use std::thread;
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
-        use sodiumoxide::crypto::sign::ed25519::PublicKey;
 
         pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
 

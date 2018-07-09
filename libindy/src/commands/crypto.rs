@@ -9,6 +9,7 @@ use errors::wallet::WalletError;
 use errors::indy::IndyError;
 use domain::crypto::key::{KeyInfo, Key};
 use domain::crypto::combo_box::ComboBox;
+use utils::crypto::base64;
 use services::wallet::{WalletService, RecordOptions};
 use services::crypto::CryptoService;
 
@@ -19,7 +20,6 @@ use std::result;
 
 type Result<T> = result::Result<T, IndyError>;
 
-use base64;
 
 pub enum CryptoCommand {
     CreateKey(

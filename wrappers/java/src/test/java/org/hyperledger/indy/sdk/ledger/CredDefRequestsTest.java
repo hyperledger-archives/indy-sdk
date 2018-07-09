@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.isA;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class CredDefRequestsTest extends LedgerIntegrationTest {
@@ -29,18 +30,17 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 				"            \"primary\": {\n" +
 				"                \"n\": \"1\",\n" +
 				"                \"s\": \"2\",\n" +
-				"                \"rms\": \"3\",\n" +
-				"                \"r\": {\"name\": \"1\"},\n" +
+				"                \"r\": {\"name\": \"1\",\"master_secret\": \"3\"},\n" +
 				"                \"rctxt\": \"1\",\n" +
 				"                \"z\": \"1\"\n" +
 				"            }\n" +
 				"        }\n" +
 				"    }";
 
-		String expectedResult = "\"operation\": {\n" +
+		String expectedResult = "{\n" +
 				"            \"ref\": 1,\n" +
 				"            \"data\": {\n" +
-				"                \"primary\": {\"n\": \"1\", \"s\": \"2\", \"rms\": \"3\", \"r\": {\"name\": \"1\"}, \"rctxt\": \"1\", \"z\": \"1\"}\n" +
+				"                \"primary\": {\"n\": \"1\", \"s\": \"2\", \"r\": {\"name\": \"1\",\"master_secret\": \"3\"}, \"rctxt\": \"1\", \"z\": \"1\"}\n" +
 				"            },\n" +
 				"            \"type\": \"102\",\n" +
 				"            \"signature_type\": \"CL\",\n" +
@@ -49,7 +49,7 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 
 		String credDefRequest = Ledger.buildCredDefRequest(DID, data).get();
 
-		assertTrue(credDefRequest.replaceAll("\\s+", "").contains(expectedResult.replaceAll("\\s+", "")));
+		assertTrue(new JSONObject(credDefRequest).getJSONObject("operation").similar(new JSONObject(expectedResult)));
 	}
 
 	@Test

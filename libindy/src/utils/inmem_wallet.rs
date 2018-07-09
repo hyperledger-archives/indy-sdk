@@ -15,7 +15,7 @@ use std::sync::Mutex;
 
 #[derive(Debug)]
 struct InmemWalletContext {
-    name: String
+    id: String
 }
 
 #[derive(Debug, Clone)]
@@ -55,40 +55,39 @@ lazy_static! {
 pub struct InmemWallet {}
 
 impl InmemWallet {
-    pub extern "C" fn create(name: *const c_char,
+    pub extern "C" fn create(id: *const c_char,
                              _: *const c_char,
                              _: *const c_char,
                              metadata: *const c_char) -> ErrorCode {
-        check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(metadata, ErrorCode::CommonInvalidStructure);
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
-        if wallets.contains_key(&name) {
+        if wallets.contains_key(&id) {
             // Invalid state as "already exists" case must be checked on service layer
             return ErrorCode::CommonInvalidState;
         }
-        wallets.insert(name.clone(), InmemWalletEntity { metadata: CString::new(metadata).unwrap(), records: HashMap::new() });
+        wallets.insert(id.clone(), InmemWalletEntity { metadata: CString::new(metadata).unwrap(), records: HashMap::new() });
 
         ErrorCode::Success
     }
 
-    pub extern "C" fn open(name: *const c_char,
-                           _: *const c_char,
+    pub extern "C" fn open(id: *const c_char,
                            _: *const c_char,
                            _: *const c_char,
                            handle: *mut i32) -> ErrorCode {
-        check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
 
         let wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&name) {
+        if !wallets.contains_key(&id) {
             return ErrorCode::CommonInvalidState;
         }
 
         let mut handles = INMEM_OPEN_WALLETS.lock().unwrap();
         let xhandle = SequenceUtils::get_next_id();
         handles.insert(xhandle, InmemWalletContext {
-            name,
+            id,
         });
 
         unsafe { *handle = xhandle };
@@ -120,11 +119,11 @@ impl InmemWallet {
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
 
         wallet.records.insert(InmemWallet::build_record_id(&type_, &id), InmemWalletRecord {
             type_: CString::new(type_).unwrap(),
@@ -154,11 +153,11 @@ impl InmemWallet {
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
 
         match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
             Some(ref mut record) => record.value = joined_value,
@@ -187,11 +186,11 @@ impl InmemWallet {
 
         let wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get(&wallet_context.name).unwrap();
+        let wallet = wallets.get(&wallet_context.id).unwrap();
 
         let key = InmemWallet::build_record_id(&type_, &id);
 
@@ -337,11 +336,11 @@ impl InmemWallet {
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
 
         match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
             Some(ref mut record) => {
@@ -385,11 +384,11 @@ impl InmemWallet {
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
 
         match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
             Some(ref mut record) => record.tags = CString::new(tags_json).unwrap(),
@@ -417,11 +416,11 @@ impl InmemWallet {
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
 
         match wallet.records.get_mut(&InmemWallet::build_record_id(&type_, &id)) {
             Some(ref mut record) => {
@@ -465,11 +464,11 @@ impl InmemWallet {
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
 
         let key = InmemWallet::build_record_id(&type_, &id);
 
@@ -493,11 +492,11 @@ impl InmemWallet {
 
         let wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get(&wallet_context.name).unwrap();
+        let wallet = wallets.get(&wallet_context.id).unwrap();
 
         let metadata = wallet.metadata.clone();
         let metadata_pointer = metadata.as_ptr();
@@ -526,11 +525,11 @@ impl InmemWallet {
 
         let mut wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get_mut(&wallet_context.name).unwrap();
+        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
 
         wallet.metadata = CString::new(metadata).unwrap();
 
@@ -567,11 +566,11 @@ impl InmemWallet {
 
         let wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get(&wallet_context.name).unwrap();
+        let wallet = wallets.get(&wallet_context.id).unwrap();
 
         let search_records = wallet.records
             .iter()
@@ -601,11 +600,11 @@ impl InmemWallet {
 
         let wallets = INMEM_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&wallet_context.name) {
+        if !wallets.contains_key(&wallet_context.id) {
             return ErrorCode::CommonInvalidState;
         }
 
-        let wallet = wallets.get(&wallet_context.name).unwrap();
+        let wallet = wallets.get(&wallet_context.id).unwrap();
 
         let search_records = wallet.records
             .values()

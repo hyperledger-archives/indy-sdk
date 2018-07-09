@@ -3,8 +3,6 @@ extern crate serde_json;
 extern crate indy_crypto;
 
 use errors::indy::IndyError;
-use errors::common::CommonError;
-use errors::wallet::WalletError;
 use services::wallet::WalletService;
 use api::wallet::*;
 use std::rc::Rc;
@@ -40,31 +38,23 @@ pub enum WalletCommand {
                        WalletFetchSearchNextRecord, // fetch search next record
                        WalletFreeSearch, // free search
                        Box<Fn(Result<()>) + Send>),
-    Create(String, // pool name
-           String, // wallet name
-           Option<String>, // storage type
-           Option<String>, // config
+    Create(String, // config
            String, // credentials
            Box<Fn(Result<()>) + Send>),
-    Open(String, // wallet name
-         Option<String>, // wallet runtime config
-         String, // wallet credentials
+    Open(String, // config
+         String, // credentials
          Box<Fn(Result<i32>) + Send>),
     Close(i32, // handle
           Box<Fn(Result<()>) + Send>),
-    ListWallets(Box<Fn(Result<String>) + Send>),
-    Delete(String, // name
-           String, // wallet credentials
+    Delete(String, // config
+           String, // credentials
            Box<Fn(Result<()>) + Send>),
     Export(i32, // wallet_handle
-           String, // export config_json
+           String, // export config
            Box<Fn(Result<()>) + Send>),
-    Import(String, // pool name
-           String, // wallet name
-           Option<String>, // storage type
-           Option<String>, // config
+    Import(String, // config
            String, // credentials
-           String, // import_config_json
+           String, // import config
            Box<Fn(Result<()>) + Send>),
 }
 
@@ -87,74 +77,68 @@ impl WalletCommandExecutor {
                                               get_record_value, get_record_tags, free_record, get_storage_metadata, set_storage_metadata,
                                               free_storage_metadata, search_records, search_all_records, get_search_total_count,
                                               fetch_search_next_record, free_search, cb) => {
-                info!(target: "wallet_command_executor", "RegisterWalletType command received");
-                cb(self.register_type(&type_, create, open, close, delete, add_record,
-                                      update_record_value, update_record_tags, add_record_tags,
-                                      delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
-                                      get_record_value, get_record_tags, free_record, get_storage_metadata, set_storage_metadata,
-                                      free_storage_metadata, search_records, search_all_records, get_search_total_count,
-                                      fetch_search_next_record, free_search));
+                debug!(target: "wallet_command_executor", "RegisterWalletType command received");
+                cb(self._register_type(&type_, create, open, close, delete, add_record,
+                                       update_record_value, update_record_tags, add_record_tags,
+                                       delete_record_tags, delete_record, get_record, get_record_id, get_record_type,
+                                       get_record_value, get_record_tags, free_record, get_storage_metadata, set_storage_metadata,
+                                       free_storage_metadata, search_records, search_all_records, get_search_total_count,
+                                       fetch_search_next_record, free_search));
             }
-            WalletCommand::Create(pool_name, name, storage_type, config, credentials, cb) => {
-                info!(target: "wallet_command_executor", "Create command received");
-                cb(self.create(&pool_name, &name, storage_type.as_ref().map(String::as_str),
-                               config.as_ref().map(String::as_str), &credentials));
+            WalletCommand::Create(config, credentials, cb) => {
+                debug!(target: "wallet_command_executor", "Create command received");
+                cb(self._create(&config, &credentials));
             }
-            WalletCommand::Open(name, runtime_config, credentials, cb) => {
-                info!(target: "wallet_command_executor", "Open command received");
-                cb(self.open(&name, runtime_config.as_ref().map(String::as_str), &credentials));
+            WalletCommand::Open(config, credentials, cb) => {
+                debug!(target: "wallet_command_executor", "Open command received");
+                cb(self._open(&config, &credentials));
             }
             WalletCommand::Close(handle, cb) => {
-                info!(target: "wallet_command_executor", "Close command received");
-                cb(self.close(handle));
+                debug!(target: "wallet_command_executor", "Close command received");
+                cb(self._close(handle));
             }
-            WalletCommand::ListWallets(cb) => {
-                info!(target: "wallet_command_executor", "ListWallets command received");
-                cb(self.list_wallets());
+            WalletCommand::Delete(config, credentials, cb) => {
+                debug!(target: "wallet_command_executor", "Delete command received");
+                cb(self._delete(&config, &credentials));
             }
-            WalletCommand::Delete(name, credentials, cb) => {
-                info!(target: "wallet_command_executor", "Delete command received");
-                cb(self.delete(&name, &credentials));
+            WalletCommand::Export(wallet_handle, export_config, cb) => {
+                debug!(target: "wallet_command_executor", "Export command received");
+                cb(self._export(wallet_handle, &export_config));
             }
-            WalletCommand::Export(wallet_handle, export_config_json, cb) => {
-                info!(target: "wallet_command_executor", "Export command received");
-                cb(self.export(wallet_handle, &export_config_json));
-            }
-            WalletCommand::Import(pool_name, name, storage_type, config, credentials, import_config, cb) => {
-                info!(target: "wallet_command_executor", "Import command received");
-                cb(self.import(&pool_name, &name, storage_type.as_ref().map(String::as_str),
-                               config.as_ref().map(String::as_str), &credentials, &import_config));
+            WalletCommand::Import(config, credentials, import_config, cb) => {
+                debug!(target: "wallet_command_executor", "Import command received");
+                cb(self._import(&config, &credentials, &import_config));
             }
         };
     }
 
-    fn register_type(&self,
-                     type_: &str,
-                     create: WalletCreate,
-                     open: WalletOpen,
-                     close: WalletClose,
-                     delete: WalletDelete,
-                     add_record: WalletAddRecord,
-                     update_record_value: WalletUpdateRecordValue,
-                     update_record_tags: WalletUpdateRecordTags,
-                     add_record_tags: WalletAddRecordTags,
-                     delete_record_tags: WalletDeleteRecordTags,
-                     delete_record: WalletDeleteRecord,
-                     get_record: WalletGetRecord,
-                     get_record_id: WalletGetRecordId,
-                     get_record_type: WalletGetRecordType,
-                     get_record_value: WalletGetRecordValue,
-                     get_record_tags: WalletGetRecordTags,
-                     free_record: WalletFreeRecord,
-                     get_storage_metadata: WalletGetStorageMetadata,
-                     set_storage_metadata: WalletSetStorageMetadata,
-                     free_storage_metadata: WalletFreeStorageMetadata,
-                     search_records: WalletSearchRecords,
-                     search_all_records: WalletSearchAllRecords,
-                     get_search_total_count: WalletGetSearchTotalCount,
-                     fetch_search_next_record: WalletFetchSearchNextRecord,
-                     free_search: WalletFreeSearch) -> Result<()> {
-        info!("register_type >>>");
+    fn _register_type(&self,
+                      type_: &str,
+                      create: WalletCreate,
+                      open: WalletOpen,
+                      close: WalletClose,
+                      delete: WalletDelete,
+                      add_record: WalletAddRecord,
+                      update_record_value: WalletUpdateRecordValue,
+                      update_record_tags: WalletUpdateRecordTags,
+                      add_record_tags: WalletAddRecordTags,
+                      delete_record_tags: WalletDeleteRecordTags,
+                      delete_record: WalletDeleteRecord,
+                      get_record: WalletGetRecord,
+                      get_record_id: WalletGetRecordId,
+                      get_record_type: WalletGetRecordType,
+                      get_record_value: WalletGetRecordValue,
+                      get_record_tags: WalletGetRecordTags,
+                      free_record: WalletFreeRecord,
+                      get_storage_metadata: WalletGetStorageMetadata,
+                      set_storage_metadata: WalletSetStorageMetadata,
+                      free_storage_metadata: WalletFreeStorageMetadata,
+                      search_records: WalletSearchRecords,
+                      search_all_records: WalletSearchAllRecords,
+                      get_search_total_count: WalletGetSearchTotalCount,
+                      fetch_search_next_record: WalletFetchSearchNextRecord,
+                      free_search: WalletFreeSearch) -> Result<()> {
+        trace!("_register_type >>> type_: {:?}", type_);
 
         let res = self
             .wallet_service
@@ -165,104 +149,75 @@ impl WalletCommandExecutor {
                 free_storage_metadata, search_records, search_all_records,
                 get_search_total_count, fetch_search_next_record, free_search)?;
 
-        info!("register_type <<< res: {:?}", res);
-
+        trace!("_register_type <<< res: {:?}", res);
         Ok(res)
     }
 
-    fn create(&self,
-              pool_name: &str,
-              name: &str,
-              storage_type: Option<&str>,
-              config: Option<&str>,
-              credentials: &str) -> Result<()> {
-        debug!("create >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}",
-               pool_name, name, storage_type, config, credentials);
+    fn _create(&self,
+               config: &str,
+               credentials: &str) -> Result<()> {
+        trace!("_create >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
 
-        let res = self.wallet_service.create_wallet(pool_name, name, storage_type, config, credentials)?;
+        let res = self.wallet_service.create_wallet(config, credentials)?;
 
-        debug!("create <<< res: {:?}", res);
-
+        trace!("_create <<< res: {:?}", res);
         Ok(res)
     }
 
-    fn open(&self,
-            name: &str,
-            runtime_config: Option<&str>,
-            credentials: &str) -> Result<i32> {
-        debug!("open >>> name: {:?}, runtime_config: {:?}, credentials: {:?}", name, runtime_config, credentials);
+    fn _open(&self,
+             config: &str,
+             credentials: &str) -> Result<i32> {
+        trace!("_open >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
 
-        let res = self.wallet_service.open_wallet(name, runtime_config, credentials)?;
+        let res = self.wallet_service.open_wallet(config, credentials)?;
 
-        debug!("open <<< res: {:?}", res);
-
+        trace!("_open <<< res: {:?}", res);
         Ok(res)
     }
 
-    fn close(&self,
-             handle: i32) -> Result<()> {
-        debug!("close >>> handle: {:?}", handle);
+    fn _close(&self,
+              handle: i32) -> Result<()> {
+        trace!("_close >>> handle: {:?}", handle);
 
         let res = self.wallet_service.close_wallet(handle)?;
 
-        debug!("close <<< res: {:?}", res);
-
+        trace!("_close <<< res: {:?}", res);
         Ok(res)
     }
 
-    fn list_wallets(&self) -> Result<String> {
-        debug!("list_wallets >>>");
+    fn _delete(&self,
+               config: &str,
+               credentials: &str) -> Result<()> {
+        trace!("_delete >>> config: {:?}, credentials: {:?}", config, credentials);
 
-        let res = self.wallet_service.list_wallets()
-            .and_then(|wallets|
-                serde_json::to_string(&wallets)
-                    .map_err(|err|
-                        WalletError::CommonError(CommonError::InvalidState(format!("Can't serialize wallets list {}", err)))))?;
+        let res = self.wallet_service.delete_wallet(config, credentials)?;
 
-        debug!("list_wallets << res: {:?}", res);
-
+        trace!("_delete <<< res: {:?}", res);
         Ok(res)
     }
 
-    fn delete(&self,
-              name: &str,
-              credentials: &str) -> Result<()> {
-        debug!("delete >>> name: {:?}, credentials: {:?}", name, credentials);
-
-        let res = self.wallet_service.delete_wallet(name, credentials)?;
-
-        debug!("delete <<< res: {:?}", res);
-
-        Ok(res)
-    }
-
-    fn export(&self,
-              wallet_handle: i32,
-              export_config_json: &str) -> Result<()> {
-        debug!("export >>> handle: {:?}, export_config_json: {:?}", wallet_handle, export_config_json);
+    fn _export(&self,
+               wallet_handle: i32,
+               export_config: &str) -> Result<()> {
+        trace!("_export >>> handle: {:?}, export_config: {:?}", wallet_handle, export_config);
 
         // TODO - later add proper versioning
-        let res = self.wallet_service.export_wallet(wallet_handle, export_config_json, 0)?;
+        let res = self.wallet_service.export_wallet(wallet_handle, export_config, 0)?;
 
-        debug!("export <<< res: {:?}", res);
-
+        trace!("_export <<< res: {:?}", res);
         Ok(res)
     }
 
-    fn import(&self,
-              pool_name: &str,
-              name: &str,
-              storage_type: Option<&str>,
-              config: Option<&str>,
-              credentials: &str,
-              import_config: &str) -> Result<()> {
-        debug!("import >>> pool_name: {:?}, name: {:?}, storage_type: {:?}, config: {:?}, credentials: {:?}, import_config: {:?}",
-               pool_name, name, storage_type, config, credentials, import_config);
+    fn _import(&self,
+               config: &str,
+               credentials: &str,
+               import_config: &str) -> Result<()> {
+        trace!("_import >>> config: {:?}, credentials: {:?}, import_config: {:?}",
+               config, "_", import_config); // TODO: FIXME: Log credentials in debug
 
-        let res = self.wallet_service.import_wallet(pool_name, name, storage_type, config, credentials, import_config)?;
+        let res = self.wallet_service.import_wallet(config, credentials, import_config)?;
 
-        debug!("import <<< res: {:?}", res);
-
+        trace!("_import <<< res: {:?}", res);
         Ok(res)
     }
 }

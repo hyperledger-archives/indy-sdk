@@ -145,76 +145,93 @@ extern "C" {
                                                   void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                                   );
 
-    /// Creates a new secure wallet with the given unique name.
+    /// Create a new secure wallet.
     ///
     /// #Params
-    /// pool_name: Name of the pool that corresponds to this wallet.
-    /// name: Name of the wallet.
-    /// xtype(optional): Type of the wallet. Defaults to 'default'.
-    ///                  Custom types can be registered with indy_register_wallet_type call.
-    /// config(optional): Wallet configuration json. List of supported keys are defined by wallet type.
-    ///                    if NULL, then default config will be used.
-    /// credentials: Wallet credentials json
+    /// config: Wallet configuration json.
+    /// {
+    ///   "id": string, Identifier of the wallet.
+    ///         Configured storage uses this identifier to lookup exact wallet data placement.
+    ///   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+    ///                  'Default' storage type allows to store wallet data in the local file.
+    ///                  Custom storage types can be registered with indy_register_wallet_storage call.
+    ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+    ///                     Can be optional if storage supports default configuration.
+    //                      For 'default' storage type configuration is:
     ///   {
-    ///       "key": string,
-    ///       "rekey": Optional<string>,
-    ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
-    ///
+    ///     "path": optional<string>, Path to the directory with wallet files.
+    ///             Defaults to $HOME/.indy_client/wallets.
+    ///             Wallet will be stored in the file {path}/{id}/sqlite.db
     ///   }
+    /// }
+    /// credentials: Wallet credentials json
+    /// {
+    ///   "key": string, Passphrase used to derive wallet master key
+    ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+    ///                          Can be optional if storage supports default configuration.
+    //                           For 'default' storage type should be empty.
+    ///
+    /// }
     ///
     /// #Returns
-    /// Error code
+    /// err: Error code
     ///
     /// #Errors
     /// Common*
     /// Wallet*
 
     extern indy_error_t indy_create_wallet(indy_handle_t  command_handle,
-                                           const char*    pool_name,
-                                           const char*    name,
-                                           const char*    xtype,
                                            const char*    config,
                                            const char*    credentials,
                                            void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                           );
-    /// Opens the wallet with specific name.
+
+    /// Open the wallet.
     ///
-    /// Wallet with corresponded name must be previously created with indy_create_wallet method.
-    /// It is impossible to open wallet with the same name more than once.
+    /// Wallet must be previously created with indy_create_wallet method.
     ///
     /// #Params
-    /// name: Name of the wallet.
-    /// runtime_config (optional): Runtime wallet configuration json. if NULL, then default runtime_config will be used. Example:
-    /// {
-    ///     "freshness_time": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.
-    ///     ... List of additional supported keys are defined by wallet type.
-    /// }
+    /// config: Wallet configuration json.
+    ///   {
+    ///       "id": string, Identifier of the wallet.
+    ///             Configured storage uses this identifier to lookup exact wallet data placement.
+    ///       "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+    ///                       'Default' storage type allows to store wallet data in the local file.
+    ///                       Custom storage types can be registered with indy_register_wallet_storage call.
+    ///       "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+    ///                         Can be optional if storage supports default configuration.
+    //                          For 'default' storage type configuration is:
+    ///           {
+    ///              "path": optional<string>, Path to the directory with wallet files.
+    ///                      Defaults to $HOME/.indy_client/wallets.
+    ///                      Wallet will be stored in the file {path}/{id}/sqlite.db
+    ///           }
+    ///
+    ///   }
     /// credentials: Wallet credentials json
     ///   {
-    ///       "key": string,
-    ///       "rekey": Optional<string>,
-    ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
+    ///       "key": string, Passphrase used to derive current wallet master key
+    ///       "rekey": optional<string>, If present than wallet master key will be rotated to a new one
+    ///                                  derived from this passphrase.
+    ///       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+    ///                              Can be optional if storage supports default configuration.
+    //                               For 'default' storage type should be empty.
     ///
     ///   }
     ///
     /// #Returns
-    /// Handle to opened wallet to use in methods that require wallet access.
+    /// err: Error code
+    /// handle: Handle to opened wallet to use in methods that require wallet access.
     ///
     /// #Errors
     /// Common*
     /// Wallet*
 
     extern indy_error_t indy_open_wallet(indy_handle_t  command_handle,
-                                         const char*    name,
-                                         const char*    runtime_config,
+                                         const char*    config,
                                          const char*    credentials,
                                          void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err, indy_handle_t handle)
                                         );
-
-    /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
-    extern indy_error_t indy_list_wallets(indy_handle_t command_handle,
-                                          void          (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const wallets)
-                                          );
 
     /// Exports opened wallet's content using key and path provided in export_config_json
     ///
@@ -240,27 +257,43 @@ extern "C" {
                                            );
 
 
-    /// Creates a new secure wallet with the given unique name and imports its content from
-    /// the file created using indy_export_wallet
+    /// Creates a new secure wallet and then imports its content
+    /// according to fields provided in import_config
+    /// This can be seen as an indy_create_wallet call with additional content import
+    ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
     ///
     /// #Params
-    /// pool_name: Name of the pool that corresponds to this wallet.
-    /// name: Name of the wallet.
-    /// xtype(optional): Type of the wallet. Defaults to 'default'.
-    ///                  Custom types can be registered with indy_register_wallet_type call.
-    /// config(optional): Wallet configuration json. List of supported keys are defined by wallet type.
-    ///                    if NULL, then default config will be used.
+    /// config: Wallet configuration json.
+    /// {
+    ///   "id": string, Identifier of the wallet.
+    ///         Configured storage uses this identifier to lookup exact wallet data placement.
+    ///   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+    ///                  'Default' storage type allows to store wallet data in the local file.
+    ///                  Custom storage types can be registered with indy_register_wallet_storage call.
+    ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+    ///                     Can be optional if storage supports default configuration.
+    //                      For 'default' storage type configuration is:
+    ///   {
+    ///     "path": optional<string>, Path to the directory with wallet files.
+    ///             Defaults to $HOME/.indy_client/wallets.
+    ///             Wallet will be stored in the file {path}/{id}/sqlite.db
+    ///   }
+    /// }
     /// credentials: Wallet credentials json
-    ///   {
-    ///       "key": string,
-    ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
+    /// {
+    ///   "key": string, Passphrase used to derive wallet master key
+    ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+    ///                          Can be optional if storage supports default configuration.
+    //                           For 'default' storage type should be empty.
     ///
-    ///   }
-    /// import_config_json: JSON containing settings for input operation.
-    ///   {
-    ///     "path": path of the file that contains exported wallet content
-    ///     "key": passphrase used to derive export key
-    ///   }
+    /// }
+    /// import_config: Import settings json.
+    /// {
+    ///   "path": <string>, path of the file that contains exported wallet content
+    ///   "key": <string>, passphrase used to derive export key
+    /// }
     ///
     /// #Returns
     /// Error code
@@ -270,9 +303,6 @@ extern "C" {
     /// Wallet*
 
     extern indy_error_t indy_import_wallet(indy_handle_t  command_handle,
-                                           const char*    pool_name,
-                                           const char*    name,
-                                           const char*    xtype,
                                            const char*    config,
                                            const char*    credentials,
                                            const char*    import_config_json,
@@ -299,14 +329,30 @@ extern "C" {
     /// Deletes created wallet.
     ///
     /// #Params
-    /// name: Name of the wallet to delete.
-    /// credentials: Wallet credentials json
+    /// config: Wallet configuration json.
+    /// {
+    ///   "id": string, Identifier of the wallet.
+    ///         Configured storage uses this identifier to lookup exact wallet data placement.
+    ///   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+    ///                  'Default' storage type allows to store wallet data in the local file.
+    ///                  Custom storage types can be registered with indy_register_wallet_storage call.
+    ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+    ///                     Can be optional if storage supports default configuration.
+    //                      For 'default' storage type configuration is:
     ///   {
-    ///       "key": string,
-    ///       "rekey": Optional<string>,
-    ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
-    ///
+    ///     "path": optional<string>, Path to the directory with wallet files.
+    ///             Defaults to $HOME/.indy_client/wallets.
+    ///             Wallet will be stored in the file {path}/{id}/sqlite.db
     ///   }
+    /// }
+    /// credentials: Wallet credentials json
+    /// {
+    ///   "key": string, Passphrase used to derive wallet master key
+    ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+    ///                          Can be optional if storage supports default configuration.
+    //                           For 'default' storage type should be empty.
+    ///
+    /// }
     ///
     /// #Returns
     /// Error code
@@ -316,73 +362,8 @@ extern "C" {
     /// Wallet*
 
     extern indy_error_t indy_delete_wallet(indy_handle_t  command_handle,
-                                           const char*    name,
-                                           const char*    credentials,
-                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
-                                          );
-
-    /// Exports opened wallet
-    ///
-    /// #Params:
-    /// wallet_handle: wallet handle returned by indy_open_wallet
-    /// export_config_json: JSON containing settings for input operation.
-    ///   {
-    ///     "path": path of the file that contains exported wallet content
-    ///     "key": passphrase used to export key
-    ///   }
-    ///
-    /// #Returns
-    /// Error code
-    ///
-    /// #Errors
-    /// Common*
-    /// Wallet*
-
-    extern indy_error_t indy_export_wallet(indy_handle_t  command_handle,
-                                           indy_handle_t  wallet_handle,
-                                           const char*    export_config_json,
-                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
-                                          );
-
-    // Creates a new secure wallet with the given unique name and then imports its content
-    // according to fields provided in import_config
-    // This can be seen as an indy_create_wallet call with additional content import
-    //
-    // #Params
-    // pool_name: Name of the pool that corresponds to this wallet
-    // name: Name of the wallet
-    // storage_type(optional): Type of the wallet storage. Defaults to 'default'.
-    //                  Custom storage types can be registered with indy_register_wallet_storage_call
-    /// config(optional): Wallet configuration json.
-    ///   {
-    ///       "storage": <object>  List of supported keys are defined by wallet type.
-    ///   }
-    /// credentials: Wallet credentials json (if NULL, then default config will be used).
-    ///   {
-    ///       "key": string,
-    ///       "storage": Optional<object>  List of supported keys are defined by wallet type.
-    ///
-    ///   }
-    /// import_config_json: JSON containing settings for input operation.
-    ///   {
-    ///     "path": path of the file that contains exported wallet content
-    ///     "key": passphrase used to export key
-    ///   }
-    ///
-    /// #Returns
-    /// Error code
-    ///
-    /// #Errors
-    /// Common*
-    /// Wallet*
-
-    extern indy_error_t indy_import_wallet(indy_handle_t  command_handle,
-                                           const char*    pool_name,
-                                           const char*    name,
-                                           const char*    xtype,
                                            const char*    config,
                                            const char*    credentials,
-                                           const char*    import_config_json,
                                            void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                           );
 
