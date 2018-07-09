@@ -41,7 +41,7 @@ mod high_cases {
         pub fn create_payment_address_works() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
 
             let payment_address = payments::create_payment_address(wallet_handle, PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap();
             assert!(payment_address.starts_with("pay:null:"));
@@ -58,7 +58,7 @@ mod high_cases {
         pub fn list_payment_addresses_works() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
 
             let payment_address = payments::create_payment_address(wallet_handle, PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap();
 
@@ -81,7 +81,7 @@ mod high_cases {
         pub fn get_utxo_works() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
@@ -116,7 +116,7 @@ mod high_cases {
         pub fn get_utxo_works_for_no_utxo() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             let nonexistent_addr = "pay:null:no-addr";
@@ -138,7 +138,7 @@ mod high_cases {
         pub fn mint_works() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
@@ -179,7 +179,7 @@ mod high_cases {
         pub fn add_request_fees_works() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             //1. Prepare new nym request
@@ -243,7 +243,7 @@ mod high_cases {
         pub fn add_request_works_for_insufficient_funds() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             let (trustee_did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
@@ -290,8 +290,8 @@ mod high_cases {
             test_utils::cleanup_storage();
             plugin::init_plugin();
 
-            let wallet_handle_1 = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
-            let wallet_handle_2 = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle_1 = wallet::create_and_open_wallet().unwrap();
+            let wallet_handle_2 = wallet::create_and_open_wallet().unwrap();
 
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
@@ -343,7 +343,7 @@ mod high_cases {
         pub fn payment_request_works() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             //1. Create addresses
@@ -412,7 +412,7 @@ mod high_cases {
         pub fn payments_work_for_insufficient_funds() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
@@ -454,8 +454,8 @@ mod high_cases {
         pub fn payment_request_works_for_utxo_not_correspond_to_wallet() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
-            let wallet_handle_2 = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
+            let wallet_handle_2 = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             //1. Create addresses
@@ -497,7 +497,7 @@ mod high_cases {
         pub fn set_request_fees_works() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             let fees_req = payments::build_set_txn_fees_req(wallet_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, FEES).unwrap();
@@ -519,7 +519,7 @@ mod high_cases {
         pub fn get_request_fees_works() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             payments_utils::set_request_fees(wallet_handle, pool_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, FEES);
@@ -551,7 +551,7 @@ mod medium_cases {
         pub fn add_request_fees_works_for_request_without_operation() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
@@ -593,7 +593,7 @@ mod medium_cases {
         pub fn add_request_fees_works_for_request_without_req_id() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
@@ -639,7 +639,7 @@ mod medium_cases {
         pub fn build_set_txn_fees_works_for_invalid_json() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
-            let wallet_handle = wallet::create_and_open_wallet(POOL_NAME, None).unwrap();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
 
             let err = payments::build_set_txn_fees_req(wallet_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, "{1}").unwrap_err();

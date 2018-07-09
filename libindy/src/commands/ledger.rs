@@ -1,8 +1,3 @@
-extern crate serde_json;
-extern crate indy_crypto;
-
-use self::serde_json::Value;
-
 use api::ledger::{CustomFree, CustomTransactionParser};
 
 use errors::common::CommonError;
@@ -16,18 +11,15 @@ use domain::crypto::key::Key;
 use domain::crypto::did::Did;
 use services::wallet::{WalletService, RecordOptions};
 use services::ledger::LedgerService;
+use utils::crypto::base58;
+use utils::crypto::signature_serializer::serialize_signature;
 
-
-use super::utils::check_wallet_and_pool_handles_consistency;
-
+use serde_json;
+use serde_json::Value;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
 use std::rc::Rc;
-
-use utils::crypto::base58::Base58;
-
-use utils::crypto::signature_serializer::serialize_signature;
 
 pub enum LedgerCommand {
     SignAndSubmitRequest(
@@ -365,8 +357,6 @@ impl LedgerCommandExecutor {
         debug!("sign_and_submit_request >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
                pool_handle, wallet_handle, submitter_did, request_json);
 
-        check_wallet_and_pool_handles_consistency!(self.wallet_service, self.pool_service,
-                                                   wallet_handle, pool_handle, cb);
         match self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Single) {
             Ok(signed_request) => self.submit_request(pool_handle, signed_request.as_str(), cb),
             Err(err) => cb(Err(err))
@@ -406,14 +396,14 @@ impl LedgerCommandExecutor {
         let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
 
         match signature_type {
-            SignatureType::Single => { request["signature"] = Value::String(Base58::encode(&signature)); }
+            SignatureType::Single => { request["signature"] = Value::String(base58::encode(&signature)); }
             SignatureType::Multi => {
                 request.as_object_mut()
                     .map(|request| {
                         if !request.contains_key("signatures") {
                             request.insert("signatures".to_string(), Value::Object(serde_json::Map::new()));
                         }
-                        request["signatures"].as_object_mut().unwrap().insert(submitter_did.to_string(), Value::String(Base58::encode(&signature)));
+                        request["signatures"].as_object_mut().unwrap().insert(submitter_did.to_string(), Value::String(base58::encode(&signature)));
                     });
             }
         }

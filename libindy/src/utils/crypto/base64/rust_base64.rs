@@ -1,15 +1,13 @@
-extern crate rust_base58;
+extern crate base64;
 
 use errors::common::CommonError;
 
-use self::rust_base58::{ToBase58, FromBase58};
-
 pub fn encode(doc: &[u8]) -> String {
-    doc.to_base58()
+    base64::encode(doc)
 }
 
 pub fn decode(doc: &str) -> Result<Vec<u8>, CommonError> {
-    doc.from_base58()
+    base64::decode(doc)
         .map_err(|err| CommonError::InvalidStructure(format!("{}", err)))
 }
 
@@ -20,14 +18,14 @@ mod tests {
     #[test]
     fn encode_works() {
         let result = encode(&[1, 2, 3]);
-        assert_eq!("Ldp", &result, "Got unexpected data");
+        assert_eq!("AQID", &result);
     }
 
     #[test]
     fn decode_works() {
-        let result = decode("Ldp");
+        let result = decode("AQID");
 
         assert!(result.is_ok(), "Got error");
-        assert_eq!(&[1, 2, 3], &result.unwrap()[..], "Get unexpected data");
+        assert_eq!(&[1, 2, 3], &result.unwrap()[..]);
     }
 }

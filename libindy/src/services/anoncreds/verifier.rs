@@ -31,6 +31,7 @@ impl Verifier {
                full_proof, proof_req, schemas, cred_defs, rev_reg_defs, rev_regs);
 
         let mut proof_verifier = CryptoVerifier::new_proof_verifier()?;
+        let non_credential_schema = build_non_credential_schema()?;
 
         for sub_proof_index in 0..full_proof.identifiers.len() {
             let identifier = full_proof.identifiers[sub_proof_index].clone();
@@ -62,6 +63,7 @@ impl Verifier {
 
             proof_verifier.add_sub_proof_request(&sub_proof_request,
                                                  &credential_schema,
+                                                 &non_credential_schema,
                                                  &credential_pub_key,
                                                  rev_reg_def.as_ref().map(|r_reg_def| &r_reg_def.value.public_keys.accum_key),
                                                  rev_reg.as_ref().map(|r_reg| &r_reg.value))?;
