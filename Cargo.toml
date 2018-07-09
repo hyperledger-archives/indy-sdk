@@ -10,3 +10,6 @@ log = "0.4"
 num-traits = "0.2"
 num-derive = "0.2"
 libindy-sys = { path ="libindy-sys", version = "0.1" }
+
+[dev-dependencies]
+serde_json = "1.0.22"
