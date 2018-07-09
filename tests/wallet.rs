@@ -1,7 +1,16 @@
 extern crate rust_indy_sdk as indy;
+
+use indy::did::Did;
 use indy::wallet::Wallet;
 
 use indy::ErrorCode;
+
+use std::path::Path;
+use std::panic;
+
+mod utils;
+
+use utils::{export_config_json, export_path};
 
 mod tests {
     use super::*;
@@ -29,6 +38,40 @@ mod tests {
         let open_closure = || {
             match Wallet::open(wallet_name, None, None) {
                 Ok(handle) => {
+                    Wallet::close(handle).unwrap();
+                    Wallet::delete(wallet_name, None).unwrap();
+                },
+                Err(e) => {
+                    Wallet::delete(wallet_name, None).unwrap();
+                    panic!("{:#?}", e);
+                }
+            }
+        };
+
+        match Wallet::create("pool1", wallet_name, None, None, None) {
+            Err(e) => match e {
+                ErrorCode::WalletAlreadyExistsError => {
+                    open_closure()
+                }
+                _ => panic!("{:#?}", e)
+            }
+            _ => open_closure()
+        };
+    }
+
+    #[test]
+    fn export_import_wallet_works() {
+        let wallet_name = "export_import_wallet_works";
+
+        let open_closure = || {
+            match Wallet::open(wallet_name, None, None) {
+                Ok(handle) => {
+                    Did::new(handle, "{}").unwrap();
+
+                    Wallet::export(handle, &export_config_json(wallet_name)).unwrap();
+
+                    assert!(Path::new(&export_path(wallet_name)).exists());
+
                     Wallet::close(handle).unwrap();
                     Wallet::delete(wallet_name, None).unwrap();
                 },
