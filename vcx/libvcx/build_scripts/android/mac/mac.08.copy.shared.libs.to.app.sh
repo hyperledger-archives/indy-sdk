@@ -13,7 +13,7 @@ VCX_SDK=$START_DIR/../../../../..
 VCX_SDK=$(abspath "$VCX_SDK")
 
 declare -a archs=(
-    "arm" "arm" "arm-linux-androideabi" "armeabi"
+    "arm" "arm" "arm-linux-androideabi" "armeabi-v7a"
     "arm" "armv7" "armv7-linux-androideabi" "armeabi-v7a"
     "arm64" "arm64" "aarch64-linux-android" "arm64-v8a"
     "x86" "x86" "i686-linux-android" "x86"
