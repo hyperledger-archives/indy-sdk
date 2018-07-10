@@ -185,7 +185,7 @@ impl WalletService {
                                                     storage_config
                                                         .as_ref()
                                                         .map(String::as_str),
-                                                    storage_config
+                                                    storage_credentials
                                                         .as_ref()
                                                         .map(String::as_str))?;
 
@@ -208,7 +208,7 @@ impl WalletService {
                                     storage_config
                                         .as_ref()
                                         .map(String::as_str),
-                                    storage_config
+                                    storage_credentials
                                         .as_ref()
                                         .map(String::as_str))?;
 
@@ -217,7 +217,7 @@ impl WalletService {
     }
 
     pub fn open_wallet(&self, config: &str, credentials: &str) -> Result<i32, WalletError> {
-        trace!("open_wallet >>> config: {:?}, credentials: {:?}", config, "_");
+        trace!("open_wallet >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
 
         let config: Config = serde_json::from_str(config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
@@ -252,7 +252,7 @@ impl WalletService {
                                                 storage_config
                                                     .as_ref()
                                                     .map(String::as_str),
-                                                storage_config
+                                                storage_credentials
                                                     .as_ref()
                                                     .map(String::as_str))?;
 
