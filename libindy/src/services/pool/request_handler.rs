@@ -97,9 +97,9 @@ struct StartState<T: Networker> {
 }
 
 struct ConsensusState<T: Networker> {
-    nack_cnt: HashSet<String>,
+    denied_nodes: HashSet<String>, //FIXME should be map, may be merged with replies
     replies: HashMap<HashableValue, HashSet<String>>,
-    timeout_cnt: HashSet<String>,
+    timeout_nodes: HashSet<String>,
     networker: Rc<RefCell<T>>,
 }
 
@@ -118,7 +118,7 @@ struct CatchupSingleState<T: Networker> {
 }
 
 struct SingleState<T: Networker> {
-    nack_cnt: HashSet<String>,
+    denied_nodes: HashSet<String>, //FIXME should be map, may be merged with replies
     replies: HashMap<HashableValue, HashSet<String>>,
     networker: Rc<RefCell<T>>,
 }
@@ -133,7 +133,7 @@ struct FinishState {}
 impl<T: Networker> From<StartState<T>> for SingleState<T> {
     fn from(state: StartState<T>) -> Self {
         SingleState {
-            nack_cnt: HashSet::new(),
+            denied_nodes: HashSet::new(),
             replies: HashMap::new(),
             networker: state.networker.clone(),
         }
@@ -143,9 +143,9 @@ impl<T: Networker> From<StartState<T>> for SingleState<T> {
 impl<T: Networker> From<StartState<T>> for ConsensusState<T> {
     fn from(state: StartState<T>) -> Self {
         ConsensusState {
-            nack_cnt: HashSet::new(),
+            denied_nodes: HashSet::new(),
             replies: HashMap::new(),
-            timeout_cnt: HashSet::new(),
+            timeout_nodes: HashSet::new(),
             networker: state.networker.clone(),
         }
     }
@@ -249,7 +249,7 @@ impl<T: Networker> RequestSM<T> {
                                 _send_ok_replies(&cmd_ids, &raw_msg);
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                                 (RequestState::finish(), None)
-                            } else if _is_consensus_reachable(&state.replies, f, nodes.len(), state.timeout_cnt.len(), state.nack_cnt.len()) {
+                            } else if _is_consensus_reachable(&state.replies, f, nodes.len(), state.timeout_nodes.len(), state.denied_nodes.len()) {
                                 state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                                 (RequestState::Consensus(state), None)
                             } else {
@@ -267,10 +267,10 @@ impl<T: Networker> RequestSM<T> {
                         (RequestState::Consensus(state), None)
                     }
                     RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
-                        if _parse_nack(&mut state.nack_cnt, f, &raw_msg, &cmd_ids, &node_alias) {
+                        if _parse_nack(&mut state.denied_nodes, f, &raw_msg, &cmd_ids, &node_alias) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
                             (RequestState::finish(), None)
-                        } else if _is_consensus_reachable(&state.replies, f, nodes.len(), state.timeout_cnt.len(), state.nack_cnt.len()) {
+                        } else if _is_consensus_reachable(&state.replies, f, nodes.len(), state.timeout_nodes.len(), state.denied_nodes.len()) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestState::Consensus(state.into()), None)
                         } else {
@@ -280,8 +280,8 @@ impl<T: Networker> RequestSM<T> {
                         }
                     }
                     RequestEvent::Timeout(req_id, node_alias) => {
-                        state.timeout_cnt.insert(node_alias.clone());
-                        if _is_consensus_reachable(&state.replies, f, nodes.len(), state.timeout_cnt.len(), state.nack_cnt.len()) {
+                        state.timeout_nodes.insert(node_alias.clone());
+                        if _is_consensus_reachable(&state.replies, f, nodes.len(), state.timeout_nodes.len(), state.denied_nodes.len()) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestState::Consensus(state.into()), None)
                         } else {
@@ -331,7 +331,7 @@ impl<T: Networker> RequestSM<T> {
                         (RequestState::Single(state), None)
                     }
                     RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
-                        if _parse_nack(&mut state.nack_cnt, f, &raw_msg, &cmd_ids, &node_alias) {
+                        if _parse_nack(&mut state.denied_nodes, f, &raw_msg, &cmd_ids, &node_alias) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
                             (RequestState::finish(), None)
                         } else {
@@ -565,12 +565,12 @@ fn _is_consensus_reachable(replies: &HashMap<HashableValue, HashSet<String>>, f:
     max_no + node_cnt - rep_no - timeout_cnt - nack_cnt > f
 }
 
-fn _parse_nack(cnt: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_ids: &Vec<i32>, node_alias: &str) -> bool {
-    if cnt.len() == f {
+fn _parse_nack(denied_nodes: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_ids: &Vec<i32>, node_alias: &str) -> bool {
+    if denied_nodes.len() == f {
         _send_ok_replies(cmd_ids, raw_msg);
         true
     } else {
-        cnt.insert(node_alias.to_string());
+        denied_nodes.insert(node_alias.to_string());
         false
     }
 }
