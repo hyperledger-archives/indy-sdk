@@ -172,7 +172,7 @@ cd $WORK_DIR/vcx-indy-sdk/libnullpay
 
 # KS: Don't need to replace it now, "staticlib" is now added in cargo.toml for libNullpay
 # # Replace '\"cdylib\"' with '\"staticlib\", \"cdylib\"' in Cargo.toml
-# sed -i .bak 's/\"cdylib\"/\"staticlib\", \"cdylib\"/' Cargo.toml
+sed -i .bak 's/\"cdylib\"/\"staticlib\", \"cdylib\"/' Cargo.toml
 
 # !IMPORTANT STEPS NEXT -- Modify the build.rs of libnullpay to handle android shared libraries
 tail -n 1 build.rs | wc -c | xargs -I {} truncate build.rs -s -{}

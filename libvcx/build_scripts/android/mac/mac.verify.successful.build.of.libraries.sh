@@ -32,3 +32,7 @@ grep "error:" ./mac.06.libvcx.build.sh.out
 echo "-----------------------------------------------------------------------------------------------------------------------------------------------"
 cd $VCX_SDK/vcx/libvcx/target
 ls -al `find . -name "libvcx.*"`
+echo "-----------------------------------------------------------------------------------------------------------------------------------------------"
+echo "There must be libvcx.so files in the list for all architectures or else something failed!!"
+cd $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs
+ls -al `find . -name "libvcx.*"`
