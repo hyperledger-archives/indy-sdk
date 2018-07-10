@@ -109,15 +109,15 @@ pub enum RequestEvent {
     ),
     CustomSingleRequest(
         String, // message
-        Result<String, CommonError>, // req_id
+        String, // req_id
     ),
     CustomConsensusRequest(
         String, // message
-        Result<String, CommonError>, // req_id
+        String, // req_id
     ),
     CustomFullRequest(
         String, // message
-        Result<String, CommonError>, // req_id
+        String, // req_id
     ),
     ConsistencyProof(
         ConsistencyProof,
@@ -156,9 +156,9 @@ pub enum RequestEvent {
 impl RequestEvent {
     pub fn get_req_id(&self) -> String {
         match self {
-            &RequestEvent::CustomSingleRequest(_, Ok(ref id)) => id.to_string(),
-            &RequestEvent::CustomConsensusRequest(_, Ok(ref id)) => id.to_string(),
-            &RequestEvent::CustomFullRequest(_, Ok(ref id)) => id.to_string(),
+            &RequestEvent::CustomSingleRequest(_, ref id) => id.to_string(),
+            &RequestEvent::CustomConsensusRequest(_, ref id) => id.to_string(),
+            &RequestEvent::CustomFullRequest(_, ref id) => id.to_string(),
             &RequestEvent::Reply(_, _, _, ref id) => id.to_string(),
             &RequestEvent::ReqACK(_, _, _, ref id) => id.to_string(),
             &RequestEvent::ReqNACK(_, _, _, ref id) => id.to_string(),
@@ -204,10 +204,10 @@ impl Into<Option<RequestEvent>> for PoolEvent {
             PoolEvent::SendRequest(_, msg) => {
                 let req_id = _parse_req_id_and_op(&msg);
                 match req_id {
-                    Ok((ref req_id, ref op)) if REQUESTS_FOR_STATE_PROOFS.contains(&op.as_str()) => Some(RequestEvent::CustomSingleRequest(msg, Ok(req_id.clone()))), //FIXME check plugged also
-                    Ok((ref req_id, ref op)) if REQUEST_FOR_FULL.contains(&op.as_str()) => Some(RequestEvent::CustomFullRequest(msg, Ok(req_id.clone()))),
-                    Ok((ref req_id, _)) => Some(RequestEvent::CustomConsensusRequest(msg, Ok(req_id.clone()))),
-                    Err(err) => Some(RequestEvent::CustomSingleRequest(msg, Err(err))),
+                    Ok((ref req_id, ref op)) if REQUESTS_FOR_STATE_PROOFS.contains(&op.as_str()) => Some(RequestEvent::CustomSingleRequest(msg, req_id.clone())), //FIXME check plugged also
+                    Ok((ref req_id, ref op)) if REQUEST_FOR_FULL.contains(&op.as_str()) => Some(RequestEvent::CustomFullRequest(msg, req_id.clone())),
+                    Ok((ref req_id, _)) => Some(RequestEvent::CustomConsensusRequest(msg, req_id.clone())),
+                    Err(_) => None,
                 }
             }
             PoolEvent::Timeout(req_id, node_alias) => Some(RequestEvent::Timeout(req_id, node_alias)),

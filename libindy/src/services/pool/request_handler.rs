@@ -12,7 +12,7 @@ use services::pool::events::NetworkerEvent;
 use services::pool::networker::Networker;
 use services::pool::state_proof;
 use services::pool::types::HashableValue;
-use services::pool::catchup::{CatchupProgress, check_nodes_responses_on_status, check_cons_proofs};
+use services::pool::catchup::{CatchupProgress, check_nodes_responses_on_status, check_cons_proofs, build_catchup_req};
 
 use self::rust_base58::FromBase58;
 use serde_json;
@@ -24,24 +24,77 @@ use std::iter::FromIterator;
 use std::rc::Rc;
 use super::indy_crypto::bls::Generator;
 use super::indy_crypto::bls::VerKey;
-use super::indy_crypto::utils::json::JsonEncodable;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::merkle_tree_factory;
-use services::pool::types::CatchupReq;
 use services::pool::types::CatchupRep;
-use services::pool::types::Message;
 
-trait RequestState {
-    fn is_terminal(&self) -> bool {
-        false
+
+struct RequestSM<T: Networker> {
+    f: usize,
+    cmd_ids: Vec<i32>,
+    nodes: HashMap<String, Option<VerKey>>,
+    generator: Generator,
+    pool_name: String,
+    state: RequestState<T>,
+}
+
+/// Transitions of request state
+/// Start -> Start, Single, Consensus, CatchupSingle, CatchupConsensus, Full, Finish
+/// Single -> Single, Finish
+/// Consensus -> Consensus, Finish
+/// CatchupSingle -> CatchupSingle, Finish
+/// CatchupConsensus -> CatchupConsensus, Finish
+/// Full -> Full, Finish
+/// Finish -> Finish
+enum RequestState<T: Networker> {
+    Start(StartState<T>),
+    Single(SingleState<T>),
+    Consensus(ConsensusState<T>),
+    CatchupSingle(CatchupSingleState<T>),
+    CatchupConsensus(CatchupConsensusState<T>),
+    Full(FullState<T>),
+    Finish(FinishState),
+}
+
+impl<T: Networker> RequestSM<T> {
+    pub fn new(networker: Rc<RefCell<T>>,
+               f: usize,
+               cmd_ids: &Vec<i32>,
+               nodes: &HashMap<String, Option<VerKey>>,
+               generator: Option<Generator>,
+               pool_name: &str) -> Self {
+        RequestSM {
+            f,
+            cmd_ids: cmd_ids.clone(),
+            nodes: nodes.clone(),
+            pool_name: pool_name.to_string(),
+            generator: generator.unwrap_or(Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap()),
+            state: RequestState::Start(StartState {
+                networker
+            }),
+        }
+    }
+
+    pub fn step(f: usize,
+                cmd_ids: Vec<i32>,
+                nodes: HashMap<String, Option<VerKey>>,
+                generator: Generator,
+                pool_name: String,
+                state: RequestState<T>) -> Self {
+        RequestSM {
+            f,
+            cmd_ids,
+            nodes,
+            pool_name,
+            generator,
+            state,
+        }
     }
 }
 
 struct StartState<T: Networker> {
     networker: Rc<RefCell<T>>
 }
-
-impl<T: Networker> RequestState for StartState<T> {}
 
 struct ConsensusState<T: Networker> {
     nack_cnt: HashSet<String>,
@@ -50,15 +103,11 @@ struct ConsensusState<T: Networker> {
     networker: Rc<RefCell<T>>,
 }
 
-impl<T: Networker> RequestState for ConsensusState<T> {}
-
 struct CatchupConsensusState<T: Networker> {
     replies: HashMap<(String, usize, Option<Vec<String>>), HashSet<String>>,
     networker: Rc<RefCell<T>>,
     merkle_tree: MerkleTree,
 }
-
-impl<T: Networker> RequestState for CatchupConsensusState<T> {}
 
 struct CatchupSingleState<T: Networker> {
     target_mt_root: Vec<u8>,
@@ -68,22 +117,10 @@ struct CatchupSingleState<T: Networker> {
     req_id: String,
 }
 
-impl<T: Networker> RequestState for CatchupSingleState<T> {}
-
 struct SingleState<T: Networker> {
     nack_cnt: HashSet<String>,
     replies: HashMap<HashableValue, HashSet<String>>,
     networker: Rc<RefCell<T>>,
-}
-
-impl<T: Networker> RequestState for SingleState<T> {}
-
-struct FinishState {}
-
-impl RequestState for FinishState {
-    fn is_terminal(&self) -> bool {
-        true
-    }
 }
 
 struct FullState<T: Networker> {
@@ -91,371 +128,177 @@ struct FullState<T: Networker> {
     networker: Rc<RefCell<T>>,
 }
 
-impl<T: Networker> RequestState for FullState<T> {}
+struct FinishState {}
 
-struct RequestSM<T: RequestState> {
-    f: usize,
-    cmd_ids: Vec<i32>,
-    nodes: HashMap<String, Option<VerKey>>,
-    generator: Generator,
-    pool_name: String,
-    state: T,
-}
-
-impl<T: Networker> RequestSM<StartState<T>> {
-    pub fn new(networker: Rc<RefCell<T>>,
-               f: usize,
-               cmd_ids: &Vec<i32>,
-               nodes_: &HashMap<String, Option<VerKey>>,
-               generator: Option<Generator>,
-               pool_name: &str) -> Self {
-        let mut nodes = HashMap::new();
-        nodes_.clone().into_iter().for_each(|(key, value)| {
-            let value = match value {
-                &Some(ref val) => {
-                    match VerKey::from_bytes(val.as_bytes()) {
-                        Ok(vk) => Some(vk),
-                        Err(_) => None
-                    }
-                }
-                &None => None
-            };
-            nodes.insert(key.clone(), value);
-        });
-        RequestSM {
-            f,
-            cmd_ids: cmd_ids.clone(),
-            nodes,
-            pool_name: pool_name.to_string(),
-            generator: generator.unwrap_or(Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap()),
-            state: StartState {
-                networker
-            },
+impl<T: Networker> From<StartState<T>> for SingleState<T> {
+    fn from(state: StartState<T>) -> Self {
+        SingleState {
+            nack_cnt: HashSet::new(),
+            replies: HashMap::new(),
+            networker: state.networker.clone(),
         }
     }
 }
 
-impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<SingleState<T>> {
-    fn from(sm: RequestSM<StartState<T>>) -> Self {
-        RequestSM {
-            f: sm.f,
-            cmd_ids: sm.cmd_ids,
-            nodes: sm.nodes,
-            generator: sm.generator,
-            pool_name: sm.pool_name,
-            state: SingleState {
-                nack_cnt: HashSet::new(),
-                replies: HashMap::new(),
-                networker: sm.state.networker,
-            },
+impl<T: Networker> From<StartState<T>> for ConsensusState<T> {
+    fn from(state: StartState<T>) -> Self {
+        ConsensusState {
+            nack_cnt: HashSet::new(),
+            replies: HashMap::new(),
+            timeout_cnt: HashSet::new(),
+            networker: state.networker.clone(),
         }
     }
 }
 
-impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<ConsensusState<T>> {
-    fn from(val: RequestSM<StartState<T>>) -> Self {
-        RequestSM {
-            f: val.f,
-            cmd_ids: val.cmd_ids,
-            nodes: val.nodes,
-            generator: val.generator,
-            pool_name: val.pool_name,
-            state: ConsensusState {
-                nack_cnt: HashSet::new(),
-                replies: HashMap::new(),
-                timeout_cnt: HashSet::new(),
-                networker: val.state.networker.clone(),
-            },
+impl<T: Networker> From<(MerkleTree, StartState<T>)> for CatchupConsensusState<T> {
+    fn from((merkle_tree, state): (MerkleTree, StartState<T>)) -> Self {
+        CatchupConsensusState {
+            replies: HashMap::new(),
+            networker: state.networker.clone(),
+            merkle_tree,
         }
     }
 }
 
-impl<T: Networker> From<(MerkleTree, RequestSM<StartState<T>>)> for RequestSM<CatchupConsensusState<T>> {
-    fn from((merkle_tree, val): (MerkleTree, RequestSM<StartState<T>>)) -> Self {
-        RequestSM {
-            f: val.f,
-            cmd_ids: val.cmd_ids,
-            nodes: val.nodes,
-            generator: val.generator,
-            pool_name: val.pool_name,
-            state: CatchupConsensusState {
-                replies: HashMap::new(),
-                networker: val.state.networker.clone(),
-                merkle_tree,
-            },
+impl<T: Networker> From<(MerkleTree, StartState<T>, Vec<u8>, usize, String)> for CatchupSingleState<T> {
+    fn from((merkle_tree, state, target_mt_root, target_mt_size, req_id): (MerkleTree, StartState<T>, Vec<u8>, usize, String)) -> Self {
+        CatchupSingleState {
+            target_mt_root,
+            target_mt_size,
+            networker: state.networker.clone(),
+            merkle_tree,
+            req_id,
         }
     }
 }
 
-impl<T: Networker> From<(MerkleTree, RequestSM<StartState<T>>, Vec<u8>, usize, String)> for RequestSM<CatchupSingleState<T>> {
-    fn from((merkle_tree, val, target_mt_root, target_mt_size, req_id): (MerkleTree, RequestSM<StartState<T>>, Vec<u8>, usize, String)) -> Self {
-        RequestSM {
-            f: val.f,
-            cmd_ids: val.cmd_ids,
-            nodes: val.nodes,
-            generator: val.generator,
-            pool_name: val.pool_name,
-            state: CatchupSingleState {
-                target_mt_root,
-                target_mt_size,
-                networker: val.state.networker.clone(),
-                merkle_tree,
-                req_id,
-            },
+impl<T: Networker> From<StartState<T>> for FullState<T> {
+    fn from(state: StartState<T>) -> Self {
+        FullState {
+            accum_reply: None,
+            networker: state.networker.clone(),
         }
     }
 }
 
-impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<FullState<T>> {
-    fn from(val: RequestSM<StartState<T>>) -> Self {
-        RequestSM {
-            f: val.f,
-            cmd_ids: val.cmd_ids,
-            nodes: val.nodes,
-            generator: val.generator,
-            pool_name: val.pool_name,
-            state: FullState {
-                accum_reply: None,
-                networker: val.state.networker.clone(),
-            },
-        }
+impl<T: Networker> RequestState<T> {
+    fn finish() -> RequestState<T> {
+        RequestState::Finish(FinishState {})
     }
 }
 
-impl<T: Networker> From<RequestSM<SingleState<T>>> for RequestSM<FinishState> {
-    fn from(val: RequestSM<SingleState<T>>) -> Self {
-        //TODO: close connections in networker
-        RequestSM {
-            f: val.f,
-            cmd_ids: val.cmd_ids,
-            nodes: val.nodes,
-            generator: val.generator,
-            pool_name: val.pool_name,
-            state: FinishState {},
-        }
-    }
-}
-
-impl<T: Networker> From<RequestSM<ConsensusState<T>>> for RequestSM<FinishState> {
-    fn from(val: RequestSM<ConsensusState<T>>) -> Self {
-        //TODO: close connections in networker
-        RequestSM {
-            f: val.f,
-            cmd_ids: val.cmd_ids,
-            nodes: val.nodes,
-            generator: val.generator,
-            pool_name: val.pool_name,
-            state: FinishState {},
-        }
-    }
-}
-
-impl<T: Networker> From<RequestSM<CatchupConsensusState<T>>> for RequestSM<FinishState> {
-    fn from(val: RequestSM<CatchupConsensusState<T>>) -> Self {
-        //TODO: close connections in networker
-        RequestSM {
-            f: val.f,
-            cmd_ids: val.cmd_ids,
-            nodes: val.nodes,
-            generator: val.generator,
-            pool_name: val.pool_name,
-            state: FinishState {},
-        }
-    }
-}
-
-impl<T: Networker> From<RequestSM<CatchupSingleState<T>>> for RequestSM<FinishState> {
-    fn from(val: RequestSM<CatchupSingleState<T>>) -> Self {
-        //TODO: close connections in networker
-        RequestSM {
-            f: val.f,
-            cmd_ids: val.cmd_ids,
-            nodes: val.nodes,
-            generator: val.generator,
-            pool_name: val.pool_name,
-            state: FinishState {},
-        }
-    }
-}
-
-impl<T: Networker> From<RequestSM<FullState<T>>> for RequestSM<FinishState> {
-    fn from(sm: RequestSM<FullState<T>>) -> Self {
-        //TODO: close connections in networker
-        RequestSM {
-            f: sm.f,
-            cmd_ids: sm.cmd_ids,
-            nodes: sm.nodes,
-            generator: sm.generator,
-            pool_name: sm.pool_name,
-            state: FinishState {},
-        }
-    }
-}
-
-impl<T: Networker> From<RequestSM<StartState<T>>> for RequestSM<FinishState> {
-    fn from(sm: RequestSM<StartState<T>>) -> Self {
-        RequestSM {
-            f: sm.f,
-            cmd_ids: sm.cmd_ids,
-            nodes: sm.nodes,
-            generator: sm.generator,
-            pool_name: sm.pool_name,
-            state: FinishState {},
-        }
-    }
-}
-
-enum RequestSMWrapper<T: Networker> {
-    Start(RequestSM<StartState<T>>),
-    Single(RequestSM<SingleState<T>>),
-    Consensus(RequestSM<ConsensusState<T>>),
-    CatchupSingle(RequestSM<CatchupSingleState<T>>),
-    CatchupConsensus(RequestSM<CatchupConsensusState<T>>),
-    Full(RequestSM<FullState<T>>),
-    Finish(RequestSM<FinishState>),
-}
-
-impl<T: Networker> RequestSMWrapper<T> {
+impl<T: Networker> RequestSM<T> {
     fn handle_event(self, re: RequestEvent) -> (Self, Option<PoolEvent>) {
-        match self {
-            RequestSMWrapper::Start(request) => {
+        let RequestSM { state, f, cmd_ids, nodes, generator, pool_name } = self;
+        let (state, event) = match state {
+            RequestState::Start(state) => {
                 let ne: Option<NetworkerEvent> = re.clone().into();
                 match re {
                     RequestEvent::LedgerStatus(_, _, Some(merkle)) => {
                         trace!("start catchup, ne: {:?}", ne);
-                        request.state.networker.borrow_mut().process_event(ne);
-                        (RequestSMWrapper::CatchupConsensus((merkle, request).into()), None)
+                        state.networker.borrow_mut().process_event(ne);
+                        (RequestState::CatchupConsensus((merkle, state).into()), None)
                     }
                     RequestEvent::CatchupReq(merkle, target_mt_size, target_mt_root) => {
-                        let txns_cnt = target_mt_size - merkle.count();
-
-                        if txns_cnt <= 0 {
-                            warn!("No transactions to catch up!");
-                            return (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced(merkle)));
+                        match build_catchup_req(&merkle, target_mt_size) {
+                            Ok(Some((req_id, req_json))) => {
+                                state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(req_json, req_id.clone())));
+                                (RequestState::CatchupSingle((merkle, state, target_mt_root, target_mt_size, req_id).into()), None)
+                            }
+                            Ok(None) => {
+                                warn!("No transactions to catch up!");
+                                (RequestState::finish(), Some(PoolEvent::Synced(merkle)))
+                            }
+                            Err(e) => {
+                                _send_replies(&cmd_ids, Err(PoolError::CommonError(e)));
+                                (RequestState::finish(), None)
+                            }
                         }
-                        let seq_no_start = merkle.count() + 1;
-                        let seq_no_end = target_mt_size;
-
-                        let cr = CatchupReq {
-                            ledgerId: 0,
-                            seqNoStart: seq_no_start.clone(),
-                            seqNoEnd: seq_no_end.clone(),
-                            catchupTill: target_mt_size,
-                        };
-                        let req_id = format!("{}{}", seq_no_start, seq_no_end);
-                        let str = Message::CatchupReq(cr).to_json().expect("FIXME");
-                        trace!("catchup_req msg: {:?}", str);
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(str, req_id.clone())));
-                        (RequestSMWrapper::CatchupSingle((merkle, request, target_mt_root, target_mt_size, req_id).into()), None)
                     }
                     RequestEvent::CustomSingleRequest(msg, req_id) => {
-                        match req_id {
-                            Ok(req_id) => {
-                                request.state.networker.borrow_mut()
-                                    .process_event(Some(NetworkerEvent::SendOneRequest(msg, req_id)));
-                                (RequestSMWrapper::Single(request.into()), None)
-                            }
-                            Err(e) => {
-                                _send_replies(&request.cmd_ids, Err(PoolError::CommonError(e)));
-                                (RequestSMWrapper::Finish(request.into()), None)
-                            }
-                        }
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(msg, req_id)));
+                        (RequestState::Single(state.into()), None)
                     }
                     RequestEvent::CustomFullRequest(msg, req_id) => {
-                        match req_id {
-                            Ok(req_id) => {
-                                request.state.networker.borrow_mut()
-                                    .process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id)));
-                                (RequestSMWrapper::Full(request.into()), None)
-                            }
-                            Err(e) => {
-                                _send_replies(&request.cmd_ids, Err(PoolError::CommonError(e)));
-                                (RequestSMWrapper::Finish(request.into()), None)
-                            }
-                        }
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id)));
+                        (RequestState::Full(state.into()), None)
                     }
                     RequestEvent::CustomConsensusRequest(msg, req_id) => {
-                        match req_id {
-                            Ok(req_id) => {
-                                request.state.networker.borrow_mut()
-                                    .process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id)));
-                                (RequestSMWrapper::Consensus(request.into()), None)
-                            }
-                            Err(e) => {
-                                _send_replies(&request.cmd_ids, Err(PoolError::CommonError(e)));
-                                (RequestSMWrapper::Finish(request.into()), None)
-                            }
-                        }
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id)));
+                        (RequestState::Consensus(state.into()), None)
                     }
-                    _ => (RequestSMWrapper::Start(request), None)
+                    _ => {
+                        (RequestState::Start(state), None)
+                    }
                 }
             }
-            RequestSMWrapper::Consensus(mut request) => {
+            RequestState::Consensus(mut state) => {
                 match re {
                     RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
                         if let Ok((_, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
 
                             let cnt = {
-                                let set = request.state.replies.entry(hashable).or_insert(HashSet::new());
+                                let set = state.replies.entry(hashable).or_insert(HashSet::new());
                                 set.insert(node_alias.clone());
                                 set.len()
                             };
 
-                            if cnt > request.f {
-                                _send_ok_replies(&request.cmd_ids, &raw_msg);
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                                (RequestSMWrapper::Finish(request.into()), None)
-                            } else if _is_consensus_reachable(&request.state.replies, request.f, request.nodes.len(), request.state.timeout_cnt.len(), request.state.nack_cnt.len()) {
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                                (RequestSMWrapper::Consensus(request), None)
+                            if cnt > f {
+                                _send_ok_replies(&cmd_ids, &raw_msg);
+                                state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+                                (RequestState::finish(), None)
+                            } else if _is_consensus_reachable(&state.replies, f, nodes.len(), state.timeout_cnt.len(), state.nack_cnt.len()) {
+                                state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                                (RequestState::Consensus(state), None)
                             } else {
                                 //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-                                _send_replies(&request.cmd_ids, Err(PoolError::Timeout));
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                                (RequestSMWrapper::Finish(request.into()), None)
+                                _send_replies(&cmd_ids, Err(PoolError::Timeout));
+                                state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+                                (RequestState::finish(), None)
                             }
                         } else {
-                            (RequestSMWrapper::Consensus(request), None)
+                            (RequestState::Consensus(state), None)
                         }
                     }
                     RequestEvent::ReqACK(_, _, node_alias, req_id) => {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
-                        (RequestSMWrapper::Consensus(request), None)
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
+                        (RequestState::Consensus(state), None)
                     }
                     RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
-                        if _parse_nack(&mut request.state.nack_cnt, request.f, &raw_msg, &request.cmd_ids, &node_alias) {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestSMWrapper::Finish(request.into()), None)
-                        } else if _is_consensus_reachable(&request.state.replies, request.f, request.nodes.len(), request.state.timeout_cnt.len(), request.state.nack_cnt.len()) {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestSMWrapper::Consensus(request), None)
+                        if _parse_nack(&mut state.nack_cnt, f, &raw_msg, &cmd_ids, &node_alias) {
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+                            (RequestState::finish(), None)
+                        } else if _is_consensus_reachable(&state.replies, f, nodes.len(), state.timeout_cnt.len(), state.nack_cnt.len()) {
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                            (RequestState::Consensus(state.into()), None)
                         } else {
-                            _send_replies(&request.cmd_ids, Err(PoolError::Timeout));
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestSMWrapper::Finish(request.into()), None)
+                            _send_replies(&cmd_ids, Err(PoolError::Timeout));
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+                            (RequestState::finish(), None)
                         }
                     }
                     RequestEvent::Timeout(req_id, node_alias) => {
-                        request.state.timeout_cnt.insert(node_alias.clone());
-                        if _is_consensus_reachable(&request.state.replies, request.f, request.nodes.len(), request.state.timeout_cnt.len(), request.state.nack_cnt.len()) {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestSMWrapper::Consensus(request), None)
+                        state.timeout_cnt.insert(node_alias.clone());
+                        if _is_consensus_reachable(&state.replies, f, nodes.len(), state.timeout_cnt.len(), state.nack_cnt.len()) {
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                            (RequestState::Consensus(state.into()), None)
                         } else {
                             //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
-                            _send_replies(&request.cmd_ids, Err(PoolError::Timeout));
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                            (RequestSMWrapper::Finish(request.into()), None)
+                            _send_replies(&cmd_ids, Err(PoolError::Timeout));
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+                            (RequestState::finish(), None)
                         }
                     }
                     RequestEvent::Terminate => {
-                        _finish_request(&request.cmd_ids);
-                        (RequestSMWrapper::Finish(request.into()), None)
+                        _finish_request(&cmd_ids);
+                        (RequestState::finish(), None)
                     }
-                    _ => (RequestSMWrapper::Consensus(request), None)
+                    _ => (RequestState::Consensus(state.into()), None)
                 }
             }
-            RequestSMWrapper::Single(mut request) => {
+            RequestState::Single(mut state) => {
                 match re {
                     RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
                         trace!("reply on single request");
@@ -463,182 +306,218 @@ impl<T: Networker> RequestSMWrapper<T> {
                             let hashable = HashableValue { inner: result_without_proof };
 
                             let cnt = {
-                                let set = request.state.replies.entry(hashable).or_insert(HashSet::new());
+                                let set = state.replies.entry(hashable).or_insert(HashSet::new());
                                 set.insert(node_alias.clone());
                                 set.len()
                             };
 
-                            if cnt > request.f || _check_state_proof(&result, request.f, &request.generator, &request.nodes, &raw_msg) {
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-                                _send_ok_replies(&request.cmd_ids, &raw_msg);
-                                (RequestSMWrapper::Finish(request.into()), None)
+                            if cnt > f || _check_state_proof(&result, f, &generator, &nodes, &raw_msg) {
+                                state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+                                _send_ok_replies(&cmd_ids, &raw_msg);
+                                (RequestState::finish(), None)
                             } else {
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                                (RequestSMWrapper::Single(request), None)
+                                state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
+                                state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                                (RequestState::Single(state), None)
                             }
                         } else {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestSMWrapper::Single(request), None)
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                            (RequestState::Single(state), None)
                         }
                     }
                     RequestEvent::ReqACK(_, _, node_alias, req_id) => {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
-                        (RequestSMWrapper::Single(request), None)
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
+                        (RequestState::Single(state), None)
                     }
                     RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) | RequestEvent::Reject(_, raw_msg, node_alias, req_id) => {
-                        if _parse_nack(&mut request.state.nack_cnt, request.f, &raw_msg, &request.cmd_ids, &node_alias) {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestSMWrapper::Finish(request.into()), None)
+                        if _parse_nack(&mut state.nack_cnt, f, &raw_msg, &cmd_ids, &node_alias) {
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                            (RequestState::finish(), None)
                         } else {
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
-                            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                            (RequestSMWrapper::Single(request), None)
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                            (RequestState::Single(state), None)
                         }
                     }
                     RequestEvent::Timeout(req_id, node_alias) => {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                        (RequestSMWrapper::Single(request), None)
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(req_id.clone())));
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                        (RequestState::Single(state), None)
                     }
                     RequestEvent::Terminate => {
-                        _finish_request(&request.cmd_ids);
-                        (RequestSMWrapper::Finish(request.into()), None)
+                        _finish_request(&cmd_ids);
+                        (RequestState::finish(), None)
                     }
-                    _ => (RequestSMWrapper::Single(request), None)
+                    _ => (RequestState::Single(state), None)
                 }
             }
-            RequestSMWrapper::Full(request) => {
+            RequestState::CatchupConsensus(state) => {
+                match re {
+                    RequestEvent::LedgerStatus(ls, Some(node_alias), _) => {
+                        RequestSM::_catchup_target_handle_consensus_state(
+                            state,
+                            ls.merkleRoot.clone(), ls.txnSeqNo, None,
+                            node_alias, ls.merkleRoot, f, &nodes, &pool_name)
+                    }
+                    RequestEvent::ConsistencyProof(cp, node_alias) => {
+                        RequestSM::_catchup_target_handle_consensus_state(
+                            state,
+                            cp.newMerkleRoot, cp.seqNoEnd, Some(cp.hashes),
+                            node_alias, cp.oldMerkleRoot, f, &nodes, &pool_name)
+                    }
+                    RequestEvent::Timeout(req_id, node_alias) => {
+                        RequestSM::_catchup_target_handle_consensus_state(
+                            state,
+                            "timeout".to_string(), 0, None,
+                            node_alias, req_id, f, &nodes, &pool_name)
+                    }
+
+                    RequestEvent::Terminate => {
+                        _finish_request(&cmd_ids);
+                        (RequestState::finish(), None)
+                    }
+                    _ => (RequestState::CatchupConsensus(state), None)
+                }
+            }
+            RequestState::CatchupSingle(mut state) => {
+                match re {
+                    RequestEvent::CatchupRep(mut cr, node_alias) => {
+                        match _process_catchup_reply(&mut cr, &mut state.merkle_tree, &state.target_mt_root, state.target_mt_size, &pool_name) {
+                            Ok(merkle) => {
+                                state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(state.req_id.clone(), None)));
+                                (RequestState::finish(), Some(PoolEvent::Synced(merkle)))
+                            }
+                            Err(_) => {
+                                state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(state.req_id.clone())));
+                                state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(state.req_id.clone(), Some(node_alias))));
+                                (RequestState::CatchupSingle(state), None)
+                            }
+                        }
+                    }
+                    RequestEvent::Timeout(req_id, node_alias) => {
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(state.req_id.clone())));
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+                        (RequestState::CatchupSingle(state), None)
+                    }
+                    RequestEvent::Terminate => {
+                        _finish_request(&cmd_ids);
+                        (RequestState::finish(), None)
+                    }
+                    _ => (RequestState::CatchupSingle(state), None)
+                }
+            }
+            RequestState::Full(state) => {
                 match re {
                     RequestEvent::Reply(_, raw_msg, node_alias, req_id) |
                     RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) |
                     RequestEvent::Reject(_, raw_msg, node_alias, req_id) =>
-                        (RequestSMWrapper::_full_request_handle_consensus_state(
-                            request, req_id, node_alias, raw_msg), None),
+                        (RequestSM::_full_request_handle_consensus_state(
+                            state, req_id, node_alias, raw_msg, &cmd_ids, &nodes), None),
                     RequestEvent::Timeout(req_id, node_alias) =>
-                        (RequestSMWrapper::_full_request_handle_consensus_state(
-                            request, req_id, node_alias, "timeout".to_string()), None),
+                        (RequestSM::_full_request_handle_consensus_state(
+                            state, req_id, node_alias, "timeout".to_string(), &cmd_ids, &nodes), None),
 
                     RequestEvent::ReqACK(_, _, node_alias, req_id) => {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
-                        (RequestSMWrapper::Full(request), None)
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias)));
+                        (RequestState::Full(state), None)
                     }
                     RequestEvent::Terminate => {
-                        _finish_request(&request.cmd_ids);
-                        (RequestSMWrapper::Finish(request.into()), None)
+                        _finish_request(&cmd_ids);
+                        (RequestState::finish(), None)
                     }
-                    _ => (RequestSMWrapper::Full(request), None),
+                    _ => (RequestState::Full(state), None),
                 }
             }
-            RequestSMWrapper::CatchupConsensus(mut request) => {
-                match re {
-                    RequestEvent::LedgerStatus(ls, Some(node_alias), _) => {
-                        RequestSMWrapper::_catchup_target_handle_consensus_state(
-                            request,
-                            ls.merkleRoot.clone(), ls.txnSeqNo, None,
-                            node_alias, ls.merkleRoot)
-                    }
-                    RequestEvent::ConsistencyProof(cp, node_alias) => {
-                        RequestSMWrapper::_catchup_target_handle_consensus_state(
-                            request,
-                            cp.newMerkleRoot, cp.seqNoEnd, Some(cp.hashes),
-                            node_alias, cp.oldMerkleRoot)
-                    }
-                    RequestEvent::Timeout(req_id, node_alias) => {
-                        RequestSMWrapper::_catchup_target_handle_consensus_state(
-                            request,
-                            "timeout".to_string(), 0, None,
-                            node_alias, req_id)
-                    }
-
-                    RequestEvent::Terminate => {
-                        _finish_request(&request.cmd_ids);
-                        (RequestSMWrapper::Finish(request.into()), None)
-                    }
-                    _ => (RequestSMWrapper::CatchupConsensus(request), None)
-                }
-            }
-            RequestSMWrapper::CatchupSingle(mut request) => {
-                match re {
-                    RequestEvent::CatchupRep(mut cr, node_alias) => {
-                        match _process_catchup_reply(&mut cr, &mut request.state.merkle_tree, &request.state.target_mt_root, request.state.target_mt_size, &request.pool_name) {
-                            Ok(merkle) => {
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(request.state.req_id.clone(), None)));
-                                (RequestSMWrapper::Finish(request.into()), Some(PoolEvent::Synced(merkle)))
-                            },
-                            Err(_) => {
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(request.state.req_id.clone())));
-                                request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(request.state.req_id.clone(), Some(node_alias))));
-                                (RequestSMWrapper::CatchupSingle(request), None)
-                            }
-                        }
-                    }
-                    RequestEvent::Timeout(req_id, node_alias) => {
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::Resend(request.state.req_id.clone())));
-                        request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-                        (RequestSMWrapper::CatchupSingle(request), None)
-                    }
-                    RequestEvent::Terminate => {
-                        _finish_request(&request.cmd_ids);
-                        (RequestSMWrapper::Finish(request.into()), None)
-                    }
-                    _ => (RequestSMWrapper::CatchupSingle(request), None)
-                }
-            }
-            RequestSMWrapper::Finish(request) => (RequestSMWrapper::Finish(request), None)
-        }
+            RequestState::Finish(state) => (RequestState::Finish(state), None)
+        };
+        (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, state), event)
     }
 
     fn is_terminal(&self) -> bool {
-        match self {
-            &RequestSMWrapper::Start(ref request) => request.state.is_terminal(),
-            &RequestSMWrapper::Consensus(ref request) => request.state.is_terminal(),
-            &RequestSMWrapper::Single(ref request) => request.state.is_terminal(),
-            &RequestSMWrapper::Finish(ref request) => request.state.is_terminal(),
-            &RequestSMWrapper::CatchupSingle(ref request) => request.state.is_terminal(),
-            &RequestSMWrapper::CatchupConsensus(ref request) => request.state.is_terminal(),
-            &RequestSMWrapper::Full(ref request) => request.state.is_terminal(),
+        match self.state {
+            RequestState::Start(_) |
+            RequestState::Consensus(_) |
+            RequestState::Single(_) |
+            RequestState::CatchupSingle(_) |
+            RequestState::CatchupConsensus(_) |
+            RequestState::Full(_) => false,
+            RequestState::Finish(_) => true
         }
     }
 
-    fn _full_request_handle_consensus_state(mut request: RequestSM<FullState<T>>,
-                                            req_id: String, node_alias: String, node_result: String) -> Self {
-        let is_first_resp = request.state.accum_reply.is_none();
+    fn _full_request_handle_consensus_state(mut state: FullState<T>,
+                                            req_id: String, node_alias: String, node_result: String,
+                                            cmd_ids: &Vec<i32>,
+                                            nodes: &HashMap<String, Option<VerKey>>) -> RequestState<T> {
+        let is_first_resp = state.accum_reply.is_none();
         if is_first_resp {
-            request.state.accum_reply = Some(HashableValue {
+            state.accum_reply = Some(HashableValue {
                 inner: json!({node_alias.clone(): node_result})
             })
         } else {
-            request.state.accum_reply.as_mut().unwrap()
+            state.accum_reply.as_mut().unwrap()
                 .inner.as_object_mut().unwrap()
                 .insert(node_alias.clone(), SJsonValue::from(node_result));
         }
 
-        let reply_cnt = request.state.accum_reply.as_ref().unwrap()
+        let reply_cnt = state.accum_reply.as_ref().unwrap()
             .inner.as_object().unwrap().len();
 
-        if reply_cnt == request.nodes.len() {
-            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-            let reply = request.state.accum_reply.as_ref().unwrap().inner.to_string();
-            _send_ok_replies(&request.cmd_ids, &reply);
-            RequestSMWrapper::Finish(request.into())
+        if reply_cnt == nodes.len() {
+            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+            let reply = state.accum_reply.as_ref().unwrap().inner.to_string();
+            _send_ok_replies(&cmd_ids, &reply);
+            RequestState::Finish(FinishState {})
         } else {
-            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-            RequestSMWrapper::Full(request)
+            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+            RequestState::Full(state)
         }
     }
 
-    fn _catchup_target_handle_consensus_state(mut request: RequestSM<CatchupConsensusState<T>>,
+    fn _catchup_target_handle_consensus_state(mut state: CatchupConsensusState<T>,
                                               mt_root: String, sz: usize, cons_proof: Option<Vec<String>>,
-                                              node_alias: String, req_id: String) -> (Self, Option<PoolEvent>) {
-        let (finished, result) = _process_catchup_target(mt_root, sz, cons_proof, &node_alias, &mut request);
+                                              node_alias: String, req_id: String,
+                                              f: usize, nodes: &HashMap<String, Option<VerKey>>,
+                                              pool_name: &str) -> (RequestState<T>, Option<PoolEvent>) {
+        let (finished, result) = RequestSM::_process_catchup_target(mt_root, sz, cons_proof,
+                                                                    &node_alias, &mut state, f, nodes, pool_name);
         if finished {
-            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
-            (RequestSMWrapper::Finish(request.into()), result)
+            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
+            (RequestState::finish(), result)
         } else {
-            request.state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
-            (RequestSMWrapper::CatchupConsensus(request), result)
+            state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, Some(node_alias))));
+            (RequestState::CatchupConsensus(state), result)
+        }
+    }
+
+    fn _process_catchup_target(merkle_root: String,
+                               txn_seq_no: usize,
+                               hashes: Option<Vec<String>>,
+                               node_alias: &str,
+                               state: &mut CatchupConsensusState<T>,
+                               f: usize,
+                               nodes: &HashMap<String, Option<VerKey>>,
+                               pool_name: &str) -> (bool, Option<PoolEvent>) {
+        let key = (merkle_root, txn_seq_no, hashes);
+        let contains = state.replies.get_mut(&key)
+            .map(|set| { set.insert(node_alias.to_string()); })
+            .is_some();
+
+        if !contains {
+            state.replies.insert(key, HashSet::from_iter(vec![node_alias.to_string()]));
+        }
+
+        match check_nodes_responses_on_status(&state.replies,
+                                              &state.merkle_tree,
+                                              nodes.len(),
+                                              f,
+                                              &pool_name) {
+            Ok(CatchupProgress::InProgress) => (false, None),
+            Ok(CatchupProgress::NotNeeded(merkle_tree)) => (true, Some(PoolEvent::Synced(merkle_tree))),
+            Ok(CatchupProgress::ShouldBeStarted(target_mt_root, target_mt_size, merkle_tree)) =>
+                (true, Some(PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree))),
+            Err(err) => (true, Some(PoolEvent::CatchupTargetNotFound(err))),
         }
     }
 }
@@ -650,13 +529,13 @@ pub trait RequestHandler<T: Networker> {
 }
 
 pub struct RequestHandlerImpl<T: Networker> {
-    request_wrapper: Option<RequestSMWrapper<T>>
+    request_wrapper: Option<RequestSM<T>>
 }
 
 impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
     fn new(networker: Rc<RefCell<T>>, f: usize, cmd_ids: &Vec<i32>, nodes: &HashMap<String, Option<VerKey>>, generator: Option<Generator>, pool_name: &str) -> Self {
         RequestHandlerImpl {
-            request_wrapper: Some(RequestSMWrapper::Start(RequestSM::new(networker, f, cmd_ids, nodes, generator, pool_name))),
+            request_wrapper: Some(RequestSM::new(networker, f, cmd_ids, nodes, generator, pool_name)),
         }
     }
 
@@ -680,25 +559,6 @@ impl<T: Networker> RequestHandler<T> for RequestHandlerImpl<T> {
     }
 }
 
-#[cfg(test)]
-#[derive(Debug)]
-pub struct MockRequestHandler {}
-
-#[cfg(test)]
-impl<T: Networker> RequestHandler<T> for MockRequestHandler {
-    fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &Vec<i32>, _nodes: &HashMap<String, Option<VerKey>>, _generator: Option<Generator>, _pool_name: &str) -> Self {
-        MockRequestHandler {}
-    }
-
-    fn process_event(&mut self, _ore: Option<RequestEvent>) -> Option<PoolEvent> {
-        None
-    }
-
-    fn is_terminal(&self) -> bool {
-        true
-    }
-}
-
 fn _is_consensus_reachable(replies: &HashMap<HashableValue, HashSet<String>>, f: usize, node_cnt: usize, timeout_cnt: usize, nack_cnt: usize) -> bool {
     let rep_no: usize = replies.values().map(|set| set.len()).sum();
     let max_no = replies.values().map(|set| set.len()).max().unwrap_or(0);
@@ -712,33 +572,6 @@ fn _parse_nack(cnt: &mut HashSet<String>, f: usize, raw_msg: &str, cmd_ids: &Vec
     } else {
         cnt.insert(node_alias.to_string());
         false
-    }
-}
-
-fn _process_catchup_target<T: Networker>(merkle_root: String,
-                                         txn_seq_no: usize,
-                                         hashes: Option<Vec<String>>,
-                                         node_alias: &str,
-                                         request: &mut RequestSM<CatchupConsensusState<T>>) -> (bool, Option<PoolEvent>) {
-    let key = (merkle_root, txn_seq_no, hashes);
-    let contains = request.state.replies.get_mut(&key)
-        .map(|set| { set.insert(node_alias.to_string()); })
-        .is_some();
-
-    if !contains {
-        request.state.replies.insert(key, HashSet::from_iter(vec![node_alias.to_string()]));
-    }
-
-    match check_nodes_responses_on_status(&request.state.replies,
-                                          &request.state.merkle_tree,
-                                          request.nodes.len(),
-                                          request.f,
-                                          &request.pool_name) {
-        Ok(CatchupProgress::InProgress) => (false, None),
-        Ok(CatchupProgress::NotNeeded(merkle_tree)) => (true, Some(PoolEvent::Synced(merkle_tree))),
-        Ok(CatchupProgress::ShouldBeStarted(target_mt_root, target_mt_size, merkle_tree)) =>
-            (true, Some(PoolEvent::CatchupTargetFound(target_mt_root, target_mt_size, merkle_tree))),
-        Err(err) => (true, Some(PoolEvent::CatchupTargetNotFound(err))),
     }
 }
 
@@ -808,7 +641,7 @@ fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_ke
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use services::pool::networker::MockNetworker;
     use services::pool::types::{LedgerStatus, Reply, ReplyV1, ReplyResultV1, ReplyTxnV1, ResponseMetadata, Response, ResponseV1, ConsistencyProof};
@@ -821,6 +654,23 @@ mod tests {
     const NODE_2: &'static str = "n2";
     const SIMPLE_REPLY: &'static str = r#"{"result":{}}"#;
     const POOL: &'static str = "pool1";
+
+    #[derive(Debug)]
+    pub struct MockRequestHandler {}
+
+    impl<T: Networker> RequestHandler<T> for MockRequestHandler {
+        fn new(_networker: Rc<RefCell<T>>, _f: usize, _cmd_ids: &Vec<i32>, _nodes: &HashMap<String, Option<VerKey>>, _generator: Option<Generator>, _pool_name: &str) -> Self {
+            MockRequestHandler {}
+        }
+
+        fn process_event(&mut self, _ore: Option<RequestEvent>) -> Option<PoolEvent> {
+            None
+        }
+
+        fn is_terminal(&self) -> bool {
+            true
+        }
+    }
 
     impl Default for LedgerStatus {
         fn default() -> Self {
@@ -890,7 +740,7 @@ mod tests {
         let node_names = vec![NODE, NODE_2, "n3"];
         let mut nodes: HashMap<String, Option<VerKey>> = HashMap::new();
 
-        for i in 0..nodes_cnt{
+        for i in 0..nodes_cnt {
             nodes.insert(node_names[i].to_string(), None);
         }
 
@@ -923,7 +773,7 @@ mod tests {
     #[test]
     fn request_handler_new_works() {
         let request_handler = _request_handler(0, 1);
-        assert_match!(RequestSMWrapper::Start(_), request_handler.request_wrapper.unwrap());
+        assert_match!(RequestState::Start(_), request_handler.request_wrapper.unwrap().state);
     }
 
     #[test]
@@ -939,198 +789,176 @@ mod tests {
         fn request_handler_process_ledger_status_event_from_start_works() {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
-            assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_catchup_req_event_from_start_works() {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
-            assert_match!(RequestSMWrapper::CatchupSingle(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::CatchupSingle(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_catchup_req_event_from_start_works_for_no_transactions_to_catchup() {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 0, vec![])));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_custom_single_req_event_from_start_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
-            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
-        }
-
-        #[test]
-        fn request_handler_process_custom_single_req_event_from_start_works_for_error() {
-            let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Err(CommonError::InvalidStructure(String::new())))));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_consensus_full_req_event_from_start_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
-            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
-        }
-
-        #[test]
-        fn request_handler_process_consensus_full_req_event_from_start_works_for_error() {
-            let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), Err(CommonError::InvalidStructure(String::new())))));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_custom_consensus_req_event_from_start_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
-            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
+            assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
-        fn request_handler_process_custom_consensus_req_event_from_start_works_for_error() {
-            let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Err(CommonError::InvalidStructure(String::new())))));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
-        }
-
-        #[test]
-        fn request_handler_process_other_event_from_start_works_for_error() {
+        fn request_handler_process_other_event_from_start_works() {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
-            assert_match!(RequestSMWrapper::Start(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Start(_), request_handler.request_wrapper.unwrap().state);
         }
-
     }
 
-    mod consensus_state{
+    mod consensus_state {
         use super::*;
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reached() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_reachable() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), SIMPLE_REPLY.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_consensus_not_reachable() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":{}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{}"#.to_string(), NODE_2.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reply_event_from_consensus_state_works_for_invalid_message() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reqack_event_from_consensus_state_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_reached() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_reachable() {
             let mut request_handler = _request_handler(1, 3);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reqnack_event_from_consensus_state_works_for_consensus_not_reachable() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":{}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reject_event_from_consensus_state_works_for_consensus_reached() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reject_event_from_consensus_state_works_for_consensus_reachable() {
             let mut request_handler = _request_handler(1, 3);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reject_event_from_consensus_state_works_for_consensus_not_reachable() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":{}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_timeout_event_from_consensus_state_works_for_consensus_reachable() {
             let mut request_handler = _request_handler(1, 3);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Timeout(NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_timeout_event_from_consensus_state_works_for_consensus_not_reachable() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Timeout(NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_terminate_event_from_consensus_state_works_for_consensus_not_reachable() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Terminate));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_other_event_from_consensus_state_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Ping));
-            assert_match!(RequestSMWrapper::Consensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Consensus(_), request_handler.request_wrapper.unwrap().state);
         }
     }
 
@@ -1140,10 +968,10 @@ mod tests {
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_consensus_reached() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1169,91 +997,91 @@ mod tests {
             }
 
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result": {"type":"test"}}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reply_event_from_single_state_works_for_invalid_message() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), "".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reqack_event_from_single_state_works() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reqnack_event_from_single_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reqnack_event_from_single_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 3);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reject_event_from_single_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE_2.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reject_event_from_single_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 3);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), "{}".to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_timeout_event_from_single_state_works() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
-            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_terminate_event_from_single_state_works() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Terminate));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_other_event_from_single_state_works() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomSingleRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Pong));
-            assert_match!(RequestSMWrapper::Single(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Single(_), request_handler.request_wrapper.unwrap().state);
         }
     }
 
@@ -1265,7 +1093,7 @@ mod tests {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1273,7 +1101,7 @@ mod tests {
             let mut request_handler = _request_handler(1, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
-            assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1281,7 +1109,7 @@ mod tests {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::ConsistencyProof(ConsistencyProof::default(), NODE.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1289,7 +1117,7 @@ mod tests {
             let mut request_handler = _request_handler(1, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::ConsistencyProof(ConsistencyProof::default(), NODE.to_string())));
-            assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1297,7 +1125,7 @@ mod tests {
             let mut request_handler = _request_handler(1, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
-            assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1305,7 +1133,7 @@ mod tests {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1313,7 +1141,7 @@ mod tests {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::Terminate));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1321,7 +1149,7 @@ mod tests {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::Pong));
-            assert_match!(RequestSMWrapper::CatchupConsensus(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
         }
     }
 
@@ -1353,7 +1181,7 @@ mod tests {
             let cr = CatchupRep { ledgerId: 0, consProof: Vec::new(), txns };
 
             request_handler.process_event(Some(RequestEvent::CatchupRep(cr, "Node1".to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
             TestUtils::cleanup_indy_home();
         }
 
@@ -1362,7 +1190,7 @@ mod tests {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
             request_handler.process_event(Some(RequestEvent::CatchupRep(CatchupRep::default(), NODE.to_string())));
-            assert_match!(RequestSMWrapper::CatchupSingle(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::CatchupSingle(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1370,7 +1198,7 @@ mod tests {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
-            assert_match!(RequestSMWrapper::CatchupSingle(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::CatchupSingle(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1378,7 +1206,7 @@ mod tests {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
             request_handler.process_event(Some(RequestEvent::Terminate));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1386,7 +1214,7 @@ mod tests {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::CatchupReq(MerkleTree::default(), 1, vec![])));
             request_handler.process_event(Some(RequestEvent::Pong));
-            assert_match!(RequestSMWrapper::CatchupSingle(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::CatchupSingle(_), request_handler.request_wrapper.unwrap().state);
         }
     }
 
@@ -1396,98 +1224,98 @@ mod tests {
         #[test]
         fn request_handler_process_reply_event_from_full_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reply_event_from_full_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reply_event_from_full_state_works_for_different_replies() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":"11"}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":"22"}"#.to_string(), "n2".to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reqnack_event_from_full_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reqnack_event_from_full_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reject_event_from_full_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reject_event_from_full_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_timeout_event_from_full_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_timeout_event_from_full_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
-            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_reqack_event_from_full_state_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
-            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_terminate_event_from_full_state_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Terminate));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
         fn request_handler_process_other_event_from_full_state_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Pong));
-            assert_match!(RequestSMWrapper::Full(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
     }
 
@@ -1497,10 +1325,10 @@ mod tests {
         #[test]
         fn request_handler_process_event_from_finish_state_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), Ok(REQ_ID.to_string()))));
+            request_handler.process_event(Some(RequestEvent::CustomConsensusRequest(MESSAGE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Terminate));
             request_handler.process_event(Some(RequestEvent::Ping));
-            assert_match!(RequestSMWrapper::Finish(_), request_handler.request_wrapper.unwrap());
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
     }
 }

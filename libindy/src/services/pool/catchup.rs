@@ -5,6 +5,9 @@ use errors::common::CommonError;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::merkle_tree_factory;
 use services::pool::rust_base58::{FromBase58, ToBase58};
+use services::pool::types::{Message, CatchupReq};
+
+use super::indy_crypto::utils::json::JsonEncodable;
 
 pub enum CatchupProgress {
     ShouldBeStarted(
@@ -14,6 +17,29 @@ pub enum CatchupProgress {
     ),
     NotNeeded(MerkleTree),
     InProgress,
+}
+
+pub fn build_catchup_req(merkle: &MerkleTree, target_mt_size: usize) -> Result<Option<(String, String)>, CommonError> {
+    let txns_cnt = target_mt_size - merkle.count();
+
+    if txns_cnt <= 0 {
+        warn!("No transactions to catch up!");
+        return Ok(None);
+    }
+    let seq_no_start = merkle.count() + 1;
+    let seq_no_end = target_mt_size;
+
+    let cr = CatchupReq {
+        ledgerId: 0,
+        seqNoStart: seq_no_start.clone(),
+        seqNoEnd: seq_no_end.clone(),
+        catchupTill: target_mt_size,
+    };
+    let req_id = format!("{}{}", seq_no_start, seq_no_end);
+    let req_json = Message::CatchupReq(cr).to_json()
+        .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CatchupRequest: {:?}", err)))?;
+    trace!("catchup_req msg: {:?}", req_json);
+    Ok(Some((req_id, req_json)))
 }
 
 pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Option<Vec<String>>), HashSet<String>>,
@@ -33,7 +59,7 @@ pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Opt
                 } else {
                     Err(err)
                 }
-            })
+            });
         }
     }
     Ok(CatchupProgress::InProgress)
