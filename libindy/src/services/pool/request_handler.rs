@@ -37,6 +37,7 @@ struct RequestSM<T: Networker> {
     pool_name: String,
     state: RequestState<T>,
 }
+
 /// Transitions of request state
 /// Start -> Start, Single, Consensus, CatchupSingle, CatchupConsensus, Full, Finish
 /// Single -> Single, Finish
@@ -189,10 +190,11 @@ impl<T: Networker> RequestState<T> {
 
 impl<T: Networker> RequestSM<T> {
     fn handle_event(self, re: RequestEvent) -> (Self, Option<PoolEvent>) {
-        match self {
-            RequestSM { state: RequestState::Start(state), f, cmd_ids, nodes, generator, pool_name } => {
+        let RequestSM { state, f, cmd_ids, nodes, generator, pool_name } = self;
+        let (state, event) = match state {
+            RequestState::Start(state) => {
                 let ne: Option<NetworkerEvent> = re.clone().into();
-                let (state, event) = match re {
+                match re {
                     RequestEvent::LedgerStatus(_, _, Some(merkle)) => {
                         trace!("start catchup, ne: {:?}", ne);
                         state.networker.borrow_mut().process_event(ne);
@@ -229,11 +231,10 @@ impl<T: Networker> RequestSM<T> {
                     _ => {
                         (RequestState::Start(state), None)
                     }
-                };
-                (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, state), event)
+                }
             }
-            RequestSM { state: RequestState::Consensus(mut state), f, cmd_ids, nodes, generator, pool_name } => {
-                let (state, event) = match re {
+            RequestState::Consensus(mut state) => {
+                match re {
                     RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
                         if let Ok((_, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
                             let hashable = HashableValue { inner: result_without_proof };
@@ -295,11 +296,10 @@ impl<T: Networker> RequestSM<T> {
                         (RequestState::finish(), None)
                     }
                     _ => (RequestState::Consensus(state.into()), None)
-                };
-                (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, state), event)
+                }
             }
-            RequestSM { state: RequestState::Single(mut state), f, cmd_ids, nodes, generator, pool_name } => {
-                let (state, event) = match re {
+            RequestState::Single(mut state) => {
+                match re {
                     RequestEvent::Reply(_, raw_msg, node_alias, req_id) => {
                         trace!("reply on single request");
                         if let Ok((result, result_without_proof)) = _get_msg_result_without_state_proof(&raw_msg) {
@@ -350,11 +350,10 @@ impl<T: Networker> RequestSM<T> {
                         (RequestState::finish(), None)
                     }
                     _ => (RequestState::Single(state), None)
-                };
-                (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, state), event)
+                }
             }
-            RequestSM { state: RequestState::CatchupConsensus(state), f, cmd_ids, nodes, generator, pool_name } => {
-                let (state, event) = match re {
+            RequestState::CatchupConsensus(state) => {
+                match re {
                     RequestEvent::LedgerStatus(ls, Some(node_alias), _) => {
                         RequestSM::_catchup_target_handle_consensus_state(
                             state,
@@ -379,11 +378,10 @@ impl<T: Networker> RequestSM<T> {
                         (RequestState::finish(), None)
                     }
                     _ => (RequestState::CatchupConsensus(state), None)
-                };
-                (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, state), event)
+                }
             }
-            RequestSM { state: RequestState::CatchupSingle(mut state), f, cmd_ids, nodes, generator, pool_name } => {
-                let (state, event) = match re {
+            RequestState::CatchupSingle(mut state) => {
+                match re {
                     RequestEvent::CatchupRep(mut cr, node_alias) => {
                         match _process_catchup_reply(&mut cr, &mut state.merkle_tree, &state.target_mt_root, state.target_mt_size, &pool_name) {
                             Ok(merkle) => {
@@ -407,11 +405,10 @@ impl<T: Networker> RequestSM<T> {
                         (RequestState::finish(), None)
                     }
                     _ => (RequestState::CatchupSingle(state), None)
-                };
-                (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, state), event)
+                }
             }
-            RequestSM { state: RequestState::Full(state), f, cmd_ids, nodes, generator, pool_name } => {
-                let (state, event) = match re {
+            RequestState::Full(state) => {
+                match re {
                     RequestEvent::Reply(_, raw_msg, node_alias, req_id) |
                     RequestEvent::ReqNACK(_, raw_msg, node_alias, req_id) |
                     RequestEvent::Reject(_, raw_msg, node_alias, req_id) =>
@@ -430,14 +427,11 @@ impl<T: Networker> RequestSM<T> {
                         (RequestState::finish(), None)
                     }
                     _ => (RequestState::Full(state), None),
-                };
-                (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, state), event)
+                }
             }
-            RequestSM { state: RequestState::Finish(state), f, cmd_ids, nodes, generator, pool_name } => {
-                let state = RequestState::Finish(state);
-                (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, state), None)
-            }
-        }
+            RequestState::Finish(state) => (RequestState::Finish(state), None)
+        };
+        (RequestSM::step(f, cmd_ids, nodes, generator, pool_name, state), event)
     }
 
     fn is_terminal(&self) -> bool {
