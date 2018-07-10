@@ -23,6 +23,15 @@ download_adb(){
     popd
 }
 
+download_sdk(){
+    mkdir -p ${ANDROID_BUILD_FOLDER}/sdk
+     pushd ${ANDROID_BUILD_FOLDER}/adb
+
+        wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+        unzip -qq sdk-tools-linux-4333796.zip
+    popd
+}
+
 generate_arch_flags(){
     if [ -z $1 ]; then
         echo "please provide the arch e.g arm, x86 or arm64"
@@ -55,7 +64,7 @@ download_and_unzip_dependencies_for_all_architectures(){
     #TODO Get dependencies in more optimized way
     pushd ${ANDROID_BUILD_FOLDER}
         if [ ! -d "indy-android-dependencies" ] ; then
-            git clone https://github.com/evernym/indy-android-dependencies.git
+            git clone https://github.com/faisal00813/indy-android-dependencies.git
             pushd ${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/
                 git checkout tags/v1.0.1
                 find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -qq -d "$(dirname "FILENAME")" "FILENAME"'
