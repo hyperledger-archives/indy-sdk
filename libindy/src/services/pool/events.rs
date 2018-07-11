@@ -1,16 +1,14 @@
-use services::pool::types::*;
-use errors::common::CommonError;
 use domain::ledger::constants;
-
+use errors::common::CommonError;
+use errors::pool::PoolError;
+use self::indy_crypto::utils::json::JsonEncodable;
 use serde_json;
 use serde_json::Value as SJsonValue;
-use std::error::Error;
 use services::ledger::merkletree::merkletree::MerkleTree;
-use errors::pool::PoolError;
+use services::pool::types::*;
+use std::error::Error;
 
 extern crate indy_crypto;
-
-use self::indy_crypto::utils::json::JsonEncodable;
 
 
 pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
@@ -84,7 +82,7 @@ pub enum PoolEvent {
     Timeout(
         String, //req_id
         String, //node alias
-    )
+    ),
 }
 
 #[derive(Clone, Debug)]
@@ -92,12 +90,12 @@ pub enum RequestEvent {
     LedgerStatus(
         LedgerStatus,
         Option<String>, //node alias
-        Option<MerkleTree>
+        Option<MerkleTree>,
     ),
     CatchupReq(
         MerkleTree,
         usize, // target mt size
-        Vec<u8> // target mt root
+        Vec<u8>, // target mt root
     ),
     Timeout(
         String, //req_id
@@ -182,7 +180,7 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                         Message::ConsistencyProof(cp) => RequestEvent::ConsistencyProof(cp, node_alias),
                         Message::Reply(rep) => {
                             let req_id = rep.req_id();
-                            RequestEvent::Reply(rep, msg, node_alias,req_id.to_string())
+                            RequestEvent::Reply(rep, msg, node_alias, req_id.to_string())
                         }
                         Message::ReqACK(rep) => {
                             let req_id = rep.req_id();
@@ -191,16 +189,16 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                         Message::ReqNACK(rep) => {
                             let req_id = rep.req_id();
                             RequestEvent::ReqNACK(rep, msg, node_alias, req_id.to_string())
-                        },
+                        }
                         Message::Reject(rep) => {
                             let req_id = rep.req_id();
                             RequestEvent::Reject(rep, msg, node_alias, req_id.to_string())
-                        },
+                        }
                         Message::PoolLedgerTxns(_) => RequestEvent::PoolLedgerTxns,
                         Message::Ping => RequestEvent::Ping,
                         Message::Pong => RequestEvent::Pong,
                     })
-            },
+            }
             PoolEvent::SendRequest(_, msg) => {
                 let req_id = _parse_req_id_and_op(&msg);
                 match req_id {
@@ -223,7 +221,7 @@ impl Into<Option<NetworkerEvent>> for RequestEvent {
             RequestEvent::LedgerStatus(ls, _, _) => {
                 let req_id = ls.merkleRoot.clone();
                 Some(NetworkerEvent::SendAllRequest(Message::LedgerStatus(ls).to_json().expect("FIXME"), req_id))
-            },
+            }
             _ => None
         }
     }

@@ -1,10 +1,9 @@
 extern crate byteorder;
 
-use self::byteorder::{ByteOrder, LittleEndian};
-
-use super::zmq;
 use errors::common::CommonError;
+use self::byteorder::{ByteOrder, LittleEndian};
 use services::pool::events::PoolEvent;
+use super::zmq;
 
 pub struct Commander {
     cmd_socket: zmq::Socket,
@@ -30,7 +29,7 @@ impl Commander {
                 CommonError::InvalidState(format!("Invalid command received: {:?}", err)))
             .map_err(map_err_trace!()) {
             Ok(cmd) => cmd,
-            Err(_) => {return None;}
+            Err(_) => { return None; }
         };
         let id = cmd.get(1).map(|cmd: &Vec<u8>| LittleEndian::read_i32(cmd.as_slice()))
             .unwrap_or(-1);
@@ -38,7 +37,7 @@ impl Commander {
             Some(PoolEvent::Close(id))
         } else if "refresh".eq(cmd_s.as_str()) {
             Some(PoolEvent::Refresh(id))
-        } else if "connect".eq(cmd_s.as_str()){
+        } else if "connect".eq(cmd_s.as_str()) {
             Some(PoolEvent::CheckCache(id))
         } else {
             Some(PoolEvent::SendRequest(id, cmd_s))

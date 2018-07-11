@@ -1,26 +1,23 @@
-mod types;
 mod catchup;
-//mod transaction_handler;
-mod state_proof;
-//mod pool_worker;
-
-mod pool;
-mod merkle_tree_factory;
-mod networker;
 mod commander;
 mod events;
+mod merkle_tree_factory;
+mod networker;
+mod pool;
 mod request_handler;
+mod state_proof;
+mod types;
 
 extern crate byteorder;
 extern crate digest;
 extern crate hex;
+extern crate indy_crypto;
 extern crate rand;
 extern crate rust_base58;
+extern crate rmp_serde;
 extern crate sha2;
 extern crate time;
 extern crate zmq;
-extern crate rmp_serde;
-extern crate indy_crypto;
 
 
 use self::byteorder::{ByteOrder, LittleEndian};
@@ -503,73 +500,6 @@ mod tests {
         drop_test();
         TestUtils::cleanup_storage();
     }
-//
-//    impl Default for PoolWorker {
-//        fn default() -> Self {
-//            PoolWorker {
-//                pool_id: 0,
-//                cmd_sock: zmq::Context::new().socket(zmq::SocketType::PAIR).unwrap(),
-//                open_cmd_id: 0,
-//                name: "".to_string(),
-//                handler: PoolWorkerHandler::CatchupHandler(CatchupHandler {
-//                    timeout: time::now_utc().add(Duration::seconds(2)),
-//                    ..Default::default()
-//                }),
-//            }
-//        }
-//    }
-
-//    #[test]
-//    fn pool_worker_get_zmq_poll_items_works() {
-//        TestUtils::cleanup_storage();
-//
-//        let pw: PoolWorker = Default::default();
-//
-//        let poll_items = pw.get_zmq_poll_items().unwrap();
-//
-//        assert_eq!(poll_items.len(), pw.handler.nodes().len() + 1);
-//        //TODO compare poll items
-//    }
-
-//    #[test]
-//    fn catchup_handler_start_catchup_works() {
-//        TestUtils::cleanup_storage();
-//
-//        let mut ch: CatchupHandler = Default::default();
-//        let (gt, handle) = nodes_emulator::start();
-//        ch.merkle_tree.append(rmp_serde::to_vec_named(&gt).unwrap()).unwrap();
-//        let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
-//        rn.connect(&zmq::Context::new(), &zmq::CurveKeyPair::new().unwrap()).unwrap();
-//        ch.nodes.push(rn);
-//        ch.target_mt_size = 2;
-//
-//        ch.start_catchup().unwrap();
-//
-//        let emulator_msgs: Vec<String> = handle.join().unwrap();
-//        assert_eq!(1, emulator_msgs.len());
-//        let expected_resp: CatchupReq = CatchupReq {
-//            ledgerId: 0,
-//            seqNoStart: 2,
-//            seqNoEnd: 2,
-//            catchupTill: 2,
-//        };
-//        let act_resp = CatchupReq::from_json(emulator_msgs[0].as_str()).unwrap();
-//        assert_eq!(expected_resp, act_resp);
-//    }
-
-//    #[test]
-//    fn remote_node_connect_works_and_can_ping_pong() {
-//        TestUtils::cleanup_storage();
-//
-//        let (gt, handle) = nodes_emulator::start();
-//        let mut rn: RemoteNode = RemoteNode::new(&gt).unwrap();
-//        let ctx = zmq::Context::new();
-//        rn.connect(&ctx, &zmq::CurveKeyPair::new().unwrap()).unwrap();
-//        rn.send_str("pi").expect("send");
-//        rn.zsock.as_ref().expect("sock").poll(zmq::POLLIN, nodes_emulator::POLL_TIMEOUT).expect("poll");
-//        assert_eq!("po", rn.zsock.as_ref().expect("sock").recv_string(zmq::DONTWAIT).expect("recv").expect("string").as_str());
-//        handle.join().expect("join");
-//    }
 
     pub mod nodes_emulator {
         extern crate sodiumoxide;

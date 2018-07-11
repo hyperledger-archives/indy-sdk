@@ -1,30 +1,29 @@
-use super::zmq;
-use std::thread::JoinHandle;
-use std::thread;
-use std::collections::VecDeque;
-use std::collections::HashMap;
-use std::marker::PhantomData;
-use std::cell::RefCell;
-use std::rc::Rc;
-use services::pool::types::LedgerStatus;
-
-use services::pool::commander::Commander;
-use services::pool::events::*;
-use services::pool::networker::{Networker, ZMQNetworker};
-use services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
-use services::pool::merkle_tree_factory;
-use services::pool::rust_base58::{ToBase58, FromBase58};
-use super::indy_crypto::bls::VerKey;
-use services::pool::types::RemoteNode;
-use errors::pool::PoolError;
-use errors::common::CommonError;
 use commands::Command;
 use commands::CommandExecutor;
-use commands::pool::PoolCommand;
-use utils::crypto::box_::CryptoBox;
-use services::ledger::merkletree::merkletree::MerkleTree;
 use commands::ledger::LedgerCommand;
+use commands::pool::PoolCommand;
 use domain::ledger::request::ProtocolVersion;
+use errors::common::CommonError;
+use errors::pool::PoolError;
+use services::ledger::merkletree::merkletree::MerkleTree;
+use services::pool::commander::Commander;
+use services::pool::events::*;
+use services::pool::merkle_tree_factory;
+use services::pool::networker::{Networker, ZMQNetworker};
+use services::pool::request_handler::{RequestHandler, RequestHandlerImpl};
+use services::pool::rust_base58::{FromBase58, ToBase58};
+use services::pool::types::LedgerStatus;
+use services::pool::types::RemoteNode;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::collections::VecDeque;
+use std::marker::PhantomData;
+use std::rc::Rc;
+use std::thread;
+use std::thread::JoinHandle;
+use super::indy_crypto::bls::VerKey;
+use super::zmq;
+use utils::crypto::box_::CryptoBox;
 
 
 struct PoolSM<T: Networker, R: RequestHandler<T>> {
@@ -46,7 +45,7 @@ enum PoolState<T: Networker, R: RequestHandler<T>> {
     Active(ActiveState<T, R>),
     SyncCatchup(SyncCatchupState<T, R>),
     Terminated(TerminatedState<T>),
-    Closed(ClosedState)
+    Closed(ClosedState),
 }
 
 struct InitializationState<T: Networker> {
@@ -86,7 +85,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
             id,
             state: PoolState::Initialization(InitializationState {
                 networker
-            })
+            }),
         }
     }
 
@@ -186,7 +185,7 @@ impl<T: Networker, R: RequestHandler<T>> From<(ActiveState<T, R>, R, i32)> for G
             networker: state.networker,
             cmd_id,
             request_handler,
-            refresh: true
+            refresh: true,
         }
     }
 }
@@ -246,7 +245,7 @@ impl<T: Networker, R: RequestHandler<T>> From<(TerminatedState<T>, R, i32)> for 
             networker: state.networker,
             cmd_id,
             request_handler,
-            refresh: true
+            refresh: true,
         }
     }
 }
@@ -577,7 +576,7 @@ fn _get_request_handler_with_ledger_status_sent<T: Networker, R: RequestHandler<
         ledgerId: 0,
         ppSeqNo: None,
         viewNo: None,
-        protocolVersion: if protocol_version > 1 { Some(protocol_version) } else { None }
+        protocolVersion: if protocol_version > 1 { Some(protocol_version) } else { None },
     };
     request_handler.process_event(Some(RequestEvent::LedgerStatus(ls, None, Some(merkle))));
     Ok(request_handler)
@@ -629,7 +628,7 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> Result<(HashMap<String, Option
                 }
             }
             (map, vec)
-        }
+        },
     ))
 }
 
@@ -686,11 +685,11 @@ impl Drop for ZMQPool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use services::pool::types::{Message, Reply, ReplyV1, ReplyResultV1, ReplyTxnV1, ResponseMetadata};
-    use utils::test::TestUtils;
     use services::pool::networker::MockNetworker;
     use services::pool::request_handler::tests::MockRequestHandler;
+    use services::pool::types::{Message, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, ResponseMetadata};
+    use super::*;
+    use utils::test::TestUtils;
 
     mod pool {
         use super::*;
@@ -717,15 +716,13 @@ mod tests {
     }
 
     mod pool_sm {
-        use super::*;
+        use indy_crypto::utils::json::JsonEncodable;
         use std::fs;
         use std::io::Write;
+        use super::*;
         use utils::environment::EnvironmentUtils;
-        use domain::ledger::request::ProtocolVersion;
 
         extern crate indy_crypto;
-
-        use self::indy_crypto::utils::json::JsonEncodable;
 
         const POOL: &'static str = "pool";
 

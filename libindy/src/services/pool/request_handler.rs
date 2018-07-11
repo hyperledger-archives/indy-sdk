@@ -1,22 +1,24 @@
 extern crate rust_base58;
 extern crate rmp_serde;
 
-use commands::CommandExecutor;
 use commands::Command;
+use commands::CommandExecutor;
 use commands::ledger::LedgerCommand;
 use errors::common::CommonError;
 use errors::pool::PoolError;
-use services::pool::events::RequestEvent;
-use services::pool::events::PoolEvent;
-use services::pool::events::NetworkerEvent;
-use services::pool::networker::Networker;
-use services::pool::state_proof;
-use services::pool::types::HashableValue;
-use services::pool::catchup::{CatchupProgress, check_nodes_responses_on_status, check_cons_proofs, build_catchup_req};
-
 use self::rust_base58::FromBase58;
 use serde_json;
 use serde_json::Value as SJsonValue;
+use services::ledger::merkletree::merkletree::MerkleTree;
+use services::pool::catchup::{build_catchup_req, CatchupProgress, check_cons_proofs, check_nodes_responses_on_status};
+use services::pool::events::NetworkerEvent;
+use services::pool::events::PoolEvent;
+use services::pool::events::RequestEvent;
+use services::pool::merkle_tree_factory;
+use services::pool::networker::Networker;
+use services::pool::state_proof;
+use services::pool::types::CatchupRep;
+use services::pool::types::HashableValue;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -24,9 +26,6 @@ use std::iter::FromIterator;
 use std::rc::Rc;
 use super::indy_crypto::bls::Generator;
 use super::indy_crypto::bls::VerKey;
-use services::ledger::merkletree::merkletree::MerkleTree;
-use services::pool::merkle_tree_factory;
-use services::pool::types::CatchupRep;
 
 
 struct RequestSM<T: Networker> {
@@ -97,7 +96,7 @@ struct StartState<T: Networker> {
 }
 
 struct ConsensusState<T: Networker> {
-    denied_nodes: HashSet<String>, //FIXME should be map, may be merged with replies
+    denied_nodes: HashSet<String> /* FIXME should be map, may be merged with replies */,
     replies: HashMap<HashableValue, HashSet<String>>,
     timeout_nodes: HashSet<String>,
     networker: Rc<RefCell<T>>,
@@ -118,7 +117,7 @@ struct CatchupSingleState<T: Networker> {
 }
 
 struct SingleState<T: Networker> {
-    denied_nodes: HashSet<String>, //FIXME should be map, may be merged with replies
+    denied_nodes: HashSet<String> /* FIXME should be map, may be merged with replies */,
     replies: HashMap<HashableValue, HashSet<String>>,
     timeout_nodes: HashSet<String>,
     networker: Rc<RefCell<T>>,
@@ -662,10 +661,10 @@ fn _check_state_proof(msg_result: &SJsonValue, f: usize, gen: &Generator, bls_ke
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
-    use services::pool::networker::MockNetworker;
-    use services::pool::types::{LedgerStatus, Reply, ReplyV1, ReplyResultV1, ReplyTxnV1, ResponseMetadata, Response, ResponseV1, ConsistencyProof};
     use services::ledger::merkletree::tree::Tree;
+    use services::pool::networker::MockNetworker;
+    use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
+    use super::*;
     use utils::test::TestUtils;
 
     const MESSAGE: &'static str = "message";
@@ -1202,7 +1201,7 @@ pub mod tests {
             let mt = MerkleTree {
                 root: Tree::Leaf {
                     hash: vec![144, 26, 156, 60, 166, 79, 255, 53, 172, 15, 42, 186, 99, 222, 43, 53, 230, 243, 151, 105, 0, 233, 90, 151, 103, 149, 22, 172, 76, 124, 247, 62],
-                    value: vec![132, 172, 114, 101, 113, 83, 105, 103, 110, 97, 116, 117, 114, 101, 128, 163, 116, 120, 110, 131, 164, 100, 97, 116, 97, 130, 164, 100, 97, 116, 97, 135, 165, 97, 108, 105, 97, 115, 165, 78, 111, 100, 101, 49, 166, 98, 108, 115, 107, 101, 121, 217, 175, 52, 78, 56, 97, 85, 78, 72, 83, 103, 106, 81, 86, 103, 107, 112, 109, 56, 110, 104, 78, 69, 102, 68, 102, 54, 116, 120, 72, 122, 110, 111, 89, 82, 69, 103, 57, 107, 105, 114, 109, 74, 114, 107, 105, 118, 103, 76, 52, 111, 83, 69, 105, 109, 70, 70, 54, 110, 115, 81, 54, 77, 52, 49, 81, 118, 104, 77, 50, 90, 51, 51, 110, 118, 101, 115, 53, 118, 102, 83, 110, 57, 110, 49, 85, 119, 78, 70, 74, 66, 89, 116, 87, 86, 110, 72, 89, 77, 65, 84, 110, 55, 54, 118, 76, 117, 76, 51, 122, 85, 56, 56, 75, 121, 101, 65, 89, 99, 72, 102, 115, 105, 104, 51, 72, 101, 54, 85, 72, 99, 88, 68, 120, 99, 97, 101, 99, 72, 86, 122, 54, 106, 104, 67, 89, 122, 49, 80, 50, 85, 90, 110, 50, 98, 68, 86, 114, 117, 76, 53, 119, 88, 112, 101, 104, 103, 66, 102, 66, 97, 76, 75, 109, 51, 66, 97, 169, 99, 108, 105, 101, 110, 116, 95, 105, 112, 168, 49, 48, 46, 48, 46, 48, 46, 50, 171, 99, 108, 105, 101, 110, 116, 95, 112, 111, 114, 116, 205, 37, 230, 167, 110, 111, 100, 101, 95, 105, 112, 168, 49, 48, 46, 48, 46, 48, 46, 50, 169, 110, 111, 100, 101, 95, 112, 111, 114, 116, 205, 37, 229, 168, 115, 101, 114, 118, 105, 99, 101, 115, 145, 169, 86, 65, 76, 73, 68, 65, 84, 79, 82, 164, 100, 101, 115, 116, 217, 44, 71, 119, 54, 112, 68, 76, 104, 99, 66, 99, 111, 81, 101, 115, 78, 55, 50, 113, 102, 111, 116, 84, 103, 70, 97, 55, 99, 98, 117, 113, 90, 112, 107, 88, 51, 88, 111, 54, 112, 76, 104, 80, 104, 118, 168, 109, 101, 116, 97, 100, 97, 116, 97, 129, 164, 102, 114, 111, 109, 182, 84, 104, 55, 77, 112, 84, 97, 82, 90, 86, 82, 89, 110, 80, 105, 97, 98, 100, 115, 56, 49, 89, 164, 116, 121, 112, 101, 161, 48, 171, 116, 120, 110, 77, 101, 116, 97, 100, 97, 116, 97, 130, 165, 115, 101, 113, 78, 111, 1, 165, 116, 120, 110, 73, 100, 217, 64, 102, 101, 97, 56, 50, 101, 49, 48, 101, 56, 57, 52, 52, 49, 57, 102, 101, 50, 98, 101, 97, 55, 100, 57, 54, 50, 57, 54, 97, 54, 100, 52, 54, 102, 53, 48, 102, 57, 51, 102, 57, 101, 101, 100, 97, 57, 53, 52, 101, 99, 52, 54, 49, 98, 50, 101, 100, 50, 57, 53, 48, 98, 54, 50, 163, 118, 101, 114, 161, 49]
+                    value: vec![132, 172, 114, 101, 113, 83, 105, 103, 110, 97, 116, 117, 114, 101, 128, 163, 116, 120, 110, 131, 164, 100, 97, 116, 97, 130, 164, 100, 97, 116, 97, 135, 165, 97, 108, 105, 97, 115, 165, 78, 111, 100, 101, 49, 166, 98, 108, 115, 107, 101, 121, 217, 175, 52, 78, 56, 97, 85, 78, 72, 83, 103, 106, 81, 86, 103, 107, 112, 109, 56, 110, 104, 78, 69, 102, 68, 102, 54, 116, 120, 72, 122, 110, 111, 89, 82, 69, 103, 57, 107, 105, 114, 109, 74, 114, 107, 105, 118, 103, 76, 52, 111, 83, 69, 105, 109, 70, 70, 54, 110, 115, 81, 54, 77, 52, 49, 81, 118, 104, 77, 50, 90, 51, 51, 110, 118, 101, 115, 53, 118, 102, 83, 110, 57, 110, 49, 85, 119, 78, 70, 74, 66, 89, 116, 87, 86, 110, 72, 89, 77, 65, 84, 110, 55, 54, 118, 76, 117, 76, 51, 122, 85, 56, 56, 75, 121, 101, 65, 89, 99, 72, 102, 115, 105, 104, 51, 72, 101, 54, 85, 72, 99, 88, 68, 120, 99, 97, 101, 99, 72, 86, 122, 54, 106, 104, 67, 89, 122, 49, 80, 50, 85, 90, 110, 50, 98, 68, 86, 114, 117, 76, 53, 119, 88, 112, 101, 104, 103, 66, 102, 66, 97, 76, 75, 109, 51, 66, 97, 169, 99, 108, 105, 101, 110, 116, 95, 105, 112, 168, 49, 48, 46, 48, 46, 48, 46, 50, 171, 99, 108, 105, 101, 110, 116, 95, 112, 111, 114, 116, 205, 37, 230, 167, 110, 111, 100, 101, 95, 105, 112, 168, 49, 48, 46, 48, 46, 48, 46, 50, 169, 110, 111, 100, 101, 95, 112, 111, 114, 116, 205, 37, 229, 168, 115, 101, 114, 118, 105, 99, 101, 115, 145, 169, 86, 65, 76, 73, 68, 65, 84, 79, 82, 164, 100, 101, 115, 116, 217, 44, 71, 119, 54, 112, 68, 76, 104, 99, 66, 99, 111, 81, 101, 115, 78, 55, 50, 113, 102, 111, 116, 84, 103, 70, 97, 55, 99, 98, 117, 113, 90, 112, 107, 88, 51, 88, 111, 54, 112, 76, 104, 80, 104, 118, 168, 109, 101, 116, 97, 100, 97, 116, 97, 129, 164, 102, 114, 111, 109, 182, 84, 104, 55, 77, 112, 84, 97, 82, 90, 86, 82, 89, 110, 80, 105, 97, 98, 100, 115, 56, 49, 89, 164, 116, 121, 112, 101, 161, 48, 171, 116, 120, 110, 77, 101, 116, 97, 100, 97, 116, 97, 130, 165, 115, 101, 113, 78, 111, 1, 165, 116, 120, 110, 73, 100, 217, 64, 102, 101, 97, 56, 50, 101, 49, 48, 101, 56, 57, 52, 52, 49, 57, 102, 101, 50, 98, 101, 97, 55, 100, 57, 54, 50, 57, 54, 97, 54, 100, 52, 54, 102, 53, 48, 102, 57, 51, 102, 57, 101, 101, 100, 97, 57, 53, 52, 101, 99, 52, 54, 49, 98, 50, 101, 100, 50, 57, 53, 48, 98, 54, 50, 163, 118, 101, 114, 161, 49],
                 },
                 height: 0,
                 count: 1,

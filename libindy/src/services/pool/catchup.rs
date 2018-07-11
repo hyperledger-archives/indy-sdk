@@ -1,12 +1,11 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
-use errors::pool::PoolError;
 use errors::common::CommonError;
+use errors::pool::PoolError;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::merkle_tree_factory;
 use services::pool::rust_base58::{FromBase58, ToBase58};
-use services::pool::types::{Message, CatchupReq};
-
+use services::pool::types::{CatchupReq, Message};
+use std::collections::HashMap;
+use std::collections::HashSet;
 use super::indy_crypto::utils::json::JsonEncodable;
 
 pub enum CatchupProgress {
@@ -50,7 +49,7 @@ pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Opt
     if let Some((most_popular_vote, votes_cnt)) = nodes_votes.iter().map(|(key, val)| (key, val.len())).max_by_key(|entry| entry.1) {
         if votes_cnt == node_count - f {
             if most_popular_vote.0.eq("timeout") {
-                return Err(PoolError::Timeout)
+                return Err(PoolError::Timeout);
             }
             return _try_to_catch_up(most_popular_vote, merkle_tree).or_else(|err| {
                 if merkle_tree_factory::drop_cache(pool_name).is_ok() {

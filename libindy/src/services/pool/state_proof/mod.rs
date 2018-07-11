@@ -7,31 +7,30 @@ extern crate rust_base58;
 extern crate sha2;
 extern crate sha3;
 
-mod node;
-
+use api::ErrorCode;
 use base64;
 use domain::ledger::constants;
-use services::pool::events::REQUESTS_FOR_STATE_PROOFS;
-use self::node::{TrieDB, Node};
-
-use self::sha3::Digest;
-use self::digest::Input;
+use errors::common::CommonError;
 use self::digest::FixedOutput;
+use self::digest::Input;
 use self::hex::ToHex;
-use self::indy_crypto::bls::{Bls, Generator, VerKey, MultiSignature};
+use self::indy_crypto::bls::{Bls, Generator, MultiSignature, VerKey};
+use self::node::{Node, TrieDB};
 use self::rlp::{
+    encode as rlp_encode,
     UntrustedRlp,
-    encode as rlp_encode
 };
 use self::rust_base58::FromBase58;
-use serde_json::Value as SJsonValue;
+use self::sha3::Digest;
 use serde_json;
+use serde_json::Value as SJsonValue;
+use services::pool::events::REQUESTS_FOR_STATE_PROOFS;
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
-use errors::common::CommonError;
 use super::PoolService;
 use super::types::*;
-use api::ErrorCode;
+
+mod node;
 
 pub fn parse_generic_reply_for_proof_checking(json_msg: &SJsonValue, raw_msg: &str) -> Option<Vec<ParsedSP>> {
     let type_ = if let Some(type_) = json_msg["type"].as_str() {
@@ -82,7 +81,7 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
     for parsed_sp in parsed_sps {
         if parsed_sp.multi_signature["value"]["state_root_hash"].as_str().ne(
             &Some(&parsed_sp.root_hash)) {
-            return false
+            return false;
         }
 
         let data_to_check_proof_signature =
@@ -114,7 +113,7 @@ pub fn verify_parsed_sp(parsed_sps: Vec<ParsedSP>,
             kvs @ _ => {
                 warn!("Unsupported parsed state proof format for key-values {:?} ", kvs);
                 return false;
-            },
+            }
         }
     }
 
@@ -477,26 +476,26 @@ mod tests {
         let vec = Vec::from_hex(str).unwrap();
         let rlp = UntrustedRlp::new(vec.as_slice());
         let proofs: Vec<Node> = rlp.as_list().unwrap();
-        info! ("Input");
+        info!("Input");
         for rlp in rlp.iter() {
-            info! ("{:?}", rlp.as_raw());
+            info!("{:?}", rlp.as_raw());
         }
-        info! ("parsed");
+        info!("parsed");
         let mut map: TrieDB = HashMap::new();
         for node in &proofs {
-            info! ("{:?}", node);
+            info!("{:?}", node);
             let encoded = rlp_encode(node);
-            info! ("{:?}", encoded);
+            info!("{:?}", encoded);
             let mut hasher = sha3::Sha3_256::default();
             hasher.input(encoded.to_vec().as_slice());
             let out = hasher.result();
-            info! ("{:?}", out);
+            info!("{:?}", out);
             map.insert(out, node);
         }
         for k in 33..35 {
-            info! ("Try get {}", k);
+            info!("Try get {}", k);
             let x = proofs[2].get_str_value(&map, k.to_string().as_bytes()).unwrap().unwrap();
-            info! ("{:?}", x);
+            info!("{:?}", x);
             assert_eq!(x, format!("v{}", k - 32));
         }
     }
@@ -550,7 +549,7 @@ mod tests {
     #[test]
     fn state_proof_verify_proof_works_for_corrupted_rlp_bytes_for_proofs() {
         let proofs = Vec::from_hex("f8c0f7798080a0792fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080").unwrap();
-        assert_eq! (_verify_proof(proofs.as_slice(), &[0x00], "".as_bytes(), None), false);
+        assert_eq!(_verify_proof(proofs.as_slice(), &[0x00], "".as_bytes(), None), false);
     }
 
     #[test]
@@ -573,7 +572,7 @@ mod tests {
 
         PoolService::register_sp_parser("test", parse, free).unwrap();
         let mut parsed_sps = super::parse_generic_reply_for_proof_checking(&json!({"type".to_owned(): "test"}),
-                                                                       parsed_sp.to_string().as_str())
+                                                                           parsed_sp.to_string().as_str())
             .unwrap();
 
         assert_eq!(parsed_sps.len(), 1);

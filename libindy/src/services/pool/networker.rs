@@ -1,18 +1,17 @@
 extern crate zmq;
 extern crate time;
 
-use self::zmq::PollItem;
-use self::zmq::Socket as ZSocket;
-
 use errors::common::CommonError;
 use errors::pool::PoolError;
+use self::zmq::PollItem;
+use self::zmq::Socket as ZSocket;
 use services::pool::events::*;
 use services::pool::types::*;
-use std::collections::{BTreeMap, HashMap};
 use std::cell::RefCell;
+use std::collections::{BTreeMap, HashMap};
 use super::time::Duration;
-use utils::sequence::SequenceUtils;
 use time::Tm;
+use utils::sequence::SequenceUtils;
 
 pub trait Networker {
     fn new() -> Self;
@@ -354,12 +353,12 @@ impl Networker for MockNetworker {
 
 #[cfg(test)]
 pub mod networker_tests {
-    use super::*;
-    use services::pool::tests::nodes_emulator;
-    use utils::crypto::box_::CryptoBox;
     use services::pool::rust_base58::FromBase58;
+    use services::pool::tests::nodes_emulator;
     use std;
     use std::thread;
+    use super::*;
+    use utils::crypto::box_::CryptoBox;
 
     const REQ_ID: &'static str = "1";
     const MESSAGE: &'static str = "msg";
@@ -634,8 +633,8 @@ pub mod networker_tests {
 
     #[cfg(test)]
     mod pool_connection {
-        use super::*;
         use std::ops::Sub;
+        use super::*;
 
         #[test]
         fn pool_connection_new_works() {

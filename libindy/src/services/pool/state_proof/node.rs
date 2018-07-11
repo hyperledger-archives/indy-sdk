@@ -4,9 +4,10 @@ extern crate rlp;
 extern crate sha3;
 
 use errors::common::CommonError;
-use rlp::{UntrustedRlp, RlpStream,
-          Prototype as RlpPrototype,
-          DecoderError as RlpDecoderError,};
+use rlp::{DecoderError as RlpDecoderError, Prototype as RlpPrototype,
+          RlpStream,
+          UntrustedRlp,
+};
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -29,7 +30,7 @@ impl Node {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FullNode {
     nodes: [Option<Box<Node>>; Node::RADIX],
-    value: Option<Vec<u8>>
+    value: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

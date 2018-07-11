@@ -4,15 +4,12 @@ extern crate serde;
 extern crate serde_json;
 extern crate time;
 
+use errors::common::CommonError;
+use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-
-use errors::common::CommonError;
 use utils::crypto::verkey_builder::build_full_verkey;
-
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -27,7 +24,7 @@ pub struct NodeData {
     #[serde(default)]
     pub node_port: Option<u64>,
     pub services: Option<Vec<String>>,
-    pub blskey: Option<String>
+    pub blskey: Option<String>,
 }
 
 fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
@@ -52,7 +49,7 @@ fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
 #[serde(untagged)]
 pub enum NodeTransaction {
     NodeTransactionV0(NodeTransactionV0),
-    NodeTransactionV1(NodeTransactionV1)
+    NodeTransactionV1(NodeTransactionV1),
 }
 
 impl JsonEncodable for NodeTransaction {}
@@ -68,7 +65,7 @@ pub struct NodeTransactionV0 {
     pub txn_id: Option<String>,
     pub verkey: Option<String>,
     #[serde(rename = "type")]
-    pub txn_type: String
+    pub txn_type: String,
 }
 
 impl NodeTransactionV0 {
@@ -81,7 +78,7 @@ pub struct NodeTransactionV1 {
     pub txn: Txn,
     pub txn_metadata: Metadata,
     pub req_signature: ReqSignature,
-    pub ver: String
+    pub ver: String,
 }
 
 
@@ -96,7 +93,7 @@ pub struct Txn {
     #[serde(rename = "protocolVersion")]
     pub protocol_version: Option<i32>,
     pub data: TxnData,
-    pub metadata: TxnMetadata
+    pub metadata: TxnMetadata,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -104,7 +101,7 @@ pub struct Txn {
 pub struct Metadata {
     pub creation_time: Option<u64>,
     pub seq_no: Option<i32>,
-    pub txn_id: Option<String>
+    pub txn_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -112,27 +109,27 @@ pub struct Metadata {
 pub struct ReqSignature {
     #[serde(rename = "type")]
     pub type_: Option<String>,
-    pub values: Option<Vec<ReqSignatureValue>>
+    pub values: Option<Vec<ReqSignatureValue>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ReqSignatureValue {
     pub from: Option<String>,
-    pub value: Option<String>
+    pub value: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct TxnData {
     pub data: NodeData,
     pub dest: String,
-    pub verkey: Option<String>
+    pub verkey: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TxnMetadata {
     pub req_id: Option<i64>,
-    pub from: String
+    pub from: String,
 }
 
 impl From<NodeTransactionV0> for NodeTransactionV1 {
@@ -144,11 +141,11 @@ impl From<NodeTransactionV0> for NodeTransactionV1 {
                 data: TxnData {
                     data: node_txn.data,
                     dest: node_txn.dest,
-                    verkey: node_txn.verkey
+                    verkey: node_txn.verkey,
                 },
                 metadata: TxnMetadata {
                     req_id: None,
-                    from: node_txn.identifier
+                    from: node_txn.identifier,
                 },
             };
             NodeTransactionV1 {
@@ -156,11 +153,11 @@ impl From<NodeTransactionV0> for NodeTransactionV1 {
                 txn_metadata: Metadata {
                     seq_no: None,
                     txn_id: node_txn.txn_id,
-                    creation_time: None
+                    creation_time: None,
                 },
                 req_signature: ReqSignature {
                     type_: None,
-                    values: None
+                    values: None,
                 },
                 ver: "1".to_string(),
             }
@@ -207,7 +204,7 @@ pub struct LedgerStatus {
     pub ppSeqNo: Option<u32>,
     pub viewNo: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub protocolVersion: Option<usize>
+    pub protocolVersion: Option<usize>,
 }
 
 #[allow(non_snake_case)]
@@ -260,7 +257,7 @@ impl CatchupRep {
 #[serde(untagged)]
 pub enum Reply {
     ReplyV0(ReplyV0),
-    ReplyV1(ReplyV1)
+    ReplyV1(ReplyV1),
 }
 
 impl Reply {
@@ -296,7 +293,7 @@ pub struct ReplyTxnV1 {
 #[serde(untagged)]
 pub enum Response {
     ResponseV0(ResponseV0),
-    ResponseV1(ResponseV1)
+    ResponseV1(ResponseV1),
 }
 
 impl Response {
@@ -329,7 +326,7 @@ pub struct ResponseMetadata {
 #[serde(untagged)]
 pub enum PoolLedgerTxn {
     PoolLedgerTxnV0(PoolLedgerTxnV0),
-    PoolLedgerTxnV1(PoolLedgerTxnV1)
+    PoolLedgerTxnV1(PoolLedgerTxnV1),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -527,7 +524,7 @@ pub struct ResendableRequest {
 pub struct CommandProcess {
     pub nack_cnt: usize,
     pub replies: HashMap<HashableValue, usize>,
-    pub accum_replies : Option<HashableValue>,
+    pub accum_replies: Option<HashableValue>,
     pub parent_cmd_ids: Vec<i32>,
     pub resendable_request: Option<ResendableRequest>,
     pub full_cmd_timeout: Option<time::Tm>,

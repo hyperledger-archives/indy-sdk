@@ -1,23 +1,20 @@
 extern crate byteorder;
 extern crate rmp_serde;
 
-use errors::pool::PoolError;
-use std::path::PathBuf;
-use services::ledger::merkletree::merkletree::MerkleTree;
-use std::fs;
-use std::str::from_utf8;
-use self::byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
+use domain::ledger::request::ProtocolVersion;
 use errors::common::CommonError;
-use std::io;
-use std::io::{Read, BufRead, Write};
-use utils::environment::EnvironmentUtils;
+use errors::pool::PoolError;
+use self::byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use serde_json;
 use serde_json::Value as SJsonValue;
+use services::ledger::merkletree::merkletree::MerkleTree;
+use services::pool::types::{NodeTransaction, NodeTransactionV0, NodeTransactionV1};
+use std::{fs, io};
 use std::collections::HashMap;
-use services::pool::types::NodeTransactionV1;
-use services::pool::types::NodeTransaction;
-use domain::ledger::request::ProtocolVersion;
-use services::pool::types::NodeTransactionV0;
+use std::io::{BufRead, Read, Write};
+use std::path::PathBuf;
+use std::str::from_utf8;
+use utils::environment::EnvironmentUtils;
 
 pub fn create(pool_name: &str) -> Result<MerkleTree, PoolError> {
     let mut p = EnvironmentUtils::pool_path(pool_name);
@@ -93,7 +90,7 @@ fn _from_genesis(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
     Ok(mt)
 }
 
-pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> Result<(), PoolError>{
+pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> Result<(), PoolError> {
     let mut p = EnvironmentUtils::pool_path(pool_name);
 
     p.push("stored");
@@ -127,7 +124,7 @@ fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> Result<(), PoolError
     _dump_vec_to_file(&genesis_vec, &mut file)
 }
 
-fn _dump_vec_to_file(v: &Vec<Vec<u8>>, file : &mut fs::File) -> Result<(), PoolError> {
+fn _dump_vec_to_file(v: &Vec<Vec<u8>>, file: &mut fs::File) -> Result<(), PoolError> {
     v.into_iter().map(|vec| {
         file.write_u64::<LittleEndian>(vec.len() as u64).map_err(map_err_trace!())?;
         file.write_all(vec).map_err(map_err_trace!())
@@ -220,14 +217,13 @@ pub fn from_file(txn_file: &str) -> Result<MerkleTree, PoolError> {
 }
 
 
-
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use utils::test::TestUtils;
-    use std::fs;
     use byteorder::LittleEndian;
     use domain::ledger::request::ProtocolVersion;
+    use std::fs;
+    use super::*;
+    use utils::test::TestUtils;
 
     fn _set_protocol_version(version: usize) {
         ProtocolVersion::set(version);
@@ -376,8 +372,8 @@ mod tests {
 
         _write_genesis_txns(&txns_src);
 
-        let merkle_tree =super::create("test").unwrap();
-        let res =super::build_node_state(&merkle_tree);
+        let merkle_tree = super::create("test").unwrap();
+        let res = super::build_node_state(&merkle_tree);
         assert_match!(Err(PoolError::PoolIncompatibleProtocolVersion(_)), res);
     }
 }
