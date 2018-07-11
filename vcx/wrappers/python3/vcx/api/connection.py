@@ -1,3 +1,10 @@
+"""
+The basic object of the VCX API.  Represents a pairwise relationship with another identity owner.  Once the
+relationship, or connection, is established communication can happen securely and privately.  Credentials and
+proofs are exchanged using this object.
+
+TODO: document attributes
+"""
 from typing import Optional
 from ctypes import *
 from vcx.common import do_call, create_cb
@@ -30,6 +37,9 @@ class Connection(VcxStateful):
 
         :param source_id: Institution's unique ID for the connection
         :return: connection object
+        Example:
+        connection = await Connection.create(source_id)
+        credential
         """
         constructor_params = (source_id,)
 

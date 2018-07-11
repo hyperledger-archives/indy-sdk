@@ -7,7 +7,7 @@ import { ISerializedData } from './common'
 export type IVCXBaseCreateFn = (cb: ICbRef) => number
 
 export abstract class VCXBase<SerializedData> extends GCWatcher {
-  public static async _deserialize<T extends VCXBase<any> = any, P = object> (
+  protected static async _deserialize<T extends VCXBase<any> = any, P = object> (
     VCXClass: new(sourceId: string, ...args: any[]) => T,
     objData: ISerializedData<{ source_id: string }>,
     constructorParams?: P
@@ -31,13 +31,16 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
   }
 
   /**
-   * @memberof VCXBase
-   * @description Serializes an enitity.
+   *
    * Data returned can be used to recreate an entity by passing it to the deserialize function.
-   * @async
-   * @function serialize
-   * @returns {Promise<SerializedData>} - Json object with all of the underlying Rust attributes.
+   *
    * Same json object structure that is passed to the deserialize function.
+   *
+   * Example:
+   *
+   * ```
+   *  data = await object.serialize()
+   * ```
    */
   public async serialize (): Promise<ISerializedData<SerializedData>> {
     try {
@@ -71,7 +74,7 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
       throw new VCXInternalError(err)
     }
   }
-
+  /** The source Id assigned by the user for this object */
   get sourceId () {
     return this._sourceId
   }

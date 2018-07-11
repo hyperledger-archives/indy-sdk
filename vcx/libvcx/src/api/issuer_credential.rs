@@ -17,6 +17,7 @@ use error::ToErrorCode;
  */
 
 /// Create a Issuer Credential object that provides a credential for an enterprise's user
+/// Assumes a credential definition has been written to the ledger.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -29,8 +30,6 @@ use error::ToErrorCode;
 ///
 /// credential_data: data attributes offered to person in the credential
 ///
-/// # Example credential_data -> "{"state":["UT"]}"
-///
 /// credential_name: Name of the credential - ex. Drivers Licence
 ///
 /// price: price of credential
@@ -39,6 +38,8 @@ use error::ToErrorCode;
 ///
 /// #Returns
 /// Error code as a u32
+///
+/// # Example credential_data -> "{"state":["UT"]}"
 #[no_mangle]
 #[allow(unused_variables, unused_mut)]
 pub extern fn vcx_issuer_create_credential(command_handle: u32,
