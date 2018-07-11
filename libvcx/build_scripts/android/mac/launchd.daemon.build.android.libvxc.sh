@@ -13,3 +13,4 @@ cd vcx/libvcx/build_scripts/android/mac
 ./mac.06.libvcx.build.sh > ./mac.06.libvcx.build.sh.out 2>&1
 ./mac.08.copy.shared.libs.to.app.sh > ./mac.08.copy.shared.libs.to.app.sh.out 2>&1
 ./mac.09.combine.shared.libs.sh > ./mac.09.combine.shared.libs.sh.out 2>&1
+./mac.upload.android.build.zipfiles.sh > ./mac.upload.android.build.zipfiles.sh.out 2>&1
