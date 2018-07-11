@@ -117,6 +117,13 @@ pub fn get_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<
     }
 }
 
+pub fn get_opt_object_param<'a>(name: &'a str, params: &'a CommandParams) -> Result<Option<serde_json::Value>, ()> {
+    match params.get(name) {
+        Some(_) => Ok(Some(get_object_param(name, params)?)),
+        None => Ok(None)
+    }
+}
+
 fn extract_array_tuples<'a>(param: &'a str) -> Vec<String> {
     let re = Regex::new(r#"\(([^\(\)]+)\),?"#).unwrap();
     re.captures_iter(param).map(|c| c[1].to_string()).collect::<Vec<String>>()

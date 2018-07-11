@@ -94,10 +94,7 @@
     }
 }
 
-- (void)createWalletWithName:(NSString *)name
-                    poolName:(NSString *)poolName
-                        type:(NSString *)type
-                      config:(NSString *)config
+- (void)createWalletWithConfig:(NSString *)config
                  credentials:(NSString *)credentials
                   completion:(void (^)(NSError *error))completion {
     indy_error_t ret;
@@ -106,9 +103,6 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = indy_create_wallet(handle,
-            [poolName UTF8String],
-            [name UTF8String],
-            [type UTF8String],
             [config UTF8String],
             [credentials UTF8String],
             IndyWrapperCommonCallback
@@ -122,8 +116,7 @@
     }
 }
 
-- (void)openWalletWithName:(NSString *)name
-             runtimeConfig:(NSString *)config
+- (void)openWalletWithConfig:(NSString *)config
                credentials:(NSString *)credentials
                 completion:(void (^)(NSError *error, IndyHandle walletHandle))completion {
     indy_error_t ret;
@@ -132,7 +125,6 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = indy_open_wallet(handle,
-            [name UTF8String],
             [config UTF8String],
             [credentials UTF8String],
             IndyWrapperCommonHandleCallback
@@ -167,7 +159,7 @@
     }
 }
 
-- (void)deleteWalletWithName:(NSString *)walletName
+- (void)deleteWalletWithConfig:(NSString *)config
                  credentials:(NSString *)credentials
                   completion:(void (^)(NSError *error))completion {
     indy_error_t ret;
@@ -175,7 +167,7 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = indy_delete_wallet(handle,
-            [walletName UTF8String],
+            [config UTF8String],
             [credentials UTF8String],
             IndyWrapperCommonCallback
     );
@@ -212,10 +204,7 @@
     }
 }
 
-- (void)importWalletWithName:(NSString *)name
-                    poolName:(NSString *)poolName
-                        type:(NSString *)type
-                      config:(NSString *)config
+- (void)importWalletWithConfig:(NSString *)config
                  credentials:(NSString *)credentials
             importConfigJson:(NSString *)importConfigJson
                   completion:(void (^)(NSError *error))completion {
@@ -225,9 +214,6 @@
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
     ret = indy_import_wallet(handle,
-            [poolName UTF8String],
-            [name UTF8String],
-            [type UTF8String],
             [config UTF8String],
             [credentials UTF8String],
             [importConfigJson UTF8String],

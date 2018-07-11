@@ -1,6 +1,6 @@
 var fs = require('fs')
-var tmp = require('tmp')
 var path = require('path')
+var tempy = require('tempy')
 
 module.exports = function () {
   var poolIp = process.env.TEST_POOL_IP || '127.0.0.1'
@@ -17,21 +17,14 @@ module.exports = function () {
   }).join('\n')
 
   return new Promise(function (resolve, reject) {
-    tmp.file({
-      prefix: 'indy_nodejs_test',
-      postfix: '.txn',
-      keep: false// auto delete
-    }, function (err, file, fd, cleanup) {
+    var file = tempy.file()
+
+    fs.writeFile(file, txnData, 'utf8', function (err) {
       if (err) return reject(err)
 
-      fs.write(fd, txnData, 0, 'utf8', function (err) {
-        if (err) return reject(err)
-
-        resolve({
-          name: 'pool' + path.basename(file).replace(/indy_nodejs_test|\.txn/g, ''),
-          file: file,
-          cleanup: cleanup
-        })
+      resolve({
+        name: 'pool' + path.basename(file),
+        file: file
       })
     })
   })

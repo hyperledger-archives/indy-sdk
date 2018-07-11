@@ -19,9 +19,9 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
     prover_did, _ = identity_my1
 
     #  Prover Creates Wallet and Get Wallet Handle
-    prover_wallet_name = 'prover_wallet'
-    await wallet.create_wallet(pool_name, prover_wallet_name, None, None, credentials)
-    prover_wallet_handle = await wallet.open_wallet(prover_wallet_name, None, credentials)
+    prover_wallet_config = '{"id":"prover_wallet"}'
+    await wallet.create_wallet(prover_wallet_config, credentials)
+    prover_wallet_handle = await wallet.open_wallet(prover_wallet_config, credentials)
 
     # Issuer Creates Schema
     (schema_id, schema_json) = \
@@ -279,4 +279,4 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
 
     #  Close and Delete Prover Wallet
     await wallet.close_wallet(prover_wallet_handle)
-    await wallet.delete_wallet(prover_wallet_name, credentials)
+    await wallet.delete_wallet(prover_wallet_config, credentials)

@@ -1,6 +1,3 @@
-#[macro_use]
-mod utils;
-
 pub mod anoncreds;
 pub mod blob_storage;
 pub mod crypto;
@@ -89,7 +86,7 @@ impl CommandExecutor {
                 let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
                 let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
-                let did_command_executor = DidCommandExecutor::new(pool_service.clone(), wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
+                let did_command_executor = DidCommandExecutor::new(wallet_service.clone(), crypto_service.clone(), ledger_service.clone());
                 let wallet_command_executor = WalletCommandExecutor::new(wallet_service.clone());
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());

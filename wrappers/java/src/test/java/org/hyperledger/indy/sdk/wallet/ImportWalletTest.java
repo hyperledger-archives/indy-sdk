@@ -23,11 +23,11 @@ public class ImportWalletTest extends IndyIntegrationTestWithSingleWallet {
 		Wallet.exportWallet(wallet, EXPORT_CONFIG_JSON).get();
 
 		wallet.closeWallet().get();
-		Wallet.deleteWallet(WALLET, CREDENTIALS).get();
+		Wallet.deleteWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 
-		Wallet.importWallet(POOL, WALLET, null, null, CREDENTIALS, EXPORT_CONFIG_JSON).get();
+		Wallet.importWallet(WALLET_CONFIG, WALLET_CREDENTIALS, EXPORT_CONFIG_JSON).get();
 
-		wallet = Wallet.openWallet(WALLET, null, CREDENTIALS).get();
+		wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 
 		String didWithMetaAfter = Did.getDidWithMeta(wallet, did).get();
 
@@ -39,6 +39,6 @@ public class ImportWalletTest extends IndyIntegrationTestWithSingleWallet {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(IOException.class));
 
-		Wallet.importWallet(POOL, WALLET, null, null, CREDENTIALS, EXPORT_CONFIG_JSON).get();
+		Wallet.importWallet(WALLET_CONFIG, WALLET_CREDENTIALS, EXPORT_CONFIG_JSON).get();
 	}
 }
