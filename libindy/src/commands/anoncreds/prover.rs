@@ -8,9 +8,10 @@ use errors::indy::IndyError;
 use errors::anoncreds::AnoncredsError;
 use services::anoncreds::AnoncredsService;
 use services::anoncreds::helpers::parse_cred_rev_id;
-use services::wallet::{WalletService, RecordOptions, SearchOptions};
+use services::wallet::{WalletService, WalletSearch, RecordOptions, SearchOptions, WalletRecord};
 use services::crypto::CryptoService;
 use std::rc::Rc;
+use std::cell::RefCell;
 use services::blob_storage::BlobStorageService;
 use std::collections::{HashMap, HashSet};
 use self::indy_crypto::cl::{Witness, RevocationRegistry, new_nonce};
@@ -22,14 +23,16 @@ use domain::anoncreds::credential::{Credential, CredentialInfo};
 use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, cred_defs_map_to_cred_defs_v1_map};
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
-use domain::anoncreds::filter::Filter;
+use domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
 use domain::anoncreds::proof::Proof;
-use domain::anoncreds::proof_request::ProofRequest;
+use domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQuery, PredicateInfo, NonRevocedInterval};
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_state::RevocationState;
 use domain::anoncreds::master_secret::MasterSecret;
+use services::anoncreds::helpers::attr_common_view;
+use utils::sequence::SequenceUtils;
 
 pub enum ProverCommand {
     CreateMasterSecret(
@@ -55,9 +58,25 @@ pub enum ProverCommand {
         i32, // wallet handle
         Option<String>, // filter json
         Box<Fn(Result<String, IndyError>) + Send>),
+    GetCredential(
+        i32, // wallet handle
+        String, // credential id
+        Box<Fn(Result<String, IndyError>) + Send>),
+    OpenCredentialsSearch(
+        i32, // wallet handle
+        Option<String>, // filter json
+        Box<Fn(Result<(i32, usize), IndyError>) + Send>),
+    CredentialsSearchFetchRecords(
+        i32, // search handle
+        usize, // count
+        Box<Fn(Result<String, IndyError>) + Send>),
+    CloseCredentialsSearch(
+        i32, // search handle
+        Box<Fn(Result<(), IndyError>) + Send>),
     GetCredentialsForProofReq(
         i32, // wallet handle
         String, // proof request json
+        Option<String>, // query json
         Box<Fn(Result<String, IndyError>) + Send>),
     CreateProof(
         i32, // wallet handle
@@ -90,6 +109,7 @@ pub struct ProverCommandExecutor {
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
     blob_storage_service: Rc<BlobStorageService>,
+    searches: RefCell<HashMap<i32, Box<WalletSearch>>>,
 }
 
 impl ProverCommandExecutor {
@@ -101,7 +121,8 @@ impl ProverCommandExecutor {
             anoncreds_service,
             wallet_service,
             crypto_service,
-            blob_storage_service
+            blob_storage_service,
+            searches: RefCell::new(HashMap::new())
         }
     }
 
@@ -127,9 +148,25 @@ impl ProverCommandExecutor {
                 info!(target: "prover_command_executor", "GetCredentials command received");
                 cb(self.get_credentials(wallet_handle, filter_json.as_ref().map(String::as_str)));
             }
-            ProverCommand::GetCredentialsForProofReq(wallet_handle, proof_req_json, cb) => {
+            ProverCommand::GetCredential(wallet_handle, cred_id, cb) => {
+                info!(target: "prover_command_executor", "GetCredential command received");
+                cb(self.get_credential(wallet_handle, &cred_id));
+            }
+            ProverCommand::OpenCredentialsSearch(wallet_handle, filter_json, cb) => {
+                info!(target: "prover_command_executor", "OpenCredentialsSearch command received");
+                cb(self.open_credentials_search(wallet_handle, filter_json.as_ref().map(String::as_str)));
+            }
+            ProverCommand::CredentialsSearchFetchRecords(search_handle, count, cb) => {
+                info!(target: "prover_command_executor", "CredentialsSearchFetchRecords command received");
+                cb(self.credentials_search_fetch_records(search_handle, count));
+            }
+            ProverCommand::CloseCredentialsSearch(search_handle, cb) => {
+                info!(target: "prover_command_executor", "CloseCredentialsSearch command received");
+                cb(self.close_credentials_search(search_handle));
+            }
+            ProverCommand::GetCredentialsForProofReq(wallet_handle, proof_req_json, query_json, cb) => {
                 info!(target: "prover_command_executor", "GetCredentialsForProofReq command received");
-                cb(self.get_credentials_for_proof_req(wallet_handle, &proof_req_json));
+                cb(self.get_credentials_for_proof_req(wallet_handle, &proof_req_json, query_json.as_ref().map(String::as_str)));
             }
             ProverCommand::CreateProof(wallet_handle, proof_req_json, requested_credentials_json, master_secret_name,
                                        schemas_json, credential_defs_json, rev_states_json, cb) => {
@@ -197,23 +234,19 @@ impl ProverCommandExecutor {
                                                                  &master_secret.value,
                                                                  &cred_offer)?;
 
-        let nonce = new_nonce()
-            .map_err(|err| IndyError::AnoncredsError(AnoncredsError::from(err)))?;
+        let nonce = new_nonce().map_err(AnoncredsError::from)?;
 
         let credential_request = CredentialRequest {
             prover_did: prover_did.to_string(),
-            cred_def_id: cred_offer.cred_def_id.clone(),
+            cred_def_id: cred_offer.cred_def_id,
             blinded_ms,
             blinded_ms_correctness_proof,
             nonce
         };
 
-        let nonce = credential_request.nonce.clone()
-            .map_err(|err| IndyError::AnoncredsError(AnoncredsError::from(err)))?;
-
         let credential_request_metadata = CredentialRequestMetadata {
             master_secret_blinding_data: ms_blinding_data,
-            nonce,
+            nonce: credential_request.nonce.clone().map_err(AnoncredsError::from)?,
             master_secret_name: master_secret_id.to_string()
         };
 
@@ -268,7 +301,8 @@ impl ProverCommandExecutor {
 
         let out_cred_id = cred_id.map(String::from).unwrap_or(uuid::Uuid::new_v4().to_string());
 
-        self.wallet_service.add_indy_object(wallet_handle, &out_cred_id, &credential, &HashMap::new())?;
+        let cred_tags = self.anoncreds_service.prover.build_credential_tags(&credential);
+        self.wallet_service.add_indy_object(wallet_handle, &out_cred_id, &credential, &cred_tags)?;
 
         debug!("store_credential <<< out_cred_id: {:?}", out_cred_id);
 
@@ -280,13 +314,16 @@ impl ProverCommandExecutor {
                        filter_json: Option<&str>) -> Result<String, IndyError> {
         debug!("get_credentials >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
 
-        let mut credentials_info: Vec<CredentialInfo> = self.get_credentials_info(wallet_handle)?;
+        let filter_json = filter_json.unwrap_or("{}");
+        let mut credentials_info: Vec<CredentialInfo> = Vec::new();
 
-        let filter: Filter = Filter::from_json(filter_json.unwrap_or("{}"))
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Filter: {:?}", err)))?;
+        let mut credentials_search =
+            self.wallet_service.search_indy_records::<Credential>(wallet_handle, filter_json, &SearchOptions::id_value())?;
 
-        credentials_info.retain(move |credential_info|
-            self.anoncreds_service.prover.satisfy_restriction(credential_info, &filter));
+        while let Some(credential_record) = credentials_search.fetch_next_record()? {
+            let (referent, credential) = self._get_credential(&credential_record)?;
+            credentials_info.push(self._get_credential_info(&referent, credential))
+        }
 
         let credentials_info_json = serde_json::to_string(&credentials_info)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of CredentialInfo: {:?}", err)))?;
@@ -296,54 +333,129 @@ impl ProverCommandExecutor {
         Ok(credentials_info_json)
     }
 
-    fn get_credentials_info(&self,
-                            wallet_handle: i32) -> Result<Vec<CredentialInfo>, IndyError> {
-        debug!("get_credentials_info >>> wallet_handle: {:?}", wallet_handle);
+    fn get_credential(&self,
+                      wallet_handle: i32,
+                      cred_id: &str) -> Result<String, IndyError> {
+        debug!("get_credentials >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
 
-        let mut credentials_search = self.wallet_service.search_indy_records::<Credential>(wallet_handle, "{}", &SearchOptions::id_value())?;
+        let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_id, &RecordOptions::id_value(), &mut String::new())?;
+
+        let credential_info = self._get_credential_info(&cred_id, credential);
+
+        let credential_info_json = credential_info.to_json()
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialInfo: {:?}", err)))?;
+
+        debug!("get_credential <<< credential_info_json: {:?}", credential_info_json);
+
+        Ok(credential_info_json)
+    }
+
+    fn open_credentials_search(&self,
+                               wallet_handle: i32,
+                               filter_json: Option<&str>) -> Result<(i32, usize), IndyError> {
+        debug!("open_credentials_search >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
+
+        let credentials_search =
+            self.wallet_service.search_indy_records::<Credential>(wallet_handle, filter_json.unwrap_or("{}"), &SearchOptions::id_value())?;
+
+        let total_count = credentials_search.get_total_count()?.unwrap_or(0);
+
+        let handle = SequenceUtils::get_next_id();
+
+        self.searches.borrow_mut().insert(handle, Box::new(credentials_search));
+
+        trace!("open_credentials_search <<< res: {:?}", handle);
+
+        Ok((handle, total_count))
+    }
+
+    fn credentials_search_fetch_records(&self,
+                                        search_handle: i32,
+                                        count: usize, ) -> Result<String, IndyError> {
+        trace!("credentials_search_fetch_records >>> search_handle: {:?}, count: {:?}", search_handle, count);
+
+        let mut searches = self.searches.borrow_mut();
+        let search = searches.get_mut(&search_handle)
+            .ok_or(WalletError::InvalidHandle(format!("Unknown CredentialsSearch handle: {}", search_handle)))?;
 
         let mut credentials_info: Vec<CredentialInfo> = Vec::new();
 
-        while let Some(credential_record) = credentials_search.fetch_next_record()? {
-            let referent = credential_record.get_id();
-            let value = credential_record.get_value()
-                .ok_or(CommonError::InvalidStructure(format!("Credential not found for id: {}", referent)))?;
-
-            let credential: Credential = Credential::from_json(value)
-                .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Credential: {:?}", err)))?;
-
-            let mut credential_values: HashMap<String, String> = HashMap::new();
-            for (attr, values) in credential.values {
-                credential_values.insert(attr.clone(), values.raw.clone());
+        for _ in 0..count {
+            match search.fetch_next_record()? {
+                Some(credential_record) => {
+                    let (referent, credential) = self._get_credential(&credential_record)?;
+                    credentials_info.push(self._get_credential_info(&referent, credential))
+                }
+                None => break
             }
-
-            credentials_info.push(
-                CredentialInfo {
-                    referent: referent.to_string(),
-                    attrs: credential_values,
-                    schema_id: credential.schema_id.clone(),
-                    cred_def_id: credential.cred_def_id.clone(),
-                    rev_reg_id: credential.rev_reg_id.as_ref().map(|s| s.to_string()),
-                    cred_rev_id: credential.signature.extract_index().map(|idx| idx.to_string())
-                });
         }
 
-        debug!("get_credentials_info <<< credentials_info: {:?}", credentials_info);
+        let credentials_info_json = serde_json::to_string(&credentials_info)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize list of CredentialInfo: {:?}", err)))?;
 
-        Ok(credentials_info)
+        trace!("credentials_search_fetch_records <<< credentials_info_json: {:?}", credentials_info_json);
+
+        Ok(credentials_info_json)
+    }
+
+    fn close_credentials_search(&self, search_handle: i32) -> Result<(), IndyError> {
+        trace!("close_credentials_search >>> search_handle: {:?}", search_handle);
+
+        let res = match self.searches.borrow_mut().remove(&search_handle) {
+            Some(_) => Ok(()),
+            None => Err(WalletError::InvalidHandle(format!("Unknown CredentialsSearch handle: {}", search_handle)))
+        }?;
+
+        trace!("close_credentials_search <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn get_credentials_for_proof_req(&self,
                                      wallet_handle: i32,
-                                     proof_req_json: &str, ) -> Result<String, IndyError> {
-        debug!("get_credentials_for_proof_req >>> wallet_handle: {:?}, proof_req_json: {:?}", wallet_handle, proof_req_json);
+                                     proof_req_json: &str,
+                                     query_json: Option<&str>) -> Result<String, IndyError> {
+        debug!("get_credentials_for_proof_req >>> wallet_handle: {:?}, proof_req_json: {:?}, query_json: {:?}", wallet_handle, proof_req_json, query_json);
 
         let proof_request: ProofRequest = ProofRequest::from_json(proof_req_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ProofRequest: {:?}", err)))?;
 
-        let mut credentials: Vec<CredentialInfo> = self.get_credentials_info(wallet_handle)?;
+        let extra_query: Option<ProofRequestExtraQuery> = match query_json {
+            Some(query) =>
+                serde_json::from_str(query)
+                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ExtraQuery: {:?}", err)))?,
+            None => None
+        };
 
-        let credentials_for_proof_request = self.anoncreds_service.prover.get_credentials_for_proof_req(&proof_request, &mut credentials)?;
+        let mut credentials_for_proof_request = CredentialsForProofRequest::default();
+
+        for (attr_id, requested_attr) in &proof_request.requested_attributes {
+            let query_json = self.anoncreds_service.prover.build_query(&requested_attr.name,
+                                                                       &attr_id,
+                                                                       &requested_attr.restrictions,
+                                                                       &extra_query)?;
+
+            let interval = self.anoncreds_service.prover.get_non_revoc_interval(&proof_request.non_revoked, &requested_attr.non_revoked);
+
+            let credentials_for_attribute = self._get_requested_credentials(wallet_handle, &query_json, None, &interval)?;
+
+            credentials_for_proof_request.attrs.insert(attr_id.to_string(), credentials_for_attribute);
+        }
+
+        for (predicate_id, requested_predicate) in &proof_request.requested_predicates {
+            let query_json = self.anoncreds_service.prover.build_query(&requested_predicate.name,
+                                                                       &predicate_id,
+                                                                       &requested_predicate.restrictions,
+                                                                       &extra_query)?;
+
+            let interval = self.anoncreds_service.prover.get_non_revoc_interval(&proof_request.non_revoked, &requested_predicate.non_revoked);
+
+            let credentials_for_predicate =
+                self._get_requested_credentials(wallet_handle, &query_json, Some(&requested_predicate), &interval)?;
+
+            credentials_for_proof_request.predicates.insert(predicate_id.to_string(), credentials_for_predicate);
+        }
+
         let credentials_for_proof_request_json = credentials_for_proof_request.to_json()
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialsForProofRequest: {:?}", err)))?;
 
@@ -397,9 +509,9 @@ impl ProverCommandExecutor {
 
         let mut credentials: HashMap<String, Credential> = HashMap::new();
 
-        for cred_referent in cred_referents {
+        for cred_referent in cred_referents.into_iter() {
             let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_referent, &RecordOptions::id_value(), &mut String::new())?;
-            credentials.insert(cred_referent.clone(), credential);
+            credentials.insert(cred_referent, credential);
         }
 
         let proof = self.anoncreds_service.prover.create_proof(&credentials,
@@ -435,7 +547,6 @@ impl ProverCommandExecutor {
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
 
         let rev_idx = parse_cred_rev_id(cred_rev_id)?;
-        ;
 
         let sdk_tails_accessor = SDKTailsAccessor::new(self.blob_storage_service.clone(),
                                                        blob_storage_reader_handle,
@@ -501,6 +612,72 @@ impl ProverCommandExecutor {
 
         Ok(rev_state_json)
     }
+
+    fn _get_credential_info(&self,
+                            referent: &str,
+                            credential: Credential) -> CredentialInfo {
+        let credential_values: HashMap<String, String> =
+            credential.values
+                .into_iter()
+                .map(|(attr, values)| (attr, values.raw))
+                .collect();
+
+        CredentialInfo {
+            referent: referent.to_string(),
+            attrs: credential_values,
+            schema_id: credential.schema_id,
+            cred_def_id: credential.cred_def_id,
+            rev_reg_id: credential.rev_reg_id.as_ref().map(|s| s.to_string()),
+            cred_rev_id: credential.signature.extract_index().map(|idx| idx.to_string())
+        }
+    }
+
+    fn _get_credential(&self,
+                       record: &WalletRecord) -> Result<(String, Credential), IndyError> {
+        let referent = record.get_id();
+        let value = record.get_value()
+            .ok_or(CommonError::InvalidStructure(format!("Credential not found for id: {}", referent)))?;
+
+        let credential: Credential = Credential::from_json(value)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Credential: {:?}", err)))?;
+
+        Ok((referent.to_string(), credential))
+    }
+
+    fn _get_requested_credentials(&self,
+                                  wallet_handle: i32,
+                                  query_json: &str,
+                                  predicate_info: Option<&PredicateInfo>,
+                                  interval: &Option<NonRevocedInterval>) -> Result<Vec<RequestedCredential>, IndyError> {
+        debug!("_get_requested_credentials >>> wallet_handle: {:?}, query_json: {:?}, predicate_info: {:?}",
+               wallet_handle, query_json, predicate_info);
+
+        let mut credentials_search =
+            self.wallet_service.search_indy_records::<Credential>(wallet_handle, query_json, &SearchOptions::id_value())?;
+
+        let mut credentials: Vec<RequestedCredential> = Vec::new();
+
+        while let Some(credential_record) = credentials_search.fetch_next_record()? {
+            let (referent, credential) = self._get_credential(&credential_record)?;
+
+            if let Some(predicate) = predicate_info {
+                let satisfy = self.anoncreds_service.prover.attribute_satisfy_predicate(predicate,
+                                                                                        &credential.values[&attr_common_view(&predicate.name)].encoded)?;
+                if !satisfy { continue; }
+            }
+
+            credentials.push(
+                RequestedCredential {
+                    cred_info: self._get_credential_info(&referent, credential),
+                    interval: interval.clone()
+                });
+        }
+
+        debug!("_get_requested_credentials <<< credentials: {:?}", credentials);
+
+        Ok(credentials)
+    }
+
 
     fn _wallet_get_master_secret(&self, wallet_handle: i32, key: &str) -> Result<MasterSecret, WalletError> {
         self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value(), &mut String::new())

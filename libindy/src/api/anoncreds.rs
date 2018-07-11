@@ -574,7 +574,7 @@ pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: i32,
                     other_rev_reg_delta_json,
                     Box::new(move |result| {
                         let (err, merged_rev_reg_delta) = result_to_err_code_1!(result, String::new());
-                        trace!("indy_issuer_merge_revocation_registry_deltas: merged_rev_reg_delta: {:?}",merged_rev_reg_delta);
+                        trace!("indy_issuer_merge_revocation_registry_deltas: merged_rev_reg_delta: {:?}", merged_rev_reg_delta);
                         let merged_rev_reg_delta = CStringUtils::string_to_cstring(merged_rev_reg_delta);
                         cb(command_handle, err, merged_rev_reg_delta.as_ptr())
                     })
@@ -582,7 +582,7 @@ pub extern fn indy_issuer_merge_revocation_registry_deltas(command_handle: i32,
 
     let res = result_to_err_code!(result);
 
-    trace!("indy_issuer_merge_revocation_registry_deltas: <<< res: {:?}",res);
+    trace!("indy_issuer_merge_revocation_registry_deltas: <<< res: {:?}", res);
 
     res
 }
@@ -717,6 +717,19 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
 /// Check credential provided by Issuer for the given credential request,
 /// updates the credential by a master secret and stores in a secure wallet.
 ///
+/// To support efficient search the following tags will be created for stored credential:
+///     {
+///         "schema_id": <credential schema id>,
+///         "schema_issuer_did": <credential schema issuer did>,
+///         "schema_name": <credential schema name>,
+///         "schema_version": <credential schema version>,
+///         "issuer_did": <credential issuer did>,
+///         "cred_def_id": <credential definition id>,
+///         // for every attribute in <credential values>
+///         "attr::<attribute name>::marker": "1",
+///         "attr::<attribute name>::value": <attribute raw value>,
+///     }
+///
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -782,29 +795,22 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
     res
 }
 
-
 /// Gets human readable credentials according to the filter.
 /// If filter is NULL, then all credentials are returned.
 /// Credentials can be filtered by Issuer, credential_def and/or Schema.
 ///
+/// NOTE: This method is deprecated. Use <indy_prover_open_credentials_search> instead.
+///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
-/// filter_json: filter for credentials
-///        {
-///            "schema_id": string, (Optional)
-///            "schema_issuer_did": string, (Optional)
-///            "schema_name": string, (Optional)
-///            "schema_version": string, (Optional)
-///            "issuer_did": string, (Optional)
-///            "cred_def_id": string, (Optional)
-///        }
+/// filter_json: Wql style filter for credentials searching based on tags created during the saving of credential
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
 /// credentials json
 ///     [{
 ///         "referent": string, // cred_id in the wallet
-///         "values": <see cred_values_json above>,
+///         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
 ///         "schema_id": string,
 ///         "cred_def_id": string,
 ///         "rev_reg_id": Optional<string>,
@@ -850,6 +856,209 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
     res
 }
 
+/// Gets human readable credential by the given id.
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// cred_id: Identifier by which requested credential is stored in the wallet
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// credential json
+///     {
+///         "referent": string, // cred_id in the wallet
+///         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+///         "schema_id": string,
+///         "cred_def_id": string,
+///         "rev_reg_id": Optional<string>,
+///         "cred_rev_id": Optional<string>
+///     }
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_get_credential(command_handle: i32,
+                                         wallet_handle: i32,
+                                         cred_id: *const c_char,
+                                         cb: Option<extern fn(
+                                             xcommand_handle: i32, err: ErrorCode,
+                                             credential_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_prover_get_credential: >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
+
+    check_useful_c_str!(cred_id, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_prover_get_credential: entities >>> wallet_handle: {:?}, cred_id: {:?}", cred_id, cred_id);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::GetCredential(
+                    wallet_handle,
+                    cred_id,
+                    Box::new(move |result| {
+                        let (err, credential_json) = result_to_err_code_1!(result, String::new());
+                        trace!("indy_prover_get_credential: credential_json: {:?}", credential_json);
+                        let credential_json = CStringUtils::string_to_cstring(credential_json);
+                        cb(command_handle, err, credential_json.as_ptr())
+                    })
+                ))));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_prover_get_credential: <<< res: {:?}", res);
+
+    res
+}
+
+/// Search for credentials stored in wallet.
+///
+/// Instead of immediately returning of fetched credentials
+/// this call returns search_handle that can be used later
+/// to fetch records by small batches (with indy_prover_credentials_search_fetch_records).
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// filter_json: Wql style filter for credentials searching based on tags created during the saving of credential
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// search_handle: Search handle that can be used later to fetch records by small batches (with indy_prover_credentials_search_fetch_records)
+/// total_count: Total count of records
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_prover_open_credentials_search(command_handle: i32,
+                                                  wallet_handle: i32,
+                                                  filter_json: *const c_char,
+                                                  cb: Option<extern fn(
+                                                      xcommand_handle: i32, err: ErrorCode,
+                                                      search_handle: i32,
+                                                      total_count: usize)>) -> ErrorCode {
+    trace!("indy_prover_open_credentials_search: >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
+
+    check_useful_opt_c_str!(filter_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_prover_open_credentials_search: entities >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::OpenCredentialsSearch(
+                    wallet_handle,
+                    filter_json,
+                    Box::new(move |result| {
+                        let (err, handle, total_count) = result_to_err_code_2!(result, 0, 0);
+                        cb(command_handle, err, handle, total_count)
+                    })
+                ))));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_prover_open_credentials_search: <<< res: {:?}", res);
+
+    res
+}
+
+/// Fetch next records for wallet search.
+///
+/// #Params
+/// search_handle: Search handle (created by indy_prover_open_credentials_search)
+/// count: Count of records to fetch
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// records_json: List of credential on the format:
+///     [{
+///         "referent": string, // cred_id in the wallet
+///         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+///         "schema_id": string,
+///         "cred_def_id": string,
+///         "rev_reg_id": Optional<string>,
+///         "cred_rev_id": Optional<string>
+///     }]
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub  extern fn indy_prover_credentials_search_fetch_records(command_handle: i32,
+                                                            search_handle: i32,
+                                                            count: usize,
+                                                            cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
+                                                                                 records_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_prover_credentials_search_fetch_records: >>> search_handle: {:?}, count: {:?}", search_handle, count);
+
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+
+    trace!("indy_prover_credentials_search_fetch_records: entities >>> search_handle: {:?}, count: {:?}", search_handle, count);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::CredentialsSearchFetchRecords(
+                    search_handle,
+                    count,
+                    Box::new(move |result| {
+                        let (err, records_json) = result_to_err_code_1!(result, String::new());
+                        trace!("indy_prover_credentials_search_fetch_records: records_json: {:?}", records_json);
+                        let records_json = CStringUtils::string_to_cstring(records_json);
+                        cb(command_handle, err, records_json.as_ptr())
+                    })
+                ))));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_prover_credentials_search_fetch_records: <<< res: {:?}", res);
+
+    res
+}
+
+/// Close credentials search (make search handle invalid)
+///
+/// #Params
+/// search_handle: search handle
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
+                                                    search_handle: i32,
+                                                    cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_prover_close_credentials_search: >>> search_handle: {:?}", search_handle);
+
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_prover_close_credentials_search: entities >>> search_handle: {:?}", search_handle);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::CloseCredentialsSearch(
+                    search_handle,
+                    Box::new(move |result| {
+                        let err = result_to_err_code!(result);
+                        trace!("indy_prover_close_credentials_search:");
+                        cb(command_handle, err)
+                    })
+                ))));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_prover_close_credentials_search: <<< res: {:?}", res);
+
+    res
+}
+
 /// Gets human readable credentials matching the given proof request.
 ///
 /// #Params
@@ -872,6 +1081,12 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
 ///     }
+/// query_json:(Optional>) List of extra queries that will be applied to correspondent attribute/predicate:
+///     {
+///         "<attr_referent>": <wql query>,
+///         "<predicate_referent>": <wql query>,
+///
+///     }
 /// cb: Callback that takes command result as parameter.
 ///
 /// where
@@ -879,8 +1094,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
-///         "restrictions": Optional<[<attr_filter>]> // see below,
-///                         // if specified, credential must satisfy to one of the given restriction.
+///         "restrictions": Optional<filter_json> // see above.
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval this attribute
@@ -890,10 +1104,9 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 /// predicate_info: Describes requested attribute predicate
 ///     {
 ///         "name": attribute name, (case insensitive and ignore spaces)
-///         "p_type": predicate type (Currently >= only)
-///         "p_value": predicate value
-///         "restrictions": Optional<[<attr_filter>]> // see below,
-///                         // if specified, credential must satisfy to one of the given restriction.
+///         "p_type": predicate type (Currently ">=" only)
+///         "p_value": int predicate value
+///         "restrictions": Optional<filter_json> // see above.
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval this attribute
@@ -904,7 +1117,6 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///         "from": Optional<int>, // timestamp of interval beginning
 ///         "to": Optional<int>, // timestamp of interval ending
 ///     }
-/// filter: see filter_json above
 ///
 /// #Returns
 /// credentials_json: json with credentials for the given pool request.
@@ -935,15 +1147,18 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
                                                         wallet_handle: i32,
                                                         proof_request_json: *const c_char,
+                                                        query_json: *const c_char,
                                                         cb: Option<extern fn(
                                                             xcommand_handle: i32, err: ErrorCode,
                                                             credentials_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_prover_get_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}", wallet_handle, proof_request_json);
+    trace!("indy_prover_get_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}, query_json: {:?}", wallet_handle, proof_request_json, query_json);
 
     check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam3);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
+    check_useful_opt_c_str!(query_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_prover_get_credentials_for_proof_req: entities >>> wallet_handle: {:?}, proof_request_json: {:?}", wallet_handle, proof_request_json);
+    trace!("indy_prover_get_credentials_for_proof_req: entities >>> wallet_handle: {:?}, proof_request_json: {:?}, query_json: {:?}",
+           wallet_handle, proof_request_json, query_json);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
@@ -951,6 +1166,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
                 ProverCommand::GetCredentialsForProofReq(
                     wallet_handle,
                     proof_request_json,
+                    query_json,
                     Box::new(move |result| {
                         let (err, credentials_json) = result_to_err_code_1!(result, String::new());
                         trace!("indy_prover_get_credentials_for_proof_req: credentials_json: {:?}", credentials_json);
@@ -1041,8 +1257,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
-///         "restrictions": Optional<[<attr_filter>]> // see above,
-//                          // if specified, credential must satisfy to one of the given restriction.
+///         "restrictions": Optional<filter_json> // see above.
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval this attribute
@@ -1054,8 +1269,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 ///         "name": attribute name, (case insensitive and ignore spaces)
 ///         "p_type": predicate type (Currently >= only)
 ///         "p_value": predicate value
-///         "restrictions": Optional<[<attr_filter>]> // see above,
-///                         // if specified, credential must satisfy to one of the given restriction.
+///         "restrictions": Optional<filter_json> // see above.
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval this attribute

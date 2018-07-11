@@ -286,6 +286,7 @@ fn anoncreds_demo_works() {
         indy_prover_get_credentials_for_proof_req(prover_get_credentials_for_proof_req_command_handle,
                                                   wallet_handle,
                                                   CString::new(proof_req_json.clone()).unwrap().as_ptr(),
+                                                  null(),
                                                   prover_get_credentials_for_proof_req_callback);
 
     assert_eq!(ErrorCode::Success, err);
