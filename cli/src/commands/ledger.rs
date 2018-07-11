@@ -357,6 +357,10 @@ pub mod get_validator_info_command {
         };
 
         for (node, response) in responses {
+            if response.eq("timeout") {
+                println_err!("Restart pool node {} timeout.", node);
+                continue
+            }
             let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
                 .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
             println_succ!("Get validator info response for node {}:", node);
@@ -687,6 +691,11 @@ pub mod pool_restart_command {
         };
 
         for (node, response) in responses {
+            if response.eq("timeout") {
+                println_err!("Restart pool node {} timeout.", node);
+                continue
+            }
+
             let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
                 .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 

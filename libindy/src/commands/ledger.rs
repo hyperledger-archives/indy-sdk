@@ -208,9 +208,13 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::SubmitAck(handle, result) => {
                 info!(target: "ledger_command_executor", "SubmitAck command received");
-                self.send_callbacks.borrow_mut().remove(&handle)
-                    .expect("Expect callback to process ack command")
-                    (result.map_err(IndyError::from));
+                match self.send_callbacks.borrow_mut().remove(&handle) {
+                    Some(cb) => cb(result.map_err(IndyError::from)),
+                    None => {
+                        error!("Can't process LedgerCommand::SubmitAck for handle {} with result {:?} - appropriate callback not found!",
+                               handle, result);
+                    }
+                }
             }
             LedgerCommand::RegisterSPParser(txn_type, parser, free, cb) => {
                 info!(target: "ledger_command_executor", "RegisterSPParser command received");
