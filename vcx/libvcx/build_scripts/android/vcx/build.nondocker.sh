@@ -178,10 +178,11 @@ ${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so \
 ${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a \
 ${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so \
 ${LIBINDY_DIR}/libindy.a \
+${LIBNULLPAY_DIR}/libnullpay.a \
 ${OPENSSL_DIR}/lib/libssl.a \
 ${OPENSSL_DIR}/lib/libcrypto.a \
 ${SODIUM_LIB_DIR}/libsodium.a \
 ${LIBZMQ_LIB_DIR}/libzmq.a \
-${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libstdc++.a -Wl,--no-whole-archive -z muldefs
+${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libgnustl_shared.so -Wl,--no-whole-archive -z muldefs
 cp "${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a" ${LIBVCX_BUILDS}/
 
