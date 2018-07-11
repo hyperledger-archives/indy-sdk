@@ -61,5 +61,5 @@ mvn install:install-file -Dfile=${AAR_FILE} -DgroupId=com.connectme \
 # cp $VCX_SDK/vcx/wrappers/java/android/vcxtest/app/jni/x86_64/*.so ./jni/x86_64
 
 # zip -r vcx_1.0.0-${DATETIME}_all.aar *
-curl --insecure -u normjarvis -X POST -F file=@./${AAR_FILE} https://kraken.corp.evernym.com/repo/android/upload
-sudo cp ./${AAR_FILE}  /usr/local/var/www/download/android
+#curl --insecure -u normjarvis -X POST -F file=@./${AAR_FILE} https://kraken.corp.evernym.com/repo/android/upload
+#sudo cp ./${AAR_FILE}  /usr/local/var/www/download/android

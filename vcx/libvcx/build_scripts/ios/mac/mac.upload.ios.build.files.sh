@@ -27,20 +27,28 @@ fi
 # cp $VCX_SDK/vcx/wrappers/ios/vcx/lib/libvcx.a_${DATETIME}_universal.tar.gz  /usr/local/var/www/download/ios
 
 # 1) open /Users/iosbuild1/forge/work/code/evernym/sdk/vcx/wrappers/ios/vcx/vcx.xcodeproj in xcode
-cd $VCX_SDK/vcx/wrappers/ios/vcx
-mv lib/libvcx.a lib/libvcx.a.original
-cp -v lib/libvcxall.a lib/libvcx.a
 # 2) Select vcx as the target in Xcode
 # 3) Select generic iOS device as Build only device
 # 4) Select the menu Product -> archive
-xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug -sdk iphoneos CONFIGURATION_BUILD_DIR=. clean
-xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug -sdk iphoneos CONFIGURATION_BUILD_DIR=. build
-mv lib/libvcx.a.original lib/libvcx.a
 # 5) If every thing compiled successfully then folder with `vcx.framework` will be opened 
 # 6) Now upload iOS .tar.gz and .zip files from the build as assets to servers...
 #    Just run the script /Users/iosbuild1/forge/work/code/evernym/sdk/vcx/libvcx/build_scripts/ios/mac/mac.upload.ios.build.files.sh
+
+cd $VCX_SDK/vcx/wrappers/ios/vcx
+mv lib/libvcx.a lib/libvcx.a.original
+cp -v lib/libvcxall.a lib/libvcx.a
+xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug CONFIGURATION_BUILD_DIR=. clean > $START_DIR/xcodebuild.vcx.framework.build.out 2>&1
+xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug -sdk iphonesimulator CONFIGURATION_BUILD_DIR=. build >> $START_DIR/xcodebuild.vcx.framework.build.out 2>&1
+mv vcx.framework vcx.framework.iphonesimulator
+xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug -sdk iphoneos CONFIGURATION_BUILD_DIR=. build >> $START_DIR/xcodebuild.vcx.framework.build.out 2>&1
+lipo -create -output combined.ios.vcx vcx.framework/vcx vcx.framework.iphonesimulator/vcx
+mv combined.ios.vcx vcx.framework/vcx
+mv lib/libvcx.a.original lib/libvcx.a
+rm -rf vcx.framework.iphonesimulator
+
 #cd $VCX_SDK/vcx/wrappers/ios/vcx
 #cp -v lib/libnullpay.a vcx.framework/lib/libnullpay.a
+
 mkdir -p vcx.framework/lib
 cp -v lib/libvcxall.a vcx.framework/lib/libvcx.a
 mkdir -p vcx.framework/Headers
@@ -66,6 +74,6 @@ zip -r vcx.framework_${DATETIME}_universal.zip vcx
 #            |----Modules
 #            |       |---module.modulemap
 #            |----Info.plist
-curl --insecure -u normjarvis -X POST -F file=@./vcx.framework_${DATETIME}_universal.zip https://kraken.corp.evernym.com/repo/ios/upload
+#curl --insecure -u normjarvis -X POST -F file=@./vcx.framework_${DATETIME}_universal.zip https://kraken.corp.evernym.com/repo/ios/upload
 # Download the file at https://repo.corp.evernym.com/filely/ios/vcx.framework_${DATETIME}_universal.zip
-sudo cp ./vcx.framework_${DATETIME}_universal.zip  /usr/local/var/www/download/ios
+#sudo cp ./vcx.framework_${DATETIME}_universal.zip  /usr/local/var/www/download/ios
