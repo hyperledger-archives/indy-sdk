@@ -9,10 +9,13 @@ export abstract class VCXBaseWithState<SerializedData> extends VCXBase<Serialize
   protected abstract _getStFn: (commandHandle: number, handle: string, cb: ICbRef) => number
 
   /**
-   * @memberof VCXBaseWithState
-   * @description Communicates with the agent service for polling and setting the state of the entity.
-   * @async
-   * @function updateState
+   *
+   * Communicates with the agent service for polling and setting the state of the entity.
+   *
+   * Example:
+   * ```
+   * await object.updateState()
+   * ```
    * @returns {Promise<void>}
    */
   public async updateState (): Promise<void> {
@@ -41,10 +44,12 @@ export abstract class VCXBaseWithState<SerializedData> extends VCXBase<Serialize
   }
 
   /**
-   * @memberof VCXBaseWithState
-   * @description Gets the state of the entity.
-   * @async
-   * @function getState
+   * Gets the state of the entity.
+   *
+   * Example:
+   * ```
+   * state = await object.getState()
+   * ```
    * @returns {Promise<StateType>}
    */
   public async getState (): Promise<StateType> {

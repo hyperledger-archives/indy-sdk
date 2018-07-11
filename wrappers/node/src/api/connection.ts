@@ -144,13 +144,13 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
     }
   }
   /**
-   * @memberof Connection
-   * @description Creates a connection between enterprise and end user.
-   * @async
-   * @function connect
-   * @param {IConnectOptions} options - data determining if connection is established by SMS or QR code. Default is SMS
-   * @example <caption>Example of IConnectionOptions</caption>
-   * { phone: "800", timeout: 30 }
+   * Creates a connection between enterprise and end user.
+   *
+   * Example:
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * ```
    * @returns {Promise<string}
    */
   public async connect ({ phone }: IConnectOptions = {}): Promise<string> {

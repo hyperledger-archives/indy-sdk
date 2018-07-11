@@ -64,7 +64,7 @@ pub extern fn vcx_credential_get_payment_info(command_handle: u32,
 ///
 /// source_id: Institution's personal identification for the credential, should be unique.
 ///
-/// offer: credential offer received via "vcx_get_credential_offers"
+/// offer: credential offer received via "vcx_credential_get_offers"
 ///
 /// # Example offer -> "[{"msg_type": "CREDENTIAL_OFFER","version": "0.1","to_did": "...","from_did":"...","credential": {"account_num": ["...."],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "...","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}]
 ///

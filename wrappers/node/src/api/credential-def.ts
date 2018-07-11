@@ -111,7 +111,7 @@ class CredentialDefBase extends VCXBase<ICredentialDefData> {
 export class CredentialDef extends VCXPaymentTxn(CredentialDefBase) {
   /**
    * @memberof CredentialDef
-   * @description creates a credential definition on the ledger and returns an associated object.
+   * creates a credential definition on the ledger and returns an associated object.
    * @static
    * @async
    * @function create
