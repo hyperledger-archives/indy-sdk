@@ -974,7 +974,7 @@ pub extern fn indy_prover_open_credentials_search(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// records_json: List of credential on the format:
+/// credentials_json: List of credentials:
 ///     [{
 ///         "referent": string, // cred_id in the wallet
 ///         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
@@ -993,7 +993,7 @@ pub  extern fn indy_prover_credentials_search_fetch_records(command_handle: i32,
                                                             search_handle: i32,
                                                             count: usize,
                                                             cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
-                                                                                 records_json: *const c_char)>) -> ErrorCode {
+                                                                                 credentials_json: *const c_char)>) -> ErrorCode {
     trace!("indy_prover_credentials_search_fetch_records: >>> search_handle: {:?}, count: {:?}", search_handle, count);
 
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -1007,10 +1007,10 @@ pub  extern fn indy_prover_credentials_search_fetch_records(command_handle: i32,
                     search_handle,
                     count,
                     Box::new(move |result| {
-                        let (err, records_json) = result_to_err_code_1!(result, String::new());
-                        trace!("indy_prover_credentials_search_fetch_records: records_json: {:?}", records_json);
-                        let records_json = CStringUtils::string_to_cstring(records_json);
-                        cb(command_handle, err, records_json.as_ptr())
+                        let (err, credentials_json) = result_to_err_code_1!(result, String::new());
+                        trace!("indy_prover_credentials_search_fetch_records: credentials_json: {:?}", credentials_json);
+                        let credentials_json = CStringUtils::string_to_cstring(credentials_json);
+                        cb(command_handle, err, credentials_json.as_ptr())
                     })
                 ))));
 
@@ -1081,7 +1081,7 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
 ///     }
-/// query_json:(Optional>) List of extra queries that will be applied to correspondent attribute/predicate:
+/// extra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:
 ///     {
 ///         "<attr_referent>": <wql query>,
 ///         "<predicate_referent>": <wql query>,
@@ -1147,18 +1147,18 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
                                                         wallet_handle: i32,
                                                         proof_request_json: *const c_char,
-                                                        query_json: *const c_char,
+                                                        extra_query_json: *const c_char,
                                                         cb: Option<extern fn(
                                                             xcommand_handle: i32, err: ErrorCode,
                                                             credentials_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_prover_get_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}, query_json: {:?}", wallet_handle, proof_request_json, query_json);
+    trace!("indy_prover_get_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}", wallet_handle, proof_request_json, extra_query_json);
 
     check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam3);
-    check_useful_opt_c_str!(query_json, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(extra_query_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_prover_get_credentials_for_proof_req: entities >>> wallet_handle: {:?}, proof_request_json: {:?}, query_json: {:?}",
-           wallet_handle, proof_request_json, query_json);
+    trace!("indy_prover_get_credentials_for_proof_req: entities >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}",
+           wallet_handle, proof_request_json, extra_query_json);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
@@ -1166,7 +1166,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
                 ProverCommand::GetCredentialsForProofReq(
                     wallet_handle,
                     proof_request_json,
-                    query_json,
+                    extra_query_json,
                     Box::new(move |result| {
                         let (err, credentials_json) = result_to_err_code_1!(result, String::new());
                         trace!("indy_prover_get_credentials_for_proof_req: credentials_json: {:?}", credentials_json);

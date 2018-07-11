@@ -333,18 +333,11 @@ Gets human readable credentials according to the filter.
 If filter is NULL, then all credentials are returned.
 Credentials can be filtered by Issuer, credential\_def and\/or Schema.
 
+NOTE: This method is deprecated. Use <indy_prover_open_credentials_search> instead.
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `filter`: Json - filter for credentials
-```
-       {
-           "schema_id": string, (Optional)
-           "schema_issuer_did": string, (Optional)
-           "schema_name": string, (Optional)
-           "schema_version": string, (Optional)
-           "issuer_did": string, (Optional)
-           "cred_def_id": string, (Optional)
-       }
-````
+* `filter`: Json - wql style filter for credentials searching based on tags created during the saving of credential
+
 * __->__ `credentials`: Json - credentials json
 ```
     [{
@@ -359,7 +352,71 @@ Credentials can be filtered by Issuer, credential\_def and\/or Schema.
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverGetCredentialsForProofReq \( wh, proofRequest \) -&gt; credentials
+#### proverGetCredential \( wh, credId \) -&gt; credential
+
+Gets human readable credential by the given id.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `credId`: String - identifier by which requested credential is stored in the wallet
+* __->__ `credential`: Json - credential json
+```
+    {
+        "referent": string, // cred_id in the wallet
+        "values": <see cred_values_json above>,
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_id": Optional<string>,
+        "cred_rev_id": Optional<string>
+    }
+````
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverOpenCredentialsSearch \( wh, filter \) -&gt; \[ searchHandle, totalCount \]
+
+Search for credentials stored in wallet.
+
+Instead of immediately returning of fetched credentials this call returns search_handle that can be used later 
+to fetch records by small batches (with indy_prover_credentials_search_fetch_records).
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `filter`: Json - wql style filter for credentials searching based on tags created during the saving of credential
+
+* __->__ `searchHandle`: Number - handle that can be used later to fetch records by small batches (with proverCredentialsSearchFetchRecords)
+* __->__ `totalCount`: Number -  total count of records
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverCredentialsSearchFetchRecords \( sh, count \) -&gt; credentials
+
+Fetch next records for wallet search.
+
+* `sh`: Handle (Number) - search handle (created by proverOpenCredentialsSearch)
+* `count`: Number - count of records to fetch
+* __->__ `credentials`: Json - credentials json
+```
+    [{
+        "referent": string, // cred_id in the wallet
+        "values": <see cred_values_json above>,
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_id": Optional<string>,
+        "cred_rev_id": Optional<string>
+    }]
+````
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverCloseCredentialsSearch \( sh \) -&gt;
+
+Close credentials search (make search handle invalid).
+
+* `sh`: Handle (Number) - search handle (created by proverOpenCredentialsSearch)
+* __->__ void
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverGetCredentialsForProofReq \( wh, proofRequest, extraQuery \) -&gt; credentials
 
 Gets human readable credentials matching the given proof request.
 
@@ -383,8 +440,15 @@ Gets human readable credentials matching the given proof request.
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
     }
-where
 ````
+* `proofRequest`: Json - (Optional) List of extra queries that will be applied to correspondent attribute/predicate
+```
+    {
+        "<attr_referent>": <wql query>,
+        "<predicate_referent>": <wql query>,
+    }
+```
+
 * __->__ `credentials`: Json - credentials\_json: json with credentials for the given pool request.
 ```
     {

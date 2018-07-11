@@ -103,9 +103,33 @@ indy.proverGetCredentials = function proverGetCredentials (wh, filter, cb) {
   return cb.promise
 }
 
-indy.proverGetCredentialsForProofReq = function proverGetCredentialsForProofReq (wh, proofRequest, cb) {
+indy.proverGetCredential = function proverGetCredential (wh, credId, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.proverGetCredentialsForProofReq(wh, toJson(proofRequest), cb)
+  capi.proverGetCredential(wh, credId, cb)
+  return cb.promise
+}
+
+indy.proverOpenCredentialsSearch = function proverOpenCredentialsSearch (wh, filter, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.proverOpenCredentialsSearch(wh, toJson(filter), cb)
+  return cb.promise
+}
+
+indy.proverCredentialsSearchFetchRecords = function proverCredentialsSearchFetchRecords (sh, count, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.proverCredentialsSearchFetchRecords(sh, count, cb)
+  return cb.promise
+}
+
+indy.proverCloseCredentialsSearch = function proverCloseCredentialsSearch (sh, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.proverCloseCredentialsSearch(sh, cb)
+  return cb.promise
+}
+
+indy.proverGetCredentialsForProofReq = function proverGetCredentialsForProofReq (wh, proofRequest, extraQuery, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.proverGetCredentialsForProofReq(wh, toJson(proofRequest), toJson(extraQuery), cb)
   return cb.promise
 }
 

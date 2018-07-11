@@ -63,6 +63,12 @@ test('anoncreds', async function (t) {
   var outCredId = await indy.proverStoreCredential(wh, 'cred_1_id', credReqMetadata, cred, credDef, revocRegDef)
   t.is(typeof outCredId, 'string')
 
+  // Prover get Credential
+  var credential = await indy.proverGetCredential(wh, outCredId)
+  t.not(typeof credential, 'string')
+  t.is(credential.schema_id, schemaId)
+  t.is(credential.cred_def_id, credDefId)
+
   // Prover gets credentials for Proof Request
   var proofReq = {
     'nonce': '123432421212',
@@ -76,7 +82,7 @@ test('anoncreds', async function (t) {
     },
     'non_revoked': {'from': 80, 'to': 100}
   }
-  var credentialsForProof = await indy.proverGetCredentialsForProofReq(wh, proofReq)
+  var credentialsForProof = await indy.proverGetCredentialsForProofReq(wh, proofReq, null)
 
   var credentials = await indy.proverGetCredentials(wh)
   t.truthy(Array.isArray(credentials))
@@ -86,6 +92,17 @@ test('anoncreds', async function (t) {
   t.truthy(Array.isArray(credentials))
   t.truthy(credentials.length > 0)
   t.is(credentials[0].schema_id, schemaId)
+
+  // Prover searches Credentials
+  var [sh, totalCount] = await indy.proverOpenCredentialsSearch(wh, {schema_id: schemaId})
+  t.truthy(totalCount > 0)
+
+  credentials = await indy.proverCredentialsSearchFetchRecords(sh, totalCount)
+  t.truthy(Array.isArray(credentials))
+  t.truthy(credentials.length > 0)
+  t.is(credentials[0].schema_id, schemaId)
+
+  await indy.proverCloseCredentialsSearch(sh)
 
   // Prover gets credentials for Proof Request
   var timestamp = 100

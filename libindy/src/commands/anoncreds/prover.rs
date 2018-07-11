@@ -76,7 +76,7 @@ pub enum ProverCommand {
     GetCredentialsForProofReq(
         i32, // wallet handle
         String, // proof request json
-        Option<String>, // query json
+        Option<String>, // extra query json
         Box<Fn(Result<String, IndyError>) + Send>),
     CreateProof(
         i32, // wallet handle
@@ -164,9 +164,9 @@ impl ProverCommandExecutor {
                 info!(target: "prover_command_executor", "CloseCredentialsSearch command received");
                 cb(self.close_credentials_search(search_handle));
             }
-            ProverCommand::GetCredentialsForProofReq(wallet_handle, proof_req_json, query_json, cb) => {
+            ProverCommand::GetCredentialsForProofReq(wallet_handle, proof_req_json, extra_query_json, cb) => {
                 info!(target: "prover_command_executor", "GetCredentialsForProofReq command received");
-                cb(self.get_credentials_for_proof_req(wallet_handle, &proof_req_json, query_json.as_ref().map(String::as_str)));
+                cb(self.get_credentials_for_proof_req(wallet_handle, &proof_req_json, extra_query_json.as_ref().map(String::as_str)));
             }
             ProverCommand::CreateProof(wallet_handle, proof_req_json, requested_credentials_json, master_secret_name,
                                        schemas_json, credential_defs_json, rev_states_json, cb) => {
@@ -364,9 +364,11 @@ impl ProverCommandExecutor {
 
         self.searches.borrow_mut().insert(handle, Box::new(credentials_search));
 
-        trace!("open_credentials_search <<< res: {:?}", handle);
+        let res = (handle, total_count);
 
-        Ok((handle, total_count))
+        trace!("open_credentials_search <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn credentials_search_fetch_records(&self,
@@ -414,13 +416,13 @@ impl ProverCommandExecutor {
     fn get_credentials_for_proof_req(&self,
                                      wallet_handle: i32,
                                      proof_req_json: &str,
-                                     query_json: Option<&str>) -> Result<String, IndyError> {
-        debug!("get_credentials_for_proof_req >>> wallet_handle: {:?}, proof_req_json: {:?}, query_json: {:?}", wallet_handle, proof_req_json, query_json);
+                                     extra_query_json: Option<&str>) -> Result<String, IndyError> {
+        debug!("get_credentials_for_proof_req >>> wallet_handle: {:?}, proof_req_json: {:?}, extra_query_json: {:?}", wallet_handle, proof_req_json, extra_query_json);
 
         let proof_request: ProofRequest = ProofRequest::from_json(proof_req_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ProofRequest: {:?}", err)))?;
 
-        let extra_query: Option<ProofRequestExtraQuery> = match query_json {
+        let extra_query: Option<ProofRequestExtraQuery> = match extra_query_json {
             Some(query) =>
                 serde_json::from_str(query)
                     .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ExtraQuery: {:?}", err)))?,
