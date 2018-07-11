@@ -42,9 +42,10 @@ impl Issuer {
         trace!("new_credential_definition >>> issuer_did: {:?}, schema: {:?}, support_revocation: {:?}", issuer_did, schema, support_revocation);
 
         let credential_schema = build_credential_schema(&schema.attr_names)?;
+        let non_credential_schema = build_non_credential_schema()?;
 
         let (credential_public_key, credential_private_key, credential_key_correctness_proof) =
-            CryptoIssuer::new_credential_def(&credential_schema, support_revocation)?;
+            CryptoIssuer::new_credential_def(&credential_schema, &non_credential_schema, support_revocation)?;
 
         let credential_definition_value = CredentialDefinitionData {
             primary: credential_public_key.get_primary_key()?.clone()?,
@@ -87,7 +88,7 @@ impl Issuer {
     pub fn new_credential<RTA>(&self,
                                cred_def: &CredentialDefinition,
                                cred_priv_key: &CredentialPrivateKey,
-                               master_secret_blinding_nonce: &Nonce,
+                               cred_issuance_blinding_nonce: &Nonce,
                                cred_request: &CredentialRequest,
                                cred_values: &HashMap<String, AttributeValues>,
                                rev_idx: Option<u32>,
@@ -97,11 +98,11 @@ impl Issuer {
                                rev_tails_accessor: Option<&RTA>) -> Result<(CredentialSignature,
                                                                             SignatureCorrectnessProof,
                                                                             Option<RevocationRegistryDelta>), AnoncredsError> where RTA: RevocationTailsAccessor {
-        trace!("new_credential >>> cred_def: {:?}, cred_priv_key: {:?}, master_secret_blinding_nonce: {:?}, cred_request: {:?},\
+        trace!("new_credential >>> cred_def: {:?}, cred_priv_key: {:?}, cred_issuance_blinding_nonce: {:?}, cred_request: {:?},\
                cred_values: {:?}, rev_idx: {:?}, rev_reg_def: {:?}, rev_reg: {:?}, rev_key_priv: {:?}",
-               cred_def, cred_priv_key, master_secret_blinding_nonce, cred_request, cred_values, rev_idx, rev_reg_def, rev_reg, rev_key_priv);
+               cred_def, cred_priv_key, cred_issuance_blinding_nonce, cred_request, cred_values, rev_idx, rev_reg_def, rev_reg, rev_key_priv);
 
-        let credential_values = build_credential_values(&cred_values)?;
+        let credential_values = build_credential_values(&cred_values, None)?;
         let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
 
         let (credential_signature, signature_correctness_proof, rev_reg_delta) =
@@ -119,7 +120,7 @@ impl Issuer {
                 CryptoIssuer::sign_credential_with_revoc(&cred_request.prover_did,
                                                          &cred_request.blinded_ms,
                                                          &cred_request.blinded_ms_correctness_proof,
-                                                         master_secret_blinding_nonce,
+                                                         cred_issuance_blinding_nonce,
                                                          &cred_request.nonce,
                                                          &credential_values,
                                                          &credential_pub_key,
@@ -135,7 +136,7 @@ impl Issuer {
                     CryptoIssuer::sign_credential(&cred_request.prover_did,
                                                   &cred_request.blinded_ms,
                                                   &cred_request.blinded_ms_correctness_proof,
-                                                  master_secret_blinding_nonce,
+                                                  cred_issuance_blinding_nonce,
                                                   &cred_request.nonce,
                                                   &credential_values,
                                                   &credential_pub_key,

@@ -2136,68 +2136,78 @@ Errors: `Common*`
 
 ### wallet
 
-#### createWallet \( poolName, name, xtype, config, credentials \) -&gt; void
+#### createWallet \( config, credentials \) -&gt; void
 
 Creates a new secure wallet with the given unique name.
 
-* `poolName`: String - Name of the pool that corresponds to this wallet.
-* `name`: String - Name of the wallet.
-* `xtype`: String
-* `config`: Json? - Wallet configuration json.
+* `config`: String - Wallet configuration json.
 ```
-  {
-      "storage": <object>  List of supported keys are defined by wallet type.
-  }
-````
-* `credentials`: Json - Wallet credentials json
+{
+   "id": string, Identifier of the wallet.
+         Configured storage uses this identifier to lookup exact wallet data placement.
+   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                  'Default' storage type allows to store wallet data in the local file.
+                  Custom storage types can be registered with indy_register_wallet_storage call.
+   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                     Can be optional if storage supports default configuration.
+                     For 'default' storage type configuration is:
+   {
+     "path": optional<string>, Path to the directory with wallet files.
+             Defaults to $HOME/.indy_client/wallets.
+             Wallet will be stored in the file {path}/{id}/sqlite.db
+   }
+}
 ```
-  {
-      "key": string,
-      "rekey": Optional<string>,
-      "storage": Optional<object>  List of supported keys are defined by wallet type.
-  }
+* `credentials`: String? - Wallet credentials json. 
+```
+{
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
+
+}
+```
 ````
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
 
-#### openWallet \( name, runtimeConfig, credentials \) -&gt; handle
+#### openWallet \( config, credentials \) -&gt; handle
 
 Opens the wallet with specific name.
 
 Wallet with corresponded name must be previously created with indy\_create\_wallet method.
 It is impossible to open wallet with the same name more than once.
 
-* `name`: String - Name of the wallet.
-* `runtimeConfig`: String? - Runtime wallet configuration json. if NULL, then default runtime\_config will be used.
+* `config`: String - Wallet configuration json.
 ```
-  {
-      "storage": Optional<object>  List of supported keys are defined by wallet type.
-  }
-````
-* `credentials`: Json - Wallet credentials json
+{
+   "id": string, Identifier of the wallet.
+         Configured storage uses this identifier to lookup exact wallet data placement.
+   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                  'Default' storage type allows to store wallet data in the local file.
+                  Custom storage types can be registered with indy_register_wallet_storage call.
+   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                     Can be optional if storage supports default configuration.
+                     For 'default' storage type configuration is:
+   {
+     "path": optional<string>, Path to the directory with wallet files.
+             Defaults to $HOME/.indy_client/wallets.
+             Wallet will be stored in the file {path}/{id}/sqlite.db
+   }
+}
 ```
-  {
-      "key": string,
-      "rekey": Optional<string>,
-      "storage": Optional<object>  List of supported keys are defined by wallet type.
-  }
-````
+* `credentials`: String? - Wallet credentials json. 
+```
+{
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
+
+}
 * __->__ `handle`: Handle (Number) - Handle to opened wallet to use in methods that require wallet access.
-
-Errors: `Common*`, `Wallet*`
-
-#### listWallets \(  \) -&gt; wallets
-
-Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
-
-Note this function is DEPRECATED and will be removed in the next release.
-
-* __->__ `wallets`: Json - wallets list json: \[{
-"name": &lt;string&gt;
-"type": &lt;string&gt;
-"pool\_name": &lt;string&gt;
-}\].
 
 Errors: `Common*`, `Wallet*`
 
@@ -2220,42 +2230,6 @@ in the future releases.
 
 Errors: `Common*`, `Wallet*`
 
-#### importWallet \( poolName, name, xtype, config, credentials, importConfig \) -&gt; void
-
-Creates a new secure wallet with the given unique name and then imports its content
-according to fields provided in import\_config
-This can be seen as an indy\_create\_wallet call with additional content import
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
-* `poolName`: String - Name of the pool that corresponds to this wallet
-* `name`: String - Name of the wallet
-* `xtype`: String
-* `config`: Json? - Wallet configuration json.
-```
-  {
-      "storage": <object>  List of supported keys are defined by wallet type.
-  }
-````
-* `credentials`: Json - Wallet credentials json \(if NULL, then default config will be used\).
-```
-  {
-      "key": string,
-      "storage": Optional<object>  List of supported keys are defined by wallet type.
-  }
-````
-* `importConfig`: Json - JSON containing settings for input operation.
-```
-  {
-    "path": path of the file that contains exported wallet content
-    "key": passphrase used to derive export key
-  }
-````
-* __->__ void
-
-Errors: `Common*`, `Wallet*`
-
 #### closeWallet \( wh \) -&gt; void
 
 Closes opened wallet and frees allocated resources.
@@ -2265,12 +2239,51 @@ Closes opened wallet and frees allocated resources.
 
 Errors: `Common*`, `Wallet*`
 
+#### importWallet \( config, credentials, importConfigJson \) -&gt; void
+
+Creates a new secure wallet with the given unique name and then imports its content according to fields provided in import_config This can be seen as an indy_create_wallet call with additional content import
+* `config`: String - Wallet configuration json.
+```
+{
+   "id": string, Identifier of the wallet.
+         Configured storage uses this identifier to lookup exact wallet data placement.
+   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                  'Default' storage type allows to store wallet data in the local file.
+                  Custom storage types can be registered with indy_register_wallet_storage call.
+   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                     Can be optional if storage supports default configuration.
+                     For 'default' storage type configuration is:
+   {
+     "path": optional<string>, Path to the directory with wallet files.
+             Defaults to $HOME/.indy_client/wallets.
+             Wallet will be stored in the file {path}/{id}/sqlite.db
+   }
+}
+```
+* `credentials`: String? - Wallet credentials json. 
+```
+{
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
+
+}
+```
+* `exportConfigJson`: String - JSON containing settings for input operation.
+```
+{
+    "path": path of the file that contains exported wallet content
+    "key": passphrase used to export key
+}
+=======
 #### deleteWallet \( name, credentials \) -&gt; void
 
 Deletes created wallet.
 
 * `name`: String - Name of the wallet to delete.
 * `credentials`: Json - Wallet credentials json
+>>>>>>> master/master
 ```
   {
       "key": string,
