@@ -417,7 +417,6 @@ pub mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
-    #[cfg(feature = "nullpay")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_schema_with_pool(){
@@ -440,7 +439,6 @@ pub mod tests {
         let schema_id = get_schema_id(handle).unwrap();
     }
 
-    #[cfg(feature = "nullpay")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_duplicate_fails(){
@@ -462,7 +460,6 @@ pub mod tests {
     }
 
     #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "nullpay")]
     #[test]
     fn from_pool_ledger_with_id(){
         let wallet_name = "from_pool_ledger_with_id";

@@ -649,7 +649,7 @@ pub mod tests {
     fn test_send_tokens() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-        assert_eq!(vcx_wallet_send_tokens(0, 0, 50, CString::new("address").unwrap().into_raw(), Some(generic_cb)), error::SUCCESS.code_num);
+        assert_eq!(vcx_wallet_send_tokens(0, 0, 1, CString::new("address").unwrap().into_raw(), Some(generic_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
@@ -662,24 +662,23 @@ pub mod tests {
     }
 
     #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "nullpay")]
     #[test]
     fn test_send_payment() {
-        use utils::devsetup::tests;
-        use utils::libindy::payments::{mint_tokens, get_wallet_token_info};
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        let recipient = CStringUtils::string_to_cstring(::utils::libindy::payments::tests::create_throwaway_address());
+        println!("sending payment to {:?}", recipient);
         let name = "test_send_payment";
-        tests::setup_local_env(name);
-        mint_tokens(Some(1), Some(1000)).unwrap();
-        let balance = get_wallet_token_info().unwrap().get_balance();
-        let recipient = CStringUtils::string_to_cstring("pay:null:iXvVdM4mjCUZFrnnFU2F0VoJrkzQEoLy".to_string());
-        let tokens = 100;
+        ::utils::devsetup::tests::setup_ledger_env(name);
+        let balance = ::utils::libindy::payments::get_wallet_token_info().unwrap().get_balance();
+        let tokens = 5;
         let cb = generic_cb;
         let err = vcx_wallet_send_tokens(0, 0, tokens, recipient.as_ptr(), Some(cb));
         assert_eq!(err, 0);
-        thread::sleep(Duration::from_secs(2));
-        let new_balance = get_wallet_token_info().unwrap().get_balance();
+        thread::sleep(Duration::from_secs(5));
+        let new_balance = ::utils::libindy::payments::get_wallet_token_info().unwrap().get_balance();
         assert_eq!(balance - tokens, new_balance);
-        tests::cleanup_dev_env(name);
+        ::utils::devsetup::tests::cleanup_dev_env(name);
     }
 
     #[test]
@@ -832,7 +831,6 @@ pub mod tests {
     #[test]
     fn test_wallet_import_export() {
         use utils::devsetup::tests::setup_wallet_env;
-        use indy::wallet::Wallet;
         use std::env;
         use std::fs;
         use std::path::Path;
@@ -843,7 +841,6 @@ pub mod tests {
         settings::set_defaults();
         let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
         let filename_str = &settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
-        let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();
         let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME).unwrap();
         let backup_key = "backup_key";
         let mut dir = env::temp_dir();
@@ -851,7 +848,6 @@ pub mod tests {
         if Path::new(&dir).exists() {
             fs::remove_file(Path::new(&dir)).unwrap();
         }
-        let credential_config = json!({"key": wallet_key, "storage": "{}"}).to_string();
         let handle = setup_wallet_env(&wallet_name).unwrap();
         let dir_c_str = CString::new(dir.to_str().unwrap()).unwrap();
         let backup_key_c_str = CString::new(backup_key).unwrap();
@@ -863,8 +859,7 @@ pub mod tests {
                           Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(5))).unwrap();
 
-        Wallet::close(handle).unwrap();
-        Wallet::delete(&wallet_name, Some(&credential_config)).unwrap();
+        delete_wallet(&wallet_name).unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_wallet_import(cb.command_handle,
@@ -874,8 +869,8 @@ pub mod tests {
         cb.receive(Some(Duration::from_secs(5))).unwrap();
 
         let handle = setup_wallet_env(&wallet_name).unwrap();
-        Wallet::close(handle).unwrap();
-        Wallet::delete(&wallet_name, Some(&credential_config)).unwrap();
+
+        delete_wallet(&wallet_name).unwrap();
         fs::remove_file(Path::new(&dir)).unwrap();
         assert!(!Path::new(&dir).exists());
     }

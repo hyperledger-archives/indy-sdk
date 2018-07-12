@@ -73,7 +73,7 @@ describe('Wallet:', () => {
       const receipt = await Wallet.sendTokens({
         payment: 0,
         recipient: 'address',
-        tokens: 30
+        tokens: 1
       })
       assert.ok(receipt)
     })

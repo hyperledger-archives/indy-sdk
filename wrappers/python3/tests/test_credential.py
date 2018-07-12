@@ -93,7 +93,7 @@ credential_json = {
     "payment_info":{
       "payment_required":"one-time",
       "payment_addr":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j",
-      "price":25
+      "price":1
    }
   }
 
