@@ -82,7 +82,7 @@ Follow to http://zeromq.org/intro.
   
   Note that depending on the version of Visual Studio placement of vcvars64.bat can be different. For example, it can be
   `C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat`  
-- execute "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+- Execute "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 - Point path to this directory using environment variables:
   - `set INDY_PREBUILT_DEPS_DIR=C:\BIN\x64`
   - `set INDY_CRYPTO_PREBUILT_DEPS_DIR=C:\BIN\x64`
