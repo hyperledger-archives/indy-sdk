@@ -19,7 +19,9 @@ pub fn create_wallet(wallet_name: &str) -> Result<(), u32> {
         Err(x) => settings::DEFAULT_POOL_NAME.to_string(),
     };
 
-    match Wallet::create(&pool_name, wallet_name, None, None, Some(&settings::get_wallet_credentials())) {
+    let config = format!(r#"{{"id":"{}"}}"#, wallet_name);
+
+    match Wallet::create(&config, &settings::get_wallet_credentials()) {
         Ok(x) => Ok(()),
         Err(x) => if x != ErrorCode::WalletAlreadyExistsError && x != ErrorCode::Success {
             warn!("could not create wallet {}: {:?}", wallet_name, x);
@@ -38,7 +40,9 @@ pub fn open_wallet(wallet_name: &str) -> Result<i32, u32> {
         return Ok(1);
     }
 
-    let handle = Wallet::open(wallet_name, None, Some(&settings::get_wallet_credentials())).map_err(map_rust_indy_sdk_error_code)?;
+    let config = format!(r#"{{"id":"{}"}}"#, wallet_name);
+
+    let handle = Wallet::open(&config, &settings::get_wallet_credentials()).map_err(map_rust_indy_sdk_error_code)?;
     unsafe { WALLET_HANDLE = handle; }
     Ok(handle)
 }
@@ -74,7 +78,9 @@ pub fn delete_wallet(wallet_name: &str) -> Result<(), u32> {
         Err(x) => (),
     };
 
-    Wallet::delete(wallet_name,Some(&settings::get_wallet_credentials())).map_err(map_rust_indy_sdk_error_code)
+    let config = format!(r#"{{"id":"{}"}}"#, wallet_name);
+
+    Wallet::delete(&config,&settings::get_wallet_credentials()).map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn export(wallet_handle: i32, path: &Path, backup_key: &str) -> Result<(), WalletError> {
@@ -94,7 +100,9 @@ pub fn import(path: &Path, backup_key: &str) -> Result<(), WalletError> {
     let credentials = json!({"key": key, "storage":"{}"}).to_string();
     let import_config = json!({"key": backup_key, "path": path}).to_string();
 
-    match Wallet::import(&pool_name, &name, None, None,  &credentials, &import_config) {
+    let config = format!(r#"{{"id":"{}"}}"#, name);
+
+    match Wallet::import(&config, &credentials, &import_config) {
         Ok(_) => Ok(()),
         Err(e) => Err(WalletError::from(e as u32)),
     }
@@ -158,8 +166,10 @@ pub mod tests {
         ::api::wallet::vcx_wallet_add_record(0, xtype.as_ptr(), id.as_ptr(), value.as_ptr(), ptr::null(), Some(::api::wallet::tests::indy_generic_no_msg_cb));
 
         export(handle, &dir, backup_key).unwrap();
+
+        let config = format!(r#"{{"id":"{}"}}"#, wallet_name);
         Wallet::close(handle).unwrap();
-        Wallet::delete(&wallet_name, Some(&credential_config)).unwrap();
+        Wallet::delete(&config, &credential_config).unwrap();
         println!("credential_config: {}", credential_config);
 
         import(&dir, backup_key).unwrap();
@@ -167,7 +177,7 @@ pub mod tests {
 
         ::api::wallet::vcx_wallet_get_record(handle, xtype.as_ptr(), id.as_ptr(), options.as_ptr(), Some(::api::wallet::tests::indy_generic_msg_cb));
         Wallet::close(handle).unwrap();
-        Wallet::delete(&wallet_name, Some(&credential_config)).unwrap();
+        Wallet::delete(&config, &credential_config).unwrap();
         fs::remove_file(Path::new(&dir)).unwrap();
         assert!(!Path::new(&dir).exists());
     }

@@ -2,7 +2,7 @@
 
 name = "libvcx"
 version = "0.1.2097319"
-authors = [ "Mark Hadley <mark.hadley@evernym.com>" ]
+authors = [ "Evernym Inc." ]
 publish = false
 description = "C callable library for libvcx"
 license = ""
@@ -15,8 +15,8 @@ crate-type = ["staticlib","rlib", "dylib"]
 [features]
 default = ["nullpay"]
 pool_tests = []
-no_payments = []
 nullpay = []
+sovtoken = []
 
 # turn on release versioning
 ci = []
@@ -42,7 +42,7 @@ rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
 num-traits = "0.2.0"
-rust-indy-sdk = {git = "https://github.com/mikelodder7/rust-indy-sdk.git", rev = "df103b42e5c8df0a870a8911f73c6c50d5d7a23c"}
+rust-indy-sdk = {git = "https://github.com/mikelodder7/rust-indy-sdk.git"}
 log-panics = "2.0.0"
 
 [target.'cfg(target_os = "android")'.dependencies]
@@ -59,11 +59,11 @@ serde_derive = "1.0"
 tempfile = "2.2"
 
 [package.metadata.deb]
-maintainer = "Mark Hadley<mark.hadley@evernym.com>, Devin Fisher, Ryan Marsh, Doug Wightman"
+maintainer = "Evernym, Inc."
 copyright = "2018, Evernym Inc."
-depends = "$auto, libindy (=1.5.0), libnullpay (=1.5.0)"
+depends = "$auto, libindy (=1.5.0~619), libnullpay (=1.5.0~619)"
 extended-description = """\
-"TODO DESCRIPTION"""
+"C callable library for libvcx"""
 section = "admin"
 revision = "338ad01"
 priority = "optional"

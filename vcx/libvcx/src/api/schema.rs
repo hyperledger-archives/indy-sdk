@@ -476,14 +476,12 @@ mod tests {
     }
 
     #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "nullpay")]
     #[test]
     fn test_vcx_schema_serialize_contains_version() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-	let wallet_name = "vcx_schema_serialize_contains_version";
-	::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        let pool_name = &settings::get_config_value(settings::CONFIG_POOL_NAME).unwrap();
+	    let wallet_name = "vcx_schema_serialize_contains_version";
+	    ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let schema_name= format!("TestSchema-{}", rand::thread_rng().gen::<u32>());
         let source_id = "Test Source ID";
@@ -494,7 +492,7 @@ mod tests {
                                      CString::new(r#"["name","dob"]"#).unwrap().into_raw(),
                                      0,
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
-        let handle = match cb.receive(Some(Duration::from_secs(3))) {
+        let handle = match cb.receive(Some(Duration::from_secs(5))) {
             Ok(h) => h,
             Err(e) => panic!("Error Creating serialized schema: {}", e),
         };
@@ -508,6 +506,6 @@ mod tests {
         let schema:CreateSchema = serde_json::from_value(j["data"].clone()).unwrap();
         assert_eq!(j["version"], "1.0");
         assert_eq!(schema.get_source_id(), source_id);
-	::utils::devsetup::tests::cleanup_dev_env(wallet_name);
+	    ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 }

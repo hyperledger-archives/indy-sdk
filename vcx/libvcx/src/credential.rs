@@ -691,59 +691,46 @@ pub mod tests {
         wallet::delete_wallet(test_name).unwrap();
     }
 
-    #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_credential_with_sufficient_funds() {
-        use utils::devsetup;
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let test_name = "test_pay_for_credential_with_sufficient_funds";
-        devsetup::tests::setup_ledger_env(test_name);
-        let cred = create_credential_with_price(25);
+        let cred = create_credential_with_price(1);
         assert!(cred.is_payment_required());
         let payment = serde_json::to_string(&cred.submit_payment().unwrap().0).unwrap();
         assert!(payment.len() > 50);
-        devsetup::tests::cleanup_dev_env(test_name);
     }
 
-    #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_non_premium_credential() {
-        use utils::devsetup;
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let test_name = "test_pay_for_non_premium_credential";
-        devsetup::tests::setup_ledger_env(test_name);
         let cred: Credential = Credential::from_str(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         assert!(cred.payment_info.is_none());
         assert_eq!(cred.submit_payment().err(), Some(CredentialError::NoPaymentInformation()));
-        devsetup::tests::cleanup_dev_env(test_name);
     }
 
-    #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_credential_with_insufficient_funds() {
-        use utils::devsetup;
-        use error::payment::PaymentError;
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let test_name = "test_pay_for_credential_with_insufficient_funds";
-        devsetup::tests::setup_ledger_env(test_name);
         let cred = create_credential_with_price(10000000000);
-        assert_eq!(cred.submit_payment().err(), Some(CredentialError::PaymentError(PaymentError::InsufficientFunds())));
-        devsetup::tests::cleanup_dev_env(test_name);
+        assert!(cred.submit_payment().is_err());
     }
 
-    #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "nullpay")]
     #[test]
     fn test_pay_for_credential_with_handle() {
-        use utils::devsetup;
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let test_name = "test_pay_for_credential_with_handle";
-        devsetup::tests::setup_ledger_env(test_name);
         let handle = from_string(DEFAULT_SERIALIZED_CREDENTIAL_PAYMENT_REQUIRED).unwrap();
         submit_payment(handle).unwrap();
         get_payment_information(handle).unwrap();
         let handle2 = from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         assert!(!is_payment_required(handle2).unwrap());
-        devsetup::tests::cleanup_dev_env(test_name);
         let invalid_handle = 12345;
         assert_eq!(is_payment_required(invalid_handle).err(), Some(CredentialError::InvalidHandle()));
     }
@@ -758,13 +745,11 @@ pub mod tests {
         let cred_string = get_credential(handle).unwrap();
     }
 
-    #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "nullpay")]
     #[test]
     fn test_submit_payment_through_credential_request() {
-        use utils::devsetup;
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let test_name = "test_submit_payment_through_credential_request";
-        devsetup::tests::setup_ledger_env(test_name);
         use utils::libindy::payments::get_wallet_token_info;
         let balance = get_wallet_token_info().unwrap().get_balance();
         assert!(balance > 0);
@@ -772,7 +757,5 @@ pub mod tests {
         assert!(cred.send_request(1234).is_err());
         let new_balance = get_wallet_token_info().unwrap().get_balance();
         assert_eq!(new_balance, balance);
-
-        devsetup::tests::cleanup_dev_env(test_name);
     }
 }

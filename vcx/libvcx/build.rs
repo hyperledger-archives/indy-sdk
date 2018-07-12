@@ -104,6 +104,8 @@ fn main() {
         println!("cargo:rustc-link-search=native=/usr/lib");
         if cfg!(feature = "nullpay") {
           println!("cargo:rustc-link-lib=nullpay");
+        } else if cfg!(feature = "sovtoken") {
+            println!("cargo:rustc-link-lib=sovtoken");
         }
     }
 

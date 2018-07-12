@@ -33,7 +33,7 @@ async def test_get_token_info():
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_send_tokens():
-    receipt = await Wallet.send_tokens(0,50,"address")
+    receipt = await Wallet.send_tokens(0,1,"address")
     assert receipt
 
 @pytest.mark.asyncio

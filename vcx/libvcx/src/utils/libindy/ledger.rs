@@ -8,6 +8,17 @@ use utils::libindy::{
 use utils::error;
 use indy::ledger::Ledger;
 use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
+use utils::timeout::TimeoutUtils;
+
+pub fn multisign_request(did: &str, request: &str) -> Result<String, u32> {
+   Ledger::multi_sign_request(get_wallet_handle(), did, request)
+       .map_err(map_rust_indy_sdk_error_code)
+}
+
+pub fn libindy_sign_request(did: &str, request: &str) -> Result<String,u32> {
+    Ledger::sign_request(get_wallet_handle(), did, request)
+        .map_err(map_rust_indy_sdk_error_code)
+}
 
 pub fn libindy_sign_and_submit_request(issuer_did: &str, request_json: &str) -> Result<String, u32> {
     if settings::test_indy_mode_enabled() { return Ok(r#"{"rc":"success"}"#.to_string()); }
@@ -20,7 +31,7 @@ pub fn libindy_sign_and_submit_request(issuer_did: &str, request_json: &str) -> 
 
 pub fn libindy_submit_request(request_json: &str) -> Result<String, u32> {
     let pool_handle = get_pool_handle().or(Err(error::NO_POOL_OPEN.code_num))?;
-    Ledger::submit_request(pool_handle, request_json).map_err(map_rust_indy_sdk_error_code)
+    Ledger::submit_request_timeout(pool_handle, request_json, TimeoutUtils::long_timeout()).map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn libindy_build_get_txn_request(submitter_did: &str, sequence_num: i32) -> Result<String, u32> {

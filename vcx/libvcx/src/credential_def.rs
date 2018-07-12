@@ -263,7 +263,6 @@ pub mod tests {
         assert_eq!(def1, def2);
     }
 
-    #[cfg(feature = "nullpay")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_real() {
