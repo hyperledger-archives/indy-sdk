@@ -71,50 +71,34 @@ setup_dependencies(){
 
 
     fi
+
+    if [ -z "${INDY_DIR}" ]; then
+    echo STDERR "Missing INDY_DIR argument"
+    echo STDERR "Should have path to directory containing libindy binaries"
+    echo "Sample : ./build.withoutdocker.sh x86 16 i686-linux-android <ABSOLUTE_PATH_TO_LIBINDY_BINARIES_DIR>"
+    exit 1
+fi
+
+
 }
 
-statically_link_dependencies_with_libindy(){
-    $CC -v -shared -o${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so -Wl,--whole-archive \
-        ${WORKDIR}/target/${TRIPLET}/release/libindy.a \
-        ${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so \
-        ${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a \
-        ${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so \
-        ${OPENSSL_DIR}/lib/libssl.a \
-        ${OPENSSL_DIR}/lib/libcrypto.a \
-        ${SODIUM_LIB_DIR}/libsodium.a \
-        ${LIBZMQ_LIB_DIR}/libzmq.a \
-        ${TOOLCHAIN_DIR}/${TRIPLET}/lib/libgnustl_shared.so \
-        -Wl,--no-whole-archive -z muldefs
-}
 
 package_library(){
+    mkdir -p ${BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/include
+    mkdir -p ${BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
 
-    mkdir -p ${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
-
-    cp -rf "${WORKDIR}/include" ${BUILD_FOLDER}/libindy_${TARGET_ARCH}
-    cp "${WORKDIR}/target/${TRIPLET}/release/libindy.a" ${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
-    cp "${WORKDIR}/target/${TRIPLET}/release/libindy.so" ${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
-    mv "${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so" "${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy_shared.so"
-    statically_link_dependencies_with_libindy
+    cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.a" ${BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
+    cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.so" ${BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
 }
 
 build(){
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
         cargo clean
-        RUSTFLAGS="-L${TOOLCHAIN_DIR}/i686-linux-android/lib -lgnustl_shared" \
-            cargo build --release --target=${TRIPLET}
+        cargo build --release --target=${TRIPLET}
     popd
 }
 
-_test(){
-    pushd ${WORKDIR}
-        rm -rf target/${TRIPLET}
-        cargo clean
-        RUST_TEST_THREADS=1 RUSTFLAGS="-L${TOOLCHAIN_DIR}/i686-linux-android/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-            cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"
-    popd
-}
 
 #cleanup(){
 ##    rm -rf ${BUILD_FOLDER}
@@ -134,5 +118,6 @@ setup_dependencies
 download_and_setup_toolchain
 set_env_vars
 create_standalone_toolchain_and_rust_target
+printenv
 build
 package_library

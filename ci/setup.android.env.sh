@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
 CI_DIR=$(cd `dirname $0` && pwd)
-INDY_DIR="$(realpath "${CI_DIR}/..")"
+INDY_WORKDIR="$(realpath "${CI_DIR}/..")"
 ANDROID_BUILD_FOLDER="$(realpath "${CI_DIR}/../android_build")"
+export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains
 ## set this variable to 1 if you want to download the prebuilt binaries
 
 
@@ -64,9 +65,9 @@ download_and_unzip_dependencies_for_all_architectures(){
     #TODO Get dependencies in more optimized way
     pushd ${ANDROID_BUILD_FOLDER}
         if [ ! -d "indy-android-dependencies" ] ; then
-            git clone https://github.com/faisal00813/indy-android-dependencies.git
+            git clone https://github.com/evernym/indy-android-dependencies.git
             pushd ${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/
-                git checkout tags/v1.0.1
+#                git checkout tags/v1.0.1
                 find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -qq -d "$(dirname "FILENAME")" "FILENAME"'
             popd
         fi
@@ -93,31 +94,40 @@ create_standalone_toolchain_and_rust_target(){
 download_and_setup_toolchain(){
     if [ "$(uname)" == "Darwin" ]; then
         echo "Downloading NDK for OSX"
-        export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains/darwin
-        mkdir -p ${TOOLCHAIN_PREFIX}
-        pushd $TOOLCHAIN_PREFIX
-        if [ ! -d "android-ndk-r16b" ] ; then
-            echo "Downloading android-ndk-r16b-darwin-x86_64.zip"
-            wget https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip
-            unzip -qq android-ndk-r16b-darwin-x86_64.zip
-        else
-            echo "Skipping download android-ndk-r16b-linux-x86_64.zip"
-        fi
-        export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
+        export TOOLCHAIN_PLATFORM_PREFIX=${TOOLCHAIN_PREFIX}/darwin
+        mkdir -p ${TOOLCHAIN_PLATFORM_PREFIX}
+        pushd ${TOOLCHAIN_PLATFORM_PREFIX}
+            if [ ! -d "android-ndk-r16b" ] ; then
+                echo "Downloading android-ndk-r16b-darwin-x86_64.zip"
+                wget https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip
+                unzip -qq android-ndk-r16b-darwin-x86_64.zip
+            else
+                echo "Skipping download android-ndk-r16b-darwin-x86_64.zip"
+            fi
         popd
+        pushd ${TOOLCHAIN_PREFIX}
+            ln -nsf $(realpath ${TOOLCHAIN_PLATFORM_PREFIX}) standalone_toolchains
+            export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/standalone_toolchains/android-ndk-r16b
+        popd
+
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
         echo "Downloading NDK for Linux"
-        export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains/linux
-        mkdir -p ${TOOLCHAIN_PREFIX}
-        pushd $TOOLCHAIN_PREFIX
-        if [ ! -d "android-ndk-r16b" ] ; then
-            echo "Downloading android-ndk-r16b-linux-x86_64.zip"
-            wget -q https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip
-            unzip -qq android-ndk-r16b-linux-x86_64.zip
-        else
-            echo "Skipping download android-ndk-r16b-linux-x86_64.zip"
-        fi
-        export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
+        export TOOLCHAIN_PLATFORM_PREFIX=${TOOLCHAIN_PREFIX}/linux
+        mkdir -p ${TOOLCHAIN_PLATFORM_PREFIX}
+        pushd ${TOOLCHAIN_PLATFORM_PREFIX}
+            if [ ! -d "android-ndk-r16b" ] ; then
+                echo "Downloading android-ndk-r16b-linux-x86_64.zip"
+                wget -q https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip
+                unzip -qq android-ndk-r16b-linux-x86_64.zip
+            else
+                echo "Skipping download android-ndk-r16b-linux-x86_64.zip"
+            fi
+            export ANDROID_NDK_ROOT=${TOOLCHAIN_PLATFORM_PREFIX}/android-ndk-r16b
+        popd
+
+        pushd ${TOOLCHAIN_PREFIX}
+            ln -nsf $(realpath ${TOOLCHAIN_PLATFORM_PREFIX}) standalone_toolchains
+            export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/standalone_toolchains/android-ndk-r16b
         popd
     fi
 
@@ -134,7 +144,7 @@ set_env_vars(){
     export SODIUM_INCLUDE_DIR=${SODIUM_DIR}/include
     export LIBZMQ_LIB_DIR=${LIBZMQ_DIR}/lib
     export LIBZMQ_INCLUDE_DIR=${LIBZMQ_DIR}/include
-    export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH}
+    export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/standalone_toolchains/${TARGET_ARCH}
     export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
     export PKG_CONFIG_ALLOW_CROSS=1
     export CC=${TOOLCHAIN_DIR}/bin/${TRIPLET}-clang

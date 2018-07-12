@@ -28,10 +28,10 @@ impl LoggerUtils {
                 android_logger::init_once(
                     Filter::default().with_min_level(log::Level::Trace)
                 );
-                info!("Logging for Android");
+                info!("libindy::Logging for Android");
             } else {
                 let mut builder = Builder::new();
-                builder.format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(),record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
+                builder.format(|buf, record: &Record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(),record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
                 .filter(None, LevelFilter::Off);
                 if env::var("RUST_LOG").is_ok() {
                     builder.parse(&env::var("RUST_LOG").unwrap());
