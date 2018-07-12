@@ -3,6 +3,7 @@
 # Combined all static libaries in the current directory into a single static library
 # It is hardcoded to use the i386, armv7, and armv7s architectures; this can easily be changed via the 'archs' variable at the top
 # The script takes a single argument, which is the name of the final, combined library to be created.
+# If libvcxpartial is passed in as the parameter, only armv7 and arm64 are packaged 
 #
 #   For example:
 #  =>    combine_static_libraries.sh combined-library
@@ -27,7 +28,7 @@ VCX_SDK=$(abspath "$VCX_SDK")
 cd $VCX_SDK/vcx/wrappers/ios/vcx/lib
 
 if [ "$1" = "" ] || [ "$1" = "libvcx" ]; then
-    echo "You must provide a name for the resultant library, not libvcx.a as it is already used!"
+    echo "You must provide a name for the resultant library, the name libvcx is ALREADY used!"
     exit 1
 fi
 
@@ -40,7 +41,17 @@ if [ -f $1.a ]; then
     exit 1
 fi
 
-archs=(armv7 armv7s arm64 i386 x86_64)
+DEBUG_SYMBOLS="debuginfo"
+if [ ! -z "$3" ]; then
+    DEBUG_SYMBOLS=$3
+fi
+
+if [ "$1" = "libvcxpartial" ]; then
+    archs=(armv7 arm64)
+else
+    archs=(armv7 armv7s arm64 i386 x86_64)
+fi
+
 libraries=(*.a)
 libtool="/usr/bin/libtool"
 
@@ -65,6 +76,12 @@ do
     
     for library in ${libraries[*]}
     do
+        if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
+            lipo ${library}_${arch}.a -thin $arch -output ${library}-$arch-unstripped.a
+            strip -S -x -o ${library}-$arch-stripped.a -r ${library}-$arch-unstripped.a
+            mv ${library}-$arch-stripped.a ${library}_${arch}.a
+            rm ${library}-$arch-unstripped.a
+        fi
         source_libraries="${source_libraries} ${library}_${arch}.a"
     done
     

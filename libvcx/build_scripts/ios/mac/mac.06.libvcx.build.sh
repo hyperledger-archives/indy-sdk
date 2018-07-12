@@ -2,6 +2,16 @@
 
 source ./mac.05.libvcx.env.sh
 cd ../../..
+DEBUG_SYMBOLS="debuginfo"
+
+if [ ! -z "$1" ]; then
+    DEBUG_SYMBOLS=$1
+fi
+
+if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
+    sed -i .bak 's/debug = true/debug = false/' Cargo.toml
+fi
+
 cargo clean
 cargo update
 # To build for macos
