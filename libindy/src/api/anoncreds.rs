@@ -1154,7 +1154,7 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
     trace!("indy_prover_get_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}", wallet_handle, proof_request_json, extra_query_json);
 
     check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam3);
-    check_useful_opt_c_str!(extra_query_json, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(extra_query_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_prover_get_credentials_for_proof_req: entities >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}",
@@ -1178,6 +1178,80 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
     let res = result_to_err_code!(result);
 
     trace!("indy_prover_get_credentials_for_proof_req: <<< res: {:?}", res);
+
+    res
+}
+
+#[no_mangle]
+pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: i32,
+                                                           wallet_handle: i32,
+                                                           proof_request_json: *const c_char,
+                                                           extra_query_json: *const c_char,
+                                                           cb: Option<extern fn(
+                                                               xcommand_handle: i32, err: ErrorCode,
+                                                               search_handle: i32)>) -> ErrorCode {
+    trace!("indy_prover_search_credentials_for_proof_req: >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}", wallet_handle, proof_request_json, extra_query_json);
+
+    check_useful_c_str!(proof_request_json, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(extra_query_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_prover_search_credentials_for_proof_req: entities >>> wallet_handle: {:?}, proof_request_json: {:?}, extra_query_json: {:?}",
+           wallet_handle, proof_request_json, extra_query_json);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::SearchCredentialsForProofReq(
+                    wallet_handle,
+                    proof_request_json,
+                    extra_query_json,
+                    Box::new(move |result| {
+                        let (err, search_handle) = result_to_err_code_1!(result, 0);
+                        trace!("indy_prover_search_credentials_for_proof_req: search_handle: {:?}", search_handle);
+                        cb(command_handle, err, search_handle)
+                    }),
+                ))));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_prover_search_credentials_for_proof_req: <<< res: {:?}", res);
+
+    res
+}
+
+#[no_mangle]
+pub  extern fn indy_prover_fetch_next_credential_for_proof_request(command_handle: i32,
+                                                                   search_handle: i32,
+                                                                   item_referent: *const c_char,
+                                                                   count: usize,
+                                                                   cb: Option<extern fn(command_handle_: i32, err: ErrorCode,
+                                                                                        credentials_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_prover_fetch_next_credential_for_proof_request: >>> search_handle: {:?}, count: {:?}", search_handle, count);
+
+    check_useful_c_str!(item_referent, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_prover_fetch_next_credential_for_proof_request: entities >>> search_handle: {:?}, count: {:?}", search_handle, count);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::FetchNextCredentialForProofReq(
+                    search_handle,
+                    item_referent,
+                    count,
+                    Box::new(move |result| {
+                        let (err, credentials_json) = result_to_err_code_1!(result, String::new());
+                        trace!("indy_prover_fetch_next_credential_for_proof_request: credentials_json: {:?}", credentials_json);
+                        let credentials_json = CStringUtils::string_to_cstring(credentials_json);
+                        cb(command_handle, err, credentials_json.as_ptr())
+                    }),
+                ))));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_prover_fetch_next_credential_for_proof_request: <<< res: {:?}", res);
 
     res
 }
