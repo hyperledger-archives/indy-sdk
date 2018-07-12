@@ -179,6 +179,7 @@ ${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a \
 ${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so \
 ${LIBINDY_DIR}/libindy.a \
 ${LIBNULLPAY_DIR}/libnullpay.a \
+${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libgnustl_shared.so \
 ${OPENSSL_DIR}/lib/libssl.a \
 ${OPENSSL_DIR}/lib/libcrypto.a \
 ${SODIUM_LIB_DIR}/libsodium.a \
