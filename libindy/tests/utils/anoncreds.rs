@@ -343,6 +343,16 @@ impl AnoncredsUtils {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn prover_close_credentials_search_for_proof_req(search_handle: i32) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+
+        let err = indy_prover_close_credentials_search_for_proof_req(command_handle,
+                                                                     search_handle,
+                                                                     cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
+
     pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_credentials_json: &str,
                                master_secret_name: &str, schemas_json: &str, cred_defs_json: &str,
                                rev_states_json: &str) -> Result<String, ErrorCode> {

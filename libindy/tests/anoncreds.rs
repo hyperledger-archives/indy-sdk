@@ -2722,6 +2722,8 @@ mod high_cases {
             let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
             assert_eq!(credentials.len(), 2);
 
+            AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
             WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
@@ -2756,6 +2758,8 @@ mod high_cases {
             let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
             assert_eq!(credentials.len(), 1);
 
+            AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
             WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
@@ -2789,6 +2793,8 @@ mod high_cases {
 
             let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
             assert_eq!(credentials.len(), 0);
+
+            AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
         }

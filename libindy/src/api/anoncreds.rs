@@ -1256,6 +1256,35 @@ pub  extern fn indy_prover_fetch_next_credential_for_proof_request(command_handl
     res
 }
 
+#[no_mangle]
+pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle: i32,
+                                                                  search_handle: i32,
+                                                                  cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+    trace!("indy_prover_close_credentials_search_for_proof_req: >>> search_handle: {:?}", search_handle);
+
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+
+    trace!("indy_prover_close_credentials_search_for_proof_req: entities >>> search_handle: {:?}", search_handle);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Anoncreds(
+            AnoncredsCommand::Prover(
+                ProverCommand::CloseCredentialsSearchForProofReq(
+                    search_handle,
+                    Box::new(move |result| {
+                        let err = result_to_err_code!(result);
+                        trace!("indy_prover_close_credentials_search:");
+                        cb(command_handle, err)
+                    }),
+                ))));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_prover_close_credentials_search_for_proof_req: <<< res: {:?}", res);
+
+    res
+}
+
 /// Creates a proof according to the given proof request
 /// Either a corresponding credential with optionally revealed attributes or self-attested attribute must be provided
 /// for each requested attribute (see indy_prover_get_credentials_for_pool_req).

@@ -88,6 +88,9 @@ pub enum ProverCommand {
         String, // item referent
         usize, // count
         Box<Fn(Result<String, IndyError>) + Send>),
+    CloseCredentialsSearchForProofReq(
+        i32, // search handle
+        Box<Fn(Result<(), IndyError>) + Send>),
     CreateProof(
         i32, // wallet handle
         String, // proof request json
@@ -199,12 +202,16 @@ impl ProverCommandExecutor {
                 cb(self.get_credentials_for_proof_req(wallet_handle, &proof_req_json, extra_query_json.as_ref().map(String::as_str)));
             }
             ProverCommand::SearchCredentialsForProofReq(wallet_handle, proof_req_json, extra_query_json, cb) => {
-                info!(target: "prover_command_executor", "GetCredentialsForProofReq command received");
+                info!(target: "prover_command_executor", "SearchCredentialsForProofReq command received");
                 cb(self.search_credentials_for_proof_req(wallet_handle, &proof_req_json, extra_query_json.as_ref().map(String::as_str)));
             }
             ProverCommand::FetchNextCredentialForProofReq(search_handle, item_ref, count, cb) => {
-                info!(target: "prover_command_executor", "CredentialsSearchFetchRecords command received");
+                info!(target: "prover_command_executor", "FetchNextCredentialForProofReq command received");
                 cb(self.fetch_next_credential_for_proof_request(search_handle, &item_ref, count));
+            }
+            ProverCommand::CloseCredentialsSearchForProofReq(search_handle, cb) => {
+                info!(target: "prover_command_executor", "CloseCredentialsSearchForProofReq command received");
+                cb(self.close_credentials_search_for_proof_req(search_handle));
             }
             ProverCommand::CreateProof(wallet_handle, proof_req_json, requested_credentials_json, master_secret_name,
                                        schemas_json, credential_defs_json, rev_states_json, cb) => {
@@ -578,6 +585,19 @@ impl ProverCommandExecutor {
         trace!("fetch_next_credential_for_proof_request <<< requested_credentials_json: {:?}", requested_credentials_json);
 
         Ok(requested_credentials_json)
+    }
+
+    fn close_credentials_search_for_proof_req(&self, search_handle: i32) -> Result<(), IndyError> {
+        trace!("close_credentials_search_for_proof_req >>> search_handle: {:?}", search_handle);
+
+        let res = match self.searches_for_proof_requests.borrow_mut().remove(&search_handle) {
+            Some(_) => Ok(()),
+            None => Err(WalletError::InvalidHandle(format!("Unknown CredentialsSearch handle: {}", search_handle)))
+        }?;
+
+        trace!("close_credentials_search_for_proof_req <<< res: {:?}", res);
+
+        Ok(res)
     }
 
     fn create_proof(&self,
