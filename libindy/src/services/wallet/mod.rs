@@ -546,30 +546,29 @@ impl WalletService {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WalletRecord {
-    #[serde(rename = "id")]
-    name: String,
     #[serde(rename = "type")]
     type_: Option<String>,
+    id: String,
     value: Option<String>,
     tags: Option<HashMap<String, String>>
 }
 
 impl Ord for WalletRecord {
     fn cmp(&self, other: &Self) -> ::std::cmp::Ordering {
-        (&self.type_, &self.name).cmp(&(&other.type_, &other.name))
+        (&self.type_, &self.id).cmp(&(&other.type_, &other.id))
     }
 }
 
 impl PartialOrd for WalletRecord {
     fn partial_cmp(&self, other: &Self) -> Option<::std::cmp::Ordering> {
-        (&self.type_, &self.name).partial_cmp(&(&other.type_, &other.name))
+        (&self.type_, &self.id).partial_cmp(&(&other.type_, &other.id))
     }
 }
 
 impl WalletRecord {
     pub fn new(name: String, type_: Option<String>, value: Option<String>, tags: Option<HashMap<String, String>>) -> WalletRecord {
         WalletRecord {
-            name,
+            id: name,
             type_,
             value,
             tags,
@@ -577,7 +576,7 @@ impl WalletRecord {
     }
 
     pub fn get_id(&self) -> &str {
-        self.name.as_str()
+        self.id.as_str()
     }
 
     pub fn get_type(&self) -> Option<&str> {

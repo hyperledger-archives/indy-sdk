@@ -2,6 +2,8 @@
 
 extern crate base64;
 
+extern crate byteorder;
+
 #[macro_use]
 extern crate log;
 
