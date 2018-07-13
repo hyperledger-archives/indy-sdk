@@ -97,16 +97,16 @@ def android() {
                 //Package .so files into .aar 
                 packageAndroid(rust)
 
-                if (env.BRANCH_NAME == "master") {
+                //if (env.BRANCH_NAME == "master") {
                     //Publish package on aptly
                     publishAndroid(rust)
-                }
+                //}
             } catch (Exception ex) {
                 // We currently do not fail the main build if the android and ios builds fai
-                // currentBuild.result = "FAILED"
-                // if (env.BRANCH_NAME == "master") {
-                    // fail()
-                // }
+                currentBuild.result = "FAILED"
+                if (env.BRANCH_NAME == "master") {
+                    fail()
+                }
                 echo "$ex error"
             } finally {
                 step([$class: 'WsCleanup'])
@@ -137,10 +137,10 @@ def ios() {
                 }
             } catch (Exception ex) {
                 // We currently do not fail the main build if the android and ios builds fail
-                // currentBuild.result = "FAILED"
-                // if (env.BRANCH_NAME == "master") {
-                //     fail()
-                // }
+                currentBuild.result = "FAILED"
+                if (env.BRANCH_NAME == "master") {
+                    fail()
+                }
                 echo "$ex error"
             } finally {
                 step([$class: 'WsCleanup'])
@@ -344,7 +344,7 @@ def buildAndroid(envn) {
         ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
         sh "./${ANDROID_SCRIPT_PATH} arm"
         sh "./${ANDROID_SCRIPT_PATH} x86"
-        sh "./${ANDROID_SCRIPT_PATH} arm64"
+        //sh "./${ANDROID_SCRIPT_PATH} arm64"
         //Todo: get parallel processing to work. Currently it fails on Jenkins. It must share files or something
         // parallel([
         //     'arm': { sh "./${ANDROID_SCRIPT_PATH} arm"},
