@@ -12,6 +12,11 @@ if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
     sed -i .bak 's/debug = true/debug = false/' Cargo.toml
 fi
 
+IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
+if [ ! -z "$2" ]; then
+    IOS_TARGETS=$2
+fi
+
 cargo clean
 cargo update
 # To build for macos
@@ -20,7 +25,7 @@ cargo update
 #export RUST_BACKTRACE=1
 # To build for iOS
 #LIBINDY_DIR=/usr/local/lib RUST_BACKTRACE=1 cargo lipo --release
-cargo lipo --release --verbose --targets="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
+cargo lipo --release --verbose --targets="${IOS_TARGETS}"
 #LIBINDY_DIR=/usr/local/lib RUST_BACKTRACE=1 cargo lipo
 #LIBINDY_DIR=/usr/local/lib cargo test
 

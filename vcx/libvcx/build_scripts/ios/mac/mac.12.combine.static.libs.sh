@@ -46,10 +46,19 @@ if [ ! -z "$3" ]; then
     DEBUG_SYMBOLS=$3
 fi
 
+IOS_ARCHS="armv7,armv7s,arm64,i386,x86_64"
+if [ ! -z "$4" ]; then
+    IOS_ARCHS=$4
+fi
+bkpIFS="$IFS"
+IFS=',()][' read -r -a archs <<<"${IOS_ARCHS}"
+echo "Combining architectures: ${archs[@]}"    ##Or printf "%s\n" ${array[@]}
+IFS="$bkpIFS"
+
 if [ "$1" = "libvcxpartial" ]; then
     archs=(armv7 arm64)
-else
-    archs=(armv7 armv7s arm64 i386 x86_64)
+#else
+#    archs=(armv7 armv7s arm64 i386 x86_64)
 fi
 
 libraries=(*.a)
@@ -64,7 +73,7 @@ do
     # Extract individual architectures for this library
     for arch in ${archs[*]}
     do
-            lipo -extract $arch $library -o ${library}_${arch}.a
+        lipo -extract $arch $library -o ${library}_${arch}.a
     done
 done
 

@@ -26,17 +26,31 @@ git checkout `cat $SHA_HASH_DIR/libindy.commit.sha1.hash.txt`
 #cd $WORK_DIR/vcx-indy-sdk
 #git checkout tags/v1.3.0
 
+DEBUG_SYMBOLS="debuginfo"
+if [ ! -z "$1" ]; then
+    DEBUG_SYMBOLS=$1
+fi
+
+IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
+if [ ! -z "$2" ]; then
+    IOS_TARGETS=$2
+fi
+
 #########################################################################################################################
 # Now build libindy
 #########################################################################################################################
 cd $WORK_DIR/vcx-indy-sdk/libindy
+
+if [ "$DEBUG_SYMBOLS" = "debuginfo" ]; then
+    cat $START_DIR/cargo.toml.add.debug.txt >> Cargo.toml
+fi
 
 cargo clean
 cargo update
 # To build for macos
 #cargo build
 # To build for iOS
-cargo lipo --release --verbose --targets="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
+cargo lipo --release --verbose --targets="${IOS_TARGETS}"
 #cargo lipo
 
 #########################################################################################################################
@@ -44,13 +58,17 @@ cargo lipo --release --verbose --targets="aarch64-apple-ios,armv7-apple-ios,armv
 #########################################################################################################################
 cd $WORK_DIR/vcx-indy-sdk/libnullpay
 
+if [ "$DEBUG_SYMBOLS" = "debuginfo" ]; then
+    cat $START_DIR/cargo.toml.add.debug.txt >> Cargo.toml
+fi
+
 cargo clean
 cargo update
 # Replace '\"cdylib\"' with '\"staticlib\", \"cdylib\"' in Cargo.toml
-sed -i .bak 's/\"cdylib\"/\"staticlib\", \"cdylib\"/' Cargo.toml
+#sed -i .bak 's/\"cdylib\"/\"staticlib\", \"cdylib\"/' Cargo.toml
 
 # To build for macos
 #cargo build
 # To build for iOS
-cargo lipo --release --verbose --targets="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
+cargo lipo --release --verbose --targets="${IOS_TARGETS}"
 #cargo lipo
