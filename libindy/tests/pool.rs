@@ -516,6 +516,23 @@ mod medium_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn open_pool_ledger_works_for_wrong_ips() {
+            TestUtils::cleanup_storage();
+
+            PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
+            let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool_with_wrong_ips(POOL, None);
+            let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+            PoolUtils::create_pool_ledger_config(POOL, Some(pool_config.as_str())).unwrap();
+
+            let res = PoolUtils::open_pool_ledger(POOL, None);
+            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerTimeout);
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod close {

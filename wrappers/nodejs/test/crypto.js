@@ -5,10 +5,10 @@ var initTestPool = require('./helpers/initTestPool')
 
 test('crypto', async function (t) {
   var pool = await initTestPool()
-  var wName = 'wallet-' + cuid()
+  var walletConfig = {'id': 'wallet-' + cuid()}
   var walletCredentials = {'key': 'key'}
-  await indy.createWallet(pool.name, wName, 'default', null, walletCredentials)
-  var wh = await indy.openWallet(wName, null, walletCredentials)
+  await indy.createWallet(walletConfig, walletCredentials)
+  var wh = await indy.openWallet(walletConfig, walletCredentials)
 
   // Create Key
   var error = await t.throws(indy.createKey(-1, {}))
@@ -55,6 +55,6 @@ test('crypto', async function (t) {
   t.is(decrypted.toString('utf8'), message.toString('utf8'))
 
   await indy.closeWallet(wh)
-  await indy.deleteWallet(wName, walletCredentials)
+  await indy.deleteWallet(walletConfig, walletCredentials)
   pool.cleanup()
 })

@@ -11,12 +11,10 @@ use std::str::Utf8Error;
 
 use rusqlite;
 use serde_json;
-use base64;
 
 use api::ErrorCode;
 use errors::common::CommonError;
 use errors::ToErrorCode;
-
 
 #[derive(Debug)]
 pub enum WalletError {
@@ -25,12 +23,11 @@ pub enum WalletError {
     TypeAlreadyRegistered(String),
     AlreadyExists(String),
     NotFound(String),
-    IncorrectPool(String),
     PluggedWalletError(ErrorCode),
+    #[allow(dead_code)] // FIXME
     AlreadyOpened(String),
     AccessFailed(String),
     CommonError(CommonError),
-    InputError(String),
     EncodingError(String),
     StorageError(String),
     EncryptionError(String),
@@ -48,12 +45,10 @@ impl fmt::Display for WalletError {
             WalletError::TypeAlreadyRegistered(ref description) => write!(f, "Wallet type already registered: {}", description),
             WalletError::AlreadyExists(ref description) => write!(f, "Wallet with this name already exists: {}", description),
             WalletError::NotFound(ref description) => write!(f, "Wallet not found: {}", description),
-            WalletError::IncorrectPool(ref description) => write!(f, "Wallet used with different pool: {}", description),
             WalletError::PluggedWalletError(err_code) => write!(f, "Plugged wallet error: {}", err_code as i32),
             WalletError::AlreadyOpened(ref description) => write!(f, "Wallet already opened: {}", description),
             WalletError::AccessFailed(ref description) => write!(f, "Wallet security error: {}", description),
             WalletError::CommonError(ref err) => err.fmt(f),
-            WalletError::InputError(ref description) => write!(f, "Wallet input error: {}", description),
             WalletError::EncodingError(ref description) => write!(f, "Wallet encoding error: {}", description),
             WalletError::StorageError(ref description) => write!(f, "Wallet storage error occurred. Description: {}", description),
             WalletError::EncryptionError(ref description) => write!(f, "Wallet encryption error occurred. Description: {}", description),
@@ -72,12 +67,10 @@ impl error::Error for WalletError {
             WalletError::TypeAlreadyRegistered(ref description) => description,
             WalletError::AlreadyExists(ref description) => description,
             WalletError::NotFound(ref description) => description,
-            WalletError::IncorrectPool(ref description) => description,
             WalletError::PluggedWalletError(_) => "Plugged wallet error",
             WalletError::AlreadyOpened(ref description) => description,
             WalletError::AccessFailed(ref description) => description,
             WalletError::CommonError(ref err) => err.description(),
-            WalletError::InputError(ref description) => description,
             WalletError::EncodingError(ref description) => description,
             WalletError::StorageError(ref description) => description,
             WalletError::EncryptionError(ref description) => description,
@@ -94,12 +87,10 @@ impl error::Error for WalletError {
             WalletError::TypeAlreadyRegistered(_) => None,
             WalletError::AlreadyExists(_) => None,
             WalletError::NotFound(_) => None,
-            WalletError::IncorrectPool(_) => None,
             WalletError::PluggedWalletError(_) => None,
             WalletError::AlreadyOpened(_) => None,
             WalletError::AccessFailed(_) => None,
             WalletError::CommonError(ref err) => Some(err),
-            WalletError::InputError(_) => None,
             WalletError::EncodingError(_) => None,
             WalletError::StorageError(_) => None,
             WalletError::EncryptionError(_) => None,
@@ -118,12 +109,10 @@ impl ToErrorCode for WalletError {
             WalletError::TypeAlreadyRegistered(_) => ErrorCode::WalletTypeAlreadyRegisteredError,
             WalletError::AlreadyExists(_) => ErrorCode::WalletAlreadyExistsError,
             WalletError::NotFound(_) => ErrorCode::WalletNotFoundError,
-            WalletError::IncorrectPool(_) => ErrorCode::WalletIncompatiblePoolError,
             WalletError::PluggedWalletError(err_code) => err_code,
             WalletError::AlreadyOpened(_) => ErrorCode::WalletAlreadyOpenedError,
             WalletError::AccessFailed(_) => ErrorCode::WalletAccessFailed,
             WalletError::CommonError(ref err) => err.to_error_code(),
-            WalletError::InputError(_) => ErrorCode::WalletInputError,
             WalletError::EncodingError(_) => ErrorCode::WalletDecodingError,
             WalletError::StorageError(_) => ErrorCode::WalletStorageError,
             WalletError::EncryptionError(_) => ErrorCode::WalletEncryptionError,
@@ -185,18 +174,11 @@ impl From<Utf8Error> for WalletError {
     }
 }
 
-impl From<base64::DecodeError> for WalletError {
-    fn from(err: base64::DecodeError) -> Self {
-        WalletError::EncodingError(format!("Failed to decode input into base64: {}", err.description()))
-    }
-}
-
 impl From<serde_json::Error> for WalletError {
     fn from(err: serde_json::Error) -> Self {
         WalletError::EncodingError(format!("Failed to decode input into json: {}", err.description()))
     }
 }
-
 
 #[derive(Debug)]
 pub enum WalletStorageError {
@@ -210,7 +192,6 @@ pub enum WalletStorageError {
     CommonError(CommonError),
     QueryError(WalletQueryError),
 }
-
 
 impl From<rusqlite::Error> for WalletStorageError {
     fn from(err: rusqlite::Error) -> WalletStorageError {
@@ -241,10 +222,6 @@ impl From<Utf8Error> for WalletStorageError {
     fn from(err: Utf8Error) -> WalletStorageError { WalletStorageError::IOError(err.description().to_owned()) }
 }
 
-impl From<base64::DecodeError> for WalletStorageError {
-    fn from(err: base64::DecodeError) -> WalletStorageError { WalletStorageError::IOError(err.description().to_owned()) }
-}
-
 impl From<CommonError> for WalletStorageError {
     fn from(err: CommonError) -> WalletStorageError {WalletStorageError::CommonError(err)}
 }
@@ -271,7 +248,6 @@ impl error::Error for WalletStorageError {
     }
 }
 
-
 impl fmt::Display for WalletStorageError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -288,7 +264,6 @@ impl fmt::Display for WalletStorageError {
     }
 }
 
-
 #[derive(Debug)]
 pub enum WalletQueryError {
     ParsingErr(String),
@@ -303,6 +278,7 @@ impl fmt::Display for WalletQueryError {
         }
     }
 }
+
 impl error::Error for WalletQueryError {
     fn description(&self) -> &str {
         match *self {

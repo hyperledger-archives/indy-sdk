@@ -10,7 +10,7 @@ use std::rc::Rc;
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
 use std::cell::RefCell;
-use self::indy_crypto::utils::json::{JsonEncodable, JsonDecodable};
+use self::indy_crypto::utils::json::JsonEncodable;
 
 use std::result;
 
@@ -237,12 +237,12 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        RecordOptions::from_json(options_json)
+        serde_json::from_str::<RecordOptions>(options_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Options Json: {:?}", err)))?;
 
         let record = self.wallet_service.get_record(wallet_handle, type_, id, &options_json)?;
 
-        let res = record.to_json()
+        let res = serde_json::to_string(&record)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize WalletRecord: {:?}", err)))?;
 
         trace!("get_record <<< res: {:?}", res);
@@ -259,7 +259,7 @@ impl NonSecretsCommandExecutor {
 
         self._check_type(type_)?;
 
-        SearchOptions::from_json(options_json)
+        serde_json::from_str::<SearchOptions>(options_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Options Json: {:?}", err)))?;
 
         let search = self.wallet_service.search_records(wallet_handle, type_, query_json, &options_json)?;
