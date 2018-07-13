@@ -55,11 +55,11 @@ IFS=',()][' read -r -a archs <<<"${IOS_ARCHS}"
 echo "Combining architectures: ${archs[@]}"    ##Or printf "%s\n" ${array[@]}
 IFS="$bkpIFS"
 
-if [ "$1" = "libvcxpartial" ]; then
-    archs=(armv7 arm64)
+# if [ "$1" = "libvcxpartial" ]; then
+#     archs=(armv7 arm64)
 #else
 #    archs=(armv7 armv7s arm64 i386 x86_64)
-fi
+# fi
 
 libraries=(*.a)
 libtool="/usr/bin/libtool"
