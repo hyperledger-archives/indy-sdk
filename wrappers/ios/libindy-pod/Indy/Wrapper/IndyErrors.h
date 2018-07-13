@@ -156,4 +156,7 @@ typedef NS_ENUM(NSInteger, IndyErrorCode)
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702
+
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703
 };

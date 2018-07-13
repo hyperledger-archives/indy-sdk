@@ -158,6 +158,9 @@ typedef enum
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702
 
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703
+
 } indy_error_t;
 
 #endif
