@@ -83,7 +83,7 @@ statically_link_dependencies_with_libindy(){
         ${OPENSSL_DIR}/lib/libcrypto.a \
         ${SODIUM_LIB_DIR}/libsodium.a \
         ${LIBZMQ_LIB_DIR}/libzmq.a \
-        ${TOOLCHAIN_DIR}/${TOOLCHAIN_TRIPLET}/lib/libgnustl_shared.so \
+        ${TOOLCHAIN_DIR}/${TRIPLET}/lib/libgnustl_shared.so \
         -Wl,--no-whole-archive -z muldefs
 }
 
@@ -145,3 +145,5 @@ create_standalone_toolchain_and_rust_target
 create_cargo_config
 build
 package_library
+
+echo no | Android/Sdk/tools/bin/avdmanager create avd --force --name testAVD --abi google_apis/x86_64 --package 'system-images;android-23;google_apis;x86_64'
