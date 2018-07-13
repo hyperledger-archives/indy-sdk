@@ -83,7 +83,7 @@ statically_link_dependencies_with_libindy(){
         ${OPENSSL_DIR}/lib/libcrypto.a \
         ${SODIUM_LIB_DIR}/libsodium.a \
         ${LIBZMQ_LIB_DIR}/libzmq.a \
-        ${TOOLCHAIN_DIR}/${TRIPLET}/lib/libgnustl_shared.so \
+        ${TOOLCHAIN_DIR}/${TOOLCHAIN_TRIPLET}/lib/libgnustl_shared.so \
         -Wl,--no-whole-archive -z muldefs
 }
 
@@ -99,22 +99,30 @@ package_library(){
 }
 
 build(){
+    echo "**************************************************"
+    echo "Building for architecture ${ARCH}"
+    echo "Toolchain path ${TOOLCHAIN_DIR}"
+    echo "ZMQ path ${LIBZMQ_DIR}"
+    echo "Sodium path ${SODIUM_DIR}"
+    echo "Openssl path ${OPENSSL_DIR}"
+    echo "Artifacts will be in ${BUILD_FOLDER}/libindy_${TARGET_ARCH}"
+    echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
         cargo clean
-        RUSTFLAGS="-L${TOOLCHAIN_DIR}/i686-linux-android/lib -lgnustl_shared" \
+        RUSTFLAGS="-L${TOOLCHAIN_DIR}/${TRIPLET}/lib -lgnustl_shared" \
             cargo build --release --target=${TRIPLET}
     popd
 }
 
-_test(){
-    pushd ${WORKDIR}
-        rm -rf target/${TRIPLET}
-        cargo clean
-        RUST_TEST_THREADS=1 RUSTFLAGS="-L${TOOLCHAIN_DIR}/i686-linux-android/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-            cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"
-    popd
-}
+#_test(){
+#    pushd ${WORKDIR}
+#        rm -rf target/${TRIPLET}
+#        cargo clean
+#        RUST_TEST_THREADS=1 RUSTFLAGS="-L${TOOLCHAIN_DIR}/i686-linux-android/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+#            cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"
+#    popd
+#}
 
 #cleanup(){
 ##    rm -rf ${BUILD_FOLDER}
