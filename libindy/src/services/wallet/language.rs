@@ -3,7 +3,7 @@ use std::string;
 use serde_json;
 
 use errors::wallet::WalletQueryError;
-use base64;
+use utils::crypto::base64;
 
 #[derive(Debug, PartialEq, Hash, Clone)]
 pub enum TagName {

@@ -675,21 +675,15 @@ indy.setProtocolVersion = function setProtocolVersion (protocolVersion, cb) {
   return cb.promise
 }
 
-indy.createWallet = function createWallet (poolName, name, xtype, config, credentials, cb) {
+indy.createWallet = function createWallet (config, credentials, cb) {
   cb = wrapIndyCallback(cb)
-  capi.createWallet(poolName, name, xtype, toJson(config), toJson(credentials), cb)
+  capi.createWallet(toJson(config), toJson(credentials), cb)
   return cb.promise
 }
 
-indy.openWallet = function openWallet (name, runtimeConfig, credentials, cb) {
+indy.openWallet = function openWallet (config, credentials, cb) {
   cb = wrapIndyCallback(cb)
-  capi.openWallet(name, runtimeConfig, toJson(credentials), cb)
-  return cb.promise
-}
-
-indy.listWallets = function listWallets (cb) {
-  cb = wrapIndyCallback(cb, fromJson)
-  capi.listWallets(cb)
+  capi.openWallet(toJson(config), toJson(credentials), cb)
   return cb.promise
 }
 
@@ -699,9 +693,9 @@ indy.exportWallet = function exportWallet (wh, exportConfig, cb) {
   return cb.promise
 }
 
-indy.importWallet = function importWallet (poolName, name, xtype, config, credentials, importConfig, cb) {
+indy.deleteWallet = function deleteWallet (config, credentials, cb) {
   cb = wrapIndyCallback(cb)
-  capi.importWallet(poolName, name, xtype, toJson(config), toJson(credentials), toJson(importConfig), cb)
+  capi.deleteWallet(toJson(config), toJson(credentials), cb)
   return cb.promise
 }
 
@@ -711,9 +705,9 @@ indy.closeWallet = function closeWallet (wh, cb) {
   return cb.promise
 }
 
-indy.deleteWallet = function deleteWallet (name, credentials, cb) {
+indy.importWallet = function importWallet (config, credentials, importConfigJson, cb) {
   cb = wrapIndyCallback(cb)
-  capi.deleteWallet(name, toJson(credentials), cb)
+  capi.importWallet(toJson(config), toJson(credentials), toJson(importConfigJson), cb)
   return cb.promise
 }
 
