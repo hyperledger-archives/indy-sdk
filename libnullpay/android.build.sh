@@ -118,6 +118,6 @@ setup_dependencies
 download_and_setup_toolchain
 set_env_vars
 create_standalone_toolchain_and_rust_target
-printenv
+create_cargo_config
 build
 package_library

@@ -63,5 +63,6 @@ download_and_unzip_dependencies_for_all_architectures
 download_and_setup_toolchain
 set_env_vars
 create_standalone_toolchain_and_rust_target
+create_cargo_config
 build_test_artifacts
 execute_on_device

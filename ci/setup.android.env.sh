@@ -94,6 +94,15 @@ create_standalone_toolchain_and_rust_target(){
     rustup target add ${TRIPLET}
 }
 
+create_cargo_config(){
+mkdir -p ${INDY_WORKDIR}/.cargo/config
+cat << EOF > ${INDY_WORKDIR}/.cargo/config
+[target.${TRIPLET}]
+ar = $(realpath ${AR})
+linker = $(realpath ${CC})
+EOF
+}
+
 download_and_setup_toolchain(){
     if [ "$(uname)" == "Darwin" ]; then
         echo "Downloading NDK for OSX"
