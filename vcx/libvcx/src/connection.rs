@@ -477,8 +477,19 @@ pub fn build_connection_with_invite(source_id: &str, details: &str) -> Result<u3
     let details:Value = serde_json::from_str(&details)
         .or(Err(ConnectionError::CommonError(error::INVALID_JSON.code_num)))?;
 
-    let invite_details:InviteDetail = serde_json::from_value(details)
-        .or(Err(ConnectionError::CommonError(error::INVALID_INVITE_DETAILS.code_num)))?;
+    let invite_details:InviteDetail = match serde_json::from_value(details.clone()) {
+        Ok(x) => x,
+        Err(x) => {
+            // Try converting to abbreviated
+            match unabbrv_event_detail(details) {
+                Ok(x) => match serde_json::from_value(x) {
+                    Ok(x) => x,
+                    Err(x) => return Err(ConnectionError::CommonError(error::INVALID_JSON.code_num)),
+                }
+                Err(_) => return Err(ConnectionError::CommonError(error::INVALID_JSON.code_num)),
+            }
+        },
+    };
 
     let new_handle = create_connection(source_id)?;
 
@@ -1120,7 +1131,12 @@ pub mod tests {
         let details = serde_json::to_string(&unabbrv_details).unwrap();
 
         let handle = build_connection_with_invite("alice",&details).unwrap();
+
         connect(handle,Some("{}".to_string())).unwrap();
+
+        let handle_2 = build_connection_with_invite("alice",&details).unwrap();
+
+        connect(handle_2,Some("{}".to_string())).unwrap();
         wallet::delete_wallet("create_with_details").unwrap();
     }
 

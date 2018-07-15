@@ -67,7 +67,7 @@ def register_agent(args):
         sys.stderr.write("could not register agent, see log\n")
         print(json.dumps({
             'provisioned': False,
-            'provisioned_status': 'Failed: Could not register agenct, see log\n'
+            'provisioned_status': 'Failed: Could not register agent, see log\n'
         },indent=2))
     else:
         pointer = c_int(rc)
