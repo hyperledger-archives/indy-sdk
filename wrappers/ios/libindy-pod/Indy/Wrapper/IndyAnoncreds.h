@@ -268,6 +268,27 @@
                    completion:(void (^)(NSError *error, NSString *outCredID))completion;
 
 /**
+ Gets human readable credential by the given id.
+
+ @param credId: Identifier by which requested credential is stored in the wallet
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param completion Callback that takes command result as parameter.
+ Returns credential json:
+  {
+      "referent": string, // cred_id in the wallet
+      "values": <see credValuesJSON above>,
+      "schema_id": string,
+      "cred_def_id": string,
+      "rev_reg_id": Optional<string>,
+      "cred_rev_id": Optional<string>
+  }
+
+ */
++ (void)proverGetCredentialWithId:(NSString *)credId
+                     walletHandle:(IndyHandle)walletHandle
+                       completion:(void (^)(NSError *error, NSString *credentialJSON))completion;
+
+/**
  Gets human readable credentials according to the filter.
  If filter is NULL, then all credentials are returned.
  Credentials can be filtered by Issuer, credential_def and/or Schema.
@@ -299,6 +320,54 @@
                            completion:(void (^)(NSError *error, NSString *credentialsJSON))completion;
 
 /**
+ Search for credentials stored in wallet.
+
+ Instead of immediately returning of fetched credentials this call returns searchHandle that can be used later
+ to fetch records by small batches (with proverFetchCredentialsWithSearchHandle).
+  
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param filterJson Wql style filter for credentials searching based on tags created during the saving of credential.
+ @param completion Callback that takes command result as parameter. 
+ Returns 
+    searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsWithSearchHandle)
+    totalCount: Total count of records
+
+ */
++ (void)proverSearchCredentialsForFilter:(NSString *)filterJSON
+                            walletHandle:(IndyHandle)walletHandle
+                              completion:(void (^)(NSError *error, IndyHandle searchHandle, NSNumber *totalCount))completion;
+
+/**
+ Fetch next records for wallet credentials search.
+  
+ @param searchHandle Search handle (created by proverSearchCredentialsForFilter).
+ @param completion Callback that takes command result as parameter. 
+ Returns credentials json:
+  [{
+      "referent": string, // cred_id in the wallet
+      "values": <see credValuesJSON above>,
+      "schema_id": string,
+      "cred_def_id": string,
+      "rev_reg_id": Optional<string>,
+      "cred_rev_id": Optional<string>
+  }]
+
+ */
++ (void)proverFetchCredentialsWithSearchHandle:(IndyHandle)searchHandle
+                                         count:(NSNumber *)count
+                                    completion:(void (^)(NSError *error, NSString *credentialsJson))completion;
+
+/**
+ Close credentials search (make search handle invalid)
+  
+ @param searchHandle Search handle (created by proverSearchCredentialsForFilter).
+ Returns no result
+
+ */
++ (void)proverCloseCredentialsSearchWithHandle:(IndyHandle)searchHandle
+                                    completion:(void (^)(NSError *error))completion;
+
+/**
  Gets human readable credentials matching the given proof request.
  
  @param  proofReqJSON: proof request json
@@ -318,6 +387,11 @@
                        // If specified prover must proof non-revocation
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
+    }
+ @param extraQueryJSON: (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+    {
+        "<attr_referent>": <wql query>,
+        "<predicate_referent>": <wql query>,
     }
  where 
  attr_referent: Proof-request local identifier of requested attribute
@@ -372,8 +446,86 @@
      }
  */
 + (void)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
+                         extraQueryJson:(NSString *)extraQueryJSON
                            walletHandle:(IndyHandle)walletHandle
                              completion:(void (^)(NSError *error, NSString *credentialsJSON))completion;
+
+/**
+ Search for credentials matching the given proof request.
+
+ Instead of immediately returning of fetched credentials this call returns searchHandle that can be used later
+ to fetch records by small batches (with proverFetchCredentialsForProofReqItemReferent).
+
+ @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
+ @param proofReqJSON: proof request json
+    {
+        "name": string,
+        "version": string,
+        "nonce": string,
+        "requested_attributes": { // set of requested attributes
+             "<attr_referent>": <attr_info>, // see above
+             ...,
+        },
+        "requested_predicates": { // set of requested predicates
+             "<predicate_referent>": <predicate_info>, // see above
+             ...,
+         },
+        "non_revoked": Optional<<non_revoc_interval>>, // see above,
+                       // If specified prover must proof non-revocation
+                       // for date in this interval for each attribute
+                       // (can be overridden on attribute level)
+    }
+ @param extraQueryJSON: (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+    {
+        "<attr_referent>": <wql query>,
+        "<predicate_referent>": <wql query>,
+    }
+ @param completion Callback that takes command result as parameter.
+ Returns
+    searchHandle: Search handle that can be used later to fetch records by small batches (with proverFetchCredentialsForProofReqItemReferent)
+ */
++ (void)proverSearchCredentialsForProofRequest:(NSString *)proofRequest
+                                extraQueryJSON:(NSString *)extraQueryJSON
+                                  walletHandle:(IndyHandle)walletHandle
+                                    completion:(void (^)(NSError *error, IndyHandle searchHandle))completion;
+
+/**
+ Fetch next records for the requested item using proof request search handle (created by proverSearchCredentialsForProofRequest).
+
+ @param searchHandle Search handle (created by proverSearchCredentialsForProofRequest).
+ @param itemReferent Referent of attribute/predicate in the proof request.
+ @param count Count records to fetch.
+ @param completion Callback that takes command result as parameter.
+ Returns credentials json.
+    [{
+        "cred_info": <credential info>,
+        "interval": Optional(non_revoc_interval see above)
+    }]
+ where credential info is
+    {
+      "referent": string, // cred_id in the wallet
+      "values": <see credValuesJSON above>,
+      "schema_id": string,
+      "cred_def_id": string,
+      "rev_reg_id": Optional<string>,
+      "cred_rev_id": Optional<string>
+  }
+
+ */
++ (void)proverFetchCredentialsForProofReqItemReferent:(NSString *)itemReferent
+                                         searchHandle:(IndyHandle)searchHandle
+                                                count:(NSNumber *)count
+                                           completion:(void (^)(NSError *error, NSString *credentialsJson))completion;
+
+/**
+ Close credentials search for proof request (make search handle invalid)
+
+ @param searchHandle Search handle (created by proverSearchCredentialsForProofRequest).
+ Returns no result
+
+ */
++ (void)proverCloseCredentialsSearchForProofReqWithHandle:(IndyHandle)searchHandle
+                                               completion:(void (^)(NSError *error))completion;
 
 /**
  Creates a proof according to the given proof request

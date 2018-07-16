@@ -917,7 +917,7 @@ pub extern fn indy_prover_get_credential(command_handle: i32,
 ///
 /// Instead of immediately returning of fetched credentials
 /// this call returns search_handle that can be used later
-/// to fetch records by small batches (with indy_prover_credentials_search_fetch_records).
+/// to fetch records by small batches (with indy_prover_fetch_credentials).
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
@@ -925,7 +925,7 @@ pub extern fn indy_prover_get_credential(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// search_handle: Search handle that can be used later to fetch records by small batches (with indy_prover_credentials_search_fetch_records)
+/// search_handle: Search handle that can be used later to fetch records by small batches (with indy_prover_fetch_credentials)
 /// total_count: Total count of records
 ///
 /// #Errors

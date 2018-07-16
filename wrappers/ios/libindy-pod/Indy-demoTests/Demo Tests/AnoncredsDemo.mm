@@ -37,7 +37,7 @@
 
     // 2. Open wallet
     ret = [[WalletUtils sharedInstance] openWalletWithConfig:walletConfig
-                                                 outHandle:&walletHandle];
+                                                   outHandle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::openWalletWithName() failed!");
 
     //3. Issuer create Schema
@@ -131,9 +131,10 @@
             }
     }];
 
-     NSString *credentialsJson = nil;
+    NSString *credentialsJson = nil;
 
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofReqJSON
+                                                            extraQueryJson:nil
                                                               walletHandle:walletHandle
                                                            credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"proverGetCredentialsForProofReq() failed!");
@@ -445,13 +446,13 @@
 
     //4. Issuer create revocation registry
     NSString *configJson = [[AnoncredsUtils sharedInstance] toJson:@{
-            @"max_cred_num":@(5),
-            @"issuance_type":@"ISSUANCE_ON_DEMAND"
+            @"max_cred_num": @(5),
+            @"issuance_type": @"ISSUANCE_ON_DEMAND"
     }];
 
     NSString *tailsWriterConfig = [[AnoncredsUtils sharedInstance] toJson:@{
-            @"base_dir":[TestUtils tmpFilePathAppending:@"tails"],
-            @"uri_pattern":@""
+            @"base_dir": [TestUtils tmpFilePathAppending:@"tails"],
+            @"uri_pattern": @""
     }];
 
     NSNumber *tailsWriterHandle = nil;
@@ -542,7 +543,7 @@
                     @"attr1_referent": @{
                             @"name": @"name"
                     },
-                    @"attr2_referent":@{
+                    @"attr2_referent": @{
                             @"name": @"phone"
                     }
             },
@@ -557,6 +558,7 @@
 
     NSString *credentialsJson = nil;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofReqJson
+                                                            extraQueryJson:nil
                                                               walletHandle:proverWalletHandle
                                                            credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"proverGetCredentialsForProofReq() failed!");
@@ -582,19 +584,19 @@
     // 12. Prover create Proof
     NSString *requestedCredentialsJson = [[AnoncredsUtils sharedInstance] toJson:@{
             @"self_attested_attributes": @{
-                    @"attr2_referent":@"value"
+                    @"attr2_referent": @"value"
             },
             @"requested_attributes": @{
                     @"attr1_referent": @{
                             @"cred_id": credentialReferent,
                             @"revealed": @(YES),
-                            @"timestamp":timestamp
+                            @"timestamp": timestamp
                     }
             },
             @"requested_predicates": @{
                     @"predicate1_referent": @{
                             @"cred_id": credentialReferent,
-                            @"timestamp":timestamp
+                            @"timestamp": timestamp
                     }
             }
     }];

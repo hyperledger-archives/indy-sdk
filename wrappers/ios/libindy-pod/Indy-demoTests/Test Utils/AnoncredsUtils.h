@@ -112,12 +112,40 @@
                          outCredId:(NSString **)outCredId;
 
 - (NSError *)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
+                              extraQueryJson:(NSString *)extraQueryJson
                                 walletHandle:(IndyHandle)walletHandle
                              credentialsJson:(NSString **)outCredentialsJson;
+
+- (NSError *)proverGetCredentialWithId:(NSString *)credId
+                          walletHandle:(IndyHandle)walletHandle
+                        credentialJson:(NSString **)outCredentialJson;
 
 - (NSError *)proverGetCredentialsForFilter:(NSString *)filterJSON
                               walletHandle:(IndyHandle)walletHandle
                             credentilsJson:(NSString **)credentialsJson;
+
+- (NSError *)proverSearchCredentialsForFilter:(NSString *)filterJSON
+                                 walletHandle:(IndyHandle)walletHandle
+                                 searchHandle:(IndyHandle *)searchHandle
+                                   totalCount:(NSNumber **)totalCount;
+
+- (NSError *)proverFetchCredentialsWithSearchHandle:(IndyHandle)searchHandle
+                                              count:(NSNumber *)count
+                                     credentilsJson:(NSString **)credentialsJson;
+
+- (NSError *)proverCloseCredentialsSearchWithHandle:(IndyHandle)searchHandle;
+
+- (NSError *)proverSearchCredentialsForProofRequest:(NSString *)proofReqJSON
+                                     extraQueryJson:(NSString *)extraQueryJson
+                                       walletHandle:(IndyHandle)walletHandle
+                                       searchHandle:(IndyHandle *)searchHandle;
+
+- (NSError *)proverFetchCredentialsForProofReqItemReferent:(NSString *)itemReferent
+                                              searchHandle:(IndyHandle)searchHandle
+                                                     count:(NSNumber *)count
+                                            credentilsJson:(NSString **)credentialsJson;
+
+- (NSError *)proverCloseCredentialsSearchForProofReqWithHandle:(IndyHandle)searchHandle;
 
 - (NSError *)proverCreateProofForRequest:(NSString *)proofRequestJSON
                 requestedCredentialsJSON:(NSString *)requestedCredentialsJSON
