@@ -1,3 +1,6 @@
+#[macro_use]
+pub mod sodium_type;
+
 #[cfg(feature = "box_sodium")]
 #[path = "box_/sodium.rs"]
 pub mod box_;
@@ -5,6 +8,10 @@ pub mod box_;
 #[cfg(feature = "base58_rust_base58")]
 #[path = "base58/rust_base58.rs"]
 pub mod base58;
+
+#[cfg(feature = "base64_rust_base64")]
+#[path = "base64/rust_base64.rs"]
+pub mod base64;
 
 #[allow(dead_code)] /* FIXME */
 #[cfg(feature = "xsalsa20_sodium")]
@@ -23,6 +30,9 @@ pub mod signature_serializer;
 
 pub mod verkey_builder;
 
+#[cfg(feature = "memzero_sodium")]
+#[path = "memzero/sodium.rs"]
+pub mod memzero;
 
 #[cfg(feature = "sealedbox_sodium")]
 #[path = "sealedbox/sodium.rs"]

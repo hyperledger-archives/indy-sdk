@@ -83,7 +83,7 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
 
     let version = vec![0u8, TAILS_BLOB_TAG_SZ];
     hasher.process(version.as_slice());
-    service.append(blob_handle, version.as_slice());
+    service.append(blob_handle, version.as_slice())?;
 
     while let Some(tail) = rtg.next()? {
         let tail_bytes = tail.to_bytes()?;

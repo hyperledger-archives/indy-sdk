@@ -1,7 +1,11 @@
 extern crate openssl;
 
 use errors::common::CommonError;
+
 use self::openssl::hash::{hash2, MessageDigest, Hasher, DigestBytes};
+use self::openssl::error::ErrorStack;
+
+use std::error::Error;
 
 pub const HASH_OUTPUT_LEN: usize = 32;
 
@@ -83,5 +87,12 @@ impl <T: AsRef<[u8]>> Hashable for T {
 
     fn update_context(&self, context: &mut Hasher) -> Result<(), CommonError> {
         Ok(context.update(self.as_ref())?)
+    }
+}
+
+impl From<ErrorStack> for CommonError {
+    fn from(err: ErrorStack) -> CommonError {
+        // TODO: FIXME: Analyze ErrorStack and split invalid structure errors from other errors
+        CommonError::InvalidStructure(err.description().to_string())
     }
 }
