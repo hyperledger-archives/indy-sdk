@@ -276,7 +276,7 @@ impl Credential {
             Some(ref x) => format!(r#","price":"{}","payment_address":"{}""#,x.price,x.payment_addr),
             None => "".to_string(),
         };
-        format!(r#"{{"credential_id":"{}","credential":{}{}}}"#,self.get_source_id(), cred, payment_string)
+        format!(r#"{{"credential_id":"{}","credential":{}{}}}"#,self.get_credential_id(), cred, payment_string)
     }
 
     fn to_cred_offer_string(&self, cred_offer: &str) -> String {

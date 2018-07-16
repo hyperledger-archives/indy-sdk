@@ -2,6 +2,7 @@
 
 setup() {
     echo "Working Directory: ${PWD}"
+    set -e
     export ARCH=$1
 
     export PATH=${HOME}/.cargo/bin:${PATH}

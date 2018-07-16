@@ -97,10 +97,10 @@ def android() {
                 //Package .so files into .aar 
                 packageAndroid(rust)
 
-                //if (env.BRANCH_NAME == "master") {
+                if (env.BRANCH_NAME == "master") {
                     //Publish package on aptly
                     publishAndroid(rust)
-                //}
+                }
             } catch (Exception ex) {
                 // We currently do not fail the main build if the android and ios builds fai
                 currentBuild.result = "FAILED"
