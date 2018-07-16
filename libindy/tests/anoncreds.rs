@@ -453,10 +453,10 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let (search_handle, count) = AnoncredsUtils::prover_open_credentials_search(wallet_handle, "{}").unwrap();
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, "{}").unwrap();
             assert_eq!(count, 3);
 
-            let credentials = AnoncredsUtils::prover_credentials_search_fetch_records(search_handle, count).unwrap();
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
             assert_eq!(credentials.len(), 3);
@@ -475,10 +475,10 @@ mod high_cases {
             let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             let filter_json = json!({"issuer_did": ISSUER_DID}).to_string();
-            let (search_handle, count) = AnoncredsUtils::prover_open_credentials_search(wallet_handle, &filter_json).unwrap();
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
             assert_eq!(count, 2);
 
-            let credentials = AnoncredsUtils::prover_credentials_search_fetch_records(search_handle, count).unwrap();
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
             assert_eq!(credentials.len(), 2);
@@ -496,10 +496,10 @@ mod high_cases {
             let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             let filter_json = json!({"schema_id": AnoncredsUtils::gvt_schema_id()}).to_string();
-            let (search_handle, count) = AnoncredsUtils::prover_open_credentials_search(wallet_handle, &filter_json).unwrap();
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
             assert_eq!(count, 2);
 
-            let credentials = AnoncredsUtils::prover_credentials_search_fetch_records(search_handle, count).unwrap();
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
             assert_eq!(credentials.len(), 2);
@@ -521,10 +521,10 @@ mod high_cases {
                 "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id()
             }).to_string();
 
-            let (search_handle, count) = AnoncredsUtils::prover_open_credentials_search(wallet_handle, &filter_json).unwrap();
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
             assert_eq!(count, 1);
 
-            let credentials = AnoncredsUtils::prover_credentials_search_fetch_records(search_handle, count).unwrap();
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
             assert_eq!(credentials.len(), 1);
@@ -546,10 +546,10 @@ mod high_cases {
                 })
             }).to_string();
 
-            let (search_handle, count) = AnoncredsUtils::prover_open_credentials_search(wallet_handle, &filter_json).unwrap();
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
             assert_eq!(count, 3);
 
-            let credentials = AnoncredsUtils::prover_credentials_search_fetch_records(search_handle, count).unwrap();
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
             assert_eq!(credentials.len(), 3);
@@ -574,10 +574,10 @@ mod high_cases {
                 ]
             }).to_string();
 
-            let (search_handle, count) = AnoncredsUtils::prover_open_credentials_search(wallet_handle, &filter_json).unwrap();
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
             assert_eq!(count, 3);
 
-            let credentials = AnoncredsUtils::prover_credentials_search_fetch_records(search_handle, count).unwrap();
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
             assert_eq!(credentials.len(), 3);
@@ -597,10 +597,10 @@ mod high_cases {
 
             let filter_json = json!({"other_field": "other_value"}).to_string();
 
-            let (search_handle, count) = AnoncredsUtils::prover_open_credentials_search(wallet_handle, &filter_json).unwrap();
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
             assert_eq!(count, 0);
 
-            let credentials = AnoncredsUtils::prover_credentials_search_fetch_records(search_handle, count).unwrap();
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
             assert_eq!(credentials.len(), 0);
 

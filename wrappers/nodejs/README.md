@@ -233,7 +233,7 @@ Example:
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_def_id", Optional<string>,
-        "values": <see cred_values_json above>,
+        "values": <see credValues above>,
         // Fields below can depend on Cred Def type
         "signature": <signature>,
         "signature_correctness_proof": <signature_correctness_proof>
@@ -342,7 +342,7 @@ NOTE: This method is deprecated. Use <indy_prover_open_credentials_search> inste
 ```
     [{
         "referent": string, // cred_id in the wallet
-        "values": <see cred_values_json above>,
+        "values": <see credValues above>,
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_id": Optional<string>,
@@ -362,7 +362,7 @@ Gets human readable credential by the given id.
 ```
     {
         "referent": string, // cred_id in the wallet
-        "values": <see cred_values_json above>,
+        "values": <see credValues above>,
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_id": Optional<string>,
@@ -372,32 +372,32 @@ Gets human readable credential by the given id.
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverOpenCredentialsSearch \( wh, filter \) -&gt; \[ searchHandle, totalCount \]
+#### proverSearchCredentials \( wh, filter \) -&gt; \[ searchHandle, totalCount \]
 
 Search for credentials stored in wallet.
 
 Instead of immediately returning of fetched credentials this call returns search_handle that can be used later 
-to fetch records by small batches (with indy_prover_credentials_search_fetch_records).
+to fetch records by small batches (with proverFetchCredentials).
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `filter`: Json - wql style filter for credentials searching based on tags created during the saving of credential
 
-* __->__ `searchHandle`: Number - handle that can be used later to fetch records by small batches (with proverCredentialsSearchFetchRecords)
+* __->__ `searchHandle`: Number - handle that can be used later to fetch records by small batches (with proverFetchCredentials)
 * __->__ `totalCount`: Number -  total count of records
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverCredentialsSearchFetchRecords \( sh, count \) -&gt; credentials
+#### proverFetchCredentials \( sh, count \) -&gt; credentials
 
 Fetch next records for wallet search.
 
-* `sh`: Handle (Number) - search handle (created by proverOpenCredentialsSearch)
+* `sh`: Handle (Number) - search handle (created by proverSearchCredentials)
 * `count`: Number - count of records to fetch
 * __->__ `credentials`: Json - credentials json
 ```
     [{
         "referent": string, // cred_id in the wallet
-        "values": <see cred_values_json above>,
+        "values": <see credValues above>,
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_id": Optional<string>,
@@ -411,7 +411,7 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
 Close credentials search (make search handle invalid).
 
-* `sh`: Handle (Number) - search handle (created by proverOpenCredentialsSearch)
+* `sh`: Handle (Number) - search handle (created by proverSearchCredentials)
 * __->__ void
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
@@ -441,7 +441,7 @@ Gets human readable credentials matching the given proof request.
                        // (can be overridden on attribute level)
     }
 ````
-* `proofRequest`: Json - (Optional) List of extra queries that will be applied to correspondent attribute/predicate
+* `extraQuery`: Json - (Optional) List of extra queries that will be applied to correspondent attribute/predicate
 ```
     {
         "<attr_referent>": <wql query>,
@@ -470,6 +470,82 @@ Gets human readable credentials matching the given proof request.
         "cred_rev_id": Optional<int>,
     }
 ````
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverSearchCredentialsForProofReq \( wh, proofRequest, extraQuery \) -&gt; searchHandle
+
+Search for credentials matching the given proof request.
+
+Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
+to fetch records by small batches (with proverFetchCredentialsForProofReq).
+
+* `proofRequest`: Json - proof request json
+```
+    {
+        "name": string,
+        "version": string,
+        "nonce": string,
+        "requested_attributes": { // set of requested attributes
+             "<attr_referent>": <attr_info>, // see below
+             ...,
+        },
+        "requested_predicates": { // set of requested predicates
+             "<predicate_referent>": <predicate_info>, // see below
+             ...,
+         },
+        "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                       // If specified prover must proof non-revocation
+                       // for date in this interval for each attribute
+                       // (can be overridden on attribute level)
+    }
+````
+* `extraQuery`: Json - (Optional) List of extra queries that will be applied to correspondent attribute/predicate
+```
+    {
+        "<attr_referent>": <wql query>,
+        "<predicate_referent>": <wql query>,
+    }
+```
+
+* __->__ `searchHandle`: Number - handle that can be used later to fetch records by small batches (with proverFetchCredentialsForProofReq)
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverFetchCredentialsForProofReq \( sh, itemReferent, count \) -&gt; credentials
+
+Fetch next records for the requested item using proof request search handle (created by proverSearchCredentialsForProofReq).
+
+* `sh`: Handle (Number) - search handle (created by proverSearchCredentialsForProofReq)
+* `itemReferent`: Number - referent of attribute/predicate in the proof request
+* `count`: Number - count of records to fetch
+* __->__ `credentials`: Json - credentials json
+```
+    [{
+        cred_info: <credential_info>,
+        interval: Optional<non_revoc_interval>
+    }]
+````
+where credential_info is:
+```
+    {
+        "referent": <string>,
+        "attrs": [{"attr_name" : "attr_raw_value"}],
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_id": Optional<int>,
+        "cred_rev_id": Optional<int>,
+    }
+```
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverCloseCredentialsSearchForProofReq \( sh \) -&gt;
+
+Close credentials search for proof request (make search handle invalid)
+
+* `sh`: Handle (Number) - search handle (created by proverSearchCredentialsForProofReq)
+* __->__ void
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 

@@ -265,26 +265,26 @@ impl AnoncredsUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn prover_open_credentials_search(wallet_handle: i32, filter_json: &str) -> Result<(i32, usize), ErrorCode> {
+    pub fn prover_search_credentials(wallet_handle: i32, filter_json: &str) -> Result<(i32, usize), ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_i32_usize();
 
         let filter_json = CString::new(filter_json).unwrap();
 
-        let err = indy_prover_open_credentials_search(command_handle,
-                                                      wallet_handle,
-                                                      filter_json.as_ptr(),
-                                                      cb);
+        let err = indy_prover_search_credentials(command_handle,
+                                                 wallet_handle,
+                                                 filter_json.as_ptr(),
+                                                 cb);
 
         super::results::result_to_int_usize(err, receiver)
     }
 
-    pub fn prover_credentials_search_fetch_records(search_handle: i32, count: usize) -> Result<String, ErrorCode> {
+    pub fn prover_fetch_credentials(search_handle: i32, count: usize) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
-        let err = indy_prover_credentials_search_fetch_records(command_handle,
-                                                               search_handle,
-                                                               count,
-                                                               cb);
+        let err = indy_prover_fetch_credentials(command_handle,
+                                                search_handle,
+                                                count,
+                                                cb);
 
         super::results::result_to_string(err, receiver)
     }
@@ -334,11 +334,11 @@ impl AnoncredsUtils {
 
         let item_ref = CString::new(item_ref).unwrap();
 
-        let err = indy_prover_fetch_next_credential_for_proof_request(command_handle,
-                                                                      search_handle,
-                                                                      item_ref.as_ptr(),
-                                                                      count,
-                                                                      cb);
+        let err = indy_prover_fetch_credentials_for_proof_req(command_handle,
+                                                              search_handle,
+                                                              item_ref.as_ptr(),
+                                                              count,
+                                                              cb);
 
         super::results::result_to_string(err, receiver)
     }

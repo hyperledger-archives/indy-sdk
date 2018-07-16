@@ -1182,6 +1182,47 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
     res
 }
 
+/// Search for credentials matching the given proof request.
+///
+/// Instead of immediately returning of fetched credentials
+/// this call returns search_handle that can be used later
+/// to fetch records by small batches (with indy_prover_fetch_credentials_for_proof_req).
+///
+/// #Params
+/// wallet_handle: wallet handler (created by open_wallet).
+/// proof_request_json: proof request json
+///     {
+///         "name": string,
+///         "version": string,
+///         "nonce": string,
+///         "requested_attributes": { // set of requested attributes
+///              "<attr_referent>": <attr_info>, // see below
+///              ...,
+///         },
+///         "requested_predicates": { // set of requested predicates
+///              "<predicate_referent>": <predicate_info>, // see below
+///              ...,
+///          },
+///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+///                        // If specified prover must proof non-revocation
+///                        // for date in this interval for each attribute
+///                        // (can be overridden on attribute level)
+///     }
+/// extra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+///     {
+///         "<attr_referent>": <wql query>,
+///         "<predicate_referent>": <wql query>,
+///
+///     }
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// search_handle: Search handle that can be used later to fetch records by small batches (with indy_prover_fetch_credentials_for_proof_req)
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
 #[no_mangle]
 pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: i32,
                                                            wallet_handle: i32,
@@ -1220,6 +1261,34 @@ pub extern fn indy_prover_search_credentials_for_proof_req(command_handle: i32,
     res
 }
 
+/// Fetch next records for the requested item using proof request search handle (created by indy_prover_search_credentials_for_proof_req).
+///
+/// #Params
+/// search_handle: Search handle (created by indy_prover_search_credentials_for_proof_req)
+/// item_referent: Referent of attribute/predicate in the proof request
+/// count: Count of records to fetch
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// credentials_json: List of credentials for the given proof request.
+///     [{
+///         cred_info: <credential_info>,
+///         interval: Optional<non_revoc_interval>
+///     }]
+/// where credential_info is
+///     {
+///         "referent": <string>,
+///         "attrs": [{"attr_name" : "attr_raw_value"}],
+///         "schema_id": string,
+///         "cred_def_id": string,
+///         "rev_reg_id": Optional<int>,
+///         "cred_rev_id": Optional<int>,
+///     }
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
 #[no_mangle]
 pub  extern fn indy_prover_fetch_credentials_for_proof_req(command_handle: i32,
                                                            search_handle: i32,
@@ -1256,6 +1325,15 @@ pub  extern fn indy_prover_fetch_credentials_for_proof_req(command_handle: i32,
     res
 }
 
+/// Close credentials search for proof request (make search handle invalid)
+///
+/// #Params
+/// search_handle: search handle
+///
+/// #Errors
+/// Annoncreds*
+/// Common*
+/// Wallet*
 #[no_mangle]
 pub  extern fn indy_prover_close_credentials_search_for_proof_req(command_handle: i32,
                                                                   search_handle: i32,
