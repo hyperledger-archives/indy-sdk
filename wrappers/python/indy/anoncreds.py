@@ -572,6 +572,19 @@ async def prover_store_credential(wallet_handle: int,
     """
     Check credential provided by Issuer for the given credential request,
     updates the credential by a master secret and stores in a secure wallet.
+    
+    To support efficient search the following tags will be created for stored credential:
+        {
+            "schema_id": <credential schema id>,
+            "schema_issuer_did": <credential schema issuer did>,
+            "schema_name": <credential schema name>,
+            "schema_version": <credential schema version>,
+            "issuer_did": <credential issuer did>,
+            "cred_def_id": <credential definition id>,
+            // for every attribute in <credential values>
+            "attr::<attribute name>::marker": "1",
+            "attr::<attribute name>::value": <attribute raw value>,
+        }
 
     :param wallet_handle: wallet handler (created by open_wallet).
     :param cred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet

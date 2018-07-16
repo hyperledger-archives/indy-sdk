@@ -251,6 +251,19 @@
  Check credential provided by Issuer for the given credential request,
  updates the credential by a master secret and stores in a secure wallet.
  
+ To support efficient search the following tags will be created for stored credential:
+     {
+         "schema_id": <credential schema id>,
+         "schema_issuer_did": <credential schema issuer did>,
+         "schema_name": <credential schema name>,
+         "schema_version": <credential schema version>,
+         "issuer_did": <credential issuer did>,
+         "cred_def_id": <credential definition id>,
+         // for every attribute in <credValuesJSON>
+         "attr::<attribute name>::marker": "1",
+         "attr::<attribute name>::value": <attribute raw value>,
+     }
+ 
  @param credID: (optional, default is a random one) identifier by which credential will be stored in the wallet
  @param credReqMetadataJSON: a credential request metadata created by proverCreateCredentialReqForCredentialOffer
  @param credJson:  credential json received from issuer

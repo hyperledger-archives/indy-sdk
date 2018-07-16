@@ -317,6 +317,21 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 Check credential provided by Issuer for the given credential request,
 updates the credential by a master secret and stores in a secure wallet.
 
+To support efficient search the following tags will be created for stored credential:
+```
+    {
+        "schema_id": <credential schema id>,
+        "schema_issuer_did": <credential schema issuer did>,
+        "schema_name": <credential schema name>,
+        "schema_version": <credential schema version>,
+        "issuer_did": <credential issuer did>,
+        "cred_def_id": <credential definition id>,
+        // for every attribute in <credValues>
+        "attr::<attribute name>::marker": "1",
+        "attr::<attribute name>::value": <attribute raw value>,
+    }
+```
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `credId`: String - \(optional, default is a random one\) identifier by which credential will be stored in the wallet
 * `credReqMetadata`: Json - a credential request metadata created by indy\_prover\_create\_credential\_req
