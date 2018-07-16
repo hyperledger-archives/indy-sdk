@@ -82,33 +82,17 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when issuerCreateCredentialOffer completes.
+	 * Callback used when function returning string completes.
 	 */
-	private static Callback issuerCreateCredentialOfferCb = new Callback() {
+	static Callback stringCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String credential_offer_json) {
+		public void callback(int xcommand_handle, int err, String str) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
 
-			String result = credential_offer_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when issuerMergeRevocationRegistryDeltas completes.
-	 */
-	private static Callback issuerMergeRevocationRegistryDeltasCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String merged_rev_reg_delta) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = merged_rev_reg_delta;
+			String result = str;
 			future.complete(result);
 		}
 	};
@@ -125,54 +109,6 @@ public class Anoncreds extends IndyJava.API {
 			if (! checkCallback(future, err)) return;
 
 			IssuerCreateCredentialResult result = new IssuerCreateCredentialResult(cred_json, cred_rev_id, revoc_reg_delta_json);
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when issuerRevokeCredential completes.
-	 */
-	private static Callback issuerRevokeCredentialCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String revoc_reg_delta_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = revoc_reg_delta_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when issuerRecoverCredential completes.
-	 */
-	private static Callback issuerRecoverCredentialCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String revoc_reg_delta_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = revoc_reg_delta_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when proverCreateMasterSecret completes.
-	 */
-	private static Callback proverCreateMasterSecretCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String master_secret_id) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = master_secret_id;
 			future.complete(result);
 		}
 	};
@@ -195,70 +131,6 @@ public class Anoncreds extends IndyJava.API {
 	};
 
 	/**
-	 * Callback used when proverStoreCredential completes.
-	 */
-	private static Callback proverStoreCredentialCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String outCredId) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = outCredId;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when proverGetCredentials completes.
-	 */
-	private static Callback proverGetCredentialsCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String credentialsJson) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = credentialsJson;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when proverGetCredentialsForProofReq completes.
-	 */
-	private static Callback proverGetCredentialsForProofReqCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String credentialsJson) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = credentialsJson;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when proverCreateProof completes.
-	 */
-	private static Callback proverCreateProofCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String proofJson) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = proofJson;
-			future.complete(result);
-		}
-	};
-
-	/**
 	 * Callback used when verifierVerifyProof completes.
 	 */
 	private static Callback verifierVerifyProofCb = new Callback() {
@@ -270,38 +142,6 @@ public class Anoncreds extends IndyJava.API {
 			if (! checkCallback(future, err)) return;
 
 			Boolean result = valid;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when createRevocationState completes.
-	 */
-	private static Callback createRevocationStateCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String rev_state_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = rev_state_json;
-			future.complete(result);
-		}
-	};
-
-	/**
-	 * Callback used when updateRevocationState completes.
-	 */
-	private static Callback updateRevocationStateCb = new Callback() {
-
-		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String updated_rev_state_json) {
-
-			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
-
-			String result = updated_rev_state_json;
 			future.complete(result);
 		}
 	};
@@ -523,7 +363,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				credDefId,
-				issuerCreateCredentialOfferCb);
+				stringCb);
 
 		checkResult(result);
 
@@ -638,7 +478,7 @@ public class Anoncreds extends IndyJava.API {
 				blobStorageReaderHandle,
 				revRegId,
 				credRevocId,
-				issuerRevokeCredentialCb);
+				stringCb);
 
 		checkResult(result);
 
@@ -712,7 +552,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				revRegDelta,
 				otherRevRegDelta,
-				issuerMergeRevocationRegistryDeltasCb);
+				stringCb);
 
 		checkResult(result);
 
@@ -742,7 +582,7 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				masterSecretId,
-				proverCreateMasterSecretCb);
+				stringCb);
 
 		checkResult(result);
 
@@ -845,7 +685,7 @@ public class Anoncreds extends IndyJava.API {
 				credJson,
 				credDefJson,
 				revRegDefJson,
-				proverStoreCredentialCb);
+				stringCb);
 
 		checkResult(result);
 
@@ -892,7 +732,30 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				filter,
-				proverGetCredentialsCb);
+				stringCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	public static CompletableFuture<String> proverGetCredential(
+			Wallet wallet,
+			String credId) throws IndyException {
+
+		ParamGuard.notNull(wallet, "wallet");
+		ParamGuard.notNullOrWhiteSpace(credId, "credId");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int walletHandle = wallet.getWalletHandle();
+
+		int result = LibIndy.api.indy_prover_get_credential(
+				commandHandle,
+				walletHandle,
+				credId,
+				stringCb);
 
 		checkResult(result);
 
@@ -948,8 +811,9 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "from": Optional<int>, // timestamp of interval beginning
 	 *         "to": Optional<int>, // timestamp of interval ending
-	 *     }  
-	 *     filter: see filter above                   
+	 *     }
+	 *     filter: see filter above
+	 * @param extraQueryJson
 	 * @return A future that resolves to a json with credentials for the given pool request.
 	 *     {
 	 *         "requested_attrs": {
@@ -973,7 +837,8 @@ public class Anoncreds extends IndyJava.API {
 	 */
 	public static CompletableFuture<String> proverGetCredentialsForProofReq(
 			Wallet wallet,
-			String proofRequest) throws IndyException {
+			String proofRequest,
+			String extraQueryJson) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(proofRequest, "proofRequest");
@@ -987,7 +852,8 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				proofRequest,
-				proverGetCredentialsForProofReqCb);
+				extraQueryJson,
+				stringCb);
 
 		checkResult(result);
 
@@ -1116,7 +982,7 @@ public class Anoncreds extends IndyJava.API {
 				schemas,
 				credentialDefs,
 				revStates,
-				proverCreateProofCb);
+				stringCb);
 
 		checkResult(result);
 
@@ -1273,7 +1139,7 @@ public class Anoncreds extends IndyJava.API {
 				revRegDelta,
 				timestamp,
 				credRevId,
-				createRevocationStateCb);
+				stringCb);
 
 		checkResult(result);
 
@@ -1322,7 +1188,7 @@ public class Anoncreds extends IndyJava.API {
 				revRegDelta,
 				timestamp,
 				credRevId,
-				updateRevocationStateCb);
+				stringCb);
 
 		checkResult(result);
 
