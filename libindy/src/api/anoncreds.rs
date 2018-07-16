@@ -1085,7 +1085,6 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 ///     {
 ///         "<attr_referent>": <wql query>,
 ///         "<predicate_referent>": <wql query>,
-///
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1212,7 +1211,6 @@ pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
 ///     {
 ///         "<attr_referent>": <wql query>,
 ///         "<predicate_referent>": <wql query>,
-///
 ///     }
 /// cb: Callback that takes command result as parameter.
 ///
