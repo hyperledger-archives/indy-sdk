@@ -121,7 +121,7 @@ pub mod connect_command {
             match Pool::close(handle) {
                 Ok(()) => {
                     set_connected_pool(ctx, Some((handle, name.to_owned())));
-                    println_succ!("Pool \"{}\" has been connected", name)
+                    println_succ!("Pool \"{}\" has been disconnected", name)
                 }
                 Err(err) => println_err!("Indy SDK error occurred {:?}", err),
             }

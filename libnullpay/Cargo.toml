@@ -8,6 +8,10 @@ build = "build.rs"
 name = "nullpay"
 crate-type = ["staticlib","cdylib", "rlib"]
 
+[features]
+# Causes the build to fail on all warnings
+fatal_warnings = []
+
 [dependencies]
 lazy_static = "1.0"
 libc = "0.2.21"

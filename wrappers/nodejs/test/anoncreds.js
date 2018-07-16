@@ -1,16 +1,15 @@
 var test = require('ava')
 var indy = require('../')
 var cuid = require('cuid')
-var path = require('path')
 var initTestPool = require('./helpers/initTestPool')
-var indyHomeDir = require('home-dir')('.indy_client')
+var tempy = require('tempy')
 
 test('anoncreds', async function (t) {
   var pool = await initTestPool()
-  var wName = 'wallet-' + cuid()
+  var walletConfig = {'id': 'wallet-' + cuid()}
   var walletCredentials = {'key': 'key'}
-  await indy.createWallet(pool.name, wName, 'default', null, walletCredentials)
-  var wh = await indy.openWallet(wName, null, walletCredentials)
+  await indy.createWallet(walletConfig, walletCredentials)
+  var wh = await indy.openWallet(walletConfig, walletCredentials)
   var issuerDid = 'NcYxiDXkpYi6ov5FcYDi1e'
   var proverDid = 'VsKV7grR1BUE29mG2Fm2kX'
 
@@ -25,7 +24,7 @@ test('anoncreds', async function (t) {
 
   // Issuer create Revocation Registry
   var tailsWriterConfig = {
-    'base_dir': path.join(indyHomeDir, 'tails'),
+    'base_dir': tempy.directory(),
     'uri_pattern': ''
   }
   var tailsWriterHandle = await indy.openBlobStorageWriter('default', tailsWriterConfig)
@@ -140,6 +139,6 @@ test('anoncreds', async function (t) {
   t.truthy(/^true /.test(mergedDelta.value.accum))
 
   await indy.closeWallet(wh)
-  await indy.deleteWallet(wName, walletCredentials)
+  await indy.deleteWallet(walletConfig, walletCredentials)
   pool.cleanup()
 })

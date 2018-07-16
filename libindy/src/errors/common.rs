@@ -9,8 +9,6 @@ use api::ErrorCode;
 use errors::ToErrorCode;
 
 use self::indy_crypto::errors::IndyCryptoError;
-use openssl::error::ErrorStack;
-
 
 #[derive(Debug)]
 pub enum CommonError {
@@ -145,25 +143,18 @@ impl From<BorrowMutError> for CommonError {
     }
 }
 
-impl From<ErrorStack> for CommonError {
-    fn from(err: ErrorStack) -> CommonError {
-        // TODO: FIXME: Analyze ErrorStack and split invalid structure errors from other errors
-        CommonError::InvalidStructure(err.description().to_string())
-    }
-}
-
 impl From<indy_crypto::errors::IndyCryptoError> for CommonError {
     fn from(err: indy_crypto::errors::IndyCryptoError) -> Self {
         match err {
-            IndyCryptoError::InvalidParam1(err) => CommonError::InvalidParam1(err),
-            IndyCryptoError::InvalidParam2(err) => CommonError::InvalidParam2(err),
-            IndyCryptoError::InvalidParam3(err) => CommonError::InvalidParam3(err),
-            IndyCryptoError::InvalidParam4(err) => CommonError::InvalidParam4(err),
-            IndyCryptoError::InvalidParam5(err) => CommonError::InvalidParam5(err),
-            IndyCryptoError::InvalidParam6(err) => CommonError::InvalidParam6(err),
-            IndyCryptoError::InvalidParam7(err) => CommonError::InvalidParam7(err),
-            IndyCryptoError::InvalidParam8(err) => CommonError::InvalidParam8(err),
-            IndyCryptoError::InvalidParam9(err) => CommonError::InvalidParam9(err),
+            IndyCryptoError::InvalidParam1(err) => CommonError::InvalidStructure(err),
+            IndyCryptoError::InvalidParam2(err) => CommonError::InvalidStructure(err),
+            IndyCryptoError::InvalidParam3(err) => CommonError::InvalidStructure(err),
+            IndyCryptoError::InvalidParam4(err) => CommonError::InvalidStructure(err),
+            IndyCryptoError::InvalidParam5(err) => CommonError::InvalidStructure(err),
+            IndyCryptoError::InvalidParam6(err) => CommonError::InvalidStructure(err),
+            IndyCryptoError::InvalidParam7(err) => CommonError::InvalidStructure(err),
+            IndyCryptoError::InvalidParam8(err) => CommonError::InvalidStructure(err),
+            IndyCryptoError::InvalidParam9(err) => CommonError::InvalidStructure(err),
             IndyCryptoError::InvalidState(err) => CommonError::InvalidState(err),
             IndyCryptoError::InvalidStructure(err) => CommonError::InvalidStructure(err),
             IndyCryptoError::IOError(err) => CommonError::IOError(err),

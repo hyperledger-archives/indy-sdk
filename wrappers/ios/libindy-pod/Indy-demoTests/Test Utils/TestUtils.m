@@ -55,6 +55,10 @@
     return @"wallet_1";
 }
 
++ (NSString *)walletConfig {
+    return @"{\"id\":\"wallet_1\"}";
+}
+
 + (NSData *)message {
     NSString *messageJson = @"{\"reqId\":1496822211362017764}";
     return [messageJson dataUsingEncoding:NSUTF8StringEncoding];

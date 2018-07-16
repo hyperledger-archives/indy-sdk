@@ -1,31 +1,32 @@
-extern crate sodiumoxide;
-extern crate serde_json;
-
 use std::str;
 use std::collections::HashMap;
 
-use self::sodiumoxide::utils::memzero;
+use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
+use utils::crypto::memzero::memzero;
 
-use utils::crypto::chacha20poly1305_ietf::{ChaCha20Poly1305IETF, ChaCha20Poly1305IETFKey, ChaCha20Poly1305IETFNonce, KEY_LENGTH, NONCE_LENGTH};
-use utils::crypto::hmacsha256::{HMACSHA256Key, HMACSHA256};
-use utils::crypto::pwhash_argon2i13::PwhashArgon2i13;
-use services::wallet::WalletRecord;
-
-use super::wallet::Keys;
-use super::storage::{Tag, TagName, StorageEntity};
+use super::{Keys, WalletRecord};
+use super::storage::{Tag, TagName, StorageRecord};
 
 use errors::wallet::WalletError;
 
-pub(super) fn derive_key(input: &[u8], salt: &[u8; 32]) -> Result<ChaCha20Poly1305IETFKey, WalletError> {
-    let mut key_bytes: [u8; KEY_LENGTH] = [0; KEY_LENGTH];
-    PwhashArgon2i13::derive_key(&mut key_bytes, input, salt)?;
-    let key = ChaCha20Poly1305IETF::clone_key_from_slice(&key_bytes[..]);
-    memzero(&mut key_bytes[..]);
-    Ok(key)
+pub(super) fn gen_master_key_salt() -> Result<pwhash_argon2i13::Salt, WalletError> {
+    Ok(pwhash_argon2i13::gen_salt())
 }
 
+pub(super) fn master_key_salt_from_slice(slice: &[u8]) -> Result<pwhash_argon2i13::Salt, WalletError> {
+    let salt = pwhash_argon2i13::Salt::from_slice(slice)
+        .map_err(|err| ::errors::common::CommonError::InvalidState("Invalid master key salt".to_string()))?;
 
-pub(super) fn encrypt_tag_names(tag_names: &[&str], tag_name_key: &ChaCha20Poly1305IETFKey, tags_hmac_key: &HMACSHA256Key) -> Vec<TagName> {
+    Ok(salt)
+}
+
+pub(super) fn derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt) -> Result<chacha20poly1305_ietf::Key, WalletError> {
+    let mut key_bytes = [0u8; chacha20poly1305_ietf::KEYBYTES];
+    pwhash_argon2i13::pwhash(&mut key_bytes, passphrase.as_bytes(), salt)?;
+    Ok(chacha20poly1305_ietf::Key::new(key_bytes))
+}
+
+pub(super) fn encrypt_tag_names(tag_names: &[&str], tag_name_key: &chacha20poly1305_ietf::Key, tags_hmac_key: &hmacsha256::Key) -> Vec<TagName> {
     tag_names
         .iter()
         .map(|tag_name|
@@ -38,7 +39,10 @@ pub(super) fn encrypt_tag_names(tag_names: &[&str], tag_name_key: &ChaCha20Poly1
         .collect::<Vec<TagName>>()
 }
 
-pub(super) fn encrypt_tags(tags: &HashMap<String, String>, tag_name_key: &ChaCha20Poly1305IETFKey, tag_value_key: &ChaCha20Poly1305IETFKey, tags_hmac_key: &HMACSHA256Key) -> Vec<Tag> {
+pub(super) fn encrypt_tags(tags: &HashMap<String, String>,
+                           tag_name_key: &chacha20poly1305_ietf::Key,
+                           tag_value_key: &chacha20poly1305_ietf::Key,
+                           tags_hmac_key: &hmacsha256::Key) -> Vec<Tag> {
     tags
         .iter()
         .map(|(tag_name, tag_value)|
@@ -58,41 +62,39 @@ pub(super) fn encrypt_tags(tags: &HashMap<String, String>, tag_name_key: &ChaCha
 }
 
 
-pub(super) fn encrypt_as_searchable(data: &[u8], key: &ChaCha20Poly1305IETFKey, hmac_key: &HMACSHA256Key) -> Vec<u8> {
-    let tag = HMACSHA256::create_tag(data, hmac_key);
-    let nonce = ChaCha20Poly1305IETF::clone_nonce_from_slice(&tag[..NONCE_LENGTH]);
-    let ct = ChaCha20Poly1305IETF::encrypt(data, key, &nonce);
+pub(super) fn encrypt_as_searchable(data: &[u8], key: &chacha20poly1305_ietf::Key, hmac_key: &hmacsha256::Key) -> Vec<u8> {
+    let tag = hmacsha256::authenticate(data, hmac_key);
+    let nonce = chacha20poly1305_ietf::Nonce::from_slice(&tag[..chacha20poly1305_ietf::NONCEBYTES]).unwrap(); // We can safely unwrap here
+    let ct = chacha20poly1305_ietf::encrypt(data, key, &nonce);
 
     let mut result: Vec<u8> = Default::default();
-    result.extend_from_slice(&nonce.get_bytes());
+    result.extend_from_slice(&nonce[..]);
     result.extend_from_slice(&ct);
     result
 }
 
-pub(super) fn encrypt_as_not_searchable(data: &[u8], key: &ChaCha20Poly1305IETFKey) -> Vec<u8> {
-    let (ct, nonce) = ChaCha20Poly1305IETF::generate_nonce_and_encrypt(data, key);
+pub(super) fn encrypt_as_not_searchable(data: &[u8], key: &chacha20poly1305_ietf::Key) -> Vec<u8> {
+    let (ct, nonce) = chacha20poly1305_ietf::gen_nonce_and_encrypt(data, key);
 
     let mut result: Vec<u8> = Default::default();
-    result.extend_from_slice(nonce.get_bytes());
+    result.extend_from_slice(&nonce[..]);
     result.extend_from_slice(&ct);
     result
 }
 
-pub(super) fn decrypt(data: &[u8], key: &ChaCha20Poly1305IETFKey, nonce: &ChaCha20Poly1305IETFNonce) -> Result<Vec<u8>, WalletError> {
-    let res = ChaCha20Poly1305IETF::decrypt(data, key, nonce)?;
+pub(super) fn decrypt(data: &[u8], key: &chacha20poly1305_ietf::Key, nonce: &chacha20poly1305_ietf::Nonce) -> Result<Vec<u8>, WalletError> {
+    let res = chacha20poly1305_ietf::decrypt(data, key, nonce)?;
     Ok(res)
 }
 
-pub(super) fn decrypt_merged(joined_data: &[u8], key: &ChaCha20Poly1305IETFKey) -> Result<Vec<u8>, WalletError> {
-    let nonce = ChaCha20Poly1305IETF::clone_nonce_from_slice(&joined_data[..NONCE_LENGTH]);
-    let data = &joined_data[NONCE_LENGTH..];
-
-    let res = ChaCha20Poly1305IETF::decrypt(data, key, &nonce)?;
+pub(super) fn decrypt_merged(joined_data: &[u8], key: &chacha20poly1305_ietf::Key) -> Result<Vec<u8>, WalletError> {
+    let nonce = chacha20poly1305_ietf::Nonce::from_slice(&joined_data[..chacha20poly1305_ietf::NONCEBYTES]).unwrap(); // We can safety unwrap here
+    let data = &joined_data[chacha20poly1305_ietf::NONCEBYTES..];
+    let res = chacha20poly1305_ietf::decrypt(data, key, &nonce)?;
     Ok(res)
 }
 
-
-pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &ChaCha20Poly1305IETFKey, tag_value_key: &ChaCha20Poly1305IETFKey) -> Result<Option<HashMap<String, String>>, WalletError> {
+pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &chacha20poly1305_ietf::Key, tag_value_key: &chacha20poly1305_ietf::Key) -> Result<Option<HashMap<String, String>>, WalletError> {
     match etags {
         &None => Ok(None),
         &Some(ref etags) => {
@@ -127,18 +129,18 @@ pub(super) fn decrypt_tags(etags: &Option<Vec<Tag>>, tag_name_key: &ChaCha20Poly
     }
 }
 
-pub(super) fn decrypt_storage_record(record: &StorageEntity, keys: &Keys) -> Result<WalletRecord, WalletError> {
-    let decrypted_name = decrypt_merged(&record.name, &keys.name_key)?;
+pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Result<WalletRecord, WalletError> {
+    let decrypted_name = decrypt_merged(&record.id, &keys.name_key)?;
     let decrypted_name = String::from_utf8(decrypted_name)?;
 
     let decrypted_value = match record.value {
         Some(ref value) => {
             let mut decrypted_value_key_bytes = decrypt_merged(&value.key, &keys.value_key)?;
-            let decrypted_value_key = ChaCha20Poly1305IETF::clone_key_from_slice(&decrypted_value_key_bytes);
+            let decrypted_value_key = chacha20poly1305_ietf::Key::from_slice(&decrypted_value_key_bytes).unwrap(); // FIXME:
             memzero(&mut decrypted_value_key_bytes);
             let decrypted_value = decrypt_merged(&value.data, &decrypted_value_key)?;
             Some(String::from_utf8(decrypted_value)?)
-        },
+        }
         None => None
     };
 
@@ -146,7 +148,7 @@ pub(super) fn decrypt_storage_record(record: &StorageEntity, keys: &Keys) -> Res
         Some(ref type_) => {
             let decrypted_type = decrypt_merged(type_, &keys.type_key)?;
             Some(String::from_utf8(decrypted_type)?)
-        },
+        }
         None => None,
     };
 
@@ -157,16 +159,16 @@ pub(super) fn decrypt_storage_record(record: &StorageEntity, keys: &Keys) -> Res
 
 #[cfg(test)]
 mod tests {
-    use utils::crypto::hmacsha256::HMACSHA256;
     use super::*;
+    use serde_json;
 
     #[test]
     fn test_encrypt_decrypt_tags() {
         let tags = serde_json::from_str(r#"{"tag1":"value1", "tag2":"value2", "~tag3":"value3"}"#).unwrap();
 
-        let tag_name_key = ChaCha20Poly1305IETF::generate_key();
-        let tag_value_key = ChaCha20Poly1305IETF::generate_key();
-        let hmac_key = HMACSHA256::generate_key();
+        let tag_name_key = chacha20poly1305_ietf::gen_key();
+        let tag_value_key = chacha20poly1305_ietf::gen_key();
+        let hmac_key = hmacsha256::gen_key();
 
         let c = encrypt_tags(&tags, &tag_name_key, &tag_value_key, &hmac_key);
         let u = decrypt_tags(&Some(c), &tag_name_key, &tag_value_key).unwrap().unwrap();
@@ -175,8 +177,8 @@ mod tests {
 
     #[test]
     fn test_decrypt_tags_works_for_none() {
-        let tag_name_key = ChaCha20Poly1305IETF::generate_key();
-        let tag_value_key = ChaCha20Poly1305IETF::generate_key();
+        let tag_name_key = chacha20poly1305_ietf::gen_key();
+        let tag_value_key = chacha20poly1305_ietf::gen_key();
 
         let u = decrypt_tags(&None, &tag_name_key, &tag_value_key).unwrap();
         assert!(u.is_none());
