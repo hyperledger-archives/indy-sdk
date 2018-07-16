@@ -64,7 +64,7 @@ async def test_anoncreds_demo_works(pool_name, path_home, wallet_config, credent
         }
     })
 
-    credential_for_proof_json = await anoncreds.prover_get_credentials_for_proof_req(wallet_handle, proof_req_json)
+    credential_for_proof_json = await anoncreds.prover_get_credentials_for_proof_req(wallet_handle, proof_req_json, None)
     credentials_for_proof = json.loads(credential_for_proof_json)
 
     credential_for_attr1 = credentials_for_proof['attrs']['attr1_referent']
@@ -171,7 +171,7 @@ async def test_anoncreds_demo_works_for_revocation_proof(pool_name, path_home, w
         "non_revoked": {"from": 80, "to": 100}
     })
 
-    credential_for_proof_json = await anoncreds.prover_get_credentials_for_proof_req(wallet_handle, proof_req_json)
+    credential_for_proof_json = await anoncreds.prover_get_credentials_for_proof_req(wallet_handle, proof_req_json, None)
     credentials_for_proof = json.loads(credential_for_proof_json)
 
     # 11. Prover creates revocation state

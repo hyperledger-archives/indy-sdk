@@ -486,7 +486,7 @@ async def prover_create_master_secret(wallet_handle: int,
         prover_create_master_secret.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_master_secret_name = c_char_p(master_secret_name.encode('utf-8'))if master_secret_name else None
+    c_master_secret_name = c_char_p(master_secret_name.encode('utf-8')) if master_secret_name else None
 
     out_master_secret_id = await do_call('indy_prover_create_master_secret',
                                          c_wallet_handle,
@@ -597,7 +597,7 @@ async def prover_store_credential(wallet_handle: int,
         prover_store_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_cred_id = c_char_p(cred_id.encode('utf-8'))if cred_id else None
+    c_cred_id = c_char_p(cred_id.encode('utf-8')) if cred_id else None
     c_cred_req_metadata_json = c_char_p(cred_req_metadata_json.encode('utf-8'))
     c_cred_json = c_char_p(cred_json.encode('utf-8'))
     c_cred_def_json = c_char_p(cred_def_json.encode('utf-8'))
@@ -614,6 +614,46 @@ async def prover_store_credential(wallet_handle: int,
 
     res = cred_id.decode()
     logger.debug("prover_store_credential: <<< res: %r", res)
+    return res
+
+
+async def prover_get_credential(wallet_handle: int,
+                                cred_id: str) -> str:
+    """
+    Gets human readable credential by the given id.
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param cred_id: Identifier by which requested credential is stored in the wallet
+    :return:  credential json
+     {
+         "referent": string, // cred_id in the wallet
+         "values": <see cred_values_json above>,
+         "schema_id": string,
+         "cred_def_id": string,
+         "rev_reg_id": Optional<string>,
+         "cred_rev_id": Optional<string>
+     }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_get_credential: >>> wallet_handle: %r, cred_id: %r",
+                 wallet_handle,
+                 cred_id)
+
+    if not hasattr(prover_get_credential, "cb"):
+        logger.debug("prover_get_credential: Creating callback")
+        prover_get_credential.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_cred_id = c_char_p(cred_id.encode('utf-8'))
+
+    credentials_json = await do_call('indy_prover_get_credential',
+                                     c_wallet_handle,
+                                     c_cred_id,
+                                     prover_get_credential.cb)
+
+    res = credentials_json.decode()
+    logger.debug("prover_get_credential: <<< res: %r", res)
     return res
 
 
@@ -667,8 +707,111 @@ async def prover_get_credentials(wallet_handle: int,
     return res
 
 
+async def prover_search_credentials(wallet_handle: int,
+                                    filter_json: str) -> (int, int):
+    """
+    Search for credentials stored in wallet.
+
+    Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
+    to fetch records by small batches (with prover_credentials_search_fetch_records).
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param filter_json: wql style filter for credentials searching based on tags created during the saving of credential
+    :return:
+        search_handle: Search handle that can be used later to fetch records by small batches (with prover_credentials_search_fetch_records)
+        total_count: Total count of records
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_search_credentials: >>> wallet_handle: %r, filter_json: %r",
+                 wallet_handle,
+                 filter_json)
+
+    if not hasattr(prover_search_credentials, "cb"):
+        logger.debug("prover_search_credentials: Creating callback")
+        prover_search_credentials.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32, c_uint))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_filter_json = c_char_p(filter_json.encode('utf-8'))
+
+    res = await do_call('indy_prover_search_credentials',
+                        c_wallet_handle,
+                        c_filter_json,
+                        prover_search_credentials.cb)
+
+    logger.debug("prover_search_credentials: <<< res: %r", res)
+    return res
+
+
+async def prover_fetch_credentials(search_handle: int,
+                                   count: int) -> str:
+    """
+    Fetch next records for wallet search.
+
+    :param search_handle: Search handle (created by prover_open_credentials_search)
+    :param count: Count of records to fetch
+    :return: credentials_json: List of credentials:
+    [{
+        "referent": string, // cred_id in the wallet
+        "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_id": Optional<string>,
+        "cred_rev_id": Optional<string>
+    }]
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_fetch_credentials: >>> search_handle: %r, count: %r",
+                 search_handle,
+                 count)
+
+    if not hasattr(prover_fetch_credentials, "cb"):
+        logger.debug("prover_fetch_credentials: Creating callback")
+        prover_fetch_credentials.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_search_handle = c_int32(search_handle)
+    c_count = c_uint(count)
+
+    credentials_json = await do_call('indy_prover_fetch_credentials',
+                                     c_search_handle,
+                                     c_count,
+                                     prover_fetch_credentials.cb)
+
+    res = credentials_json.decode()
+    logger.debug("prover_fetch_credentials: <<< res: %r", res)
+    return res
+
+
+async def prover_close_credentials_search(search_handle: int) -> None:
+    """
+    Close credentials search (make search handle invalid)
+
+    :param search_handle: Search handle (created by prover_open_credentials_search)
+    :return: None
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_close_credentials_search: >>> search_handle: %r",
+                 search_handle)
+
+    if not hasattr(prover_close_credentials_search, "cb"):
+        logger.debug("prover_close_credentials_search: Creating callback")
+        prover_close_credentials_search.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_search_handle = c_int32(search_handle)
+
+    res = await do_call('indy_prover_close_credentials_search',
+                        c_search_handle,
+                        prover_close_credentials_search.cb)
+
+    logger.debug("prover_close_credentials_search: <<< res: %r", res)
+    return res
+
+
 async def prover_get_credentials_for_proof_req(wallet_handle: int,
-                                               proof_request_json: str) -> str:
+                                               proof_request_json: str,
+                                               extra_query_json: Optional[str]) -> str:
     """
     Gets human readable credentials matching the given proof request.
 
@@ -691,7 +834,12 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
                            // for date in this interval for each attribute
                            // (can be overridden on attribute level)
         }
-        where:
+    :param extra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+        {
+            "<attr_referent>": <wql query>,
+            "<predicate_referent>": <wql query>,
+        }
+    where:
          attr_referent: Proof-request local identifier of requested attribute
          attr_info: Describes requested attribute
              {
@@ -744,9 +892,11 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("prover_get_credentials_for_proof_req: >>> wallet_handle: %r, proof_request_json: %r",
+    logger.debug("prover_get_credentials_for_proof_req: >>> wallet_handle: %r, proof_request_json: %r, "
+                 "extra_query_json: %r",
                  wallet_handle,
-                 proof_request_json)
+                 proof_request_json,
+                 extra_query_json)
 
     if not hasattr(prover_get_credentials_for_proof_req, "cb"):
         logger.debug("prover_get_credentials_for_proof_req: Creating callback")
@@ -754,14 +904,153 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
 
     c_wallet_handle = c_int32(wallet_handle)
     c_proof_request_json = c_char_p(proof_request_json.encode('utf-8'))
+    c_extra_query_json = c_char_p(extra_query_json.encode('utf-8')) if extra_query_json is not None else None
 
     credentials_json = await do_call('indy_prover_get_credentials_for_proof_req',
                                      c_wallet_handle,
                                      c_proof_request_json,
+                                     c_extra_query_json,
                                      prover_get_credentials_for_proof_req.cb)
 
     res = credentials_json.decode()
     logger.debug("prover_get_credentials_for_proof_req: <<< res: %r", res)
+    return res
+
+
+async def prover_search_credentials_for_proof_req(wallet_handle: int,
+                                                  proof_request_json: str,
+                                                  extra_query_json: Optional[str]) -> int:
+    """
+    Search for credentials matching the given proof request.
+
+    Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
+    to fetch records by small batches (with prover_fetch_credentials_for_proof_req).
+
+    :param wallet_handle: wallet handler (created by open_wallet).
+    :param proof_request_json: proof request json
+        {
+            "name": string,
+            "version": string,
+            "nonce": string,
+            "requested_attributes": { // set of requested attributes
+                 "<attr_referent>": <attr_info>, // see below
+                 ...,
+            },
+            "requested_predicates": { // set of requested predicates
+                 "<predicate_referent>": <predicate_info>, // see below
+                 ...,
+             },
+            "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                           // If specified prover must proof non-revocation
+                           // for date in this interval for each attribute
+                           // (can be overridden on attribute level)
+        }
+    :param extra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+        {
+            "<attr_referent>": <wql query>,
+            "<predicate_referent>": <wql query>,
+        }
+    :return: search_handle: Search handle that can be used later to fetch records by small batches (with prover_fetch_credentials_for_proof_req)
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_search_credentials_for_proof_req: >>> wallet_handle: %r, proof_request_json: %r, "
+                 "extra_query_json: %r",
+                 wallet_handle,
+                 proof_request_json,
+                 extra_query_json)
+
+    if not hasattr(prover_search_credentials_for_proof_req, "cb"):
+        logger.debug("prover_search_credentials_for_proof_req: Creating callback")
+        prover_search_credentials_for_proof_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_proof_request_json = c_char_p(proof_request_json.encode('utf-8'))
+    c_extra_query_json = c_char_p(extra_query_json.encode('utf-8')) if extra_query_json is not None else None
+
+    res = await do_call('indy_prover_search_credentials_for_proof_req',
+                        c_wallet_handle,
+                        c_proof_request_json,
+                        c_extra_query_json,
+                        prover_search_credentials_for_proof_req.cb)
+
+    logger.debug("prover_search_credentials_for_proof_req: <<< res: %r", res)
+    return res
+
+
+async def prover_fetch_credentials_for_proof_req(search_handle: int,
+                                                 item_referent: str,
+                                                 count: int) -> str:
+    """
+    Fetch next records for the requested item using proof request search handle (created by prover_search_credentials_for_proof_req).
+
+    :param search_handle: Search handle (created by prover_search_credentials_for_proof_req)
+    :param item_referent: Referent of attribute/predicate in the proof request
+    :param count: Count of records to fetch
+    :return: credentials_json: List of credentials for the given proof request.
+        [{
+            cred_info: <credential_info>,
+            interval: Optional<non_revoc_interval>
+        }]
+    where credential_info is
+        {
+            "referent": <string>,
+            "attrs": [{"attr_name" : "attr_raw_value"}],
+            "schema_id": string,
+            "cred_def_id": string,
+            "rev_reg_id": Optional<int>,
+            "cred_rev_id": Optional<int>,
+        }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_fetch_credentials_for_proof_req: >>> search_handle: %r, item_referent: %r, count: %r",
+                 search_handle,
+                 item_referent,
+                 count)
+
+    if not hasattr(prover_fetch_credentials_for_proof_req, "cb"):
+        logger.debug("prover_fetch_credentials_for_proof_req: Creating callback")
+        prover_fetch_credentials_for_proof_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_search_handle = c_int32(search_handle)
+    c_item_referent = c_char_p(item_referent.encode('utf-8'))
+    c_count = c_uint(count)
+
+    credentials_json = await do_call('indy_prover_fetch_credentials_for_proof_req',
+                                     c_search_handle,
+                                     c_item_referent,
+                                     c_count,
+                                     prover_fetch_credentials_for_proof_req.cb)
+
+    res = credentials_json.decode()
+    logger.debug("prover_fetch_credentials_for_proof_req: <<< res: %r", res)
+    return res
+
+
+async def prover_close_credentials_search_for_proof_req(search_handle: int) -> None:
+    """
+    Close credentials search for proof request (make search handle invalid)
+
+    :param search_handle: Search handle (created by prover_search_credentials_for_proof_req)
+    :return: None
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("prover_close_credentials_search_for_proof_req: >>> search_handle: %r",
+                 search_handle)
+
+    if not hasattr(prover_close_credentials_search_for_proof_req, "cb"):
+        logger.debug("prover_close_credentials_search_for_proof_req: Creating callback")
+        prover_close_credentials_search_for_proof_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_search_handle = c_int32(search_handle)
+
+    res = await do_call('indy_prover_close_credentials_search_for_proof_req',
+                        c_search_handle,
+                        prover_close_credentials_search_for_proof_req.cb)
+
+    logger.debug("prover_close_credentials_search_for_proof_req: <<< res: %r", res)
     return res
 
 
