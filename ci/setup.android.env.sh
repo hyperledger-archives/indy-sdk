@@ -42,7 +42,7 @@ create_avd(){
 
         SDK_ROOT="$(realpath ${ANDROID_BUILD_FOLDER}/sdk)"
         ANDROID_SDK_ROOT=${SDK_ROOT} ANDROID_HOME=${SDK_ROOT} ${ANDROID_BUILD_FOLDER}/sdk/tools/emulator -avd ${TARGET_ARCH}
-        ANDROID_SDK_ROOT=${SDK_ROOT} ANDROID_HOME=${SDK_ROOT} ${SDK_ROOT}/tools/emulator -avd arm -no-audio -no-window
+        ANDROID_SDK_ROOT=${SDK_ROOT} ANDROID_HOME=${SDK_ROOT} ${SDK_ROOT}/tools/emulator -avd arm -no-audio -no-window &
 }
 
 download_sdk(){
