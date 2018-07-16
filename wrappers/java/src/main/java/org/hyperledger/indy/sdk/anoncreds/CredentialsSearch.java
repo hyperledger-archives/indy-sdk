@@ -50,6 +50,17 @@ public class CredentialsSearch extends IndyJava.API implements AutoCloseable {
 		}
 	};
 
+	/**
+	 * Search for credentials stored in wallet.
+	 *
+	 * Instead of immediately returning of fetched credentials {@link Anoncreds#proverGetCredentials(Wallet, String)}
+	 * this call returns CredentialsSearch that can be used later
+	 * to fetch records by small batches (with {@link CredentialsSearch#fetchNextCredentials(int)}).
+	 * @param wallet 	 A wallet
+	 * @param filterJson Wql style filter for credentials searching based on tags created during the saving of credential
+	 * @return CredentialsSearch to fetch method
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 */
 	public static CompletableFuture<CredentialsSearch> open(
 			Wallet wallet,
 			String filterJson) throws IndyException {
@@ -73,6 +84,21 @@ public class CredentialsSearch extends IndyJava.API implements AutoCloseable {
 		return future;
 	}
 
+	/**
+	 * Fetch next records for credential search.
+	 *
+	 * @param count count of records to fetch
+	 * @return credentials_json: List of credentials:
+	 *     [{
+	 *         "referent": string, // cred_id in the wallet
+	 *         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+	 *         "schema_id": string,
+	 *         "cred_def_id": string,
+	 *         "rev_reg_id": Optional<string>,
+	 *         "cred_rev_id": Optional<string>
+	 *     }]
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 */
 	public CompletableFuture<String> fetchNextCredentials(
 			int count
 	) throws IndyException {
@@ -90,6 +116,12 @@ public class CredentialsSearch extends IndyJava.API implements AutoCloseable {
 		return future;
 	}
 
+	/**
+	 * Close credentials search
+	 *
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 */
 	public CompletableFuture<Void> closeSearch() throws IndyException {
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);

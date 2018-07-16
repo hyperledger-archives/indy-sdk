@@ -48,6 +48,69 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 		}
 	};
 
+	/**
+	 * Search for credentials matching the given proof request.
+	 *
+	 * Instead of immediately returning of fetched credentials {@link Anoncreds#proverGetCredentialsForProofReq(Wallet, String, String)}
+	 * this call returns search_handle that can be used later
+	 * to fetch records by small batches (with {@link CredentialsSearchForProofReq#fetchNextCredentials(String, int)}).
+	 *
+	 * @param wallet 		A wallet.
+	 * @param proofReqJson	proof request json
+	 *     {
+	 *         "name": string,
+	 *         "version": string,
+	 *         "nonce": string,
+	 *         "requested_attributes": { // set of requested attributes
+	 *              "<attr_referent>": <attr_info>, // see below
+	 *              ...,
+	 *         },
+	 *         "requested_predicates": { // set of requested predicates
+	 *              "<predicate_referent>": <predicate_info>, // see below
+	 *              ...,
+	 *          },
+	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *                        // If specified prover must proof non-revocation
+	 *                        // for date in this interval for each attribute
+	 *                        // (can be overridden on attribute level)
+	 *     }
+	 *     where
+	 *     attr_referent: Describes requested attribute
+	 *     {
+	 *         "name": string, // attribute name, (case insensitive and ignore spaces)
+	 *         "restrictions": Optional<[<attr_filter>]> // see below,
+	 *                          // if specified, credential must satisfy to one of the given restriction.
+	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *                        // If specified prover must proof non-revocation
+	 *                        // for date in this interval this attribute
+	 *                        // (overrides proof level interval)
+	 *     }
+	 *     predicate_referent: Describes requested attribute predicate
+	 *     {
+	 *         "name": attribute name, (case insensitive and ignore spaces)
+	 *         "p_type": predicate type (Currently >= only)
+	 *         "p_value": predicate value
+	 *         "restrictions": Optional<[<attr_filter>]> // see below,
+	 *                         // if specified, credential must satisfy to one of the given restriction.
+	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *                        // If specified prover must proof non-revocation
+	 *                        // for date in this interval this attribute
+	 *                        // (overrides proof level interval)
+	 *     }
+	 *     non_revoc_interval: Defines non-revocation interval
+	 *     {
+	 *         "from": Optional<int>, // timestamp of interval beginning
+	 *         "to": Optional<int>, // timestamp of interval ending
+	 *     }
+	 *     filter: see filter above
+	 * @param extraQueryJson (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+	 *     {
+	 *         "<attr_referent>": <wql query>,
+	 *         "<predicate_referent>": <wql query>,
+	 *     }
+	 * @return Future CredentialsSearchForProofReq to fetch credentials
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<CredentialsSearchForProofReq> open(
 			Wallet wallet,
 			String proofReqJson,
@@ -73,6 +136,27 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 		return future;
 	}
 
+	/**
+	 * Fetch next records for the requested item using CredentialsSearchForProofReq.
+	 *
+	 * @param itemRef Referent of attribute/predicate in the proof request
+	 * @param count Count of records to fetch
+	 * @return List of credentials for the given proof request.
+	 *     [{
+	 *         cred_info: <credential_info>,
+	 *         interval: Optional<non_revoc_interval>
+	 *     }]
+	 * where credential_info is
+	 *     {
+	 *         "referent": <string>,
+	 *         "attrs": [{"attr_name" : "attr_raw_value"}],
+	 *         "schema_id": string,
+	 *         "cred_def_id": string,
+	 *         "rev_reg_id": Optional<int>,
+	 *         "cred_rev_id": Optional<int>,
+	 *     }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public CompletableFuture<String> fetchNextCredentials(
 			String itemRef,
 			int count
@@ -94,6 +178,12 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 		return future;
 	}
 
+	/**
+	 * Close credentials search for proof request
+	 *
+	 * @return A future that resolves no value.
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 */
 	public CompletableFuture<Void> closeSearch() throws IndyException {
 		CompletableFuture<Void> future = new CompletableFuture<Void>();
 		int commandHandle = addFuture(future);

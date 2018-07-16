@@ -739,6 +739,22 @@ public class Anoncreds extends IndyJava.API {
 		return future;
 	}
 
+	/**
+	 * Gets human readable credential by the given id.
+	 *
+	 * @param wallet A wallet.
+	 * @param credId Identifier by which requested credential is stored in the wallet
+	 * @return credential json
+	 * {
+	 * 		"referent": string, // cred_id in the wallet
+	 * 		"attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+	 * 		"schema_id": string,
+	 * 		"cred_def_id": string,
+	 * 		"rev_reg_id": Optional<string>,
+	 * 		"cred_rev_id": Optional<string>
+	 * }
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
 	public static CompletableFuture<String> proverGetCredential(
 			Wallet wallet,
 			String credId) throws IndyException {
@@ -813,7 +829,11 @@ public class Anoncreds extends IndyJava.API {
 	 *         "to": Optional<int>, // timestamp of interval ending
 	 *     }
 	 *     filter: see filter above
-	 * @param extraQueryJson
+	 * @param extraQueryJson (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+	 *     {
+	 *         "<attr_referent>": <wql query>,
+	 *         "<predicate_referent>": <wql query>,
+	 *     }
 	 * @return A future that resolves to a json with credentials for the given pool request.
 	 *     {
 	 *         "requested_attrs": {
