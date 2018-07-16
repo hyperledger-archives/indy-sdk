@@ -19,7 +19,30 @@ download_adb(){
     pushd ${ANDROID_BUILD_FOLDER}/adb
         wget https://dl.google.com/android/repository/platform-tools_r28.0.0-linux.zip
         unzip -qq platform-tools_r28.0.0-linux.zip
+        export ADB_EXECUTABLE="$(realpath ${ANDROID_BUILD_FOLDER}/adb/platform-tools)/adb"
     popd
+}
+
+delete_existing_avd(){
+    ${ANDROID_BUILD_FOLDER}/sdk/tools/bin/avdmanager delete ${ARCH}
+}
+
+create_avd(){
+    echo "yes" | \
+         ${ANDROID_BUILD_FOLDER}/sdk/tools/bin/sdkmanager --no_https \
+            "emulator" \
+            "platform-tools" \
+            "platforms;android-24" \
+            "system-images;android-24;default;${ABI}"
+
+        echo "no" |
+            ${ANDROID_BUILD_FOLDER}/sdk/tools/bin/avdmanager create avd \
+                --name ${TARGET_ARCH} \
+                --package "system-images;android-24;default;${ABI}"
+
+        ${ANDROID_BUILD_FOLDER}/sdk/tools/emulator -avd ${TARGET_ARCH}
+        SDK_ROOT="$(realpath ${ANDROID_BUILD_FOLDER}/sdk)"
+        ANDROID_SDK_ROOT=${SDK_ROOT} ANDROID_HOME=${SDK_ROOT} ./sdk/tools/emulator -avd arm -no-audio -no-window
 }
 
 download_sdk(){
@@ -27,20 +50,11 @@ download_sdk(){
      pushd ${ANDROID_BUILD_FOLDER}/sdk
         wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
         unzip -qq sdk-tools-linux-4333796.zip
-
-     echo "yes" | \
-     ./android-sdk-linux/tools/bin/sdkmanager --no_https \
-        "emulator" \
-        "platform-tools" \
-        "platforms;android-24" \
-        "system-images;android-24;default;${ABI}"
-
-    echo "no" |
-        ./android-sdk-linux/tools/bin/avdmanager create avd \
-            --name ${TARGET_ARCH} \
-            --package "system-images;android-24;default;${ABI}"
-    popd
+        delete_existing_avd
+        create_avd
+     popd
 }
+
 
 generate_arch_flags(){
     if [ -z $1 ]; then

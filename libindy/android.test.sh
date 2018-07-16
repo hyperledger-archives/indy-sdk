@@ -6,7 +6,6 @@ WORKDIR=${PWD}
 INDY_DIR="$(realpath "${WORKDIR}/..")"
 CI_DIR="$(realpath "${WORKDIR}/../ci")"
 ANDROID_BUILD_FOLDER="$(realpath "${WORKDIR}/../android_build")"
-ADB_EXECUTABLE=${ANDROID_BUILD_FOLDER}/adb/platform-tools/adb
 
 TARGET_ARCH=$1
 
@@ -39,6 +38,7 @@ execute_on_device(){
 
     ${ADB_EXECUTABLE} push \
     "${LIBZMQ_LIB_DIR}/libzmq.so" "/data/local/tmp/libzmq.so"
+
     for i in "${EXE_ARRAY[@]}"
     do
        :
@@ -59,6 +59,7 @@ execute_on_device(){
 
 
 download_adb
+download_sdk
 download_and_unzip_dependencies_for_all_architectures
 download_and_setup_toolchain
 set_env_vars

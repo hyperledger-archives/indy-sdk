@@ -145,5 +145,3 @@ create_standalone_toolchain_and_rust_target
 create_cargo_config
 build
 package_library
-
-echo no | Android/Sdk/tools/bin/avdmanager create avd --force --name testAVD --abi google_apis/x86_64 --package 'system-images;android-23;google_apis;x86_64'
