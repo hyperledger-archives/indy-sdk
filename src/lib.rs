@@ -87,6 +87,45 @@ pub enum ErrorCode
     // Caller passed invalid value as param 14 (null, invalid json and etc..)
     CommonInvalidParam14 = 116,
 
+    // Caller passed invalid value as param 15 (null, invalid json and etc..)
+    CommonInvalidParam15 = 117,
+
+    // Caller passed invalid value as param 16 (null, invalid json and etc..)
+    CommonInvalidParam16 = 118,
+
+    // Caller passed invalid value as param 17 (null, invalid json and etc..)
+    CommonInvalidParam17 = 119,
+
+    // Caller passed invalid value as param 18 (null, invalid json and etc..)
+    CommonInvalidParam18 = 120,
+
+    // Caller passed invalid value as param 19 (null, invalid json and etc..)
+    CommonInvalidParam19 = 121,
+
+    // Caller passed invalid value as param 20 (null, invalid json and etc..)
+    CommonInvalidParam20 = 122,
+
+    // Caller passed invalid value as param 21 (null, invalid json and etc..)
+    CommonInvalidParam21 = 123,
+
+    // Caller passed invalid value as param 22 (null, invalid json and etc..)
+    CommonInvalidParam22 = 124,
+
+    // Caller passed invalid value as param 23 (null, invalid json and etc..)
+    CommonInvalidParam23 = 125,
+
+    // Caller passed invalid value as param 24 (null, invalid json and etc..)
+    CommonInvalidParam24 = 126,
+
+    // Caller passed invalid value as param 25 (null, invalid json and etc..)
+    CommonInvalidParam25 = 127,
+
+    // Caller passed invalid value as param 26 (null, invalid json and etc..)
+    CommonInvalidParam26 = 128,
+
+    // Caller passed invalid value as param 27 (null, invalid json and etc..)
+    CommonInvalidParam27 = 129,
+
     // Wallet errors
     // Caller passed invalid wallet handle
     WalletInvalidHandle = 200,
@@ -158,14 +197,14 @@ pub enum ErrorCode
     // Timeout for action
     PoolLedgerTimeout = 307,
 
+    // Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
+    // Call pool.indy_set_protocol_version to set correct Protocol version.
+    PoolIncompatibleProtocolVersion = 308,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
     AnoncredsInvalidUserRevocIndex = 401,
-
-    AnoncredsAccumulatorIsFull = 402,
-
-    AnoncredsNotIssuedError = 403,
 
     // Attempt to generate master secret with duplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,
@@ -192,6 +231,9 @@ pub enum ErrorCode
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
+
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703
 }
 
 impl ErrorCode {
@@ -214,6 +256,19 @@ impl ErrorCode {
             CommonInvalidParam12 => "Caller passed invalid value as param 12",
             CommonInvalidParam13 => "Caller passed invalid value as param 13",
             CommonInvalidParam14 => "Caller passed invalid value as param 14",
+            CommonInvalidParam15 => "Caller passed invalid value as param 15",
+            CommonInvalidParam16 => "Caller passed invalid value as param 16",
+            CommonInvalidParam17 => "Caller passed invalid value as param 17",
+            CommonInvalidParam18 => "Caller passed invalid value as param 18",
+            CommonInvalidParam19 => "Caller passed invalid value as param 19",
+            CommonInvalidParam20 => "Caller passed invalid value as param 20",
+            CommonInvalidParam21 => "Caller passed invalid value as param 21",
+            CommonInvalidParam22 => "Caller passed invalid value as param 22",
+            CommonInvalidParam23 => "Caller passed invalid value as param 23",
+            CommonInvalidParam24 => "Caller passed invalid value as param 24",
+            CommonInvalidParam25 => "Caller passed invalid value as param 25",
+            CommonInvalidParam26 => "Caller passed invalid value as param 26",
+            CommonInvalidParam27 => "Caller passed invalid value as param 27",
             CommonInvalidState => "Invalid library state was detected in runtime. It signals library bug",
             CommonInvalidStructure => "Object (json, config, key, credential and etc...) passed by library caller has invalid structure",
             CommonIOError => "IO Error",
@@ -239,10 +294,10 @@ impl ErrorCode {
             LedgerInvalidTransaction => "Attempt to send unknown or incomplete transaction message",
             LedgerSecurityError => "Attempt to send transaction without the necessary privileges",
             PoolLedgerConfigAlreadyExistsError => "Attempt to create pool ledger config with name used for another existing pool",
+            PoolLedgerTimeout => "Timeout for action",
+            PoolIncompatibleProtocolVersion => "Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version. Set the correct Protocol version first.",
             AnoncredsRevocationRegistryFullError => "Revocation registry is full and creation of new registry is necessary",
             AnoncredsInvalidUserRevocIndex => "Invalid user revocation index",
-            AnoncredsAccumulatorIsFull => "Revocation accumulator is full",
-            AnoncredsNotIssuedError => "Not issued",
             AnoncredsMasterSecretDuplicateNameError => "Attempt to generate master secret with duplicated name",
             AnoncredsProofRejected => "Proof rejected",
             AnoncredsCredentialRevoked => "Credential revoked",
@@ -251,7 +306,8 @@ impl ErrorCode {
             DidAlreadyExistsError => "Did already exists",
             UnknownPaymentMethod => "Unknown payment method was given",
             IncompatiblePaymentError => "Multiple different payment methods were specified",
-            PaymentInsufficientFundsError => "Payment cannot be processed because there was insufficient funds"
+            PaymentInsufficientFundsError => "Payment cannot be processed because there was insufficient funds",
+            PaymentSourceDoesNotExistError => "No such source on a ledger."
         }
     }
 
