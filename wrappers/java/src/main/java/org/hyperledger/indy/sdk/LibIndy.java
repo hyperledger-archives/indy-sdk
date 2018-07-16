@@ -71,9 +71,9 @@ public abstract class LibIndy {
 		public int indy_build_get_revoc_reg_def_request(int command_handle, String submitter_did, String id, Callback cb);
 		public int indy_parse_get_revoc_reg_def_response(int command_handle, String get_revoc_ref_def_response, Callback cb);
 		public int indy_build_revoc_reg_entry_request(int command_handle, String submitter_did, String revoc_reg_def_id, String rev_def_type, String value, Callback cb);
-		public int indy_build_get_revoc_reg_request(int command_handle, String submitter_did, String revoc_reg_def_id, int timestamp, Callback cb);
+		public int indy_build_get_revoc_reg_request(int command_handle, String submitter_did, String revoc_reg_def_id, long timestamp, Callback cb);
 		public int indy_parse_get_revoc_reg_response(int command_handle, String get_revoc_reg_response, Callback cb);
-		public int indy_build_get_revoc_reg_delta_request(int command_handle, String submitter_did, String revoc_reg_def_id, int from, int to, Callback cb);
+		public int indy_build_get_revoc_reg_delta_request(int command_handle, String submitter_did, String revoc_reg_def_id, long from, long to, Callback cb);
 		public int indy_parse_get_revoc_reg_delta_response(int command_handle, String get_revoc_reg_delta_response, Callback cb);
 
 		// did.rs
@@ -128,8 +128,8 @@ public abstract class LibIndy {
 		public int indy_prover_close_credentials_search_for_proof_req(int command_handle, int search_handle, Callback cb);
 		public int indy_prover_create_proof(int command_handle, int wallet_handle, String proof_req_json, String requested_credentials_json, String master_secret_name, String schemas_json, String credential_defs_json, String rev_infos_json, Callback cb);
 		public int indy_verifier_verify_proof(int command_handle, String proof_request_json, String proof_json, String schemas_json, String cred_defs_jsons, String rev_reg_defs_json, String revoc_regs_json, Callback cb);
-		public int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_reg_def_json, String rev_reg_delta_json, int timestamp, String cred_rev_id, Callback cb);
-		public int indy_update_revocation_info(int command_handle, int blob_storage_reader_handle, String rev_state_json, String rev_reg_def_json, String rev_reg_delta_json, int timestamp, String cred_rev_id, Callback cb);
+		public int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
+		public int indy_update_revocation_state(int command_handle, int blob_storage_reader_handle, String rev_state_json, String rev_reg_def_json, String rev_reg_delta_json, long timestamp, String cred_rev_id, Callback cb);
 
 		// pairwise.rs
 

@@ -1155,7 +1155,7 @@ public class Anoncreds extends IndyJava.API {
 			int blobStorageReaderHandle,
 			String revRegDef,
 			String revRegDelta,
-			int timestamp,
+			long timestamp,
 			String credRevId) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(revRegDef, "revRegDef");
@@ -1202,7 +1202,7 @@ public class Anoncreds extends IndyJava.API {
 			String revState,
 			String revRegDef,
 			String revRegDelta,
-			int timestamp,
+			long timestamp,
 			String credRevId) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(revState, "revState");
@@ -1213,7 +1213,7 @@ public class Anoncreds extends IndyJava.API {
 		CompletableFuture<String> future = new CompletableFuture<String>();
 		int commandHandle = addFuture(future);
 
-		int result = LibIndy.api.indy_update_revocation_info(
+		int result = LibIndy.api.indy_update_revocation_state(
 				commandHandle,
 				blobStorageReaderHandle,
 				revState,
