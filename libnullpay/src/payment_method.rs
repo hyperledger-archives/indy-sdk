@@ -68,6 +68,23 @@ pub mod add_request_fees {
 
         trace!("FEE: {}", fee);
 
+        let ec = _check_inputs_existance(&inputs_json);
+        if ec != ErrorCode::Success {
+            ledger::build_get_txn_request(
+                submitter_did.as_str(),
+                None,
+                1,
+                Box::new(move |ec, res| {
+                    let ec = if ec == ErrorCode::Success {
+                        _add_response(&res, "NO_UTXO")
+                    } else { ec };
+                    trace!("libnullpay::add_request_fees::handle >>");
+                    _process_callback(cmd_handle, ec, res, cb);
+                }),
+            );
+            return ErrorCode::Success;
+        }
+
         let total_amount = _count_total_inputs(&inputs_json);
         let total_payments = _count_total_payments(&outputs_json);
 
@@ -188,6 +205,7 @@ pub mod build_payment_req {
 
                 let total_balance = _count_total_inputs(&inputs_json);
                 let total_payments = _count_total_payments(&outputs_json);
+                let ec_existance = _check_inputs_existance(&inputs_json);
 
                 let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
 
@@ -202,7 +220,9 @@ pub mod build_payment_req {
                         1,
                         Box::new(move |ec, res| {
                             if ec == ErrorCode::Success {
-                                if total_balance >= total_payments {
+                                if ec_existance != ErrorCode::Success {
+                                    _add_response(&res, "NO_UTXO");
+                                } else if total_balance >= total_payments {
                                     _process_inputs(&inputs_json);
                                     let infos = _process_outputs(&outputs_json, seq_no);
 
@@ -360,6 +380,16 @@ fn _check_inputs(inputs: &Vec<String>, payment_addresses: &Vec<String>) -> bool 
             }
             None => false
         })
+}
+
+fn _check_inputs_existance(inputs: &Vec<String>) -> ErrorCode {
+    for input in inputs {
+        match utxo_cache::get_balanse_of_utxo(input) {
+            None => return ErrorCode::PaymentSourceDoesNotExistError,
+            _ => ()
+        }
+    }
+    ErrorCode::Success
 }
 
 fn _process_inputs(inputs: &Vec<String>) {
