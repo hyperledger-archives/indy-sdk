@@ -24,7 +24,7 @@ download_adb(){
 }
 
 delete_existing_avd(){
-    ${ANDROID_BUILD_FOLDER}/sdk/tools/bin/avdmanager delete ${ARCH}
+    ${ANDROID_BUILD_FOLDER}/sdk/tools/bin/avdmanager delete avd -n ${ARCH}
 }
 
 create_avd(){
@@ -40,9 +40,9 @@ create_avd(){
                 --name ${TARGET_ARCH} \
                 --package "system-images;android-24;default;${ABI}"
 
-        ${ANDROID_BUILD_FOLDER}/sdk/tools/emulator -avd ${TARGET_ARCH}
         SDK_ROOT="$(realpath ${ANDROID_BUILD_FOLDER}/sdk)"
-        ANDROID_SDK_ROOT=${SDK_ROOT} ANDROID_HOME=${SDK_ROOT} ./sdk/tools/emulator -avd arm -no-audio -no-window
+        ANDROID_SDK_ROOT=${SDK_ROOT} ANDROID_HOME=${SDK_ROOT} ${ANDROID_BUILD_FOLDER}/sdk/tools/emulator -avd ${TARGET_ARCH}
+        ANDROID_SDK_ROOT=${SDK_ROOT} ANDROID_HOME=${SDK_ROOT} ${SDK_ROOT}/tools/emulator -avd arm -no-audio -no-window
 }
 
 download_sdk(){
@@ -131,7 +131,7 @@ download_and_setup_toolchain(){
         pushd $TOOLCHAIN_PREFIX
         if [ ! -d "android-ndk-r16b" ] ; then
             echo "Downloading android-ndk-r16b-darwin-x86_64.zip"
-            wget https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip
+            wget -q https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip
             unzip -qq android-ndk-r16b-darwin-x86_64.zip
         else
             echo "Skipping download android-ndk-r16b-linux-x86_64.zip"
