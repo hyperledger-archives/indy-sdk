@@ -14,7 +14,7 @@ def create_deb(filename):
     cur_dir = os.getcwd()
     
     if not os.path.isfile(filename):
-        print('%s doesnt exist' %s)
+        print('%s doesnt exist' % filename)
         sys.exit(1)
 
     if os.path.isfile('package') or os.path.isdir('package') or os.path.isfile('vcx') or os.path.isdir('vcx'):

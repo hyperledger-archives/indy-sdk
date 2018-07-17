@@ -1,7 +1,5 @@
 # Development 
-FROM libindy 
- 
-ARG uid=1000 
+FROM libvcx
  
 # Update environment 
 # JRE installation and gcc 
@@ -15,9 +13,13 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
 
 # Assumes we are in the ./vcx directory
 RUN npm i -g npm@6.1.0
-COPY libvcx/target/debug/libvcx.so /usr/lib
-RUN useradd -ms /bin/bash -u $uid vcx
-USER vcx
 
+# Redundant, but helps break up testing, can remove from production
+COPY vcx/wrappers/node/ci/test-and-package.sh /sdk/vcx/wrappers/node/ci
+COPY vcx/ci/scripts/create_npm_deb.py /sdk/vcx/ci/scripts
+
+WORKDIR /sdk/vcx/wrappers/node
+
+CMD [ "/sdk/vcx/wrappers/node/ci/test-and-package.sh" ]
 
 

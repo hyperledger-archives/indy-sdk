@@ -1,7 +1,5 @@
 # Development
-FROM libindy
-
-ARG uid=1000
+FROM libvcx
 
 RUN apt-get update && apt-get install -y python3
 
@@ -9,14 +7,14 @@ RUN apt-get install -y python3-pip
 
 RUN pip3 install pytest qrcode pytest-asyncio
 
-ENV PYTHONPATH=$PYTHONPATH:/python3
+ENV PYTHONPATH=${PYTHONPATH}:/sdk/vcx/wrappers/python3
 
-RUN mkdir -p /scripts
-COPY ci/scripts/ /scripts
+WORKDIR /sdk/vcx/wrappers/python3/tests
 
-COPY libvcx/target/debug/libvcx.so /usr/lib
-COPY wrappers/python3/ /python3
-WORKDIR /python3/tests
+RUN find . -name \*.pyc -delete
 
-CMD [ "/usr/bin/python3", "-m", "pytest", "-v"]
+# for testing, remove for production
+COPY vcx/wrappers/python3/ci/test-and-package.sh /sdk/vcx/wrappers/python3/ci/
+
+CMD [ "/sdk/vcx/wrappers/python3/ci/test-and-package.sh" ]
 
