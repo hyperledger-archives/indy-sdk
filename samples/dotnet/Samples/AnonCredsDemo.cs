@@ -80,7 +80,7 @@ namespace Hyperledger.Indy.Samples
                     var credential = createCredentialResult.CredentialJson;
 
                     //10. Prover Stores Credential
-                    await AnonCreds.ProverStoreCredentialAsync(proverWallet, null, credReqJson, credReqMetadataJson, credential, credDefJson, null);
+                    await AnonCreds.ProverStoreCredentialAsync(proverWallet, null, credReqMetadataJson, credential, credDefJson, null);
 
                     //11. Prover Gets Credentials for Proof Request
                     var proofRequestJson = "{" +

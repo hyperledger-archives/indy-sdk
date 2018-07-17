@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Hyperledger.Indy.PoolApi;
 
 namespace Hyperledger.Indy.Samples
 {
@@ -16,6 +17,8 @@ namespace Hyperledger.Indy.Samples
 
         static async Task ExecuteDemos()
         {
+            await Pool.SetProtocolVersionAsync(2);
+
             await AnonCredsDemo.Execute();
             await AnonCredsRevocationDemo.Execute();
             await LedgerDemo.Execute();
