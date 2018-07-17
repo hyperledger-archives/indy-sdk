@@ -86,6 +86,8 @@ vcx_error_t vcx_wallet_delete_record(indy_signed_t chandle, const char * type_, 
 vcx_error_t vcx_wallet_open_search(vcx_command_handle_t chandle, const char * type_, const char *query_json, const char *options_json, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, vcx_wallet_search_handle_t search_handle));
 vcx_error_t vcx_wallet_close_search(vcx_command_handle_t chandle, vcx_command_handle_t shandle, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 vcx_error_t vcx_wallet_search_next_records(vcx_command_handle_t chandle, vcx_wallet_search_handle_t shandle, count_t count, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *results));
+/** Functionality in Libindy for validating an address is NOT there yet **/
+vcx_error_t vcx_wallet_validate_payment_address(vcx_command_handle_t chandle, const char * type_, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 
 /** Returns a human readable message for the associated error code */
 const char *vcx_error_c_message(int);

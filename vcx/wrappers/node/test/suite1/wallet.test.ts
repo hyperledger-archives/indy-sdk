@@ -86,6 +86,12 @@ describe('Wallet:', () => {
     })
   })
 
+  describe('validatePaymentAddress:', () => {
+    it('success', async () => {
+      await Wallet.validatePaymentAddress('sov:1:1234')
+    })
+  })
+
   describe('records:', () => {
     it('success', async () => {
       await Wallet.addRecord(WALLET_RECORD)
