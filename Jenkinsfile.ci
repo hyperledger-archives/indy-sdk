@@ -412,8 +412,8 @@ def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
 
 def buildAndroid(buildEnv) {
 
-    sh 'chmod -R 777 libindy/ci/'
-    ANDROID_SCRIPT_PATH = 'libindy/ci/buildAndroid.sh'
+    sh 'chmod -R 777 ci/'
+    ANDROID_SCRIPT_PATH = 'ci/buildAndroid.sh'
     echo 'Building Libindy android files for arm'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} arm"
