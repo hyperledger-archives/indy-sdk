@@ -258,6 +258,13 @@ class Wallet:
 
     @staticmethod
     async def export(path, backup_key):
+        """
+        Exports opened wallet
+        :param path: Path to export wallet to User's File System.
+        :param backupKey: String representing the User's Key for securing (encrypting) the exported Wallet.
+        :return:
+        Error code - success indicates that the wallet was successfully exported.
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.export, "cb"):
@@ -279,6 +286,14 @@ class Wallet:
 
     @staticmethod
     async def import_wallet(path, backupKey):
+        """
+        Imports wallet from file with given key.
+        Cannot be used if wallet is already opened (Especially if vcx_init has already been used).
+        :param path: Path to file.
+        :param backupKey: String representing the User's Key for securing (encrypting) the exported Wallet.
+        :return:
+        Error code - success indicates that the wallet was successfully imported.
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.import_wallet, "cb"):
