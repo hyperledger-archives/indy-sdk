@@ -359,7 +359,11 @@ impl WalletStorage for SQLiteStorage {
 
         let id = match res {
             Ok(entity) => entity,
-            Err(rusqlite::Error::SqliteFailure(_, _)) => return Err(WalletStorageError::ItemAlreadyExists),
+            Err(rusqlite::Error::SqliteFailure(a, b)) => {
+                println!("{:?}", a);
+                println!("{:?}", b);
+                return Err(WalletStorageError::ItemAlreadyExists);
+            },
             Err(err) => return Err(WalletStorageError::from(err))
         };
 
