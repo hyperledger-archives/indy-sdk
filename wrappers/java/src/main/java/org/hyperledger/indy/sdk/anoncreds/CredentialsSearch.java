@@ -52,12 +52,15 @@ public class CredentialsSearch extends IndyJava.API implements AutoCloseable {
 
 	/**
 	 * Search for credentials stored in wallet.
+	 * Credentials can be filtered by tags created during saving of credential.
 	 *
 	 * Instead of immediately returning of fetched credentials {@link Anoncreds#proverGetCredentials(Wallet, String)}
 	 * this call returns CredentialsSearch that can be used later
 	 * to fetch records by small batches (with {@link CredentialsSearch#fetchNextCredentials(int)}).
+	 *
 	 * @param wallet 	 A wallet
-	 * @param filterJson Wql style filter for credentials searching based on tags created during the saving of credential
+	 * @param filterJson Wql style filter for credentials searching based on tags.
+	 *         where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 	 * @return CredentialsSearch to fetch method
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
 	 */
@@ -97,6 +100,7 @@ public class CredentialsSearch extends IndyJava.API implements AutoCloseable {
 	 *         "rev_reg_id": Optional<string>,
 	 *         "cred_rev_id": Optional<string>
 	 *     }]
+	 * NOTE: The list of length less than the requested count means credentials search iterator is completed.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
 	 */
 	public CompletableFuture<String> fetchNextCredentials(

@@ -299,16 +299,14 @@ impl AnoncredsUtils {
         super::results::result_to_empty(err, receiver)
     }
 
-    pub fn prover_get_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str, extra_query_json: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn prover_get_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let proof_request_json = CString::new(proof_request_json).unwrap();
-        let extra_query_json_str = extra_query_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = indy_prover_get_credentials_for_proof_req(command_handle,
                                                             wallet_handle,
                                                             proof_request_json.as_ptr(),
-                                                            if extra_query_json.is_some() { extra_query_json_str.as_ptr() } else { null() },
                                                             cb);
 
         super::results::result_to_string(err, receiver)

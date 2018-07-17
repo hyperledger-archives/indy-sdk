@@ -21,7 +21,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr(wall
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -45,7 +45,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_in_u
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -69,7 +69,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_cont
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -95,7 +95,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -120,7 +120,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -146,7 +146,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -172,7 +172,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -199,7 +199,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -224,7 +224,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -247,7 +247,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_not_found_attribut
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -273,7 +273,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_revealed_attr_for_
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 1
     assert len(credentials['predicates']) == 0
@@ -299,7 +299,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate(wallet_h
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 0
     assert len(credentials['predicates']) == 1
@@ -326,7 +326,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_attr_in_
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 0
     assert len(credentials['predicates']) == 1
@@ -353,7 +353,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_attr_con
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 0
     assert len(credentials['predicates']) == 1
@@ -380,7 +380,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_for_sche
         }
     }
 
-    credentials = json.loads(await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+    credentials = json.loads(await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 0
     assert len(credentials['predicates']) == 1
@@ -407,7 +407,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_for_issu
         }
     }
 
-    credentials = json.loads(await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+    credentials = json.loads(await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 0
     assert len(credentials['predicates']) == 1
@@ -435,7 +435,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_for_cred
         }
     }
 
-    credentials = json.loads(await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+    credentials = json.loads(await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 0
     assert len(credentials['predicates']) == 1
@@ -464,7 +464,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_predicate_for_mult
         }
     }
 
-    credentials = json.loads(await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+    credentials = json.loads(await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 0
     assert len(credentials['predicates']) == 1
@@ -489,7 +489,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_not_found_predicat
         }
     }
 
-    credentials = json.loads(await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+    credentials = json.loads(await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 0
     assert len(credentials['predicates']) == 1
@@ -514,7 +514,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_not_satisfy_predic
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 0
     assert len(credentials['predicates']) == 1
@@ -540,7 +540,7 @@ async def test_prover_get_credentials_for_proof_req_works_for_multiply_attribute
     }
 
     credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), None))
+        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req)))
 
     assert len(credentials['attrs']) == 2
     assert len(credentials['predicates']) == 2
@@ -571,34 +571,6 @@ async def test_prover_get_credentials_for_proof_req_works_for_invalid_wallet_han
     invalid_wallet_handle = wallet_handle + 100
 
     with pytest.raises(IndyError) as e:
-        await prover_get_credentials_for_proof_req(invalid_wallet_handle, json.dumps(proof_req), None)
+        await prover_get_credentials_for_proof_req(invalid_wallet_handle, json.dumps(proof_req))
 
     assert ErrorCode.WalletInvalidHandle == e.value.error_code
-
-
-# noinspection PyUnusedLocal
-@pytest.mark.asyncio
-async def test_prover_get_credentials_for_proof_req_works_for_extra_query(wallet_handle, prepopulated_wallet):
-    proof_req = {
-        "nonce": "123432421212",
-        "name": "proof_req_1",
-        "version": "0.1",
-        "requested_attributes": {
-            "attr1_referent": {
-                "name": "name"
-            }
-        },
-        "requested_predicates": {}
-    }
-
-    extra_query = {
-        'attr1_referent': {
-            'attr::name::value': 'Alex'
-        }
-    }
-
-    credentials = json.loads(
-        await prover_get_credentials_for_proof_req(wallet_handle, json.dumps(proof_req), json.dumps(extra_query)))
-
-    assert len(credentials['attrs']) == 1
-    assert len(credentials['attrs']['attr1_referent']) == 1

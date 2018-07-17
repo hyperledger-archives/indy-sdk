@@ -199,7 +199,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 
 		// Prover gets Claims for Proof Request
-		String credsJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequest, null).get();
+		String credsJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequest).get();
 
 		JSONObject credentials = new JSONObject(credsJson);
 		JSONArray credsForReferent = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
@@ -541,7 +541,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		// Prover gets Claims for Proof Request
 
-		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequest, null).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequest).get();
 
 		JSONObject credentials = new JSONObject(credentialsJson);
 		JSONArray credentialsForReferent = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");

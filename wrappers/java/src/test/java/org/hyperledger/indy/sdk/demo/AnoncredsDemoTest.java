@@ -128,7 +128,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    }" +
 				"                  }").toString();
 
-		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson, null).get();
+		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
 
 		JSONObject credentialsForProof = new JSONObject(credentialsForProofJson);
 		JSONArray credentialsForAttribute1 = credentialsForProof.getJSONObject("attrs").getJSONArray("attr1_referent");
@@ -257,7 +257,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    }" +
 				"                  }").toString();
 
-		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson, null).get();
+		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
 		assertNotNull(credentialsForProofJson);
 
 		JSONObject credentialsForProof = new JSONObject(credentialsForProofJson);
@@ -384,7 +384,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    }" +
 				"                  }").toString();
 
-		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson, null).get();
+		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
 		assertNotNull(credentialsForProofJson);
 
 		JSONObject credentialsForProof = new JSONObject(credentialsForProofJson);
@@ -496,7 +496,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    }" +
 				"               }").toString();
 
-		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequest, null).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequest).get();
 		JSONObject credentials = new JSONObject(credentialsJson);
 		JSONArray credentialsForAttr1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
 
@@ -581,7 +581,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 				"                    \"requested_predicates\":{}" +
 				"                  }", gvtSchemaId)).toString();
 
-		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson, null).get();
+		String credentialsForProofJson = Anoncreds.proverGetCredentialsForProofReq(proverWallet, proofRequestJson).get();
 		assertNotNull(credentialsForProofJson);
 
 		JSONObject credentialsForProof = new JSONObject(credentialsForProofJson);

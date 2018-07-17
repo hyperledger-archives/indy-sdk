@@ -652,11 +652,11 @@ void proverGetCredentialsForProofReq_cb(indy_handle_t handle, indy_error_t xerr,
   }
 }
 NAN_METHOD(proverGetCredentialsForProofReq) {
-  if(info.Length() != 4){
-    return Nan::ThrowError(Nan::New("Expected 4 arguments: proverGetCredentialsForProofReq(wallet_handle, proof_request_json, extra_query_json, cb(err, credentials))").ToLocalChecked());
+  if(info.Length() != 3){
+    return Nan::ThrowError(Nan::New("Expected 3 arguments: proverGetCredentialsForProofReq(wallet_handle, proof_request_json, cb(err, credentials))").ToLocalChecked());
   }
   if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: proverGetCredentialsForProofReq(wallet_handle, proof_request_json, extra_query_json, cb(err, credentials))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: proverGetCredentialsForProofReq(wallet_handle, proof_request_json, cb(err, credentials))").ToLocalChecked());
   }
   indy_handle_t arg0 = info[0]->Int32Value();
   Nan::Utf8String* arg1UTF = nullptr;
@@ -665,25 +665,15 @@ NAN_METHOD(proverGetCredentialsForProofReq) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for proof_request_json: proverGetCredentialsForProofReq(wallet_handle, proof_request_json, extra_query_json, cb(err, credentials))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for proof_request_json: proverGetCredentialsForProofReq(wallet_handle, proof_request_json, cb(err, credentials))").ToLocalChecked());
   }
 
-  Nan::Utf8String* arg2UTF = nullptr;
-  const char* arg2 = nullptr;
-  if(info[2]->IsString()){
-    arg2UTF = new Nan::Utf8String(info[2]);
-    arg2 = (const char*)(**arg2UTF);
-  } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for proof_request_json: proverGetCredentialsForProofReq(wallet_handle, proof_request_json, extra_query_json, cb(err, credentials))").ToLocalChecked());
+  if(!info[2]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("proverGetCredentialsForProofReq arg 2 expected callback Function").ToLocalChecked());
   }
-
-  if(!info[3]->IsFunction()) {
-    return Nan::ThrowError(Nan::New("proverGetCredentialsForProofReq arg 3 expected callback Function").ToLocalChecked());
-  }
-  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
-  indyCalled(icb, indy_prover_get_credentials_for_proof_req(icb->handle, arg0, arg1, arg2, proverGetCredentialsForProofReq_cb));
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
+  indyCalled(icb, indy_prover_get_credentials_for_proof_req(icb->handle, arg0, arg1, proverGetCredentialsForProofReq_cb));
   delete arg1UTF;
-  delete arg2UTF;
 }
 
 void proverSearchCredentialsForProofReq_cb(indy_handle_t handle, indy_error_t xerr, indy_handle_t arg0) {

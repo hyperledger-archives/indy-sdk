@@ -51,7 +51,7 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 	/**
 	 * Search for credentials matching the given proof request.
 	 *
-	 * Instead of immediately returning of fetched credentials {@link Anoncreds#proverGetCredentialsForProofReq(Wallet, String, String)}
+	 * Instead of immediately returning of fetched credentials {@link Anoncreds#proverGetCredentialsForProofReq(Wallet, String)}
 	 * this call returns search_handle that can be used later
 	 * to fetch records by small batches (with {@link CredentialsSearchForProofReq#fetchNextCredentials(String, int)}).
 	 *
@@ -108,6 +108,7 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 	 *         "<attr_referent>": <wql query>,
 	 *         "<predicate_referent>": <wql query>,
 	 *     }
+	 * where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 	 * @return Future CredentialsSearchForProofReq to fetch credentials
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -155,6 +156,8 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 	 *         "rev_reg_id": Optional<int>,
 	 *         "cred_rev_id": Optional<int>,
 	 *     }
+	 * NOTE: The list of length less than the requested <count> means that search iterator
+	 * correspondent to the requested <itemRef> is completed.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public CompletableFuture<String> fetchNextCredentials(

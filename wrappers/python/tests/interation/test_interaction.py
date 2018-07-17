@@ -139,7 +139,7 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
 
     # Prover Gets credentials for Proof Request
     credential_for_proof_json = \
-        await anoncreds.prover_get_credentials_for_proof_req(prover_wallet_handle, proof_req_json, None)
+        await anoncreds.prover_get_credentials_for_proof_req(prover_wallet_handle, proof_req_json)
     credentials_for_proof = json.loads(credential_for_proof_json)
     cred_info = credentials_for_proof['attrs']['attr1_referent'][0]['cred_info']
 

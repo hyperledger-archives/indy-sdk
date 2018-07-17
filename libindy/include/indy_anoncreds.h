@@ -186,7 +186,6 @@ extern "C" {
     extern indy_error_t indy_prover_get_credentials_for_proof_req(indy_handle_t command_handle,
                                                                   indy_handle_t wallet_handle,
                                                                   const char *  proof_request_json,
-                                                                  const char *  query_json,
 
                                                                   void           (*cb)(indy_handle_t xcommand_handle,
                                                                                        indy_error_t  err,

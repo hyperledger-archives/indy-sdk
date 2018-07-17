@@ -73,7 +73,7 @@ public class IssuerRevokeCredentialTest extends AnoncredsIntegrationTest {
 		Anoncreds.proverStoreCredential(wallet, credentialId1, credentialReqMetadataJson, credJson, credDefJson, revRegDef).get();
 
 		// Prover gets Credentials for Proof Request
-		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest, null).get();
+		String credentialsJson = Anoncreds.proverGetCredentialsForProofReq(wallet, proofRequest).get();
 		JSONObject credentials = new JSONObject(credentialsJson);
 		JSONArray credentialsForAttr1 = credentials.getJSONObject("attrs").getJSONArray("attr1_referent");
 

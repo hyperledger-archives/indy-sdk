@@ -590,7 +590,7 @@ public class Anoncreds extends IndyJava.API {
 	}
 
 	/**
-	 * Creates a clam request for the given credential offer.
+	 * Creates a credential request for the given credential offer.
 	 * 
 	 * The method creates a blinded master secret for a master secret identified by a provided name.
 	 * The master secret identified by the name must be already stored in the secure wallet (see proverCreateMasterSecret)
@@ -599,7 +599,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @param wallet              A wallet.
 	 * @param proverDid           The DID of the prover.
 	 * @param credentialOfferJson Credential offer as a json containing information about the issuer and a credential
-	 * @param credentialDefJson   Credential definition json
+	 * @param credentialDefJson   Credential definition json realted to <cred_def_id> in <credentialOfferJson>
 	 * @param masterSecretId      The id of the master secret stored in the wallet
 	 * @return A future that resolves to:
 	 * * credReqJson: Credential request json for creation of credential by Issuer
@@ -650,7 +650,7 @@ public class Anoncreds extends IndyJava.API {
 	 * Check credential provided by Issuer for the given credential request,
 	 * updates the credential by a master secret and stores in a secure wallet.
 	 *
-	 * To support efficient search the following tags will be created for stored credential:
+	 * To support efficient and flexible search the following tags will be created for stored credential:
 	 *     {
 	 *         "schema_id": <credential schema id>,
 	 *         "schema_issuer_did": <credential schema issuer did>,
@@ -667,8 +667,8 @@ public class Anoncreds extends IndyJava.API {
 	 * @param credId              (optional, default is a random one) Identifier by which credential will be stored in the wallet
 	 * @param credReqMetadataJson Credential request metadata created by proverCreateCredentialReq
 	 * @param credJson            Credential json received from issuer
-	 * @param credDefJson         Credential definition json
-	 * @param revRegDefJson       Revocation registry definition json
+	 * @param credDefJson         Credential definition json related to <cred_def_id> in <credJson>
+	 * @param revRegDefJson       Revocation registry definition json related to <rev_reg_def_id> in <credJson>
 	 * @return A future that  resolve to identifier by which credential is stored in the wallet.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -707,21 +707,19 @@ public class Anoncreds extends IndyJava.API {
 
 	/**
 	 * Gets human readable credentials according to the filter.
+	 * If filter is NULL, then all credentials are returned.
+	 * Credentials can be filtered by tags created during saving of credential.
+	 *
+	 * NOTE: This method is deprecated because immediately returns all fetched credentials.
+	 * Use {@link CredentialsSearch#open(Wallet, String)} to fetch records by small batches.
 	 *
 	 * @param wallet A wallet.
-	 * @param filter for credentials
-	 *        {
-	 *            "schema_id": string, (Optional)
-	 *            "schema_issuer_did": string, (Optional)
-	 *            "schema_name": string, (Optional)
-	 *            "schema_version": string, (Optional)
-	 *            "issuer_did": string, (Optional)
-	 *            "cred_def_id": string, (Optional)
-	 *        }
+	 * @param filter Wql style query for credentials searching based on tags.
+	 * where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 	 * @return A future that resolves to a credentials json
 	 *     [{
 	 *         "referent": string, // cred_id in the wallet
-	 *         "values": <see credValuesJson above>,
+	 *         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
 	 *         "schema_id": string,
 	 *         "cred_def_id": string,
 	 *         "rev_reg_id": Optional<string>,
@@ -794,6 +792,9 @@ public class Anoncreds extends IndyJava.API {
 	/**
 	 * Gets human readable credentials matching the given proof request.
 	 *
+	 * NOTE: This method is deprecated because immediately returns all fetched credentials.
+	 * Use {@link CredentialsSearchForProofReq#open(Wallet, String, String)} to fetch records by small batches.
+	 *
 	 * @param wallet       A wallet.
 	 * @param proofRequest proof request json
 	 *     {
@@ -817,7 +818,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     attr_referent: Describes requested attribute
 	 *     {
 	 *         "name": string, // attribute name, (case insensitive and ignore spaces)
-	 *         "restrictions": Optional<[<attr_filter>]> // see below,
+	 *         "restrictions": Optional<[<wql query>]>,
 	 *                          // if specified, credential must satisfy to one of the given restriction.
 	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 	 *                        // If specified prover must proof non-revocation
@@ -829,7 +830,7 @@ public class Anoncreds extends IndyJava.API {
 	 *         "name": attribute name, (case insensitive and ignore spaces)
 	 *         "p_type": predicate type (Currently >= only)
 	 *         "p_value": predicate value
-	 *         "restrictions": Optional<[<attr_filter>]> // see below,
+	 *         "restrictions": Optional<[<wql query>]>,
 	 *                         // if specified, credential must satisfy to one of the given restriction.
 	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 	 *                        // If specified prover must proof non-revocation
@@ -841,13 +842,8 @@ public class Anoncreds extends IndyJava.API {
 	 *         "from": Optional<int>, // timestamp of interval beginning
 	 *         "to": Optional<int>, // timestamp of interval ending
 	 *     }
-	 *     filter: see filter above
-	 * @param extraQueryJson (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
-	 *     {
-	 *         "<attr_referent>": <wql query>,
-	 *         "<predicate_referent>": <wql query>,
-	 *     }
-	 * @return A future that resolves to a json with credentials for the given pool request.
+	 *     where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+	 * @return A future that resolves to a json with credentials for the given proof request.
 	 *     {
 	 *         "requested_attrs": {
 	 *             "<attr_referent>": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],
@@ -870,8 +866,7 @@ public class Anoncreds extends IndyJava.API {
 	 */
 	public static CompletableFuture<String> proverGetCredentialsForProofReq(
 			Wallet wallet,
-			String proofRequest,
-			String extraQueryJson) throws IndyException {
+			String proofRequest) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
 		ParamGuard.notNullOrWhiteSpace(proofRequest, "proofRequest");
@@ -885,7 +880,6 @@ public class Anoncreds extends IndyJava.API {
 				commandHandle,
 				walletHandle,
 				proofRequest,
-				extraQueryJson,
 				stringCb);
 
 		checkResult(result);

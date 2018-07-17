@@ -93,7 +93,7 @@ test('anoncreds', async function (t) {
     },
     'non_revoked': {'from': 80, 'to': 100}
   }
-  var credentialsForProof = await indy.proverGetCredentialsForProofReq(wh, proofReq, null)
+  var credentialsForProof = await indy.proverGetCredentialsForProofReq(wh, proofReq)
 
   credentials = await indy.proverGetCredentials(wh)
   t.truthy(Array.isArray(credentials))

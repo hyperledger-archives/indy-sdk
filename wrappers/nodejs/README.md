@@ -348,10 +348,11 @@ Gets human readable credentials according to the filter.
 If filter is NULL, then all credentials are returned.
 Credentials can be filtered by Issuer, credential\_def and\/or Schema.
 
-NOTE: This method is deprecated. Use <indy_prover_open_credentials_search> instead.
+NOTE: This method is deprecated. Use `proverSearchCredentials` instead.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `filter`: Json - wql style filter for credentials searching based on tags created during the saving of credential
+* `filter`: Json - wql style query for credentials searching based on tags created during the saving of credential
+where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 
 * __->__ `credentials`: Json - credentials json
 ```
@@ -396,6 +397,7 @@ to fetch records by small batches (with proverFetchCredentials).
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `filter`: Json - wql style filter for credentials searching based on tags created during the saving of credential
+where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 
 * __->__ `searchHandle`: Number - handle that can be used later to fetch records by small batches (with proverFetchCredentials)
 * __->__ `totalCount`: Number -  total count of records
@@ -419,6 +421,7 @@ Fetch next records for wallet search.
         "cred_rev_id": Optional<string>
     }]
 ````
+NOTE: The list of length less than the requested count means credentials search iterator is completed.
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
@@ -431,7 +434,9 @@ Close credentials search (make search handle invalid).
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
-#### proverGetCredentialsForProofReq \( wh, proofRequest, extraQuery \) -&gt; credentials
+#### proverGetCredentialsForProofReq \( wh, proofRequest \) -&gt; credentials
+
+NOTE: This method is deprecated. Use `proverSearchCredentialsForProofReq` instead.
 
 Gets human readable credentials matching the given proof request.
 
@@ -456,15 +461,8 @@ Gets human readable credentials matching the given proof request.
                        // (can be overridden on attribute level)
     }
 ````
-* `extraQuery`: Json - (Optional) List of extra queries that will be applied to correspondent attribute/predicate
-```
-    {
-        "<attr_referent>": <wql query>,
-        "<predicate_referent>": <wql query>,
-    }
-```
 
-* __->__ `credentials`: Json - credentials\_json: json with credentials for the given pool request.
+* __->__ `credentials`: Json - credentials\_json: json with credentials for the given proof request.
 ```
     {
         "requested_attrs": {
@@ -515,7 +513,8 @@ to fetch records by small batches (with proverFetchCredentialsForProofReq).
                        // (can be overridden on attribute level)
     }
 ````
-* `extraQuery`: Json - (Optional) List of extra queries that will be applied to correspondent attribute/predicate
+* `extraQuery`: Json - (Optional) List of extra queries that will be applied to correspondent attribute/predicate.
+where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 ```
     {
         "<attr_referent>": <wql query>,
@@ -552,6 +551,7 @@ where credential_info is:
         "cred_rev_id": Optional<int>,
     }
 ```
+NOTE: The list of length less than the requested `count` means that search iterator correspondent to the requested `itemReferent` is completed.
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 

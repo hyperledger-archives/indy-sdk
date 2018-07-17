@@ -201,7 +201,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
         }).to_string();
 
     // Prover gets Credentials for Proof Request
-    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_request, None).unwrap();
+    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_request).unwrap();
     let cred_info = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
     // Prover gets RevocationRegistryDelta from Ledger
@@ -537,7 +537,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
         }).to_string();
 
     // Prover gets Credentials for Proof Request
-    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_request, None).unwrap();
+    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
     // Prover gets RevocationRegistryDelta from Ledger
@@ -881,7 +881,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
         }).to_string();
 
     // Prover1 gets Credentials for Proof Request
-    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover1_wallet_handle, &proof_request, None).unwrap();
+    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover1_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
     // Prover1 gets RevocationRegistryDelta from Ledger
@@ -1158,7 +1158,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
         }).to_string();
 
     // Prover1 gets Credentials for Proof Request
-    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover1_wallet_handle, &proof_request, None).unwrap();
+    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover1_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
     // Prover1 gets RevocationRegistryDelta from Ledger
@@ -1238,7 +1238,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     // Verifying Prover2 Credential
     // Prover2 gets Credentials for Proof Request
-    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover2_wallet_handle, &proof_request, None).unwrap();
+    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover2_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
     // Prover2 gets RevocationRegistryDelta from Ledger
@@ -1291,7 +1291,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     // Verifying Prover3 Credential
     // Prover3 gets Credentials for Proof Request
-    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover3_wallet_handle, &proof_request, None).unwrap();
+    let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover3_wallet_handle, &proof_request).unwrap();
     let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
 
     // Prover3 gets RevocationRegistryDelta from Ledger
