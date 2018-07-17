@@ -44,10 +44,8 @@ impl LedgerService {
         LedgerService {}
     }
 
-    pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>,
-                             alias: Option<&str>, role: Option<&str>) -> Result<String, CommonError> {
-        info!("build_nym_request >>> identifier: {:?}, dest: {:?}, verkey: {:?}, alias: {:?}, role: {:?}", identifier, dest, verkey, alias, role);
-
+    pub fn build_nym_operation(dest: &str, verkey: Option<&str>, alias: Option<&str>,
+                               role: Option<&str>) -> Result<Value, CommonError> {
         let mut operation: Value = Value::Object(serde_json::map::Map::new());
         operation["type"] = Value::String(NYM.to_string());
         operation["dest"] = Value::String(dest.to_string());
@@ -73,6 +71,14 @@ impl LedgerService {
                 }.to_string())
             }
         }
+        Ok(operation)
+    }
+
+    pub fn build_nym_request(&self, identifier: &str, dest: &str, verkey: Option<&str>,
+                             alias: Option<&str>, role: Option<&str>) -> Result<String, CommonError> {
+        info!("build_nym_request >>> identifier: {:?}, dest: {:?}, verkey: {:?}, alias: {:?}, role: {:?}", identifier, dest, verkey, alias, role);
+
+        let operation = LedgerService::build_nym_operation(dest, verkey, alias, role)?;
 
         let request = Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("NYM request json is invalid {:?}.", err)))?;
