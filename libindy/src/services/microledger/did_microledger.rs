@@ -89,14 +89,15 @@ impl DidMicroledger {
 mod tests {
     use super::*;
     use utils::environment::EnvironmentUtils;
+    use utils::test::TestUtils;
 
     fn valid_storage_options() -> HashMap<String, String>{
         let mut options: HashMap<String, String> = HashMap::new();
         let mut path = EnvironmentUtils::tmp_path();
         path.push("did_ml_path");
-        path.to_str().unwrap().to_owned();
+        let storage_path = path.to_str().unwrap().to_owned();
         options.insert("storage_type".to_string(), "sqlite".to_string());
-        options.insert("storage_path".to_string(), "/tmp".to_string());
+        options.insert("storage_path".to_string(), storage_path);
         options
     }
 
@@ -133,25 +134,27 @@ mod tests {
 
     #[test]
     fn test_get_ledger_storage() {
+        TestUtils::cleanup_temp();
         let options = valid_storage_options();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let storage = DidMicroledger::get_ledger_storage(did,
-                                                         options.get("storage_path").unwrap()).unwrap();
+        let storage = DidMicroledger::get_ledger_storage(
+            did, DidMicroledger::get_storage_path_from_options(&options)).unwrap();
         let mut storage_iterator = storage.get_all().unwrap();
         let record = storage_iterator.next().unwrap();
         assert!(record.is_none());
 
-        let parsed_options = DidMicroledger::parse_options(options).unwrap();
+        /*let parsed_options = DidMicroledger::parse_options(options).unwrap();
         let storage_path = DidMicroledger::get_storage_path_from_options(&parsed_options);
         let config = json!({
             "path": storage_path
         }).to_string();
         let storage_type = SQLiteStorageType::new();
-        storage_type.delete_storage(did, Some(&config), None).unwrap();
+        storage_type.delete_storage(did, Some(&config), None).unwrap();*/
     }
 
     #[test]
     fn test_did_create_microledger() {
+        TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let options = valid_storage_options();
         let ml = DidMicroledger::new(did, options).unwrap();
