@@ -1,6 +1,7 @@
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+use std::io;
 use std::io::{Write, Read, BufWriter, BufReader};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -95,67 +96,6 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
         wallet.add(&record.type_, &record.id, &record.value, &record.tags)?;
     }
 
-
-//    let mut reader = BufReader::new(reader);
-//
-//    let mut header_length_bytes: [u8; 2] = [0; 2];
-//    let read_count = reader.read(&mut header_length_bytes)?;
-//    if read_count < 2 {
-//        return Err(WalletError::CommonError(CommonError::InvalidStructure("Failed to read import header bytes".to_string())));
-//    }
-//    let header_length = bytes_to_u16(&header_length_bytes) as usize;
-//    if header_length < 48 {
-//        return Err(WalletError::CommonError(CommonError::InvalidStructure("Wallet import header not of sufficient minimal length".to_string())));
-//    }
-//
-//    let mut header_data: Vec<u8> = vec![0; header_length + 2];
-//    header_data[0] = header_length_bytes[0];
-//    header_data[1] = header_length_bytes[1];
-//
-//    let mut header_read_count = 0;
-//    while header_read_count < header_length {
-//        let read_count = reader.read(&mut header_data[2 + header_read_count..])?;
-//        if read_count == 0 {
-//            return Err(WalletError::CommonError(CommonError::InvalidStructure("Header body length less than specified".to_string())));
-//        } else {
-//            header_read_count += read_count;
-//        }
-//    }
-//
-//    let header = Header::deserialise(&header_data)?;
-//    let key = derive_master_key(passphrase, &header.salt)?;
-//    let mut nonce = header.nonce;
-//
-//    let mut encrypted_chunk: [u8; 1040] = [0; 1040];
-//    let mut decrypted_buffer = Vec::new();
-//
-//    let mut has_more = true;
-//    while has_more {
-//        let mut chunk_read_count = 0;
-//        while chunk_read_count < 1040 {
-//            let read_count = reader.read(&mut encrypted_chunk[chunk_read_count..])?;
-//            if read_count == 0 {
-//                has_more = false;
-//                break;
-//            }
-//            chunk_read_count += read_count;
-//        }
-//
-//        if chunk_read_count == 0 {
-//            continue;
-//        }
-//
-//        decrypted_buffer.extend(&decrypt(&encrypted_chunk[0..chunk_read_count], &key, &nonce)?);
-//        nonce.increment();
-//
-//        add_records_from_buffer(wallet, &mut decrypted_buffer)?;
-//    }
-//
-//    add_records_from_buffer(wallet, &mut decrypted_buffer)?;
-//    if decrypted_buffer.len() != 0 {
-//        return Err(WalletError::CommonError(CommonError::InvalidStructure("Failed to import all content".to_string())));
-//    }
-
     Ok(())
 }
 
@@ -203,11 +143,13 @@ impl<R: Read> StructReader<R> {
     }
 
     pub fn read_next<T>(&mut self) -> Result<Option<T>, CommonError> where T: DeserializeOwned {
-        let len = self.inner.read_u32::<LittleEndian>()? as usize;
+        let len = self.inner.read_u32::<LittleEndian>().map_err(_map_io_err)? as usize;
 
         if len > 0 {
             let mut buf = vec![0u8; len + HASHBYTES];
-            self.inner.read_exact(&mut buf)?;
+
+            self.inner.read_exact(&mut buf).map_err(_map_io_err)?;
+
             let obj = &buf[..len];
             let hashbytes = &buf[len..];
 
@@ -228,301 +170,167 @@ impl<R: Read> StructReader<R> {
     }
 }
 
+fn _map_io_err(e: io::Error) -> CommonError {
+    match e {
+        ref e if e.kind() == io::ErrorKind::UnexpectedEof
+            || e.kind() == io::ErrorKind::InvalidData => CommonError::InvalidStructure("Invalid export file format".to_string()),
+        e => CommonError::IOError(e),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     use serde_json;
-    use std;
-    use std::io::{Read, BufReader};
     use std::rc::Rc;
     use std::collections::HashMap;
-    use std::path::PathBuf;
 
     use domain::wallet::Metadata;
     use utils::crypto::pwhash_argon2i13;
-    use utils::environment::EnvironmentUtils;
     use utils::test::TestUtils;
     use services::wallet::encryption;
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::wallet::{Keys, Wallet};
 
-    use super::super::WalletRecord;
-
     #[test]
-    fn export_works_for_empty_wallet() {
+    fn export_import_works_for_empty_wallet() {
         _cleanup();
-        export(&_wallet1(), &mut _export_file(), _passphrase(), _version1()).unwrap();
+
+        let mut output: Vec<u8> = Vec::new();
+        export(&_wallet1(), &mut output, _passphrase(), _version1()).unwrap();
+
+        let wallet = _wallet2();
+        _assert_is_empty(&wallet);
+
+        import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
+        _assert_is_empty(&wallet);
     }
 
     #[test]
-    fn export_works_for_2_records() {
+    fn export_import_works_for_2_items() {
         _cleanup();
 
-        let wallet = _wallet1();
-        wallet.add("type1", "id1", "value1", &_tags1()).unwrap();
-        wallet.add("type2", "id2", "value2", &_tags2()).unwrap();
+        let mut output: Vec<u8> = Vec::new();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
 
-        export(&wallet, &mut _export_file(), _passphrase(), _version1()).unwrap();
+        let wallet = _wallet2();
+        _assert_is_empty(&wallet);
+
+        import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
+        _assert_has_2_records(&wallet);
     }
 
     #[test]
-    fn export_works_for_multiple_records() {
+    fn export_import_works_for_multiple_items() {
         _cleanup();
 
-        let wallet = _wallet1();
+        let mut output: Vec<u8> = Vec::new();
+        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
 
-        for i in 0..300 {
-            let type_ = format!("type_{}", i);
-            let id = format!("id_{}", i);
-            let value = format!("value_{}", i);
-            let tags = _tags(i);
-            wallet.add(&type_, &id, &value, &tags).unwrap();
-        }
+        let wallet = _wallet2();
+        _assert_is_empty(&wallet);
 
-        export(&wallet, &mut _export_file(), _passphrase(), 0).unwrap();
+        import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
+        _assert_has_300_records(&wallet);
     }
 
     #[test]
-    fn import_fails_if_header_length_too_small() {
+    fn import_works_for_empty() {
         _cleanup();
 
-        let mut wallet = _wallet1();
-        let mut reader = BufReader::new("\x00\x20some_hash00000000000000000000000".as_bytes());
-
-        let res = import(&mut wallet, &mut reader, "import_key");
-        assert_match!(Err(WalletError::CommonError(_)), res);
+        let res = import(&_wallet1(), &mut "".as_bytes(), _passphrase());
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
     }
 
     #[test]
-    fn import_fails_if_header_body_too_small() {
+    fn import_works_for_cut_header_length() {
         _cleanup();
 
-        let mut wallet = _wallet1();
-        let mut reader = BufReader::new("\x00\x30this_hash_is_too_short".as_bytes());
-
-        let res = import(&mut wallet, &mut reader, "import_key");
-        assert_match!(Err(WalletError::CommonError(_)), res);
+        let res = import(&_wallet1(), &mut "\x00".as_bytes(), _passphrase());
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
     }
 
     #[test]
-    fn export_import_empty_wallet() {
+    fn import_works_for_cut_header_body() {
         _cleanup();
 
-        {
-            let mut wallet = _wallet1();
-            export(&wallet, &mut _export_file(), _passphrase(), _version1()).unwrap();
-            wallet.close().unwrap();
-        }
-
-        let mut wallet = _wallet2();
-        assert!(wallet.get_all().unwrap().next().unwrap().is_none());
-
-        import(&mut wallet, &mut _import_file(), _passphrase()).unwrap();
-        assert!(wallet.get_all().unwrap().next().unwrap().is_none());
+        let res = import(&_wallet1(), &mut "\x00\x20small".as_bytes(), _passphrase());
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
     }
 
     #[test]
-    fn export_import_2_items() {
+    fn import_works_for_invalid_header_body() {
         _cleanup();
 
-        {
-            let mut wallet = _wallet("w1");
+        let output = {
+            let invalid_header = "invalid_header".as_bytes();
+            let mut output: Vec<u8> = Vec::new();
+            output.write_u32::<LittleEndian>(invalid_header.len() as u32).unwrap();
+            output.write_all(invalid_header).unwrap();
+            output.write_all(&hash(invalid_header).unwrap()).unwrap();
+            output
+        };
 
-            wallet.add("type1", "id1", "value1", &_tags1()).unwrap();
-            wallet.add("type2", "id2", "value2", &_tags2()).unwrap();
-
-            export(&wallet, &mut _export_file(), _passphrase(), _version1()).unwrap();
-            wallet.close().unwrap();
-        }
-
-        let mut wallet = _wallet2();
-        assert_match!(Err(WalletError::ItemNotFound), wallet.get("type1", "id1", "{}"));
-
-        import(&mut wallet, &mut _import_file(), _passphrase()).unwrap();
-        let first_record = wallet.get("type1", "id1", _options()).unwrap();
-        let second_record = wallet.get("type2", "id2", _options()).unwrap();
-
-        assert_eq!(first_record.type_.unwrap(), "type1");
-        assert_eq!(first_record.id, "id1");
-        assert_eq!(first_record.value.unwrap(), "value1");
-        assert_eq!(first_record.tags.unwrap(), _tags1());
-
-        assert_eq!(second_record.type_.unwrap(), "type2");
-        assert_eq!(second_record.id, "id2");
-        assert_eq!(second_record.value.unwrap(), "value2");
-        assert_eq!(second_record.tags.unwrap(), _tags2());
+        let res = import(&_wallet1(), &mut output.as_slice(), _passphrase());
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
     }
 
     #[test]
-    fn export_import_multiple_items() {
+    fn import_works_for_invalid_header_hash() {
         _cleanup();
 
-        let items_count = 300usize;
-
-        {
-            let mut wallet = _wallet1();
-
-            for i in 0..items_count {
-                let id = format!("id_{}", i);
-                let value = format!("value_{}", i);
-                let mut tags = _tags(i);
-                wallet.add("type", &id, &value, &tags).unwrap();
-            }
-
-            export(&wallet, &mut _export_file(), _passphrase(), _version1()).unwrap();
-            wallet.close().unwrap();
-        }
-
-        let mut wallet = _wallet2();
-        assert!(wallet.get_all().unwrap().next().unwrap().is_none());
-
-        import(&mut wallet, &mut _import_file(), _passphrase()).unwrap();
-
-        for i in 0..items_count {
-            let id = format!("id_{}", i);
-            let value = format!("value_{}", i);
-            let tags = _tags(i);
-
-            let record = wallet.get("type", &id, _options()).unwrap();
-            assert_eq!(record.value.unwrap(), value);
-            assert_eq!(record.tags.unwrap(), tags);
-        }
-    }
-
-    #[test]
-    fn export_import_returns_error_if_header_hash_broken() {
-        _cleanup();
-
-        {
-            let mut wallet = _wallet1();
-            wallet.add("type1", "id1", "value1", &_tags1()).unwrap();
-            wallet.add("type2", "id2", "value2", &_tags2()).unwrap();
-
-            export(&wallet, &mut _export_file(), _passphrase(), _version1()).unwrap();
-            wallet.close().unwrap();
-        }
+        let mut output: Vec<u8> = Vec::new();
+        export(&_wallet1(), &mut output, _passphrase(), _version1()).unwrap();
 
         // Modifying one of the bytes in the header hash
-        let mut content = _export_file_content();
-        let index = 60;
-        let byte_value = content[index];
-        content[index] = if byte_value < 255 { byte_value + 1 } else { 0 };
-        _replace_export_file(content);
+        let pos = (&mut output.as_slice()).read_u32::<LittleEndian>().unwrap() as usize + 2;
+        _change_byte(&mut output, pos);
 
-        let mut wallet = _wallet2();
-        assert_match!(Err(WalletError::ItemNotFound), wallet.get("type1", "id1", "{}"));
-
-        let res = import(&mut wallet, &mut _export_file(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(_)), res);
+        let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
     }
 
     #[test]
-    fn export_import_returns_error_if_data_does_not_match_header_hash() {
+    fn export_import_works_for_changed_record() {
         _cleanup();
 
-        {
-            let mut wallet = _wallet1();
-            wallet.add("type1", "id1", "value1", &_tags1()).unwrap();
-            wallet.add("type2", "id2", "value2", &_tags2()).unwrap();
+        let mut output: Vec<u8> = Vec::new();
+        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
 
-            export(&wallet, &mut _export_file(), _passphrase(), _version1()).unwrap();
-            wallet.close().unwrap();
-        }
+        // Modifying one byte in the middle of encrypted part
+        let pos = output.len() / 2;
+        _change_byte(&mut output, pos);
 
-        // Modifying one of the bytes in the header (version)
-        let mut content = _export_file_content();
-        let index = 4;
-        let byte_value = content[index];
-        content[index] = if byte_value < 255 { byte_value + 1 } else { 0 };
-        _replace_export_file(content);
-
-        let mut wallet = _wallet2();
-        assert_match!(Err(WalletError::ItemNotFound), wallet.get("type1", "id1", "{}"));
-
-        let res = import(&mut wallet, &mut _import_file(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(_)), res);
+        let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
     }
 
     #[test]
-    fn export_import_returns_error_if_encrypted_data_modified() {
+    fn import_works_for_data_cut() {
         _cleanup();
 
-        {
-            let mut wallet = _wallet1();
-            wallet.add("type1", "id1", "value1", &_tags1()).unwrap();
-            wallet.add("type2", "id2", "value2", &_tags2()).unwrap();
+        let mut output: Vec<u8> = Vec::new();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
 
-            export(&wallet, &mut _export_file(), _passphrase(), _version1()).unwrap();
-            wallet.close().unwrap();
-        }
+        output.pop().unwrap();
 
-        let mut content = _export_file_content();
-        let index = content.len() - 20;
-        let byte_value = content[index];
-        content[index] = if byte_value < 255 { byte_value + 1 } else { 0 };
-        _replace_export_file(content);
-
-        let mut wallet = _wallet2();
-        assert_match!(Err(WalletError::ItemNotFound), wallet.get("type1", "id1", "{}"));
-
-        let res = import(&mut wallet, &mut _import_file(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(_)), res);
+        let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
     }
 
     #[test]
-    fn export_import_returns_error_if_encrypted_data_cut_short() {
+    fn import_works_for_data_extended() {
         _cleanup();
 
-        {
-            let mut wallet = _wallet1();
-            wallet.add("type1", "id1", "value1", &_tags1()).unwrap();
-            wallet.add("type2", "id2", "value2", &_tags2()).unwrap();
+        let mut output: Vec<u8> = Vec::new();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
 
-            export(&wallet, &mut _export_file(), _passphrase(), _version1()).unwrap();
-            wallet.close().unwrap();
-        }
+        output.push(10);
 
-        let mut content = _export_file_content();
-        content.pop().unwrap();
-        _replace_export_file(content);
-
-        let mut wallet = _wallet2();
-        assert_match!(Err(WalletError::ItemNotFound), wallet.get("type1", "id1", "{}"));
-
-        let res = import(&mut wallet, &mut _import_file(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(_)), res);
-
-        let res = wallet.get("type1", "id1", _options());
-        assert_match!(Err(WalletError::ItemNotFound), res);
-    }
-
-    #[test]
-    fn export_import_returns_error_if_encrypted_data_extended() {
-        _cleanup();
-
-        {
-            let mut wallet = _wallet1();
-            wallet.add("type1", "id1", "value1", &_tags1()).unwrap();
-            wallet.add("type2", "id2", "value2", &_tags2()).unwrap();
-
-            export(&wallet, &mut _export_file(), _passphrase(), _version1()).unwrap();
-            wallet.close().unwrap();
-        }
-
-        let mut content = _export_file_content();
-        content.push(10);
-        _replace_export_file(content);
-
-        let mut wallet = _wallet2();
-        assert_match!(Err(WalletError::ItemNotFound), wallet.get("type1", "id1", "{}"));
-
-        let res = import(&mut wallet, &mut _import_file(), _passphrase());
-        assert_match!(Err(WalletError::CommonError(_)), res);
-
-        let res = wallet.get("type1", "id1", _options());
-        assert_match!(Err(WalletError::ItemNotFound), res);
+        let res = import(&mut _wallet2(), &mut output.as_slice(), _passphrase());
+        assert_match!(Err(WalletError::CommonError(CommonError::InvalidStructure(_))), res);
     }
 
     fn _cleanup() {
@@ -572,6 +380,48 @@ mod tests {
         _wallet(_wallet2_id())
     }
 
+    fn _assert_is_empty(wallet: &Wallet) {
+        assert!(wallet.get_all().unwrap().next().unwrap().is_none());
+    }
+
+    fn _add_2_records(wallet: Wallet) -> Wallet {
+        wallet.add(&_type1(), &_id1(), &_value1(), &_tags1()).unwrap();
+        wallet.add(&_type2(), &_id2(), &_value2(), &_tags2()).unwrap();
+        wallet
+    }
+
+    fn _assert_has_2_records(wallet: &Wallet) {
+        let record = wallet.get(&_type1(), &_id1(), _options()).unwrap();
+        assert_eq!(record.type_.unwrap(), _type1());
+        assert_eq!(record.id, _id1());
+        assert_eq!(record.value.unwrap(), _value1());
+        assert_eq!(record.tags.unwrap(), _tags1());
+
+        let record = wallet.get(&_type2(), &_id2(), _options()).unwrap();
+        assert_eq!(record.type_.unwrap(), _type2());
+        assert_eq!(record.id, _id2());
+        assert_eq!(record.value.unwrap(), _value2());
+        assert_eq!(record.tags.unwrap(), _tags2());
+    }
+
+    fn _add_300_records(wallet: Wallet) -> Wallet {
+        for i in 0..300 {
+            wallet.add(&_type(i % 3), &_id(i), &_value(i), &_tags(i)).unwrap();
+        }
+
+        wallet
+    }
+
+    fn _assert_has_300_records(wallet: &Wallet) {
+        for i in 0..300 {
+            let record = wallet.get(&_type(i % 3), &_id(i), _options()).unwrap();
+            assert_eq!(record.type_.unwrap(), _type(i % 3));
+            assert_eq!(record.id, _id(i));
+            assert_eq!(record.value.unwrap(), _value(i));
+            assert_eq!(record.tags.unwrap(), _tags(i));
+        }
+    }
+
     fn _master_key() -> chacha20poly1305_ietf::Key {
         chacha20poly1305_ietf::gen_key()
     }
@@ -580,34 +430,9 @@ mod tests {
         chacha20poly1305_ietf::gen_nonce()
     }
 
-    fn _export_file_path() -> PathBuf {
-        let mut path = EnvironmentUtils::tmp_file_path("export_directory");
-        path.push("export_file");
-        path
-    }
-
-    fn _export_file() -> std::fs::File {
-        let path = _export_file_path();
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::File::create(path).unwrap()
-    }
-
-    fn _export_file_content() -> Vec<u8> {
-        let mut file = std::fs::File::open(_export_file_path()).unwrap();
-        let mut v = Vec::new();
-        let content = file.read_to_end(&mut v).expect("Failed to read exported file");
-        v
-    }
-
-    fn _import_file() -> std::fs::File {
-        std::fs::File::open(_export_file_path()).unwrap()
-    }
-
-    fn _replace_export_file(data: Vec<u8>) {
-        let path = _export_file_path();
-        std::fs::remove_file(path.as_path()).unwrap();
-        let mut new_file = std::fs::File::create(path).unwrap();
-        new_file.write_all(&data).unwrap();
+    fn _change_byte(data: &mut[u8], pos: usize) {
+        let value = data[pos];
+        data[pos] = if value < 255 { value + 1 } else { 0 };
     }
 
     fn _options() -> &'static str {
@@ -677,13 +502,6 @@ mod tests {
 
     fn _tags2() -> HashMap<String, String> {
         _tags(2)
-    }
-
-    fn _wallet_record() -> WalletRecord {
-        WalletRecord::new("name".to_string(),
-                          Some("type".to_string()),
-                          Some("value".to_string()),
-                          Some(_tags1()))
     }
 
     fn _passphrase() -> &'static str {
