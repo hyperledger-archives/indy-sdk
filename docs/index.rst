@@ -1,5 +1,5 @@
 Hyperledger Indy
-================
+=================
 
 .. image:: images/hyperledger_indy_logo.png
 
