@@ -12,7 +12,7 @@ pub trait Microledger where Self: Sized {
     // Gets no of txns in ledger
     fn get_size(&self) -> usize;
     // Add a txn and return seq no
-    //fn add(&self, txn: &str) -> u64;
+    fn add(&self, txn: &str) -> Result<usize, CommonError>;
     // get txns in seq_no range [from, to]
     //fn get(&self, from: u64, to: Option<u64>) -> Vec<String>;
     /*// registers a view

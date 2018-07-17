@@ -4,7 +4,7 @@ mod query_encryption;
 mod iterator;
 mod language;
 mod export_import;
-mod wallet;
+pub mod wallet;
 
 use serde_json;
 use std::cell::RefCell;

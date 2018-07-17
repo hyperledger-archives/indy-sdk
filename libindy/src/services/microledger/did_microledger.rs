@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 
+use byteorder::{LittleEndian, WriteBytesExt};
 use serde_json;
+
 use errors::common::CommonError;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::wallet::storage::WalletStorage;
 use services::wallet::storage::default::SQLiteStorageType;
 use services::wallet::storage::WalletStorageType;
+use services::wallet::wallet::EncryptedValue;
 use errors::wallet::WalletStorageError;
 use services::microledger::microledger::Microledger;
 
@@ -35,6 +38,19 @@ impl Microledger for DidMicroledger where Self: Sized {
 
     fn get_size(&self) -> usize {
         self.merkle_tree.count
+    }
+
+    fn add(&self, txn: &str) -> Result<usize, CommonError> {
+        let txn_bytes = txn.as_bytes().to_vec();
+        let txn_bytes_len = txn_bytes.len() as u8;
+        // TODO: Fix this, the key should be generated
+        let enc = EncryptedValue::new(txn_bytes, vec![0, txn_bytes_len]);
+        let current_size = self.get_size();
+        // TODO: Complete this
+        /*let mut wtr = vec![];
+        wtr.write_usize::<LittleEndian>(current_size+1).unwrap();
+        self.storage.add(&_type1(), &_id1(), &enc(), &vec![]).unwrap();*/
+        Ok(1)
     }
 }
 
@@ -164,5 +180,16 @@ mod tests {
         let mut storage_iterator = ml.storage.get_all().unwrap();
         let record = storage_iterator.next().unwrap();
         assert!(record.is_none());
+    }
+
+    #[test]
+    fn test_add_to_did_microledger() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let options = valid_storage_options();
+        let ml = DidMicroledger::new(did, options).unwrap();
+        let txn = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1"}}"#;
+        let seq_no = ml.add(txn).unwrap();
+        assert_eq!(seq_no, 1);
     }
 }
