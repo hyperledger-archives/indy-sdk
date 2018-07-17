@@ -4,7 +4,7 @@
 Hyperledger Indy
 ================
 
-.. image:: docs/images/hyperledger_indy_logo.png
+.. image:: images/hyperledger_indy_logo.png
 
 .. contents::
    :depth: 3
