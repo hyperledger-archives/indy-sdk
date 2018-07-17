@@ -149,3 +149,11 @@ def update_major_minor_build_to_toml(filename, major, minor, build):
     except IOError:
         print("Error: Cannot find Cargo.toml file, error reading/writing")
         
+
+if __name__  == "__main__":
+    if len(sys.argv) < 2:
+        print("USAGE: %s path/to/Cargo.toml" % __file__)
+        sys.exit(1)
+    print(get_version_from_file(sys.argv[1]))
+
+
