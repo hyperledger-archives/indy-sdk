@@ -25,9 +25,9 @@ download_and_unzip_deps(){
 	find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -d "$(dirname "FILENAME")" "FILENAME"'
 	popd
 	ln -s indy-android-dependencies/prebuilt dependencies
-    export OPENSSL_DIR=dependencies/openssl/openssl_arm
-    export SODIUM_DIR=dependencies/sodium/libsodium_arm
-	export LIBZMQ_DIR=dependencies/zmq/libzmq_arm
+    export OPENSSL_DIR=dependencies/openssl/openssl_${TARGET_ARCH}
+    export SODIUM_DIR=dependencies/sodium/libsodium_${TARGET_ARCH}
+	export LIBZMQ_DIR=dependencies/zmq/libzmq_${TARGET_ARCH}
 }
 
 if [ -z "${TARGET_ARCH}" ]; then
