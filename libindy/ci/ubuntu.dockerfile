@@ -24,8 +24,7 @@ RUN apt-get update && \
       libzmq3-dev \
       zip \
       unzip \
-      jq \
-      openjdk-8-jdk
+      jq
 
 # install nodejs and npm
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
