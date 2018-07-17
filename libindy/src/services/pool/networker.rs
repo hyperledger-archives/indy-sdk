@@ -220,7 +220,8 @@ impl PoolConnection {
             .min_by(|&(_, ref val1), &(_, ref val2)| val1.cmp(&val2)) {
             ((req_id.to_string(), node_alias.to_string()), timeout)
         } else {
-            (("".to_string(), "".to_string()), POOL_ACK_TIMEOUT * 1000)
+            let time_from_start: Duration = time::now() - self.time_created;
+            (("".to_string(), "".to_string()), POOL_CON_ACTIVE_TO * 1000 - time_from_start.num_milliseconds())
         }
     }
 
@@ -683,14 +684,18 @@ pub mod networker_tests {
 
             let mut conn = PoolConnection::new(vec![rn]);
 
-            let timeout = conn.get_timeout();
-            assert_eq!((("".to_string(), "".to_string()), POOL_ACK_TIMEOUT * 1000), timeout);
+            let ((req_id, node_alias), timeout) = conn.get_timeout();
+            assert_eq!(req_id, "".to_string());
+            assert_eq!(node_alias, "".to_string());
+            assert!(POOL_CON_ACTIVE_TO * 1000 - 10 <= timeout);
+            assert!(POOL_CON_ACTIVE_TO * 1000 >= timeout);
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string()))).unwrap();
 
             let (id, timeout) = conn.get_timeout();
             assert_eq!((REQ_ID.to_string(), NODE_NAME.to_string()), id);
-            assert_ne!(POOL_ACK_TIMEOUT * 1000, timeout)
+            assert!(POOL_ACK_TIMEOUT * 1000 - 10 <= timeout);
+            assert!(POOL_ACK_TIMEOUT * 1000 >= timeout);
         }
 
         #[test]
