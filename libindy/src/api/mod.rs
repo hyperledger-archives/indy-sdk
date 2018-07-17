@@ -70,6 +70,45 @@ pub enum ErrorCode
     // Caller passed invalid value as param 14 (null, invalid json and etc..)
     CommonInvalidParam14 = 116,
 
+    // Caller passed invalid value as param 15 (null, invalid json and etc..)
+    CommonInvalidParam15 = 117,
+
+    // Caller passed invalid value as param 16 (null, invalid json and etc..)
+    CommonInvalidParam16 = 118,
+
+    // Caller passed invalid value as param 17 (null, invalid json and etc..)
+    CommonInvalidParam17 = 119,
+
+    // Caller passed invalid value as param 18 (null, invalid json and etc..)
+    CommonInvalidParam18 = 120,
+
+    // Caller passed invalid value as param 19 (null, invalid json and etc..)
+    CommonInvalidParam19 = 121,
+
+    // Caller passed invalid value as param 20 (null, invalid json and etc..)
+    CommonInvalidParam20 = 122,
+
+    // Caller passed invalid value as param 21 (null, invalid json and etc..)
+    CommonInvalidParam21 = 123,
+
+    // Caller passed invalid value as param 22 (null, invalid json and etc..)
+    CommonInvalidParam22 = 124,
+
+    // Caller passed invalid value as param 23 (null, invalid json and etc..)
+    CommonInvalidParam23 = 125,
+
+    // Caller passed invalid value as param 24 (null, invalid json and etc..)
+    CommonInvalidParam24 = 126,
+
+    // Caller passed invalid value as param 25 (null, invalid json and etc..)
+    CommonInvalidParam25 = 127,
+
+    // Caller passed invalid value as param 26 (null, invalid json and etc..)
+    CommonInvalidParam26 = 128,
+
+    // Caller passed invalid value as param 27 (null, invalid json and etc..)
+    CommonInvalidParam27 = 129,
+
     // Wallet errors
     // Caller passed invalid wallet handle
     WalletInvalidHandle = 200,
@@ -175,4 +214,7 @@ pub enum ErrorCode
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
+
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703
 }

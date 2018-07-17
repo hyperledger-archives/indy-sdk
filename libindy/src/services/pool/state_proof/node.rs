@@ -1,32 +1,17 @@
-extern crate serde;
-extern crate serde_json;
+extern crate digest;
+extern crate generic_array;
 extern crate rlp;
 extern crate sha3;
-extern crate generic_array;
-extern crate digest;
-extern crate indy_crypto;
-
-use self::rlp::{
-    DecoderError as RlpDecoderError,
-    Prototype as RlpPrototype,
-    RlpStream,
-    UntrustedRlp,
-    encode as rlp_encode
-};
-use self::sha3::Digest;
-use std::collections::HashMap;
 
 use errors::common::CommonError;
-
-use services::pool::types::RemoteNode;
-use self::indy_crypto::bls::{Bls, Generator, VerKey, MultiSignature};
-
-extern crate rust_base58;
-
-use self::rust_base58::FromBase58;
+use rlp::{DecoderError as RlpDecoderError, Prototype as RlpPrototype,
+          RlpStream,
+          UntrustedRlp,
+};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
-enum Node {
+pub enum Node {
     Leaf(Leaf),
     Extension(Extension),
     Full(FullNode),
@@ -43,19 +28,19 @@ impl Node {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct FullNode {
+pub struct FullNode {
     nodes: [Option<Box<Node>>; Node::RADIX],
-    value: Option<Vec<u8>>
+    value: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Leaf {
+pub struct Leaf {
     path: Vec<u8>,
     value: Vec<u8>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Extension {
+pub struct Extension {
     path: Vec<u8>,
     next: Box<Node>,
 }
@@ -149,10 +134,10 @@ impl rlp::Decodable for Node {
 }
 
 type NodeHash = generic_array::GenericArray<u8, <sha3::Sha3_256 as digest::FixedOutput>::OutputSize>;
-type TrieDB<'a> = HashMap<NodeHash, &'a Node>;
+pub type TrieDB<'a> = HashMap<NodeHash, &'a Node>;
 
 impl Node {
-    fn get_str_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> Result<Option<String>, CommonError> {
+    pub fn get_str_value<'a, 'b>(&'a self, db: &'a TrieDB, path: &'b [u8]) -> Result<Option<String>, CommonError> {
         let value = self.get_value(db, path)?;
         if let Some(vec) = value {
             let str = String::from_utf8(vec)
@@ -244,170 +229,5 @@ impl Node {
             nibbles.insert(0, path[0] & 0x0F);
         }
         return (is_leaf, nibbles);
-    }
-}
-
-pub fn verify_proof(proofs_rlp: &[u8], root_hash: &[u8], key: &[u8], expected_value: Option<&str>) -> bool {
-    debug!("verify_proof >> key {:?}, expected_value {:?}", key, expected_value);
-    let nodes: Vec<Node> = UntrustedRlp::new(proofs_rlp).as_list().unwrap_or_default(); //default will cause error below
-    let mut map: TrieDB = HashMap::new();
-    for node in &nodes {
-        let encoded = rlp_encode(node);
-        let mut hasher = sha3::Sha3_256::default();
-        hasher.input(encoded.to_vec().as_slice());
-        let hash = hasher.result();
-        map.insert(hash, node);
-    }
-    map.get(root_hash).map(|root| {
-        root
-            .get_str_value(&map, key)
-            .map_err(map_err_trace!())
-            .map(|value| value.as_ref().map(String::as_str).eq(&expected_value))
-            .unwrap_or(false)
-    }).unwrap_or(false)
-}
-
-pub fn verify_proof_signature(signature: &str,
-                              participants: &[&str],
-                              value: &[u8],
-                              nodes: &[RemoteNode],
-                              f: usize,
-                              gen: &Generator) -> Result<bool, CommonError> {
-    trace!("verify_proof_signature: >>> signature: {:?}, participants: {:?}, pool_state_root: {:?}", signature, participants, value);
-
-    let mut ver_keys: Vec<&VerKey> = Vec::new();
-    for node in nodes {
-        if participants.contains(&node.name.as_str()) {
-            match &node.blskey {
-                &Some(ref blskey) => ver_keys.push(blskey),
-                _ => return Err(CommonError::InvalidState(format!("Blskey not found for node: {:?}", node.name)))
-            };
-        }
-    }
-
-    debug!("verify_proof_signature: ver_keys.len(): {:?}", ver_keys.len());
-
-    if ver_keys.len() < (nodes.len() - f) {
-        return Ok(false);
-    }
-
-    let signature =
-        if let Ok(signature) = signature.from_base58() {
-            signature
-        } else {
-            return Ok(false);
-        };
-
-    let signature =
-        if let Ok(signature) = MultiSignature::from_bytes(signature.as_slice()) {
-            signature
-        } else {
-            return Ok(false);
-        };
-
-    debug!("verify_proof_signature: signature: {:?}", signature);
-
-    let res = Bls::verify_multi_sig(&signature, value, ver_keys.as_slice(), gen).unwrap_or(false);
-
-    debug!("verify_proof_signature: <<< res: {:?}", res);
-    Ok(res)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    extern crate hex;
-
-    use self::hex::FromHex;
-
-    #[test]
-    fn state_proof_nodes_parse_and_get_works() {
-        /*
-            '33' -> 'v1'
-            '34' -> 'v2'
-            '3C' -> 'v3'
-            '4'  -> 'v4'
-            'D'  -> 'v5asdfasdf'
-            'E'  -> 'v6fdsfdfs'
-        */
-        let str = "f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080";
-        let vec = Vec::from_hex(str).unwrap();
-        let rlp = UntrustedRlp::new(vec.as_slice());
-        let proofs: Vec<Node> = rlp.as_list().unwrap();
-        info! ("Input");
-        for rlp in rlp.iter() {
-            info! ("{:?}", rlp.as_raw());
-        }
-        info! ("parsed");
-        let mut map: TrieDB = HashMap::new();
-        for node in &proofs {
-            info! ("{:?}", node);
-            let encoded = rlp_encode(node);
-            info! ("{:?}", encoded);
-            let mut hasher = sha3::Sha3_256::default();
-            hasher.input(encoded.to_vec().as_slice());
-            let out = hasher.result();
-            info! ("{:?}", out);
-            map.insert(out, node);
-        }
-        for k in 33..35 {
-            info! ("Try get {}", k);
-            let x = proofs[2].get_str_value(&map, k.to_string().as_bytes()).unwrap().unwrap();
-            info! ("{:?}", x);
-            assert_eq!(x, format!("v{}", k - 32));
-        }
-    }
-
-    #[test]
-    fn state_proof_verify_proof_works_for_get_value_from_leaf() {
-        /*
-            '33' -> 'v1'
-            '34' -> 'v2'
-            '3C' -> 'v3'
-            '4'  -> 'v4'
-            'D'  -> 'v5asdfasdf'
-            'E'  -> 'v6fdsfdfs'
-        */
-        let proofs = Vec::from_hex("f8c0f7808080a0762fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080").unwrap();
-        let root_hash = Vec::from_hex("badc906111df306c6afac17b62f29792f0e523b67ba831651d6056529b6bf690").unwrap();
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "33".as_bytes(), Some("v1")));
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "34".as_bytes(), Some("v2")));
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "3C".as_bytes(), Some("v3")));
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "4".as_bytes(), Some("v4")));
-    }
-
-    #[test]
-    fn state_proof_verify_proof_works_for_get_value_from_leaf_through_extension() {
-        /*
-            '33'  -> 'v1'
-            'D'   -> 'v2'
-            'E'   -> 'v3'
-            '333' -> 'v4'
-            '334' -> 'v5'
-        */
-        let proofs = Vec::from_hex("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080").unwrap();
-        let root_hash = Vec::from_hex("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab").unwrap();
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "333".as_bytes(), Some("v4")));
-    }
-
-    #[test]
-    fn state_proof_verify_proof_works_for_get_value_from_full_node() {
-        /*
-            '33'  -> 'v1'
-            'D'   -> 'v2'
-            'E'   -> 'v3'
-            '333' -> 'v4'
-            '334' -> 'v5'
-        */
-        let proofs = Vec::from_hex("f8a8e4821333a05fff9765fa0c56a26b361c81b7883478da90259d0c469896e8da7edd6ad7c756f2808080dd808080c62084c3827634c62084c382763580808080808080808080808080808080808080808080808084c3827631f84e808080a06a4096e59e980d2f2745d0ed2d1779eb135a1831fd3763f010316d99fd2adbb3dd80808080c62084c3827632c62084c38276338080808080808080808080808080808080808080808080").unwrap();
-        let root_hash = Vec::from_hex("d01bd87a6105a945c5eb83e328489390e2843a9b588f03d222ab1a51db7b9fab").unwrap();
-        assert!(verify_proof(proofs.as_slice(), root_hash.as_slice(), "33".as_bytes(), Some("v1")));
-    }
-
-    #[test]
-    fn state_proof_verify_proof_works_for_corrupted_rlp_bytes_for_proofs() {
-        let proofs = Vec::from_hex("f8c0f7798080a0792fc4967c792ef3d22fefd3f43209e2185b25e9a97640f09bb4b61657f67cf3c62084c3827634808080808080808080808080f4808080dd808080c62084c3827631c62084c3827632808080808080808080808080c63384c3827633808080808080808080808080f851808080a0099d752f1d5a4b9f9f0034540153d2d2a7c14c11290f27e5d877b57c801848caa06267640081beb8c77f14f30c68f30688afc3e5d5a388194c6a42f699fe361b2f808080808080808080808080").unwrap();
-        assert_eq! (verify_proof(proofs.as_slice(), &[0x00], "".as_bytes(), None), false);
     }
 }

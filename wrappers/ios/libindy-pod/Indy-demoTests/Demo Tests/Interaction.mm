@@ -49,16 +49,12 @@
 
     // Create Issuer wallet, get wallet handle
     IndyHandle issuerWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&issuerWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&issuerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"createAndOpenWalletWithPoolName() failed!");
 
     // Create Prover wallet, get wallet handle
     IndyHandle proverWalletHandle = 0;
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&proverWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"createAndOpenWalletWithPoolName() failed!");
 
     // Obtain default trustee did

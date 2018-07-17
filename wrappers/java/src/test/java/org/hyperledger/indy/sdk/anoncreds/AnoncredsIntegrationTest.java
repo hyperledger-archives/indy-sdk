@@ -83,10 +83,13 @@ public class AnoncredsIntegrationTest {
 
 		StorageUtils.cleanupStorage();
 
-		String walletName = "anoncredsCommonWallet";
+		String walletConfig =
+				new JSONObject()
+						.put("id", "anoncredsCommonWallet")
+						.toString();
 
-		Wallet.createWallet("default", walletName, "default", null, CREDENTIALS).get();
-		wallet = Wallet.openWallet(walletName, null, CREDENTIALS).get();
+		Wallet.createWallet(walletConfig, CREDENTIALS).get();
+		wallet = Wallet.openWallet(walletConfig, CREDENTIALS).get();
 
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult =
 				Anoncreds.issuerCreateSchema(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes).get();
