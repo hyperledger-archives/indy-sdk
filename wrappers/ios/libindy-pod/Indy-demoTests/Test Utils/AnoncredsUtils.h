@@ -112,7 +112,6 @@
                          outCredId:(NSString **)outCredId;
 
 - (NSError *)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
-                              extraQueryJson:(NSString *)extraQueryJson
                                 walletHandle:(IndyHandle)walletHandle
                              credentialsJson:(NSString **)outCredentialsJson;
 

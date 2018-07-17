@@ -431,11 +431,6 @@
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
     }
- @param extraQueryJSON: (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
-    {
-        "<attr_referent>": <wql query>,
-        "<predicate_referent>": <wql query>,
-    }
  where
  wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
  attr_referent: Proof-request local identifier of requested attribute
@@ -487,7 +482,6 @@
      }
  */
 + (void)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
-                         extraQueryJson:(NSString *)extraQueryJSON
                            walletHandle:(IndyHandle)walletHandle
                              completion:(void (^)(NSError *error, NSString *credentialsJSON))completion;
 

@@ -479,7 +479,6 @@
 
     NSString *credentialsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
-                                                            extraQueryJson:nil
                                                               walletHandle:walletHandle
                                                            credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong code");
@@ -517,7 +516,6 @@
 
     NSString *credentialsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
-                                                            extraQueryJson:nil
                                                               walletHandle:walletHandle
                                                            credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong code");
@@ -557,7 +555,6 @@
 
     NSString *credentialsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
-                                                            extraQueryJson:nil
                                                               walletHandle:walletHandle
                                                            credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong code");
@@ -596,7 +593,6 @@
     }];
     NSString *credentialsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
-                                                            extraQueryJson:nil
                                                               walletHandle:walletHandle
                                                            credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong code");
@@ -648,7 +644,6 @@
 
     NSString *credentialsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
-                                                            extraQueryJson:nil
                                                               walletHandle:walletHandle
                                                            credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverGetCredentialsForProofReqWithWalletHandle returned wrong code");
@@ -749,7 +744,6 @@
 
     NSString *credentialsJson;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofRequest
-                                                            extraQueryJson:nil
                                                               walletHandle:walletHandle
                                                            credentialsJson:&credentialsJson];
 

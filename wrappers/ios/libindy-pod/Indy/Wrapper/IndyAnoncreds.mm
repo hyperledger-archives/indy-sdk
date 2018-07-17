@@ -396,7 +396,6 @@
 }
 
 + (void)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
-                         extraQueryJson:(NSString *)extraQueryJSON
                            walletHandle:(IndyHandle)walletHandle
                              completion:(void (^)(NSError *error, NSString *credentialsJSON))completion {
     indy_error_t ret;
@@ -406,7 +405,6 @@
     ret = indy_prover_get_credentials_for_proof_req(handle,
             walletHandle,
             [proofReqJSON UTF8String],
-            [extraQueryJSON UTF8String],
             IndyWrapperCommonStringCallback
     );
     if (ret != Success) {

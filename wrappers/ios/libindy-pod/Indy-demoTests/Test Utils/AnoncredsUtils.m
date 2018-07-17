@@ -515,7 +515,6 @@
 }
 
 - (NSError *)proverGetCredentialsForProofReq:(NSString *)proofReqJSON
-                              extraQueryJson:(NSString *)extraQueryJson
                                 walletHandle:(IndyHandle)walletHandle
                              credentialsJson:(NSString **)outCredentialsJson {
     __block NSError *err = nil;
@@ -525,7 +524,6 @@
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
     [IndyAnoncreds proverGetCredentialsForProofReq:proofReqJSON
-                                    extraQueryJson:extraQueryJson
                                       walletHandle:walletHandle
                                         completion:^(NSError *error, NSString *credentialsJSON) {
                                             err = error;

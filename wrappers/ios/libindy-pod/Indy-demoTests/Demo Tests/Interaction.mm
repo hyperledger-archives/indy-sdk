@@ -373,7 +373,6 @@
 
     NSString *credentialsJson = nil;
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofReqJson
-                                                            extraQueryJson:nil
                                                               walletHandle:proverWalletHandle
                                                            credentialsJson:&credentialsJson];
     XCTAssertEqual(ret.code, Success, @"proverGetCredentialsForProofReq() failed!");
