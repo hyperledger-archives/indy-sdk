@@ -618,6 +618,31 @@ pub extern fn vcx_wallet_import(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+// Functionality in Libindy for validating an address in NOT there yet
+/// Validates a Payment address
+///
+/// #Params
+///
+/// command_handle: command handle to map callback to user context.
+///
+/// payment_address: value to be validated as a payment address
+///
+/// cb: Callback that any errors
+///
+/// #Returns
+/// Error code as a u32
+#[no_mangle]
+pub  extern fn vcx_wallet_validate_payment_address(command_handle: i32,
+                                                   payment_address: *const c_char,
+                                                   cb: Option<extern fn(command_handle_: i32, err: u32)>) -> u32 {
+    check_useful_c_str!(payment_address,  error::INVALID_OPTION.code_num);
+    check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    thread::spawn(move || {
+        cb(command_handle, error::SUCCESS.code_num)
+    });
+    error::SUCCESS.code_num
+}
+
 #[cfg(test)]
 pub mod tests {
     extern crate serde_json;
@@ -649,7 +674,6 @@ pub mod tests {
     extern "C" fn duplicate_record_cb(command_handle: i32, err: i32) {
         assert_ne!(err as u32, error::DUPLICATE_WALLET_RECORD.code_num);
         println!("successfully called duplicate_record_cb");
-
     }
 
     extern "C" fn record_not_found_msg_cb(command_handle: i32, err: i32, msg: *const c_char) {
@@ -722,7 +746,7 @@ pub mod tests {
         // Valid add
         assert_eq!(vcx_wallet_add_record(0, xtype.as_ptr(), id.as_ptr(), value.as_ptr(), ptr::null(), Some(indy_generic_no_msg_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
-
+        
         // Failure because of duplicate
         assert_eq!(vcx_wallet_add_record(0, xtype.as_ptr(), id.as_ptr(), value.as_ptr(), ptr::null(), Some(duplicate_record_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));

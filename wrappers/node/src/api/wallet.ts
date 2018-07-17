@@ -147,6 +147,39 @@ export class Wallet {
 
   /**
    * @memberof Wallet
+   * @description Validates Payment Address
+   * @static
+   * @async
+   * @param
+   * @returns {Promise<void>} New address
+   */
+  public static async validatePaymentAddress (paymentAddress: string): Promise<void> {
+    try {
+      return await createFFICallbackPromise<void>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_wallet_validate_payment_address(0, paymentAddress, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => Callback(
+          'void',
+          ['uint32','uint32'],
+          (xhandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+      )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * @memberof Wallet
    * @description Sends token to a specified address
    * @static
    * @async
