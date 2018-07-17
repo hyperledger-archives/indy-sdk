@@ -9,7 +9,6 @@ use self::indy_crypto::cl::{
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use super::DELIMITER;
-use super::filter::Filtering;
 
 use std::collections::HashMap;
 use named_type::NamedType;
@@ -26,6 +25,32 @@ pub struct Credential {
     pub witness: Option<Witness>
 }
 
+impl Credential {
+    fn schema_parts(&self) -> Vec<&str> {
+        self.schema_id.split_terminator(DELIMITER).collect::<Vec<&str>>()
+    }
+
+    pub fn schema_id(&self) -> String { self.schema_id.to_string() }
+
+    pub fn schema_issuer_did(&self) -> String {
+        self.schema_parts().get(0).map(|s| s.to_string()).unwrap_or(String::new())
+    }
+
+    pub fn schema_name(&self) -> String {
+        self.schema_parts().get(2).map(|s| s.to_string()).unwrap_or(String::new())
+    }
+
+    pub fn schema_version(&self) -> String {
+        self.schema_parts().get(3).map(|s| s.to_string()).unwrap_or(String::new())
+    }
+
+    pub fn issuer_did(&self) -> String {
+        self.cred_def_id.split_terminator(DELIMITER).collect::<Vec<&str>>()[0].to_string()
+    }
+
+    pub fn cred_def_id(&self) -> String { self.cred_def_id.to_string() }
+}
+
 impl JsonEncodable for Credential {}
 
 impl<'a> JsonDecodable<'a> for Credential {}
@@ -40,28 +65,7 @@ pub struct CredentialInfo {
     pub cred_rev_id: Option<String>
 }
 
-impl CredentialInfo {
-    fn schema_parts(&self) -> Vec<&str> {
-        self.schema_id.split_terminator(DELIMITER).collect::<Vec<&str>>()
-    }
-}
-
-impl Filtering for CredentialInfo {
-    fn schema_id(&self) -> String { self.schema_id.to_string() }
-    fn schema_issuer_did(&self) -> String {
-        self.schema_parts().get(0).map(|s| s.to_string()).unwrap_or(String::new())
-    }
-    fn schema_name(&self) -> String {
-        self.schema_parts().get(2).map(|s| s.to_string()).unwrap_or(String::new())
-    }
-    fn schema_version(&self) -> String {
-        self.schema_parts().get(3).map(|s| s.to_string()).unwrap_or(String::new())
-    }
-    fn issuer_did(&self) -> String {
-        self.cred_def_id.split_terminator(DELIMITER).collect::<Vec<&str>>()[0].to_string()
-    }
-    fn cred_def_id(&self) -> String { self.cred_def_id.to_string() }
-}
+impl JsonEncodable for CredentialInfo {}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AttributeValues {
