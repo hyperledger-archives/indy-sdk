@@ -32,8 +32,8 @@ export LIBZMQ_LIB_DIR=/usr/local/lib
 export LIBZMQ_INCLUDE_DIR=/usr/local/include
 sed -i .bak 's/LIBZMQ_LIB_DIR/ANDROID_ZMQ_LIB/' build.rs
 # !IMPORTANT STEPS NEXT -- Modify the build.rs of indy-sdk to handle android shared libraries
-tail -n 1 build.rs | wc -c | xargs -I {} truncate build.rs -s -{}
-cat $START_DIR/indy-sdk.build.rs.android.target.static.libs.template >> build.rs
+# tail -n 1 build.rs | wc -c | xargs -I {} truncate build.rs -s -{}
+# cat $START_DIR/indy-sdk.build.rs.android.target.static.libs.template >> build.rs
 ###################################################################################################
 
 if [ ! -d $WORK_DIR/libzmq-android/libsodium/libsodium_arm ]; then
@@ -87,7 +87,7 @@ export ORIGINAL_PATH=$PATH
 
 # Commenting because we don't want to compile cargo everytime
 # cargo clean
-cargo install
+
 
 export OPENSSL_DIR_DARWIN=$OPENSSL_DIR
 
@@ -181,8 +181,8 @@ cd $WORK_DIR/vcx-indy-sdk/libnullpay
 # sed -i .bak 's/\"cdylib\"/\"staticlib\", \"cdylib\"/' Cargo.toml
 
 # !IMPORTANT STEPS NEXT -- Modify the build.rs of libnullpay to handle android shared libraries
-tail -n 1 build.rs | wc -c | xargs -I {} truncate build.rs -s -{}
-cat $START_DIR/libnullpay.build.rs.android.target.static.libs.template >> build.rs
+# tail -n 1 build.rs | wc -c | xargs -I {} truncate build.rs -s -{}
+# cat $START_DIR/libnullpay.build.rs.android.target.static.libs.template >> build.rs
 ###################################################################################################
 
 # KS: Commenting it out because we want to debug only on armv7 based device/simulator
@@ -225,13 +225,13 @@ cat $START_DIR/libnullpay.build.rs.android.target.static.libs.template >> build.
 # echo "-----------------------------------------------------------------------------------------------"
 
 export PATH=$WORK_DIR/NDK/x86/bin:$ORIGINAL_PATH; echo "PATH: $PATH"
-export OPENSSL_DIR=$WORK_DIR/openssl_for_ios_and_android/output/android/openssl-x86; echo "OPENSSL_DIR: $OPENSSL_DIR"
-export ANDROID_SODIUM_LIB=$WORK_DIR/libzmq-android/libsodium/libsodium_x86/lib; echo "ANDROID_SODIUM_LIB: $ANDROID_SODIUM_LIB"
-export SODIUM_LIB_DIR=$ANDROID_SODIUM_LIB; echo "SODIUM_LIB_DIR: $SODIUM_LIB_DIR"
-export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_x86/lib; echo "ANDROID_ZMQ_LIB: $ANDROID_ZMQ_LIB"
+# export OPENSSL_DIR=$WORK_DIR/openssl_for_ios_and_android/output/android/openssl-x86; echo "OPENSSL_DIR: $OPENSSL_DIR"
+# export ANDROID_SODIUM_LIB=$WORK_DIR/libzmq-android/libsodium/libsodium_x86/lib; echo "ANDROID_SODIUM_LIB: $ANDROID_SODIUM_LIB"
+# export SODIUM_LIB_DIR=$ANDROID_SODIUM_LIB; echo "SODIUM_LIB_DIR: $SODIUM_LIB_DIR"
+# export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_x86/lib; echo "ANDROID_ZMQ_LIB: $ANDROID_ZMQ_LIB"
 #export LIBZMQ_LIB_DIR=$ANDROID_ZMQ_LIB; echo "LIBZMQ_LIB_DIR: $LIBZMQ_LIB_DIR"
 #export LIBZMQ_INCLUDE_DIR=$WORK_DIR/libzmq-android/zmq/libzmq_x86/include; echo "LIBZMQ_INCLUDE_DIR: $LIBZMQ_INCLUDE_DIR"
-export ANDROID_SQLITE_LIB=$WORK_DIR/libsqlite3-android/x86; echo "ANDROID_SQLITE_LIB: $ANDROID_SQLITE_LIB"
+# export ANDROID_SQLITE_LIB=$WORK_DIR/libsqlite3-android/x86; echo "ANDROID_SQLITE_LIB: $ANDROID_SQLITE_LIB"
 export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/i686-linux-android/release; echo "LIBINDY_DIR: $LIBINDY_DIR"
 cargo build --target i686-linux-android --release
 echo "-----------------------------------------------------------------------------------------------"

@@ -47,14 +47,14 @@ public class WalletApi extends VcxJava.API {
 
     public static CompletableFuture<Integer> importWallet(
             String importPath,
-            String encryptionKey
+            String decryptionKey
     ) throws VcxException {
         ParamGuard.notNull(importPath, "importPath");
-        ParamGuard.notNull(encryptionKey, "encryptionKey");
+        ParamGuard.notNull(decryptionKey, "decryptionKey");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
-        int result = LibVcx.api.vcx_wallet_import(commandHandle, importPath, encryptionKey, vcxImportWalletCB);
+        int result = LibVcx.api.vcx_wallet_import(commandHandle, importPath, decryptionKey, vcxImportWalletCB);
         checkResult(result);
 
         return future;

@@ -5,7 +5,7 @@ export BASE_DIR="../../../../.."
 export WRAPPER_LIBS="vcx/wrappers/ios/vcx/lib"
 IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
 #IOS_TARGETS="x86_64-apple-ios"
-IOS_ARCHS="armv7,armv7s,arm64,i386,x86_64"
+IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
 #IOS_ARCHS="x86_64"
 
 ls
@@ -23,7 +23,7 @@ cp -rf ~/combine-libs ${BASE_DIR}/.macosbuild
 ./mac.12.combine.static.libs.sh libvcxall delete nodebug "${IOS_ARCHS}"
 
 # Package for armv7 and arm64
-IOS_ARCHS="armv7,arm64"
+IOS_ARCHS="arm64,armv7"
 ./mac.11.copy.static.libs.to.app.sh
 ./mac.12.combine.static.libs.sh libvcxpartial delete nodebug "${IOS_ARCHS}" 
 

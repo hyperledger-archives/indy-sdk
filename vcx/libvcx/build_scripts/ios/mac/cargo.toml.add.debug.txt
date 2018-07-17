@@ -2,4 +2,4 @@
 [profile.release]
 debug = true
 panic = 'unwind'
-incremental = false
+incremental = true

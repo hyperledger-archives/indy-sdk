@@ -30,11 +30,12 @@ do
     cd $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/${target_arch}
     rm ./libvcx.so
     $NDK_DIR/${ndk_arch}/bin/${cross_compile}-clang -v -shared -o libvcx.so -Wl,--whole-archive \
-    libindy.a \
-    libnullpay.a \
     libvcx.a \
-    libzmq.a \
+    libcrypto.a \
     libsodium.a \
+    libsqlite3.a \
+    libssl.a \
+    libzmq.a \
     $NDK_DIR/${ndk_arch}/${cross_compile}/${LIB_FOLDER}/libgnustl_shared.so \
     $NDK_DIR/${ndk_arch}/sysroot/usr/${LIB_FOLDER}/libz.so \
     $NDK_DIR/${ndk_arch}/sysroot/usr/${LIB_FOLDER}/libm.a \
