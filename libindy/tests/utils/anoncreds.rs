@@ -252,6 +252,53 @@ impl AnoncredsUtils {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn prover_get_credential(wallet_handle: i32, cred_id: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let cred_id = CString::new(cred_id).unwrap();
+
+        let err = indy_prover_get_credential(command_handle,
+                                             wallet_handle,
+                                             cred_id.as_ptr(),
+                                             cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn prover_search_credentials(wallet_handle: i32, filter_json: &str) -> Result<(i32, usize), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_i32_usize();
+
+        let filter_json = CString::new(filter_json).unwrap();
+
+        let err = indy_prover_search_credentials(command_handle,
+                                                 wallet_handle,
+                                                 filter_json.as_ptr(),
+                                                 cb);
+
+        super::results::result_to_int_usize(err, receiver)
+    }
+
+    pub fn prover_fetch_credentials(search_handle: i32, count: usize) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let err = indy_prover_fetch_credentials(command_handle,
+                                                search_handle,
+                                                count,
+                                                cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn prover_close_credentials_search(search_handle: i32) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+
+        let err = indy_prover_close_credentials_search(command_handle,
+                                                       search_handle,
+                                                       cb);
+
+        super::results::result_to_empty(err, receiver)
+    }
+
     pub fn prover_get_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
@@ -263,6 +310,45 @@ impl AnoncredsUtils {
                                                             cb);
 
         super::results::result_to_string(err, receiver)
+    }
+
+    pub fn prover_search_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str, extra_query_json: Option<&str>) -> Result<i32, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_i32();
+
+        let proof_request_json = CString::new(proof_request_json).unwrap();
+        let extra_query_json_str = extra_query_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+
+        let err = indy_prover_search_credentials_for_proof_req(command_handle,
+                                                               wallet_handle,
+                                                               proof_request_json.as_ptr(),
+                                                               if extra_query_json.is_some() { extra_query_json_str.as_ptr() } else { null() },
+                                                               cb);
+
+        super::results::result_to_int(err, receiver)
+    }
+
+    pub fn prover_fetch_next_credentials_for_proof_req(search_handle: i32, item_ref: &str, count: usize) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let item_ref = CString::new(item_ref).unwrap();
+
+        let err = indy_prover_fetch_credentials_for_proof_req(command_handle,
+                                                              search_handle,
+                                                              item_ref.as_ptr(),
+                                                              count,
+                                                              cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn prover_close_credentials_search_for_proof_req(search_handle: i32) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+
+        let err = indy_prover_close_credentials_search_for_proof_req(command_handle,
+                                                                     search_handle,
+                                                                     cb);
+
+        super::results::result_to_empty(err, receiver)
     }
 
     pub fn prover_create_proof(wallet_handle: i32, proof_req_json: &str, requested_credentials_json: &str,

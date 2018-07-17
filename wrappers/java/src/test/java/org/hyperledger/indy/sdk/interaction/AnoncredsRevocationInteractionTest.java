@@ -214,7 +214,7 @@ public class AnoncredsRevocationInteractionTest extends IndyIntegrationTestWithP
 
 		revRegId = revRegInfo2.getId();
 		revocRegDeltaJson = revRegInfo2.getObjectJson();
-		int timestamp = revRegInfo2.getTimestamp();
+		long timestamp = revRegInfo2.getTimestamp();
 
 		// Prover creates RevocationState
 		String revStateJson = Anoncreds.createRevocationState(blobStorageReaderHandle.getBlobStorageReaderHandle(),
