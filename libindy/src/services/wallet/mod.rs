@@ -1,4 +1,4 @@
-mod storage;
+pub mod storage;
 mod encryption;
 mod query_encryption;
 mod iterator;
