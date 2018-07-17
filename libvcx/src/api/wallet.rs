@@ -535,6 +535,20 @@ pub extern fn vcx_wallet_close_search(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Exports opened wallet
+///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+///
+/// #Params:
+/// command_handle: Handle for User's Reference only.
+/// path: Path to export wallet to User's File System.
+/// backup_key: String representing the User's Key for securing (encrypting) the exported Wallet.
+/// cb: Callback that provides the success/failure of the api call.
+/// #Returns
+/// Error code - success indicates that the api call was successfully created and execution
+/// is scheduled to begin in a separate thread.
+
 #[no_mangle]
 pub extern fn vcx_wallet_export(command_handle: u32,
                                 path: *const c_char,
@@ -563,6 +577,19 @@ pub extern fn vcx_wallet_export(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Creates a new secure wallet and then imports its content
+/// according to fields provided in import_config
+/// Cannot be used if wallet is already opened (Especially if vcx_init has already been used).
+///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+///
+/// path: Path of the file that contains exported wallet content
+/// backup_key: Key used when creating the backup of the wallet (For encryption/decrption)
+/// cb: Callback that provides the success/failure of the api call.
+/// #Returns
+/// Error code - success indicates that the api call was successfully created and execution
+/// is scheduled to begin in a separate thread.
 #[no_mangle]
 pub extern fn vcx_wallet_import(command_handle: u32,
                                 path: *const c_char,

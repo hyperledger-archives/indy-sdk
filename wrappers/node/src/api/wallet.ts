@@ -558,13 +558,13 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Import a wallet from a file, backup key used for encrypting the file
-   * @static
-   * @async
-   * @param {String} importPath
-   * @param {String} backupKey
-   * @returns {Promise<void>}
+   * Imports wallet from file with given key.
+   * Cannot be used if wallet is already opened (Especially if vcx_init has already been used).
+   *
+   * Example:
+   * ```
+   * await Wallet.import('/tmp/foobar.wallet', 'key_for_wallet')
+   * ```
    */
   public static async import (path: string, backupKey: string): Promise<void> {
     const commandHandle = 0
@@ -596,13 +596,12 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Export a file to a wallet, backup key used for decrypting the file.
-   * @static
-   * @async
-   * @param {String} exportPath
-   * @param {String} backupKey
-   * @returns {Promise<void>}
+   * Export a file to a wallet, backup key used for decrypting the file.
+   *
+   * Example:
+   * ```
+   * await Wallet.export('/tmp/foobar.wallet', 'key_for_wallet')
+   * ```
    */
   public static async export (path: string, backupKey: string): Promise<void> {
     const commandHandle = 0
