@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -o pipefail
+
 setup() {
     echo "Working Directory: ${PWD}"
     export ARCH=$1

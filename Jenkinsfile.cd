@@ -384,6 +384,30 @@ def ubuntuTesting() {
     }
 }
 
+def androidTesting() {
+    def libindyVersion
+
+    node('ubuntu'){
+        stage('Build Android binaries as TEST'){
+            try{
+                echo 'Building android binaries. This will act as a minimal test for android'
+                checkout scm
+
+                libindyVersion = getSrcVersion("libindy")
+
+                echo 'Building android binaries: Building docker image'
+                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
+                buildAndroid(buildEnv,libindyVersion,false)
+
+            }
+            finally{
+                echo 'Building Android binaries: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
 def rhelTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
@@ -467,7 +491,7 @@ def androidPublishing(){
 
                 echo 'Publish Android binaries: Building docker image'
                 buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
-                buildAndroid(buildEnv,libindyVersion)
+                buildAndroid(buildEnv,libindyVersion,true)
 
             }
             finally{
@@ -582,7 +606,7 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
     }
 }
 
-def buildAndroid(buildEnv,libIndyVersion) {
+def buildAndroid(buildEnv,libIndyVersion,shouldPublish) {
 
     sh 'chmod -R 777 libindy/ci/'
     ANDROID_SCRIPT_PATH = 'libindy/ci/buildAndroid.sh'
@@ -590,22 +614,31 @@ def buildAndroid(buildEnv,libIndyVersion) {
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} arm"
     }
-    echo 'Publish Libindy android files for arm'
-    androidPublishArtifacts(buildEnv, libIndyVersion,"arm" )
+    if(shouldPublish){
+        echo 'Publish Libindy android files for arm'
+        androidPublishArtifacts(buildEnv, libIndyVersion,"arm" )
+    }
+
 
     echo 'Building Libindy android files for x86'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} x86"
     }
-    echo 'Publish Libindy android files for x86'
-    androidPublishArtifacts(buildEnv, libIndyVersion,"x86" )
+    if(shouldPublish){
+        echo 'Publish Libindy android files for x86'
+        androidPublishArtifacts(buildEnv, libIndyVersion,"x86" )
+    }
+
 
     echo 'Building Libindy android files for arm64'
     buildEnv.inside {
         sh "./${ANDROID_SCRIPT_PATH} arm64"
     }
-    echo 'Publish Libindy android files for arm64'
-    androidPublishArtifacts(buildEnv, libIndyVersion,"arm64" )
+    if (shouldPublish){
+        echo 'Publish Libindy android files for arm64'
+        androidPublishArtifacts(buildEnv, libIndyVersion,"arm64" )
+    }
+
 
 }
 

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+set -e
+set -o pipefail
+
 WORKDIR=${PWD}
 TARGET_ARCH=$1
 TARGET_API=$2
@@ -103,7 +106,7 @@ cp -rf ./../../../libnullpay/Cargo.toml ${LIBNULLPAY_SRC}
 pushd $LIBNULLPAY_SRC
 
 cargo clean
-cargo build --release --target=${CROSS_COMPILE} --verbose
+cargo build --release --target=${CROSS_COMPILE}
 popd
 
 LIBNULLPAY_BUILDS=${WORKDIR}/libnullpay_${TARGET_ARCH}
