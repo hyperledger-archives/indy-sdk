@@ -21,7 +21,11 @@ RUN apt-get update && \
       wget \
       devscripts \
       libncursesw5-dev \
-      libzmq3-dev
+      libzmq3-dev \
+      zip \
+      unzip \
+      jq \
+      openjdk-8-jdk
 
 # install nodejs and npm
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
