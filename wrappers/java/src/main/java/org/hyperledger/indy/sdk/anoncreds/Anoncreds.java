@@ -714,8 +714,15 @@ public class Anoncreds extends IndyJava.API {
 	 * Use {@link CredentialsSearch#open(Wallet, String)} to fetch records by small batches.
 	 *
 	 * @param wallet A wallet.
-	 * @param filter Wql style query for credentials searching based on tags.
-	 * where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+	 * @param filter filter for credentials
+	 *        {
+	 *            "schema_id": string, (Optional)
+	 *            "schema_issuer_did": string, (Optional)
+	 *            "schema_name": string, (Optional)
+	 *            "schema_version": string, (Optional)
+	 *            "issuer_did": string, (Optional)
+	 *            "cred_def_id": string, (Optional)
+	 *        }
 	 * @return A future that resolves to a credentials json
 	 *     [{
 	 *         "referent": string, // cred_id in the wallet
@@ -818,7 +825,7 @@ public class Anoncreds extends IndyJava.API {
 	 *     attr_referent: Describes requested attribute
 	 *     {
 	 *         "name": string, // attribute name, (case insensitive and ignore spaces)
-	 *         "restrictions": Optional<[<wql query>]>,
+	 *         "restrictions": Optional<filter>, // see filter above
 	 *                          // if specified, credential must satisfy to one of the given restriction.
 	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 	 *                        // If specified prover must proof non-revocation
@@ -830,7 +837,7 @@ public class Anoncreds extends IndyJava.API {
 	 *         "name": attribute name, (case insensitive and ignore spaces)
 	 *         "p_type": predicate type (Currently >= only)
 	 *         "p_value": predicate value
-	 *         "restrictions": Optional<[<wql query>]>,
+	 *         "restrictions": Optional<filter>, // see filter above
 	 *                         // if specified, credential must satisfy to one of the given restriction.
 	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 	 *                        // If specified prover must proof non-revocation
@@ -842,7 +849,6 @@ public class Anoncreds extends IndyJava.API {
 	 *         "from": Optional<int>, // timestamp of interval beginning
 	 *         "to": Optional<int>, // timestamp of interval ending
 	 *     }
-	 *     where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 	 * @return A future that resolves to a json with credentials for the given proof request.
 	 *     {
 	 *         "requested_attrs": {

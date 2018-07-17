@@ -480,27 +480,34 @@ pub extern fn indy_prover_get_credential(command_handle: i32,
 ```Rust
 /// Gets human readable credentials according to the filter.
 /// If filter is NULL, then all credentials are returned.
-/// Credentials can be filtered by tags created during saving of credential.
+/// Credentials can be filtered by Issuer, credential_def and/or Schema.
 ///
-/// NOTE: This method is deprecated because immediately returns all fetched credentials. 
+/// NOTE: This method is deprecated because immediately returns all fetched credentials.
 /// Use <indy_prover_search_credentials> to fetch records by small batches.
-/// 
+///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
-/// filter_json: Wql style filter for credentials searching based on tags.
-///     where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+/// filter_json: filter for credentials
+///        {
+///            "schema_id": string, (Optional)
+///            "schema_issuer_did": string, (Optional)
+///            "schema_name": string, (Optional)
+///            "schema_version": string, (Optional)
+///            "issuer_did": string, (Optional)
+///            "cred_def_id": string, (Optional)
+///        }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
-/// credentials json 
-///     [{ 
-///         "referent": string, // cred_id in the wallet 
-///         "attrs": {"key1":"raw_value1", "key2":"raw_value2"}, 
-///         "schema_id": string, 
-///         "cred_def_id": string, 
-///         "rev_reg_id": Optional<string>, 
-///         "cred_rev_id": Optional<string> 
-///     }] 
+/// credentials json
+///     [{
+///         "referent": string, // cred_id in the wallet
+///         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+///         "schema_id": string,
+///         "cred_def_id": string,
+///         "rev_reg_id": Optional<string>,
+///         "cred_rev_id": Optional<string>
+///     }]
 ///
 /// #Errors
 /// Annoncreds*
@@ -525,7 +532,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
-/// filter_json: Wql style filter for credentials searching based on tags.
+/// query_json: Wql style filter for credentials searching based on tags.
 ///     where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 /// cb: Callback that takes command result as parameter.
 ///
@@ -540,7 +547,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_prover_search_credentials(command_handle: i32,
                                              wallet_handle: i32,
-                                             filter_json: *const c_char,
+                                             query_json: *const c_char,
                                              cb: Option<extern fn(
                                                  xcommand_handle: i32, err: ErrorCode,
                                                  search_handle: i32,
@@ -595,9 +602,9 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 
 /// Gets human readable credentials matching the given proof request.
 ///
-/// NOTE: This method is deprecated because immediately returns all fetched credentials. 
+/// NOTE: This method is deprecated because immediately returns all fetched credentials.
 /// Use <indy_prover_search_credentials_for_proof_req> to fetch records by small batches.
-/// 
+///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// proof_request_json: proof request json
@@ -618,20 +625,14 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
 ///     }
-/// extra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:
-///     {
-///         "<attr_referent>": <wql query>,
-///         "<predicate_referent>": <wql query>,
-///     }
 /// cb: Callback that takes command result as parameter.
 ///
 /// where
-/// where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 /// attr_referent: Proof-request local identifier of requested attribute
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
-///         "restrictions": Optional<wql query>,
+///         "restrictions": Optional<filter_json>, // see above
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval this attribute
@@ -643,7 +644,7 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 ///         "name": attribute name, (case insensitive and ignore spaces)
 ///         "p_type": predicate type (Currently ">=" only)
 ///         "p_value": int predicate value
-///         "restrictions": Optional<wql query>,
+///         "restrictions": Optional<filter_json>, // see above
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval this attribute
@@ -684,7 +685,6 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
                                                         wallet_handle: i32,
                                                         proof_request_json: *const c_char,
-                                                        extra_query_json: *const c_char,
                                                         cb: Option<extern fn(
                                                             xcommand_handle: i32, err: ErrorCode,
                                                             credentials_json: *const c_char)>) -> ErrorCode

@@ -586,7 +586,7 @@
     return err;
 }
 
-- (NSError *)proverSearchCredentialsForFilter:(NSString *)filterJSON
+- (NSError *)proverSearchCredentialsForQuery:(NSString *)queryJSON
                                  walletHandle:(IndyHandle)walletHandle
                                  searchHandle:(IndyHandle *)searchHandle
                                    totalCount:(NSNumber **)totalCount {
@@ -595,7 +595,7 @@
 
     completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
 
-    [IndyAnoncreds proverSearchCredentialsForFilter:filterJSON
+    [IndyAnoncreds proverSearchCredentialsForQuery:queryJSON
                                        walletHandle:walletHandle
                                          completion:^(NSError *error, IndyHandle outSearchHandle, NSNumber *outTotalCount) {
                                              err = error;

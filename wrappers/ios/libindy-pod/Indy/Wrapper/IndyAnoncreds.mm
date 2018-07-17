@@ -334,7 +334,7 @@
     }
 }
 
-+ (void)proverSearchCredentialsForFilter:(NSString *)filterJSON
++ (void)proverSearchCredentialsForQuery:(NSString *)queryJSON
                             walletHandle:(IndyHandle)walletHandle
                               completion:(void (^)(NSError *error, IndyHandle searchHandle, NSNumber *totalCount))completion {
     indy_error_t ret;
@@ -343,7 +343,7 @@
 
     ret = indy_prover_search_credentials(handle,
             walletHandle,
-            [filterJSON UTF8String],
+            [queryJSON UTF8String],
             IndyWrapperCommonHandleNumberCallback
     );
     if (ret != Success) {

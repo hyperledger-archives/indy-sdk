@@ -64,7 +64,7 @@ pub enum ProverCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     SearchCredentials(
         i32, // wallet handle
-        Option<String>, // filter json
+        Option<String>, // query json
         Box<Fn(Result<(i32, usize), IndyError>) + Send>),
     FetchCredentials(
         i32, // search handle
@@ -184,9 +184,9 @@ impl ProverCommandExecutor {
                 info!(target: "prover_command_executor", "GetCredential command received");
                 cb(self.get_credential(wallet_handle, &cred_id));
             }
-            ProverCommand::SearchCredentials(wallet_handle, filter_json, cb) => {
+            ProverCommand::SearchCredentials(wallet_handle, query_json, cb) => {
                 info!(target: "prover_command_executor", "SearchCredentials command received");
-                cb(self.search_credentials(wallet_handle, filter_json.as_ref().map(String::as_str)));
+                cb(self.search_credentials(wallet_handle, query_json.as_ref().map(String::as_str)));
             }
             ProverCommand::FetchCredentials(search_handle, count, cb) => {
                 info!(target: "prover_command_executor", "FetchCredentials command received");
@@ -396,11 +396,11 @@ impl ProverCommandExecutor {
 
     fn search_credentials(&self,
                           wallet_handle: i32,
-                          filter_json: Option<&str>) -> Result<(i32, usize), IndyError> {
-        debug!("search_credentials >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
+                          query_json: Option<&str>) -> Result<(i32, usize), IndyError> {
+        debug!("search_credentials >>> wallet_handle: {:?}, query_json: {:?}", wallet_handle, query_json);
 
         let credentials_search =
-            self.wallet_service.search_indy_records::<Credential>(wallet_handle, filter_json.unwrap_or("{}"), &SearchOptions::id_value())?;
+            self.wallet_service.search_indy_records::<Credential>(wallet_handle, query_json.unwrap_or("{}"), &SearchOptions::id_value())?;
 
         let total_count = credentials_search.get_total_count()?.unwrap_or(0);
 

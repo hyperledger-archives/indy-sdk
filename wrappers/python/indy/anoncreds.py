@@ -681,7 +681,15 @@ async def prover_get_credentials(wallet_handle: int,
     Use <prover_search_credentials> to fetch records by small batches.
 
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param filter_json: цql style filter for credentials searching based on tags.
+    :param filter_json: filter for credentials
+        {
+            "schema_id": string, (Optional)
+            "schema_issuer_did": string, (Optional)
+            "schema_name": string, (Optional)
+            "schema_version": string, (Optional)
+            "issuer_did": string, (Optional)
+            "cred_def_id": string, (Optional)
+        }
     :return:  credentials json
      [{
          "referent": string, // cred_id in the wallet
@@ -716,7 +724,7 @@ async def prover_get_credentials(wallet_handle: int,
 
 
 async def prover_search_credentials(wallet_handle: int,
-                                    filter_json: str) -> (int, int):
+                                    query_json: str) -> (int, int):
     """
     Search for credentials stored in wallet.
     Credentials can be filtered by tags created during saving of credential.
@@ -725,27 +733,29 @@ async def prover_search_credentials(wallet_handle: int,
     to fetch records by small batches (with prover_credentials_search_fetch_records).
 
     :param wallet_handle: wallet handler (created by open_wallet).
-    :param filter_json: wql style filter for credentials searching based on tags created during the saving of credential
+    :param query_json: wql style filter for credentials searching based on tags.
+        where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
     :return:
-        search_handle: Search handle that can be used later to fetch records by small batches (with prover_credentials_search_fetch_records)
+        search_handle: Search handle that can be used later to fetch records by small batches
+            (with prover_credentials_search_fetch_records)
         total_count: Total count of records
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("prover_search_credentials: >>> wallet_handle: %r, filter_json: %r",
+    logger.debug("prover_search_credentials: >>> wallet_handle: %r, query_json: %r",
                  wallet_handle,
-                 filter_json)
+                 query_json)
 
     if not hasattr(prover_search_credentials, "cb"):
         logger.debug("prover_search_credentials: Creating callback")
         prover_search_credentials.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_int32, c_uint))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_filter_json = c_char_p(filter_json.encode('utf-8'))
+    c_query_json = c_char_p(query_json.encode('utf-8'))
 
     res = await do_call('indy_prover_search_credentials',
                         c_wallet_handle,
-                        c_filter_json,
+                        c_query_json,
                         prover_search_credentials.cb)
 
     logger.debug("prover_search_credentials: <<< res: %r", res)
@@ -847,12 +857,11 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
                            // (can be overridden on attribute level)
         }
     where:
-         where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
          attr_referent: Proof-request local identifier of requested attribute
          attr_info: Describes requested attribute
              {
                  "name": string, // attribute name, (case insensitive and ignore spaces)
-                 "restrictions": Optional<[<wql query>]>,
+                 "restrictions": Optional<[<filter_json>]>, // see above
                                   // if specified, credential must satisfy to one of the given restriction.
                  "non_revoked": Optional<<non_revoc_interval>>, // see below,
                                 // If specified prover must proof non-revocation
@@ -865,7 +874,7 @@ async def prover_get_credentials_for_proof_req(wallet_handle: int,
                  "name": attribute name, (case insensitive and ignore spaces)
                  "p_type": predicate type (Currently >= only)
                  "p_value": predicate value
-                 "restrictions": Optional<[<wql query>]>,
+                 "restrictions": Optional<[<filter_json>]>, // see above
                                  // if specified, credential must satisfy to one of the given restriction.
                  "non_revoked": Optional<<non_revoc_interval>>, // see below,
                                 // If specified prover must proof non-revocation

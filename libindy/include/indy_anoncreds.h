@@ -159,7 +159,7 @@ extern "C" {
 
     extern indy_error_t indy_prover_search_credentials(indy_handle_t command_handle,
                                                        indy_handle_t wallet_handle,
-                                                       const char *  filter_json,
+                                                       const char *  query_json,
 
                                                        void           (*cb)(indy_handle_t xcommand_handle,
                                                                             indy_error_t  err,

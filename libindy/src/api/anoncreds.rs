@@ -854,15 +854,22 @@ pub extern fn indy_prover_get_credential(command_handle: i32,
 
 /// Gets human readable credentials according to the filter.
 /// If filter is NULL, then all credentials are returned.
-/// Credentials can be filtered by tags created during saving of credential.
+/// Credentials can be filtered by Issuer, credential_def and/or Schema.
 ///
 /// NOTE: This method is deprecated because immediately returns all fetched credentials.
 /// Use <indy_prover_search_credentials> to fetch records by small batches.
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
-/// filter_json: Wql style query for credentials searching based on tags.
-/// where query: indy-sdk/doc/design/011-wallet-query-language/README.md
+/// filter_json: filter for credentials
+///        {
+///            "schema_id": string, (Optional)
+///            "schema_issuer_did": string, (Optional)
+///            "schema_name": string, (Optional)
+///            "schema_version": string, (Optional)
+///            "issuer_did": string, (Optional)
+///            "cred_def_id": string, (Optional)
+///        }
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -924,7 +931,7 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 ///
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
-/// filter_json: Wql query filter for credentials searching based on tags.
+/// query_json: Wql query filter for credentials searching based on tags.
 /// where query: indy-sdk/doc/design/011-wallet-query-language/README.md
 /// cb: Callback that takes command result as parameter.
 ///
@@ -939,24 +946,24 @@ pub extern fn indy_prover_get_credentials(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_prover_search_credentials(command_handle: i32,
                                              wallet_handle: i32,
-                                             filter_json: *const c_char,
+                                             query_json: *const c_char,
                                              cb: Option<extern fn(
                                                  xcommand_handle: i32, err: ErrorCode,
                                                  search_handle: i32,
                                                  total_count: usize)>) -> ErrorCode {
-    trace!("indy_prover_search_credentials: >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
+    trace!("indy_prover_search_credentials: >>> wallet_handle: {:?}, query_json: {:?}", wallet_handle, query_json);
 
-    check_useful_opt_c_str!(filter_json, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(query_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_prover_search_credentials: entities >>> wallet_handle: {:?}, filter_json: {:?}", wallet_handle, filter_json);
+    trace!("indy_prover_search_credentials: entities >>> wallet_handle: {:?}, query_json: {:?}", wallet_handle, query_json);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
             AnoncredsCommand::Prover(
                 ProverCommand::SearchCredentials(
                     wallet_handle,
-                    filter_json,
+                    query_json,
                     Box::new(move |result| {
                         let (err, handle, total_count) = result_to_err_code_2!(result, 0, 0);
                         cb(command_handle, err, handle, total_count)
@@ -1092,12 +1099,11 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 /// cb: Callback that takes command result as parameter.
 ///
 /// where
-/// where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 /// attr_referent: Proof-request local identifier of requested attribute
 /// attr_info: Describes requested attribute
 ///     {
 ///         "name": string, // attribute name, (case insensitive and ignore spaces)
-///         "restrictions": Optional<wql query>.
+///         "restrictions": Optional<filter_json>, // see above
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval this attribute
@@ -1109,7 +1115,7 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 ///         "name": attribute name, (case insensitive and ignore spaces)
 ///         "p_type": predicate type (Currently ">=" only)
 ///         "p_value": int predicate value
-///         "restrictions": Optional<wql query> .
+///         "restrictions": Optional<filter_json>, // see above
 ///         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 ///                        // If specified prover must proof non-revocation
 ///                        // for date in this interval this attribute

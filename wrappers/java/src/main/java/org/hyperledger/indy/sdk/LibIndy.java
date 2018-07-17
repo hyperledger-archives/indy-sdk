@@ -119,7 +119,7 @@ public abstract class LibIndy {
 		public int indy_prover_store_credential(int command_handle, int wallet_handle, String cred_id, String cred_req_metadata_json, String cred_json, String cred_def_json, String rev_reg_def_json, Callback cb);
 		public int indy_prover_get_credentials(int command_handle, int wallet_handle, String filter_json, Callback cb);
 		public int indy_prover_get_credential(int command_handle, int wallet_handle, String cred_id, Callback cb);
-		public int indy_prover_search_credentials(int command_handle, int wallet_handle, String filter_json, Callback cb);
+		public int indy_prover_search_credentials(int command_handle, int wallet_handle, String query_json, Callback cb);
 		public int indy_prover_fetch_credentials(int command_handle, int search_handle, int count, Callback cb);
 		public int indy_prover_close_credentials_search(int command_handle, int search_handle, Callback cb);
 		public int indy_prover_get_credentials_for_proof_req(int command_handle, int wallet_handle, String proof_request_json, Callback cb);

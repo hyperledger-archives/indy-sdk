@@ -78,7 +78,7 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 	 *     attr_referent: Describes requested attribute
 	 *     {
 	 *         "name": string, // attribute name, (case insensitive and ignore spaces)
-	 *         "restrictions": Optional<[<attr_filter>]> // see below,
+	 *         "restrictions": Optional<[<wql query>]>,
 	 *                          // if specified, credential must satisfy to one of the given restriction.
 	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 	 *                        // If specified prover must proof non-revocation
@@ -90,7 +90,7 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 	 *         "name": attribute name, (case insensitive and ignore spaces)
 	 *         "p_type": predicate type (Currently >= only)
 	 *         "p_value": predicate value
-	 *         "restrictions": Optional<[<attr_filter>]> // see below,
+	 *         "restrictions": Optional<[<wql query>]>,
 	 *                         // if specified, credential must satisfy to one of the given restriction.
 	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
 	 *                        // If specified prover must proof non-revocation
@@ -102,7 +102,6 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 	 *         "from": Optional<int>, // timestamp of interval beginning
 	 *         "to": Optional<int>, // timestamp of interval ending
 	 *     }
-	 *     filter: see filter above
 	 * @param extraQueryJson (Optional) List of extra queries that will be applied to correspondent attribute/predicate:
 	 *     {
 	 *         "<attr_referent>": <wql query>,
@@ -158,6 +157,7 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 	 *     }
 	 * NOTE: The list of length less than the requested <count> means that search iterator
 	 * correspondent to the requested <itemRef> is completed.
+	 *
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public CompletableFuture<String> fetchNextCredentials(

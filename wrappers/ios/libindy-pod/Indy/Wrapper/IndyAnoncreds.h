@@ -332,10 +332,17 @@
  Credentials can be filtered by tags created during saving of credential.
 
  NOTE: This method is deprecated because immediately returns all fetched credentials. 
- Use <proverSearchCredentialsForFilter> to fetch records by small batches.
+ Use <proverSearchCredentialsForQuery> to fetch records by small batches.
 
- @param filterJSON: Wql style filter for credentials searching based on tags.
-        (indy-sdk/doc/design/011-wallet-query-language/README.md)
+ @param filterJSON: filter for credentials
+    {
+        "schema_id": string, (Optional)
+        "schema_issuer_did": string, (Optional)
+        "schema_name": string, (Optional)
+        "schema_version": string, (Optional)
+        "issuer_did": string, (Optional)
+        "cred_def_id": string, (Optional)
+    }
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
  @param completion Callback that takes command result as parameter. 
  Returns credentials json. 
@@ -362,7 +369,7 @@
  to fetch records by small batches (with proverFetchCredentialsWithSearchHandle).
   
  @param walletHandle Wallet handler (created by IndyWallet::openWalletWithName).
- @param filterJson Wql style filter for credentials searching based on tags.
+ @param queryJSON Wql style filter for credentials searching based on tags.
         (indy-sdk/doc/design/011-wallet-query-language/README.md)
  @param completion Callback that takes command result as parameter. 
  Returns 
@@ -370,14 +377,14 @@
     totalCount: Total count of records
 
  */
-+ (void)proverSearchCredentialsForFilter:(NSString *)filterJSON
++ (void)proverSearchCredentialsForQuery:(NSString *)queryJSON
                             walletHandle:(IndyHandle)walletHandle
                               completion:(void (^)(NSError *error, IndyHandle searchHandle, NSNumber *totalCount))completion;
 
 /**
  Fetch next credentials for search.
   
- @param searchHandle Search handle (created by proverSearchCredentialsForFilter).
+ @param searchHandle Search handle (created by proverSearchCredentialsForQuery).
  @param count Count of credentials to fetch
  @param completion Callback that takes command result as parameter. 
  Returns 
@@ -400,7 +407,7 @@
 /**
  Close credentials search (make search handle invalid)
   
- @param searchHandle Search handle (created by proverSearchCredentialsForFilter).
+ @param searchHandle Search handle (created by proverSearchCredentialsForQuery).
  Returns no result
 
  */
@@ -432,12 +439,11 @@
                        // (can be overridden on attribute level)
     }
  where
- wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
  attr_referent: Proof-request local identifier of requested attribute
  attr_info: Describes requested attribute
      {
          "name": string, // attribute name, (case insensitive and ignore spaces)
-         "restrictions": Optional<wql query>,
+         "restrictions": Optional<filterJSON>, // see above
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
                         // for date in this interval this attribute
@@ -449,7 +455,7 @@
          "name": attribute name, (case insensitive and ignore spaces)
          "p_type": predicate type (Currently ">=" only)
          "p_value": int predicate value
-         "restrictions": Optional<wql query>,
+         "restrictions": Optional<filterJSON>, // see above,
          "non_revoked": Optional<<non_revoc_interval>>, // see below,
                         // If specified prover must proof non-revocation
                         // for date in this interval this attribute

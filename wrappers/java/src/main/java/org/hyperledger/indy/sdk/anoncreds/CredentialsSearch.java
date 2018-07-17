@@ -59,17 +59,17 @@ public class CredentialsSearch extends IndyJava.API implements AutoCloseable {
 	 * to fetch records by small batches (with {@link CredentialsSearch#fetchNextCredentials(int)}).
 	 *
 	 * @param wallet 	 A wallet
-	 * @param filterJson Wql style filter for credentials searching based on tags.
+	 * @param queryJson Wql style filter for credentials searching based on tags.
 	 *         where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
 	 * @return CredentialsSearch to fetch method
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
 	 */
 	public static CompletableFuture<CredentialsSearch> open(
 			Wallet wallet,
-			String filterJson) throws IndyException {
+			String queryJson) throws IndyException {
 
 		ParamGuard.notNull(wallet, "wallet");
-		ParamGuard.notNullOrWhiteSpace(filterJson, "filterJson");
+		ParamGuard.notNullOrWhiteSpace(queryJson, "queryJson");
 
 		CompletableFuture<CredentialsSearch> future = new CompletableFuture<CredentialsSearch>();
 		int commandHandle = addFuture(future);
@@ -79,7 +79,7 @@ public class CredentialsSearch extends IndyJava.API implements AutoCloseable {
 		int result = LibIndy.api.indy_prover_search_credentials(
 				commandHandle,
 				walletHandle,
-				filterJson,
+				queryJson,
 				proverSearchCredentialsCb);
 
 		checkResult(result);

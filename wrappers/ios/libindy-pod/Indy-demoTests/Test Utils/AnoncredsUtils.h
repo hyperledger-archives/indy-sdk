@@ -123,7 +123,7 @@
                               walletHandle:(IndyHandle)walletHandle
                             credentilsJson:(NSString **)credentialsJson;
 
-- (NSError *)proverSearchCredentialsForFilter:(NSString *)filterJSON
+- (NSError *)proverSearchCredentialsForQuery:(NSString *)queryJSON
                                  walletHandle:(IndyHandle)walletHandle
                                  searchHandle:(IndyHandle *)searchHandle
                                    totalCount:(NSNumber **)totalCount;

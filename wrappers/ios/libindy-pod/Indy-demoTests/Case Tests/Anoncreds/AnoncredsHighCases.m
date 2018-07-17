@@ -428,11 +428,11 @@
     // 2. get credentials
     IndyHandle searchHandle;
     NSNumber *totalCount;
-    ret = [[AnoncredsUtils sharedInstance] proverSearchCredentialsForFilter:@"{}"
+    ret = [[AnoncredsUtils sharedInstance] proverSearchCredentialsForQuery:@"{}"
                                                                walletHandle:walletHandle
                                                                searchHandle:&searchHandle
                                                                  totalCount:&totalCount];
-    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverSearchCredentialsForFilter failed");
+    XCTAssertEqual(ret.code, Success, @"AnoncredsUtils::proverSearchCredentialsForQuery failed");
 
     XCTAssertEqual([totalCount intValue], 3, @"credentials count != 3");
 
