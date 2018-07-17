@@ -115,25 +115,10 @@ build(){
     popd
 }
 
-#_test(){
-#    pushd ${WORKDIR}
-#        rm -rf target/${TRIPLET}
-#        cargo clean
-#        RUST_TEST_THREADS=1 RUSTFLAGS="-L${TOOLCHAIN_DIR}/i686-linux-android/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-#            cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"
-#    popd
-#}
 
 #cleanup(){
 ##    rm -rf ${BUILD_FOLDER}
 #
-#}
-
-#execute_build_steps(){
-#
-#        test
-##        build
-##        package_library
 #}
 
 generate_arch_flags ${TARGET_ARCH}

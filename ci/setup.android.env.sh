@@ -3,6 +3,8 @@
 CI_DIR=$(cd `dirname $0` && pwd)
 INDY_WORKDIR="$(realpath "${CI_DIR}/..")"
 ANDROID_BUILD_FOLDER="$(realpath "${CI_DIR}/../android_build")"
+ANDROID_SDK=${ANDROID_BUILD_FOLDER}/sdk
+mkdir -p ${ANDROID_SDK}
 ## set this variable to 1 if you want to download the prebuilt binaries
 
 
@@ -14,40 +16,41 @@ if [ -z "${TARGET_ARCH}" ]; then
     exit 1
 fi
 
-download_adb(){
-    mkdir -p ${ANDROID_BUILD_FOLDER}/adb
-    pushd ${ANDROID_BUILD_FOLDER}/adb
-        wget https://dl.google.com/android/repository/platform-tools_r28.0.0-linux.zip
-        unzip -qq platform-tools_r28.0.0-linux.zip
-        export ADB_EXECUTABLE="$(realpath ${ANDROID_BUILD_FOLDER}/adb/platform-tools)/adb"
-    popd
+
+
+check_if_emulator_is_running(){
+    emus=$(${ADB_EXECUTABLE} devices)
+    if [[ ${emus} = *"emulator"* ]]; then
+      echo "emulator is running"
+      else
+       echo "emulator is not running"
+       exit 1
+    fi
 }
 
 delete_existing_avd(){
-    ${ANDROID_BUILD_FOLDER}/sdk/tools/bin/avdmanager delete avd -n ${ARCH}
+    ${ANDROID_SDK}/tools/bin/avdmanager delete avd -n ${ARCH}
 }
 
 create_avd(){
     echo "yes" | \
-         ${ANDROID_BUILD_FOLDER}/sdk/tools/bin/sdkmanager --no_https \
+         ${ANDROID_SDK}/tools/bin/sdkmanager --no_https \
             "emulator" \
             "platform-tools" \
             "platforms;android-24" \
             "system-images;android-24;default;${ABI}"
 
         echo "no" |
-            ${ANDROID_BUILD_FOLDER}/sdk/tools/bin/avdmanager create avd \
+            ${ANDROID_SDK}/tools/bin/avdmanager create avd \
                 --name ${TARGET_ARCH} \
                 --package "system-images;android-24;default;${ABI}"
 
-        SDK_ROOT="$(realpath ${ANDROID_BUILD_FOLDER}/sdk)"
-        ANDROID_SDK_ROOT=${SDK_ROOT} ANDROID_HOME=${SDK_ROOT} ${ANDROID_BUILD_FOLDER}/sdk/tools/emulator -avd ${TARGET_ARCH}
-        ANDROID_SDK_ROOT=${SDK_ROOT} ANDROID_HOME=${SDK_ROOT} ${SDK_ROOT}/tools/emulator -avd arm -no-audio -no-window &
+        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_SDK}/tools/emulator -avd ${TARGET_ARCH}
+        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_SDK}/tools/emulator -avd arm -no-audio -no-window &
 }
 
 download_sdk(){
-    mkdir -p ${ANDROID_BUILD_FOLDER}/sdk
-     pushd ${ANDROID_BUILD_FOLDER}/sdk
+     pushd ${ANDROID_SDK}
         wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
         unzip -qq sdk-tools-linux-4333796.zip
         delete_existing_avd
@@ -158,6 +161,7 @@ download_and_setup_toolchain(){
 
 
 set_env_vars(){
+    export ADB_EXECUTABLE=${ANDROID_BUILD_FOLDER}/sdk/platform-tools/adb
     export PKG_CONFIG_ALLOW_CROSS=1
     export CARGO_INCREMENTAL=1
     export RUST_LOG=indy=trace

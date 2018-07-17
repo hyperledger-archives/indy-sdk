@@ -24,18 +24,18 @@ declare -a EXE_ARRAY
 
 build_test_artifacts(){
     pushd ${WORKDIR}
-#        rm -rf target/${TRIPLET}
-#        cargo clean
 
-#export RUST_LOG=debug
-
-EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/${TRIPLET}/lib -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-            cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
-popd
+        cargo clean
+        EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/${TRIPLET}/lib -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+                    cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
+    popd
 }
 
 
 execute_on_device(){
+    #exits the script with code 1 if the emulator is not running
+    check_if_emulator_is_running
+
     ${ADB_EXECUTABLE} push \
     "${SODIUM_LIB_DIR}/libsodium.so" "/data/local/tmp/libsodium.so"
 
@@ -61,8 +61,8 @@ execute_on_device(){
 
 
 
-#download_adb
-#download_sdk
+download_adb
+download_sdk
 download_and_unzip_dependencies_for_all_architectures
 download_and_setup_toolchain
 set_env_vars
