@@ -17,15 +17,11 @@ shift $((OPTIND -1))
 
 TARGET_ARCH=$1
 
-
-
 if [ -z "${TARGET_ARCH}" ]; then
     echo STDERR "Missing TARGET_ARCH argument"
     echo STDERR "e.g. x86 or arm"
     exit 1
 fi
-
-
 
 source ${CI_DIR}/setup.android.env.sh
 
@@ -117,18 +113,6 @@ build(){
     popd
 }
 
-
-#cleanup(){
-##    rm -rf ${BUILD_FOLDER}
-#
-#}
-
-#execute_build_steps(){
-#
-#        test
-##        build
-##        package_library
-#}
 
 generate_arch_flags ${TARGET_ARCH}
 setup_dependencies

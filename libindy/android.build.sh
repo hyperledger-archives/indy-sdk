@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-
+set -e
+set -o pipefail
 WORKDIR=${PWD}
 INDY_WORKDIR="$(realpath "${WORKDIR}/..")"
 CI_DIR="$(realpath "${WORKDIR}/../ci")"
@@ -94,7 +95,7 @@ package_library(){
     cp -rf "${WORKDIR}/include" ${BUILD_FOLDER}/libindy_${TARGET_ARCH}
     cp "${WORKDIR}/target/${TRIPLET}/release/libindy.a" ${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
     cp "${WORKDIR}/target/${TRIPLET}/release/libindy.so" ${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
-    mv "${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so" "${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy_shared.so"
+    mv "${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so" "${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy_shared.so" &&
     statically_link_dependencies_with_libindy
 }
 
@@ -109,9 +110,9 @@ build(){
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
-        cargo clean
+        cargo clean &&
         RUSTFLAGS="-L${TOOLCHAIN_DIR}/${TRIPLET}/lib -lgnustl_shared" \
-            cargo build --release --target=${TRIPLET}
+            cargo build --release --target=${TRIPLET} &&
     popd
 }
 
@@ -123,5 +124,4 @@ download_and_setup_toolchain
 set_env_vars
 create_standalone_toolchain_and_rust_target
 create_cargo_config
-build
-package_library
+build && package_library
