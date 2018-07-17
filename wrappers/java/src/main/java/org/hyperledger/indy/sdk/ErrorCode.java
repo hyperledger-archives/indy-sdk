@@ -283,6 +283,11 @@ public enum ErrorCode {
 	 * Insufficient funds on inputs
 	 */
 	InsufficientFundsError(702),
+
+	/**
+	 * No such source on a ledger
+	 */
+	PaymentSourceDoesNotExistError(703),
 	;
 
 	private int value;
