@@ -15,7 +15,7 @@ export ORIGINAL_PATH=$PATH
 
 # Commenting because we don't want to compile cargo everytime
 # cargo clean
-cargo install
+# cargo install
 
 export OPENSSL_DIR_DARWIN=$OPENSSL_DIR
 

@@ -46,7 +46,7 @@ if [ ! -z "$3" ]; then
     DEBUG_SYMBOLS=$3
 fi
 
-IOS_ARCHS="armv7,armv7s,arm64,i386,x86_64"
+IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
 if [ ! -z "$4" ]; then
     IOS_ARCHS=$4
 fi
@@ -86,10 +86,8 @@ do
     for library in ${libraries[*]}
     do
         if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
-            lipo ${library}_${arch}.a -thin $arch -output ${library}-$arch-unstripped.a
-            strip -S -x -o ${library}-$arch-stripped.a -r ${library}-$arch-unstripped.a
+            strip -S -x -o ${library}-$arch-stripped.a -r ${library}_${arch}.a
             mv ${library}-$arch-stripped.a ${library}_${arch}.a
-            rm ${library}-$arch-unstripped.a
         fi
         source_libraries="${source_libraries} ${library}_${arch}.a"
     done

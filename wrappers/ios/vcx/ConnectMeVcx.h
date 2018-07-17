@@ -54,7 +54,7 @@ extern void VcxWrapperCommonStringDataCallback(vcx_command_handle_t xcommand_han
 
 extern void VcxWrapperCommonNumberCallback(vcx_command_handle_t xcommand_handle,
                                            vcx_error_t err,
-                                           int32_t handle);
+                                           vcx_command_handle_t handle);
 
 extern void VcxWrapperCommonStringOptStringOptStringCallback(vcx_command_handle_t xcommand_handle,
                                                              vcx_error_t err,
@@ -62,17 +62,16 @@ extern void VcxWrapperCommonStringOptStringOptStringCallback(vcx_command_handle_
                                                              const char *const arg2,
                                                              const char *const arg3);
 
-void VcxWrapperCommonStringStringLongCallback(vcx_command_handle_t xcommand_handle,
-                                              vcx_error_t err,
-                                              const char *arg1,
-                                              const char *arg2,
-                                              unsigned long long arg3);
+extern void VcxWrapperCommonStringStringLongCallback(vcx_command_handle_t xcommand_handle,
+                                                     vcx_error_t err,
+                                                     const char *arg1,
+                                                     const char *arg2,
+                                                     unsigned long long arg3);
 
-void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
-                                          vcx_error_t err,
-                                          unsigned int handle,
-                                          const char *const arg2
-                                          );
+extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
+                                                 vcx_error_t err,
+                                                 vcx_command_handle_t handle,
+                                                 const char *const arg2);
 
 @interface ConnectMeVcx : NSObject
 
@@ -105,6 +104,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 - (void)credentialCreateWithOffer:(NSString *)sourceId
                             offer:(NSString *)credentialOffer
                        completion:(void (^)(NSError *error, NSInteger credentailHandle))completion;
+
 - (void)credentialCreateWithMsgid:(NSString *)sourceId
                  connectionHandle:(VcxHandle)connectionHandle
                             msgId:(NSString *)msgId
@@ -112,6 +112,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 - (void)credentialSendRequest:(NSInteger)credentialHandle
              connectionHandle:(VcxHandle)connectionHandle
+                paymentHandle:(vcx_payment_handle_t)paymentHandle
                    completion:(void (^)(NSError *error))completion;
 
 - (void)credentialGetState:(NSInteger )credentialHandle
@@ -128,16 +129,19 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
 - (void)credentialDeserialize:(NSString *)serializedCredential
                    completion:(void (^)(NSError *error, NSInteger credentialHandle))completion;
+
 - (void)generateProof:(NSString *)proofRequestId
          requestedAttrs:(NSString *)requestedAttrs
     requestedPredicates:(NSString *)requestedPredicates
               proofName:(NSString *)proofName
              completion:(void (^)(NSError *error, NSString *proofHandle))completion;
+
 - (void)exportWallet:(NSString *)exportPath
             encryptWith:(NSString *)encryptionKey
            completion:(void (^)(NSError *error, NSInteger exportHandle))completion;
+
 - (void)importWallet:(NSString *)importPath
-            encryptWith:(NSString *)encryptionKey
+            decryptWith:(NSString *)decryptionKey
            completion:(void (^)(NSError *error, NSInteger importHandle))completion;
 
 @end
