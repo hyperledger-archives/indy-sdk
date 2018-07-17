@@ -116,11 +116,6 @@ build(){
 }
 
 
-#cleanup(){
-##    rm -rf ${BUILD_FOLDER}
-#
-#}
-
 generate_arch_flags ${TARGET_ARCH}
 setup_dependencies
 #download_and_unzip_dependencies_for_all_architectures

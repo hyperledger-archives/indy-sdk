@@ -26,7 +26,7 @@ build_test_artifacts(){
     pushd ${WORKDIR}
 
         cargo clean
-        EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/${TRIPLET}/lib -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+        EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/lib -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
                     cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
     popd
 }
@@ -36,10 +36,13 @@ execute_on_device(){
     #exits the script with code 1 if the emulator is not running
     check_if_emulator_is_running
 
-    ${ADB_EXECUTABLE} push \
+    adb push \
+    "${TOOLCHAIN_DIR}/${TRIPLET}/lib/libgnustl_shared.so" "/data/local/tmp/libgnustl_shared.so"
+
+    adb push \
     "${SODIUM_LIB_DIR}/libsodium.so" "/data/local/tmp/libsodium.so"
 
-    ${ADB_EXECUTABLE} push \
+    adb push \
     "${LIBZMQ_LIB_DIR}/libzmq.so" "/data/local/tmp/libzmq.so"
 
     for i in "${EXE_ARRAY[@]}"
@@ -49,11 +52,11 @@ execute_on_device(){
         EXE_NAME=`basename ${EXE}`
 
 
-        ${ADB_EXECUTABLE} push "$EXE" "/data/local/tmp/$EXE_NAME"
-        ${ADB_EXECUTABLE} shell "chmod 755 /data/local/tmp/$EXE_NAME"
+        adb push "$EXE" "/data/local/tmp/$EXE_NAME"
+        adb shell "chmod 755 /data/local/tmp/$EXE_NAME"
         OUT="$(mktemp)"
         MARK="ADB_SUCCESS!"
-        ${ADB_EXECUTABLE} shell "LD_LIBRARY_PATH=/data/local/tmp RUST_TEST_THREADS=1 RUST_LOG=debug /data/local/tmp/$EXE_NAME && echo $MARK" 2>&1 | tee $OUT
+        adb shell "LD_LIBRARY_PATH=/data/local/tmp RUST_TEST_THREADS=1 RUST_LOG=debug /data/local/tmp/$EXE_NAME && echo $MARK" 2>&1 | tee $OUT
         grep $MARK $OUT
     done
 
@@ -61,7 +64,6 @@ execute_on_device(){
 
 
 
-download_adb
 download_sdk
 download_and_unzip_dependencies_for_all_architectures
 download_and_setup_toolchain
@@ -70,3 +72,4 @@ create_standalone_toolchain_and_rust_target
 create_cargo_config
 build_test_artifacts
 execute_on_device
+kill_avd

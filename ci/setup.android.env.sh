@@ -4,6 +4,10 @@ CI_DIR=$(cd `dirname $0` && pwd)
 INDY_WORKDIR="$(realpath "${CI_DIR}/..")"
 ANDROID_BUILD_FOLDER="$(realpath "${CI_DIR}/../android_build")"
 ANDROID_SDK=${ANDROID_BUILD_FOLDER}/sdk
+export PATH=${PATH}:${ANDROID_SDK}/platform-tools
+export PATH=${PATH}:${ANDROID_SDK}/tools
+export PATH=${PATH}:${ANDROID_SDK}/tools/bin
+
 mkdir -p ${ANDROID_SDK}
 ## set this variable to 1 if you want to download the prebuilt binaries
 
@@ -19,7 +23,7 @@ fi
 
 
 check_if_emulator_is_running(){
-    emus=$(${ADB_EXECUTABLE} devices)
+    emus=$(adb devices)
     if [[ ${emus} = *"emulator"* ]]; then
       echo "emulator is running"
       else
@@ -28,25 +32,31 @@ check_if_emulator_is_running(){
     fi
 }
 
+kill_avd(){
+    adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done
+}
 delete_existing_avd(){
-    ${ANDROID_SDK}/tools/bin/avdmanager delete avd -n ${ARCH}
+    kill_avd
+    avdmanager delete avd -n ${ARCH}
 }
 
 create_avd(){
     echo "yes" | \
-         ${ANDROID_SDK}/tools/bin/sdkmanager --no_https \
+          sdkmanager --no_https \
             "emulator" \
             "platform-tools" \
             "platforms;android-24" \
             "system-images;android-24;default;${ABI}"
 
         echo "no" |
-            ${ANDROID_SDK}/tools/bin/avdmanager create avd \
+             avdmanager create avd \
                 --name ${TARGET_ARCH} \
-                --package "system-images;android-24;default;${ABI}"
+                --package "system-images;android-24;default;${ABI}" \
+                -f \
+                -c 1000M
 
-        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_SDK}/tools/emulator -avd ${TARGET_ARCH}
-        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_SDK}/tools/emulator -avd arm -no-audio -no-window &
+        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} emulator -avd ${TARGET_ARCH}
+        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} emulator -avd arm -no-audio -no-window &
 }
 
 download_sdk(){
@@ -161,7 +171,6 @@ download_and_setup_toolchain(){
 
 
 set_env_vars(){
-    export ADB_EXECUTABLE=${ANDROID_BUILD_FOLDER}/sdk/platform-tools/adb
     export PKG_CONFIG_ALLOW_CROSS=1
     export CARGO_INCREMENTAL=1
     export RUST_LOG=indy=trace
