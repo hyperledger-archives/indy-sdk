@@ -156,9 +156,13 @@ def androidTesting() {
                 echo 'Building android binaries. This will act as a minimal test for android'
                 checkout scm
 
-                echo 'Building android binaries: Building docker image'
-                buildEnv = dockerBuild('libindy-android','libindy/ci/android.dockerfile')//dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
-                buildAndroid(buildEnv)
+                dir('libindy') {
+                    echo 'Building android binaries: Building docker image'
+                    def testEnv
+                    testEnv = dockerBuild('libindy',"ci/ubuntu.dockerfile ci")
+                    buildAndroid(testEnv)
+                }
+
 
             }
             finally{
