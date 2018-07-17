@@ -26,24 +26,26 @@ try {
 
 def testing() {
     stage('Testing') {
-        parallel([
-                'ubuntu-test' : { ubuntuTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
-        ])
+        androidTesting()
+//        parallel([
+//                'ubuntu-test' : { ubuntuTesting() },
+//                'redhat-test' : { rhelTesting() },
+//                'android-test' : { androidTesting() },
+//                'windows-test': { windowsTesting() }
+//        ])
     }
 }
 
 def publishing() {
     stage('Publishing') {
         echo "${env.BRANCH_NAME}: start publishing"
-
-        publishedVersions = parallel([
-                //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
-                'ubuntu-files' : { ubuntuPublishing() },
-                'windows-files': { windowsPublishing() },
-                'android-files': { androidPublishing() },
-        ])
+        androidPublishing()
+//        publishedVersions = parallel([
+//                //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
+//                'ubuntu-files' : { ubuntuPublishing() },
+//                'windows-files': { windowsPublishing() },
+//                'android-files': { androidPublishing() },
+//        ])
 
         if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
             error "platforms artifacts have different versions"
@@ -396,7 +398,7 @@ def androidTesting() {
                 libindyVersion = getSrcVersion("libindy")
 
                 echo 'Building android binaries: Building docker image'
-                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile ci')
+                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
                 buildAndroid(buildEnv,libindyVersion,false)
 
             }
@@ -490,7 +492,7 @@ def androidPublishing(){
                 libindyVersion = getSrcVersion("libindy")
 
                 echo 'Publish Android binaries: Building docker image'
-                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile ci')
+                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
                 buildAndroid(buildEnv,libindyVersion,true)
 
             }
