@@ -4,14 +4,15 @@ testing()
 
 def testing() {
     stage('Testing') {
-        parallel([
-                'ubuntu-test' : { ubuntuTesting() },
-                'android-test': { androidTesting()},
-                'macos-test'  : { macosTesting() },
-                'ios-test'    : { iosTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
-        ])
+        androidTesting()
+//        parallel([
+//                'ubuntu-test' : { ubuntuTesting() },
+//                'android-test': { androidTesting()},
+//                'macos-test'  : { macosTesting() },
+//                'ios-test'    : { iosTesting() },
+//                'redhat-test' : { rhelTesting() },
+//                'windows-test': { windowsTesting() }
+//        ])
     }
 }
 
@@ -156,7 +157,7 @@ def androidTesting() {
                 checkout scm
 
                 echo 'Building android binaries: Building docker image'
-                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
+                buildEnv = dockerBuild('libindy-android','libindy/ci/android.dockerfile')//dockerHelpers.build('indy-sdk', 'libindy/ci/android.dockerfile libindy/ci')
                 buildAndroid(buildEnv)
 
             }
