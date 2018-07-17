@@ -26,26 +26,24 @@ try {
 
 def testing() {
     stage('Testing') {
-        androidTesting()
-//        parallel([
-//                'ubuntu-test' : { ubuntuTesting() },
-//                'redhat-test' : { rhelTesting() },
-//                'android-test' : { androidTesting() },
-//                'windows-test': { windowsTesting() }
-//        ])
+        parallel([
+                'ubuntu-test' : { ubuntuTesting() },
+                'redhat-test' : { rhelTesting() },
+                'android-test' : { androidTesting() },
+                'windows-test': { windowsTesting() }
+        ])
     }
 }
 
 def publishing() {
     stage('Publishing') {
         echo "${env.BRANCH_NAME}: start publishing"
-        androidPublishing()
-//        publishedVersions = parallel([
-//                //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
-//                'ubuntu-files' : { ubuntuPublishing() },
-//                'windows-files': { windowsPublishing() },
-//                'android-files': { androidPublishing() },
-//        ])
+        publishedVersions = parallel([
+                //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
+                'ubuntu-files' : { ubuntuPublishing() },
+                'windows-files': { windowsPublishing() },
+                'android-files': { androidPublishing() },
+        ])
 
         if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
             error "platforms artifacts have different versions"
