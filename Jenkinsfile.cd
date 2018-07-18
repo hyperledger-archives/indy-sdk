@@ -38,7 +38,6 @@ def testing() {
 def publishing() {
     stage('Publishing') {
         echo "${env.BRANCH_NAME}: start publishing"
-        androidPublishing()
         publishedVersions = parallel([
                 //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
                 'ubuntu-files' : { ubuntuPublishing() },
