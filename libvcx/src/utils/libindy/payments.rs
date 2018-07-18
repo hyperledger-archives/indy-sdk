@@ -246,7 +246,6 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
                                                                      &inputs,
                                                                      &outputs) {
         Ok((req, payment_method)) => {
-            println!("req: {}", req);
             (libindy_submit_request(&req)?, payment_method)
         },
         Err(x) => return Err(map_rust_indy_sdk_error_code(x)),

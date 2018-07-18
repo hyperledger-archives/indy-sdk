@@ -1,5 +1,6 @@
 extern crate serde;
 extern crate rmp_serde;
+extern crate serde_json;
 
 pub mod create_key;
 pub mod invite;
@@ -10,6 +11,7 @@ pub mod update_profile;
 pub mod proofs;
 pub mod agent_utils;
 pub mod update_connection;
+pub mod update_message;
 
 use std::u8;
 use settings;
@@ -25,6 +27,7 @@ use self::get_message::GetMessages;
 use self::send_message::SendMessage;
 use serde::Deserialize;
 use self::rmp_serde::Deserializer;
+use serde_json::Value;
 use self::proofs::proof_request::{ProofRequestMessage};
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
@@ -144,6 +147,14 @@ pub fn to_i8(bytes: &Vec<u8>) -> Vec<i8> {
     buf.to_owned()
 }
 
+pub fn to_json(bytes: &Vec<u8>) -> Result<Value, u32> {
+    let mut de = Deserializer::new(&bytes[..]);
+    match Deserialize::deserialize(&mut de) {
+        Ok(x) => Ok(x),
+        Err(x) => Err(error::INVALID_JSON.code_num),
+    }
+}
+
 pub fn bundle_from_u8(data: Vec<u8>) -> Result<Bundled<Vec<u8>>, u32> {
     let bundle = match try_i8_bundle(data.clone()) {
         Ok(x) => x,
@@ -222,7 +233,7 @@ pub fn unbundle_from_agency(message: Vec<u8>) -> Result<Vec<Vec<u8>>, u32> {
 
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
 
-    let (_, data) = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, &message[..])?;
+    let (_, data) = crypto::parse_msg(&my_vk, &message[..])?;
 
     debug!("deserializing {:?}", data);
     let bundle:Bundled<Vec<u8>> = bundle_from_u8(data)?;

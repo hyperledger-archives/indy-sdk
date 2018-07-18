@@ -90,7 +90,6 @@ impl Connection {
             Err(ec) => {
                 // TODO: Refactor Error
                 // TODO: Implement Correct Error
-//                return Err(error::POST_MSG_FAILURE.code_num)
                 return Err(ConnectionError::CommonError(ec))
             },
             Ok(response) => {
@@ -101,7 +100,6 @@ impl Connection {
                         error!("error when sending invite: {}", x);
                         // TODO: Refactor Error
                         // TODO: Implement Correct Error
-//                        return Err(x);
                         return Err(ConnectionError::GeneralConnectionError())
                     },
                 };
@@ -143,8 +141,7 @@ impl Connection {
                 .send_secure() {
                 Err(_) => {
                     // TODO: Refactor Error
-//                    TODO: Implement Correct Error
-//                    Err(error::POST_MSG_FAILURE.code_num)
+                    // TODO: Implement Correct Error
                     Err(ConnectionError::GeneralConnectionError())
                 },
                 Ok(response) => {
@@ -155,9 +152,8 @@ impl Connection {
         }
         else{
             warn!("Can not connect without Invite Details");
-//            Err(error::NOT_READY.code_num)
             // TODO: Refactor Error
-//            TODO: Implement Correct Error
+            // TODO: Implement Correct Error
             Err(ConnectionError::GeneralConnectionError())
         }
     }
@@ -171,7 +167,7 @@ impl Connection {
             _ => {
                 warn!("connection {} in state {} not ready to connect",self.source_id, self.state as u32);
                 // TODO: Refactor Error
-//            TODO: Implement Correct Error
+                // TODO: Implement Correct Error
                 Err(ConnectionError::GeneralConnectionError())
             }
         }
@@ -520,7 +516,7 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<Sender
     let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
     let payload = messages::to_u8(message.payload.as_ref().unwrap());
     // TODO: check returned verkey
-    let (_, payload) = crypto::parse_msg(wallet::get_wallet_handle(),&my_vk,&payload).map_err(|e| {ConnectionError::CommonError(e)})?;
+    let (_, payload) = crypto::parse_msg(&my_vk,&payload).map_err(|e| {ConnectionError::CommonError(e)})?;
 
     trace!("deserializing GetMsgResponse: {:?}", payload);
 
@@ -788,13 +784,11 @@ pub mod tests {
         let alice = build_connection("alice").unwrap();
         connect(alice, Some("{}".to_string())).unwrap();
         let details = get_invite_details(alice, false).unwrap();
-        println!("sending connection invite");
         //BE CONSUMER AND ACCEPT INVITE FROM INSTITUTION
         ::utils::devsetup::tests::set_consumer();
         let faber = build_connection_with_invite("faber", &details).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(faber));
         connect(faber, Some("{}".to_string())).unwrap();
-        println!("accepting connection invite");
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
         ::utils::devsetup::tests::set_institution();
         thread::sleep(Duration::from_millis(2000));
@@ -963,6 +957,7 @@ pub mod tests {
             msg_type: "connReqAnswer".to_string(),
             ref_msg_id: None,
             delivery_details: Vec::new(),
+            decrypted_payload: None,
         };
 
         let c = Connection {
@@ -992,6 +987,7 @@ pub mod tests {
             msg_type: "connReqAnswer".to_string(),
             ref_msg_id: None,
             delivery_details: Vec::new(),
+            decrypted_payload: None,
         };
 
         match parse_acceptance_details(handle, &bad_response) {

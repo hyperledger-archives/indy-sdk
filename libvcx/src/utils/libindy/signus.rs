@@ -12,3 +12,11 @@ pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result
     let my_did_json = seed.map_or("{}".to_string(), |seed| format!("{{\"seed\":\"{}\" }}", seed));
     Did::new(wallet_handle, &my_did_json).map_err(map_rust_indy_sdk_error_code)
 }
+
+pub fn get_local_verkey(did: &str) -> Result<String, u32> {
+    if settings::test_indy_mode_enabled() {
+        return Ok(::utils::constants::VERKEY.to_string());
+    }
+
+    Did::get_ver_key_local(::utils::libindy::wallet::get_wallet_handle(), did).map_err(map_rust_indy_sdk_error_code)
+}
