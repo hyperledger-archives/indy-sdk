@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.6.0
+
+* Integrated tags based search to Anoncreds workflow:
+    * Updated `indy_prover_store_credential` API function to create tags for a stored credential object.
+    * Added two chains of APIs related to credentials search that allows fetching records by batches:
+        * Simple credentials search - `indy_prover_search_credentials`
+        * Search credentials for proof request - `indy_prover_search_credentials_for_proof_req`
+    * Supported [WQL query language](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/011-wallet-query-language) for all search functions in Anoncreds API.
+* Added `indy_prover_get_credential` API function allows to get human-readable credential by the specific id from Wallet.
+* Performed changes related to Libindy Wallet behavior:
+    * Changed Wallet export serialization format to use the same message pack as the rest of LibIndy.
+    * Removed association between Wallet and Pool.
+    * Removed persistence of Wallet configuration by Libindy.
+    * Updated `wallet_create`, `wallet_open`, `wallet_delete` functions to accept wallet configuration as a single JSON.
+* Performed changes related to Libindy [Pool behavior](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/009-efficient-connections):
+    * Changed Pool connection logic to avoid unnecessary opened connections.
+    * Changed Catch-up process to get all transactions from a single node.
+    * Implemented logic of persisting of actual Pool Leger at the end of catch-up process and starting from this point on the next time.
+* Bugfixes       
+
+Notes:
+
+* There is [migration guide](doc/migration-guide-1.5.0-1.6.0.md) about API changes.
+
 ## 1.5.0
 
 * Introduction of [Wallet Storage](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage) concept:

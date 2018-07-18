@@ -343,7 +343,7 @@ public class Anoncreds extends IndyJava.API {
 	 *         "cred_def_id": string,
 	 *         // Fields below can depend on Cred Def type
 	 *         "nonce": string,
-	 *         "key_correctness_proof" : <key_correctness_proof>
+	 *         "key_correctness_proof" : {key_correctness_proof}
 	 *     }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -398,11 +398,11 @@ public class Anoncreds extends IndyJava.API {
 	 *     {
 	 *         "schema_id": string,
 	 *         "cred_def_id": string,
-	 *         "rev_reg_def_id", Optional<string>,
-	 *         "values": <see credValuesJson above>,
+	 *         "rev_reg_def_id", Optional[string],
+	 *         "values": "see credValuesJson above",
 	 *         // Fields below can depend on Cred Def type
-	 *         "signature": <signature>,
-	 *         "signature_correctness_proof": <signature_correctness_proof>
+	 *         "signature": {signature},
+	 *         "signature_correctness_proof": {signature_correctness_proof}
 	 *     }
 	 * credRevocId: local id for revocation info (Can be used for revocation of this cred)
 	 * revocRegDeltaJson: Revocation registry delta json with a newly issued credential
@@ -599,7 +599,7 @@ public class Anoncreds extends IndyJava.API {
 	 * @param wallet              A wallet.
 	 * @param proverDid           The DID of the prover.
 	 * @param credentialOfferJson Credential offer as a json containing information about the issuer and a credential
-	 * @param credentialDefJson   Credential definition json realted to <cred_def_id> in <credentialOfferJson>
+	 * @param credentialDefJson   Credential definition json realted to cred_def_id in credentialOfferJson
 	 * @param masterSecretId      The id of the master secret stored in the wallet
 	 * @return A future that resolves to:
 	 * * credReqJson: Credential request json for creation of credential by Issuer
@@ -607,8 +607,8 @@ public class Anoncreds extends IndyJava.API {
 	 *      "prover_did" : string,
 	 *      "cred_def_id" : string,
 	 *         // Fields below can depend on Cred Def type
-	 *      "blinded_ms" : <blinded_master_secret>,
-	 *      "blinded_ms_correctness_proof" : <blinded_ms_correctness_proof>,
+	 *      "blinded_ms" : {blinded_master_secret},
+	 *      "blinded_ms_correctness_proof" : {blinded_ms_correctness_proof},
 	 *      "nonce": string
 	 *    }
 	 * credReqMetadataJson: Credential request metadata json for processing of received form Issuer credential.
@@ -652,23 +652,23 @@ public class Anoncreds extends IndyJava.API {
 	 *
 	 * To support efficient and flexible search the following tags will be created for stored credential:
 	 *     {
-	 *         "schema_id": <credential schema id>,
-	 *         "schema_issuer_did": <credential schema issuer did>,
-	 *         "schema_name": <credential schema name>,
-	 *         "schema_version": <credential schema version>,
-	 *         "issuer_did": <credential issuer did>,
-	 *         "cred_def_id": <credential definition id>,
-	 *         // for every attribute in <credValuesJson>
-	 *         "attr::<attribute name>::marker": "1",
-	 *         "attr::<attribute name>::value": <attribute raw value>,
+	 *         "schema_id": "credential schema id",
+	 *         "schema_issuer_did": "credential schema issuer did",
+	 *         "schema_name": "credential schema name",
+	 *         "schema_version": "credential schema version",
+	 *         "issuer_did": "credential issuer did",
+	 *         "cred_def_id": "credential definition id",
+	 *         // for every attribute in credValuesJson
+	 *         "attr::{attribute name}::marker": "1",
+	 *         "attr::{attribute name}::value": "attribute raw value",
 	 *     }
 	 * 
 	 * @param wallet              A Wallet.
 	 * @param credId              (optional, default is a random one) Identifier by which credential will be stored in the wallet
 	 * @param credReqMetadataJson Credential request metadata created by proverCreateCredentialReq
 	 * @param credJson            Credential json received from issuer
-	 * @param credDefJson         Credential definition json related to <cred_def_id> in <credJson>
-	 * @param revRegDefJson       Revocation registry definition json related to <rev_reg_def_id> in <credJson>
+	 * @param credDefJson         Credential definition json related to cred_def_id in credJson
+	 * @param revRegDefJson       Revocation registry definition json related to rev_reg_def_id in credJson
 	 * @return A future that  resolve to identifier by which credential is stored in the wallet.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -729,8 +729,8 @@ public class Anoncreds extends IndyJava.API {
 	 *         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
 	 *         "schema_id": string,
 	 *         "cred_def_id": string,
-	 *         "rev_reg_id": Optional<string>,
-	 *         "cred_rev_id": Optional<string>
+	 *         "rev_reg_id": Optional[string],
+	 *         "cred_rev_id": Optional[string]
 	 *     }]
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -768,8 +768,8 @@ public class Anoncreds extends IndyJava.API {
 	 * 		"attrs": {"key1":"raw_value1", "key2":"raw_value2"},
 	 * 		"schema_id": string,
 	 * 		"cred_def_id": string,
-	 * 		"rev_reg_id": Optional<string>,
-	 * 		"cred_rev_id": Optional<string>
+	 * 		"rev_reg_id": Optional[string],
+	 * 		"cred_rev_id": Optional[string]
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -809,14 +809,14 @@ public class Anoncreds extends IndyJava.API {
 	 *         "version": string,
 	 *         "nonce": string,
 	 *         "requested_attributes": { // set of requested attributes
-	 *              "<attr_referent>": <attr_info>, // see below
+	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
 	 *         },
 	 *         "requested_predicates": { // set of requested predicates
-	 *              "<predicate_referent>": <predicate_info>, // see below
+	 *              "predicate_referent": {predicate_info}, // see below
 	 *              ...,
 	 *          },
-	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *         "non_revoked": Optional[{non_revoc_interval}], // see below,
 	 *                        // If specified prover must proof non-revocation
 	 *                        // for date in this interval for each attribute
 	 *                        // (can be overridden on attribute level)
@@ -825,9 +825,9 @@ public class Anoncreds extends IndyJava.API {
 	 *     attr_referent: Describes requested attribute
 	 *     {
 	 *         "name": string, // attribute name, (case insensitive and ignore spaces)
-	 *         "restrictions": Optional<filter>, // see filter above
+	 *         "restrictions": Optional[{filter}], // see filter above
 	 *                          // if specified, credential must satisfy to one of the given restriction.
-	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *         "non_revoked": Optional[{non_revoc_interval}], // see below,
 	 *                        // If specified prover must proof non-revocation
 	 *                        // for date in this interval this attribute
 	 *                        // (overrides proof level interval)
@@ -835,38 +835,38 @@ public class Anoncreds extends IndyJava.API {
 	 *     predicate_referent: Describes requested attribute predicate
 	 *     {
 	 *         "name": attribute name, (case insensitive and ignore spaces)
-	 *         "p_type": predicate type (Currently >= only)
+	 *         "p_type": predicate type (Currently {@code ">=" } only)
 	 *         "p_value": predicate value
-	 *         "restrictions": Optional<filter>, // see filter above
+	 *         "restrictions": Optional[{filter}], // see filter above
 	 *                         // if specified, credential must satisfy to one of the given restriction.
-	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *         "non_revoked": Optional[{non_revoc_interval}], // see below,
 	 *                        // If specified prover must proof non-revocation
 	 *                        // for date in this interval this attribute
 	 *                        // (overrides proof level interval)
 	 *     }
 	 *     non_revoc_interval: Defines non-revocation interval
 	 *     {
-	 *         "from": Optional<int>, // timestamp of interval beginning
-	 *         "to": Optional<int>, // timestamp of interval ending
+	 *         "from": Optional[int], // timestamp of interval beginning
+	 *         "to": Optional[int], // timestamp of interval ending
 	 *     }
 	 * @return A future that resolves to a json with credentials for the given proof request.
 	 *     {
 	 *         "requested_attrs": {
-	 *             "<attr_referent>": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],
+	 *             "attr_referent": [{ cred_info: {credential_info}, interval: Optional[{non_revoc_interval}] }],
 	 *             ...,
 	 *         },
 	 *         "requested_predicates": {
-	 *             "requested_predicates": [{ cred_info: <credential_info>, timestamp: Optional<integer> }, { cred_info: <credential_2_info>, timestamp: Optional<integer> }],
-	 *             "requested_predicate_2_referent": [{ cred_info: <credential_2_info>, timestamp: Optional<integer> }]
+	 *             "requested_predicates": [{ cred_info: {credential_info}, timestamp: Optional[int] }, { cred_info: {credential_2_info}, timestamp: Optional[int] }],
+	 *             "requested_predicate_2_referent": [{ cred_info: {credential_2_info}, timestamp: Optional[int] }]
 	 *         }
 	 *     }, where credential is
 	 *     {
-	 *         "referent": <string>,
+	 *         "referent": "string",
 	 *         "attrs": [{"attr_name" : "attr_raw_value"}],
 	 *         "schema_id": string,
 	 *         "cred_def_id": string,
-	 *         "rev_reg_id": Optional<int>,
-	 *         "cred_rev_id": Optional<int>,
+	 *         "rev_reg_id": Optional[int],
+	 *         "cred_rev_id": Optional[int],
 	 *     }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -903,14 +903,14 @@ public class Anoncreds extends IndyJava.API {
 	 *         "version": string,
 	 *         "nonce": string,
 	 *         "requested_attributes": { // set of requested attributes
-	 *              "<attr_referent>": <attr_info>, // see below
+	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
 	 *         },
 	 *         "requested_predicates": { // set of requested predicates
-	 *              "<predicate_referent>": <predicate_info>, // see below
+	 *              "predicate_referent": {predicate_info}, // see below
 	 *              ...,
 	 *          },
-	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *         "non_revoked": Optional[{non_revoc_interval}], // see below,
 	 *                        // If specified prover must proof non-revocation
 	 *                        // for date in this interval for each attribute
 	 *                        // (can be overridden on attribute level)
@@ -921,37 +921,37 @@ public class Anoncreds extends IndyJava.API {
 	 *             "self_attested_attribute_referent": string
 	 *         },
  	 *         "requested_attributes": {
-	 *             "requested_attribute_referent_1": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }},
-	 *             "requested_attribute_referent_2": {"cred_id": string, "timestamp": Optional<number>, revealed: <bool> }}
+	 *             "requested_attribute_referent_1": {"cred_id": string, "timestamp": Optional[int], revealed: bool }},
+	 *             "requested_attribute_referent_2": {"cred_id": string, "timestamp": Optional[int], revealed: bool }}
 	 *         },
 	 *         "requested_predicates": {
-	 *             "requested_predicates_referent_1": {"cred_id": string, "timestamp": Optional<number> }},
+	 *             "requested_predicates_referent_1": {"cred_id": string, "timestamp": Optional[int] }},
 	 *         }
 	 *     }
 	 * @param masterSecret         Id of the master secret stored in the wallet
 	 * @param schemas              All schemas json participating in the proof request
 	 *     {
-	 *         <schema1_id>: <schema1_json>,
-	 *         <schema2_id>: <schema2_json>,
-	 *         <schema3_id>: <schema3_json>,
+	 *         "schema1_id": {schema1_json},
+	 *         "schema2_id": {schema2_json},
+	 *         "schema3_id": {schema3_json},
 	 *     }
 	 * @param credentialDefs       All credential definitions json participating in the proof request
 	 *     {
-	 *         "cred_def1_id": <credential_def1_json>,
-	 *         "cred_def2_id": <credential_def2_json>,
-	 *         "cred_def3_id": <credential_def3_json>,
+	 *         "cred_def1_id": {credential_def1_json},
+	 *         "cred_def2_id": {credential_def2_json},
+	 *         "cred_def3_id": {credential_def3_json},
 	 *     }
 	 * @param revStates            All revocation states json participating in the proof request
 	 *     {
 	 *         "rev_reg_def1_id": {
-	 *             "timestamp1": <rev_state1>,
-	 *             "timestamp2": <rev_state2>,
+	 *             "timestamp1": {rev_state1},
+	 *             "timestamp2": {rev_state2},
 	 *         },
 	 *         "rev_reg_def2_id": {
-	 *             "timestamp3": <rev_state3>
+	 *             "timestamp3": {rev_state3}
 	 *         },
 	 *         "rev_reg_def3_id": {
-	 *             "timestamp4": <rev_state4>
+	 *             "timestamp4": {rev_state4}
 	 *         },
 	 *     }
 	 * @return A future resolving to a Proof json
@@ -977,10 +977,10 @@ public class Anoncreds extends IndyJava.API {
 	 *             }
 	 *         }
 	 *         "proof": {
-	 *             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
-	 *             "aggregated_proof": <aggregated_proof>
+	 *             "proofs": [ {credential_proof}, {credential_proof}, {credential_proof} ],
+	 *             "aggregated_proof": {aggregated_proof}
 	 *         }
-	 *         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
+	 *         "identifiers": [{schema_id, cred_def_id, Optional["rev_reg_id"], Optional[timestamp]}]
 	 *     }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -1032,14 +1032,14 @@ public class Anoncreds extends IndyJava.API {
 	 *         "version": string,
 	 *         "nonce": string,
 	 *         "requested_attributes": { // set of requested attributes
-	 *              "<attr_referent>": <attr_info>, // see below
+	 *              "attr_referent": {attr_info}, // see below
 	 *              ...,
 	 *         },
 	 *         "requested_predicates": { // set of requested predicates
-	 *              "<predicate_referent>": <predicate_info>, // see below
+	 *              "predicate_referent": {predicate_info}, // see below
 	 *              ...,
 	 *          },
-	 *         "non_revoked": Optional<<non_revoc_interval>>, // see below,
+	 *         "non_revoked": Optional[non_revoc_interval], // see below,
 	 *                        // If specified prover must proof non-revocation
 	 *                        // for date in this interval for each attribute
 	 *                        // (can be overridden on attribute level)
@@ -1063,40 +1063,40 @@ public class Anoncreds extends IndyJava.API {
 	 *             }
 	 *         }
 	 *         "proof": {
-	 *             "proofs": [ <credential_proof>, <credential_proof>, <credential_proof> ],
-	 *             "aggregated_proof": <aggregated_proof>
+	 *             "proofs": [ {credential_proof}, {credential_proof}, {credential_proof} ],
+	 *             "aggregated_proof": {aggregated_proof}
 	 *         }
-	 *         "identifiers": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]
+	 *         "identifiers": [{schema_id, cred_def_id, Optional["rev_reg_id"], Optional[timestamp]}]
 	 *     }
 	 * @param schemas        All schemas json participating in the proof request
 	 *     {
-	 *         <schema1_id>: <schema1_json>,
-	 *         <schema2_id>: <schema2_json>,
-	 *         <schema3_id>: <schema3_json>,
+	 *         "schema1_id": {schema1_json},
+	 *         "schema2_id": {schema2_json},
+	 *         "schema3_id": {schema3_json},
 	 *     }
 	 * @param credentialDefs  All credential definitions json participating in the proof request
 	 *     {
-	 *         "cred_def1_id": <credential_def1_json>,
-	 *         "cred_def2_id": <credential_def2_json>,
-	 *         "cred_def3_id": <credential_def3_json>,
+	 *         "cred_def1_id": {credential_def1_json},
+	 *         "cred_def2_id": {credential_def2_json},
+	 *         "cred_def3_id": {credential_def3_json},
 	 *     }
 	 * @param revocRegDefs   All revocation registry definitions json participating in the proof
 	 *     {
-	 *         "rev_reg_def1_id": <rev_reg_def1_json>,
-	 *         "rev_reg_def2_id": <rev_reg_def2_json>,
-	 *         "rev_reg_def3_id": <rev_reg_def3_json>,
+	 *         "rev_reg_def1_id": {rev_reg_def1_json},
+	 *         "rev_reg_def2_id": {rev_reg_def2_json},
+	 *         "rev_reg_def3_id": {rev_reg_def3_json},
 	 *     }
 	 * @param revocRegs      all revocation registries json participating in the proof
 	 *     {
 	 *         "rev_reg_def1_id": {
-	 *             "timestamp1": <rev_reg1>,
-	 *             "timestamp2": <rev_reg2>,
+	 *             "timestamp1": {rev_reg1},
+	 *             "timestamp2": {rev_reg2},
 	 *         },
 	 *         "rev_reg_def2_id": {
-	 *             "timestamp3": <rev_reg3>
+	 *             "timestamp3": {rev_reg3}
 	 *         },
 	 *         "rev_reg_def3_id": {
-	 *             "timestamp4": <rev_reg4>
+	 *             "timestamp4": {rev_reg4}
 	 *         },
 	 *     }
 	 * @return A future resolving to true if signature is valid, otherwise false.
@@ -1145,8 +1145,8 @@ public class Anoncreds extends IndyJava.API {
 	 * @param credRevId               user credential revocation id in revocation registry
 	 * @return A future that resolves to a revocation state json:
 	 *     {
-	 *         "rev_reg": <revocation registry>,
-	 *         "witness": <witness>,
+	 *         "rev_reg": {revocation registry},
+	 *         "witness": {witness},
 	 *         "timestamp" : integer
 	 *     }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -1191,8 +1191,8 @@ public class Anoncreds extends IndyJava.API {
 	 * @param credRevId               user credential revocation id in revocation registry
 	 * @return A future that resolves to a revocation state json:
 	 *     {
-	 *         "rev_reg": <revocation registry>,
-	 *         "witness": <witness>,
+	 *         "rev_reg": {revocation registry},
+	 *         "witness": {witness},
 	 *         "timestamp" : integer
 	 *     }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.

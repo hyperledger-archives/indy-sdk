@@ -114,10 +114,10 @@ public class Payments extends IndyJava.API {
      * @param paymentMethod Payment method to use (for example, 'sov')
      * @param config payment address config as json:
      *               {
-     *                  seed: <str>, // allows deterministic creation of payment address
+     *                  seed: "str", // allows deterministic creation of payment address
      *               }
      * @return public identifier of payment address in fully resolvable payment address format
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> createPaymentAddress(
             Wallet wallet,
@@ -152,7 +152,7 @@ public class Payments extends IndyJava.API {
      * in the future releases.
      * @param wallet The wallet.
      * @return json array of string with json addresses
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> listPaymentAddresses(
             Wallet wallet
@@ -199,12 +199,12 @@ public class Payments extends IndyJava.API {
      *                      - this param will be used to determine payment_method
      * @param outputsJson The list of UTXO outputs as json array:
      *                    [{
-     *                      paymentAddress: <str>, // payment address used as output
-     *                      amount: <int>, // amount of tokens to transfer to this payment address
-     *                      extra: <str>, // optional data
+     *                      paymentAddress: "str", // payment address used as output
+     *                      amount: int, // amount of tokens to transfer to this payment address
+     *                      extra: "str", // optional data
      *                    }]
      * @return modified Indy request with added fees info
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<AddRequestFeesResult> addRequestFees(
             Wallet wallet,
@@ -242,15 +242,15 @@ public class Payments extends IndyJava.API {
      *
      * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
      * in the future releases.
-     * @param paymentMethod
+     * @param paymentMethod Payment method to use (for example, 'sov')
      * @param respJson response for Indy request with fees
      * @return parsed (payment method and node version agnostic) utxo info as json:
      *          [{
-     *              input: <str>, // UTXO input
-     *              amount: <int>, // amount of tokens in this input
-     *              extra: <str>, // optional data from payment transaction
+     *              input: "str", // UTXO input
+     *              amount: int, // amount of tokens in this input
+     *              extra: "str", // optional data from payment transaction
      *          }]
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> parseResponseWithFees(
             String paymentMethod,
@@ -269,7 +269,7 @@ public class Payments extends IndyJava.API {
      * @param submitterDid DID of request sender
      * @param paymentAddress target payment address
      * @return Indy request for getting UTXO list for payment address
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<BuildGetUtxoRequestResult> buildGetUtxoRequest(
             Wallet wallet,
@@ -301,15 +301,15 @@ public class Payments extends IndyJava.API {
      *
      * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
      * in the future releases.
-     * @param paymentMethod
+     * @param paymentMethod Payment method to use (for example, 'sov')
      * @param respJson response for Indy request for getting UTXO list
      * @return parsed (payment method and node version agnostic) utxo info as json:
      * [{
-     *    input: <str>, // UTXO input
-     *    amount: <int>, // amount of tokens in this input
-     *    extra: <str>, // optional data from payment transaction
+     *    input: "str", // UTXO input
+     *    amount: int, // amount of tokens in this input
+     *    extra: "str", // optional data from payment transaction
      * }]
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> parseGetUtxoResponse(
             String paymentMethod,
@@ -336,14 +336,14 @@ public class Payments extends IndyJava.API {
      *                      Note that each input should reference paymentAddress
      * @param outputsJson The list of UTXO outputs as json array:
      *                      [{
-     *                        paymentAddress: <str>, // payment address used as output
-     *                        amount: <int>, // amount of tokens to transfer to this payment address
-     *                        extra: <str>, // optional data
+     *                        paymentAddress: "str", // payment address used as output
+     *                        amount: int, // amount of tokens to transfer to this payment address
+     *                        extra: "str", // optional data
      *                      }]
      * @return
      * payment_req_json - Indy request for doing tokens payment
      * payment_method
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<BuildPaymentReqResult> buildPaymentRequest(
             Wallet wallet,
@@ -378,15 +378,15 @@ public class Payments extends IndyJava.API {
      *
      * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
      * in the future releases.
-     * @param paymentMethod
+     * @param paymentMethod Payment method to use (for example, 'sov')
      * @param respJson response for Indy request for payment txn
      * @return parsed (payment method and node version agnostic) utxo info as json:
      * [{
-     *    input: <str>, // UTXO input
-     *    amount: <int>, // amount of tokens in this input
-     *    extra: <str>, // optional data from payment transaction
+     *    input: "str", // UTXO input
+     *    amount: int, // amount of tokens in this input
+     *    extra: "str", // optional data from payment transaction
      * }]
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> parsePaymentResponse (
             String paymentMethod,
@@ -406,12 +406,12 @@ public class Payments extends IndyJava.API {
      * @param submitterDid DID of request sender
      * @param outputsJson The list of UTXO outputs as json array:
      *                      [{
-     *                        paymentAddress: <str>, // payment address used as output
-     *                        amount: <int>, // amount of tokens to transfer to this payment address
-     *                        extra: <str>, // optional data
+     *                        paymentAddress: "str", // payment address used as output
+     *                        amount: int, // amount of tokens to transfer to this payment address
+     *                        extra: "str", // optional data
      *                      }]
      * @return Indy request for doing tokens minting
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<BuildMintReqResult> buildMintRequest(
             Wallet wallet,
@@ -445,7 +445,7 @@ public class Payments extends IndyJava.API {
      * in the future releases.
      * @param wallet The wallet.
      * @param submitterDid DID of request sender
-     * @param paymentMethod
+     * @param paymentMethod Payment method to use (for example, 'sov')
      * @param feesJson {
      *   txnType1: amount1,
      *   txnType2: amount2,
@@ -453,7 +453,7 @@ public class Payments extends IndyJava.API {
      *   txnTypeN: amountN,
      * }
      * @return Indy request for setting fees for transactions in the ledger
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> buildSetTxnFeesRequest(
             Wallet wallet,
@@ -490,9 +490,9 @@ public class Payments extends IndyJava.API {
      * in the future releases.
      * @param wallet The wallet.
      * @param submitterDid DID of request sender
-     * @param paymentMethod
+     * @param paymentMethod Payment method to use (for example, 'sov')
      * @return Indy request for getting fees for transactions in the ledger
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> buildGetTxnFeesRequest(
             Wallet wallet,
@@ -524,7 +524,7 @@ public class Payments extends IndyJava.API {
      *
      * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
      * in the future releases.
-     * @param paymentMethod
+     * @param paymentMethod Payment method to use (for example, 'sov')
      * @param respJson response for Indy request for getting fees
      * @return fees_json {
      *   txnType1: amount1,
@@ -532,7 +532,7 @@ public class Payments extends IndyJava.API {
      *   .................
      *   txnTypeN: amountN,
      * }
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> parseGetTxnFeesResponse(
             String paymentMethod,

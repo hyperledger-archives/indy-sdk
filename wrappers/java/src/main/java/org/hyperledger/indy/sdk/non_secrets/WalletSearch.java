@@ -151,12 +151,12 @@ public class WalletSearch extends IndyJava.API implements AutoCloseable {
 	 * @param count  Count of records to fetch
 	 * @return A future resolving to the wallet records json:
 	 * {
-	 *      totalCount: <int>, // present only if retrieveTotalCount set to true
+	 *      totalCount: int, // present only if retrieveTotalCount set to true
 	 *      records: [{ // present only if retrieveRecords set to true
 	 *          id: "Some id",
 	 *          type: "Some type", // present only if retrieveType set to true
 	 *          value: "Some value", // present only if retrieveValue set to true
-	 *          tags: <tags json>, // present only if retrieveTags set to true
+	 *          tags: "Some tags json", // present only if retrieveTags set to true
 	 *      }],
 	 * }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
