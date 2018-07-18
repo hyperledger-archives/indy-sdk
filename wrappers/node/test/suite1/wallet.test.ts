@@ -3,7 +3,7 @@ import '../module-resolver-helper'
 import { assert } from 'chai'
 import { validateUTXO } from 'helpers/asserts'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { VCXCode, Wallet } from 'src'
+import { shutdownVcx, VCXCode, Wallet } from 'src'
 
 const WALLET_RECORD = {
   id: 'RecordId',
@@ -115,15 +115,36 @@ describe('Wallet:', () => {
 
   describe('import:', () => {
     it('throws: libindy error', async () => {
-      const error = await shouldThrow(async () => Wallet.import('/tmp/foobar.wallet', 'key_for_wallet'))
+      let config = '{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}'
+      let error = await shouldThrow(async () => Wallet.import(config))
       assert.equal(error.vcxCode, VCXCode.IO_ERROR)
+      shutdownVcx(false)
+
+      config = '{"wallet_key":"","exported_wallet_path":"","backup_key":""}'
+      error = await shouldThrow(async () => Wallet.import(config))
+      assert.equal(error.vcxCode, VCXCode.MISSING_WALLET_NAME)
+      shutdownVcx(false)
+
+      config = '{"wallet_name":"","exported_wallet_path":"","backup_key":""}'
+      error = await shouldThrow(async () => Wallet.import(config))
+      assert.equal(error.vcxCode, VCXCode.MISSING_WALLET_KEY)
+      shutdownVcx(false)
+
+      config = '{"wallet_name":"","wallet_key":"","backup_key":""}'
+      error = await shouldThrow(async () => Wallet.import(config))
+      assert.equal(error.vcxCode, VCXCode.MISSING_EXPORTED_WALLET_PATH)
+      shutdownVcx(false)
+
+      config = '{"wallet_name":"","wallet_key":"","exported_wallet_path":""}'
+      error = await shouldThrow(async () => Wallet.import(config))
+      assert.equal(error.vcxCode, VCXCode.MISSING_BACKUP_KEY)
     })
   })
 
   describe('export:', () => {
     it('throws: libindy error', async () => {
       const error = await shouldThrow(async () => Wallet.export('/tmp/foobar.wallet', 'key_for_wallet'))
-      assert.equal(error.vcxCode, VCXCode.INVALID_WALLET_CREATION)
+      assert.equal(error.vcxCode, VCXCode.INVALID_WALLET_HANDLE)
     })
   })
 })

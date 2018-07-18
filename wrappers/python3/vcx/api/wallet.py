@@ -252,19 +252,19 @@ class Wallet:
         return result
 
     @staticmethod
-    async def send_tokens(handle: int, tokens: int, address: str) -> str:
+    async def send_tokens(payment_handle: int, tokens: int, address: str) -> str:
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.send_tokens, "cb"):
             logger.debug("vcx_wallet_send_tokens: Creating callback")
             Wallet.send_tokens.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
-        c_handle = c_uint32(0)
+        c_payment_handle = c_uint32(payment_handle)
         c_tokens = c_uint64(tokens)
         c_address = c_char_p(address.encode('utf-8'))
 
         result = await do_call('vcx_wallet_send_tokens',
-                               c_handle,
+                               c_payment_handle,
                                c_tokens,
                                c_address,
                                Wallet.send_tokens.cb)
@@ -287,12 +287,10 @@ class Wallet:
             logger.debug("vcx_wallet_export: Creating callback")
             Wallet.export.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
 
-        c_handle = c_uint32(0)
         c_backupKey = c_char_p(backup_key.encode('utf-8'))
         c_path = c_char_p(path.encode('utf-8'))
 
         result = await do_call('vcx_wallet_export',
-                               c_handle,
                                c_path,
                                c_backupKey,
                                Wallet.export.cb)
@@ -301,30 +299,28 @@ class Wallet:
         return result
 
     @staticmethod
-    async def import_wallet(path, backupKey):
+    async def import_wallet(config):
         """
         Imports wallet from file with given key.
         Cannot be used if wallet is already opened (Especially if vcx_init has already been used).
-        :param path: Path to file.
-        :param backupKey: String representing the User's Key for securing (encrypting) the exported Wallet.
+        :param config: Can be same config that is passed to vcx_init.
+        Must include: '{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}'
         :return:
         Error code - success indicates that the wallet was successfully imported.
         """
+
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.import_wallet, "cb"):
             logger.debug("vcx_wallet_import: Creating callback")
             Wallet.import_wallet.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
 
-        c_handle = c_uint32(0)
-        c_backup_key = c_char_p(backupKey.encode('utf-8'))
-        c_path = c_char_p(path.encode('utf-8'))
+        c_config = c_char_p(config.encode('utf-8'))
 
         result = await do_call('vcx_wallet_import',
-                               c_handle,
-                               c_path,
-                               c_backup_key,
+                               c_config,
                                Wallet.import_wallet.cb)
 
         logger.debug("vcx_wallet_export completed")
         return result
+
