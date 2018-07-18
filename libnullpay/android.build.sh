@@ -3,7 +3,7 @@
 
 WORKDIR=${PWD}
 INDY_WORKDIR="$(realpath "${WORKDIR}/..")"
-CI_DIR="$(realpath "${WORKDIR}/../ci")"
+CI_DIR="${INDY_WORKDIR}/libindy/ci"
 BUILD_FOLDER="$(realpath "${WORKDIR}/../android_build")"
 DOWNLOAD_PREBUILTS="0"
 

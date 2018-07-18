@@ -4,7 +4,7 @@
 
 WORKDIR=${PWD}
 INDY_DIR="$(realpath "${WORKDIR}/..")"
-CI_DIR="$(realpath "${WORKDIR}/../ci")"
+CI_DIR="${INDY_WORKDIR}/libindy/ci"
 ANDROID_BUILD_FOLDER="$(realpath "${WORKDIR}/../android_build")"
 
 TARGET_ARCH=$1
