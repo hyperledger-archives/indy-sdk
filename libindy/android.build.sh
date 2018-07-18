@@ -83,7 +83,7 @@ setup_dependencies(){
 }
 
 statically_link_dependencies_with_libindy(){
-    $CC -v -shared -o${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so -Wl,--whole-archive \
+    $CC -v -shared -o${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so -Wl,--whole-archive \
         ${WORKDIR}/target/${TRIPLET}/release/libindy.a \
         ${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so \
         ${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a \
