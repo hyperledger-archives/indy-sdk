@@ -94,7 +94,7 @@ pub fn import(config: &str) -> Result<(), WalletError> {
         .map_err(|e| WalletError::CommonError(e))?;
 
     let name = settings::get_config_value(settings::CONFIG_WALLET_NAME)
-        .map_err(|e| WalletError::CommonError(e))?;
+        .map_err(|e| WalletError::CommonError(error::MISSING_WALLET_NAME.code_num))?;
 
     let exported_wallet_path = settings::get_config_value(settings::CONFIG_EXPORTED_WALLET_PATH)
         .or(Err(WalletError::CommonError(error::MISSING_EXPORTED_WALLET_PATH.code_num)))?;

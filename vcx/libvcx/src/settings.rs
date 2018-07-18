@@ -84,7 +84,6 @@ pub fn validate_config(config: &HashMap<String, String>) -> Result<u32, u32> {
 
     //Mandatory parameters
     get_config_value(CONFIG_WALLET_KEY).or(Err(error::MISSING_WALLET_KEY.code_num))?;
-    get_config_value(CONFIG_WALLET_NAME).or(Err(error::MISSING_WALLET_NAME.code_num))?;
 
     // If values are provided, validate they're in the correct format
     validate_optional_config_val(config.get(CONFIG_INSTITUTION_DID), error::INVALID_DID.code_num, validation::validate_did)?;
