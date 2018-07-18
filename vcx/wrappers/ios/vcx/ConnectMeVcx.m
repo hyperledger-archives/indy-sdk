@@ -578,7 +578,6 @@ completion:(void (^)(NSError *error))completion
     }
 }
 
-
 - (void)exportWallet:(NSString *)exportPath
             encryptWith:(NSString *)encryptionKey
            completion:(void (^)(NSError *error, NSInteger exportHandle))completion {
@@ -692,6 +691,83 @@ completion:(void (^)(NSError *error))completion
     ret = vcx_wallet_update_record_value(handle, record_type, record_id, record_value, VcxWrapperCommonCallback);
     
     if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
+- (void) proofCreateWithMsgId:(NSString *)sourceId
+         withConnectionHandle:(vcx_connection_handle_t)connectionHandle
+                    withMsgId:(NSString *)msgId
+               withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle, NSString *proofRequest))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char *source_id = [sourceId cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *msg_id = [msgId cStringUsingEncoding:NSUTF8StringEncoding];
+    
+    ret = vcx_disclosed_proof_create_with_msgid(handle, source_id, connectionHandle, msg_id, VcxWrapperCommonNumberStringCallback);
+    
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], 0, nil);
+        });
+    }
+}
+
+- (void) proofRetrieveCredentials:(vcx_proof_handle_t)proofHandle
+                   withCompletion:(void (^)(NSError *error, NSString *matchingCredentials))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = vcx_disclosed_proof_retrieve_credentials(handle, proofHandle, VcxWrapperCommonStringCallback);
+
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
+- (void) proofGenerate:(vcx_proof_handle_t)proofHandle
+withSelectedCredentials:(NSString *)selectedCredentials
+ withSelfAttestedAttrs:(NSString *)selfAttestedAttributes
+        withCompletion:(void (^)(NSError *error))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char *selected_credentials = [selectedCredentials cStringUsingEncoding:NSUTF8StringEncoding];
+    const char *self_attested_attributes = [selfAttestedAttributes cStringUsingEncoding:NSUTF8StringEncoding];
+    
+    ret = vcx_disclosed_proof_generate_proof(handle, proofHandle, selected_credentials, self_attested_attributes, VcxWrapperCommonCallback);
+    
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
+- (void) proofSend:(vcx_proof_handle_t)proof_handle
+withConnectionHandle:(vcx_connection_handle_t)connection_handle
+    withCompletion:(void (^)(NSError *error))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    
+    ret = vcx_disclosed_proof_send_proof(handle, proof_handle, connection_handle, VcxWrapperCommonCallback);
+    
+    if ( ret != 0 )
     {
         [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
         
