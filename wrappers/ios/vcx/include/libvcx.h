@@ -192,7 +192,7 @@ vcx_error_t vcx_issuer_accept_credential(vcx_credential_handle_t credential_hand
 
 /** Creates a proof object.  Populates a handle to the new proof. */
 vcx_error_t vcx_proof_create(vcx_command_handle_t command_handle, const char *source_id, const char *requested_attrs, const char *requested_predicates, const char *name, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
-
+    
 /** Asynchronously send a proof request to the connection. */
 vcx_error_t vcx_proof_send_request(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
 
@@ -227,7 +227,7 @@ vcx_error_t vcx_proof_release(vcx_proof_handle_t proof_handle);
 vcx_error_t vcx_disclosed_proof_create_with_request(vcx_command_handle_t command_handle, const char *source_id, const char *proof_req, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
 
 /** Creates a disclosed_proof object from a msgid.  Populates a handle to the new disclosed_proof. */
-vcx_error_t vcx_disclosed_proof_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connection, const char *msg_id, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
+vcx_error_t vcx_disclosed_proof_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connectionHandle, const char *msg_id, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_proof_handle_t proof_handle, const char *proof_request));
 
 /** Asynchronously send a proof to the connection. */
 vcx_error_t vcx_disclosed_proof_send_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
@@ -247,6 +247,12 @@ vcx_error_t vcx_disclosed_proof_serialize(vcx_command_handle_t command_handle, v
 /** Re-creates a disclosed_proof object from the specified serialization. */
 vcx_error_t vcx_disclosed_proof_deserialize(vcx_command_handle_t command_handle, const char *serialized_proof, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_proof_handle_t proof_handle));
 
+/** Takes the disclosed proof object and returns a json string of all credentials matching associated proof request from wallet */
+vcx_error_t vcx_disclosed_proof_retrieve_credentials(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, const char *matching_credentials));
+    
+/** Takes the disclosed proof object and generates a proof from the selected credentials and self attested attributes */
+vcx_error_t vcx_disclosed_proof_generate_proof(vcx_command_handle_t command_handle, vcx_proof_handle_t proof_handle, const char *selected_credentials, const char *self_attested_attrs, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));
+    
 /** Releases the disclosed_proof from memory. */
 vcx_error_t vcx_disclosed_proof_release(vcx_proof_handle_t proof_handle);
 
@@ -263,7 +269,7 @@ vcx_error_t vcx_get_credential(vcx_command_handle_t handle, vcx_credential_handl
 vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle, const char *source_id, const char *credential_offer, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));
 
 /** Creates a credential object from the connection and msg id. Populates a handle the new credential. */
-vcx_error_t vcx_credential_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connection, const char *msg_id, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));
+vcx_error_t vcx_credential_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connection, const char *msg_id, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle, const char* credential_offer));
 
 /** Asynchronously sends the credential request to the connection. */
 vcx_error_t vcx_credential_send_request(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, vcx_connection_handle_t connection_handle, vcx_payment_handle_t payment_handle, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err));

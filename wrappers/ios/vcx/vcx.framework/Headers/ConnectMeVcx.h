@@ -130,28 +130,49 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)credentialDeserialize:(NSString *)serializedCredential
                    completion:(void (^)(NSError *error, NSInteger credentialHandle))completion;
 
-- (void)generateProof:(NSString *)proofRequestId
-         requestedAttrs:(NSString *)requestedAttrs
-    requestedPredicates:(NSString *)requestedPredicates
-              proofName:(NSString *)proofName
-             completion:(void (^)(NSError *error, NSString *proofHandle))completion;
-
 - (void)exportWallet:(NSString *)exportPath
-            encryptWith:(NSString *)encryptionKey
-           completion:(void (^)(NSError *error, NSInteger exportHandle))completion;
+         encryptWith:(NSString *)encryptionKey
+          completion:(void (^)(NSError *error, NSInteger exportHandle))completion;
 
 - (void)importWallet:(NSString *)importPath
             decryptWith:(NSString *)decryptionKey
            completion:(void (^)(NSError *error, NSInteger importHandle))completion;
-- (void)addRecordWallet:(NSString *)importPath
-            encryptWith:(NSString *)encryptionKey
-           completion:(void (^)(NSError *error, NSInteger walletHandle))completion;
-- (void)getRecordWallet:(NSString *)recordType
+
+- (void)addRecordWallet:(NSString *)recordType
             recordId:(NSString *)recordId
-           completion:(void (^)(NSError *error, NSInteger walletHandle, NSString* walletValue))completion;
+            recordValue:(NSString *) recordValue
+           completion:(void (^)(NSError *error))completion;
+
+- (void)updateRecordWallet:(NSString *)recordType
+              withRecordId:(NSString *)recordId
+           withRecordValue:(NSString *) recordValue
+            withCompletion:(void (^)(NSError *error))completion;
+
+- (void)getRecordWallet:(NSString *)recordType
+               recordId:(NSString *)recordId
+             completion:(void (^)(NSError *error, NSString *walletValue))completion;
+
 - (void)deleteRecordWallet:(NSString *)recordType
             recordId:(NSString *)recordId
-           completion:(void (^)(NSError *error, NSInteger walletHandle))completion;
+           completion:(void (^)(NSError *error))completion;
+
+- (void) proofRetrieveCredentials:(vcx_proof_handle_t)proofHandle
+                   withCompletion:(void (^)(NSError *error, NSString *matchingCredentials))completion;
+
+- (void) proofGenerate:(vcx_proof_handle_t)proofHandle
+withSelectedCredentials:(NSString *)selectedCredentials
+ withSelfAttestedAttrs:(NSString *)selfAttestedAttributes
+        withCompletion:(void (^)(NSError *error))completion;
+
+- (void) proofCreateWithMsgId:(NSString *)source_id
+         withConnectionHandle:(vcx_connection_handle_t)connectionHandle
+                    withMsgId:(NSString *)msgId
+               withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle, NSString *proofRequest))completion;
+
+- (void) proofSend:(vcx_proof_handle_t)proof_handle
+withConnectionHandle:(vcx_connection_handle_t)connection_handle
+    withCompletion:(void (^)(NSError *error))completion;
+
 @end
 
 #endif /* init_h */
