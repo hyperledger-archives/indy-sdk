@@ -334,6 +334,21 @@ public abstract class LibVcx {
          */
         public int vcx_disclosed_proof_release(int proof_handle);
 
+        /**
+         * Create proof instance with a message id
+         */
+        public int vcx_disclosed_proof_create_with_msgid(int command_handle, String source_id, int connection_handle, String msd_id, Callback cb);
+
+        /**
+         * Retrieve credentials that matches with the proof request
+         */
+        public int vcx_disclosed_proof_retrieve_credentials(int command_handle, int proof_handle, Callback cb);
+
+        /**
+         * Generate a proof that can be sent later
+         */
+        public int vcx_disclosed_proof_generate_proof(int command_handle, int proof_handle, String selected_credentials, String self_attested_attributes, Callback cb);
+
 /**
  * claim object
  *
