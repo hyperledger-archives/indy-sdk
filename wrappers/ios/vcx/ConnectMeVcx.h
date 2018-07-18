@@ -135,7 +135,7 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
           completion:(void (^)(NSError *error, NSInteger exportHandle))completion;
 
 - (void)importWallet:(NSString *)config
-           completion:(void (^)(NSError *error, NSInteger importHandle))completion;
+           completion:(void (^)(NSError *error))completion;
 
 - (void)addRecordWallet:(NSString *)recordType
             recordId:(NSString *)recordId
