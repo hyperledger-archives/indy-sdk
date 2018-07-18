@@ -20,7 +20,7 @@ def testing() {
         parallel([
             'Main' : { mainUbuntu() },
             'Android': { android() },
-            'iOS' : { ios() }
+            // 'iOS' : { ios() }
         ])
     }
 }

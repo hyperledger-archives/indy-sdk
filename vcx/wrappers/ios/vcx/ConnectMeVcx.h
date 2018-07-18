@@ -144,6 +144,24 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
             decryptWith:(NSString *)decryptionKey
            completion:(void (^)(NSError *error, NSInteger importHandle))completion;
 
+- (void)addRecordWallet:(NSString *)recordType
+            recordId:(NSString *)recordId
+            recordValue:(NSString *) recordValue
+           completion:(void (^)(NSError *error))completion;
+
+- (void)updateRecordWallet:(NSString *)recordType
+              withRecordId:(NSString *)recordId
+           withRecordValue:(NSString *) recordValue
+            withCompletion:(void (^)(NSError *error))completion;
+
+- (void)getRecordWallet:(NSString *)recordType
+               recordId:(NSString *)recordId
+             completion:(void (^)(NSError *error, NSString *walletValue))completion;
+
+- (void)deleteRecordWallet:(NSString *)recordType
+            recordId:(NSString *)recordId
+           completion:(void (^)(NSError *error))completion;
+
 @end
 
 #endif /* init_h */
