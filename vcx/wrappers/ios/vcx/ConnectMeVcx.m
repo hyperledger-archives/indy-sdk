@@ -601,8 +601,7 @@ completion:(void (^)(NSError *error))completion
            completion:(void (^)(NSError *error, NSInteger importHandle))completion {
    vcx_error_t ret;
    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
-   const char * config=[config cString];
-    ret = vcx_wallet_import(handle, config, VcxWrapperCommonCallback);
+    ret = vcx_wallet_import(handle, [config cString], VcxWrapperCommonCallback);
 
    if( ret != 0 )
    {
