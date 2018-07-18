@@ -83,7 +83,7 @@ setup_dependencies(){
             INDY_DIR="libindy_${TARGET_ARCH}"
             if [ -d "${INDY_DIR}" ] ; then
                 echo "Found ${INDY_DIR}"
-            elif [ -z "$6" ] ; then
+            elif [ -z "$2" ] ; then
                 echo STDERR "Missing INDY_DIR argument and environment variable"
                 echo STDERR "e.g. set INDY_DIR=<path> for environment or libindy_${TARGET_ARCH}"
                 exit 1
