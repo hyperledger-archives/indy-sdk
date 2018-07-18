@@ -3,9 +3,9 @@
 
 
 WORKDIR=${PWD}
-INDY_DIR="$(realpath "${WORKDIR}/..")"
-CI_DIR="${INDY_WORKDIR}/libindy/ci"
-ANDROID_BUILD_FOLDER="$(realpath "${WORKDIR}/../android_build")"
+LIBINDY_WORKDIR=${WORKDIR}
+CI_DIR="${LIBINDY_WORKDIR}/ci"
+export ANDROID_BUILD_FOLDER="/tmp/android_build"
 
 TARGET_ARCH=$1
 
@@ -31,6 +31,14 @@ build_test_artifacts(){
     popd
 }
 
+create_cargo_config(){
+mkdir -p ${LIBINDY_WORKDIR}/.cargo
+cat << EOF > ${LIBINDY_WORKDIR}/.cargo/config
+[target.${TRIPLET}]
+ar = "$(realpath ${AR})"
+linker = "$(realpath ${CC})"
+EOF
+}
 
 execute_on_device(){
     #exits the script with code 1 if the emulator is not running

@@ -4,14 +4,15 @@ testing()
 
 def testing() {
     stage('Testing') {
-        parallel([
-                'ubuntu-test' : { ubuntuTesting() },
-                'android-test': { androidTesting()},
-                'macos-test'  : { macosTesting() },
-                'ios-test'    : { iosTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
-        ])
+        androidTesting()
+//        parallel([
+//                'ubuntu-test' : { ubuntuTesting() },
+//                'android-test': { androidTesting()},
+//                'macos-test'  : { macosTesting() },
+//                'ios-test'    : { iosTesting() },
+//                'redhat-test' : { rhelTesting() },
+//                'windows-test': { windowsTesting() }
+//        ])
     }
 }
 
@@ -150,16 +151,16 @@ def macosTesting() {
 def androidTesting() {
 
     node('ubuntu'){
-        stage('Build Android binaries as TEST'){
+        stage('Android Test'){
             try{
-                echo 'Building android binaries. This will act as a minimal test for android'
+                echo 'Building android binaries.This will start emulator and test android binaries'
                 checkout scm
 
                 dir('libindy') {
                     echo 'Building android binaries: Building docker image'
                     def testEnv
                     testEnv = dockerBuild('libindy',"ci/ubuntu.dockerfile ci")
-                    sh 'chmod -R 777 ../ci/'
+                    sh 'chmod -R 777 ci/*.sh'
                     sh 'chmod -R 777 *.sh'
                     ANDROID_SCRIPT_PATH = 'android.test.sh'
                     echo 'Testing Libindy android files for arm'

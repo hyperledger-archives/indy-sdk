@@ -2,9 +2,8 @@
 
 
 WORKDIR=${PWD}
-INDY_WORKDIR="$(realpath "${WORKDIR}/..")"
-CI_DIR="${INDY_WORKDIR}/libindy/ci"
-BUILD_FOLDER="$(realpath "${WORKDIR}/../android_build")"
+CI_DIR="../libindy/ci"
+export ANDROID_BUILD_FOLDER="/tmp/android_build"
 DOWNLOAD_PREBUILTS="0"
 
 while getopts ":d" opt; do
@@ -25,6 +24,14 @@ fi
 
 source ${CI_DIR}/setup.android.env.sh
 
+create_cargo_config(){
+mkdir -p ${INDY_WORKDIR}/.cargo
+cat << EOF > ${INDY_WORKDIR}/.cargo/config
+[target.${TRIPLET}]
+ar = "$(realpath ${AR})"
+linker = "$(realpath ${CC})"
+EOF
+}
 setup_dependencies(){
     if [ "${DOWNLOAD_PREBUILTS}" == "1" ]; then
         download_and_unzip_dependencies_for_all_architectures

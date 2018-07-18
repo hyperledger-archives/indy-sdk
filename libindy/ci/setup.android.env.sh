@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 
-CI_DIR=$(cd `dirname $0` && pwd)
-INDY_WORKDIR="$(realpath "${CI_DIR}/..")"
-ANDROID_BUILD_FOLDER="$(realpath "${CI_DIR}/../android_build")"
+
+if [ -z "${ANDROID_BUILD_FOLDER}" ]; then
+    echo STDERR "ANDROID_BUILD_FOLDER is not set. Please set it in the caller script"
+    echo STDERR "e.g. x86 or arm"
+    exit 1
+fi
 ANDROID_SDK=${ANDROID_BUILD_FOLDER}/sdk
 export PATH=${PATH}:${ANDROID_SDK}/platform-tools
 export PATH=${PATH}:${ANDROID_SDK}/tools
 export PATH=${PATH}:${ANDROID_SDK}/tools/bin
 
 mkdir -p ${ANDROID_SDK}
-## set this variable to 1 if you want to download the prebuilt binaries
-
 
 TARGET_ARCH=$1
 
@@ -127,14 +128,7 @@ create_standalone_toolchain_and_rust_target(){
     rustup target add ${TRIPLET}
 }
 
-create_cargo_config(){
-mkdir -p ${INDY_WORKDIR}/.cargo
-cat << EOF > ${INDY_WORKDIR}/.cargo/config
-[target.${TRIPLET}]
-ar = "$(realpath ${AR})"
-linker = "$(realpath ${CC})"
-EOF
-}
+
 
 download_and_setup_toolchain(){
     if [ "$(uname)" == "Darwin" ]; then
