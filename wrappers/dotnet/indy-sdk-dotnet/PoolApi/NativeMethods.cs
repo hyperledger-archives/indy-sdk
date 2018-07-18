@@ -65,7 +65,7 @@ namespace Hyperledger.Indy.PoolApi
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_close_pool_ledger(int command_handle, IntPtr handle, IndyMethodCompletedDelegate cb);
-   
+
         /// <summary>
         /// Lists names of created pool ledgers
         /// </summary>
@@ -74,6 +74,23 @@ namespace Hyperledger.Indy.PoolApi
         /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_list_pools(int command_handle, ListPoolsCompletedDelegate cb);
+
+        /// <summary> 
+        /// Set PROTOCOL_VERSION to specific version. 
+        /// 
+        /// There is a global property PROTOCOL_VERSION that used in every request to the pool and 
+        /// specified version of Indy Node which Libindy works. 
+        /// 
+        /// By default PROTOCOL_VERSION=1. 
+        /// </summary> 
+        /// <returns>The set protocol version.</returns> 
+        /// <param name="command_handle">Command handle.</param> 
+        /// <param name="protocol_version">Protocol version will be used: 
+        ///     1 - for Indy Node 1.3 
+        ///     2 - for Indy Node 1.4</param> 
+        /// <param name="cb">Cb.</param> 
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_set_protocol_version(int command_handle, int protocol_version, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Delegate to be uses on completion of calls to indy_list_pools.
