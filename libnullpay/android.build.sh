@@ -97,21 +97,21 @@ setup_dependencies(){
 
 
 package_library(){
-    mkdir -p ${BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/include
-    mkdir -p ${BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
+    mkdir -p ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/include
+    mkdir -p ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
 
-    cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.a" ${BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
-    cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.so" ${BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
+    cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.a" ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
+    cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.so" ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
 }
 
 build(){
     echo "**************************************************"
-    echo "Building for architecture ${ARCH}"
+    echo "Building for architecture ${TARGET_ARCH}"
     echo "Toolchain path ${TOOLCHAIN_DIR}"
     echo "ZMQ path ${LIBZMQ_DIR}"
     echo "Sodium path ${SODIUM_DIR}"
     echo "Indy path ${INDY_DIR}"
-    echo "Artifacts will be in ${BUILD_FOLDER}/libindy_${TARGET_ARCH}"
+    echo "Artifacts will be in ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}"
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}

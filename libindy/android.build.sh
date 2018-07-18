@@ -98,23 +98,23 @@ statically_link_dependencies_with_libindy(){
 
 package_library(){
 
-    mkdir -p ${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
+    mkdir -p ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
 
-    cp -rf "${WORKDIR}/include" ${BUILD_FOLDER}/libindy_${TARGET_ARCH}
-    cp "${WORKDIR}/target/${TRIPLET}/release/libindy.a" ${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
-    cp "${WORKDIR}/target/${TRIPLET}/release/libindy.so" ${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
-    mv "${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so" "${BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy_shared.so" &&
+    cp -rf "${WORKDIR}/include" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}
+    cp "${WORKDIR}/target/${TRIPLET}/release/libindy.a" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
+    cp "${WORKDIR}/target/${TRIPLET}/release/libindy.so" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
+    mv "${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so" "${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy_shared.so" &&
     statically_link_dependencies_with_libindy
 }
 
 build(){
     echo "**************************************************"
-    echo "Building for architecture ${ARCH}"
+    echo "Building for architecture ${TARGET_ARCH}"
     echo "Toolchain path ${TOOLCHAIN_DIR}"
     echo "ZMQ path ${LIBZMQ_DIR}"
     echo "Sodium path ${SODIUM_DIR}"
     echo "Openssl path ${OPENSSL_DIR}"
-    echo "Artifacts will be in ${BUILD_FOLDER}/libindy_${TARGET_ARCH}"
+    echo "Artifacts will be in ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}"
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
