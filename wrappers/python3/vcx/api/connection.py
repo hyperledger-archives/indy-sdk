@@ -39,7 +39,6 @@ class Connection(VcxStateful):
         :return: connection object
         Example:
         connection = await Connection.create(source_id)
-        credential
         """
         constructor_params = (source_id,)
 
