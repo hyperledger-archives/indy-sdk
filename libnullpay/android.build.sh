@@ -123,7 +123,7 @@ build(){
 
 generate_arch_flags ${TARGET_ARCH}
 setup_dependencies
-#download_and_unzip_dependencies_for_all_architectures
+download_and_unzip_dependencies_for_all_architectures
 download_and_setup_toolchain
 set_env_vars
 create_standalone_toolchain_and_rust_target

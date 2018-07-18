@@ -110,7 +110,7 @@ download_and_unzip_dependencies_for_all_architectures(){
         if [ ! -d "indy-android-dependencies" ] ; then
             git clone https://github.com/evernym/indy-android-dependencies.git
             pushd ${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/
-#                git checkout tags/v1.0.1
+                git checkout tags/v1.0.2
                 find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -qq -d "$(dirname "FILENAME")" "FILENAME"'
             popd
         fi

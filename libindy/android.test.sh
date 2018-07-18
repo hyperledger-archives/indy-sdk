@@ -41,8 +41,6 @@ EOF
 }
 
 execute_on_device(){
-    #exits the script with code 1 if the emulator is not running
-    check_if_emulator_is_running
 
     adb push \
     "${TOOLCHAIN_DIR}/${TRIPLET}/lib/libgnustl_shared.so" "/data/local/tmp/libgnustl_shared.so"
@@ -78,6 +76,7 @@ download_and_setup_toolchain
 set_env_vars
 create_standalone_toolchain_and_rust_target
 create_cargo_config
-build_test_artifacts
+build_test_artifacts &&
+check_if_emulator_is_running &&
 execute_on_device
 kill_avd
