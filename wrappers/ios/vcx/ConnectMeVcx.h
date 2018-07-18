@@ -130,15 +130,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)credentialDeserialize:(NSString *)serializedCredential
                    completion:(void (^)(NSError *error, NSInteger credentialHandle))completion;
 
-- (void)generateProof:(NSString *)proofRequestId
-         requestedAttrs:(NSString *)requestedAttrs
-    requestedPredicates:(NSString *)requestedPredicates
-              proofName:(NSString *)proofName
-             completion:(void (^)(NSError *error, NSString *proofHandle))completion;
-
 - (void)exportWallet:(NSString *)exportPath
-            encryptWith:(NSString *)encryptionKey
-           completion:(void (^)(NSError *error, NSInteger exportHandle))completion;
+         encryptWith:(NSString *)encryptionKey
+          completion:(void (^)(NSError *error, NSInteger exportHandle))completion;
 
 - (void)importWallet:(NSString *)importPath
             decryptWith:(NSString *)decryptionKey
@@ -161,6 +155,23 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)deleteRecordWallet:(NSString *)recordType
             recordId:(NSString *)recordId
            completion:(void (^)(NSError *error))completion;
+
+- (void) proofRetrieveCredentials:(vcx_proof_handle_t)proofHandle
+                   withCompletion:(void (^)(NSError *error, NSString *matchingCredentials))completion;
+
+- (void) proofGenerate:(vcx_proof_handle_t)proofHandle
+withSelectedCredentials:(NSString *)selectedCredentials
+ withSelfAttestedAttrs:(NSString *)selfAttestedAttributes
+        withCompletion:(void (^)(NSError *error))completion;
+
+- (void) proofCreateWithMsgId:(NSString *)source_id
+         withConnectionHandle:(vcx_connection_handle_t)connectionHandle
+                    withMsgId:(NSString *)msgId
+               withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle, NSString *proofRequest))completion;
+
+- (void) proofSend:(vcx_proof_handle_t)proof_handle
+withConnectionHandle:(vcx_connection_handle_t)connection_handle
+    withCompletion:(void (^)(NSError *error))completion;
 
 @end
 
