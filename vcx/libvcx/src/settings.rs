@@ -31,9 +31,13 @@ pub static CONFIG_GENESIS_PATH: &str = "genesis_path";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
 pub static CONFIG_LOG_CONFIG: &str = "log_config";
 pub static CONFIG_LINK_SECRET_ALIAS: &str = "link_secret_alias";
+pub static CONFIG_EXPORTED_WALLET_PATH: &str = "exported_wallet_path";
+pub static CONFIG_WALLET_BACKUP_KEY: &str = "backup_key";
 
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
+pub static UNINITIALIZED_BACKUP_KEY: &str = "<KEY_IS_NOT_SET>";
 pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
+pub static DEFAULT_EXPORTED_WALLET_PATH: &str = "/tmp/wallet.txn";
 pub static DEFAULT_WALLET_NAME: &str = "LIBVCX_SDK_WALLET";
 pub static DEFAULT_POOL_NAME: &str = "pool1";
 pub static DEFAULT_LINK_SECRET_ALIAS: &str = "main";
@@ -70,11 +74,17 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_GENESIS_PATH.to_string(), DEFAULT_GENESIS_PATH.to_string());
     settings.insert(CONFIG_WALLET_KEY.to_string(),TEST_WALLET_KEY.to_string());
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
+    settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(), DEFAULT_EXPORTED_WALLET_PATH.to_string());
+    settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), UNINITIALIZED_BACKUP_KEY.to_string());
 
     error::SUCCESS.code_num
 }
 
 pub fn validate_config(config: &HashMap<String, String>) -> Result<u32, u32> {
+
+    //Mandatory parameters
+    get_config_value(CONFIG_WALLET_KEY).or(Err(error::MISSING_WALLET_KEY.code_num))?;
+    get_config_value(CONFIG_WALLET_NAME).or(Err(error::MISSING_WALLET_NAME.code_num))?;
 
     // If values are provided, validate they're in the correct format
     validate_optional_config_val(config.get(CONFIG_INSTITUTION_DID), error::INVALID_DID.code_num, validation::validate_did)?;
@@ -93,7 +103,6 @@ pub fn validate_config(config: &HashMap<String, String>) -> Result<u32, u32> {
     validate_optional_config_val(config.get(CONFIG_INSTITUTION_LOGO_URL), error::INVALID_URL.code_num, Url::parse)?;
     validate_optional_config_val(config.get(CONFIG_POOL_NAME), error::INVALID_POOL_NAME.code_num, validate_pool_name)?;
 
-    validate_optional_config_val(config.get(CONFIG_WALLET_KEY), error::MISSING_WALLET_KEY.code_num, validate_wallet_key)?;
 
     Ok(error::SUCCESS.code_num)
 }

@@ -18,8 +18,6 @@ use settings;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::Mutex;
 
-use utils::error;
-
 lazy_static!{
     static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
 }
@@ -38,14 +36,11 @@ fn next_u32_command_handle() -> u32 {
     (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as u32
 }
 
-pub fn init_pool_and_wallet() -> Result<(), u32>  {
+pub fn init_pool() -> Result<(), u32>  {
     if settings::test_indy_mode_enabled() {return Ok (()); }
 
     let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME)
         .unwrap_or(settings::DEFAULT_POOL_NAME.to_string());
-
-    let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME)
-        .unwrap_or(settings::DEFAULT_WALLET_NAME.to_string());
 
     let path: String = settings::get_config_value(settings::CONFIG_GENESIS_PATH)
         .unwrap_or(settings::DEFAULT_GENESIS_PATH.to_string());
@@ -58,31 +53,11 @@ pub fn init_pool_and_wallet() -> Result<(), u32>  {
         },
         Ok(_) => {
             debug!("Pool Config Created Successfully");
-            match pool::open_pool_ledger(&pool_name, None) {
-                Err(e) => {
-                    warn!("Open Pool Error: {}", e);
-                    return Err(e);
-                },
-                Ok(handle) => {
-                    debug!("Open Pool Successful");
-                }
-            }
+            pool::open_pool_ledger(&pool_name, None)?;
+            Ok(())
         }
     }
-
-    match wallet::open_wallet(&wallet_name) {
-        Err(e) => {
-            warn!("Init Wallet Error {}.", e);
-            return Err(error::UNKNOWN_LIBINDY_ERROR.code_num);
-        },
-        Ok(_) => {
-            debug!("Init Wallet Successful");
-        },
-    };
-
-    Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -97,7 +72,9 @@ mod tests {
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
-        init_pool_and_wallet().unwrap();
+        init_pool().unwrap();
+        wallet::init_wallet(wallet_name).unwrap();
+
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 }

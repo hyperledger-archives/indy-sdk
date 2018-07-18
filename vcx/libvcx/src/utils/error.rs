@@ -10,6 +10,8 @@ use std::ffi::CString;
 // STEP 3: create a test making sure that your message can be retrieved
 
 pub static SUCCESS: Error = Error{code_num:0, message:"Success"};
+pub static INDY_WALLET_RECORD_NOT_FOUND: Error = Error{code_num:212, message:"Error from Indy: Wallet Item not found"};
+pub static INDY_DUPLICATE_WALLET_RECORD: Error = Error{code_num:213, message:"Error from Indy: Duplicate Wallet Record"};
 pub static UNKNOWN_ERROR: Error = Error{code_num:1001, message:"Unknown Error"};
 pub static CONNECTION_ERROR: Error = Error{code_num:1002, message:"Error with Connection"};
 pub static INVALID_CONNECTION_HANDLE: Error = Error{code_num:1003, message:"Invalid Connection Handle"};
@@ -85,6 +87,10 @@ pub static DUPLICATE_WALLET_RECORD: Error = Error{ code_num: 1072, message: "Rec
 pub static WALLET_RECORD_NOT_FOUND: Error = Error{ code_num: 1073, message: "Wallet record not found"};
 pub static IOERROR: Error = Error { code_num: 1074, message: "IO Error, possibly creating a backup wallet"};
 pub static INVALID_WALLET_STORAGE_PARAMETER: Error = Error { code_num: 1075, message: "Wallet Storage Parameter Either Malformed or Missing"};
+pub static MISSING_WALLET_NAME: Error = Error { code_num: 1076, message: "Missing wallet name in config"};
+pub static MISSING_EXPORTED_WALLET_PATH: Error = Error { code_num: 1077, message: "Missing exported wallet path in config"};
+pub static MISSING_BACKUP_KEY: Error = Error { code_num: 1078, message: "Missing exported backup key in config"};
+pub static WALLET_NOT_FOUND: Error = Error { code_num: 1079, message: "Wallet Not Found"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -163,6 +169,13 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_WALLET_STORAGE_PARAMETER);
         insert_c_message(&mut m, &OBJECT_CACHE_ERROR);
         insert_c_message(&mut m, &NO_PAYMENT_INFORMATION);
+        insert_c_message(&mut m, &INDY_DUPLICATE_WALLET_RECORD);
+        insert_c_message(&mut m, &INDY_WALLET_RECORD_NOT_FOUND);
+        insert_c_message(&mut m, &MISSING_WALLET_NAME);
+        insert_c_message(&mut m, &MISSING_EXPORTED_WALLET_PATH);
+        insert_c_message(&mut m, &MISSING_BACKUP_KEY);
+        insert_c_message(&mut m, &WALLET_NOT_FOUND);
+
        m
     };
 }

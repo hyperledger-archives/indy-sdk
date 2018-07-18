@@ -596,17 +596,17 @@ export class Wallet {
    *
    * Example:
    * ```
-   * await Wallet.import('/tmp/foobar.wallet', 'key_for_wallet')
+   * config: '{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}'
+   * await Wallet.import(config)
    * ```
    */
-  public static async import (path: string, backupKey: string): Promise<void> {
+  public static async import (config: string): Promise<void> {
     const commandHandle = 0
     try {
       await createFFICallbackPromise<void>(
         (resolve, reject, cb) => {
           const rc = rustAPI().vcx_wallet_import(commandHandle,
-            path,
-            backupKey,
+            config,
             cb)
           if (rc) {
             reject(rc)

@@ -81,6 +81,10 @@ class ErrorCode(IntEnum):
     WalletRecordNotFound = 1073,
     IOError = 1074,
     InvalidWalletStorageParam = 1075,
+    MissingWalletName = 1076,
+    MissingExportedWalletPath = 1077,
+    MissingBackupKey = 1078,
+    WalletNotFound = 1079
 
 class VcxError(Exception):
     # error_code: ErrorCode

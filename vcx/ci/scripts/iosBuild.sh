@@ -11,10 +11,10 @@ IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
 ls
 cd ${SCRIPTS_PATH}
 ./mac.02.libindy.env.sh
-./mac.03.libindy.build.sh nodebug "${IOS_TARGETS}"
+./mac.03.libindy.build.sh nodebug "${IOS_TARGETS}" cleanbuild
 ./mac.04.libvcx.setup.sh
 source ./mac.05.libvcx.env.sh
-./mac.06.libvcx.build.sh nodebug "${IOS_TARGETS}"
+./mac.06.libvcx.build.sh nodebug "${IOS_TARGETS}" cleanbuild
 cp -rf ~/OpenSSL-for-iPhone ${BASE_DIR}/.macosbuild
 cp -rf ~/libzmq-ios ${BASE_DIR}/.macosbuild
 cp -rf ~/combine-libs ${BASE_DIR}/.macosbuild

@@ -333,6 +333,7 @@ mod tests {
     use std::ffi::CString;
     use std::time::Duration;
     use settings;
+    #[allow(unused_imports)]
     use utils::constants::{ SCHEMA_ID, SCHEMA_WITH_VERSION, DEFAULT_SCHEMA_ATTRS, DEFAULT_SCHEMA_ID, DEFAULT_SCHEMA_NAME };
     use utils::libindy::return_types_u32;
 

@@ -133,7 +133,6 @@ pub mod tests {
 
     pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {
         use utils::libindy::wallet::init_wallet;
-        settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         init_wallet(test_name).map_err(|e| format!("Unable to init_wallet in tests: {}", e))
     }

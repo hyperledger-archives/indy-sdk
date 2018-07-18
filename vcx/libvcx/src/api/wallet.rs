@@ -162,7 +162,6 @@ pub extern fn vcx_wallet_add_record(command_handle: i32,
                                     cb: Option<extern fn(xcommand_handle: i32, err: i32)>) -> u32 {
     if settings::test_indy_mode_enabled() {
         check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-        println!("vcx_wallet_add_record cb");
         cb(command_handle, error::SUCCESS.code_num as i32);
         return error::SUCCESS.code_num
     }
@@ -584,7 +583,8 @@ pub extern fn vcx_wallet_export(command_handle: u32,
 /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
 /// in the future releases.
 ///
-/// path: Path of the file that contains exported wallet content
+/// config: "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}"
+/// exported_wallet_path: Path of the file that contains exported wallet content
 /// backup_key: Key used when creating the backup of the wallet (For encryption/decrption)
 /// cb: Callback that provides the success/failure of the api call.
 /// #Returns
@@ -592,17 +592,15 @@ pub extern fn vcx_wallet_export(command_handle: u32,
 /// is scheduled to begin in a separate thread.
 #[no_mangle]
 pub extern fn vcx_wallet_import(command_handle: u32,
-                                path: *const c_char,
-                                backup_key: *const c_char,
+                                config: *const c_char,
                                 cb: Option<extern fn(xcommand_handle: u32,
                                                      err: u32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    check_useful_c_str!(path,  error::INVALID_OPTION.code_num);
-    check_useful_c_str!(backup_key, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(config,  error::INVALID_OPTION.code_num);
+
     thread::spawn(move || {
-        let path = Path::new(&path);
-        info!("vcx_wallet_import(command_handle: {}, path: {:?}, backup_key: ****)", command_handle, path);
-        match import(&path, &backup_key) {
+        info!("vcx_wallet_import(command_handle: {}, config: ****)", command_handle);
+        match import(&config) {
             Ok(_) => {
                 let return_code = error::SUCCESS.code_num;
                 info!("vcx_wallet_import(command_handle: {}, rc: {})", command_handle, return_code);
@@ -671,19 +669,19 @@ pub mod tests {
 
     }
 
-    extern "C" fn duplicate_record_cb(command_handle: i32, err: i32) {
-        assert_ne!(err as u32, error::DUPLICATE_WALLET_RECORD.code_num);
+    pub extern "C" fn duplicate_record_cb(command_handle: i32, err: i32) {
+        assert_eq!(err as u32, error::INDY_DUPLICATE_WALLET_RECORD.code_num);
         println!("successfully called duplicate_record_cb");
     }
 
     extern "C" fn record_not_found_msg_cb(command_handle: i32, err: i32, msg: *const c_char) {
-        assert_ne!(err as u32, error::WALLET_RECORD_NOT_FOUND.code_num);
+        assert_eq!(err as u32, error::INDY_WALLET_RECORD_NOT_FOUND.code_num);
         println!("successfully called record_not_found_msg_cb");
 
     }
 
     extern "C" fn record_not_found_cb(command_handle: i32, err: i32) {
-        assert_ne!(err as u32, error::WALLET_RECORD_NOT_FOUND.code_num);
+        assert_eq!(err as u32, error::INDY_WALLET_RECORD_NOT_FOUND.code_num);
         println!("successfully called record_not_found_cb");
 
     }
@@ -892,7 +890,7 @@ pub mod tests {
         settings::set_defaults();
         let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
         let filename_str = &settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
-        let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME).unwrap();
+        let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();
         let backup_key = "backup_key";
         let mut dir = env::temp_dir();
         dir.push(filename_str);
@@ -913,9 +911,16 @@ pub mod tests {
         delete_wallet(&wallet_name).unwrap();
 
         let cb = return_types_u32::Return_U32::new().unwrap();
+        let exported_path = dir.to_str().unwrap();
+        let import_config = json!({
+            settings::CONFIG_WALLET_NAME: wallet_name,
+            settings::CONFIG_WALLET_KEY: wallet_key,
+            settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
+            settings::CONFIG_WALLET_BACKUP_KEY: backup_key,
+        }).to_string();
+        let import_config_c = CString::new(import_config).unwrap();
         assert_eq!(vcx_wallet_import(cb.command_handle,
-                                     dir_c_str.as_ptr(),
-                                     backup_key_c_str.as_ptr(),
+                                     import_config_c.as_ptr(),
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(5))).unwrap();
 
