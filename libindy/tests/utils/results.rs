@@ -30,6 +30,20 @@ pub fn result_to_int(err: ErrorCode, receiver: Receiver<(ErrorCode, i32)>) -> Re
     Ok(val)
 }
 
+pub fn result_to_int_usize(err: ErrorCode, receiver: Receiver<(ErrorCode, i32, usize)>) -> Result<(i32, usize), ErrorCode> {
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    let (err, val, val_2) = receiver.recv().unwrap();
+
+    if err != ErrorCode::Success {
+        return Err(err);
+    }
+
+    Ok((val, val_2))
+}
+
 pub fn result_to_bool(err: ErrorCode, receiver: Receiver<(ErrorCode, bool)>) -> Result<bool, ErrorCode> {
     if err != ErrorCode::Success {
         return Err(err);

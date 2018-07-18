@@ -1,11 +1,10 @@
 extern crate indy_crypto;
+extern crate serde_json;
 
 use std::collections::HashMap;
 
 use self::indy_crypto::cl::Nonce;
 use self::indy_crypto::utils::json::{JsonDecodable};
-
-use super::filter::Filter;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequest {
@@ -19,6 +18,8 @@ pub struct ProofRequest {
 
 impl<'a> JsonDecodable<'a> for ProofRequest {}
 
+pub type ProofRequestExtraQuery = HashMap<String, HashMap<String, serde_json::Value>>;
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub struct NonRevocedInterval {
     pub from: Option<u64>,
@@ -28,17 +29,23 @@ pub struct NonRevocedInterval {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AttributeInfo {
     pub name: String,
-    pub restrictions: Option<Vec<Filter>>,
+    pub restrictions: Option<serde_json::Value>,
     pub non_revoked: Option<NonRevocedInterval>
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PredicateInfo {
     pub name: String,
-    pub p_type: String,
+    pub p_type: PredicateTypes,
     pub p_value: i32,
-    pub restrictions: Option<Vec<Filter>>,
+    pub restrictions: Option<serde_json::Value>,
     pub non_revoked: Option<NonRevocedInterval>
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum PredicateTypes{
+    #[serde(rename = ">=")]
+    GE
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

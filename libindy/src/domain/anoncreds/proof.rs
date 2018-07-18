@@ -24,6 +24,17 @@ pub struct RequestedProof {
     pub predicates: HashMap<String, SubProofReferent>
 }
 
+impl Default for RequestedProof {
+    fn default() -> Self {
+        RequestedProof {
+            revealed_attrs: HashMap::new(),
+            self_attested_attrs: HashMap::new(),
+            unrevealed_attrs: HashMap::new(),
+            predicates: HashMap::new(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SubProofReferent {
     pub sub_proof_index: i32,

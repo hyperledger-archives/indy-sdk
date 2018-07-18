@@ -117,7 +117,7 @@ public class Ledger extends IndyJava.API {
 	private static Callback parseRegistryResponseCb = new Callback() {
 
 		@SuppressWarnings({"unused", "unchecked"})
-		public void callback(int xcommand_handle, int err, String id, String object_json, int timestamp) {
+		public void callback(int xcommand_handle, int err, String id, String object_json, long timestamp) {
 
 			CompletableFuture<ParseRegistryResponseResult> future = (CompletableFuture<ParseRegistryResponseResult>) removeFuture(xcommand_handle);
 			if (! checkCallback(future, err)) return;
@@ -1056,7 +1056,7 @@ public class Ledger extends IndyJava.API {
 	public static CompletableFuture<String> buildGetRevocRegRequest(
 			String submitterDid,
 			String revocRegDefId,
-			int timestamp) throws IndyException {
+			long timestamp) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(revocRegDefId, "id");
@@ -1122,8 +1122,8 @@ public class Ledger extends IndyJava.API {
 	public static CompletableFuture<String> buildGetRevocRegDeltaRequest(
 			String submitterDid,
 			String revocRegDefId,
-			int from,
-			int to) throws IndyException {
+			long from,
+			long to) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 		ParamGuard.notNullOrWhiteSpace(revocRegDefId, "id");
