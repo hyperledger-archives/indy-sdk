@@ -22,6 +22,6 @@ ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 mkdir -p /var/repo
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
 cd /var/repository/repos/android/libindy/$branchName/$version-$buildNumber
-put -r ../libindy/libindy_android_${arch}_"${version}".zip
+put -r ../libindy/libindy_android_${arch}_${version}.zip
 ls -l /var/repository/repos/android/libindy/$branchName/$version-$buildNumber
 EOF
