@@ -402,7 +402,7 @@ def androidTesting() {
 
                 //TODO: Enable emulator test when the unit test start passing on android device
                 //androidEmulatorTest(buildEnv)
-                androidBuildTest(buildEnv)
+                buildAndroid(buildEnv,libindyVersion,false)
 
 
 
@@ -424,9 +424,6 @@ def androidEmulatorTest(buildEnv){
             sh "./${ANDROID_SCRIPT_PATH} arm"
         }
     }
-}
-def androidBuildTest(buildEnv){
-    buildAndroid(buildEnv,libindyVersion,false)
 }
 
 def rhelTesting() {
