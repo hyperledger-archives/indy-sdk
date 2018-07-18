@@ -28,6 +28,8 @@ pub struct ZMQNetworker {
 }
 
 const POOL_CON_ACTIVE_TO: i64 = 5;
+const POOL_ACK_TIMEOUT: i64 = 10;
+const POOL_REPLY_TIMEOUT: i64 = 50;
 const MAX_REQ_PER_POOL_CON: usize = 5;
 
 impl Networker for ZMQNetworker {
@@ -214,11 +216,12 @@ impl PoolConnection {
 
     fn get_timeout(&self) -> ((String, String), i64) {
         if let Some((&(ref req_id, ref node_alias), timeout)) = self.timeouts.borrow().iter()
-            .map(|(key, value)| (key, (Duration::seconds(10) - (time::now() - *value)).num_milliseconds()))
+            .map(|(key, value)| (key, (*value - time::now()).num_milliseconds()))
             .min_by(|&(_, ref val1), &(_, ref val2)| val1.cmp(&val2)) {
             ((req_id.to_string(), node_alias.to_string()), timeout)
         } else {
-            (("".to_string(), "".to_string()), POOL_CON_ACTIVE_TO * 1000)
+            let time_from_start: Duration = time::now() - self.time_created;
+            (("".to_string(), "".to_string()), POOL_CON_ACTIVE_TO * 1000 - time_from_start.num_milliseconds())
         }
     }
 
@@ -262,7 +265,9 @@ impl PoolConnection {
 
     fn extend_timeout(&self, req_id: &str, node_alias: &str) {
         if let Some(timeout) = self.timeouts.borrow_mut().get_mut(&(req_id.to_string(), node_alias.to_string())) {
-            *timeout = time::now();
+            *timeout = time::now() + Duration::seconds(POOL_REPLY_TIMEOUT);
+        } else {
+            debug!("late REQACK for req_id {}, node {}", req_id, node_alias);
         }
     }
 
@@ -293,7 +298,7 @@ impl PoolConnection {
             let s = self._get_socket(idx)?;
             s.send_str(&req, zmq::DONTWAIT)?;
         }
-        self.timeouts.borrow_mut().insert((req_id, self.nodes[idx].name.clone()), time::now());
+        self.timeouts.borrow_mut().insert((req_id, self.nodes[idx].name.clone()), time::now() + Duration::seconds(POOL_ACK_TIMEOUT));
         trace!("_send_msg_to_one_node <<");
         Ok(())
     }
@@ -679,14 +684,18 @@ pub mod networker_tests {
 
             let mut conn = PoolConnection::new(vec![rn]);
 
-            let timeout = conn.get_timeout();
-            assert_eq!((("".to_string(), "".to_string()), POOL_CON_ACTIVE_TO * 1000), timeout);
+            let ((req_id, node_alias), timeout) = conn.get_timeout();
+            assert_eq!(req_id, "".to_string());
+            assert_eq!(node_alias, "".to_string());
+            assert!(POOL_CON_ACTIVE_TO * 1000 - 10 <= timeout);
+            assert!(POOL_CON_ACTIVE_TO * 1000 >= timeout);
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string()))).unwrap();
 
             let (id, timeout) = conn.get_timeout();
             assert_eq!((REQ_ID.to_string(), NODE_NAME.to_string()), id);
-            assert_ne!(POOL_CON_ACTIVE_TO * 1000, timeout)
+            assert!(POOL_ACK_TIMEOUT * 1000 - 10 <= timeout);
+            assert!(POOL_ACK_TIMEOUT * 1000 >= timeout);
         }
 
         #[test]

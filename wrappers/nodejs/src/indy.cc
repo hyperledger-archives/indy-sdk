@@ -34,6 +34,7 @@ enum IndyCallbackType {
     CB_BOOLEAN,
     CB_HANDLE,
     CB_I32,
+    CB_I32_USIZE,
     CB_BUFFER,
     CB_STRING_BUFFER,
     CB_STRING_STRING,
@@ -130,6 +131,15 @@ class IndyCallback : public Nan::AsyncResource {
         send(xerr);
     }
 
+    void cbI32Usize(indy_error_t xerr, indy_i32_t i, uint32_t u){
+        if(xerr == 0){
+          type = CB_I32_USIZE;
+          i32int0 = i;
+          buffer0len = u;
+        }
+        send(xerr);
+    }
+
     void cbBuffer(indy_error_t xerr, const indy_u8_t* data, indy_u32_t len){
         if(xerr == 0){
             type = CB_BUFFER;
@@ -208,6 +218,12 @@ class IndyCallback : public Nan::AsyncResource {
                 break;
             case CB_I32:
                 argv[1] = Nan::New<v8::Number>(icb->i32int0);
+                break;
+            case CB_I32_USIZE:
+                tuple = Nan::New<v8::Array>();
+                tuple->Set(0, Nan::New<v8::Number>(icb->i32int0));
+                tuple->Set(1, Nan::New<v8::Number>(icb->buffer0len));
+                argv[1] = tuple;
                 break;
             case CB_BUFFER:
                 argv[1] = Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked();
