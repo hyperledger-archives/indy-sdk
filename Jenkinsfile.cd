@@ -39,12 +39,12 @@ def publishing() {
     stage('Publishing') {
         echo "${env.BRANCH_NAME}: start publishing"
         androidPublishing()
-//        publishedVersions = parallel([
-//                //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
-//                'ubuntu-files' : { ubuntuPublishing() },
-//                'windows-files': { windowsPublishing() },
-//                'android-files': { androidPublishing() },
-//        ])
+        publishedVersions = parallel([
+                //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
+                'ubuntu-files' : { ubuntuPublishing() },
+                'windows-files': { windowsPublishing() },
+                'android-files': { androidPublishing() },
+        ])
 
         if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
             error "platforms artifacts have different versions"
@@ -389,16 +389,22 @@ def androidTesting() {
     def libindyVersion
 
     node('ubuntu'){
-        stage('Build Android binaries as TEST'){
+        stage('Android test'){
             try{
                 echo 'Building android binaries. This will act as a minimal test for android'
                 checkout scm
 
                 libindyVersion = getSrcVersion("libindy")
-
                 echo 'Building android binaries: Building docker image'
                 buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
-                buildAndroid(buildEnv,libindyVersion,false)
+                sh 'chmod -R 777 libindy/'
+                sh 'chmod -R 777 libindy/ci/'
+
+                //TODO: Enable emulator test when the unit test start passing on android device
+                //androidEmulatorTest(buildEnv)
+                androidBuildTest(buildEnv)
+
+
 
             }
             finally{
@@ -407,6 +413,20 @@ def androidTesting() {
             }
         }
     }
+}
+
+def androidEmulatorTest(buildEnv){
+    dir('libindy') {
+        echo 'Building android binaries: Building docker image'
+        ANDROID_SCRIPT_PATH = 'android.test.sh'
+        echo 'Testing Libindy android files for arm'
+        buildEnv.inside {
+            sh "./${ANDROID_SCRIPT_PATH} arm"
+        }
+    }
+}
+def androidBuildTest(buildEnv){
+    buildAndroid(buildEnv,libindyVersion,false)
 }
 
 def rhelTesting() {
@@ -610,12 +630,13 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
 def buildAndroid(buildEnv,libIndyVersion,shouldPublish) {
 
 
-    sh 'chmod -R 777 libindy/ci/'
-    ANDROID_SCRIPT_PATH = 'libindy/ci/buildAndroid.sh'
+
+    ANDROID_SCRIPT_PATH = 'android.build.sh'
     dir('libindy') {
         echo 'Building Libindy android files for arm'
         buildEnv.inside {
-            sh "./${ANDROID_SCRIPT_PATH} arm"
+            sh "LIBINDY_VERSION=${libIndyVersion} ./${ANDROID_SCRIPT_PATH} -d arm"
+            sh "ls -la"
         }
     }
     if(shouldPublish){
@@ -626,7 +647,7 @@ def buildAndroid(buildEnv,libIndyVersion,shouldPublish) {
     dir('libindy') {
         echo 'Building Libindy android files for x86'
         buildEnv.inside {
-            sh "./${ANDROID_SCRIPT_PATH} x86"
+            sh "LIBINDY_VERSION=${libIndyVersion} ./${ANDROID_SCRIPT_PATH} -d x86"
         }
     }
     if(shouldPublish){
@@ -637,7 +658,7 @@ def buildAndroid(buildEnv,libIndyVersion,shouldPublish) {
     dir('libindy') {
         echo 'Building Libindy android files for arm64'
         buildEnv.inside {
-            sh "./${ANDROID_SCRIPT_PATH} arm64"
+            sh "LIBINDY_VERSION=${libIndyVersion} ./${ANDROID_SCRIPT_PATH} -d arm64"
         }
     }
     if (shouldPublish){
@@ -654,7 +675,6 @@ def androidPublishArtifacts(buildEnv, packageVersion,arch) {
         sh 'chmod -R 777 ci'
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-//            Creating directory using SFTP is not working. Hence creating directory using ssh and files are uploaded using SFTP in ci/android-zip-and-upload.sh
             sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER "
         }
     }
