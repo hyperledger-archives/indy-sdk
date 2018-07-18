@@ -50,6 +50,8 @@ cp -v runtime_android_build/indy-sdk/libindy/build_scripts/android/indy-sdk/libi
 cd ${TEMP_LIBINDY_ARCH_DIR} && zip -r libindy_android_${arch}_${version}.zip ./* && mv libindy_android_${arch}_${version}.zip .. && cd ..
 rm -rf ${TEMP_LIBINDY_ARCH_DIR}
 
+ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 mkdir -p /var/repository/repos/android/libindy/${branchName}/${version}-${buildNumber}
+
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
 cd /var/repository/repos/android/libindy/$branchName/$version-$buildNumber
 put -r libindy_android_${arch}_"${version}".zip
@@ -68,6 +70,8 @@ cp -v runtime_android_build/indy-sdk/libnullpay/build_scripts/android/indy-sdk/l
 
 cd ${TEMP_LIBNULLPAY_ARCH_DIR} && zip -r libnullpay_android_${arch}_${version}.zip ./* && mv libnullpay_android_${arch}_${version}.zip .. && cd ..
 rm -rf ${TEMP_LIBNULLPAY_ARCH_DIR}
+
+ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 mkdir -p /var/repository/repos/android/libnullpay/${branchName}/${version}-${buildNumber}
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
 cd /var/repository/repos/android/libnullpay/$branchName/$version-$buildNumber
