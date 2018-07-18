@@ -37,7 +37,7 @@ pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
 /// Modifies Indy request by adding information how to pay fees for this transaction
 /// according to this payment method.
 ///
-/// This method consumes set of UTXO inputs and outputs. The difference between inputs balance
+/// This method consumes set of inputs and outputs. The difference between inputs balance
 /// and outputs balance is the fee for this transaction.
 ///
 /// Not that this method also produces correct fee signatures.
@@ -49,13 +49,13 @@ pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// req_json: initial transaction request as json
-/// inputs_json: The list of UTXO inputs as json array:
-///   ["input1", ...]
-///   Note that each input should reference paymentAddress
-/// outputs_json: The list of UTXO outputs as json array:
+/// inputs_json: The list of payment sources as json array:
+///   ["source1", ...]
+///   Note that each source should reference payment address
+/// outputs_json: The list of outputs as json array:
 ///   [{
-///     paymentAddress: <str>, // payment address used as output
-///     amount: <int>, // amount of tokens to transfer to this payment address
+///     recipient: <str>, // payment address of recipient
+///     amount: <int>, // amount of tokens to transfer to this recipient
 ///     extra: <str>, // optional data
 ///   }]
 ///
@@ -79,20 +79,20 @@ pub type AddRequestFeesCB = extern fn(command_handle: i32,
 ///   Note: this param will be used to determine payment_method
 ///
 /// #Returns
-/// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+/// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
 ///   [{
-///      txo: <str>, // UTXO input
-///      paymentAddress: <str>, //payment address for this UTXO
-///      amount: <int>, // amount of tokens in this input
+///      receipt: <str>, // receipt
+///      recipient: <str>, //payment address for this recipient
+///      amount: <int>, // amount of tokens in this receipt
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
                                              resp_json: *const c_char,
                                              cb: Option<extern fn(command_handle_: i32,
                                                                   err: ErrorCode,
-                                                                  utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                  receipts_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
-/// Builds Indy request for getting UTXO list for payment address
+/// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
 ///
 /// #Params
@@ -101,38 +101,39 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
 /// payment_address: target payment address
 ///
 /// #Returns
-/// get_utxo_txn_json - Indy request for getting UTXO list for payment address
-pub type BuildGetUTXORequestCB = extern fn(command_handle: i32,
-                                           wallet_handle: i32,
-                                           submitter_did: *const c_char,
-                                           payment_address: *const c_char,
-                                           cb: Option<extern fn(command_handle_: i32,
+/// get_sources_txn_json - Indy request for getting sources list for payment address
+pub type BuildGetSourcesRequestCB = extern fn(command_handle: i32,
+                                              wallet_handle: i32,
+                                              submitter_did: *const c_char,
+                                              payment_address: *const c_char,
+                                              cb: Option<extern fn(command_handle_: i32,
                                                                 err: ErrorCode,
-                                                                get_utxo_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                get_sources_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
-/// Parses response for Indy request for getting UTXO list.
+/// Parses response for Indy request for getting sources list.
 ///
 /// #Params
-/// resp_json: response for Indy request for getting UTXO list
+/// resp_json: response for Indy request for getting sources list
+///   Note: this param will be used to determine payment_method
 ///
 /// #Returns
-/// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+/// sources_json - parsed (payment method and node version agnostic) sources info as json:
 ///   [{
-///      txo: <str>, // UTXO input
-///      paymentAddress: <str>, //payment address for this UTXO
-///      amount: <int>, // amount of tokens in this input
+///      source: <str>, // source input
+///      paymentAddress: <str>, //payment address for this source
+///      amount: <int>, // amount of tokens in this source
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
-pub type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
-                                            resp_json: *const c_char,
-                                            cb: Option<extern fn(command_handle_: i32,
-                                                                 err: ErrorCode,
-                                                                 utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+pub type ParseGetSourcesResponseCB = extern fn(command_handle: i32,
+                                               resp_json: *const c_char,
+                                               cb: Option<extern fn(command_handle_: i32,
+                                                                    err: ErrorCode,
+                                                                    sources_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
 /// Builds Indy request for doing tokens payment
 /// according to this payment method.
 ///
-/// This method consumes set of UTXO inputs and outputs.
+/// This method consumes set of inputs and outputs.
 ///
 /// Format of inputs is specific for payment method. Usually it should reference payment transaction
 /// with at least one output that corresponds to payment address that user owns.
@@ -140,13 +141,13 @@ pub type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
-/// inputs_json: The list of UTXO inputs as json array:
-///   ["input1", ...]
-///   Note that each input should reference paymentAddress
-/// outputs_json: The list of UTXO outputs as json array:
+/// inputs_json: The list of payment sources as json array:
+///   ["source1", ...]
+///   Note that each source should reference payment address
+/// outputs_json: The list of outputs as json array:
 ///   [{
-///     paymentAddress: <str>, // payment address used as output
-///     amount: <int>, // amount of tokens to transfer to this payment address
+///     recipient: <str>, // payment address of recipient
+///     amount: <int>, // amount of tokens to transfer to this recipient
 ///     extra: <str>, // optional data
 ///   }]
 ///
@@ -169,18 +170,18 @@ pub type BuildPaymentReqCB = extern fn(command_handle: i32,
 ///   Note: this param will be used to determine payment_method
 ///
 /// #Returns
-/// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+/// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
 ///   [{
-///      txo: <str>, // UTXO input
-///      paymentAddress: <str>, //payment address for this UTXO
-///      amount: <int>, // amount of tokens in this input
+///      receipt: <str>, // source input
+///      recipient: <str>, //payment address for this receipt
+///      amount: <int>, // amount of tokens in this receipt
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
                                             resp_json: *const c_char,
                                             cb: Option<extern fn(command_handle_: i32,
                                                                  err: ErrorCode,
-                                                                 utxo_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                 receipts_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
 /// Builds Indy request for doing tokens minting
 /// according to this payment method.
@@ -188,10 +189,10 @@ pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
-/// outputs_json: The list of UTXO outputs as json array:
+/// outputs_json: The list of outputs as json array:
 ///   [{
-///     paymentAddress: <str>, // payment address used as output
-///     amount: <int>, // amount of tokens to transfer to this payment address
+///     recipient: <str>, // payment address of recipient
+///     amount: <int>, // amount of tokens to transfer to this recipient
 ///     extra: <str>, // optional data
 ///   }]
 ///
@@ -276,8 +277,8 @@ pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
 /// payment_method: The type of payment method also used as sub-prefix for fully resolvable payment address format ("sov" - for example)
 /// create_payment_address: "create_payment_address" operation handler
 /// add_request_fees: "add_request_fees" operation handler
-/// build_get_utxo_request: "build_get_utxo_request" operation handler
-/// parse_get_utxo_response: "parse_get_utxo_response" operation handler
+/// build_get_sources_request: "build_get_sources_request" operation handler
+/// parse_get_sources_response: "parse_get_sources_response" operation handler
 /// build_payment_req: "build_payment_req" operation handler
 /// build_mint_req: "build_mint_req" operation handler
 ///
@@ -289,8 +290,8 @@ pub extern fn indy_register_payment_method(command_handle: i32,
                                            create_payment_address: Option<CreatePaymentAddressCB>,
                                            add_request_fees: Option<AddRequestFeesCB>,
                                            parse_response_with_fees: Option<ParseResponseWithFeesCB>,
-                                           build_get_utxo_request: Option<BuildGetUTXORequestCB>,
-                                           parse_get_utxo_response: Option<ParseGetUTXOResponseCB>,
+                                           build_get_sources_request: Option<BuildGetSourcesRequestCB>,
+                                           parse_get_sources_response: Option<ParseGetSourcesResponseCB>,
                                            build_payment_req: Option<BuildPaymentReqCB>,
                                            parse_payment_response: Option<ParsePaymentResponseCB>,
                                            build_mint_req: Option<BuildMintReqCB>,
@@ -305,8 +306,8 @@ pub extern fn indy_register_payment_method(command_handle: i32,
     check_useful_c_callback!(create_payment_address, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(add_request_fees, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(parse_response_with_fees, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(build_get_utxo_request, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(parse_get_utxo_response, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(build_get_sources_request, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(parse_get_sources_response, ErrorCode::CommonInvalidParam7);
     check_useful_c_callback!(build_payment_req, ErrorCode::CommonInvalidParam8);
     check_useful_c_callback!(parse_payment_response, ErrorCode::CommonInvalidParam9);
     check_useful_c_callback!(build_mint_req, ErrorCode::CommonInvalidParam10);
@@ -321,8 +322,8 @@ pub extern fn indy_register_payment_method(command_handle: i32,
         create_payment_address,
         add_request_fees,
         parse_response_with_fees,
-        build_get_utxo_request,
-        parse_get_utxo_response,
+        build_get_sources_request,
+        parse_get_sources_response,
         build_payment_req,
         parse_payment_response,
         build_mint_req,
@@ -454,11 +455,9 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 }
 
 /// Modifies Indy request by adding information how to pay fees for this transaction
-/// according to selected payment method.
+/// according to this payment method.
 ///
-/// Payment selection is performed by looking to o
-///
-/// This method consumes set of UTXO inputs and outputs. The difference between inputs balance
+/// This method consumes set of inputs and outputs. The difference between inputs balance
 /// and outputs balance is the fee for this transaction.
 ///
 /// Not that this method also produces correct fee signatures.
@@ -466,22 +465,21 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 /// Format of inputs is specific for payment method. Usually it should reference payment transaction
 /// with at least one output that corresponds to payment address that user owns.
 ///
+///
 /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
 /// in the future releases.
-///
+/// 
 /// #Params
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// req_json: initial transaction request as json
-/// inputs_json: The list of UTXO inputs as json array:
-///   ["input1", ...]
-///   Notes:
-///     - each input should reference paymentAddress
-///     - this param will be used to determine payment_method
-/// outputs_json: The list of UTXO outputs as json array:
+/// inputs_json: The list of payment sources as json array:
+///   ["source1", ...]
+///   Note that each source should reference payment address
+/// outputs_json: The list of outputs as json array:
 ///   [{
-///     paymentAddress: <str>, // payment address used as output
-///     amount: <int>, // amount of tokens to transfer to this payment address
+///     recipient: <str>, // payment address of recipient
+///     amount: <int>, // amount of tokens to transfer to this recipient
 ///     extra: <str>, // optional data
 ///   }]
 ///
@@ -544,12 +542,15 @@ pub extern fn indy_add_request_fees(command_handle: i32,
 /// resp_json: response for Indy request with fees
 ///   Note: this param will be used to determine payment_method
 ///
+/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+/// in the future releases.
+/// 
 /// #Returns
-/// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+/// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
 ///   [{
-///      txo: <str>, // UTXO input
-///      paymentAddress: <str>, //payment address for this UTXO
-///      amount: <int>, // amount of tokens in this input
+///      receipt: <str>, // receipt
+///      recipient: <str>, //payment address of recipient
+///      amount: <int>, // amount of tokens in this receipt
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 #[no_mangle]
@@ -558,7 +559,7 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
                                             resp_json: *const c_char,
                                             cb: Option<extern fn(command_handle_: i32,
                                                                  err: ErrorCode,
-                                                                 utxo_json: *const c_char)>) -> ErrorCode {
+                                                                 receipts_json: *const c_char)>) -> ErrorCode {
     trace!("indy_parse_response_with_fees: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
@@ -571,10 +572,10 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
             Command::Payments(
                 PaymentsCommand::ParseResponseWithFees(
                     payment_method, resp_json, Box::new(move |result| {
-                        let (err, utxo_json) = result_to_err_code_1!(result, String::new());
-                        trace!("indy_parse_response_with_fees: utxo_json: {:?}", utxo_json);
-                        let utxo_json = CStringUtils::string_to_cstring(utxo_json);
-                        cb(command_handle, err, utxo_json.as_ptr());
+                        let (err, receipts_json) = result_to_err_code_1!(result, String::new());
+                        trace!("indy_parse_response_with_fees: receipts_json: {:?}", receipts_json);
+                        let receipts_json = CStringUtils::string_to_cstring(receipts_json);
+                        cb(command_handle, err, receipts_json.as_ptr());
                     }))
             ));
     let res = result_to_err_code!(result);
@@ -584,7 +585,7 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
     res
 }
 
-/// Builds Indy request for getting UTXO list for payment address
+/// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
 ///
 /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
@@ -596,95 +597,95 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 /// payment_address: target payment address
 ///
 /// #Returns
-/// get_utxo_txn_json - Indy request for getting UTXO list for payment address
+/// get_sources_txn_json - Indy request for getting sources list for payment address
 /// payment_method
 #[no_mangle]
-pub extern fn indy_build_get_utxo_request(command_handle: i32,
+pub extern fn indy_build_get_sources_request(command_handle: i32,
                                           wallet_handle: i32,
                                           submitter_did: *const c_char,
                                           payment_address: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
-                                                               get_utxo_txn_json: *const c_char,
+                                                               get_sources_txn_json: *const c_char,
                                                                payment_method: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_get_utxo_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
+    trace!("indy_build_get_sources_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_build_get_utxo_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
+    trace!("indy_build_get_sources_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
 
     let result =
         CommandExecutor::instance().send(
             Command::Payments(
-                PaymentsCommand::BuildGetUtxoRequest(
+                PaymentsCommand::BuildGetSourcesRequest(
                     wallet_handle,
                     submitter_did,
                     payment_address,
                     Box::new(move |result| {
-                        let (err, get_utxo_txn_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
-                        trace!("indy_build_get_utxo_request: get_utxo_txn_json: {:?}, payment_method: {:?}", get_utxo_txn_json, payment_method);
-                        let get_utxo_txn_json = CStringUtils::string_to_cstring(get_utxo_txn_json);
+                        let (err, get_sources_txn_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
+                        trace!("indy_build_get_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
+                        let get_sources_txn_json = CStringUtils::string_to_cstring(get_sources_txn_json);
                         let payment_method = CStringUtils::string_to_cstring(payment_method);
-                        cb(command_handle, err, get_utxo_txn_json.as_ptr(), payment_method.as_ptr());
+                        cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
                     }))
             ));
 
     let res = result_to_err_code!(result);
 
-    trace!("indy_build_get_utxo_request: <<< res: {:?}", res);
+    trace!("indy_build_get_sources_request: <<< res: {:?}", res);
 
     res
 }
 
-/// Parses response for Indy request for getting UTXO list.
+/// Parses response for Indy request for getting sources list.
 ///
 /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
 /// in the future releases.
 ///
 /// #Params
-/// resp_json: response for Indy request for getting UTXO list
+/// resp_json: response for Indy request for getting sources list
 ///   Note: this param will be used to determine payment_method
 ///
 /// #Returns
-/// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+/// sources_json - parsed (payment method and node version agnostic) sources info as json:
 ///   [{
-///      txo: <str>, // UTXO input
-///      paymentAddress: <str>, //payment address for this UTXO
-///      amount: <int>, // amount of tokens in this input
+///      source: <str>, // source input
+///      paymentAddress: <str>, //payment address for this source
+///      amount: <int>, // amount of tokens in this source
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 #[no_mangle]
-pub extern fn indy_parse_get_utxo_response(command_handle: i32,
-                                           payment_method: *const c_char,
-                                           resp_json: *const c_char,
-                                           cb: Option<extern fn(command_handle_: i32,
+pub extern fn indy_parse_get_sources_response(command_handle: i32,
+                                              payment_method: *const c_char,
+                                              resp_json: *const c_char,
+                                              cb: Option<extern fn(command_handle_: i32,
                                                                 err: ErrorCode,
-                                                                utxo_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_parse_get_utxo_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+                                                                sources_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_parse_get_sources_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_parse_get_utxo_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
+    trace!("indy_parse_get_sources_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
     let result =
         CommandExecutor::instance().send(
             Command::Payments(
-                PaymentsCommand::ParseGetUtxoResponse(
+                PaymentsCommand::ParseGetSourcesResponse(
                     payment_method,
                     resp_json,
                     Box::new(move |result| {
-                        let (err, utxo_json) = result_to_err_code_1!(result, String::new());
-                        trace!("indy_parse_get_utxo_response: utxo_json: {:?}", utxo_json);
-                        let utxo_json = CStringUtils::string_to_cstring(utxo_json);
-                        cb(command_handle, err, utxo_json.as_ptr());
+                        let (err, sources_json) = result_to_err_code_1!(result, String::new());
+                        trace!("indy_parse_get_sources_response: sources_json: {:?}", sources_json);
+                        let sources_json = CStringUtils::string_to_cstring(sources_json);
+                        cb(command_handle, err, sources_json.as_ptr());
                     }))
             ));
 
     let res = result_to_err_code!(result);
 
-    trace!("indy_parse_get_utxo_response: <<< res: {:?}", res);
+    trace!("indy_parse_get_sources_response: <<< res: {:?}", res);
 
     res
 }
@@ -692,7 +693,7 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
 /// Builds Indy request for doing tokens payment
 /// according to this payment method.
 ///
-/// This method consumes set of UTXO inputs and outputs.
+/// This method consumes set of inputs and outputs.
 ///
 /// Format of inputs is specific for payment method. Usually it should reference payment transaction
 /// with at least one output that corresponds to payment address that user owns.
@@ -703,13 +704,13 @@ pub extern fn indy_parse_get_utxo_response(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
-/// inputs_json: The list of UTXO inputs as json array:
-///   ["input1", ...]
-///   Note that each input should reference paymentAddress
-/// outputs_json: The list of UTXO outputs as json array:
+/// inputs_json: The list of payment sources as json array:
+///   ["source1", ...]
+///   Note that each source should reference payment address
+/// outputs_json: The list of outputs as json array:
 ///   [{
-///     paymentAddress: <str>, // payment address used as output
-///     amount: <int>, // amount of tokens to transfer to this payment address
+///     recipient: <str>, // payment address of recipient
+///     amount: <int>, // amount of tokens to transfer to this recipient
 ///     extra: <str>, // optional data
 ///   }]
 ///
@@ -770,11 +771,11 @@ pub extern fn indy_build_payment_req(command_handle: i32,
 ///   Note: this param will be used to determine payment_method
 ///
 /// #Returns
-/// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+/// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
 ///   [{
-///      txo: <str>, // UTXO input
-///      paymentAddress: <str>, //payment address for this UTXO
-///      amount: <int>, // amount of tokens in this input
+///      receipt: <str>, // source input
+///      recipient: <str>, // payment address of recipient
+///      amount: <int>, // amount of tokens in this receipt
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 #[no_mangle]
@@ -783,7 +784,7 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
                                           resp_json: *const c_char,
                                           cb: Option<extern fn(command_handle_: i32,
                                                                err: ErrorCode,
-                                                               utxo_json: *const c_char)>) -> ErrorCode {
+                                                               receipts_json: *const c_char)>) -> ErrorCode {
     trace!("indy_parse_payment_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
@@ -798,10 +799,10 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
                     payment_method,
                     resp_json,
                     Box::new(move |result| {
-                        let (err, utxo_json) = result_to_err_code_1!(result, String::new());
-                        trace!("indy_parse_payment_response: utxo_json: {:?}", utxo_json);
-                        let utxo_json = CStringUtils::string_to_cstring(utxo_json);
-                        cb(command_handle, err, utxo_json.as_ptr());
+                        let (err, receipts_json) = result_to_err_code_1!(result, String::new());
+                        trace!("indy_parse_payment_response: receipts_json: {:?}", receipts_json);
+                        let receipts_json = CStringUtils::string_to_cstring(receipts_json);
+                        cb(command_handle, err, receipts_json.as_ptr());
                     }))
             ));
 
@@ -821,10 +822,10 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
-/// outputs_json: The list of UTXO outputs as json array:
+/// outputs_json: The list of outputs as json array:
 ///   [{
-///     paymentAddress: <str>, // payment address used as output
-///     amount: <int>, // amount of tokens to transfer to this payment address
+///     recipient: <str>, // payment address of recipient
+///     amount: <int>, // amount of tokens to transfer to this recipient
 ///     extra: <str>, // optional data
 ///   }]
 ///
