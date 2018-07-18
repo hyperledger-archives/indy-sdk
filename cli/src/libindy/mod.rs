@@ -171,6 +171,9 @@ pub enum ErrorCode
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
+
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703
 }
 
 impl ErrorCode {
@@ -229,6 +232,7 @@ impl ErrorCode {
             PaymentUnknownMethodError => "Unknown payment method was given",
             PaymentIncompatibleMethodsError => "Multiple different payment methods were specified",
             PaymentInsufficientFundsError => "Insufficient funds on inputs",
+            PaymentSourceDoesNotExistError => "No such source found",
         }
     }
 }

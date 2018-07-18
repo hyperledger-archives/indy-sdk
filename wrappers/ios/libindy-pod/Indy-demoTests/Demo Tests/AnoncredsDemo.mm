@@ -30,18 +30,14 @@
 
 - (void)testAnoncredsDemo {
     // 1. Create wallet
-    NSString *walletName = @"issuer_wallet";
+    NSString *walletConfig = @"{\"id\":\"issuer_wallet\"}";
     IndyHandle walletHandle;
-    ret = [[WalletUtils sharedInstance] createWalletWithPoolName:[TestUtils pool]
-                                                      walletName:walletName
-                                                           xtype:[TestUtils defaultType]
-                                                          config:nil];
+    ret = [[WalletUtils sharedInstance] createWalletWithConfig:walletConfig];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createWalletWithPoolName() failed!");
 
     // 2. Open wallet
-    ret = [[WalletUtils sharedInstance] openWalletWithName:walletName
-                                                    config:nil
-                                                 outHandle:&walletHandle];
+    ret = [[WalletUtils sharedInstance] openWalletWithConfig:walletConfig
+                                                   outHandle:&walletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::openWalletWithName() failed!");
 
     //3. Issuer create Schema
@@ -135,7 +131,7 @@
             }
     }];
 
-     NSString *credentialsJson = nil;
+    NSString *credentialsJson = nil;
 
     ret = [[AnoncredsUtils sharedInstance] proverGetCredentialsForProofReq:proofReqJSON
                                                               walletHandle:walletHandle
@@ -416,15 +412,11 @@
     IndyHandle proverWalletHandle = 0;
 
     //1. Create Issuer wallet, get wallet handle
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&issuerWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&issuerWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     //2. Create Prover wallet, get wallet handle
-    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithPoolName:[TestUtils pool]
-                                                                  xtype:nil
-                                                                 handle:&proverWalletHandle];
+    ret = [[WalletUtils sharedInstance] createAndOpenWalletWithHandle:&proverWalletHandle];
     XCTAssertEqual(ret.code, Success, @"WalletUtils::createAndOpenWallet() failed");
 
     // 3. Issuer create Schema
@@ -453,13 +445,13 @@
 
     //4. Issuer create revocation registry
     NSString *configJson = [[AnoncredsUtils sharedInstance] toJson:@{
-            @"max_cred_num":@(5),
-            @"issuance_type":@"ISSUANCE_ON_DEMAND"
+            @"max_cred_num": @(5),
+            @"issuance_type": @"ISSUANCE_ON_DEMAND"
     }];
 
     NSString *tailsWriterConfig = [[AnoncredsUtils sharedInstance] toJson:@{
-            @"base_dir":[TestUtils tmpFilePathAppending:@"tails"],
-            @"uri_pattern":@""
+            @"base_dir": [TestUtils tmpFilePathAppending:@"tails"],
+            @"uri_pattern": @""
     }];
 
     NSNumber *tailsWriterHandle = nil;
@@ -550,7 +542,7 @@
                     @"attr1_referent": @{
                             @"name": @"name"
                     },
-                    @"attr2_referent":@{
+                    @"attr2_referent": @{
                             @"name": @"phone"
                     }
             },
@@ -590,19 +582,19 @@
     // 12. Prover create Proof
     NSString *requestedCredentialsJson = [[AnoncredsUtils sharedInstance] toJson:@{
             @"self_attested_attributes": @{
-                    @"attr2_referent":@"value"
+                    @"attr2_referent": @"value"
             },
             @"requested_attributes": @{
                     @"attr1_referent": @{
                             @"cred_id": credentialReferent,
                             @"revealed": @(YES),
-                            @"timestamp":timestamp
+                            @"timestamp": timestamp
                     }
             },
             @"requested_predicates": @{
                     @"predicate1_referent": @{
                             @"cred_id": credentialReferent,
-                            @"timestamp":timestamp
+                            @"timestamp": timestamp
                     }
             }
     }];

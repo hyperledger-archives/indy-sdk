@@ -1,18 +1,15 @@
 mod ed25519;
 
-use base64;
-
 use self::ed25519::ED25519CryptoType;
-
-
-use utils::crypto::base58::Base58;
-use utils::crypto::verkey_builder::build_full_verkey;
-use domain::crypto::key::{Key, KeyInfo};
-use domain::crypto::did::{Did, MyDidInfo, TheirDidInfo, TheirDid};
-use domain::crypto::combo_box::ComboBox;
 
 use errors::common::CommonError;
 use errors::crypto::CryptoError;
+use domain::crypto::key::{Key, KeyInfo};
+use domain::crypto::did::{Did, MyDidInfo, TheirDidInfo, TheirDid};
+use domain::crypto::combo_box::ComboBox;
+use utils::crypto::base58;
+use utils::crypto::base64;
+use utils::crypto::verkey_builder::build_full_verkey;
 
 use std::collections::HashMap;
 use std::str;
@@ -63,8 +60,8 @@ impl CryptoService {
 
         let seed = self.convert_seed(key_info.seed.as_ref().map(String::as_ref))?;
         let (vk, sk) = crypto_type.create_key(seed.as_ref().map(Vec::as_slice))?;
-        let mut vk = Base58::encode(&vk);
-        let sk = Base58::encode(&sk);
+        let mut vk = base58::encode(&vk);
+        let sk = base58::encode(&sk);
 
         if !crypto_type_name.eq(DEFAULT_CRYPTO_TYPE) {
             // Use suffix with crypto type name to store crypto type inside of vk
@@ -99,15 +96,15 @@ impl CryptoService {
         let did = match my_did_info.did {
             Some(ref did) => {
                 self.validate_did(did)?;
-                Base58::decode(did)?
+                base58::decode(did)?
             }
             _ if my_did_info.cid == Some(true) => vk.clone(),
             _ => vk[0..16].to_vec()
         };
 
-        let did = Base58::encode(&did);
-        let mut vk = Base58::encode(&vk);
-        let sk = Base58::encode(&sk);
+        let did = base58::encode(&did);
+        let mut vk = base58::encode(&vk);
+        let sk = base58::encode(&sk);
 
         if !crypto_type_name.eq(DEFAULT_CRYPTO_TYPE) {
             // Use suffix with crypto type name to store crypto type inside of vk
@@ -125,7 +122,7 @@ impl CryptoService {
         trace!("create_their_did >>> their_did_info: {:?}", their_did_info);
 
         // Check did is correct Base58
-        Base58::decode(&their_did_info.did)?;
+        base58::decode(&their_did_info.did)?;
 
         let verkey = build_full_verkey(their_did_info.did.as_str(),
                                        their_did_info.verkey.as_ref().map(String::as_str))?;
@@ -157,7 +154,7 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let my_sk = Base58::decode(my_key.signkey.as_str())?;
+        let my_sk = base58::decode(my_key.signkey.as_str())?;
         let signature = crypto_type.sign(&my_sk, doc)?;
 
         trace!("sign <<< signature: {:?}", signature);
@@ -182,7 +179,7 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let their_vk = Base58::decode(&their_vk)?;
+        let their_vk = base58::decode(&their_vk)?;
 
         let valid = crypto_type.verify(&their_vk, msg, signature)?;
 
@@ -238,8 +235,8 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(&crypto_type_name).unwrap();
 
-        let my_sk = Base58::decode(my_key.signkey.as_str())?;
-        let their_vk = Base58::decode(their_vk)?;
+        let my_sk = base58::decode(my_key.signkey.as_str())?;
+        let their_vk = base58::decode(their_vk)?;
         let nonce = crypto_type.gen_nonce();
 
         let encrypted_doc = crypto_type.encrypt(&my_sk, &their_vk, doc, &nonce)?;
@@ -281,8 +278,8 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let my_sk = Base58::decode(&my_key.signkey)?;
-        let their_vk = Base58::decode(their_vk)?;
+        let my_sk = base58::decode(&my_key.signkey)?;
+        let their_vk = base58::decode(their_vk)?;
 
         let decrypted_doc = crypto_type.decrypt(&my_sk, &their_vk, &doc, &nonce)?;
 
@@ -307,7 +304,7 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let their_vk = Base58::decode(their_vk)?;
+        let their_vk = base58::decode(their_vk)?;
 
         let encrypted_doc = crypto_type.encrypt_sealed(&their_vk, doc)?;
 
@@ -333,8 +330,8 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let my_vk = Base58::decode(my_vk)?;
-        let my_sk = Base58::decode(my_key.signkey.as_str())?;
+        let my_vk = base58::decode(my_vk)?;
+        let my_sk = base58::decode(my_key.signkey.as_str())?;
 
         let decrypted_doc = crypto_type.decrypt_sealed(&my_vk, &my_sk, doc)?;
 
@@ -379,7 +376,7 @@ impl CryptoService {
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
         let vk = if vk.starts_with('~') { &vk[1..] } else { vk };
-        let vk = Base58::decode(vk)?;
+        let vk = base58::decode(vk)?;
 
         let res =crypto_type.validate_key(&vk)?;
 
@@ -391,7 +388,7 @@ impl CryptoService {
     pub fn validate_did(&self, did: &str) -> Result<(), CryptoError> {
         trace!("validate_did >>> did: {:?}", did);
 
-        let did = Base58::decode(did)?;
+        let did = base58::decode(did)?;
 
         if did.len() != 16 && did.len() != 32 {
             return Err(CryptoError::CommonError(

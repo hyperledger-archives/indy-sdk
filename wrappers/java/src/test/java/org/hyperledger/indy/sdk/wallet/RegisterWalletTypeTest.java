@@ -44,11 +44,9 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 
 		StorageUtils.cleanupStorage();
 
-		String walletName = "inmemWorkoutWallet";
-
 		//  Creates and opens wallet
-		Wallet.createWallet(POOL, walletName, type, null, CREDENTIALS).get();
-		Wallet wallet = Wallet.openWallet(walletName, null, CREDENTIALS).get();
+		Wallet.createWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		Wallet wallet = Wallet.openWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
 
 		//  Issuer creates Schema
 		AnoncredsResults.IssuerCreateSchemaResult createSchemaResult = Anoncreds.issuerCreateSchema(DID, GVT_SCHEMA_NAME, SCHEMA_VERSION, GVT_SCHEMA_ATTRIBUTES).get();
@@ -85,5 +83,8 @@ public class RegisterWalletTypeTest extends IndyIntegrationTest {
 		JSONArray credentialsArray = new JSONArray(credentials);
 
 		assertEquals(1, credentialsArray.length());
+
+		wallet.closeWallet().get();
+		Wallet.deleteWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
 	}
 }

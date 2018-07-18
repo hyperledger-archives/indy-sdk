@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "fatal_warnings", deny(warnings))]
+
 extern crate libc;
 extern crate rand;
 
@@ -201,4 +203,7 @@ pub enum ErrorCode
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
+
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703,
 }

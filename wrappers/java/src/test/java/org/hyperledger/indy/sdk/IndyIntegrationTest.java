@@ -5,8 +5,6 @@ import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
-import org.hyperledger.indy.sdk.wallet.InMemWalletType;
-import org.hyperledger.indy.sdk.wallet.Wallet;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -66,7 +64,21 @@ public class IndyIntegrationTest {
 			"        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
 			"        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
 			"    }";
-	protected String CREDENTIALS = "{\"key\": \"key\"}";
+	protected static final String WALLET_CONFIG =
+			new JSONObject()
+					.put("id", WALLET)
+					.put("storage_type", TYPE)
+					.toString();
+	protected static final String WALLET_CREDENTIALS =
+			new JSONObject()
+					.put("key", "key")
+					.toString();
+	protected static final String PLUGGED_WALLET_CONFIG =
+			new JSONObject()
+					.put("id", WALLET)
+					.put("storage_type", "unknown_type")
+					.toString();
+
 	protected int PROTOCOL_VERSION = 2;
 
 

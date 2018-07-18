@@ -21,7 +21,7 @@ mod utils;
 
 #[cfg(feature = "local_nodes_pool")]
 use utils::callback::CallbackUtils;
-use utils::constants::{DEFAULT_WALLET_CREDENTIALS, PROTOCOL_VERSION};
+use utils::constants::{WALLET_CREDENTIALS, PROTOCOL_VERSION};
 use utils::pool::PoolUtils;
 use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
@@ -74,19 +74,14 @@ fn anoncreds_demo_works() {
     let (cs_rev_reg_receiver, cs_rev_reg_command_handle, cs_rev_reg_cb) = CallbackUtils::_closure_to_cb_ec_string_string_string();
     let (create_rev_state_receiver, create_rev_state_command_handle, create_rev_state_cb) = CallbackUtils::_closure_to_cb_ec_string();
 
-    let pool_name = "pool_1";
-    let wallet_name = "issuer_wallet1";
-    let xtype = "default";
+    let wallet_config = json!({"id": "issuer_wallet1"}).to_string();
 
     //TODO CREATE ISSUER, PROVER, VERIFIER WALLETS
     //1. Creates Wallet
     let err =
         indy_create_wallet(create_wallet_command_handle,
-                           CString::new(pool_name).unwrap().as_ptr(),
-                           CString::new(wallet_name).unwrap().as_ptr(),
-                           CString::new(xtype).unwrap().as_ptr(),
-                           null(),
-                           CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
+                           CString::new(wallet_config.as_str()).unwrap().as_ptr(),
+                           CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -96,9 +91,8 @@ fn anoncreds_demo_works() {
     //2. Opens Wallet
     let err =
         indy_open_wallet(open_wallet_command_handle,
-                         CString::new(wallet_name).unwrap().as_ptr(),
-                         null(),
-                         CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
+                         CString::new(wallet_config.as_str()).unwrap().as_ptr(),
+                         CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -114,10 +108,10 @@ fn anoncreds_demo_works() {
     // 3. Issuer create Schema
     let err =
         indy_issuer_create_schema(issuer_create_schema_command_handle,
-                                  CString::new(issuer_did.clone()).unwrap().as_ptr(),
-                                  CString::new(schema_name.clone()).unwrap().as_ptr(),
-                                  CString::new(version.clone()).unwrap().as_ptr(),
-                                  CString::new(attrs.clone()).unwrap().as_ptr(),
+                                  CString::new(issuer_did).unwrap().as_ptr(),
+                                  CString::new(schema_name).unwrap().as_ptr(),
+                                  CString::new(version).unwrap().as_ptr(),
+                                  CString::new(attrs).unwrap().as_ptr(),
                                   issuer_create_schema_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -410,9 +404,9 @@ fn anoncreds_demo_works() {
 #[cfg(feature = "local_nodes_pool")]
 fn ledger_demo_works() {
     TestUtils::cleanup_storage();
-    let my_wallet_name = "my_wallet";
-    let their_wallet_name = "their_wallet";
-    let wallet_type = "default";
+    let my_wallet_config = json!({"id": "my_wallet"}).to_string();
+    let their_wallet_config = json!({"id": "their_wallet"}).to_string();
+
     let pool_name = "pool_1";
     let c_pool_name = CString::new(pool_name).unwrap();
 
@@ -466,11 +460,8 @@ fn ledger_demo_works() {
     // 3. Create My Wallet
     let err =
         indy_create_wallet(create_my_wallet_command_handle,
-                           CString::new(pool_name).unwrap().as_ptr(),
-                           CString::new(my_wallet_name).unwrap().as_ptr(),
-                           CString::new(wallet_type).unwrap().as_ptr(),
-                           null(),
-                           CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
+                           CString::new(my_wallet_config.as_str()).unwrap().as_ptr(),
+                           CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_my_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -480,9 +471,8 @@ fn ledger_demo_works() {
     // 4. Open My Wallet. Gets My wallet handle
     let err =
         indy_open_wallet(open_my_wallet_command_handle,
-                         CString::new(my_wallet_name).unwrap().as_ptr(),
-                         null(),
-                         CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
+                         CString::new(my_wallet_config.as_str()).unwrap().as_ptr(),
+                         CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_my_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -493,11 +483,8 @@ fn ledger_demo_works() {
     // 5. Create Their Wallet
     let err =
         indy_create_wallet(create_their_wallet_command_handle,
-                           CString::new(pool_name).unwrap().as_ptr(),
-                           CString::new(their_wallet_name).unwrap().as_ptr(),
-                           CString::new(wallet_type).unwrap().as_ptr(),
-                           null(),
-                           CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
+                           CString::new(their_wallet_config.as_str()).unwrap().as_ptr(),
+                           CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_their_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -507,9 +494,8 @@ fn ledger_demo_works() {
     // 6. Open Their Wallet. Gets Their wallet handle
     let err =
         indy_open_wallet(open_their_wallet_command_handle,
-                         CString::new(their_wallet_name).unwrap().as_ptr(),
-                         null(),
-                         CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
+                         CString::new(their_wallet_config.as_str()).unwrap().as_ptr(),
+                         CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_their_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -567,7 +553,7 @@ fn ledger_demo_works() {
             dest: my_did.clone(),
             type_: "1".to_string(),
         },
-        protocol_version: 1,
+        protocol_version: 2,
         req_id: nym_req_id,
         signature: None,
     };
@@ -602,7 +588,7 @@ fn ledger_demo_works() {
             type_: "105".to_string(),
             dest: my_did.clone(),
         },
-        protocol_version: 1,
+        protocol_version: 2,
     };
 
     let request = serde_json::to_string(&get_nym_txn).unwrap();
@@ -692,18 +678,13 @@ fn crypto_demo_works() {
     let (verify_receiver, verify_command_handle, verify_callback) = CallbackUtils::_closure_to_cb_ec_bool();
     let (close_wallet_receiver, close_wallet_command_handle, close_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
 
-    let pool_name = "pool_1";
-    let wallet_name = "wallet_1";
-    let xtype = "default";
+    let wallet_config = json!({"id": "wallet_1"}).to_string();
 
     // 1. Create Wallet
     let err =
         indy_create_wallet(create_wallet_command_handle,
-                           CString::new(pool_name).unwrap().as_ptr(),
-                           CString::new(wallet_name).unwrap().as_ptr(),
-                           CString::new(xtype).unwrap().as_ptr(),
-                           null(),
-                           CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
+                           CString::new(wallet_config.as_str()).unwrap().as_ptr(),
+                           CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                            create_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
@@ -713,9 +694,8 @@ fn crypto_demo_works() {
     // 2. Open Wallet. Gets wallet handle
     let err =
         indy_open_wallet(open_wallet_command_handle,
-                         CString::new(wallet_name).unwrap().as_ptr(),
-                         null(),
-                         CString::new(DEFAULT_WALLET_CREDENTIALS).unwrap().as_ptr(),
+                         CString::new(wallet_config.as_str()).unwrap().as_ptr(),
+                         CString::new(WALLET_CREDENTIALS).unwrap().as_ptr(),
                          open_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);

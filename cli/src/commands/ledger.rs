@@ -357,6 +357,10 @@ pub mod get_validator_info_command {
         };
 
         for (node, response) in responses {
+            if response.eq("timeout") {
+                println_err!("Restart pool node {} timeout.", node);
+                continue
+            }
             let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
                 .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
             println_succ!("Get validator info response for node {}:", node);
@@ -687,6 +691,11 @@ pub mod pool_restart_command {
         };
 
         for (node, response) in responses {
+            if response.eq("timeout") {
+                println_err!("Restart pool node {} timeout.", node);
+                continue
+            }
+
             let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
                 .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
@@ -872,7 +881,8 @@ pub mod get_utxo_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&utxo,
-                                 &vec![("input", "Input"),
+                                 &vec![("txo", "Txo"),
+                                       ("paymentAddress", "Payment Address"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
                                  "There are no utxo's");
@@ -922,7 +932,8 @@ pub mod payment_command {
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
                 print_list_table(&utxo,
-                                 &vec![("input", "Input"),
+                                 &vec![("txo", "Txo"),
+                                       ("paymentAddress", "Payment Address"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
                                  "There are no utxo's");
@@ -1166,7 +1177,8 @@ fn print_response_utxo(utxo: Option<Vec<serde_json::Value>>) -> Result<(), ()> {
         if !utxo.is_empty() {
             println_succ!("Following Utxo has been received.");
             print_list_table(&utxo,
-                             &vec![("input", "Input"),
+                             &vec![("txo", "Txo"),
+                                   ("paymentAddress", "Payment Address"),
                                    ("amount", "Amount"),
                                    ("extra", "Extra")],
                              "");
@@ -3866,7 +3878,7 @@ pub mod tests {
 
         let utxos = serde_json::from_str::<serde_json::Value>(&utxo_json).unwrap();
         let utxo: &serde_json::Value = &utxos.as_array().unwrap()[0];
-        utxo["input"].as_str().unwrap().to_string()
+        utxo["txo"].as_str().unwrap().to_string()
     }
 
     #[cfg(feature = "nullpay_plugin")]
