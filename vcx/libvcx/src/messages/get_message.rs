@@ -19,7 +19,11 @@ struct GetMessagesPayload{
     #[serde(skip_serializing_if = "Option::is_none")]
     exclude_payload: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    uids: Option<String>,
+    uids: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    status_codes: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pairwise_dids: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
@@ -50,6 +54,8 @@ impl GetMessages{
                 msg_type: MsgType { name: "GET_MSGS".to_string(), ver: "1.0".to_string(), },
                 uids: None,
                 exclude_payload: None,
+                status_codes: None,
+                pairwise_dids: None,
             },
             agent_payload: String::new(),
             validate_rc: error::SUCCESS.code_num,
@@ -58,9 +64,21 @@ impl GetMessages{
         }
     }
 
-    pub fn uid(&mut self, uid: &str) -> &mut Self{
+    pub fn uid(&mut self, uids: Option<Vec<String>>) -> &mut Self{
         //Todo: validate msg_uid??
-        self.payload.uids = Some(uid.to_string());
+        self.payload.uids = uids;
+        self
+    }
+
+    pub fn status_codes(&mut self, status_codes: Option<Vec<String>>) -> &mut Self{
+        //Todo: validate msg_uid??
+        self.payload.status_codes = status_codes;
+        self
+    }
+
+    pub fn pairwise_dids(&mut self, pairwise_dids: Option<Vec<String>>) -> &mut Self{
+        //Todo: validate msg_uid??
+        self.payload.pairwise_dids = pairwise_dids;
         self
     }
 
@@ -82,6 +100,30 @@ impl GetMessages{
                 return Ok(Vec::new());
             } else {
                 parse_get_messages_response(response)
+            },
+        }
+    }
+
+    pub fn download_messages(&mut self) -> Result<Vec<ConnectionMessages>, u32> {
+        if self.validate_rc != error::SUCCESS.code_num {
+            return Err(self.validate_rc)
+        }
+
+        self.payload.msg_type.name = "GET_MSGS_BY_CONNS".to_string();
+        let data = encode::to_vec_named(&self.payload).unwrap();
+        trace!("get_message content: {:?}", data);
+
+        let msg = Bundled::create(data).encode()?;
+
+        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap();
+        let data = bundle_for_agency(msg, &to_did)?;
+
+        match httpclient::post_u8(&data) {
+            Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
+            Ok(response) => if settings::test_agency_mode_enabled() && response.len() == 0 {
+                return Ok(Vec::new());
+            } else {
+                parse_get_connection_messages_response(response)
             },
         }
     }
@@ -149,6 +191,9 @@ pub struct Message {
     pub ref_msg_id: Option<String>,
     #[serde(skip_deserializing)]
     pub delivery_details: Vec<DeliveryDetails>,
+    #[serde(skip_deserializing)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decrypted_payload: Option<String>,
 }
 
 impl Message {
@@ -160,9 +205,28 @@ impl Message {
             uid: String::new(),
             msg_type: String::new(),
             ref_msg_id: None,
-            delivery_details: Vec::new(), 
+            delivery_details: Vec::new(),
+            decrypted_payload: None,
         }    
-    }    
+    }
+
+    pub fn decrypt(&self, vk: &str) -> Message {
+        let mut new_message = self.clone();
+        if self.payload.is_some() {
+            let payload = ::messages::to_u8(&self.payload.clone().unwrap());
+            match ::utils::libindy::crypto::parse_msg(&vk, &payload) {
+                Ok(x) => {
+                    new_message.decrypted_payload = match to_json(&x.1) {
+                        Ok(x) => Some(x.to_string()),
+                        Err(_) => None,
+                    };
+                }
+                Err(_) => (),
+            };
+        }
+        new_message.payload = None;
+        new_message
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
@@ -190,7 +254,51 @@ fn parse_get_messages_response(response: Vec<u8>) -> Result<Vec<Message>, u32> {
     Ok(response.msgs.to_owned())
 }
 
-pub fn get_matching_message(msg_uid:&str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<get_message::Message, u32> {
+#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GetConnectionMessagesResponse {
+    #[serde(rename = "@type")]
+    msg_type: MsgType,
+    msgs_by_conns: Vec<ConnectionMessages>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectionMessages {
+    pairwise_did: String,
+    pub msgs: Vec<Message>,
+}
+
+fn parse_get_connection_messages_response(response: Vec<u8>) -> Result<Vec<ConnectionMessages>, u32> {
+    let data = unbundle_from_agency(response)?;
+
+    trace!("parse_get_connection_message response: {:?}", data[0]);
+    let mut de = Deserializer::new(&data[0][..]);
+    let response: GetConnectionMessagesResponse = match Deserialize::deserialize(&mut de) {
+        Ok(x) => x,
+        Err(x) => {
+            error!("Could not parse messagepack: {}", x);
+
+            return Err(error::INVALID_MSGPACK.code_num)
+        },
+    };
+
+    let mut connection_messages = Vec::new();
+    for connection in response.msgs_by_conns.iter() {
+        let vk = ::utils::libindy::signus::get_local_verkey(&connection.pairwise_did)?;
+        let mut new_messages = Vec::new();
+        for message in connection.msgs.iter() {
+            new_messages.push(message.decrypt(&vk));
+        }
+        connection_messages.push(ConnectionMessages {
+            pairwise_did: connection.pairwise_did.clone(),
+            msgs: new_messages,
+        })
+    }
+    Ok(connection_messages)
+}
+
+pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str, msg_uid: Option<Vec<String>>) -> Result<Vec<Message>, u32> {
 
     match get_messages()
         .to(&pw_did)
@@ -205,50 +313,35 @@ pub fn get_matching_message(msg_uid:&str, pw_did: &str, pw_vk: &str, agent_did: 
         },
         Ok(response) => {
             if response.len() == 0 {
-                Ok(get_message::Message::new())    
+                Err(error::POST_MSG_FAILURE.code_num)
             } else {
                 trace!("message returned: {:?}", response[0]);
-                Ok(response[0].to_owned())
+                Ok(response)
             }
         },
     }
 }
 
-pub fn get_all_message(pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<Message>, u32> {
-    match get_messages()
-        .to(&pw_did)
-        .to_vk(&pw_vk)
-        .agent_did(&agent_did)
-        .agent_vk(&agent_vk)
-        .send_secure() {
-        Err(x) => {
-            error!("could not post get_messages: {}", x);
-            Err(error::POST_MSG_FAILURE.code_num)
-        },
-        Ok(response) => Ok(response)
-    }
-}
-
 pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
-    let message = get_matching_message(msg_id, pw_did, pw_vk, agent_did, agent_vk)?;
+    let message = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
     trace!("checking for ref_msg: {:?}", message);
     let msg_id;
-    if message.status_code == MessageAccepted.as_string() && !message.ref_msg_id.is_none() {
-        msg_id = message.ref_msg_id.unwrap()
+    if message[0].status_code == MessageAccepted.as_string() && !message[0].ref_msg_id.is_none() {
+        msg_id = message[0].ref_msg_id.clone().unwrap()
     }
     else {
         return Err(error::NOT_READY.code_num);
     }
 
-    let message = get_matching_message(&msg_id, pw_did, pw_vk, agent_did, agent_vk)?;
+    let message = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
 
     trace!("checking for pending message: {:?}", message);
 
     // this will work for both credReq and proof types
-    if message.status_code == MessagePending.as_string() && !message.payload.is_none() {
-        let data = to_u8(message.payload.as_ref().unwrap());
+    if message[0].status_code == MessagePending.as_string() && !message[0].payload.is_none() {
+        let data = to_u8(message[0].payload.as_ref().unwrap());
 	// TOD: check returned verkey
-        let (_, msg) = crypto::parse_msg(wallet::get_wallet_handle(), &pw_vk, &data)?;
+        let (_, msg) = crypto::parse_msg(&pw_vk, &data)?;
 	Ok(msg)
     }
     else {
@@ -256,10 +349,31 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     }
 }
 
+pub fn download_messages(status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> Result<Vec<ConnectionMessages>, u32> {
+
+    match get_messages()
+        .uid(uids)
+        .status_codes(status_codes)
+        .download_messages() {
+        Err(x) => {
+            error!("could not post get_messages: {}", x);
+            Err(error::POST_MSG_FAILURE.code_num)
+        },
+        Ok(response) => {
+            if response.len() == 0 {
+                Err(error::POST_MSG_FAILURE.code_num)
+            } else {
+                trace!("message returned: {:?}", response[0]);
+                Ok(response)
+            }
+        },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::constants::GET_MESSAGES_RESPONSE;
+    use utils::constants::{GET_MESSAGES_RESPONSE, GET_ALL_MESSAGES_RESPONSE};
 
     #[test]
     fn test_parse_get_messages_response() {
@@ -268,6 +382,17 @@ mod tests {
 
         let result = parse_get_messages_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 3)
+    }
+
+    #[test]
+    fn test_parse_get_connection_messages_response() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+
+        let json = to_json(&GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
+        println!("{}", json);
+        let result = parse_get_connection_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
+        assert_eq!(result.len(), 1)
     }
 
     #[test]
@@ -294,6 +419,7 @@ mod tests {
             msg_type: "connReq".to_string(),
             ref_msg_id: None,
             delivery_details: vec![delivery_details1],
+            decrypted_payload: None,
         };
         let msg2 = Message {
             status_code: MessageResponseCode::MessageCreate.as_string(),
@@ -303,6 +429,7 @@ mod tests {
             msg_type: "credOffer".to_string(),
             ref_msg_id: None,
             delivery_details: Vec::new(),
+            decrypted_payload: None,
         };
         let response = GetMessagesResponse {
             msg_type: MsgType { name: "MSGS".to_string(), ver: "1.0".to_string(), },
@@ -316,6 +443,41 @@ mod tests {
         println!("bundle: {:?}", bundle);
         let result = parse_get_messages_response(bundle).unwrap();
         println!("response: {:?}", result);
+    }
 
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_download_messages() {
+        use std::thread;
+        use std::time::Duration;
+
+        settings::set_defaults();
+        ::utils::devsetup::tests::setup_local_env("test_download_messages");
+        let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (faber, alice) = ::connection::tests::create_connected_connections();
+
+        let (schema_id, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
+        let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
+        let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_id.clone(),
+                                                                           "1".to_string(),
+                                                                           institution_did.clone(),
+                                                                           "credential_name".to_string(),
+                                                                           credential_data.to_owned(),
+                                                                           1).unwrap();
+        ::issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
+        thread::sleep(Duration::from_millis(2000));
+        // AS CONSUMER GET MESSAGES
+        ::utils::devsetup::tests::set_consumer();
+        let all_messages = download_messages(None, None).unwrap();
+        println!("{}", serde_json::to_string(&all_messages).unwrap());
+        let pending = download_messages(Some(vec!["MS-103".to_string()]), None).unwrap();
+        assert_eq!(pending.len(), 1);
+        let accepted = download_messages(Some(vec!["MS-104".to_string()]), None).unwrap();
+        assert_eq!(accepted[0].msgs.len(), 2);
+        let specific = download_messages(None, Some(vec![accepted[0].msgs[0].uid.clone()])).unwrap();
+        assert_eq!(specific.len(), 1);
+        let none = download_messages(Some(vec!["MS-103".to_string()]), Some(vec![accepted[0].msgs[0].uid.clone()]));
+        assert!(none.is_err());
+        ::utils::devsetup::tests::cleanup_dev_env("test_download_messages");
     }
 }

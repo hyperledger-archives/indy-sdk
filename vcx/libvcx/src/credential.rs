@@ -18,7 +18,6 @@ use messages::send_message::parse_msg_uid;
 use messages::extract_json_payload;
 
 use utils::libindy::anoncreds::{libindy_prover_create_credential_req, libindy_prover_store_credential};
-use utils::libindy::wallet;
 use utils::libindy::crypto;
 use utils::libindy::payments::{pay_a_payee, PaymentTxn};
 
@@ -181,17 +180,18 @@ impl Credential {
         let my_vk = self.my_vk.as_ref().ok_or(e_code)?;
         let msg_uid = self.msg_uid.as_ref().ok_or(e_code)?;
 
-        let payload = messages::get_message::get_all_message(my_did,
-                                                         my_vk,
-                                                         agent_did,
-                                                         agent_vk)?;
+        let payload = messages::get_message::get_connection_messages(my_did,
+                                                                     my_vk,
+                                                                     agent_did,
+                                                                     agent_vk,
+                                                                     None)?;
 
         for msg in payload {
             if msg.msg_type.eq("cred") {
                 match msg.payload {
                     Some(ref data) => {
                         let data = to_u8(data);
-                        let (_, data) = crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice())?;
+                        let (_, data) = crypto::parse_msg(&my_vk, data.as_slice())?;
 
                         let credential = extract_json_payload(&data)?;
 
@@ -427,17 +427,17 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<
 
     if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec()); }
 
-    let message = messages::get_message::get_matching_message(msg_id,
-                                                              &my_did,
-                                                              &my_vk,
-                                                              &agent_did,
-                                                              &agent_vk).map_err(|ec| CredentialError::CommonError(ec))?;
+    let message = messages::get_message::get_connection_messages(&my_did,
+                                                                 &my_vk,
+                                                                 &agent_did,
+                                                                 &agent_vk,
+                                                                 Some(vec![msg_id.to_string()])).map_err(|ec| CredentialError::CommonError(ec))?;
 
-    if message.msg_type.eq("credOffer") {
-        let (_, msg_data) = match message.payload {
+    if message[0].msg_type.eq("credOffer") {
+        let (_, msg_data) = match message[0].payload {
             Some(ref data) => {
                 let data = to_u8(data);
-                crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice()).map_err(|ec| CredentialError::CommonError(ec))?
+                crypto::parse_msg(&my_vk, data.as_slice()).map_err(|ec| CredentialError::CommonError(ec))?
             },
             None => return Err(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))
         };
@@ -445,7 +445,7 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<
         let offer = extract_json_payload(&msg_data).map_err(|ec| CredentialError::CommonError(ec))?;
         let (mut offer, payment_info) = parse_json_offer(&offer)?;
 
-        offer.msg_ref_id = Some(message.uid.to_owned());
+        offer.msg_ref_id = Some(message[0].uid.to_owned());
         let mut payload = Vec::new();
         payload.push(json!(offer));
         if payment_info.is_some() { payload.push(json!(payment_info.unwrap())); }
@@ -464,10 +464,11 @@ pub fn get_credential_offer_messages(connection_handle: u32, match_name: Option<
 
     if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec()); }
 
-    let payload = messages::get_message::get_all_message(&my_did,
-                                                     &my_vk,
-                                                     &agent_did,
-                                                     &agent_vk).map_err(|ec| CredentialError::CommonError(ec))?;
+    let payload = messages::get_message::get_connection_messages(&my_did,
+                                                                 &my_vk,
+                                                                 &agent_did,
+                                                                 &agent_vk,
+                                                                 None).map_err(|ec| CredentialError::CommonError(ec))?;
 
     let mut messages = Vec::new();
 
@@ -476,7 +477,7 @@ pub fn get_credential_offer_messages(connection_handle: u32, match_name: Option<
             let (_, msg_data) = match msg.payload {
                 Some(ref data) => {
                     let data = to_u8(data);
-                    crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice()).map_err(|ec| CredentialError::CommonError(ec))?
+                    crypto::parse_msg( &my_vk, data.as_slice()).map_err(|ec| CredentialError::CommonError(ec))?
                 },
                 None => return Err(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))
             };
@@ -588,6 +589,7 @@ pub mod tests {
     use utils::httpclient;
     use api::VcxStateType;
     use serde_json::Value;
+    use utils::libindy::wallet;
     pub const BAD_CREDENTIAL_OFFER: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","claim": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","claim_name": "Account Certificate","claim_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
     use utils::constants::{DEFAULT_SERIALIZED_CREDENTIAL,
                            DEFAULT_SERIALIZED_CREDENTIAL_PAYMENT_REQUIRED};

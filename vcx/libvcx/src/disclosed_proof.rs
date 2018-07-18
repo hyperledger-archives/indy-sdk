@@ -16,7 +16,6 @@ use credential_def::{ retrieve_credential_def };
 use schema::{ LedgerSchema };
 
 use utils::libindy::anoncreds;
-use utils::libindy::wallet;
 use utils::libindy::crypto;
 
 use settings;
@@ -412,17 +411,17 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
 
     if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
 
-    let message = messages::get_message::get_matching_message(msg_id,
-                                                              &my_did,
-                                                              &my_vk,
-                                                              &agent_did,
-                                                              &agent_vk).map_err(|ec| ProofError::CommonError(ec))?;
+    let message = messages::get_message::get_connection_messages(&my_did,
+                                                                 &my_vk,
+                                                                 &agent_did,
+                                                                 &agent_vk,
+                                                                 Some(vec![msg_id.to_string()])).map_err(|ec| ProofError::CommonError(ec))?;
 
-    if message.msg_type.eq("proofReq") {
-        let (_, msg_data) = match message.payload {
+    if message[0].msg_type.eq("proofReq") {
+        let (_, msg_data) = match message[0].payload {
             Some(ref data) => {
                 let data = to_u8(data);
-                crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice()).map_err(|ec| ProofError::CommonError(ec))?
+                crypto::parse_msg(&my_vk, data.as_slice()).map_err(|ec| ProofError::CommonError(ec))?
             },
             None => return Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))
         };
@@ -431,7 +430,7 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
         let mut request: ProofRequestMessage = serde_json::from_str(&request)
            .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;
 
-        request.msg_ref_id = Some(message.uid.to_owned());
+        request.msg_ref_id = Some(message[0].uid.to_owned());
         Ok(serde_json::to_string_pretty(&request).unwrap())
     } else {
         Err(ProofError::CommonError(error::INVALID_MESSAGES.code_num))
@@ -447,10 +446,11 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
 
     if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
 
-    let payload = messages::get_message::get_all_message(&my_did,
-                                                         &my_vk,
-                                                         &agent_did,
-                                                         &agent_vk).map_err(|ec| ProofError::CommonError(ec))?;
+    let payload = messages::get_message::get_connection_messages(&my_did,
+                                                                 &my_vk,
+                                                                 &agent_did,
+                                                                 &agent_vk,
+                                                                 None).map_err(|ec| ProofError::CommonError(ec))?;
 
     let mut messages: Vec<ProofRequestMessage> = Default::default();
 
@@ -461,7 +461,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
             let (_, msg_data) = match msg.payload {
                 Some(ref data) => {
                     let data = to_u8(data);
-                    crypto::parse_msg(wallet::get_wallet_handle(), &my_vk, data.as_slice())
+                    crypto::parse_msg(&my_vk, data.as_slice())
                         .map_err(|ec| ProofError::CommonError(ec))?
                 },
                 None => return Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num))
@@ -491,6 +491,7 @@ mod tests {
     extern crate serde_json;
 
     use super::*;
+    use utils::libindy::wallet;
     use utils::constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID, ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID };
     use serde_json::Value;
 
