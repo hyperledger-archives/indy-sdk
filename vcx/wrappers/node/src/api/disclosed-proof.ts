@@ -50,6 +50,44 @@ export interface IGenerateProofData {
 }
 
 export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
+  /**
+   * Create a proof for fulfilling a corresponding proof request
+   *
+   * Example:
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * disclosedProofRequest = {
+   * '@topic': {
+   *   mid: 9,
+   *   tid: 1
+   * },
+   * '@type': {
+   *   name: 'PROOF_REQUEST',
+   *   version: '1.0'
+   * },
+   * 'msg_ref_id': 'abcd',
+   * 'proof_request_data': {
+   *   name: 'Account Certificate',
+   *   nonce: '838186471541979035208225',
+   *   requested_attributes: {
+   *      business_2: {
+   *       name: 'business'
+   *     },
+   *     email_1: {
+   *       name: 'email'
+   *     },
+   *     name_0: {
+   *       name: 'name'
+   *     }
+   *   },
+   *   requested_predicates: {},
+   *   version: '0.1'
+   * }
+   * sourceId = 'testDisclosedProofSourceId'
+   * disclosedProof = await DisclosedProof.create({ connection, request: disclosedProofRequest, sourceId: sourceId })
+   * ```
+   */
   public static async create ({ sourceId, request }: IDisclosedProofCreateData): Promise<DisclosedProof> {
     const newObj = new DisclosedProof(sourceId)
     try {
@@ -66,6 +104,16 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
     }
   }
 
+  /**
+   * Create a proof for fulfilling a corresponding proof request with MsgId from Agency Service
+   *
+   * Example:
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * ```
+   */
   public static async createWithMsgId ({ connection, sourceId, msgId }: IDisclosedProofCreateWithMsgIdData):
   Promise<DisclosedProof> {
     try {
@@ -96,7 +144,17 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
       throw new VCXInternalError(err)
     }
   }
-
+  /**
+   * Serializes the object
+   *
+   * Example:
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * data = await disclosedProof.serialize()
+   * ```
+   */
   public static async deserialize (data: ISerializedData<IDisclosedProofData>) {
     try {
       const newObj = await super._deserialize<DisclosedProof, {}>(DisclosedProof, data)
@@ -105,7 +163,17 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
       throw new VCXInternalError(err)
     }
   }
-
+  /**
+   * Serializes the object
+   *
+   * Example:
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * requests = disclosedProof.getRequests(connection)
+   * ```
+   */
   public static async getRequests (connection: Connection): Promise<IDisclosedProofRequest[]> {
     const requestsStr = await createFFICallbackPromise<string>(
       (resolve, reject, cb) => {
@@ -136,6 +204,17 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
   protected _deserializeFn = rustAPI().vcx_disclosed_proof_deserialize
   private _proofReq: string = ''
 
+  /**
+   * Gets the credentials from a disclosed proof
+   *
+   * Example:
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * creds = await disclosedProof.getCredentials()
+   * ```
+   */
   public async getCredentials (): Promise<IRetrievedCreds> {
     try {
       const credsStr = await createFFICallbackPromise<string>(
@@ -163,6 +242,23 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
     }
   }
 
+  /**
+   * Sends the proof to the Connection
+   *
+   * Example:
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * { attrs } = await disclosedProof.getCredentials()
+   * valSelfAttested = 'testSelfAttestedVal'
+   * await disclosedProof.generateProof({
+   *    {},
+   *    mapValues(attrs, () => valSelfAttested)
+   *  })
+   * await disclosedProof.sendProof(connection)
+   * ```
+   */
   public async sendProof (connection: Connection): Promise<void> {
     try {
       await createFFICallbackPromise<void>(
@@ -188,6 +284,22 @@ export class DisclosedProof extends VCXBaseWithState<IDisclosedProofData> {
     }
   }
 
+  /**
+   * Generates the proof
+   *
+   * Example:
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * disclosedProof = await DisclosedProof.createWithMsgId(connection, 'testDisclousedProofMsgId', 'sourceId')
+   * { attrs } = await disclosedProof.getCredentials()
+   * valSelfAttested = 'testSelfAttestedVal'
+   * await disclosedProof.generateProof({
+   *    {},
+   *    mapValues(attrs, () => valSelfAttested)
+   *  })
+   * ```
+   */
   public async generateProof ({ selectedCreds, selfAttestedAttrs }: IGenerateProofData): Promise<void> {
     try {
       await createFFICallbackPromise<void>(

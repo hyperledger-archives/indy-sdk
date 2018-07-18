@@ -28,6 +28,43 @@ class DisclosedProof(VcxStateful):
 
     @staticmethod
     async def create(source_id: str, proof_request: str):
+        """
+        Create a proof for fulfilling a corresponding proof request
+        :param source_id: Tag associated by user of sdk
+        :param proof_request: Proof Request data sent by requestor.
+        Example:
+        source_id = 'sourceId'
+        request = {
+            "@topic": {
+            "mid": 9,
+            "tid": 1
+            },
+            "@type": {
+                "name": "PROOF_REQUEST",
+                "version":"1.0"
+            },
+            "msg_ref_id": "ymy5nth",
+            "proof_request_data": {
+                "name": "Account Certificate",
+                "nonce": "838186471541979035208225",
+                "requested_attributes": {
+                    "business_2": {
+                        "name": "business"
+                    },
+                    "email_1": {
+                        "name": "email"
+                    },
+                    "name_0": {
+                        "name": "name"
+                    }
+                },
+                "requested_predicates": {},
+                "version": "0.1"
+            }
+        }
+        disclosed_proof = await DisclosedProof.create(source_id, request)
+        :return: Disclosed Proof Object
+        """
         constructor_params = (source_id,)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
@@ -40,6 +77,19 @@ class DisclosedProof(VcxStateful):
 
     @staticmethod
     async def create_with_msgid(source_id: str, connection: Connection, msg_id: str):
+        """
+
+        :param source_id:
+        :param connection:
+        :param msg_id:
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        :return: DisclosedProof
+        """
         proof = DisclosedProof(source_id)
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
@@ -61,6 +111,18 @@ class DisclosedProof(VcxStateful):
 
     @staticmethod
     async def deserialize(data: dict):
+        """
+        :param data: Data provided by the serialize method
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        data = await disclosed_proof.serialize()
+        disclosed_proof2 = await DisclosedProof.deserialize(data)
+        :return:  DisclosedProof
+        """
         disclosed_proof = await DisclosedProof._deserialize("vcx_disclosed_proof_deserialize",
                                                       json.dumps(data),
                                                       data.get('data').get('source_id'))
@@ -68,6 +130,17 @@ class DisclosedProof(VcxStateful):
 
     @staticmethod
     async def get_requests(connection: Connection) -> dict:
+        """
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        requests = await DisclosedProof.get_requests(connection)
+        :param connection: Connection
+        :return: requests associated with the connection
+        """
         if not hasattr(DisclosedProof.get_requests, "cb"):
             DisclosedProof.get_requests.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
@@ -80,18 +153,66 @@ class DisclosedProof(VcxStateful):
         return json.loads(data.decode())
 
     async def serialize(self) -> dict:
+        """
+        Serialize the object
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        data = await disclosed_proof.serialize()
+        :return:
+        """
         return await self._serialize(DisclosedProof, 'vcx_disclosed_proof_serialize')
 
     async def update_state(self) -> int:
+        """
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        assert await disclosed_proof.update_state() == State.RequestReceived
+        :return:
+        """
         return await self._update_state(DisclosedProof, 'vcx_disclosed_proof_update_state')
 
     async def get_state(self) -> int:
+        """
+
+        Gets the state of the entity.
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        assert await proof.get_state() == State.Initialized
+        :return: StateType
+        """
         return await self._get_state(DisclosedProof, 'vcx_disclosed_proof_get_state')
 
     def release(self) -> None:
+        """
+        Internal method used for memory management
+        :return: None
+        """
         self._release(DisclosedProof, 'vcx_disclosed_proof_release')
 
     async def get_creds(self) -> dict:
+        """
+        Gets the credentials from a disclosed proof
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        creds = await disclosed_proof.get_creds()
+        :return: credentials
+        """
         if not hasattr(DisclosedProof.get_creds, "cb"):
             self.logger.debug("vcx_disclosed_proof_retrieve_credentials: Creating callback")
             DisclosedProof.send_proof.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
@@ -104,6 +225,18 @@ class DisclosedProof(VcxStateful):
         return json.loads(data.decode())
 
     async def send_proof(self, connection: Connection):
+        """
+        Sends the proof to the Connection
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        await disclosed_proof.send_proof(connection)
+        :param connection: Connection
+        :return: None
+        """
         if not hasattr(DisclosedProof.send_proof, "cb"):
             self.logger.debug("vcx_disclosed_proof_send_proof: Creating callback")
             DisclosedProof.send_proof.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
@@ -117,6 +250,19 @@ class DisclosedProof(VcxStateful):
                       DisclosedProof.send_proof.cb)
 
     async def generate_proof(self, selected_creds: dict, self_attested_attrs: dict):
+        """
+        Generates the proof
+        Example:
+        msg_id = '1'
+        phone_number = '8019119191'
+        connection = await Connection.create(source_id)
+        await connection.connect(phone_number)
+        disclosed_proof = await DisclosedProof.create_with_msgid(source_id, connection, msg_id)
+        await disclosed_proof.generate_proof({}, {})
+        :param selected_creds: Credentials issued
+        :param self_attested_attrs: Self Attested Attributes
+        :return: None
+        """
         if not hasattr(DisclosedProof.send_proof, "cb"):
             self.logger.debug("vcx_disclosed_proof_generate_proof: Creating callback")
             DisclosedProof.send_proof.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))

@@ -84,19 +84,23 @@ export interface IProofPredicate {
 }
 
 /**
- * @class Class representing a Connection
+ * Class representing a Proof
  */
 export class Proof extends VCXBaseWithState<IProofData> {
   /**
-   * @memberof Proof
-   * @description Builds a generic Proof object
-   * @static
-   * @async
-   * @function create
-   * @param {IProofCreateData} data
-   * @example <caption>Example of IProofConfig</caption>
-   * {sourceId: string,attrs: [{restrictions: [IFilter ...], name: "attrName"}], name: "name of proof"}
-   * @returns {Promise<Proof>} A Proof Object
+   * Builds a generic proof object
+   *
+   * Example:
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof1 = await Proof.create(data)
+   * ```
    */
   public static async create ({ sourceId, ...createDataRest }: IProofCreateData): Promise<Proof> {
     try {
@@ -116,16 +120,23 @@ export class Proof extends VCXBaseWithState<IProofData> {
     }
   }
 
-  /**
-   * @description Builds a Proof object with defined attributes.
-   * Attributes are provided by a previous call to the serialize function.
-   * @static
-   * @async
-   * @memberof Proof
-   * @function deserialize
-   * @param {ISerializedData<IProofData>} proofData - Data obtained by serialize api. Used to create proof object.
-   * @returns {Promise<Proof>} A Proof Object
-   */
+/**
+ * Builds a Proof object with defined attributes.
+ *
+ * Attributes are provided by a previous call to the serialize function.
+ * ```
+ * data = {
+ *   attrs: [
+ *     { name: 'attr1' },
+ *     { name: 'attr2' }],
+ *   name: 'Proof',
+ *   sourceId: 'testProofSourceId'
+ * }
+ * proof1 = await Proof.create(data)
+ * data1 = await Proof.serialize()
+ * await Proof.deserialize(data1)
+ * ```
+ */
   public static async deserialize (proofData: ISerializedData<IProofData>) {
     try {
       const { data: { requested_attrs, name } } = proofData
@@ -157,14 +168,20 @@ export class Proof extends VCXBaseWithState<IProofData> {
   }
 
   /**
-   * @memberof Proof
-   * @description Sends a proof request to the end user.
-   * Proof request is made up of the data provided in the creation of this object
-   * @async
-   * @param {Connection} connection
-   * Connection is the object that was created to set up the pairwise relationship.
-   * @function requestProof
-   * @returns {Promise<void>}
+   * Sends a proof request to pairwise connection.
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * ```
    */
   public async requestProof (connection: Connection): Promise<void> {
     try {
@@ -192,12 +209,22 @@ export class Proof extends VCXBaseWithState<IProofData> {
   }
 
   /**
-   * @memberof Proof
-   * @description Returns the requested proof if available
-   * @async
-   * @function getProof
-   * @param {Connection} connection
-   * @returns {Promise<IProofResponses>} The proof and the state of the proof (valid | invalid | undefined)
+   * Returns the requested proof if available
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * proofData = await proof.getProof(connection)
+   * assert.equal(proofData.proofState, ProofState.Verified)
+   * ```
    */
   public async getProof (connection: Connection): Promise<IProofResponses> {
     try {
@@ -225,15 +252,70 @@ export class Proof extends VCXBaseWithState<IProofData> {
       throw new VCXInternalError(err)
     }
   }
-
+  /**
+   * Get the state of the proof
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * assert.equal(await proof.getState(), StateType.OfferSent)
+   * ```
+   */
   get proofState (): ProofState | null {
     return this._proofState
   }
-
+  /**
+   * Get the attributes of the proof
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * assert.equal(await proof.getState(), StateType.OfferSent)
+   * proofData = await proof.getProof(connection)
+   * await proof.updateState()
+   * assert.equal(await proof.requestedAttributes(), data.attrs)
+   * ```
+   */
   get requestedAttributes () {
     return this._requestedAttributes
   }
 
+  /**
+   * Get the name of the proof
+   *
+   * Example
+   * ```
+   * data = {
+   *   attrs: [
+   *     { name: 'attr1' },
+   *     { name: 'attr2' }],
+   *   name: 'Proof',
+   *   sourceId: 'testProofSourceId'
+   * }
+   * proof = await Proof.create(data)
+   * await proof.requestProof(connection)
+   * assert.equal(await proof.getState(), StateType.OfferSent)
+   * proofData = await proof.getProof(connection)
+   * await proof.updateState()
+   * assert.equal(await proof.name(), data.name)
+   * ```
+   */
   get name () {
     return this._name
   }
