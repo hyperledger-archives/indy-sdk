@@ -57,6 +57,8 @@ import com.evernym.sdk.vcx.vcx.UnknownErrorException;
 import com.evernym.sdk.vcx.vcx.UnknownLibindyErrorException;
 import com.evernym.sdk.vcx.vcx.WalletAleradyOpenException;
 import com.evernym.sdk.vcx.vcx.WalletAlreadyExistsException;
+import com.evernym.sdk.vcx.vcx.WalletItemNotFoundException;
+import com.evernym.sdk.vcx.vcx.WalletItemAlreadyExistsException;
 
 /**
  * Thrown when an Indy specific error has occurred.
@@ -199,6 +201,10 @@ public class VcxException extends Exception {
                 return new WalletAlreadyExistsException();
             case WALLET_ALREADY_OPEN:
                 return new WalletAleradyOpenException();
+            case WALLET_ITEM_NOT_FOUND:
+                return new WalletItemNotFoundException();
+            case WALLET_ITEM_CANNOT_ADD:
+                return new WalletItemAlreadyExistsException();
             case INVALID_CREDENTIAL_HANDLE:
                 return new InvalidCredentialHandleException();
             case INVALID_CREDENTIAL_JSON:

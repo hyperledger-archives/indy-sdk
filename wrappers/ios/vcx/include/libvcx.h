@@ -298,6 +298,18 @@ vcx_error_t vcx_wallet_export(vcx_command_handle_t handle, const char *path, con
 /** Import an encrypted file back into the wallet */
 vcx_error_t vcx_wallet_import(vcx_command_handle_t handle, const char *path, const char *backup_key, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 
+/** Add a record inside a wallet */
+vcx_error_t vcx_wallet_add_record(vcx_command_handle_t chandle, const char * type_, const char *record_id, const char *record_value, const char *tags_json, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
+
+/** Get a record from wallet */
+vcx_error_t vcx_wallet_get_record(vcx_command_handle_t chandle, const char * type_, const char *record_id, const char *options, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *record_json));
+
+/** Delete a record from wallet */
+vcx_error_t vcx_wallet_delete_record(vcx_command_handle_t chandle, const char * type_, const char *record_id, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
+
+/** Update a record in wallet if it is already added */
+vcx_error_t vcx_wallet_update_record_value(vcx_command_handle_t chandle, const char *type_, const char *record_id, const char *record_value, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
+
 /** For testing purposes only */
 void vcx_set_next_agency_response(int);
 #ifdef __cplusplus
