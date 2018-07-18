@@ -48,9 +48,9 @@ public final class LedgerResults {
 	public static class ParseRegistryResponseResult extends IndyJava.Result {
 
 		private String id, objectJson;
-		int timestamp;
+		long timestamp;
 
-		ParseRegistryResponseResult(String id, String objectJson, int timestamp) {
+		ParseRegistryResponseResult(String id, String objectJson, long timestamp) {
 			this.id = id;
 			this.objectJson = objectJson;
 			this.timestamp = timestamp;
@@ -79,7 +79,7 @@ public final class LedgerResults {
 		 *
 		 * @return The timestamp.
 		 */
-		public int getTimestamp() {
+		public long getTimestamp() {
 			return this.timestamp;
 		}
 	}
