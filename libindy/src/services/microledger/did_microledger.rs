@@ -1,7 +1,8 @@
 use std::collections::HashMap;
+use std::str;
 
-use byteorder::{LittleEndian, WriteBytesExt};
 use serde_json;
+use rand::{thread_rng, Rng};
 
 use errors::common::CommonError;
 use services::ledger::merkletree::merkletree::MerkleTree;
@@ -12,6 +13,8 @@ use services::wallet::wallet::EncryptedValue;
 use errors::wallet::WalletStorageError;
 use services::microledger::microledger::Microledger;
 use services::microledger::txn_builder::TxnBuilder;
+use services::microledger::utils::byte_array_to_usize;
+use services::microledger::utils::usize_to_byte_array;
 
 const TYP: [u8; 3] = [0, 1, 2];
 
@@ -54,14 +57,62 @@ impl Microledger for DidMicroledger where Self: Sized {
         let txn_bytes = txn.as_bytes().to_vec();
         let txn_bytes_len = txn_bytes.len();
         self.merkle_tree.append(txn_bytes.clone())?;
-        // TODO: Fix this, the key should be generated
-        let enc = EncryptedValue::new(txn_bytes, vec![0; txn_bytes_len]);
+        // TODO: Fix this, find out the correct size of the key
+        let key = thread_rng().gen_iter().take(txn_bytes_len).collect();
+        let enc = EncryptedValue::new(txn_bytes, key);
         let new_size = self.get_size();
-        let mut wtr: Vec<u8> = Vec::new();
-        wtr.write_u64::<LittleEndian>(new_size as u64).unwrap();
-        self.storage.add(&TYP, &wtr, &enc, &vec![]).map_err(|err|
+        let id = usize_to_byte_array(new_size);
+        self.storage.add(&TYP, &id, &enc, &vec![]).map_err(|err|
             CommonError::InvalidStructure(format!("Error while adding to ledger storage: {:?}.", err)))?;
         Ok(new_size)
+    }
+
+    fn get(&self, from: u64, to: Option<u64>) -> Result<Vec<String>, CommonError> {
+        if from < 1 {
+            return Err(CommonError::InvalidStructure(format!("Invalid seq no: {}", from)))
+        }
+
+        // TODO: Use `storage.search` instead of `storage.get_all`
+        let mut storage_iterator = self.storage.get_all().map_err(|err|
+            CommonError::InvalidStructure(format!("Error getting ledger storage iterator: {:?}.", err)))?;
+
+        // Question: Why does get_total_count return a result of Option? When can the option be None
+        match to {
+            Some(t) => {
+                let ledger_size = self.get_size() as u64;
+                if t > ledger_size {
+                    return Err(CommonError::InvalidStructure(format!("`to` greater than ledger size: to={}, ledger size={}", t, ledger_size)))
+                }
+            },
+            None => ()
+        }
+
+        let mut res: Vec<String> = Vec::new();
+        // TODO Duplicated from `populate_merkle_tree`, change when changing iterator
+        loop {
+            match storage_iterator.next() {
+                Ok(v) => {
+                    match v {
+                        Some(r) => {
+                            let id = byte_array_to_usize(r.id) as u64;
+                            match r.value {
+                                Some(ev) => {
+                                    if id >= from && (to.is_none() || to.unwrap() >= id) {
+                                        res.push(str::from_utf8(&ev.data).unwrap().to_string())
+                                    }
+                                },
+                                None => continue
+                            }
+                            continue
+                        }
+                        None => break
+                    }
+                },
+                Err(e) => return Err(CommonError::InvalidStructure(format!("Error getting ledger storage iterator: {:?}.", e)))
+            }
+        }
+
+        Ok(res)
     }
 }
 
@@ -118,7 +169,7 @@ impl DidMicroledger {
     fn populate_merkle_tree(&mut self) -> Result<(), CommonError> {
         let mut storage_iterator = self.storage.get_all().map_err(|err|
             CommonError::InvalidStructure(format!("Error getting ledger storage iterator: {:?}.", err)))?;
-        while true {
+        loop {
             match storage_iterator.next() {
                 Ok(v) => {
                     match v {
@@ -176,6 +227,22 @@ mod tests {
     fn get_new_microledger(did: &str) -> DidMicroledger{
         let options = valid_storage_options();
         DidMicroledger::new(did, options).unwrap()
+    }
+
+    fn get_4_txns() -> Vec<String> {
+        let txn = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1"}}"#;
+        let txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        let txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        let txn_4 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent.example.com","type":"3","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        vec![txn.to_string(), txn_2.to_string(), txn_3.to_string(), txn_4.to_string()]
+    }
+
+    fn add_4_txns(ml: &mut DidMicroledger) -> usize {
+        for txn in get_4_txns() {
+            ml.add(&txn).unwrap();
+        }
+        ml.get_size()
+
     }
 
     #[test]
@@ -261,20 +328,13 @@ mod tests {
     fn test_rebuild_merkle_tree() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let txn = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1"}}"#;
-        let txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
-        let txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
-        let txn_4 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent.example.com","type":"3","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
         let mut root_hash = String::from("");
         let mut size = 0;
 
         // Create a new microledger and fill it with some txns
         {
             let mut ml = get_new_microledger(did);
-            ml.add(txn).unwrap();
-            ml.add(txn_2).unwrap();
-            ml.add(txn_3).unwrap();
-            let s = ml.add(txn_4).unwrap();
+            let s = add_4_txns(&mut ml);
             assert_eq!(s, 4);
             let s = ml.get_size();
             assert_eq!(s, 4);
@@ -326,5 +386,36 @@ mod tests {
         let mut ml = get_new_microledger(did);
         let s = ml.add_endpoint_txn(verkey, address).unwrap();
         assert_eq!(s, 1);
+    }
+
+    #[test]
+    fn test_get_txns() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let mut ml = get_new_microledger(did);
+        let s = add_4_txns(&mut ml);
+        assert_eq!(s, 4);
+        let txns = get_4_txns();
+
+        let t = ml.get(0, None);
+        assert!(t.is_err());
+
+        let t = ml.get(1, None).unwrap();
+        assert_eq!(t, txns.clone());
+
+        let t = ml.get(1, Some(1)).unwrap();
+        assert_eq!(t[0], txns[0].to_owned());
+
+        let t = ml.get(1, Some(2)).unwrap();
+        assert_eq!(t, txns[0..2].to_vec());
+
+        let t = ml.get(1, Some(3)).unwrap();
+        assert_eq!(t, txns[0..3].to_vec());
+
+        let t = ml.get(1, Some(4)).unwrap();
+        assert_eq!(t, txns[0..4].to_vec());
+
+        let t = ml.get(1, Some(5));
+        assert!(t.is_err());
     }
 }
