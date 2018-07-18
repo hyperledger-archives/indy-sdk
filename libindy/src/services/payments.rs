@@ -20,8 +20,8 @@ pub struct PaymentsMethod {
     create_address: CreatePaymentAddressCB,
     add_request_fees: AddRequestFeesCB,
     parse_response_with_fees: ParseResponseWithFeesCB,
-    build_get_utxo_request: BuildGetSourcesRequestCB,
-    parse_get_utxo_response: ParseGetSourcesResponseCB,
+    build_get_utxo_request: BuildGetUTXORequestCB,
+    parse_get_utxo_response: ParseGetUTXOResponseCB,
     build_payment_req: BuildPaymentReqCB,
     parse_payment_response: ParsePaymentResponseCB,
     build_mint_req: BuildMintReqCB,
@@ -36,8 +36,8 @@ impl PaymentsMethodCBs {
     pub fn new(create_address: CreatePaymentAddressCB,
                add_request_fees: AddRequestFeesCB,
                parse_response_with_fees: ParseResponseWithFeesCB,
-               build_get_utxo_request: BuildGetSourcesRequestCB,
-               parse_get_utxo_response: ParseGetSourcesResponseCB,
+               build_get_utxo_request: BuildGetUTXORequestCB,
+               parse_get_utxo_response: ParseGetUTXOResponseCB,
                build_payment_req: BuildPaymentReqCB,
                parse_payment_response: ParsePaymentResponseCB,
                build_mint_req: BuildMintReqCB,
@@ -128,7 +128,7 @@ impl PaymentsService {
 
     pub fn build_get_utxo_request(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, address: &str) -> Result<(), PaymentsError> {
         trace!("build_get_utxo_request >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, address: {:?}", type_, wallet_handle, submitter_did, address);
-        let build_get_utxo_request: BuildGetSourcesRequestCB = self.methods.borrow().get(type_)
+        let build_get_utxo_request: BuildGetUTXORequestCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_utxo_request;
 
         let submitter_did = CString::new(submitter_did)?;
@@ -145,7 +145,7 @@ impl PaymentsService {
 
     pub fn parse_get_utxo_response(&self, cmd_handle: i32, type_: &str, response: &str) -> Result<(), PaymentsError> {
         trace!("parse_get_utxo_response >>> type_: {:?}, response: {:?}", type_, response);
-        let parse_get_utxo_response: ParseGetSourcesResponseCB = self.methods.borrow().get(type_)
+        let parse_get_utxo_response: ParseGetUTXOResponseCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.parse_get_utxo_response;
 
         let response = CString::new(response)?;

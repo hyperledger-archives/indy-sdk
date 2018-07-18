@@ -141,8 +141,8 @@ pub fn register_payment_method(payment_method_name: &str,
                                create_payment_address: Option<CreatePaymentAddressCB>,
                                add_request_fees: Option<AddRequestFeesCB>,
                                parse_response_with_fees: Option<ParseResponseWithFeesCB>,
-                               build_get_utxo_request: Option<BuildGetSourcesRequestCB>,
-                               parse_get_utxo_response: Option<ParseGetSourcesResponseCB>,
+                               build_get_utxo_request: Option<BuildGetUTXORequestCB>,
+                               parse_get_utxo_response: Option<ParseGetUTXOResponseCB>,
                                build_payment_req: Option<BuildPaymentReqCB>,
                                parse_payment_response: Option<ParsePaymentResponseCB>,
                                build_mint_req: Option<BuildMintReqCB>,
@@ -277,10 +277,10 @@ pub fn parse_get_utxo_response(payment_method: &str, resp_json: &str) -> Result<
     let payment_method = CString::new(payment_method).unwrap();
     let resp_json = CString::new(resp_json).unwrap();
 
-    let err = indy_parse_get_sources_response(cmd_handle,
-                                              payment_method.as_ptr(),
-                                              resp_json.as_ptr(),
-                                              cb);
+    let err = indy_parse_get_utxo_response(cmd_handle,
+                                           payment_method.as_ptr(),
+                                           resp_json.as_ptr(),
+                                           cb);
 
     super::results::result_to_string(err, receiver)
 }

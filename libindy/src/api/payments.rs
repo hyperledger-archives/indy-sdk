@@ -107,8 +107,8 @@ pub type BuildGetSourcesRequestCB = extern fn(command_handle: i32,
                                               submitter_did: *const c_char,
                                               payment_address: *const c_char,
                                               cb: Option<extern fn(command_handle_: i32,
-                                                                err: ErrorCode,
-                                                                get_sources_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+                                                                   err: ErrorCode,
+                                                                   get_sources_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
 /// Parses response for Indy request for getting sources list.
 ///
@@ -468,7 +468,7 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 ///
 /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
 /// in the future releases.
-/// 
+///
 /// #Params
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
@@ -544,7 +544,7 @@ pub extern fn indy_add_request_fees(command_handle: i32,
 ///
 /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
 /// in the future releases.
-/// 
+///
 /// #Returns
 /// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
 ///   [{
@@ -601,13 +601,13 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 /// payment_method
 #[no_mangle]
 pub extern fn indy_build_get_sources_request(command_handle: i32,
-                                          wallet_handle: i32,
-                                          submitter_did: *const c_char,
-                                          payment_address: *const c_char,
-                                          cb: Option<extern fn(command_handle_: i32,
-                                                               err: ErrorCode,
-                                                               get_sources_txn_json: *const c_char,
-                                                               payment_method: *const c_char)>) -> ErrorCode {
+                                             wallet_handle: i32,
+                                             submitter_did: *const c_char,
+                                             payment_address: *const c_char,
+                                             cb: Option<extern fn(command_handle_: i32,
+                                                                  err: ErrorCode,
+                                                                  get_sources_txn_json: *const c_char,
+                                                                  payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_sources_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
@@ -660,8 +660,8 @@ pub extern fn indy_parse_get_sources_response(command_handle: i32,
                                               payment_method: *const c_char,
                                               resp_json: *const c_char,
                                               cb: Option<extern fn(command_handle_: i32,
-                                                                err: ErrorCode,
-                                                                sources_json: *const c_char)>) -> ErrorCode {
+                                                                   err: ErrorCode,
+                                                                   sources_json: *const c_char)>) -> ErrorCode {
     trace!("indy_parse_get_sources_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(resp_json, ErrorCode::CommonInvalidParam3);
