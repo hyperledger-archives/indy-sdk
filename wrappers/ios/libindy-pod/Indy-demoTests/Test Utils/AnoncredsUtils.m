@@ -167,7 +167,7 @@
                                               "     }"
                                               "},\"requested_proof\":{\"revealed_attrs\":{\"attr1_referent\":{\"sub_proof_index\":0,\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"}},\"self_attested_attrs\":{},\"unrevealed_attrs\":{},\"predicates\":{\"predicate1_referent\":{\"sub_proof_index\":0}}},"
                                               "\"identifiers\":[{\"cred_def_id\":\"%@\",\"schema_id\":\"%@\",\"rev_reg_id\":null,\"timestamp\":null}]}",
-                    [[AnoncredsUtils sharedInstance] getIssuer1GvtCredDefId], [[AnoncredsUtils sharedInstance] getGvtSchemaId]];
+                                      [[AnoncredsUtils sharedInstance] getIssuer1GvtCredDefId], [[AnoncredsUtils sharedInstance] getGvtSchemaId]];
 }
 
 // MARK: issuer credential
@@ -538,6 +538,30 @@
     return err;
 }
 
+- (NSError *)proverGetCredentialWithId:(NSString *)credId
+                          walletHandle:(IndyHandle)walletHandle
+                        credentialJson:(NSString **)outCredentialJson {
+    __block NSError *err = nil;
+    __block NSString *outJson;
+    XCTestExpectation *completionExpectation = nil;
+
+    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds proverGetCredentialWithId:credId
+                                walletHandle:walletHandle
+                                  completion:^(NSError *error, NSString *credentialsJSON) {
+                                      err = error;
+                                      outJson = credentialsJSON;
+                                      [completionExpectation fulfill];
+                                  }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    if (outCredentialJson) {*outCredentialJson = outJson;}
+
+    return err;
+}
+
 - (NSError *)proverGetCredentialsForFilter:(NSString *)filterJSON
                               walletHandle:(IndyHandle)walletHandle
                             credentilsJson:(NSString **)credentialsJson {
@@ -558,6 +582,134 @@
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
     if (credentialsJson) {*credentialsJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)proverSearchCredentialsForQuery:(NSString *)queryJSON
+                                 walletHandle:(IndyHandle)walletHandle
+                                 searchHandle:(IndyHandle *)searchHandle
+                                   totalCount:(NSNumber **)totalCount {
+    __block NSError *err = nil;
+    XCTestExpectation *completionExpectation = nil;
+
+    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds proverSearchCredentialsForQuery:queryJSON
+                                       walletHandle:walletHandle
+                                         completion:^(NSError *error, IndyHandle outSearchHandle, NSNumber *outTotalCount) {
+                                             err = error;
+                                             if (searchHandle) *searchHandle = outSearchHandle;
+                                             if (totalCount) *totalCount = outTotalCount;
+                                             [completionExpectation fulfill];
+                                         }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    return err;
+}
+
+- (NSError *)proverFetchCredentialsWithSearchHandle:(IndyHandle)searchHandle
+                                              count:(NSNumber *)count
+                                     credentilsJson:(NSString **)credentialsJson {
+    __block NSError *err = nil;
+    __block NSString *outJson;
+    XCTestExpectation *completionExpectation = nil;
+
+    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds proverFetchCredentialsWithSearchHandle:searchHandle
+                                                    count:count
+                                               completion:^(NSError *error, NSString *credentialsJSON) {
+                                                   err = error;
+                                                   outJson = credentialsJSON;
+                                                   [completionExpectation fulfill];
+                                               }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    if (credentialsJson) {*credentialsJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)proverCloseCredentialsSearchWithHandle:(IndyHandle)searchHandle {
+
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyAnoncreds proverCloseCredentialsSearchWithHandle:searchHandle
+                                               completion:^(NSError *error) {
+                                                   err = error;
+                                                   [completionExpectation fulfill];
+                                               }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    return err;
+}
+
+- (NSError *)proverSearchCredentialsForProofRequest:(NSString *)proofReqJSON
+                                     extraQueryJson:(NSString *)extraQueryJson
+                                       walletHandle:(IndyHandle)walletHandle
+                                       searchHandle:(IndyHandle *)searchHandle {
+    __block NSError *err = nil;
+    XCTestExpectation *completionExpectation = nil;
+
+    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds proverSearchCredentialsForProofRequest:proofReqJSON
+                                           extraQueryJSON:extraQueryJson
+                                             walletHandle:walletHandle
+                                               completion:^(NSError *error, IndyHandle outSearchHandle) {
+                                                   err = error;
+                                                   if (searchHandle) *searchHandle = outSearchHandle;
+                                                   [completionExpectation fulfill];
+                                               }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    return err;
+}
+
+- (NSError *)proverFetchCredentialsForProofReqItemReferent:(NSString *)itemReferent
+                                              searchHandle:(IndyHandle)searchHandle
+                                                     count:(NSNumber *)count
+                                            credentilsJson:(NSString **)credentialsJson {
+    __block NSError *err = nil;
+    __block NSString *outJson;
+    XCTestExpectation *completionExpectation = nil;
+
+    completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+
+    [IndyAnoncreds proverFetchCredentialsForProofReqItemReferent:itemReferent
+                                                    searchHandle:searchHandle
+                                                           count:count
+                                                      completion:^(NSError *error, NSString *credentialsJSON) {
+                                                          err = error;
+                                                          outJson = credentialsJSON;
+                                                          [completionExpectation fulfill];
+                                                      }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    if (credentialsJson) {*credentialsJson = outJson;}
+
+    return err;
+}
+
+- (NSError *)proverCloseCredentialsSearchForProofReqWithHandle:(IndyHandle)searchHandle {
+
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyAnoncreds proverCloseCredentialsSearchForProofReqWithHandle:searchHandle
+                                                          completion:^(NSError *error) {
+                                                              err = error;
+                                                              [completionExpectation fulfill];
+                                                          }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
 
     return err;
 }

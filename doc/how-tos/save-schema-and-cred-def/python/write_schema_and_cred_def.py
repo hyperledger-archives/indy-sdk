@@ -14,13 +14,13 @@ import json
 import pprint
 
 from indy import pool, ledger, wallet, did, anoncreds
-from indy.error import IndyError
+from indy.error import ErrorCode, IndyError
 
 
 pool_name = 'pool'
 wallet_name = 'wallet'
-genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
-
+genesis_file_path = '../indy-sdk/cli/docker_pool_transactions_genesis'
+wallet_credentials = json.dumps({"key": "wallet_key"})
 
 def print_log(value_color="", value_noncolor=""):
     """set the colors for text."""
@@ -30,12 +30,18 @@ def print_log(value_color="", value_noncolor=""):
 
 
 async def write_schema_and_cred_def():
+    
     try:
+        await pool.set_protocol_version(2)
         # 1.
         print_log('\n1. Creates a new local pool ledger configuration that is used '
                   'later when connecting to ledger.\n')
         pool_config = json.dumps({'genesis_txn': genesis_file_path})
-        await pool.create_pool_ledger_config(config_name=pool_name, config=pool_config)
+        try:
+            await pool.create_pool_ledger_config(pool_name, pool_config)
+        except IndyError:
+            await pool.delete_pool_ledger_config(config_name=pool_name)
+            await pool.create_pool_ledger_config(pool_name, pool_config)
 
         # 2.
         print_log('\n2. Open pool ledger and get handle from libindy\n')
@@ -43,11 +49,15 @@ async def write_schema_and_cred_def():
 
         # 3.
         print_log('\n3. Creating new secure wallet\n')
-        await wallet.create_wallet(pool_name, wallet_name, None, None, None)
+        try:
+            await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
+        except IndyError:
+            await wallet.delete_wallet(wallet_name, wallet_credentials)
+            await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
 
         # 4.
         print_log('\n4. Open wallet and get handle from libindy\n')
-        wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+        wallet_handle = await wallet.open_wallet(wallet_name, None, wallet_credentials)
 
         # 5.
         print_log('\n5. Generating and storing steward DID and verkey\n')
@@ -55,7 +65,7 @@ async def write_schema_and_cred_def():
         did_json = json.dumps({'seed': steward_seed})
         steward_did, steward_verkey = await did.create_and_store_my_did(wallet_handle, did_json)
         print_log('Steward DID: ', steward_did)
-        print_log('Steward Verkey: ', steward_verkey)
+        print_log('Steward Verkey: ', steward_verkey) 
 
         # 6.
         print_log('\n6. Generating and storing trust anchor DID and verkey\n')
@@ -89,9 +99,11 @@ async def write_schema_and_cred_def():
             'seqNo': seq_no,
             'dest': steward_did,
             'data': {
+                'id': '1',
                 'name': 'gvt',
                 'version': '1.0',
-                'attr_names': ['age', 'sex', 'height', 'name']
+                'ver': '1.0',
+                'attrNames': ['age', 'sex', 'height', 'name']
             }
         }
         schema_data = schema['data']
@@ -111,9 +123,14 @@ async def write_schema_and_cred_def():
 
         # 11.
         print_log('\n11. Creating and storing CRED DEFINITION using anoncreds as Trust Anchor, for the given Schema\n')
-        claim_def_json = await anoncreds.issuer_create_and_store_claim_def(wallet_handle, trust_anchor_did, json.dumps(schema), 'CL', False)
-        print_log('Claim Definition: ')
-        pprint.pprint(json.loads(claim_def_json))
+        cred_def_tag = 'cred_def_tag'
+        cred_def_type = 'CL'
+        cred_def_config = json.dumps({"support_revocation": False})
+
+        (cred_def_id, cred_def_json) = await anoncreds.issuer_create_and_store_credential_def(wallet_handle, trust_anchor_did, json.dumps(schema_data),
+                                                                               cred_def_tag, cred_def_type, cred_def_config)
+        print_log('Credential definition: ')
+        pprint.pprint(json.loads(cred_def_json))
 
         # 12.
         print_log('\n12. Closing wallet and pool\n')
@@ -122,7 +139,7 @@ async def write_schema_and_cred_def():
 
         # 13.
         print_log('\n13. Deleting created wallet\n')
-        await wallet.delete_wallet(wallet_name, None)
+        await wallet.delete_wallet(wallet_name, wallet_credentials)
 
         # 14.
         print_log('\n14. Deleting pool ledger config\n')
@@ -140,4 +157,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
