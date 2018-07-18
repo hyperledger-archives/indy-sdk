@@ -297,7 +297,19 @@ impl Prover {
         match restrictions.as_ref() {
             // Convert old restrictions format to valid wql
             Some(&serde_json::Value::Array(ref array)) => {
-                query.insert("$or".to_string(), serde_json::Value::Array(array.to_vec()));
+                // skip Null's
+                let mut res: Vec<serde_json::Value> = Vec::new();
+                for sub_query in array {
+                    let sub_query = sub_query.as_object()
+                        .ok_or(CommonError::InvalidStructure("Restriction is invalid".to_string()))?
+                        .clone()
+                        .into_iter()
+                        .filter(|&(_, ref v)| !v.is_null())
+                        .collect();
+                    res.push(serde_json::Value::Object(sub_query));
+                }
+
+                query.insert("$or".to_string(), serde_json::Value::Array(res));
             }
             Some(&serde_json::Value::Object(ref object)) => {
                 query.extend(object.clone());
@@ -389,7 +401,7 @@ impl Prover {
         }
 
         for predicate in req_predicates_for_credential {
-            sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.predicate_info.name),  "GE", predicate.predicate_info.p_value)?;
+            sub_proof_request_builder.add_predicate(&attr_common_view(&predicate.predicate_info.name), "GE", predicate.predicate_info.p_value)?;
         }
 
         let sub_proof_request = sub_proof_request_builder.finalize()?;
@@ -574,6 +586,31 @@ mod tests {
         }
 
         #[test]
+        fn build_query_works_for_restriction_in_old_format_with_nulls() {
+            let ps = Prover::new();
+
+            let restriction_1 = json!({"schema_id": SCHEMA_ID, "issuer_did": serde_json::Value::Null});
+            let restriction_2 = json!({"schema_id":  serde_json::Value::Null, "cred_def_id": CRED_DEF_ID});
+            let restirctions = serde_json::Value::Array(vec![restriction_1, restriction_2]);
+
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), &None).unwrap();
+
+            let expected_query = json!({
+                "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER,
+                "$or": vec![
+                    json!({
+                        "schema_id": SCHEMA_ID,
+                    }),
+                    json!({
+                        "cred_def_id": CRED_DEF_ID,
+                    })
+                ],
+            });
+
+            assert_eq!(expected_query, _value(&query));
+        }
+
+        #[test]
         fn build_query_works_for_extra_query_with_other_referent() {
             let ps = Prover::new();
 
@@ -597,8 +634,8 @@ mod tests {
     mod attribute_satisfy_predicate {
         use super::*;
 
-        fn predicate_info() -> PredicateInfo{
-            PredicateInfo{
+        fn predicate_info() -> PredicateInfo {
+            PredicateInfo {
                 name: "age".to_string(),
                 p_type: PredicateTypes::GE,
                 p_value: 8,
