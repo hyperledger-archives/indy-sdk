@@ -44,12 +44,16 @@ delete_existing_avd(){
 }
 
 create_avd(){
+
+    echo "Creating Android SDK"
     echo "yes" | \
           sdkmanager --no_https \
             "emulator" \
             "platform-tools" \
             "platforms;android-24" \
             "system-images;android-24;default;${ABI}"
+
+    echo "Creating android emulator"
 
         echo "no" |
              avdmanager create avd \
