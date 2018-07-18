@@ -1153,6 +1153,46 @@ mod high_cases {
 
                 WalletUtils::close_wallet(wallet_handle).unwrap();
             }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_null_restrictions() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = r#"{
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes":{
+                      "attr1_referent":{
+                         "name":"name",
+                         "restrictions":[
+                            {
+                               "schema_id":null,
+                               "schema_issuer_did":null,
+                               "schema_name":null,
+                               "schema_version":null,
+                               "issuer_did":"NcYxiDXkpYi6ov5FcYDi1e",
+                               "cred_def_id":null
+                            }
+                         ]
+                      }
+                   },
+                   "requested_predicates":{
+                   }
+                }"#;
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
         }
 
         mod attribute_restrictions_wql_format {
