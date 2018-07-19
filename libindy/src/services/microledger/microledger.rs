@@ -15,6 +15,8 @@ pub trait Microledger where Self: Sized {
     fn add(&mut self, txn: &str) -> Result<usize, CommonError>;
     // get txns in seq_no range [from, to]
     fn get(&self, from: u64, to: Option<u64>) -> Result<Vec<String>, CommonError>;
+    // get txns in seq_no range [from, to], including the seq no
+    fn get_with_seq_no(&self, from: u64, to: Option<u64>) -> Result<Vec<(u64, String)>, CommonError>;
     /*// registers a view
     fn register_view(&self, view: View);
     // deregisters a view

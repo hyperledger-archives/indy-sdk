@@ -13,8 +13,8 @@ use services::wallet::wallet::EncryptedValue;
 use errors::wallet::WalletStorageError;
 use services::microledger::microledger::Microledger;
 use services::microledger::txn_builder::TxnBuilder;
-use services::microledger::utils::byte_array_to_usize;
-use services::microledger::utils::usize_to_byte_array;
+use services::microledger::helpers::byte_array_to_usize;
+use services::microledger::helpers::usize_to_byte_array;
 
 const TYP: [u8; 3] = [0, 1, 2];
 
@@ -114,6 +114,17 @@ impl Microledger for DidMicroledger where Self: Sized {
 
         Ok(res)
     }
+
+    fn get_with_seq_no(&self, from: u64, to: Option<u64>) -> Result<Vec<(u64, String)>, CommonError> {
+        let txns = self.get(from, to)?;
+        let mut res: Vec<(u64, String)> = Vec::new();
+        let mut start = from;
+        for txn in txns {
+            res.push((start, txn));
+            start += 1;
+        }
+        Ok(res)
+    }
 }
 
 impl DidMicroledger {
@@ -208,34 +219,12 @@ impl DidMicroledger {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use utils::environment::EnvironmentUtils;
-    use utils::test::TestUtils;
+    use super::super::super::super::utils::test::TestUtils;
     use services::microledger::constants::*;
-
-    fn valid_storage_options() -> HashMap<String, String>{
-        let mut options: HashMap<String, String> = HashMap::new();
-        let mut path = EnvironmentUtils::tmp_path();
-        path.push("did_ml_path");
-        let storage_path = path.to_str().unwrap().to_owned();
-        options.insert("storage_type".to_string(), "sqlite".to_string());
-        options.insert("storage_path".to_string(), storage_path);
-        options
-    }
-
-    fn get_new_microledger(did: &str) -> DidMicroledger{
-        let options = valid_storage_options();
-        DidMicroledger::new(did, options).unwrap()
-    }
-
-    fn get_4_txns() -> Vec<String> {
-        let txn = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1"}}"#;
-        let txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
-        let txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
-        let txn_4 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent.example.com","type":"3","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
-        vec![txn.to_string(), txn_2.to_string(), txn_3.to_string(), txn_4.to_string()]
-    }
+    use services::microledger::helpers::tests::{valid_storage_options, get_new_microledger, get_4_txns};
 
     fn add_4_txns(ml: &mut DidMicroledger) -> usize {
         for txn in get_4_txns() {
@@ -415,7 +404,40 @@ mod tests {
         let t = ml.get(1, Some(4)).unwrap();
         assert_eq!(t, txns[0..4].to_vec());
 
+        let t = ml.get(2, Some(4)).unwrap();
+        assert_eq!(t, txns[1..4].to_vec());
+
+        let t = ml.get(2, Some(3)).unwrap();
+        assert_eq!(t, txns[1..3].to_vec());
+
+        let t = ml.get(2, Some(2)).unwrap();
+        assert_eq!(t, txns[1..2].to_vec());
+
         let t = ml.get(1, Some(5));
         assert!(t.is_err());
+    }
+
+    #[test]
+    fn test_get_with_seq_no_txns() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let mut ml = get_new_microledger(did);
+        let s = add_4_txns(&mut ml);
+        let txns = get_4_txns();
+
+        let t = ml.get_with_seq_no(1, None).unwrap();
+        for i in 0..4usize {
+            assert_eq!(t[i], (i as u64 + 1, txns[i].clone()))
+        }
+
+        let t = ml.get_with_seq_no(2, None).unwrap();
+        for i in 1..4usize {
+            assert_eq!(t[i-1], (i as u64 + 1, txns[i].clone()))
+        }
+
+        let t = ml.get_with_seq_no(2, Some(3)).unwrap();
+        for i in 1..3usize {
+            assert_eq!(t[i-1], (i as u64 + 1, txns[i].clone()))
+        }
     }
 }

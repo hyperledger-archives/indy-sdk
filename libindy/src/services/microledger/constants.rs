@@ -10,3 +10,5 @@ pub const AUTHZ_REM_KEY: &'static str = "rem_key";
 
 pub const KEY_TXN: &'static str = "2";
 pub const ENDPOINT_TXN: &'static str = "3";
+
+pub const LEDGER_UPDATE: &'static str = "ledgerUpdate";
