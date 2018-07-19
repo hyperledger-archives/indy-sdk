@@ -387,12 +387,15 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
+
         let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":"key"}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
-
-        let result = vcx_agent_provision_async(0, c_json, Some(generic_cb));
+        use utils::libindy::return_types_u32;
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let result = vcx_agent_provision_async(cb.command_handle, c_json, Some(cb.get_callback()));
         assert_eq!(0, result);
-        thread::sleep(Duration::from_secs(1));
+        let result = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        assert!(result.is_some());
     }
 
     #[test]

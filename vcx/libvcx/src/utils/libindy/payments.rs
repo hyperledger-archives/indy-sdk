@@ -18,7 +18,7 @@ use serde_json::Value;
 use settings;
 
 static EMPTY_CONFIG: &str = "{}";
-static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "101":2, "102":42, "103":0, "104":0, "105":0, "106":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
+static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "101":2, "102":42, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 static PARSED_TXN_PAYMENT_RESPONSE: &str = r#"[{"amount":4,"extra":null,"input":"["pov:null:1","pov:null:2"]"}]"#;
 
 static PAYMENT_INIT: Once = ONCE_INIT;
