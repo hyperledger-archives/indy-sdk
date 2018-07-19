@@ -38,5 +38,5 @@ indy> load-plugin library=<library-name> initializer=<init-func-name>
 Example:
 
 ```bash
-indy> load-plugin library=libsovplugin initializer=sovplugin_init
+indy> load-plugin library=libnullpay initializer=nullpay_init
 ```
