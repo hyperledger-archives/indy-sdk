@@ -44,7 +44,7 @@ pub mod nym_command {
                 .add_optional_param("verkey", "Verification key of new identity")
                 .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB or empty in case of blacklisting NYM")
                 .add_optional_param("fees_inputs","The list of source inputs")
-                .add_optional_param("fees_outputs","The list of outputs")
+                .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount, Optional<extra>)")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
@@ -156,7 +156,7 @@ pub mod attrib_command {
                 .add_optional_param("raw", "JSON representation of attribute data")
                 .add_optional_param("enc", "Encrypted attribute data")
                 .add_optional_param("fees_inputs","The list of source inputs")
-                .add_optional_param("fees_outputs","The list of outputs")
+                .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount, Optional<extra>)")
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}}"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d"#)
@@ -269,7 +269,7 @@ pub mod schema_command {
                 .add_required_param("version", "Schema version")
                 .add_required_param("attr_names", "Schema attributes split by comma")
                 .add_optional_param("fees_inputs","The list of source inputs")
-                .add_optional_param("fees_outputs","The list of outputs")
+                .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount, Optional<extra>)")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age fees_inputs=txo:sov:111_rBuQo2A1sc9jrJg fees_outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
                 .finalize()
@@ -431,7 +431,7 @@ pub mod cred_def_command {
                 .add_required_param("primary", "Primary key in json format")
                 .add_optional_param("revocation", "Revocation key in json format")
                 .add_optional_param("fees_inputs","The list of source inputs")
-                .add_optional_param("fees_outputs","The list of outputs")
+                .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount, Optional<extra>)")
                 .add_example(r#"ledger cred-def schema_id=1 signature_type=CL primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
                 .finalize()
     );
@@ -901,7 +901,7 @@ pub mod payment_command {
 
     command!(CommandMetadata::build("payment", "Send request for doing payment.")
                 .add_required_param("inputs","The list of payment sources")
-                .add_required_param("outputs","The list of outputs")
+                .add_required_param("outputs","The list of outputs in the following format: (recipient, amount, Optional<extra>)")
                 .add_example("ledger payment inputs=txo:sov:111_rBuQo2A1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100,extradata)")
                 .add_example("ledger payment inputs=txo:sov:111_rBuQo2A1sc9jrJg,txo:sov:222_aEwACvA1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100,extradata),(pay:sov:ABABefwrhscbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
                 .finalize()
@@ -1005,7 +1005,7 @@ pub mod mint_prepare_command {
     use super::*;
 
     command!(CommandMetadata::build("mint-prepare", "Prepare MINT transaction.")
-                .add_required_param("outputs","The list of outputs")
+                .add_required_param("outputs","The list of outputs in the following format: (recipient, amount, Optional<extra>)")
                 .add_example("ledger mint-prepare outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100,extradata)")
                 .add_example("ledger mint-prepare outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100,extradata),(pay:sov:ABABaaVwSascbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
                 .finalize()

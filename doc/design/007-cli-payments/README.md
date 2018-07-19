@@ -7,11 +7,11 @@ This design proposes the list of commands to Indy CLI to handle payments.
 * Indy CLI should provide ability to perform the main payments operations:
   * Creation of payment address
   * Listing of payment addresses
-  * Getting list of UTXO for payment address
+  * Getting list of sources for payment address
   * Sending payment transaction
   * Adding fees to transactions
   * Getting transactions fees amount
-* Abstraction level should correspond to Indy SDK. For example, don't hide UTXO abstraction. In the future we can add
+* Abstraction level should correspond to Indy SDK. For example, don't hide source abstraction. In the future we can add
   new commands to increase abstractions level.
 
 ## New CLI commands
@@ -40,12 +40,12 @@ Returns:
 
 * Table with columns: Payment Address, Payment Method
 
-### Send GET_UTXO request
+### Send GET_SOURCES request
 
-Send request to get list of UTXO for specified payment addresses
+Send request to get list of sources for specified payment addresses
 
 ```indy-cli
-indy> ledger get-utxo payment_address=<payment-address>
+indy> ledger get-sources payment_address=<payment-address>
 ```
 
 Returns:
@@ -57,14 +57,14 @@ Returns:
 Send payment transaction
 
 ```indy-cli
-indy> ledger payment inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-0>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+indy> ledger payment inputs=<source-1>,..,<source-n> outputs=(<recipient-0>,<amount>,<extra>),..,(<recipient-n>,<amount>,<extra>)
 ```
 
 Returns:
 
 * Success or error message
 
-Note that "utxo-n" is identifier presented in "Input" column of ```ledger get-utxo``` command output
+Note that "source-n" is identifier presented in "Source" column of ```ledger get-sources``` command output
 
 ### Send GET_FEES request
 
@@ -139,7 +139,7 @@ Returns:
 All commands to send domain transactions require new optional params to add transactions fees:
 
 ```indy-cli
-[fees_inputs=<utxo-1>,..,<utxo-n>] [fees_outputs=(<pay-addr-0>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+[fees_inputs=<source-1>,..,<source-n>] [fees_outputs=(<recipient-0>,<amount>,<extra>),..,(<recipient-n>,<amount>,<extra>)]
 ```
 
-Note that "utxo-n" is identifier presented in "Input" column of ```ledger get-utxo``` command output
+Note that "source-n" is identifier presented in "Source" column of ```ledger get-sources``` command output
