@@ -105,7 +105,14 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
        return error::ALREADY_INITIALIZED.code_num;
    }
     // Wallet name was already validated
-   let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap_or_default();
+   let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
+       Ok(x) => x,
+       Err(_) => {
+           info!("Using default wallet: {}", settings::DEFAULT_WALLET_NAME.to_string());
+           settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
+           settings::DEFAULT_WALLET_NAME.to_string()
+       }
+   };
 
     info!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
@@ -345,6 +352,27 @@ mod tests {
         thread::sleep(Duration::from_secs(1));
 
         assert_eq!(result,error::MISSING_WALLET_KEY.code_num);
+    }
+
+    #[test]
+    fn test_config_with_no_wallet_uses_default() {
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        settings::set_config_value(settings::CONFIG_WALLET_KEY,"key");
+        let wallet_n = settings::DEFAULT_WALLET_NAME;
+        wallet::create_wallet(wallet_n).unwrap();
+
+        vcx_shutdown(false);
+
+        assert!(settings::get_config_value(settings::CONFIG_WALLET_NAME).is_err());
+
+        let content = json!({
+            "wallet_key": "123",
+        }).to_string();
+        assert_eq!(vcx_init_with_config(0,CString::new(content).unwrap().into_raw(),Some(init_cb)), 0);
+        thread::sleep(Duration::from_secs(1));
+
+        // Assert default wallet name
+        assert_eq!(settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap(), wallet_n.to_string());
     }
 
     #[cfg(feature = "pool_tests")]
