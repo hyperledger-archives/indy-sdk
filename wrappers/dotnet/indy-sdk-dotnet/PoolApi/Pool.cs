@@ -239,6 +239,35 @@ namespace Hyperledger.Indy.PoolApi
             return taskCompletionSource.Task;
         }
 
+        /// <summary> 
+        /// Set PROTOCOL_VERSION to specific version. 
+        /// 
+        /// There is a global property PROTOCOL_VERSION that used in every request to the pool and 
+        /// specified version of Indy Node which Libindy works. 
+        /// 
+        /// By default PROTOCOL_VERSION=1. 
+        /// </summary> 
+        /// <param name="protocolVersion">Protocol version will be used: 
+        /// <c> 
+        ///     1 - for Indy Node 1.3 
+        ///     2 - for Indy Node 1.4 
+        /// </c></param> 
+        public static Task SetProtocolVersionAsync(int protocolVersion)
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_set_protocol_version(
+                commandHandle,
+                protocolVersion,
+                CallbackHelper.TaskCompletingNoValueCallback
+                );
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
         /// <summary>
         /// Disposes of resources.
         /// </summary>

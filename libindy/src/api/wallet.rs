@@ -151,7 +151,7 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 ///                  Custom storage types can be registered with indy_register_wallet_storage call.
 ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
 ///                     Can be optional if storage supports default configuration.
-//                      For 'default' storage type configuration is:
+///                     For 'default' storage type configuration is:
 ///   {
 ///     "path": optional<string>, Path to the directory with wallet files.
 ///             Defaults to $HOME/.indy_client/wallets.
@@ -163,7 +163,7 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 ///   "key": string, Passphrase used to derive wallet master key
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
-//                           For 'default' storage type should be empty.
+///                          For 'default' storage type should be empty.
 ///
 /// }
 ///
@@ -219,7 +219,7 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///                       Custom storage types can be registered with indy_register_wallet_storage call.
 ///       "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
 ///                         Can be optional if storage supports default configuration.
-//                          For 'default' storage type configuration is:
+///                         For 'default' storage type configuration is:
 ///           {
 ///              "path": optional<string>, Path to the directory with wallet files.
 ///                      Defaults to $HOME/.indy_client/wallets.
@@ -234,7 +234,7 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///                                  derived from this passphrase.
 ///       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                              Can be optional if storage supports default configuration.
-//                               For 'default' storage type should be empty.
+///                              For 'default' storage type should be empty.
 ///
 ///   }
 ///
@@ -285,7 +285,7 @@ pub extern fn indy_open_wallet(command_handle: i32,
 /// wallet_handle: wallet handle returned by indy_open_wallet
 /// export_config: JSON containing settings for input operation.
 ///   {
-///     "path": <strinng>, Path of the file that contains exported wallet content
+///     "path": <string>, Path of the file that contains exported wallet content
 ///     "key": <string>, Passphrase used to derive export key
 ///   }
 ///
@@ -339,7 +339,7 @@ pub extern fn indy_export_wallet(command_handle: i32,
 ///                  Custom storage types can be registered with indy_register_wallet_storage call.
 ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
 ///                     Can be optional if storage supports default configuration.
-//                      For 'default' storage type configuration is:
+///                     For 'default' storage type configuration is:
 ///   {
 ///     "path": optional<string>, Path to the directory with wallet files.
 ///             Defaults to $HOME/.indy_client/wallets.
@@ -351,7 +351,7 @@ pub extern fn indy_export_wallet(command_handle: i32,
 ///   "key": string, Passphrase used to derive wallet master key
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
-//                           For 'default' storage type should be empty.
+///                          For 'default' storage type should be empty.
 ///
 /// }
 /// import_config: Import settings json.
@@ -452,7 +452,7 @@ pub extern fn indy_close_wallet(command_handle: i32,
 ///                  Custom storage types can be registered with indy_register_wallet_storage call.
 ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
 ///                     Can be optional if storage supports default configuration.
-//                      For 'default' storage type configuration is:
+///                     For 'default' storage type configuration is:
 ///   {
 ///     "path": optional<string>, Path to the directory with wallet files.
 ///             Defaults to $HOME/.indy_client/wallets.
@@ -464,7 +464,7 @@ pub extern fn indy_close_wallet(command_handle: i32,
 ///   "key": string, Passphrase used to derive wallet master key
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
-//                           For 'default' storage type should be empty.
+///                          For 'default' storage type should be empty.
 ///
 /// }
 ///
@@ -481,13 +481,13 @@ pub extern fn indy_delete_wallet(command_handle: i32,
                                  cb: Option<extern fn(xcommand_handle: i32,
                                                       err: ErrorCode)>) -> ErrorCode {
     trace!("indy_delete_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
-           command_handle, config, credentials, cb);
+           command_handle, config, "_" /*credentials*/, cb); // TODO: FIXME: log secrets in debug
 
     check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_delete_wallet: params config: {:?}, credentials: {:?}", config, credentials);
+    trace!("indy_delete_wallet: params config: {:?}, credentials: {:?}", config, "_" /*credentials*/); // TODO: FIXME: log secrets in debug
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Delete(

@@ -33,4 +33,16 @@ macro_rules! assert_match {
             _ => false
         })
     );
+    ($pattern:pat, $var:expr, $val_in_pattern:ident, $exp_value:expr) => (
+        assert!(match $var {
+            $pattern => $val_in_pattern == $exp_value,
+            _ => false
+        })
+    );
+    ($pattern:pat, $var:expr, $val_in_pattern1:ident, $exp_value1:expr, $val_in_pattern2:ident, $exp_value2:expr) => (
+        assert!(match $var {
+            $pattern => $val_in_pattern1 == $exp_value1 && $val_in_pattern2 == $exp_value2,
+            _ => false
+        })
+    );
 }
