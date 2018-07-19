@@ -347,21 +347,6 @@ mod tests {
         assert_eq!(result,error::MISSING_WALLET_KEY.code_num);
     }
 
-    #[test]
-    fn test_init_fails_with_no_wallet_name() {
-        vcx_shutdown(true);
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        let content = json!({
-            "wallet_key": "123",
-        }).to_string();
-
-        let result = vcx_init_with_config(0,CString::new(content).unwrap().into_raw(),Some(init_cb));
-        thread::sleep(Duration::from_secs(1));
-
-        assert_eq!(result,error::MISSING_WALLET_NAME.code_num);
-    }
-
-
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_with_default_values() {
