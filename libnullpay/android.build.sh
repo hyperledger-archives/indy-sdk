@@ -106,6 +106,17 @@ package_library(){
 
     cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.a" ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
     cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.so" ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
+
+     pushd ${WORKDIR}
+        rm -f libnullpay_android_${TARGET_ARCH}.zip
+        cp -rf ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH} .
+        if [ -z "${LIBNULLPAY_VERSION}" ]; then
+            zip -r libnullpay_android_${TARGET_ARCH}.zip libnullpay_${TARGET_ARCH}
+        else
+            zip -r libnullpay_android_${TARGET_ARCH}_${LIBNULLPAY_VERSION}.zip libnullpay_${TARGET_ARCH}
+        fi
+
+    popd
 }
 
 build(){
