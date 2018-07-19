@@ -42,8 +42,7 @@ pub fn init_pool() -> Result<(), u32>  {
     let pool_name = settings::get_config_value(settings::CONFIG_POOL_NAME)
         .unwrap_or(settings::DEFAULT_POOL_NAME.to_string());
 
-    let path: String = settings::get_config_value(settings::CONFIG_GENESIS_PATH)
-        .unwrap_or(settings::DEFAULT_GENESIS_PATH.to_string());
+    let path: String = settings::get_config_value(settings::CONFIG_GENESIS_PATH)?;
 
     trace!("opening pool {} with genesis_path: {}", pool_name, path);
     match pool::create_pool_ledger_config(&pool_name, &path) {

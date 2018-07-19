@@ -117,7 +117,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
     info!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
     thread::spawn(move|| {
-        if settings::get_config_value(settings::CONFIG_POOL_NAME).is_ok() {
+        if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
             match ::utils::libindy::init_pool() {
                 Ok(_) => (),
                 Err(e) => {
@@ -258,8 +258,6 @@ mod tests {
 
         let config_path = "/tmp/test_init.json";
         let content = json!({
-            "pool_name" : "pool1",
-            "config_name":"config1",
             "wallet_name":wallet_name,
             "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
             "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
@@ -292,8 +290,6 @@ mod tests {
         pool::close().unwrap();
 
         let content = json!({
-            "pool_name" : "pool1",
-            "config_name":"config1",
             "wallet_name": wallet_name,
             "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
             "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
@@ -389,7 +385,7 @@ mod tests {
         assert_eq!(result,0);
         thread::sleep(Duration::from_secs(2));
 
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
+        wallet::delete_wallet(wallet_name).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -411,7 +407,7 @@ mod tests {
         assert_eq!(result,error::ALREADY_INITIALIZED.code_num);
         thread::sleep(Duration::from_secs(2));
 
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
+        wallet::delete_wallet(wallet_name).unwrap();
     }
 
     #[cfg(feature = "pool_tests")]
@@ -454,8 +450,6 @@ mod tests {
 
         let config_path = "/tmp/test_init.json";
         let content = json!({
-            "pool_name" : "pool1",
-            "config_name":"config1",
             "wallet_name": wallet_name,
             "agency_did" : "72x8p4HubxzUK1dwxcc5FU",
             "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",

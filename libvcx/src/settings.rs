@@ -81,7 +81,6 @@ pub fn set_defaults() -> u32 {
 //    settings.set(CONFIG_ENABLE_TEST_MODE,DEFAULT_ENABLE_TEST_MODE);
     settings.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(),DEFAULT_DID.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(),DEFAULT_VERKEY.to_string());
-    settings.insert(CONFIG_GENESIS_PATH.to_string(), DEFAULT_GENESIS_PATH.to_string());
     settings.insert(CONFIG_WALLET_KEY.to_string(),TEST_WALLET_KEY.to_string());
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
     settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(), DEFAULT_EXPORTED_WALLET_PATH.to_string());
@@ -220,10 +219,6 @@ pub fn read_config_file(path: &str) -> Result<String, u32> {
     Ok(config)
 }
 
-pub fn remove_default_genesis_file(){
-    remove_file_if_exists(DEFAULT_GENESIS_PATH);
-}
-
 pub fn remove_file_if_exists(filename: &str){
     if Path::new(filename).exists() {
         println!("{}", format!("Removing file for testing: {}.", &filename));
@@ -237,10 +232,6 @@ pub fn remove_file_if_exists(filename: &str){
 pub fn clear_config() {
     let mut config = SETTINGS.write().unwrap();
     config.clear();
-}
-
-pub fn create_default_genesis_file(){
-    fs::File::create(DEFAULT_GENESIS_PATH).unwrap();
 }
 
 #[cfg(test)]
