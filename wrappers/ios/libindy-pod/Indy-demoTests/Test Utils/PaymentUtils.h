@@ -27,18 +27,18 @@
 
 - (NSError *)parseResponseWithFees:(NSString *)responseJson
                      paymentMethod:(NSString *)paymentMethod
-                          utxoJson:(NSString **)utxoJson;
+                      receiptsJson:(NSString **)receiptsJson;
 
-// MARK: - Get UTXO request
-- (NSError *)buildGetUtxoRequest:(IndyHandle)walletHandle
-                    submitterDid:(NSString *)submitterDid
-                  paymentAddress:(NSString *)paymentAddress
-                  getUtxoTxnJson:(NSString **)getUtxoTxnJson
-                   paymentMethod:(NSString **)paymentMethod;
+// MARK: - Get sources request
+- (NSError *)buildGetSourcesRequest:(IndyHandle)walletHandle
+                       submitterDid:(NSString *)submitterDid
+                     paymentAddress:(NSString *)paymentAddress
+                  getSourcesTxnJson:(NSString **)getSourcesTxnJson
+                      paymentMethod:(NSString **)paymentMethod;
 
-- (NSError *)parseGetUtxoResponse:(NSString *)responseJson
-                    paymentMethod:(NSString *)paymentMethod
-                         utxoJson:(NSString **)utxoJson;
+- (NSError *)parseGetSourcesResponse:(NSString *)responseJson
+                       paymentMethod:(NSString *)paymentMethod
+                         sourcesJson:(NSString **)sourcesJson;
 
 // MARK: - Payment request
 - (NSError *)buildPaymentRequest:(IndyHandle)walletHandle
@@ -50,7 +50,7 @@
 
 - (NSError *)parsePaymentResponse:(NSString *)responseJson
                     paymentMethod:(NSString *)paymentMethod
-                         utxoJson:(NSString **)utxoJson;
+                     receiptsJson:(NSString **)receiptsJson;
 
 // MARK: - Mint request
 - (NSError *)buildMintRequest:(IndyHandle)walletHandle
