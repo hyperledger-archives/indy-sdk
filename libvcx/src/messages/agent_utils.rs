@@ -270,8 +270,6 @@ mod tests {
                                                 None,
                                                 None).unwrap();
         assert!(result.len() > 0);
-        println!("result: {}", result);
-
         wallet::delete_wallet("test_connect_register_provision").unwrap();
     }
 
