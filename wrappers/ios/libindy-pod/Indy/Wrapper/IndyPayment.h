@@ -40,11 +40,9 @@
 
 /**
  Modifies Indy request by adding information how to pay fees for this transaction
- according to selected payment method.
+ according to this payment method.
 
- Payment selection is performed by looking to o
-
- This method consumes set of UTXO inputs and outputs. The difference between inputs balance
+ This method consumes set of inputs and outputs. The difference between inputs balance
  and outputs balance is the fee for this transaction.
 
  Not that this method also produces correct fee signatures.
@@ -52,18 +50,20 @@
  Format of inputs is specific for payment method. Usually it should reference payment transaction
  with at least one output that corresponds to payment address that user owns.
 
+ Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+ in the future releases.
+
  @param requestJson Request data json.
  @param submitterDid Id of Identity stored in secured Wallet.
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
- @param inputsJson The list of UTXO inputs as json array:
-   ["input1", ...]
-   Notes:
+ @param inputsJson The list of payment sources as json array:
+   ["source1", ...]
      - each input should reference paymentAddress
      - this param will be used to determine payment_method
- @param outputsJson The list of UTXO outputs as json array:
+ @param outputsJson The list of outputs as json array:
    [{
-     paymentAddress: <str>, // payment address used as output
-     amount: <int>, // amount of tokens to transfer to this payment address
+     recipient: <str>, // payment address of recipient
+     amount: <int>, // amount
      extra: <str>, // optional data
    }]
  @param completion Callback that takes command result as parameter. Returns addRequestFeesRequest json.
@@ -80,69 +80,88 @@
 
  @param responseJson Response for Indy request with fees
  @param paymentMethod
- @param completion Callback that takes command result as parameter. Returns requestResultJSON.
+ @param completion Callback that takes command result as parameter. 
+ Returns receiptsJson - parsed (payment method and node version agnostic) receipts info as json:
+   [{
+      receipt: <str>, // receipt that can be used for payment referencing and verification
+      recipient: <str>, //payment address of recipient
+      amount: <int>, // amount
+      extra: <str>, // optional data from payment transaction
+   }]
  */
 + (void)parseResponseWithFees:(NSString *)responseJson
                 paymentMethod:(NSString *)paymentMethod
-                   completion:(void (^)(NSError *error, NSString *utxoJson))completion;
+                   completion:(void (^)(NSError *error, NSString *receiptsJson))completion;
 
 /**
- Builds Indy request for getting UTXO list for payment address
- according to this payment method.payment transaction
- with at least one output that corresponds to payment address that user owns.
+ Builds Indy request for getting sources list for payment address
+ according to this payment method.
+
+ Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+ in the future releases.
 
  @param requestJson Request data json.
  @param submitterDid Id of Identity stored in secured Wallet.
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
  @param paymentAddress Target payment address
- @param completion Callback that takes command result as parameter. Returns getUtxoTxnRequest json.
+ @param completion Callback that takes command result as parameter. 
+ Returns 
+    getSourcesTxnJson - Indy request for getting sources list for payment address
+    paymentMethod - used payment method
  */
-+ (void)buildGetUtxoRequest:(IndyHandle)walletHandle
-               submitterDid:(NSString *)submitterDid
-             paymentAddress:(NSString *)paymentAddress
-                 completion:(void (^)(NSError *error, NSString *getUtxoTxnJson, NSString *paymentMethod))completion;
++ (void)buildGetSourcesRequest:(IndyHandle)walletHandle
+                  submitterDid:(NSString *)submitterDid
+                paymentAddress:(NSString *)paymentAddress
+                    completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion;
 
 
 /**
- Parses response for Indy request for getting UTXO list.
+ Parses response for Indy request for getting sources list.
 
- @param responseJson response for Indy request for getting UTXO list
+ @param responseJson response for Indy request for getting sources list
  @param paymentMethod
  @param completion Callback that takes command result as parameter.
- Returns utxoJson : parsed (payment method and node version agnostic) utxo info as json:
+ Returns sourcesJson - parsed (payment method and node version agnostic) sources info as json:
    [{
-      input: <str>, // UTXO input
-      amount: <int>, // amount of tokens in this input
+      source: <str>, // source input
+      paymentAddress: <str>, //payment address for this source
+      amount: <int>, // amount
       extra: <str>, // optional data from payment transaction
    }]
  */
-+ (void)parseGetUtxoResponse:(NSString *)responseJson
-               paymentMethod:(NSString *)paymentMethod
-                  completion:(void (^)(NSError *error, NSString *utxoJson))completion;
++ (void)parseGetSourcesResponse:(NSString *)responseJson
+                  paymentMethod:(NSString *)paymentMethod
+                     completion:(void (^)(NSError *error, NSString *sourcesJson))completion;
 
 
 /**
- Builds Indy request for doing tokens payment
+ Builds Indy request for doing payment
  according to this payment method.
 
- This method consumes set of UTXO inputs and outputs.
+ This method consumes set of inputs and outputs.
 
  Format of inputs is specific for payment method. Usually it should reference payment transaction
  with at least one output that corresponds to payment address that user owns.
 
+ Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+ in the future releases.
+
  @param requestJson Request data json.
  @param submitterDid Id of Identity stored in secured Wallet.
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
- @param inputsJson The list of UTXO inputs as json array:
-   ["input1", ...]
-   Note that each input should reference paymentAddress
- @param outputsJson The list of UTXO outputs as json array:
+ @param inputsJson The list of payment sources as json array:
+   ["source1", ...]
+   Note that each source should reference payment address
+ @param outputsJson The list of outputs as json array:
    [{
-     paymentAddress: <str>, // payment address used as output
-     amount: <int>, // amount of tokens to transfer to this payment address
+     recipient: <str>, // payment address of recipient
+     amount: <int>, // amount
      extra: <str>, // optional data
    }]
- @param completion Callback that takes command result as parameter. Returns paymentRequest json.
+ @param completion Callback that takes command result as parameter. 
+ Returns 
+    paymentRequest - Indy request for doing payment.
+    paymentMethod - used payment method
  */
 + (void)buildPaymentRequest:(IndyHandle)walletHandle
                submitterDid:(NSString *)submitterDid
@@ -156,30 +175,34 @@
  @param responseJson response for Indy request for payment txn
  @param paymentMethod
  @param completion Callback that takes command result as parameter.
- Returns utxoJson : parsed (payment method and node version agnostic) utxo info as json:
+ Returns receiptsJson : parsed (payment method and node version agnostic) receipts info as json:
    [{
-      input: <str>, // UTXO input
-      amount: <int>, // amount of tokens in this input
+      receipt: <str>, // receipt that can be used for payment referencing and verification
+      recipient: <str>, // payment address of recipient
+      amount: <int>, // amount
       extra: <str>, // optional data from payment transaction
    }]
  */
 + (void)parsePaymentResponse:(NSString *)responseJson
                paymentMethod:(NSString *)paymentMethod
-                  completion:(void (^)(NSError *error, NSString *utxoJson))completion;
+                  completion:(void (^)(NSError *error, NSString *receiptsJson))completion;
 
 /**
- Builds Indy request for doing tokens minting according to this payment method.
+ Builds Indy request for doing minting according to this payment method.
 
  @param requestJson Request data json.
  @param submitterDid Id of Identity stored in secured Wallet.
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
- @param outputsJson The list of UTXO outputs as json array:
+ @param outputsJson The list of outputs as json array:
    [{
-     paymentAddress: <str>, // payment address used as output
-     amount: <int>, // amount of tokens to transfer to this payment address
+     recipient: <str>, // payment address of recipient
+     amount: <int>, // amount
      extra: <str>, // optional data
    }]
- @param completion Callback that takes command result as parameter. Returns MintRequest json.
+ @param completion Callback that takes command result as parameter.
+ Returns
+    MintRequest - Indy request for doing minting
+    paymentMethod - used payment method
  */
 + (void)buildMintRequest:(IndyHandle)walletHandle
             submitterDid:(NSString *)submitterDid
