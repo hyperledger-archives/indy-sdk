@@ -126,7 +126,7 @@ build(){
     echo "ZMQ path ${LIBZMQ_DIR}"
     echo "Sodium path ${SODIUM_DIR}"
     echo "Indy path ${INDY_DIR}"
-    echo "Artifacts will be in ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}"
+    echo "Artifacts will be in ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}"
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}

@@ -394,6 +394,7 @@ def androidTesting() {
                 checkout scm
 
                 libindyVersion = getSrcVersion("libindy")
+                def libnullpayVersion = getSrcVersion("libnullpay")
                 echo 'Building android binaries: Building docker image'
                 buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
                 sh 'chmod -R 777 libindy/'
@@ -401,7 +402,7 @@ def androidTesting() {
 
                 //TODO: Enable emulator test when the unit test start passing on android device
                 //androidEmulatorTest(buildEnv)
-                buildAndroid(buildEnv,libindyVersion,false)
+                buildAndroid(buildEnv,libindyVersion,libnullpayVersion,false)
 
 
 
@@ -497,6 +498,7 @@ def ubuntuPublishing() {
 }
 def androidPublishing(){
     def libindyVersion
+    def libnullpayVersion
 
     node('ubuntu'){
         stage('Publish Android binaries'){
@@ -505,10 +507,11 @@ def androidPublishing(){
                 checkout scm
 
                 libindyVersion = getSrcVersion("libindy")
+                libnullpayVersion = getSrcVersion("libnullpay")
 
                 echo 'Publish Android binaries: Building docker image'
                 buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
-                buildAndroid(buildEnv,libindyVersion,true)
+                buildAndroid(buildEnv,libindyVersion,libnullpayVersion,true)
 
             }
             finally{
@@ -623,23 +626,25 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
     }
 }
 
-def buildAndroid(buildEnv,libIndyVersion,shouldPublish) {
+def buildAndroid(buildEnv,libIndyVersion,libnullpayVersion,shouldPublish) {
 
 
 
     ANDROID_SCRIPT_PATH = 'android.build.sh'
+    //ARM
     dir('libindy') {
         echo 'Building Libindy android files for arm'
         buildEnv.inside {
             sh "LIBINDY_VERSION=${libIndyVersion} ./${ANDROID_SCRIPT_PATH} -d arm"
-            sh "ls -la"
         }
     }
     if(shouldPublish){
         echo 'Publish Libindy android files for arm'
-        androidPublishArtifacts(buildEnv, libIndyVersion,"arm" )
+        androidPublishArtifacts(buildEnv, libIndyVersion,"arm" ,"libindy" )
     }
 
+
+    //X86
     dir('libindy') {
         echo 'Building Libindy android files for x86'
         buildEnv.inside {
@@ -648,9 +653,12 @@ def buildAndroid(buildEnv,libIndyVersion,shouldPublish) {
     }
     if(shouldPublish){
         echo 'Publish Libindy android files for x86'
-        androidPublishArtifacts(buildEnv, libIndyVersion,"x86" )
+        androidPublishArtifacts(buildEnv, libIndyVersion,"x86" , "libindy")
     }
 
+
+
+    //ARM64
     dir('libindy') {
         echo 'Building Libindy android files for arm64'
         buildEnv.inside {
@@ -659,19 +667,19 @@ def buildAndroid(buildEnv,libIndyVersion,shouldPublish) {
     }
     if (shouldPublish){
         echo 'Publish Libindy android files for arm64'
-        androidPublishArtifacts(buildEnv, libIndyVersion,"arm64" )
+        androidPublishArtifacts(buildEnv, libIndyVersion,"arm64" ,"libindy")
     }
 
 
 }
 
 
-def androidPublishArtifacts(buildEnv, packageVersion,arch) {
+def androidPublishArtifacts(buildEnv, packageVersion,arch,artifact) {
     buildEnv.inside {
         sh 'chmod -R 777 ci'
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER "
+            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
         }
     }
 }
