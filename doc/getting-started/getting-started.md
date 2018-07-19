@@ -921,3 +921,5 @@ Now that you've had a chance to see how the Libindy implementation works from th
 If so, please run [Simulating Getting Started in the Jupiter](run-getting-started.md).
 You may need to be signed into GitHub to view this link.
 Also you can find the source code [here](https://github.com/hyperledger/indy-sdk/blob/master/samples/python/src/getting_started.py)
+
+If demo gives an error when executing check [Trouble Shooting Guide](Trouble_shoot_GSG.md).
