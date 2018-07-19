@@ -7,7 +7,7 @@ use services::*;
 use services::response_storage::*;
 use utils::types::*;
 use utils::rand;
-use utils::json_helper::{parse_operation_from_request, serialize_infos};
+use utils::json_helper::parse_operation_from_request;
 use utils::cstring::CStringUtils;
 
 use serde_json::{from_str, to_string};
@@ -45,7 +45,7 @@ pub mod add_request_fees {
         trace!("parsing_json");
         parse_json!(inputs_json, Vec<String>, ErrorCode::CommonInvalidStructure);
         trace!("parsed_inputs");
-        parse_json!(outputs_json, Vec<UTXOOutput>, ErrorCode::CommonInvalidStructure);
+        parse_json!(outputs_json, Vec<Output>, ErrorCode::CommonInvalidStructure);
         trace!("parsed_outputs");
 
         let txn_type = match parse_operation_from_request(req_json.as_str()) {
@@ -76,7 +76,7 @@ pub mod add_request_fees {
                 1,
                 Box::new(move |ec, res| {
                     let ec = if ec == ErrorCode::Success {
-                        _add_response(&res, "NO_UTXO")
+                        _add_response(&res, "NO_SOURCE")
                     } else { ec };
                     trace!("libnullpay::add_request_fees::handle >>");
                     _process_callback(cmd_handle, ec, res, cb);
@@ -104,8 +104,8 @@ pub mod add_request_fees {
 
                         if _check_inputs(&inputs_json, &payment_addresses) {
                             _process_inputs(&inputs_json);
-                            let infos: Vec<UTXOInfo> = _process_outputs(&outputs_json, seq_no);
-                            _save_response(&infos, &req_json)
+                            let infos: Vec<ReceiptInfo> = _process_outputs(&outputs_json, seq_no);
+                            _save_receipt_response(&infos, &req_json)
                         } else { ErrorCode::CommonInvalidState }
                     } else { ec };
 
@@ -141,13 +141,13 @@ pub mod parse_response_with_fees {
     }
 }
 
-pub mod build_get_utxo_request {
+pub mod build_get_sources_request {
     use super::*;
 
     pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, payment_address: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
         check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(payment_address, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_get_utxo_request::handle << payment_address: {}, submitter_did: {}", payment_address, submitter_did);
+        trace!("libnullpay::build_get_sources_request::handle << payment_address: {}, submitter_did: {}", payment_address, submitter_did);
 
         ledger::build_get_txn_request(
             submitter_did.as_str(),
@@ -155,23 +155,23 @@ pub mod build_get_utxo_request {
             1,
             Box::new(move |ec, res| {
                 let ec = if ec == ErrorCode::Success {
-                    let utxos = utxo_cache::get_utxos_by_payment_address(&payment_address);
-                    let infos: Vec<UTXOInfo> = utxos.into_iter().filter_map(payment_ledger::get_utxo_info).collect();
-                    _save_response(&infos, &res)
+                    let sources = source_cache::get_sources_by_payment_address(&payment_address);
+                    let infos: Vec<SourceInfo> = sources.into_iter().filter_map(payment_ledger::get_source_info).collect();
+                    _save_source_response(&infos, &res)
                 } else { ec };
 
-                trace!("libnullpay::build_get_utxo_request::handle >>");
+                trace!("libnullpay::build_get_sources_request::handle >>");
                 _process_callback(cmd_handle, ec, res, cb);
             }),
         )
     }
 }
 
-pub mod parse_get_utxo_response {
+pub mod parse_get_sources_response {
     use super::*;
 
     pub extern fn handle(cmd_handle: i32, resp_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-        trace!("libnullpay::parse_get_utxo_response::handle <<");
+        trace!("libnullpay::parse_get_sources_response::handle <<");
         _process_parse_response(cmd_handle, resp_json, cb)
     }
 }
@@ -186,7 +186,7 @@ pub mod build_payment_req {
         trace!("libnullpay::build_payment_req::handle << inputs_json: {}, outputs_json: {}, submitter_did: {}", inputs_json, outputs_json, submitter_did);
 
         parse_json!(inputs_json, Vec<String>, ErrorCode::CommonInvalidStructure);
-        parse_json!(outputs_json, Vec<UTXOOutput>, ErrorCode::CommonInvalidStructure);
+        parse_json!(outputs_json, Vec<Output>, ErrorCode::CommonInvalidStructure);
 
         libindy::payments::list_payment_addresses(
             wallet_handle,
@@ -221,12 +221,11 @@ pub mod build_payment_req {
                         Box::new(move |ec, res| {
                             if ec == ErrorCode::Success {
                                 if ec_existance != ErrorCode::Success {
-                                    _add_response(&res, "NO_UTXO");
+                                    _add_response(&res, "NO_SOURCE");
                                 } else if total_balance >= total_payments {
                                     _process_inputs(&inputs_json);
                                     let infos = _process_outputs(&outputs_json, seq_no);
-
-                                    _save_response(&infos, &res);
+                                    _save_receipt_response(&infos, &res);
                                 } else {
                                     _add_response(&res, "INSUFFICIENT_FUNDS");
                                 }
@@ -259,7 +258,7 @@ pub mod build_mint_req {
         check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidState);
         trace!("libnullpay::build_mint_req::handle << outputs_json: {}, submitter_did: {}", outputs_json, submitter_did);
 
-        parse_json!(outputs_json, Vec<UTXOOutput>, ErrorCode::CommonInvalidStructure);
+        parse_json!(outputs_json, Vec<Output>, ErrorCode::CommonInvalidStructure);
 
         ledger::build_get_txn_request(submitter_did.as_str(),
                                       None,
@@ -269,7 +268,7 @@ pub mod build_mint_req {
                                               let seq_no = payment_ledger::add_txn(vec![], outputs_json.clone());
 
                                               outputs_json.clone().into_iter().for_each(|output| {
-                                                  utxo_cache::add_utxo(&output.payment_address, seq_no, output.amount);
+                                                  source_cache::add_source(&output.recipient, seq_no, output.amount);
                                               });
                                           }
 
@@ -360,21 +359,21 @@ fn _process_callback(cmd_handle: i32, err: ErrorCode, response: String, cb: Opti
     }
 }
 
-fn _process_outputs(outputs: &Vec<UTXOOutput>, seq_no: i32) -> Vec<UTXOInfo> {
+fn _process_outputs(outputs: &Vec<Output>, seq_no: i32) -> Vec<ReceiptInfo> {
     outputs.into_iter().map(|out| {
-        match utxo_cache::add_utxo(&out.payment_address, seq_no, out.amount)
-            .map(|utxo| payment_ledger::get_utxo_info(utxo)) {
-            Some(Some(utxo_info)) => utxo_info,
-            _ => panic!("Some UTXO was not processed!")
+        match source_cache::add_source(&out.recipient, seq_no, out.amount)
+            .map(|source| payment_ledger::get_receipt_info(source)) {
+            Some(Some(receipt_info)) => receipt_info,
+            _ => panic!("Some source was not processed!")
         }
     }).collect()
 }
 
-use utils::utxo::from_utxo;
+use utils::source::from_source;
 
 fn _check_inputs(inputs: &Vec<String>, payment_addresses: &Vec<String>) -> bool {
-    inputs.iter().all(|input|
-        match from_utxo(input) {
+    inputs.iter().all(|source|
+        match from_source(source) {
             Some((_, payment_address)) => {
                 payment_addresses.contains(&payment_address)
             }
@@ -384,7 +383,7 @@ fn _check_inputs(inputs: &Vec<String>, payment_addresses: &Vec<String>) -> bool 
 
 fn _check_inputs_existance(inputs: &Vec<String>) -> ErrorCode {
     for input in inputs {
-        match utxo_cache::get_balanse_of_utxo(input) {
+        match source_cache::get_balance_of_source(input) {
             None => return ErrorCode::PaymentSourceDoesNotExistError,
             _ => ()
         }
@@ -393,15 +392,28 @@ fn _check_inputs_existance(inputs: &Vec<String>) -> ErrorCode {
 }
 
 fn _process_inputs(inputs: &Vec<String>) {
-    inputs.into_iter().for_each(|s| {
-        utxo_cache::remove_utxo(s);
+    inputs.into_iter().for_each(|source| {
+        source_cache::remove_source(source);
     });
 }
 
-fn _save_response(infos: &Vec<UTXOInfo>, request: &str) -> ErrorCode {
-    match serialize_infos(&infos) {
-        Ok(str) => _add_response(request, &str),
-        Err(ec) => ec
+fn _save_source_response(sources: &Vec<SourceInfo>, request: &str) -> ErrorCode {
+    match to_string(&sources) {
+        Ok(json) => _add_response(request, &json),
+        Err(_) => {
+            error!("Can't deserialize Source Info");
+            ErrorCode::CommonInvalidState
+        }
+    }
+}
+
+fn _save_receipt_response(receipts: &Vec<ReceiptInfo>, request: &str) -> ErrorCode {
+    match to_string(&receipts) {
+        Ok(json) => _add_response(request, &json),
+        Err(_) => {
+            error!("Can't deserialize Receipt Info");
+            ErrorCode::CommonInvalidState
+        }
     }
 }
 
@@ -413,9 +425,9 @@ fn _add_response(request: &str, response: &str) -> ErrorCode {
 }
 
 fn _count_total_inputs(inputs: &Vec<String>) -> i32 {
-    inputs.into_iter().filter_map(utxo_cache::get_balanse_of_utxo).fold(0, |acc, next| acc + next)
+    inputs.into_iter().filter_map(source_cache::get_balance_of_source).fold(0, |acc, next| acc + next)
 }
 
-fn _count_total_payments(outputs: &Vec<UTXOOutput>) -> i32 {
+fn _count_total_payments(outputs: &Vec<Output>) -> i32 {
     outputs.into_iter().fold(0, |acc, next| acc + next.amount)
 }

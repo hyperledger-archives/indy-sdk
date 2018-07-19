@@ -12,13 +12,16 @@ extern "C" {
     ///
     /// It allows library user to provide custom payment method implementation as set of handlers.
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
     /// payment_method: The type of payment method also used as sub-prefix for fully resolvable payment address format ("sov" - for example)
     /// create_payment_address: "create_payment_address" operation handler
     /// add_request_fees: "add_request_fees" operation handler
-    /// build_get_utxo_request: "build_get_utxo_request" operation handler
-    /// parse_get_utxo_response: "parse_get_utxo_response" operation handler
+    /// build_get_sources_request: "build_get_sources_request" operation handler
+    /// parse_get_sources_response: "parse_get_sources_response" operation handler
     /// build_payment_req: "build_payment_req" operation handler
     /// build_mint_req: "build_mint_req" operation handler
     ///
@@ -34,16 +37,16 @@ extern "C" {
                                                                                     const char* outputs_json,
                                                                                     const char ** const req_with_fees_ptr),
                                                      indy_error_t (*parseResponseWithFees)(const char* resp_json,
-                                                                                           const char ** const utxo_ptr),
-                                                     indy_error_t (*buildGetUtxoRequest)(const char* payment_address,
-                                                                                         const char ** const get_utxo_txn_ptr),
-                                                     indy_error_t (*parseGetUtxoResponse)(const char* resp_json,
-                                                                                          const char ** const utxo_ptr),
+                                                                                           const char ** const receipts_ptr),
+                                                     indy_error_t (*buildGetSourcesRequest)(const char* payment_address,
+                                                                                            const char ** const get_sources_txn_ptr),
+                                                     indy_error_t (*parseGetSourcesResponse)(const char* resp_json,
+                                                                                            const char ** const sources_ptr),
                                                      indy_error_t (*buildPaymentReq)(const char* inputs_json,
                                                                                      const char* outputs_json,
                                                                                      const char ** const payment_req_ptr),
                                                      indy_error_t (*parsePaymentResponse)(const char* resp_json,
-                                                                                          const char ** const utxo_ptr),
+                                                                                          const char ** const receipts_ptr),
                                                      indy_error_t (*buildMintReq)(const char* outputs_json,
                                                                                   const char ** const mint_req_ptr),
                                                      indy_error_t (*buildSetTxnFeesReq)(const char* fees_json,
@@ -64,10 +67,13 @@ extern "C" {
     /// Note that payment method should be able to resolve this
     /// secret by fully resolvable payment address format.
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// #Params
     /// command_handle: command handle to map callback to context
     /// wallet_handle: wallet handle where to save new address
-    /// payment_method: Payment method to use (for example, 'sov')
+    /// payment_method: payment method to use (for example, 'sov')
     /// config: payment address config as json:
     ///   {
     ///     seed: <str>, // allows deterministic creation of payment address
@@ -88,6 +94,9 @@ extern "C" {
 
     /// Lists all payment addresses that are stored in the wallet
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// #Params
     /// command_handle: command handle to map callback to context
     /// wallet_handle: wallet to search for payment_addresses in
@@ -104,11 +113,9 @@ extern "C" {
                                                     );
 
     /// Modifies Indy request by adding information how to pay fees for this transaction
-    /// according to selected payment method.
+    /// according to this payment method.
     ///
-    /// Payment selection is performed by looking to o
-    ///
-    /// This method consumes set of UTXO inputs and outputs. The difference between inputs balance
+    /// This method consumes set of inputs and outputs. The difference between inputs balance
     /// and outputs balance is the fee for this transaction.
     ///
     /// Not that this method also produces correct fee signatures.
@@ -116,25 +123,29 @@ extern "C" {
     /// Format of inputs is specific for payment method. Usually it should reference payment transaction
     /// with at least one output that corresponds to payment address that user owns.
     ///
+    ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// #Params
+    /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
     /// submitter_did : DID of request sender
     /// req_json: initial transaction request as json
-    /// inputs_json: The list of UTXO inputs as json array:
-    ///   ["input1", ...]
-    ///   Notes:
+    /// inputs_json: The list of payment sources as json array:
+    ///   ["source1", ...]
     ///     - each input should reference paymentAddress
     ///     - this param will be used to determine payment_method
-    /// outputs_json: The list of UTXO outputs as json array:
+    /// outputs_json: The list of outputs as json array:
     ///   [{
-    ///     paymentAddress: <str>, // payment address used as output
-    ///     amount: <int>, // amount of tokens to transfer to this payment address
+    ///     recipient: <str>, // payment address of recipient
+    ///     amount: <int>, // amount
     ///     extra: <str>, // optional data
     ///   }]
     ///
     /// #Returns
     /// req_with_fees_json - modified Indy request with added fees info
-    /// payment_method
+    /// payment_method - used payment method
 
     extern indy_error_t indy_add_request_fees(indy_handle_t command_handle,
                                               indy_handle_t wallet_handle,
@@ -151,17 +162,24 @@ extern "C" {
 
     /// Parses response for Indy request with fees.
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// #Params
-    /// command_handle
-    /// payment_method
+    /// command_handle: Command handle to map callback to caller context.
+    /// payment_method: payment method to use
     /// resp_json: response for Indy request with fees
     ///   Note: this param will be used to determine payment_method
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// #Returns
-    /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+    /// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
     ///   [{
-    ///      input: <str>, // UTXO input
-    ///      amount: <int>, // amount of tokens in this input
+    ///      receipt: <str>, // receipt that can be used for payment referencing and verification
+    ///      recipient: <str>, //payment address of recipient
+    ///      amount: <int>, // amount
     ///      extra: <str>, // optional data from payment transaction
     ///   }]
 
@@ -171,78 +189,93 @@ extern "C" {
 
                                                         void           (*cb)(indy_handle_t xcommand_handle,
                                                                 indy_error_t  err,
-                                                                const char*   utxo_json)
-                                                );
+                                                                const char*   receipts_json)
+                                                     );
 
-    /// Builds Indy request for getting UTXO list for payment address
+    /// Builds Indy request for getting sources list for payment address
     /// according to this payment method.
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// #Params
-    /// wallet_handle: wallet handle where keys for signature are stored
-    /// submitter_did: target payment address
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: wallet handle
+    /// submitter_did : DID of request sender
     /// payment_address: target payment address
     ///
     /// #Returns
-    /// get_utxo_txn_json - Indy request for getting UTXO list for payment address
-    /// payment_method
+    /// get_sources_txn_json - Indy request for getting sources list for payment address
+    /// payment_method - used payment method
 
-    extern indy_error_t indy_build_get_utxo_request(indy_handle_t command_handle,
-                                                    indy_handle_t wallet_handle,
-                                                    const char *  submitter_did,
-                                                    const char *  payment_address,
+    extern indy_error_t indy_build_get_sources_request(indy_handle_t command_handle,
+                                                       indy_handle_t wallet_handle,
+                                                       const char *  submitter_did,
+                                                       const char *  payment_address,
 
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
-                                                                         indy_error_t  err,
-                                                                         const char*   get_utxo_txn_json,
-                                                                         const char*   payment_method)
-                                                    );
+                                                       void           (*cb)(indy_handle_t xcommand_handle,
+                                                                            indy_error_t  err,
+                                                                            const char*   get_sources_txn_json,
+                                                                            const char*   payment_method)
+                                                       );
 
-    /// Parses response for Indy request for getting UTXO list.
+    /// Parses response for Indy request for getting sources list.
+    ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
     ///
     /// #Params
-    /// resp_json: response for Indy request for getting UTXO list
+    /// command_handle: Command handle to map callback to caller context.
+    /// payment_method: payment method to use.
+    /// resp_json: response for Indy request for getting sources list
     ///   Note: this param will be used to determine payment_method
     ///
     /// #Returns
-    /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+    /// sources_json - parsed (payment method and node version agnostic) sources info as json:
     ///   [{
-    ///      input: <str>, // UTXO input
-    ///      amount: <int>, // amount of tokens in this input
+    ///      source: <str>, // source input
+    ///      paymentAddress: <str>, //payment address for this source
+    ///      amount: <int>, // amount
     ///      extra: <str>, // optional data from payment transaction
     ///   }]
 
-    extern indy_error_t indy_parse_get_utxo_response(indy_handle_t command_handle,
-                                                     const char *  payment_method,
-                                                     const char *  resp_json,
+    extern indy_error_t indy_parse_get_sources_response(indy_handle_t command_handle,
+                                                        const char *  payment_method,
+                                                        const char *  resp_json,
 
-                                                     void           (*cb)(indy_handle_t xcommand_handle,
-                                                                          indy_error_t  err,
-                                                                          const char*   utxo_json)
-                                                     );
+                                                        void           (*cb)(indy_handle_t xcommand_handle,
+                                                                             indy_error_t  err,
+                                                                             const char*   sources_json)
+                                                        );
 
-    /// Builds Indy request for doing tokens payment
+    /// Builds Indy request for doing payment
     /// according to this payment method.
     ///
-    /// This method consumes set of UTXO inputs and outputs.
+    /// This method consumes set of inputs and outputs.
     ///
     /// Format of inputs is specific for payment method. Usually it should reference payment transaction
     /// with at least one output that corresponds to payment address that user owns.
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// #Params
-    /// wallet_handle: wallet handle where keys for signature are stored
-    /// inputs_json: The list of UTXO inputs as json array:
-    ///   ["input1", ...]
-    ///   Note that each input should reference paymentAddress
-    /// outputs_json: The list of UTXO outputs as json array:
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: wallet handle
+    /// submitter_did : DID of request sender
+    /// inputs_json: The list of payment sources as json array:
+    ///   ["source1", ...]
+    ///   Note that each source should reference payment address
+    /// outputs_json: The list of outputs as json array:
     ///   [{
-    ///     paymentAddress: <str>, // payment address used as output
-    ///     amount: <int>, // amount of tokens to transfer to this payment address
+    ///     recipient: <str>, // payment address of recipient
+    ///     amount: <int>, // amount
     ///     extra: <str>, // optional data
     ///   }]
     ///
     /// #Returns
-    /// payment_req_json - Indy request for doing tokens payment
-    /// payment_method
+    /// payment_req_json - Indy request for doing payment
+    /// payment_method - used payment method
 
     extern indy_error_t indy_build_payment_req(indy_handle_t command_handle,
                                                indy_handle_t wallet_handle,
@@ -258,17 +291,21 @@ extern "C" {
 
     /// Parses response for Indy request for payment txn.
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// #Params
-    /// command_handle
-    /// payment_method
+    /// command_handle: Command handle to map callback to caller context.
+    /// payment_method: payment method to use
     /// resp_json: response for Indy request for payment txn
     ///   Note: this param will be used to determine payment_method
     ///
     /// #Returns
-    /// utxo_json - parsed (payment method and node version agnostic) utxo info as json:
+    /// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
     ///   [{
-    ///      input: <str>, // UTXO input
-    ///      amount: <int>, // amount of tokens in this input
+    ///      receipt: <str>, // receipt that can be used for payment referencing and verification
+    ///      recipient: <str>, // payment address of recipient
+    ///      amount: <int>, // amount
     ///      extra: <str>, // optional data from payment transaction
     ///   }]
 
@@ -278,24 +315,29 @@ extern "C" {
 
                                                     void           (*cb)(indy_handle_t xcommand_handle,
                                                                          indy_error_t  err,
-                                                                         const char*   utxo_json)
+                                                                         const char*   receipts_json)
                                                     );
 
-    /// Builds Indy request for doing tokens minting
+    /// Builds Indy request for doing minting
     /// according to this payment method.
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// #Params
-    /// wallet_handle: wallet handle where keys for signature are stored
-    /// outputs_json: The list of UTXO outputs as json array:
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: wallet handle
+    /// submitter_did : DID of request sender
+    /// outputs_json: The list of outputs as json array:
     ///   [{
-    ///     paymentAddress: <str>, // payment address used as output
-    ///     amount: <int>, // amount of tokens to transfer to this payment address
+    ///     recipient: <str>, // payment address of recipient
+    ///     amount: <int>, // amount
     ///     extra: <str>, // optional data
     ///   }]
     ///
     /// #Returns
-    /// mint_req_json - Indy request for doing tokens minting
-    /// payment_method
+    /// mint_req_json - Indy request for doing minting
+    /// payment_method - used payment method
 
     extern indy_error_t indy_build_mint_req(indy_handle_t command_handle,
                                             indy_handle_t wallet_handle,
@@ -310,10 +352,14 @@ extern "C" {
 
     /// Builds Indy request for setting fees for transactions in the ledger
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// # Params
-    /// command_handle
-    /// wallet_handle: wallet handle where keys for signature are stored
-    /// payment_method
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: wallet handle
+    /// submitter_did : DID of request sender
+    /// payment_method: payment method to use
     /// fees_json {
     ///   txnType1: amount1,
     ///   txnType2: amount2,
@@ -336,10 +382,14 @@ extern "C" {
 
     /// Builds Indy get request for getting fees for transactions in the ledger
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// # Params
-    /// command_handle
-    /// wallet_handle: wallet handle where keys for signature are stored
-    /// payment_method
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: wallet handle
+    /// submitter_did : DID of request sender
+    /// payment_method: payment method to use
     ///
     /// # Return
     /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
@@ -356,9 +406,12 @@ extern "C" {
 
     /// Parses response for Indy request for getting fees
     ///
+    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+    /// in the future releases.
+    ///
     /// # Params
-    /// command_handle
-    /// payment_method
+    /// command_handle: Command handle to map callback to caller context.
+    /// payment_method: payment method to use
     /// resp_json: response for Indy request for getting fees
     ///
     /// # Return

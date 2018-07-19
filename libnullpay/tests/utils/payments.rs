@@ -70,7 +70,7 @@ pub fn parse_response_with_fees(payment_method: &str, resp_json: &str) -> Result
     super::results::result_to_string(err, receiver)
 }
 
-pub fn build_get_utxo_request(wallet_handle: i32, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
+pub fn build_get_sources_request(wallet_handle: i32, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
     let (receiver, command_handle, cb) =
         super::callbacks::_closure_to_cb_ec_string_string();
 
@@ -78,7 +78,7 @@ pub fn build_get_utxo_request(wallet_handle: i32, submitter_did: &str, payment_a
     let payment_address = CString::new(payment_address).unwrap();
 
     let err = unsafe {
-        indy_build_get_utxo_request(command_handle,
+        indy_build_get_sources_request(command_handle,
                                     wallet_handle,
                                     submitter_did.as_ptr(),
                                     payment_address.as_ptr(),
@@ -89,7 +89,7 @@ pub fn build_get_utxo_request(wallet_handle: i32, submitter_did: &str, payment_a
 }
 
 
-pub fn parse_get_utxo_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
+pub fn parse_get_sources_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) =
         super::callbacks::_closure_to_cb_ec_string();
 
@@ -97,7 +97,7 @@ pub fn parse_get_utxo_response(payment_method: &str, resp_json: &str) -> Result<
     let resp_json = CString::new(resp_json).unwrap();
 
     let err = unsafe {
-        indy_parse_get_utxo_response(command_handle,
+        indy_parse_get_sources_response(command_handle,
                                      payment_method.as_ptr(),
                                      resp_json.as_ptr(),
                                      cb)
@@ -252,25 +252,25 @@ extern {
                                      resp_json: *const c_char,
                                      cb: Option<extern fn(command_handle_: i32,
                                                           err: ErrorCode,
-                                                          utxo_json: *const c_char)>) -> ErrorCode;
+                                                          receipts_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
-    fn indy_build_get_utxo_request(command_handle: i32,
+    fn indy_build_get_sources_request(command_handle: i32,
                                    wallet_handle: i32,
                                    submitter_did: *const c_char,
                                    payment_address: *const c_char,
                                    cb: Option<extern fn(command_handle_: i32,
                                                         err: ErrorCode,
-                                                        get_utxo_txn_json: *const c_char,
+                                                        get_sources_txn_json: *const c_char,
                                                         payment_method: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
-    fn indy_parse_get_utxo_response(command_handle: i32,
+    fn indy_parse_get_sources_response(command_handle: i32,
                                     payment_method: *const c_char,
                                     resp_json: *const c_char,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
-                                                         utxo_json: *const c_char)>) -> ErrorCode;
+                                                         sources_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_build_payment_req(command_handle: i32,
@@ -289,7 +289,7 @@ extern {
                                    resp_json: *const c_char,
                                    cb: Option<extern fn(command_handle_: i32,
                                                         err: ErrorCode,
-                                                        utxo_json: *const c_char)>) -> ErrorCode;
+                                                        receipts_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_build_mint_req(command_handle: i32,

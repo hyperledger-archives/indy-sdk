@@ -46,6 +46,7 @@ pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
 /// with at least one output that corresponds to payment address that user owns.
 ///
 /// #Params
+/// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// req_json: initial transaction request as json
@@ -55,7 +56,7 @@ pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
 /// outputs_json: The list of outputs as json array:
 ///   [{
 ///     recipient: <str>, // payment address of recipient
-///     amount: <int>, // amount of tokens to transfer to this recipient
+///     amount: <int>, // amount
 ///     extra: <str>, // optional data
 ///   }]
 ///
@@ -74,16 +75,16 @@ pub type AddRequestFeesCB = extern fn(command_handle: i32,
 /// Parses response for Indy request with fees.
 ///
 /// #Params
-/// command_handle
+/// command_handle: command handle to map callback to context
 /// resp_json: response for Indy request with fees
 ///   Note: this param will be used to determine payment_method
 ///
 /// #Returns
 /// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
 ///   [{
-///      receipt: <str>, // receipt
+///      receipt: <str>, // receipt that can be used for payment referencing and verification
 ///      recipient: <str>, //payment address for this recipient
-///      amount: <int>, // amount of tokens in this receipt
+///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
@@ -96,6 +97,7 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
 /// according to this payment method.
 ///
 /// #Params
+/// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// payment_address: target payment address
@@ -113,6 +115,7 @@ pub type BuildGetSourcesRequestCB = extern fn(command_handle: i32,
 /// Parses response for Indy request for getting sources list.
 ///
 /// #Params
+/// command_handle: command handle to map callback to context
 /// resp_json: response for Indy request for getting sources list
 ///   Note: this param will be used to determine payment_method
 ///
@@ -121,7 +124,7 @@ pub type BuildGetSourcesRequestCB = extern fn(command_handle: i32,
 ///   [{
 ///      source: <str>, // source input
 ///      paymentAddress: <str>, //payment address for this source
-///      amount: <int>, // amount of tokens in this source
+///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 pub type ParseGetSourcesResponseCB = extern fn(command_handle: i32,
@@ -130,7 +133,7 @@ pub type ParseGetSourcesResponseCB = extern fn(command_handle: i32,
                                                                     err: ErrorCode,
                                                                     sources_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
-/// Builds Indy request for doing tokens payment
+/// Builds Indy request for doing payment
 /// according to this payment method.
 ///
 /// This method consumes set of inputs and outputs.
@@ -139,6 +142,7 @@ pub type ParseGetSourcesResponseCB = extern fn(command_handle: i32,
 /// with at least one output that corresponds to payment address that user owns.
 ///
 /// #Params
+/// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// inputs_json: The list of payment sources as json array:
@@ -147,12 +151,12 @@ pub type ParseGetSourcesResponseCB = extern fn(command_handle: i32,
 /// outputs_json: The list of outputs as json array:
 ///   [{
 ///     recipient: <str>, // payment address of recipient
-///     amount: <int>, // amount of tokens to transfer to this recipient
+///     amount: <int>, // amount
 ///     extra: <str>, // optional data
 ///   }]
 ///
 /// #Returns
-/// payment_req_json - Indy request for doing tokens payment
+/// payment_req_json - Indy request for doing payment
 pub type BuildPaymentReqCB = extern fn(command_handle: i32,
                                        wallet_handle: i32,
                                        submitter_did: *const c_char,
@@ -165,16 +169,16 @@ pub type BuildPaymentReqCB = extern fn(command_handle: i32,
 /// Parses response for Indy request for payment txn.
 ///
 /// #Params
-/// command_handle
+/// command_handle: command handle to map callback to context
 /// resp_json: response for Indy request for payment txn
 ///   Note: this param will be used to determine payment_method
 ///
 /// #Returns
 /// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
 ///   [{
-///      receipt: <str>, // source input
+///      receipt: <str>, // receipt that can be used for payment referencing and verification
 ///      recipient: <str>, //payment address for this receipt
-///      amount: <int>, // amount of tokens in this receipt
+///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
@@ -183,21 +187,22 @@ pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
                                                                  err: ErrorCode,
                                                                  receipts_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
-/// Builds Indy request for doing tokens minting
+/// Builds Indy request for doing minting
 /// according to this payment method.
 ///
 /// #Params
+/// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// outputs_json: The list of outputs as json array:
 ///   [{
 ///     recipient: <str>, // payment address of recipient
-///     amount: <int>, // amount of tokens to transfer to this recipient
+///     amount: <int>, // amount
 ///     extra: <str>, // optional data
 ///   }]
 ///
 /// #Returns
-/// mint_req_json - Indy request for doing tokens minting
+/// mint_req_json - Indy request for doing minting
 pub type BuildMintReqCB = extern fn(command_handle: i32,
                                     wallet_handle: i32,
                                     submitter_did: *const c_char,
@@ -209,7 +214,7 @@ pub type BuildMintReqCB = extern fn(command_handle: i32,
 /// Builds Indy request for setting fees for transactions in the ledger
 ///
 /// # Params
-/// command_handle
+/// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// fees_json {
@@ -232,7 +237,7 @@ pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
 /// Builds Indy get request for getting fees for transactions in the ledger
 ///
 /// # Params
-/// command_handle
+/// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 ///
@@ -248,8 +253,8 @@ pub type BuildGetTxnFeesReqCB = extern fn(command_handle: i32,
 /// Parses response for Indy request for getting fees
 ///
 /// # Params
-/// command_handle
-/// payment_method
+/// command_handle: command handle to map callback to context
+/// payment_method: payment method to use
 /// resp_json: response for Indy request for getting fees
 ///
 /// # Return
@@ -365,7 +370,7 @@ pub extern fn indy_register_payment_method(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle where to save new address
-/// payment_method: Payment method to use (for example, 'sov')
+/// payment_method: payment method to use (for example, 'sov')
 /// config: payment address config as json:
 ///   {
 ///     seed: <str>, // allows deterministic creation of payment address
@@ -470,22 +475,24 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 /// in the future releases.
 ///
 /// #Params
+/// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// req_json: initial transaction request as json
 /// inputs_json: The list of payment sources as json array:
 ///   ["source1", ...]
-///   Note that each source should reference payment address
+///     - each input should reference paymentAddress
+///     - this param will be used to determine payment_method
 /// outputs_json: The list of outputs as json array:
 ///   [{
 ///     recipient: <str>, // payment address of recipient
-///     amount: <int>, // amount of tokens to transfer to this recipient
+///     amount: <int>, // amount
 ///     extra: <str>, // optional data
 ///   }]
 ///
 /// #Returns
 /// req_with_fees_json - modified Indy request with added fees info
-/// payment_method
+/// payment_method - used payment method
 #[no_mangle]
 pub extern fn indy_add_request_fees(command_handle: i32,
                                     wallet_handle: i32,
@@ -537,8 +544,8 @@ pub extern fn indy_add_request_fees(command_handle: i32,
 /// in the future releases.
 ///
 /// #Params
-/// command_handle
-/// payment_method
+/// command_handle: Command handle to map callback to caller context.
+/// payment_method: payment method to use
 /// resp_json: response for Indy request with fees
 ///   Note: this param will be used to determine payment_method
 ///
@@ -548,9 +555,9 @@ pub extern fn indy_add_request_fees(command_handle: i32,
 /// #Returns
 /// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
 ///   [{
-///      receipt: <str>, // receipt
+///      receipt: <str>, // receipt that can be used for payment referencing and verification
 ///      recipient: <str>, //payment address of recipient
-///      amount: <int>, // amount of tokens in this receipt
+///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 #[no_mangle]
@@ -592,13 +599,14 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 /// in the future releases.
 ///
 /// #Params
+/// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// payment_address: target payment address
 ///
 /// #Returns
 /// get_sources_txn_json - Indy request for getting sources list for payment address
-/// payment_method
+/// payment_method - used payment method
 #[no_mangle]
 pub extern fn indy_build_get_sources_request(command_handle: i32,
                                              wallet_handle: i32,
@@ -644,6 +652,8 @@ pub extern fn indy_build_get_sources_request(command_handle: i32,
 /// in the future releases.
 ///
 /// #Params
+/// command_handle: Command handle to map callback to caller context.
+/// payment_method: payment method to use.
 /// resp_json: response for Indy request for getting sources list
 ///   Note: this param will be used to determine payment_method
 ///
@@ -652,7 +662,7 @@ pub extern fn indy_build_get_sources_request(command_handle: i32,
 ///   [{
 ///      source: <str>, // source input
 ///      paymentAddress: <str>, //payment address for this source
-///      amount: <int>, // amount of tokens in this source
+///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 #[no_mangle]
@@ -690,7 +700,7 @@ pub extern fn indy_parse_get_sources_response(command_handle: i32,
     res
 }
 
-/// Builds Indy request for doing tokens payment
+/// Builds Indy request for doing payment
 /// according to this payment method.
 ///
 /// This method consumes set of inputs and outputs.
@@ -702,6 +712,7 @@ pub extern fn indy_parse_get_sources_response(command_handle: i32,
 /// in the future releases.
 ///
 /// #Params
+/// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// inputs_json: The list of payment sources as json array:
@@ -710,13 +721,13 @@ pub extern fn indy_parse_get_sources_response(command_handle: i32,
 /// outputs_json: The list of outputs as json array:
 ///   [{
 ///     recipient: <str>, // payment address of recipient
-///     amount: <int>, // amount of tokens to transfer to this recipient
+///     amount: <int>, // amount
 ///     extra: <str>, // optional data
 ///   }]
 ///
 /// #Returns
-/// payment_req_json - Indy request for doing tokens payment
-/// payment_method
+/// payment_req_json - Indy request for doing payment
+/// payment_method - used payment method
 #[no_mangle]
 pub extern fn indy_build_payment_req(command_handle: i32,
                                      wallet_handle: i32,
@@ -765,17 +776,17 @@ pub extern fn indy_build_payment_req(command_handle: i32,
 /// in the future releases.
 ///
 /// #Params
-/// command_handle
-/// payment_method
+/// command_handle: Command handle to map callback to caller context.
+/// payment_method: payment method to use
 /// resp_json: response for Indy request for payment txn
 ///   Note: this param will be used to determine payment_method
 ///
 /// #Returns
 /// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
 ///   [{
-///      receipt: <str>, // source input
+///      receipt: <str>, // receipt that can be used for payment referencing and verification
 ///      recipient: <str>, // payment address of recipient
-///      amount: <int>, // amount of tokens in this receipt
+///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 #[no_mangle]
@@ -813,25 +824,26 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
     res
 }
 
-/// Builds Indy request for doing tokens minting
+/// Builds Indy request for doing minting
 /// according to this payment method.
 ///
 /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
 /// in the future releases.
 ///
 /// #Params
+/// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
 /// outputs_json: The list of outputs as json array:
 ///   [{
 ///     recipient: <str>, // payment address of recipient
-///     amount: <int>, // amount of tokens to transfer to this recipient
+///     amount: <int>, // amount
 ///     extra: <str>, // optional data
 ///   }]
 ///
 /// #Returns
-/// mint_req_json - Indy request for doing tokens minting
-/// payment_method
+/// mint_req_json - Indy request for doing minting
+/// payment_method - used payment method
 #[no_mangle]
 pub extern fn indy_build_mint_req(command_handle: i32,
                                   wallet_handle: i32,
@@ -877,10 +889,10 @@ pub extern fn indy_build_mint_req(command_handle: i32,
 /// in the future releases.
 ///
 /// # Params
-/// command_handle
+/// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
-/// payment_method
+/// payment_method: payment method to use
 /// fees_json {
 ///   txnType1: amount1,
 ///   txnType2: amount2,
@@ -935,10 +947,10 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
 /// in the future releases.
 ///
 /// # Params
-/// command_handle
+/// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
 /// submitter_did : DID of request sender
-/// payment_method
+/// payment_method: payment method to use
 ///
 /// # Return
 /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
@@ -985,8 +997,8 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
 /// in the future releases.
 ///
 /// # Params
-/// command_handle
-/// payment_method
+/// command_handle: Command handle to map callback to caller context.
+/// payment_method: payment method to use
 /// resp_json: response for Indy request for getting fees
 ///
 /// # Return
@@ -1010,14 +1022,19 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: i32,
 
     trace!("indy_parse_get_txn_fees_response: entities >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
 
-    let result = CommandExecutor::instance().send(Command::Payments(
-        PaymentsCommand::ParseGetTxnFeesResponse(payment_method, resp_json, Box::new(move |result| {
-            let (err, fees_json) = result_to_err_code_1!(result, String::new());
-            trace!("indy_parse_get_txn_fees_response: fees_json: {:?}", fees_json);
-            let fees_json = CStringUtils::string_to_cstring(fees_json);
-            cb(command_handle, err, fees_json.as_ptr());
-        }))
-    ));
+    let result =
+        CommandExecutor::instance()
+            .send(Command::Payments(
+                PaymentsCommand::ParseGetTxnFeesResponse(
+                    payment_method,
+                    resp_json,
+                    Box::new(move |result| {
+                        let (err, fees_json) = result_to_err_code_1!(result, String::new());
+                        trace!("indy_parse_get_txn_fees_response: fees_json: {:?}", fees_json);
+                        let fees_json = CStringUtils::string_to_cstring(fees_json);
+                        cb(command_handle, err, fees_json.as_ptr());
+                    }))
+            ));
 
     let res = result_to_err_code!(result);
 

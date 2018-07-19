@@ -48,19 +48,19 @@ pub enum PaymentsCommand {
     ParseResponseWithFeesAck(
         i32, //handle
         Result<String, PaymentsError>),
-    BuildGetUtxoRequest(
+    BuildGetSourcesRequest(
         i32, //wallet_handle
         String, //submitter did
         String, //payment address
         Box<Fn(Result<(String, String), IndyError>) + Send>),
-    BuildGetUtxoRequestAck(
+    BuildGetSourcesRequestAck(
         i32, //handle
         Result<String, PaymentsError>),
-    ParseGetUtxoResponse(
+    ParseGetSourcesResponse(
         String, //type
         String, //response
         Box<Fn(Result<String, IndyError>) + Send>),
-    ParseGetUtxoResponseAck(
+    ParseGetSourcesResponseAck(
         i32, //cmd_handle
         Result<String, PaymentsError>),
     BuildPaymentReq(
@@ -164,21 +164,21 @@ impl PaymentsCommandExecutor {
                 info!(target: "payments_command_executor", "ParseResponseWithFeesAck command received");
                 self.parse_response_with_fees_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildGetUtxoRequest(wallet_handle, submitter_did, payment_address, cb) => {
-                info!(target: "payments_command_executor", "BuildGetUtxoRequest command received");
-                self.build_get_utxo_request(wallet_handle, &submitter_did, &payment_address, cb);
+            PaymentsCommand::BuildGetSourcesRequest(wallet_handle, submitter_did, payment_address, cb) => {
+                info!(target: "payments_command_executor", "BuildGetSourcesRequest command received");
+                self.build_get_sources_request(wallet_handle, &submitter_did, &payment_address, cb);
             }
-            PaymentsCommand::BuildGetUtxoRequestAck(cmd_handle, result) => {
-                info!(target: "payments_command_executor", "BuildGetUtxoRequestAck command received");
-                self.build_get_utxo_request_ack(cmd_handle, result);
+            PaymentsCommand::BuildGetSourcesRequestAck(cmd_handle, result) => {
+                info!(target: "payments_command_executor", "BuildGetSourcesRequestAck command received");
+                self.build_get_sources_request_ack(cmd_handle, result);
             }
-            PaymentsCommand::ParseGetUtxoResponse(type_, response, cb) => {
-                info!(target: "payments_command_executor", "ParseGetUtxoResponse command received");
-                self.parse_get_utxo_response(&type_, &response, cb);
+            PaymentsCommand::ParseGetSourcesResponse(type_, response, cb) => {
+                info!(target: "payments_command_executor", "ParseGetSourcesResponse command received");
+                self.parse_get_sources_response(&type_, &response, cb);
             }
-            PaymentsCommand::ParseGetUtxoResponseAck(cmd_handle, result) => {
-                info!(target: "payments_command_executor", "ParseGetUtxoResponseAck command received");
-                self.parse_get_utxo_response_ack(cmd_handle, result);
+            PaymentsCommand::ParseGetSourcesResponseAck(cmd_handle, result) => {
+                info!(target: "payments_command_executor", "ParseGetSourcesResponseAck command received");
+                self.parse_get_sources_response_ack(cmd_handle, result);
             }
             PaymentsCommand::BuildPaymentReq(wallet_handle, submitter_did, inputs, outputs, cb) => {
                 info!(target: "payments_command_executor", "BuildPaymentReq command received");
@@ -351,8 +351,8 @@ impl PaymentsCommandExecutor {
         trace!("parse_response_with_fees_ack <<<");
     }
 
-    fn build_get_utxo_request(&self, wallet_handle: i32, submitter_did: &str, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        trace!("build_get_utxo_request >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
+    fn build_get_sources_request(&self, wallet_handle: i32, submitter_did: &str, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        trace!("build_get_sources_request >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
         match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
@@ -372,28 +372,28 @@ impl PaymentsCommandExecutor {
         let method_copy = method.to_string();
 
         self._process_method(
-            Box::new(move |get_utxo_txn_json| cb(get_utxo_txn_json.map(|s| (s, method.to_string())))),
-            &|i| self.payments_service.build_get_utxo_request(i, &method_copy, wallet_handle, &submitter_did, payment_address)
+            Box::new(move |get_sources_txn_json| cb(get_sources_txn_json.map(|s| (s, method.to_string())))),
+            &|i| self.payments_service.build_get_sources_request(i, &method_copy, wallet_handle, &submitter_did, payment_address)
         );
-        trace!("build_get_utxo_request <<<");
+        trace!("build_get_sources_request <<<");
     }
 
-    fn build_get_utxo_request_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
-        trace!("build_get_utxo_request_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "BuildGetUtxoRequestAck");
-        trace!("build_get_utxo_request_ack <<<");
+    fn build_get_sources_request_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
+        trace!("build_get_sources_request_ack >>> result: {:?}", result);
+        self._common_ack_payments(cmd_handle, result, "BuildGetSourcesRequestAck");
+        trace!("build_get_sources_request_ack <<<");
     }
 
-    fn parse_get_utxo_response(&self, type_: &str, response: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        trace!("parse_get_utxo_response >>> response: {:?}", response);
-        self._process_method(cb, &|i| self.payments_service.parse_get_utxo_response(i, type_, response));
-        trace!("parse_get_utxo_response <<<");
+    fn parse_get_sources_response(&self, type_: &str, response: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        trace!("parse_get_sources_response >>> response: {:?}", response);
+        self._process_method(cb, &|i| self.payments_service.parse_get_sources_response(i, type_, response));
+        trace!("parse_get_sources_response <<<");
     }
 
-    fn parse_get_utxo_response_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
-        trace!("parse_get_utxo_response_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "ParseGetUtxoResponseAck");
-        trace!("parse_get_utxo_response_ack <<<");
+    fn parse_get_sources_response_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
+        trace!("parse_get_sources_response_ack >>> result: {:?}", result);
+        self._common_ack_payments(cmd_handle, result, "ParseGetSourcesResponseAck");
+        trace!("parse_get_sources_response_ack <<<");
     }
 
     fn build_payment_req(&self, wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {

@@ -37,7 +37,7 @@ static INCOMPATIBLE_OUTPUTS: &str = r#"[{"paymentAddress": "pay:PAYMENT_METHOD_1
 static EQUAL_INPUTS: &str = r#"["pay:null1:1", "pay:null1:1", "pay:null1:2"]"#;
 static EQUAL_OUTPUTS: &str = r#"[{"paymentAddress": "pay:null:1", "amount":1, "extra":"1"}, {"paymentAddress": "pay:null:1", "amount":2, "extra":"2"}, {"paymentAddress": "pay:null:2", "amount":2, "extra":"2"}]"#;
 static CORRECT_FEES: &str = r#"{"txnType1":1, "txnType2":2}"#;
-static PAYMENT_RESPONSE: &str = r#"{"reqId":1, "utxos":[{"input": "pay:null:1", "amount":1, "extra":"1"}, {"input": "pay:null:2", "amount":2, "extra":"2"}]}"#;
+static PAYMENT_RESPONSE: &str = r#"{"reqId":1, "sources":[{"input": "pay:null:1", "amount":1, "extra":"1"}, {"input": "pay:null:2", "amount":2, "extra":"2"}]}"#;
 static GET_TXN_FEES_RESPONSE: &str = r#"{"reqId":1, fees:{"txnType1":1, "txnType2":2}}"#;
 static TEST_RES_STRING: &str = "test";
 static CORRECT_PAYMENT_ADDRESS: &str = "pay:null:test";
@@ -56,8 +56,8 @@ mod high_cases {
                                                          Some(payments::mock_method::create_payment_address::handle),
                                                          Some(payments::mock_method::add_request_fees::handle),
                                                          Some(payments::mock_method::parse_response_with_fees::handle),
-                                                         Some(payments::mock_method::build_get_utxo_request::handle),
-                                                         Some(payments::mock_method::parse_get_utxo_response::handle),
+                                                         Some(payments::mock_method::build_get_sources_request::handle),
+                                                         Some(payments::mock_method::parse_get_sources_response::handle),
                                                          Some(payments::mock_method::build_payment_req::handle),
                                                          Some(payments::mock_method::parse_payment_response::handle),
                                                          Some(payments::mock_method::build_mint_req::handle),
@@ -183,18 +183,18 @@ mod high_cases {
         }
     }
 
-    mod build_get_utxo_request {
+    mod build_get_sources_request {
         use super::*;
 
         #[test]
-        fn build_get_utxo_request_works() {
+        fn build_get_sources_request_works() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
-            payments::mock_method::build_get_utxo_request::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+            payments::mock_method::build_get_sources_request::inject_mock(ErrorCode::Success, TEST_RES_STRING);
 
-            let (req, payment_method) = payments::build_get_utxo_request(wallet_handle, IDENTIFIER, CORRECT_PAYMENT_ADDRESS).unwrap();
+            let (req, payment_method) = payments::build_get_sources_request(wallet_handle, IDENTIFIER, CORRECT_PAYMENT_ADDRESS).unwrap();
 
             assert_eq!(req, TEST_RES_STRING.to_string());
             assert_eq!(PAYMENT_METHOD_NAME, payment_method);
@@ -204,18 +204,18 @@ mod high_cases {
         }
     }
 
-    mod parse_get_utxo_response {
+    mod parse_get_sources_response {
         use super::*;
 
         #[test]
-        fn parse_get_utxo_response_works() {
+        fn parse_get_sources_response_works() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
-            payments::mock_method::parse_get_utxo_response::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+            payments::mock_method::parse_get_sources_response::inject_mock(ErrorCode::Success, TEST_RES_STRING);
 
-            let res_plugin = payments::parse_get_utxo_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap();
+            let res_plugin = payments::parse_get_sources_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap();
 
             assert_eq!(res_plugin, TEST_RES_STRING);
 
@@ -733,16 +733,16 @@ mod medium_cases {
         }
     }
 
-    mod build_get_utxo_request {
+    mod build_get_sources_request {
         use super::*;
 
         #[test]
-        pub fn build_get_utxo_request_works_for_nonexistent_plugin() {
+        pub fn build_get_sources_request_works_for_nonexistent_plugin() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
-            let err = payments::build_get_utxo_request(wallet_handle, IDENTIFIER, "pay:null1:test").unwrap_err();
+            let err = payments::build_get_sources_request(wallet_handle, IDENTIFIER, "pay:null1:test").unwrap_err();
 
             assert_eq!(err, ErrorCode::PaymentUnknownMethodError);
 
@@ -751,12 +751,12 @@ mod medium_cases {
         }
 
         #[test]
-        pub fn build_get_utxo_request_works_for_malformed_payment_address() {
+        pub fn build_get_sources_request_works_for_malformed_payment_address() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
-            let err = payments::build_get_utxo_request(wallet_handle, IDENTIFIER, "pay:null1").unwrap_err();
+            let err = payments::build_get_sources_request(wallet_handle, IDENTIFIER, "pay:null1").unwrap_err();
 
             assert_eq!(err, ErrorCode::PaymentIncompatibleMethodsError);
 
@@ -765,12 +765,12 @@ mod medium_cases {
         }
 
         #[test]
-        pub fn build_get_utxo_request_works_for_invalid_wallet_handle() {
+        pub fn build_get_sources_request_works_for_invalid_wallet_handle() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
-            let err = payments::build_get_utxo_request(wallet_handle + 1, IDENTIFIER, CORRECT_PAYMENT_ADDRESS).unwrap_err();
+            let err = payments::build_get_sources_request(wallet_handle + 1, IDENTIFIER, CORRECT_PAYMENT_ADDRESS).unwrap_err();
             assert_eq!(err, ErrorCode::WalletInvalidHandle);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
@@ -778,12 +778,12 @@ mod medium_cases {
         }
 
         #[test]
-        pub fn build_get_utxo_request_works_for_invalid_submitter_did() {
+        pub fn build_get_sources_request_works_for_invalid_submitter_did() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
-            let err = payments::build_get_utxo_request(wallet_handle, INVALID_IDENTIFIER, CORRECT_PAYMENT_ADDRESS).unwrap_err();
+            let err = payments::build_get_sources_request(wallet_handle, INVALID_IDENTIFIER, CORRECT_PAYMENT_ADDRESS).unwrap_err();
 
             assert_eq!(err, ErrorCode::CommonInvalidStructure);
 
@@ -792,16 +792,16 @@ mod medium_cases {
         }
 
         #[test]
-        fn build_get_utxo_request_works_for_generic_error() {
+        fn build_get_sources_request_works_for_generic_error() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
-            payments::mock_method::build_get_utxo_request::inject_mock(ErrorCode::WalletAccessFailed, "");
+            payments::mock_method::build_get_sources_request::inject_mock(ErrorCode::WalletAccessFailed, "");
 
-            let err = payments::build_get_utxo_request(wallet_handle,
-                                                       IDENTIFIER,
-                                                       CORRECT_PAYMENT_ADDRESS,
+            let err = payments::build_get_sources_request(wallet_handle,
+                                                          IDENTIFIER,
+                                                          CORRECT_PAYMENT_ADDRESS,
             ).unwrap_err();
 
             assert_eq!(err, ErrorCode::WalletAccessFailed);
@@ -811,15 +811,15 @@ mod medium_cases {
         }
     }
 
-    mod parse_get_utxo_request {
+    mod parse_get_sources_request {
         use super::*;
 
         #[test]
-        pub fn parse_get_utxo_response_works_for_nonexistent_plugin() {
+        pub fn parse_get_sources_response_works_for_nonexistent_plugin() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
 
-            let err = payments::parse_get_utxo_response(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS).unwrap_err();
+            let err = payments::parse_get_sources_response(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS).unwrap_err();
 
             assert_eq!(err, ErrorCode::PaymentUnknownMethodError);
 
@@ -827,14 +827,14 @@ mod medium_cases {
         }
 
         #[test]
-        fn parse_get_utxo_response_works_for_generic_error() {
+        fn parse_get_sources_response_works_for_generic_error() {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
-            payments::mock_method::parse_get_utxo_response::inject_mock(ErrorCode::WalletAccessFailed, "");
+            payments::mock_method::parse_get_sources_response::inject_mock(ErrorCode::WalletAccessFailed, "");
 
-            let err = payments::parse_get_utxo_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap_err();
+            let err = payments::parse_get_sources_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap_err();
 
             assert_eq!(err, ErrorCode::WalletAccessFailed);
 

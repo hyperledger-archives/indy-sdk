@@ -77,8 +77,8 @@ pub mod mock_method {
                                          Some(create_payment_address::handle),
                                          Some(add_request_fees::handle),
                                          Some(parse_response_with_fees::handle),
-                                         Some(build_get_utxo_request::handle),
-                                         Some(parse_get_utxo_response::handle),
+                                         Some(build_get_sources_request::handle),
+                                         Some(parse_get_sources_response::handle),
                                          Some(build_payment_req::handle),
                                          Some(parse_payment_response::handle),
                                          Some(build_mint_req::handle),
@@ -104,11 +104,11 @@ pub mod mock_method {
         mocked_handler!(_resp_json: *const c_char);
     }
 
-    pub mod build_get_utxo_request {
+    pub mod build_get_sources_request {
         mocked_handler!(_wallet_handle: i32, _submitter_did: *const c_char, _payment_address: *const c_char);
     }
 
-    pub mod parse_get_utxo_response {
+    pub mod parse_get_sources_response {
         mocked_handler!(_resp_json: *const c_char);
     }
 
@@ -141,8 +141,8 @@ pub fn register_payment_method(payment_method_name: &str,
                                create_payment_address: Option<CreatePaymentAddressCB>,
                                add_request_fees: Option<AddRequestFeesCB>,
                                parse_response_with_fees: Option<ParseResponseWithFeesCB>,
-                               build_get_utxo_request: Option<BuildGetUTXORequestCB>,
-                               parse_get_utxo_response: Option<ParseGetUTXOResponseCB>,
+                               build_get_sources_request: Option<BuildGetSourcesRequestCB>,
+                               parse_get_sources_response: Option<ParseGetSourcesResponseCB>,
                                build_payment_req: Option<BuildPaymentReqCB>,
                                parse_payment_response: Option<ParsePaymentResponseCB>,
                                build_mint_req: Option<BuildMintReqCB>,
@@ -159,8 +159,8 @@ pub fn register_payment_method(payment_method_name: &str,
                                            create_payment_address,
                                            add_request_fees,
                                            parse_response_with_fees,
-                                           build_get_utxo_request,
-                                           parse_get_utxo_response,
+                                           build_get_sources_request,
+                                           parse_get_sources_response,
                                            build_payment_req,
                                            parse_payment_response,
                                            build_mint_req,
@@ -223,17 +223,17 @@ pub fn add_request_fees(wallet_handle: i32, submitter_did: &str, req_json: &str,
     super::results::result_to_string_string(err, receiver)
 }
 
-pub fn build_get_utxo_request(wallet_handle: i32, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
+pub fn build_get_sources_request(wallet_handle: i32, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
     let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string_string();
 
     let payment_address = CString::new(payment_address).unwrap();
     let submitter_did = CString::new(submitter_did).unwrap();
 
-    let err = indy_build_get_utxo_request(cmd_handle,
-                                          wallet_handle,
-                                          submitter_did.as_ptr(),
-                                          payment_address.as_ptr(),
-                                          cb,
+    let err = indy_build_get_sources_request(cmd_handle,
+                                             wallet_handle,
+                                             submitter_did.as_ptr(),
+                                             payment_address.as_ptr(),
+                                             cb,
     );
 
     super::results::result_to_string_string(err, receiver)
@@ -271,16 +271,16 @@ pub fn parse_response_with_fees(payment_method: &str, resp_json: &str) -> Result
     super::results::result_to_string(err, receiver)
 }
 
-pub fn parse_get_utxo_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
+pub fn parse_get_sources_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
     let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
     let payment_method = CString::new(payment_method).unwrap();
     let resp_json = CString::new(resp_json).unwrap();
 
-    let err = indy_parse_get_utxo_response(cmd_handle,
-                                           payment_method.as_ptr(),
-                                           resp_json.as_ptr(),
-                                           cb);
+    let err = indy_parse_get_sources_response(cmd_handle,
+                                              payment_method.as_ptr(),
+                                              resp_json.as_ptr(),
+                                              cb);
 
     super::results::result_to_string(err, receiver)
 }
