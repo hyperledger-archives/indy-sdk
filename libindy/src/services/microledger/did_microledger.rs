@@ -337,7 +337,7 @@ pub mod tests {
         let txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent1.example.com:9080","type":"3","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
         let seq_nos = ml.add_multiple(vec![txn, txn_2, txn_3]).unwrap();
         assert_eq!(seq_nos.0, 1usize);
-        assert_eq!(seq_nos.1, 2usize);
+        assert_eq!(seq_nos.1, 3usize);
     }
 
     #[test]

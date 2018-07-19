@@ -114,7 +114,7 @@ impl<'a> Agent<'a> {
 
     pub fn get_new_connection_msg(&self) -> Result<String, CommonError> {
         let ledger_update = LedgerUpdate::new_as_json(&self.managing_did,
-                                                      self.get_self_microledger()?, 9)?;
+                                                      self.get_self_microledger()?, 1)?;
         serde_json::to_string(&Connection::new(
             &self.managing_did,
             &ledger_update
@@ -176,7 +176,8 @@ mod tests {
             let ml = agent1.get_self_microledger_mut().unwrap();
             ml.add_multiple(txns).unwrap();
         }
+        let expected_message = r#"{"type":"Connection","id":"75KUW8tPUQNBS4W7ibFeY8","message":"{\"type\":\"ledgerUpdate\",\"state\":\"DID:75KUW8tPUQNBS4W7ibFeY8\",\"root\":\"c59e216c9207c5736670a70688e0caace20c2085333ba079842f0d9e1c250db3\",\"events\":[[1,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"dest\\\":\\\"75KUW8tPUQNBS4W7ibFeY8\\\",\\\"type\\\":\\\"1\\\"}}\"],[2,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"authorizations\\\":[\\\"all\\\"],\\\"type\\\":\\\"2\\\",\\\"verkey\\\":\\\"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC\\\"}}\"],[3,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"address\\\":\\\"https://agent.example.com\\\",\\\"type\\\":\\\"3\\\",\\\"verkey\\\":\\\"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC\\\"}}\"]]}"}"#;
         let conn = agent1.get_new_connection_msg().unwrap();
-        println!("{}", conn);
+        assert_eq!(expected_message, conn);
     }
 }
