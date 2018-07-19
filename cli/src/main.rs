@@ -107,7 +107,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(ledger::pool_restart_command::new())
         .add_command(ledger::pool_upgrade_command::new())
         .add_command(ledger::custom_command::new())
-        .add_command(ledger::get_utxo_command::new())
+        .add_command(ledger::get_sources_command::new())
         .add_command(ledger::payment_command::new())
         .add_command(ledger::get_fees_command::new())
         .add_command(ledger::mint_prepare_command::new())

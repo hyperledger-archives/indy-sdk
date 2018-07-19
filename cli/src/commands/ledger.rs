@@ -43,8 +43,8 @@ pub mod nym_command {
                 .add_required_param("did", "DID of new identity")
                 .add_optional_param("verkey", "Verification key of new identity")
                 .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB or empty in case of blacklisting NYM")
-                .add_optional_param("fees_inputs","The list of UTXO inputs")
-                .add_optional_param("fees_outputs","The list of UTXO outputs")
+                .add_optional_param("fees_inputs","The list of source inputs")
+                .add_optional_param("fees_outputs","The list of outputs")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
@@ -74,7 +74,7 @@ pub mod nym_command {
         let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let utxo = parse_response_with_fees(&response, payment_method)?;
+        let receipts = parse_response_with_fees(&response, payment_method)?;
 
         let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -92,7 +92,7 @@ pub mod nym_command {
                                                                ("verkey", "Verkey"),
                                                                ("role", "Role")]))?;
 
-        let res = print_response_utxo(utxo);
+        let res = print_response_receipts(receipts);
 
         trace!("execute << {:?}", res);
         res
@@ -155,8 +155,8 @@ pub mod attrib_command {
                 .add_optional_param("hash", "Hash of attribute data")
                 .add_optional_param("raw", "JSON representation of attribute data")
                 .add_optional_param("enc", "Encrypted attribute data")
-                .add_optional_param("fees_inputs","The list of UTXO inputs")
-                .add_optional_param("fees_outputs","The list of UTXO outputs")
+                .add_optional_param("fees_inputs","The list of source inputs")
+                .add_optional_param("fees_outputs","The list of outputs")
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}}"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d"#)
@@ -186,7 +186,7 @@ pub mod attrib_command {
         let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let utxo = parse_response_with_fees(&response, payment_method)?;
+        let receipts = parse_response_with_fees(&response, payment_method)?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -204,7 +204,7 @@ pub mod attrib_command {
                                                      None,
                                                      &[attribute]))?;
 
-        let res = print_response_utxo(utxo);
+        let res = print_response_receipts(receipts);
 
         trace!("execute << {:?}", res);
         res
@@ -268,8 +268,8 @@ pub mod schema_command {
                 .add_required_param("name", "Schema name")
                 .add_required_param("version", "Schema version")
                 .add_required_param("attr_names", "Schema attributes split by comma")
-                .add_optional_param("fees_inputs","The list of UTXO inputs")
-                .add_optional_param("fees_outputs","The list of UTXO outputs")
+                .add_optional_param("fees_inputs","The list of source inputs")
+                .add_optional_param("fees_outputs","The list of outputs")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age fees_inputs=txo:sov:111_rBuQo2A1sc9jrJg fees_outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
                 .finalize()
@@ -308,7 +308,7 @@ pub mod schema_command {
         let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let utxo = parse_response_with_fees(&response, payment_method)?;
+        let receipts = parse_response_with_fees(&response, payment_method)?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -321,7 +321,7 @@ pub mod schema_command {
                                                          ("version", "Version"),
                                                          ("attr_names", "Attributes")]))?;
 
-        let res = print_response_utxo(utxo);
+        let res = print_response_receipts(receipts);
 
         trace!("execute << {:?}", res);
         res
@@ -430,8 +430,8 @@ pub mod cred_def_command {
                 .add_optional_param("tag", "Allows to distinct between credential definitions for the same issuer and schema. Note that it is mandatory for indy-node version 1.4.x and higher")
                 .add_required_param("primary", "Primary key in json format")
                 .add_optional_param("revocation", "Revocation key in json format")
-                .add_optional_param("fees_inputs","The list of UTXO inputs")
-                .add_optional_param("fees_outputs","The list of UTXO outputs")
+                .add_optional_param("fees_inputs","The list of source inputs")
+                .add_optional_param("fees_outputs","The list of outputs")
                 .add_example(r#"ledger cred-def schema_id=1 signature_type=CL primary={"n":"1","s":"2","rms":"3","r":{"age":"4","name":"5"},"rctxt":"6","z":"7"}"#)
                 .finalize()
     );
@@ -479,7 +479,7 @@ pub mod cred_def_command {
         let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let utxo = parse_response_with_fees(&response, payment_method)?;
+        let receipts = parse_response_with_fees(&response, payment_method)?;
 
         let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -491,7 +491,7 @@ pub mod cred_def_command {
                                                      &[("primary", "Primary Key"),
                                                          ("revocation", "Revocation Key")]))?;
 
-        let res = print_response_utxo(utxo);
+        let res = print_response_receipts(receipts);
 
         trace!("execute << {:?}", res);
         res
@@ -851,12 +851,12 @@ pub mod custom_command {
     }
 }
 
-pub mod get_utxo_command {
+pub mod get_sources_command {
     use super::*;
 
-    command!(CommandMetadata::build("get-utxo", "Get UTXO list for payment address.")
+    command!(CommandMetadata::build("get-sources", "Get sources list for payment address.")
                 .add_required_param("payment_address","Target payment address")
-                .add_example("ledger get-utxo payment_address=pay:sov:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
+                .add_example("ledger get-sources payment_address=pay:sov:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .finalize()
     );
 
@@ -869,23 +869,23 @@ pub mod get_utxo_command {
 
         let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
 
-        let (request, payment_method) = Payment::build_get_utxo_request(wallet_handle, &submitter_did, payment_address)
+        let (request, payment_method) = Payment::build_get_sources_request(wallet_handle, &submitter_did, payment_address)
             .map_err(|err| handle_payment_error(err, None))?;
 
         let response = Ledger::submit_request(pool_handle, &request)
             .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
 
-        let res = match Payment::parse_get_utxo_response(&payment_method, &response) {
-            Ok(utxo_json) => {
-                let mut utxo: Vec<serde_json::Value> = serde_json::from_str(&utxo_json)
+        let res = match Payment::parse_get_sources_response(&payment_method, &response) {
+            Ok(sources_json) => {
+                let mut sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                print_list_table(&utxo,
-                                 &vec![("txo", "Txo"),
+                print_list_table(&sources,
+                                 &vec![("source", "Source"),
                                        ("paymentAddress", "Payment Address"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
-                                 "There are no utxo's");
+                                 "There are no source's");
                 Ok(())
             }
             Err(err) => Err(println_err!("Invalid data has been received: {:?}", err)),
@@ -899,8 +899,8 @@ pub mod get_utxo_command {
 pub mod payment_command {
     use super::*;
 
-    command!(CommandMetadata::build("payment", "Send request for doing tokens payment.")
-                .add_required_param("inputs","The list of UTXO inputs")
+    command!(CommandMetadata::build("payment", "Send request for doing payment.")
+                .add_required_param("inputs","The list of payment sources")
                 .add_required_param("outputs","The list of outputs")
                 .add_example("ledger payment inputs=txo:sov:111_rBuQo2A1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100,extradata)")
                 .add_example("ledger payment inputs=txo:sov:111_rBuQo2A1sc9jrJg,txo:sov:222_aEwACvA1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100,extradata),(pay:sov:ABABefwrhscbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
@@ -927,16 +927,16 @@ pub mod payment_command {
             .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
 
         let res = match Payment::parse_payment_response(&payment_method, &response) {
-            Ok(utxo_json) => {
-                let mut utxo: Vec<serde_json::Value> = serde_json::from_str(&utxo_json)
+            Ok(receipts_json) => {
+                let mut receipts: Vec<serde_json::Value> = serde_json::from_str(&receipts_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
 
-                print_list_table(&utxo,
-                                 &vec![("txo", "Txo"),
-                                       ("paymentAddress", "Payment Address"),
+                print_list_table(&receipts,
+                                 &vec![("receipt", "Receipt"),
+                                       ("recipient", "Payment Address of recipient"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
-                                 "There are no utxo's");
+                                 "There are no receipts's");
                 Ok(())
             }
             Err(err) => Err(handle_payment_error(err, None)),
@@ -1005,7 +1005,7 @@ pub mod mint_prepare_command {
     use super::*;
 
     command!(CommandMetadata::build("mint-prepare", "Prepare MINT transaction.")
-                .add_required_param("outputs","The list of UTXO outputs")
+                .add_required_param("outputs","The list of outputs")
                 .add_example("ledger mint-prepare outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100,extradata)")
                 .add_example("ledger mint-prepare outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100,extradata),(pay:sov:ABABaaVwSascbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
                 .finalize()
@@ -1144,9 +1144,9 @@ fn parse_payment_outputs(outputs: &Vec<String>) -> Result<String, ()> {
         let parts: Vec<&str> = output.split(OUTPUTS_DELIMITER).collect::<Vec<&str>>();
 
         output_objects.push(json!({
-                        "paymentAddress": parts.get(0)
-                                            .ok_or(())
-                                            .map_err(|_| println_err!("Invalid format of Outputs: Payment Address not found"))?,
+                        "recipient": parts.get(0)
+                                          .ok_or(())
+                                          .map_err(|_| println_err!("Invalid format of Outputs: Payment Address not found"))?,
                         "amount": parts.get(1)
                                     .ok_or(())
                                     .map_err(|_| println_err!("Invalid format of Outputs: Amount not found"))
@@ -1162,23 +1162,23 @@ fn parse_payment_outputs(outputs: &Vec<String>) -> Result<String, ()> {
 
 
 fn parse_response_with_fees(response: &str, payment_method: Option<String>) -> Result<Option<Vec<serde_json::Value>>, ()> {
-    let utxo = if let Some(method) = payment_method {
+    let receipts = if let Some(method) = payment_method {
         Some(Payment::parse_response_with_fees(&method, &response)
             .map_err(|err| handle_payment_error(err, Some(&method)))
             .and_then(|fees| serde_json::from_str::<Vec<serde_json::Value>>(&fees)
                 .map_err(|err| println_err!("Invalid data has been received: {:?}", err)))?)
     } else { None };
 
-    Ok(utxo)
+    Ok(receipts)
 }
 
-fn print_response_utxo(utxo: Option<Vec<serde_json::Value>>) -> Result<(), ()> {
-    utxo.map(|utxo| {
-        if !utxo.is_empty() {
-            println_succ!("Following Utxo has been received.");
-            print_list_table(&utxo,
-                             &vec![("txo", "Txo"),
-                                   ("paymentAddress", "Payment Address"),
+fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Result<(), ()> {
+    receipts.map(|receipt| {
+        if !receipt.is_empty() {
+            println_succ!("Following Receipts has been received.");
+            print_list_table(&receipt,
+                             &vec![("receipt", "Receipt"),
+                                   ("recipient", "Payment Address of recipient"),
                                    ("amount", "Amount"),
                                    ("extra", "Extra")],
                              "");
@@ -1449,8 +1449,8 @@ pub mod tests {
 
             load_null_payment_plugin(&ctx);
             set_fees(&ctx, FEES);
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = nym_command::new();
                 let mut params = CommandParams::new();
@@ -1478,8 +1478,8 @@ pub mod tests {
             use_did(&ctx, DID_TRUSTEE);
 
             load_null_payment_plugin(&ctx);
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             set_fees(&ctx, "NYM:101");
             {
                 let cmd = nym_command::new();
@@ -1507,8 +1507,8 @@ pub mod tests {
             use_did(&ctx, DID_TRUSTEE);
 
             load_null_payment_plugin(&ctx);
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             set_fees(&ctx, "NYM:95");
             {
                 let cmd = nym_command::new();
@@ -1803,8 +1803,8 @@ pub mod tests {
 
             load_null_payment_plugin(&ctx);
             set_fees(&ctx, FEES);
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = attrib_command::new();
                 let mut params = CommandParams::new();
@@ -1832,8 +1832,8 @@ pub mod tests {
 
             load_null_payment_plugin(&ctx);
             set_fees(&ctx, "ATTRIB:101");
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = attrib_command::new();
                 let mut params = CommandParams::new();
@@ -2098,8 +2098,8 @@ pub mod tests {
             load_null_payment_plugin(&ctx);
             set_fees(&ctx, FEES);
 
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = schema_command::new();
                 let mut params = CommandParams::new();
@@ -2128,8 +2128,8 @@ pub mod tests {
             load_null_payment_plugin(&ctx);
             set_fees(&ctx, "SCHEMA:101");
 
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = schema_command::new();
                 let mut params = CommandParams::new();
@@ -2374,8 +2374,8 @@ pub mod tests {
 
             load_null_payment_plugin(&ctx);
             set_fees(&ctx, FEES);
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = cred_def_command::new();
                 let mut params = CommandParams::new();
@@ -2406,8 +2406,8 @@ pub mod tests {
 
             load_null_payment_plugin(&ctx);
             set_fees(&ctx, "CRED_DEF:101");
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = cred_def_command::new();
                 let mut params = CommandParams::new();
@@ -2897,11 +2897,11 @@ pub mod tests {
     }
 
     #[cfg(feature = "nullpay_plugin")]
-    mod get_utxo {
+    mod get_sources {
         use super::*;
 
         #[test]
-        pub fn get_utxo_works() {
+        pub fn get_sources_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -2910,9 +2910,9 @@ pub mod tests {
             load_null_payment_plugin(&ctx);
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
-            let payment_address = create_address_and_mint_tokens(&ctx);
+            let payment_address = create_address_and_mint_sources(&ctx);
             {
-                let cmd = get_utxo_command::new();
+                let cmd = get_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", payment_address);
                 cmd.execute(&ctx, &params).unwrap();
@@ -2923,7 +2923,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_utxo_works_for_no_utxos() {
+        pub fn get_sources_works_for_no_sources() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -2933,7 +2933,7 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             {
-                let cmd = get_utxo_command::new();
+                let cmd = get_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", PAYMENT_ADDRESS.to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -2944,7 +2944,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_utxo_works_for_unknown_payment_method() {
+        pub fn get_sources_works_for_unknown_payment_method() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -2954,7 +2954,7 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             {
-                let cmd = get_utxo_command::new();
+                let cmd = get_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", format!("pay:{}:test", UNKNOWN_PAYMENT_METHOD));
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -2965,7 +2965,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_utxo_works_for_invalid_payment_address() {
+        pub fn get_sources_works_for_invalid_payment_address() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -2975,7 +2975,7 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             {
-                let cmd = get_utxo_command::new();
+                let cmd = get_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", INVALID_PAYMENT_ADDRESS.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -2986,14 +2986,14 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_utxo_works_for_no_active_wallet() {
+        pub fn get_sources_works_for_no_active_wallet() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_connect_pool(&ctx);
             load_null_payment_plugin(&ctx);
             {
-                let cmd = get_utxo_command::new();
+                let cmd = get_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", INVALID_PAYMENT_ADDRESS.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -3003,7 +3003,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_utxo_works_for_no_active_did() {
+        pub fn get_sources_works_for_no_active_did() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -3011,7 +3011,7 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             load_null_payment_plugin(&ctx);
             {
-                let cmd = get_utxo_command::new();
+                let cmd = get_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", PAYMENT_ADDRESS.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -3037,8 +3037,8 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
 
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
@@ -3062,11 +3062,11 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
 
-            let payment_address_from_1 = create_address_and_mint_tokens(&ctx);
-            let input_1 = get_utxo_input(&ctx, &payment_address_from_1);
+            let payment_address_from_1 = create_address_and_mint_sources(&ctx);
+            let input_1 = get_source_input(&ctx, &payment_address_from_1);
 
-            let payment_address_from_2 = create_address_and_mint_tokens(&ctx);
-            let input_2 = get_utxo_input(&ctx, &payment_address_from_2);
+            let payment_address_from_2 = create_address_and_mint_sources(&ctx);
+            let input_2 = get_source_input(&ctx, &payment_address_from_2);
 
             {
                 let cmd = payment_command::new();
@@ -3091,8 +3091,8 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
 
-            let payment_address_from_1 = create_address_and_mint_tokens(&ctx);
-            let input_1 = get_utxo_input(&ctx, &payment_address_from_1);
+            let payment_address_from_1 = create_address_and_mint_sources(&ctx);
+            let input_1 = get_source_input(&ctx, &payment_address_from_1);
 
             let payment_address_to = create_payment_address(&ctx);
             {
@@ -3118,11 +3118,11 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
 
-            let payment_address_from_1 = create_address_and_mint_tokens(&ctx);
-            let input_1 = get_utxo_input(&ctx, &payment_address_from_1);
+            let payment_address_from_1 = create_address_and_mint_sources(&ctx);
+            let input_1 = get_source_input(&ctx, &payment_address_from_1);
 
-            let payment_address_from_2 = create_address_and_mint_tokens(&ctx);
-            let input_2 = get_utxo_input(&ctx, &payment_address_from_2);
+            let payment_address_from_2 = create_address_and_mint_sources(&ctx);
+            let input_2 = get_source_input(&ctx, &payment_address_from_2);
 
             let payment_address_to = create_payment_address(&ctx);
             {
@@ -3148,8 +3148,8 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
 
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
@@ -3378,8 +3378,8 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
 
-            let payment_address_from = create_address_and_mint_tokens(&ctx);
-            let input = get_utxo_input(&ctx, &payment_address_from);
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
@@ -3853,7 +3853,7 @@ pub mod tests {
     }
 
     #[cfg(feature = "nullpay_plugin")]
-    pub fn create_address_and_mint_tokens(ctx: &CommandContext) -> String {
+    pub fn create_address_and_mint_sources(ctx: &CommandContext) -> String {
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
         let submitter_did = ensure_active_did(&ctx).unwrap();
 
@@ -3866,19 +3866,19 @@ pub mod tests {
     }
 
     #[cfg(feature = "nullpay_plugin")]
-    pub fn get_utxo_input(ctx: &CommandContext, payment_address: &str) -> String {
+    pub fn get_source_input(ctx: &CommandContext, payment_address: &str) -> String {
         let (pool_handle, _) = get_connected_pool(ctx).unwrap();
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
         let submitter_did = ensure_active_did(&ctx).unwrap();
 
-        let (get_utxo_txn_json, _) = Payment::build_get_utxo_request(wallet_handle, &submitter_did, payment_address).unwrap();
-        let response = Ledger::submit_request(pool_handle, &get_utxo_txn_json).unwrap();
+        let (get_sources_txn_json, _) = Payment::build_get_sources_request(wallet_handle, &submitter_did, payment_address).unwrap();
+        let response = Ledger::submit_request(pool_handle, &get_sources_txn_json).unwrap();
 
-        let utxo_json = Payment::parse_get_utxo_response(NULL_PAYMENT_METHOD, &response).unwrap();
+        let sources_json = Payment::parse_get_sources_response(NULL_PAYMENT_METHOD, &response).unwrap();
 
-        let utxos = serde_json::from_str::<serde_json::Value>(&utxo_json).unwrap();
-        let utxo: &serde_json::Value = &utxos.as_array().unwrap()[0];
-        utxo["txo"].as_str().unwrap().to_string()
+        let sources = serde_json::from_str::<serde_json::Value>(&sources_json).unwrap();
+        let source: &serde_json::Value = &sources.as_array().unwrap()[0];
+        source["source"].as_str().unwrap().to_string()
     }
 
     #[cfg(feature = "nullpay_plugin")]

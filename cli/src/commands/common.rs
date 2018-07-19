@@ -94,7 +94,7 @@ pub mod load_plugin_command {
     command!(CommandMetadata::build("load-plugin", "Load plugin in Libindy")
                             .add_required_param("library", "Name of plugin (can be absolute or relative path)")
                             .add_required_param("initializer", "Name of plugin init function")
-                            .add_example("load-plugin library=libsovtoken initializer=sovtoken_init")
+                            .add_example("load-plugin library=libsovplugin initializer=sovplugin_init")
                             .finalize());
 
     fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
