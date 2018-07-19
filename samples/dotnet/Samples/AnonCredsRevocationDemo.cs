@@ -94,7 +94,7 @@ namespace Hyperledger.Indy.Samples
                     var credRevId = createCredentialResult.RevocId;
 
                     //12. Prover Stores Credential
-                    await AnonCreds.ProverStoreCredentialAsync(proverWallet, null, credReqJson, credReqMetadataJson, credential, credDefJson, revRegDefJson);
+                    await AnonCreds.ProverStoreCredentialAsync(proverWallet, null, credReqMetadataJson, credential, credDefJson, revRegDefJson);
 
                     //13. Prover Gets Credentials for Proof Request
                     var proofRequestJson = "{\n" +
