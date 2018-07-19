@@ -1,7 +1,6 @@
 #![cfg_attr(feature = "fatal_warnings", deny(warnings))]
 
 extern crate base64;
-
 extern crate byteorder;
 
 #[macro_use]
@@ -28,7 +27,6 @@ extern crate named_type_derive;
 extern crate indy_crypto;
 extern crate libsqlite3_sys;
 extern crate rlp;
-extern crate byteorder;
 extern crate time;
 extern crate libc;
 extern crate rand;
