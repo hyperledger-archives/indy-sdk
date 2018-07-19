@@ -2110,7 +2110,7 @@
       "ret": "indy_error_t"
     },
     "indy_export_wallet": {
-      "docs": "Exports opened wallet\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params:\nwallet_handle: wallet handle returned by indy_open_wallet\nexport_config_json: JSON containing settings for input operation.\n  {\n    \"path\": path of the file that contains exported wallet content\n    \"key\": passphrase used to derive export key\n  }\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "docs": "Exports opened wallet\n\n#Params:\nwallet_handle: wallet handle returned by indy_open_wallet\nexport_config_json: JSON containing settings for input operation.\n  {\n    \"path\": path of the file that contains exported wallet content\n    \"key\": passphrase used to derive export key\n  }\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
       "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -2127,7 +2127,7 @@
       "ret": "indy_error_t"
     },
     "indy_import_wallet": {
-      "docs": "Creates a new secure wallet with the given unique name and then imports its content\naccording to fields provided in import_config\nThis can be seen as an indy_create_wallet call with additional content import\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\npool_name: Name of the pool that corresponds to this wallet\nname: Name of the wallet\nstorage_type(optional): Type of the wallet storage. Defaults to 'default'.\n                 Custom storage types can be registered with indy_register_wallet_storage_call\nconfig(optional): Wallet configuration json.\n  {\n      \"storage\": <object>  List of supported keys are defined by wallet type.\n  }\ncredentials: Wallet credentials json (if NULL, then default config will be used).\n  {\n      \"key\": string,\n      \"storage\": Optional<object>  List of supported keys are defined by wallet type.\n\n  }\nimport_config_json: JSON containing settings for input operation.\n  {\n    \"path\": path of the file that contains exported wallet content\n    \"key\": passphrase used to derive export key\n  }\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "docs": "Creates a new secure wallet with the given unique name and then imports its content\naccording to fields provided in import_config\nThis can be seen as an indy_create_wallet call with additional content import\n\n#Params\npool_name: Name of the pool that corresponds to this wallet\nname: Name of the wallet\nstorage_type(optional): Type of the wallet storage. Defaults to 'default'.\n                 Custom storage types can be registered with indy_register_wallet_storage_call\nconfig(optional): Wallet configuration json.\n  {\n      \"storage\": <object>  List of supported keys are defined by wallet type.\n  }\ncredentials: Wallet credentials json (if NULL, then default config will be used).\n  {\n      \"key\": string,\n      \"storage\": Optional<object>  List of supported keys are defined by wallet type.\n\n  }\nimport_config_json: JSON containing settings for input operation.\n  {\n    \"path\": path of the file that contains exported wallet content\n    \"key\": passphrase used to derive export key\n  }\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
       "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},

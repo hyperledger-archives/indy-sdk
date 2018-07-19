@@ -90,6 +90,7 @@ impl<W: Write> Writer<W> {
         }
     }
 
+    #[allow(unused)]
     pub fn into_inner(self) -> W {
         self.inner
     }
@@ -296,7 +297,7 @@ mod tests {
     }
 
     #[test]
-    fn writer_works_for_one_to_two_chunks() {
+    fn writer_reader_works_for_one_to_two_chunks() {
         let plain = randombytes(13);
         let key = gen_key();
         let nonce = gen_nonce();
@@ -316,7 +317,7 @@ mod tests {
     }
 
     #[test]
-    fn writer_works_for_exact_two_chunks() {
+    fn writer_reader_works_for_exact_two_chunks() {
         let plain = randombytes(20);
         let key = gen_key();
         let nonce = gen_nonce();

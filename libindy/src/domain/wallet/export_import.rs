@@ -1,37 +1,40 @@
-use utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
-
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum EncryptionMethod {
-    ChaCha20Poly1305IETF {salt: pwhash_argon2i13::Salt, nonce: chacha20poly1305_ietf::Nonce, chunk_size: usize},
-}
-
-impl EncryptionMethod {
-
-    const CHUNK_SIZE: usize = 1024;
-
-    pub fn chacha20poly1305_ietf() -> EncryptionMethod {
-        EncryptionMethod::ChaCha20Poly1305IETF {
-            salt: pwhash_argon2i13::gen_salt(),
-            nonce: chacha20poly1305_ietf::gen_nonce(),
-            chunk_size: EncryptionMethod::CHUNK_SIZE,
-        }
-    }
+    ChaCha20Poly1305IETF { // **ChaCha20-Poly1305-IETF** cypher in blocks per chunk_size bytes
+    salt: Vec<u8>,  // pwhash_argon2i13::Salt as bytes. Random salt used for deriving of key from passphrase
+    nonce: Vec<u8>, // chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency
+    chunk_size: usize, // size of encrypted chunk
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Header {
-    pub encryption_method: EncryptionMethod,
-    pub time: u64,
-    pub version: u32,
+    pub encryption_method: EncryptionMethod, // Method of encryption for encrypted stream
+    pub time: u64, // Export time in seconds from UNIX Epoch
+    pub version: u32, // Version of header
 }
+
+// Note that we use externally tagged enum serialization and header will be represented as:
+//
+// {
+//   "encryption_method": {
+//     "ChaCha20Poly1305IETF": {
+//       "salt": ..,
+//       "nonce": ..,
+//       "chunk_size": ..,
+//     },
+//   },
+//   "time": ..,
+//   "version": ..,
+// }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Record {
     #[serde(rename = "type")]
-    pub type_: String,
-    pub id: String,
-    pub value: String,
-    pub tags: HashMap<String, String>,
+    pub type_: String, // Wallet record type
+    pub id: String, // Wallet record id
+    pub value: String, // Wallet record value
+    pub tags: HashMap<String, String>, // Wallet record tags
 }

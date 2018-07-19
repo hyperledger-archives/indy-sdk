@@ -3,23 +3,29 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::io;
 use std::io::{Write, Read, BufWriter, BufReader};
-use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use rmp_serde;
 
 use domain::wallet::export_import::{Header, EncryptionMethod, Record};
-use utils::crypto::hash::{hash, HASHBYTES};
-use utils::crypto::chacha20poly1305_ietf;
-
 use errors::common::CommonError;
+use utils::crypto::hash::{hash, HASHBYTES};
+use utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
 
-use super::{WalletError, Wallet};
+use super::{WalletError, Wallet, WalletRecord};
+
+const CHUNK_SIZE: usize = 1024;
 
 pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32) -> Result<(), WalletError> {
-    let encryption_method = EncryptionMethod::chacha20poly1305_ietf();
+    let salt = pwhash_argon2i13::gen_salt();
+    let nonce = chacha20poly1305_ietf::gen_nonce();
+    let chunk_size = CHUNK_SIZE;
 
     let header = Header {
-        encryption_method,
+        encryption_method: EncryptionMethod::ChaCha20Poly1305IETF {
+            salt: salt[..].to_vec(),
+            nonce: nonce[..].to_vec(),
+            chunk_size,
+        },
         time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
         version,
     };
@@ -29,41 +35,20 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
     writer.write_next(&header)?;
 
     // Writes encrypted structs
-    let mut writer = {
-        let mut writer = match header.encryption_method {
-            EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } => {
-                chacha20poly1305_ietf::Writer::new(writer.into_inner(),
-                                                   chacha20poly1305_ietf::derive_key(passphrase, &salt)?,
-                                                   nonce,
-                                                   chunk_size)
-            }
-        };
-
-        StructWriter::new(writer)
-    };
+    let mut writer = StructWriter::new(chacha20poly1305_ietf::Writer::new(writer.into_inner(),
+                                                                          chacha20poly1305_ietf::derive_key(passphrase, &salt)?,
+                                                                          nonce,
+                                                                          chunk_size));
 
     let mut records = wallet.get_all()?;
 
-    while let Some(record) = records.next()? {
-        let record = Record {
-            type_: record
-                .get_type()
-                .map(|s| s.to_string())
-                .ok_or(CommonError::InvalidState("No type fetched for exported record".to_string()))?,
-            id: record
-                .get_id()
-                .to_string(),
-            value: record
-                .get_value()
-                .map(|s| s.to_string())
-                .ok_or(CommonError::InvalidState("No value fetched for exported record".to_string()))?,
-            tags: record
-                .get_tags()
-                .map(HashMap::clone)
-                .ok_or(CommonError::InvalidState("No tags fetched for exported record".to_string()))?,
-        };
-
-        writer.write_next(&record)?;
+    while let Some(WalletRecord { type_, id, value, tags }) = records.next()? {
+        writer.write_next(&Record {
+            type_: type_.ok_or(CommonError::InvalidState("No type fetched for exported record".to_string()))?,
+            id,
+            value: value.ok_or(CommonError::InvalidState("No value fetched for exported record".to_string()))?,
+            tags: tags.ok_or(CommonError::InvalidState("No tags fetched for exported record".to_string()))?,
+        })?;
     }
 
     writer.finalize()?;
@@ -82,10 +67,15 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
     let mut reader = {
         let mut reader = match header.encryption_method {
             EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } => {
-                chacha20poly1305_ietf::Reader::new(reader.into_inner(),
-                                                   chacha20poly1305_ietf::derive_key(passphrase, &salt)?,
-                                                   nonce,
-                                                   chunk_size)
+                let salt = pwhash_argon2i13::Salt::from_slice(&salt)
+                    .map_err(|err| CommonError::InvalidStructure(format!("Invalid salt: {:?}", err)))?;
+
+                let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
+                    .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
+
+                let key = chacha20poly1305_ietf::derive_key(passphrase, &salt)?;
+
+                chacha20poly1305_ietf::Reader::new(reader.into_inner(), key, nonce, chunk_size)
             }
         };
 
@@ -430,7 +420,7 @@ mod tests {
         chacha20poly1305_ietf::gen_nonce()
     }
 
-    fn _change_byte(data: &mut[u8], pos: usize) {
+    fn _change_byte(data: &mut [u8], pos: usize) {
         let value = data[pos];
         data[pos] = if value < 255 { value + 1 } else { 0 };
     }

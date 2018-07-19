@@ -397,7 +397,7 @@ impl WalletService {
         }
     }
 
-    pub fn get_indy_record<T>(&self, wallet_handle: i32, name: &str, options_json: &str) -> Result<WalletRecord, WalletError> where T: NamedType {
+    pub fn get_indy_record<T>(&self, wallet_handle: i32, name: &str, options_json: &str) -> Result<WalletRecord, WalletError> where T: NamedType { ;
         self.get_record(wallet_handle, &self.add_prefix(T::short_type_name()), name, options_json)
     }
 
@@ -580,13 +580,7 @@ impl WalletRecord {
     }
 
     pub fn get_type(&self) -> Option<&str> {
-        self.type_.as_ref().map(|t|
-            if t.starts_with(WalletService::PREFIX) {
-                t[WalletService::PREFIX.len()..].as_ref()
-            } else {
-                t.as_str()
-            }
-        )
+        self.type_.as_ref().map(String::as_str)
     }
 
     pub fn get_value(&self) -> Option<&str> {

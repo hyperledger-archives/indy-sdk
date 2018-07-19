@@ -261,9 +261,6 @@ extern "C" {
     /// according to fields provided in import_config
     /// This can be seen as an indy_create_wallet call with additional content import
     ///
-    /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-    /// in the future releases.
-    ///
     /// #Params
     /// config: Wallet configuration json.
     /// {
