@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-
+set -e
+set -o pipefail
 WORKDIR=${PWD}
 DOWNLOAD_PREBUILTS="0"
 FINAL="1"
@@ -112,7 +113,7 @@ if [ "$(uname)" == "Darwin" ]; then
 elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
     echo "Downloading NDK for Linux"
     export TOOLCHAIN_PREFIX=${WORKDIR}/toolchains/linux
-    mkdir ${TOOLCHAIN_PREFIX}
+    mkdir -p ${TOOLCHAIN_PREFIX}
     pushd $TOOLCHAIN_PREFIX
     if [ ! -d "android-ndk-r16b" ] ; then
         echo "Downloading android-ndk-r16b-linux-x86_64.zip"
@@ -164,14 +165,23 @@ cp -rf ./../../include ${LIBINDY_SRC}
 cp -rf ./../../Cargo.toml ${LIBINDY_SRC}
 
 pushd $LIBINDY_SRC
-export OPENSSL_STATIC=1
-cargo clean
-cargo build --release --target=${CROSS_COMPILE}
+export OPENSSL_STATIC=1 &&
+cargo clean &&
+cargo build --release --target=${CROSS_COMPILE} &&
 popd
 
 
 LIBINDY_BUILDS=${WORKDIR}/libindy_${TARGET_ARCH}
-mkdir -p ${LIBINDY_BUILDS}
-$CC -v -shared -o ${LIBINDY_BUILDS}/libindy.so -Wl,--whole-archive ${LIBINDY_SRC}/target/${CROSS_COMPILE}/release/libindy.a ${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so ${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a ${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so ${OPENSSL_DIR}/lib/libssl.a ${OPENSSL_DIR}/lib/libcrypto.a ${SODIUM_LIB_DIR}/libsodium.a ${LIBZMQ_LIB_DIR}/libzmq.a ${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libstdc++.a -Wl,--no-whole-archive -z muldefs
+mkdir -p ${LIBINDY_BUILDS} &&
+$CC -v -shared -o ${LIBINDY_BUILDS}/libindy.so -Wl,--whole-archive \
+    ${LIBINDY_SRC}/target/${CROSS_COMPILE}/release/libindy.a \
+    ${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so \
+    ${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a \
+    ${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so \
+    ${OPENSSL_DIR}/lib/libssl.a ${OPENSSL_DIR}/lib/libcrypto.a \
+    ${SODIUM_LIB_DIR}/libsodium.a \
+    ${LIBZMQ_LIB_DIR}/libzmq.a \
+    ${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libgnustl_shared.so -Wl,--no-whole-archive -z muldefs &&
+
 cp "${LIBINDY_SRC}/target/${CROSS_COMPILE}/release/libindy.a" ${LIBINDY_BUILDS}/
 

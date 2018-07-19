@@ -29,6 +29,7 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
                 'redhat-test' : { rhelTesting() },
+                'android-test' : { androidTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -37,11 +38,11 @@ def testing() {
 def publishing() {
     stage('Publishing') {
         echo "${env.BRANCH_NAME}: start publishing"
-
         publishedVersions = parallel([
                 //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
                 'ubuntu-files' : { ubuntuPublishing() },
                 'windows-files': { windowsPublishing() },
+                'android-files': { androidPublishing() },
         ])
 
         if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
@@ -383,6 +384,30 @@ def ubuntuTesting() {
     }
 }
 
+def androidTesting() {
+    def libindyVersion
+
+    node('ubuntu'){
+        stage('Build Android binaries as TEST'){
+            try{
+                echo 'Building android binaries. This will act as a minimal test for android'
+                checkout scm
+
+                libindyVersion = getSrcVersion("libindy")
+
+                echo 'Building android binaries: Building docker image'
+                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                buildAndroid(buildEnv,libindyVersion,false)
+
+            }
+            finally{
+                echo 'Building Android binaries: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
 def rhelTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
@@ -431,7 +456,7 @@ def ubuntuPublishing() {
     node('ubuntu') {
         stage('Publish Ubuntu Files') {
             try {
-                echo 'Publish Ubuntu files: Checkout csm'
+                echo 'Publish Ubuntu files: Checkout scm'
                 checkout scm
 
                 libindyVersion = getSrcVersion("libindy")
@@ -453,13 +478,35 @@ def ubuntuPublishing() {
     }
     return libindyVersion
 }
+def androidPublishing(){
+    def libindyVersion
 
+    node('ubuntu'){
+        stage('Publish Android binaries'){
+            try{
+                echo 'Publish Android files: Checkout scm'
+                checkout scm
+
+                libindyVersion = getSrcVersion("libindy")
+
+                echo 'Publish Android binaries: Building docker image'
+                buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+                buildAndroid(buildEnv,libindyVersion,true)
+
+            }
+            finally{
+                echo 'Publish Android binaries: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
 def windowsPublishing() {
     def libindyVersion
     node('ubuntu') {
         stage('Publish Libindy Windows Files') {
             try {
-                echo 'Publish Windows files: Checkout csm'
+                echo 'Publish Windows files: Checkout scm'
                 checkout scm
 
                 libindyVersion = getSrcVersion("libindy")
@@ -494,6 +541,7 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
         unstash name: stashName
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
+
             sh "ci/win-zip-and-upload.sh $folder $packageName $packageType $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER"
         }
     }
@@ -558,6 +606,53 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
     }
 }
 
+def buildAndroid(buildEnv,libIndyVersion,shouldPublish) {
+
+    sh 'chmod -R 777 libindy/ci/'
+    ANDROID_SCRIPT_PATH = 'libindy/ci/buildAndroid.sh'
+    echo 'Building Libindy android files for arm'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} arm"
+    }
+    if(shouldPublish){
+        echo 'Publish Libindy android files for arm'
+        androidPublishArtifacts(buildEnv, libIndyVersion,"arm" )
+    }
+
+
+    echo 'Building Libindy android files for x86'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} x86"
+    }
+    if(shouldPublish){
+        echo 'Publish Libindy android files for x86'
+        androidPublishArtifacts(buildEnv, libIndyVersion,"x86" )
+    }
+
+
+    echo 'Building Libindy android files for arm64'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} arm64"
+    }
+    if (shouldPublish){
+        echo 'Publish Libindy android files for arm64'
+        androidPublishArtifacts(buildEnv, libIndyVersion,"arm64" )
+    }
+
+
+}
+
+
+def androidPublishArtifacts(buildEnv, packageVersion,arch) {
+    buildEnv.inside {
+        sh 'chmod -R 777 ci'
+
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
+//            Creating directory using SFTP is not working. Hence creating directory using ssh and files are uploaded using SFTP in ci/android-zip-and-upload.sh
+            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER "
+        }
+    }
+}
 
 def pythonWrapperPublishing(testEnv, isRelease) {
     dir('wrappers/python') {

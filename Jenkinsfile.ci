@@ -6,6 +6,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
+                'android-test': { androidTesting()},
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
                 'redhat-test' : { rhelTesting() },
@@ -146,6 +147,30 @@ def macosTesting() {
     }
 }
 
+def androidTesting() {
+
+    node('ubuntu'){
+        stage('Build Android binaries as TEST'){
+            try{
+                echo 'Building android binaries. This will act as a minimal test for android'
+                checkout scm
+
+                dir('libindy') {
+                    echo 'Building android binaries: Building docker image'
+                    def testEnv
+                    testEnv = dockerBuild('libindy',"ci/ubuntu.dockerfile ci")
+                    buildAndroid(testEnv)
+                }
+
+
+            }
+            finally{
+                echo 'Building Android binaries: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
 def iosTesting() {
     node('macos') {
         stage('iOS Test') {
@@ -384,6 +409,32 @@ def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
     }
 }
 
+def buildAndroid(buildEnv) {
+
+    sh 'chmod -R 777 ci/'
+    ANDROID_SCRIPT_PATH = 'ci/buildAndroid.sh'
+    echo 'Building Libindy android files for arm'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} arm"
+    }
+
+
+
+    echo 'Building Libindy android files for x86'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} x86"
+    }
+
+
+
+    echo 'Building Libindy android files for arm64'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} arm64"
+    }
+
+
+
+}
 def getUserUid() {
     return sh(returnStdout: true, script: 'id -u').trim()
 }
