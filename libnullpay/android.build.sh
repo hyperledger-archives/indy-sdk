@@ -25,8 +25,8 @@ fi
 source ${CI_DIR}/setup.android.env.sh
 
 create_cargo_config(){
-mkdir -p ${INDY_WORKDIR}/.cargo
-cat << EOF > ${INDY_WORKDIR}/.cargo/config
+mkdir -p ${WORKDIR}/.cargo
+cat << EOF > ${WORKDIR}/.cargo/config
 [target.${TRIPLET}]
 ar = "$(realpath ${AR})"
 linker = "$(realpath ${CC})"
