@@ -13,6 +13,8 @@ pub trait Microledger where Self: Sized {
     fn get_size(&self) -> usize;
     // Add a txn and return seq no
     fn add(&mut self, txn: &str) -> Result<usize, CommonError>;
+    // Add multiple txns and return start and end seq no
+    fn add_multiple(&mut self, txns: Vec<&str>) -> Result<(usize, usize), CommonError>;
     // get txns in seq_no range [from, to]
     fn get(&self, from: u64, to: Option<u64>) -> Result<Vec<String>, CommonError>;
     // get txns in seq_no range [from, to], including the seq no

@@ -30,7 +30,7 @@ pub mod tests {
         options
     }
 
-    pub fn get_new_microledger(did: &str) -> DidMicroledger{
+    pub fn get_new_microledger(did: &str) -> DidMicroledger {
         let options = valid_storage_options();
         DidMicroledger::new(did, options).unwrap()
     }

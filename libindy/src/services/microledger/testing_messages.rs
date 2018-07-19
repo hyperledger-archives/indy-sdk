@@ -11,12 +11,14 @@ use services::crypto::CryptoService;
 use errors::common::CommonError;
 use domain::crypto::key::KeyInfo;
 use services::microledger::microledger::Microledger;
+use services::microledger::messages::LedgerUpdate;
 
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum MsgTypes {
     Connection = 1,
-    Message = 2
+    ConnectionResponse = 2,
+    Message = 3
 }
 
 // NOTE: THIS STRUCT IS VERY LIKELY TO CHANGE
@@ -30,10 +32,28 @@ pub struct Connection {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+pub struct ConnectionResponse {
+    #[serde(rename = "type")]
+    pub type_: MsgTypes,
+    pub id: String,
+    pub message: String
+}
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Message {
     #[serde(rename = "type")]
     pub type_: MsgTypes,
     pub message: String
+}
+
+impl Connection {
+    pub fn new(id: &str, msg: &str) -> Self {
+        Connection {
+            type_: MsgTypes::Connection,
+            id: id.to_string(),
+            message: msg.to_string()
+        }
+    }
 }
 
 
@@ -81,8 +101,25 @@ impl<'a> Agent<'a> {
         }
     }
 
+    pub fn get_self_microledger_mut(&mut self) -> Result<&mut DidMicroledger, CommonError> {
+        match self.m_ledgers.get_mut(&self.managing_did) {
+            Some(ml) => Ok(ml),
+            None => Err(CommonError::InvalidState(String::from("Microledger not present")))
+        }
+    }
+
     pub fn has_microledger(&self, did: &str) -> bool {
         self.m_ledgers.get(did).is_some()
+    }
+
+    pub fn get_new_connection_msg(&self) -> Result<String, CommonError> {
+        let ledger_update = LedgerUpdate::new_as_json(&self.managing_did,
+                                                      self.get_self_microledger()?, 9)?;
+        serde_json::to_string(&Connection::new(
+            &self.managing_did,
+            &ledger_update
+        )).map_err(|err|
+            CommonError::InvalidState(format!("Unable to jsonify connection {:?}.", err)))
     }
 
 }
@@ -92,14 +129,30 @@ mod tests {
     use super::*;
     use super::super::testing_utils::tests::{get_new_network};
     use services::microledger::helpers::tests::{valid_storage_options, get_new_microledger};
-    use super::super::super::super::utils::test::TestUtils;
+    use utils::test::TestUtils;
+
+    fn get_new_agent(did: &str, seed: String) -> Agent {
+        Agent::new(did, Some(seed), valid_storage_options()).unwrap()
+    }
+
+    fn get_agent1_genesis_txns() -> Vec<String> {
+        vec![
+            String::from(r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1"}}"#),
+            String::from(r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"}}"#),
+            String::from(r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent.example.com","type":"3","verkey":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"}}"#)
+        ]
+    }
+
+    fn get_agent2_genesis_txns() -> Vec<String> {
+        vec![]
+    }
 
     #[test]
     fn test_new_agent_create_new_microledger() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let seed1 = String::from("11111111111111111111111111111111");
-        let agent1 = Agent::new(did, Some(seed1), valid_storage_options()).unwrap();
+        let agent1 = get_new_agent(did, seed1);
         assert_eq!(agent1.managing_did, did);
         assert_eq!(agent1.verkey, "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC");
         assert!(agent1.m_ledgers.get(did).is_some());
@@ -112,6 +165,18 @@ mod tests {
 
     #[test]
     fn test_new_connection_message() {
-
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let seed1 = String::from("11111111111111111111111111111111");
+        let mut agent1 = get_new_agent(did, seed1);
+        let gen_txns = get_agent1_genesis_txns();
+        let txns = get_agent1_genesis_txns();
+        let txns = txns.iter().map(|s|s.as_ref()).collect();
+        {
+            let ml = agent1.get_self_microledger_mut().unwrap();
+            ml.add_multiple(txns).unwrap();
+        }
+        let conn = agent1.get_new_connection_msg().unwrap();
+        println!("{}", conn);
     }
 }

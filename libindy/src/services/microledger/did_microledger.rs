@@ -67,6 +67,20 @@ impl Microledger for DidMicroledger where Self: Sized {
         Ok(new_size)
     }
 
+    fn add_multiple(&mut self, txns: Vec<&str>) -> Result<(usize, usize), CommonError> {
+        let mut start = 0;
+        let mut end = 0;
+
+        for txn in txns {
+            let s = self.add(txn)?;
+            if start == 0 {
+                start = s;
+            }
+            end = s;
+        }
+        Ok((start, end))
+    }
+
     fn get(&self, from: u64, to: Option<u64>) -> Result<Vec<String>, CommonError> {
         if from < 1 {
             return Err(CommonError::InvalidStructure(format!("Invalid seq no: {}", from)))
@@ -311,6 +325,19 @@ pub mod tests {
         let seq_no_2 = ml.add(txn_2).unwrap();
         assert_eq!(seq_no_2, 2);
         assert_eq!(ml.merkle_tree.root_hash_hex(), "37f096e724a587c37ed15fdba2ad1a6e4b1b5dbf1cd88ea1c1c5e29fd3fd9c44");
+    }
+
+    #[test]
+    fn test_add_multiple_to_did_microledger() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let mut ml = get_new_microledger(did);
+        let txn = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1"}}"#;
+        let txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        let txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent1.example.com:9080","type":"3","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        let seq_nos = ml.add_multiple(vec![txn, txn_2, txn_3]).unwrap();
+        assert_eq!(seq_nos.0, 1usize);
+        assert_eq!(seq_nos.1, 2usize);
     }
 
     #[test]
