@@ -99,7 +99,7 @@ export interface IInitVCXOptions {
 
 export interface IUTXO {
   paymentAddress: string,
-  amount: string,
+  amount: number,
   extra?: string,
   txo?: string
 }
