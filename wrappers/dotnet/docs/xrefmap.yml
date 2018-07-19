@@ -175,12 +175,12 @@ references:
   commentId: Overload:Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetCredentialsForProofReqAsync
   fullName: Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetCredentialsForProofReqAsync
   nameWithType: AnonCreds.ProverGetCredentialsForProofReqAsync
-- uid: Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreCredentialAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String,System.String)
-  name: ProverStoreCredentialAsync(Wallet, String, String, String, String, String, String)
-  href: api/Hyperledger.Indy.AnonCredsApi.AnonCreds.html#Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreCredentialAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_System_String_
-  commentId: M:Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreCredentialAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String,System.String)
-  fullName: Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreCredentialAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String, System.String, System.String, System.String)
-  nameWithType: AnonCreds.ProverStoreCredentialAsync(Wallet, String, String, String, String, String, String)
+- uid: Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreCredentialAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String)
+  name: ProverStoreCredentialAsync(Wallet, String, String, String, String, String)
+  href: api/Hyperledger.Indy.AnonCredsApi.AnonCreds.html#Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreCredentialAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreCredentialAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreCredentialAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String, System.String, System.String)
+  nameWithType: AnonCreds.ProverStoreCredentialAsync(Wallet, String, String, String, String, String)
 - uid: Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreCredentialAsync*
   name: ProverStoreCredentialAsync
   href: api/Hyperledger.Indy.AnonCredsApi.AnonCreds.html#Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreCredentialAsync_
@@ -1786,6 +1786,990 @@ references:
   commentId: Overload:Hyperledger.Indy.PairwiseApi.Pairwise.SetMetadataAsync
   fullName: Hyperledger.Indy.PairwiseApi.Pairwise.SetMetadataAsync
   nameWithType: Pairwise.SetMetadataAsync
+- uid: Hyperledger.Indy.PaymentsApi
+  name: Hyperledger.Indy.PaymentsApi
+  href: api/Hyperledger.Indy.PaymentsApi.html
+  commentId: N:Hyperledger.Indy.PaymentsApi
+  fullName: Hyperledger.Indy.PaymentsApi
+  nameWithType: Hyperledger.Indy.PaymentsApi
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods
+  name: NativeMethods
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods
+  nameWithType: NativeMethods
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.#ctor
+  name: NativeMethods()
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.html#Hyperledger_Indy_PaymentsApi_NativeMethods__ctor
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.NativeMethods()
+  nameWithType: NativeMethods.NativeMethods()
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.#ctor*
+  name: NativeMethods
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.html#Hyperledger_Indy_PaymentsApi_NativeMethods__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.NativeMethods
+  nameWithType: NativeMethods.NativeMethods
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate
+  name: NativeMethods.AddRequestFeesDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate
+  nameWithType: NativeMethods.AddRequestFeesDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.#ctor(System.Object,System.IntPtr)
+  name: AddRequestFeesDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_AddRequestFeesDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.AddRequestFeesDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.AddRequestFeesDelegate.AddRequestFeesDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.#ctor*
+  name: AddRequestFeesDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_AddRequestFeesDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.AddRequestFeesDelegate
+  nameWithType: NativeMethods.AddRequestFeesDelegate.AddRequestFeesDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_AddRequestFeesDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.AddRequestFeesDelegate.BeginInvoke(Int32, Int32, String, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_AddRequestFeesDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.BeginInvoke
+  nameWithType: NativeMethods.AddRequestFeesDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_AddRequestFeesDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.AddRequestFeesDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_AddRequestFeesDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.EndInvoke
+  nameWithType: NativeMethods.AddRequestFeesDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.Invoke(System.Int32,System.Int32,System.String,System.String)
+  name: Invoke(Int32, Int32, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_AddRequestFeesDelegate_Invoke_System_Int32_System_Int32_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.Invoke(System.Int32,System.Int32,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.Invoke(System.Int32, System.Int32, System.String, System.String)
+  nameWithType: NativeMethods.AddRequestFeesDelegate.Invoke(Int32, Int32, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_AddRequestFeesDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.AddRequestFeesDelegate.Invoke
+  nameWithType: NativeMethods.AddRequestFeesDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate
+  name: NativeMethods.BuildGetTxnFeesReqDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate
+  nameWithType: NativeMethods.BuildGetTxnFeesReqDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.#ctor(System.Object,System.IntPtr)
+  name: BuildGetTxnFeesReqDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetTxnFeesReqDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.BuildGetTxnFeesReqDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.BuildGetTxnFeesReqDelegate.BuildGetTxnFeesReqDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.#ctor*
+  name: BuildGetTxnFeesReqDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetTxnFeesReqDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.BuildGetTxnFeesReqDelegate
+  nameWithType: NativeMethods.BuildGetTxnFeesReqDelegate.BuildGetTxnFeesReqDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetTxnFeesReqDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.BuildGetTxnFeesReqDelegate.BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetTxnFeesReqDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.BeginInvoke
+  nameWithType: NativeMethods.BuildGetTxnFeesReqDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetTxnFeesReqDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.BuildGetTxnFeesReqDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetTxnFeesReqDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.EndInvoke
+  nameWithType: NativeMethods.BuildGetTxnFeesReqDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.Invoke(System.Int32,System.Int32,System.String)
+  name: Invoke(Int32, Int32, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetTxnFeesReqDelegate_Invoke_System_Int32_System_Int32_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.Invoke(System.Int32,System.Int32,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.Invoke(System.Int32, System.Int32, System.String)
+  nameWithType: NativeMethods.BuildGetTxnFeesReqDelegate.Invoke(Int32, Int32, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetTxnFeesReqDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetTxnFeesReqDelegate.Invoke
+  nameWithType: NativeMethods.BuildGetTxnFeesReqDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate
+  name: NativeMethods.BuildGetUtxoRequstDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate
+  nameWithType: NativeMethods.BuildGetUtxoRequstDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.#ctor(System.Object,System.IntPtr)
+  name: BuildGetUtxoRequstDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetUtxoRequstDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.BuildGetUtxoRequstDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.BuildGetUtxoRequstDelegate.BuildGetUtxoRequstDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.#ctor*
+  name: BuildGetUtxoRequstDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetUtxoRequstDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.BuildGetUtxoRequstDelegate
+  nameWithType: NativeMethods.BuildGetUtxoRequstDelegate.BuildGetUtxoRequstDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetUtxoRequstDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.BuildGetUtxoRequstDelegate.BeginInvoke(Int32, Int32, String, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetUtxoRequstDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.BeginInvoke
+  nameWithType: NativeMethods.BuildGetUtxoRequstDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetUtxoRequstDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.BuildGetUtxoRequstDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetUtxoRequstDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.EndInvoke
+  nameWithType: NativeMethods.BuildGetUtxoRequstDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.Invoke(System.Int32,System.Int32,System.String,System.String)
+  name: Invoke(Int32, Int32, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetUtxoRequstDelegate_Invoke_System_Int32_System_Int32_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.Invoke(System.Int32,System.Int32,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.Invoke(System.Int32, System.Int32, System.String, System.String)
+  nameWithType: NativeMethods.BuildGetUtxoRequstDelegate.Invoke(Int32, Int32, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildGetUtxoRequstDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildGetUtxoRequstDelegate.Invoke
+  nameWithType: NativeMethods.BuildGetUtxoRequstDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate
+  name: NativeMethods.BuildMintReqDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate
+  nameWithType: NativeMethods.BuildMintReqDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.#ctor(System.Object,System.IntPtr)
+  name: BuildMintReqDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildMintReqDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.BuildMintReqDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.BuildMintReqDelegate.BuildMintReqDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.#ctor*
+  name: BuildMintReqDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildMintReqDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.BuildMintReqDelegate
+  nameWithType: NativeMethods.BuildMintReqDelegate.BuildMintReqDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildMintReqDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.BuildMintReqDelegate.BeginInvoke(Int32, Int32, String, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildMintReqDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.BeginInvoke
+  nameWithType: NativeMethods.BuildMintReqDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildMintReqDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.BuildMintReqDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildMintReqDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.EndInvoke
+  nameWithType: NativeMethods.BuildMintReqDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.Invoke(System.Int32,System.Int32,System.String,System.String)
+  name: Invoke(Int32, Int32, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildMintReqDelegate_Invoke_System_Int32_System_Int32_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.Invoke(System.Int32,System.Int32,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.Invoke(System.Int32, System.Int32, System.String, System.String)
+  nameWithType: NativeMethods.BuildMintReqDelegate.Invoke(Int32, Int32, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildMintReqDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildMintReqDelegate.Invoke
+  nameWithType: NativeMethods.BuildMintReqDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate
+  name: NativeMethods.BuildPaymentRequestDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate
+  nameWithType: NativeMethods.BuildPaymentRequestDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.#ctor(System.Object,System.IntPtr)
+  name: BuildPaymentRequestDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildPaymentRequestDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.BuildPaymentRequestDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.BuildPaymentRequestDelegate.BuildPaymentRequestDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.#ctor*
+  name: BuildPaymentRequestDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildPaymentRequestDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.BuildPaymentRequestDelegate
+  nameWithType: NativeMethods.BuildPaymentRequestDelegate.BuildPaymentRequestDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildPaymentRequestDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.BuildPaymentRequestDelegate.BeginInvoke(Int32, Int32, String, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildPaymentRequestDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.BeginInvoke
+  nameWithType: NativeMethods.BuildPaymentRequestDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildPaymentRequestDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.BuildPaymentRequestDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildPaymentRequestDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.EndInvoke
+  nameWithType: NativeMethods.BuildPaymentRequestDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.Invoke(System.Int32,System.Int32,System.String,System.String)
+  name: Invoke(Int32, Int32, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildPaymentRequestDelegate_Invoke_System_Int32_System_Int32_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.Invoke(System.Int32,System.Int32,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.Invoke(System.Int32, System.Int32, System.String, System.String)
+  nameWithType: NativeMethods.BuildPaymentRequestDelegate.Invoke(Int32, Int32, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildPaymentRequestDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildPaymentRequestDelegate.Invoke
+  nameWithType: NativeMethods.BuildPaymentRequestDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate
+  name: NativeMethods.BuildSetTxnFeesReqDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate
+  nameWithType: NativeMethods.BuildSetTxnFeesReqDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.#ctor(System.Object,System.IntPtr)
+  name: BuildSetTxnFeesReqDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildSetTxnFeesReqDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.BuildSetTxnFeesReqDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.BuildSetTxnFeesReqDelegate.BuildSetTxnFeesReqDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.#ctor*
+  name: BuildSetTxnFeesReqDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildSetTxnFeesReqDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.BuildSetTxnFeesReqDelegate
+  nameWithType: NativeMethods.BuildSetTxnFeesReqDelegate.BuildSetTxnFeesReqDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildSetTxnFeesReqDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.BuildSetTxnFeesReqDelegate.BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildSetTxnFeesReqDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.BeginInvoke
+  nameWithType: NativeMethods.BuildSetTxnFeesReqDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildSetTxnFeesReqDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.BuildSetTxnFeesReqDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildSetTxnFeesReqDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.EndInvoke
+  nameWithType: NativeMethods.BuildSetTxnFeesReqDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.Invoke(System.Int32,System.Int32,System.String)
+  name: Invoke(Int32, Int32, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildSetTxnFeesReqDelegate_Invoke_System_Int32_System_Int32_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.Invoke(System.Int32,System.Int32,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.Invoke(System.Int32, System.Int32, System.String)
+  nameWithType: NativeMethods.BuildSetTxnFeesReqDelegate.Invoke(Int32, Int32, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_BuildSetTxnFeesReqDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.BuildSetTxnFeesReqDelegate.Invoke
+  nameWithType: NativeMethods.BuildSetTxnFeesReqDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate
+  name: NativeMethods.CreatePaymentAddressDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate
+  nameWithType: NativeMethods.CreatePaymentAddressDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.#ctor(System.Object,System.IntPtr)
+  name: CreatePaymentAddressDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_CreatePaymentAddressDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.CreatePaymentAddressDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.CreatePaymentAddressDelegate.CreatePaymentAddressDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.#ctor*
+  name: CreatePaymentAddressDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_CreatePaymentAddressDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.CreatePaymentAddressDelegate
+  nameWithType: NativeMethods.CreatePaymentAddressDelegate.CreatePaymentAddressDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_CreatePaymentAddressDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.CreatePaymentAddressDelegate.BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_CreatePaymentAddressDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.BeginInvoke
+  nameWithType: NativeMethods.CreatePaymentAddressDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_CreatePaymentAddressDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.CreatePaymentAddressDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_CreatePaymentAddressDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.EndInvoke
+  nameWithType: NativeMethods.CreatePaymentAddressDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.Invoke(System.Int32,System.Int32,System.String)
+  name: Invoke(Int32, Int32, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_CreatePaymentAddressDelegate_Invoke_System_Int32_System_Int32_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.Invoke(System.Int32,System.Int32,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.Invoke(System.Int32, System.Int32, System.String)
+  nameWithType: NativeMethods.CreatePaymentAddressDelegate.Invoke(Int32, Int32, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_CreatePaymentAddressDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.CreatePaymentAddressDelegate.Invoke
+  nameWithType: NativeMethods.CreatePaymentAddressDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate
+  name: NativeMethods.ParseGetTxnFeesResponseDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate
+  nameWithType: NativeMethods.ParseGetTxnFeesResponseDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.#ctor(System.Object,System.IntPtr)
+  name: ParseGetTxnFeesResponseDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetTxnFeesResponseDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.ParseGetTxnFeesResponseDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.ParseGetTxnFeesResponseDelegate.ParseGetTxnFeesResponseDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.#ctor*
+  name: ParseGetTxnFeesResponseDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetTxnFeesResponseDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.ParseGetTxnFeesResponseDelegate
+  nameWithType: NativeMethods.ParseGetTxnFeesResponseDelegate.ParseGetTxnFeesResponseDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetTxnFeesResponseDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.ParseGetTxnFeesResponseDelegate.BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetTxnFeesResponseDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.BeginInvoke
+  nameWithType: NativeMethods.ParseGetTxnFeesResponseDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetTxnFeesResponseDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.ParseGetTxnFeesResponseDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetTxnFeesResponseDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.EndInvoke
+  nameWithType: NativeMethods.ParseGetTxnFeesResponseDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.Invoke(System.Int32,System.Int32,System.String)
+  name: Invoke(Int32, Int32, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetTxnFeesResponseDelegate_Invoke_System_Int32_System_Int32_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.Invoke(System.Int32,System.Int32,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.Invoke(System.Int32, System.Int32, System.String)
+  nameWithType: NativeMethods.ParseGetTxnFeesResponseDelegate.Invoke(Int32, Int32, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetTxnFeesResponseDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetTxnFeesResponseDelegate.Invoke
+  nameWithType: NativeMethods.ParseGetTxnFeesResponseDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate
+  name: NativeMethods.ParseGetUtxoResponseDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate
+  nameWithType: NativeMethods.ParseGetUtxoResponseDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.#ctor(System.Object,System.IntPtr)
+  name: ParseGetUtxoResponseDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetUtxoResponseDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.ParseGetUtxoResponseDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.ParseGetUtxoResponseDelegate.ParseGetUtxoResponseDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.#ctor*
+  name: ParseGetUtxoResponseDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetUtxoResponseDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.ParseGetUtxoResponseDelegate
+  nameWithType: NativeMethods.ParseGetUtxoResponseDelegate.ParseGetUtxoResponseDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetUtxoResponseDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.ParseGetUtxoResponseDelegate.BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetUtxoResponseDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.BeginInvoke
+  nameWithType: NativeMethods.ParseGetUtxoResponseDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetUtxoResponseDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.ParseGetUtxoResponseDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetUtxoResponseDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.EndInvoke
+  nameWithType: NativeMethods.ParseGetUtxoResponseDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.Invoke(System.Int32,System.Int32,System.String)
+  name: Invoke(Int32, Int32, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetUtxoResponseDelegate_Invoke_System_Int32_System_Int32_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.Invoke(System.Int32,System.Int32,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.Invoke(System.Int32, System.Int32, System.String)
+  nameWithType: NativeMethods.ParseGetUtxoResponseDelegate.Invoke(Int32, Int32, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseGetUtxoResponseDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseGetUtxoResponseDelegate.Invoke
+  nameWithType: NativeMethods.ParseGetUtxoResponseDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate
+  name: NativeMethods.ParsePaymentResponseDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate
+  nameWithType: NativeMethods.ParsePaymentResponseDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.#ctor(System.Object,System.IntPtr)
+  name: ParsePaymentResponseDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParsePaymentResponseDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.ParsePaymentResponseDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.ParsePaymentResponseDelegate.ParsePaymentResponseDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.#ctor*
+  name: ParsePaymentResponseDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParsePaymentResponseDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.ParsePaymentResponseDelegate
+  nameWithType: NativeMethods.ParsePaymentResponseDelegate.ParsePaymentResponseDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParsePaymentResponseDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.ParsePaymentResponseDelegate.BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParsePaymentResponseDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.BeginInvoke
+  nameWithType: NativeMethods.ParsePaymentResponseDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParsePaymentResponseDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.ParsePaymentResponseDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParsePaymentResponseDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.EndInvoke
+  nameWithType: NativeMethods.ParsePaymentResponseDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.Invoke(System.Int32,System.Int32,System.String)
+  name: Invoke(Int32, Int32, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParsePaymentResponseDelegate_Invoke_System_Int32_System_Int32_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.Invoke(System.Int32,System.Int32,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.Invoke(System.Int32, System.Int32, System.String)
+  nameWithType: NativeMethods.ParsePaymentResponseDelegate.Invoke(Int32, Int32, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParsePaymentResponseDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParsePaymentResponseDelegate.Invoke
+  nameWithType: NativeMethods.ParsePaymentResponseDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate
+  name: NativeMethods.ParseResponseWithFeesDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate
+  nameWithType: NativeMethods.ParseResponseWithFeesDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.#ctor(System.Object,System.IntPtr)
+  name: ParseResponseWithFeesDelegate(Object, IntPtr)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate__ctor_System_Object_System_IntPtr_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.#ctor(System.Object,System.IntPtr)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.ParseResponseWithFeesDelegate(System.Object, System.IntPtr)
+  nameWithType: NativeMethods.ParseResponseWithFeesDelegate.ParseResponseWithFeesDelegate(Object, IntPtr)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.#ctor*
+  name: ParseResponseWithFeesDelegate
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.ParseResponseWithFeesDelegate
+  nameWithType: NativeMethods.ParseResponseWithFeesDelegate.ParseResponseWithFeesDelegate
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  name: BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate_BeginInvoke_System_Int32_System_Int32_System_String_System_AsyncCallback_System_Object_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.BeginInvoke(System.Int32,System.Int32,System.String,System.AsyncCallback,System.Object)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.BeginInvoke(System.Int32, System.Int32, System.String, System.AsyncCallback, System.Object)
+  nameWithType: NativeMethods.ParseResponseWithFeesDelegate.BeginInvoke(Int32, Int32, String, AsyncCallback, Object)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.BeginInvoke*
+  name: BeginInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate_BeginInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.BeginInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.BeginInvoke
+  nameWithType: NativeMethods.ParseResponseWithFeesDelegate.BeginInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.EndInvoke(System.IAsyncResult)
+  name: EndInvoke(IAsyncResult)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate_EndInvoke_System_IAsyncResult_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.EndInvoke(System.IAsyncResult)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.EndInvoke(System.IAsyncResult)
+  nameWithType: NativeMethods.ParseResponseWithFeesDelegate.EndInvoke(IAsyncResult)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.EndInvoke*
+  name: EndInvoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate_EndInvoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.EndInvoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.EndInvoke
+  nameWithType: NativeMethods.ParseResponseWithFeesDelegate.EndInvoke
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.Invoke(System.Int32,System.Int32,System.String)
+  name: Invoke(Int32, Int32, String)
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate_Invoke_System_Int32_System_Int32_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.Invoke(System.Int32,System.Int32,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.Invoke(System.Int32, System.Int32, System.String)
+  nameWithType: NativeMethods.ParseResponseWithFeesDelegate.Invoke(Int32, Int32, String)
+- uid: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.Invoke*
+  name: Invoke
+  href: api/Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.html#Hyperledger_Indy_PaymentsApi_NativeMethods_ParseResponseWithFeesDelegate_Invoke_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.Invoke
+  fullName: Hyperledger.Indy.PaymentsApi.NativeMethods.ParseResponseWithFeesDelegate.Invoke
+  nameWithType: NativeMethods.ParseResponseWithFeesDelegate.Invoke
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod
+  name: PaymentMethod
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.PaymentMethod
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod
+  nameWithType: PaymentMethod
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.#ctor
+  name: PaymentMethod()
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod__ctor
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.PaymentMethod()
+  nameWithType: PaymentMethod.PaymentMethod()
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.#ctor*
+  name: PaymentMethod
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.PaymentMethod
+  nameWithType: PaymentMethod.PaymentMethod
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.AddRequestFeesAsync(System.String,System.String,System.String,System.String)
+  name: AddRequestFeesAsync(String, String, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_AddRequestFeesAsync_System_String_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.AddRequestFeesAsync(System.String,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.AddRequestFeesAsync(System.String, System.String, System.String, System.String)
+  nameWithType: PaymentMethod.AddRequestFeesAsync(String, String, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.AddRequestFeesAsync*
+  name: AddRequestFeesAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_AddRequestFeesAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.AddRequestFeesAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.AddRequestFeesAsync
+  nameWithType: PaymentMethod.AddRequestFeesAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetTxnFeesAsync(System.String)
+  name: BuildGetTxnFeesAsync(String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_BuildGetTxnFeesAsync_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetTxnFeesAsync(System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetTxnFeesAsync(System.String)
+  nameWithType: PaymentMethod.BuildGetTxnFeesAsync(String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetTxnFeesAsync*
+  name: BuildGetTxnFeesAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_BuildGetTxnFeesAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetTxnFeesAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetTxnFeesAsync
+  nameWithType: PaymentMethod.BuildGetTxnFeesAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetUtxoRequestAsync(System.String,System.String)
+  name: BuildGetUtxoRequestAsync(String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_BuildGetUtxoRequestAsync_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetUtxoRequestAsync(System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetUtxoRequestAsync(System.String, System.String)
+  nameWithType: PaymentMethod.BuildGetUtxoRequestAsync(String, String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetUtxoRequestAsync*
+  name: BuildGetUtxoRequestAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_BuildGetUtxoRequestAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetUtxoRequestAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildGetUtxoRequestAsync
+  nameWithType: PaymentMethod.BuildGetUtxoRequestAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildMintRequestAsync(System.String,System.String)
+  name: BuildMintRequestAsync(String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_BuildMintRequestAsync_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildMintRequestAsync(System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildMintRequestAsync(System.String, System.String)
+  nameWithType: PaymentMethod.BuildMintRequestAsync(String, String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildMintRequestAsync*
+  name: BuildMintRequestAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_BuildMintRequestAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildMintRequestAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildMintRequestAsync
+  nameWithType: PaymentMethod.BuildMintRequestAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildPaymentRequestAsync(System.String,System.String,System.String)
+  name: BuildPaymentRequestAsync(String, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_BuildPaymentRequestAsync_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildPaymentRequestAsync(System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildPaymentRequestAsync(System.String, System.String, System.String)
+  nameWithType: PaymentMethod.BuildPaymentRequestAsync(String, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildPaymentRequestAsync*
+  name: BuildPaymentRequestAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_BuildPaymentRequestAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildPaymentRequestAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildPaymentRequestAsync
+  nameWithType: PaymentMethod.BuildPaymentRequestAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildSetTxnFeesAsync(System.String,System.String)
+  name: BuildSetTxnFeesAsync(String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_BuildSetTxnFeesAsync_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildSetTxnFeesAsync(System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildSetTxnFeesAsync(System.String, System.String)
+  nameWithType: PaymentMethod.BuildSetTxnFeesAsync(String, String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildSetTxnFeesAsync*
+  name: BuildSetTxnFeesAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_BuildSetTxnFeesAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildSetTxnFeesAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.BuildSetTxnFeesAsync
+  nameWithType: PaymentMethod.BuildSetTxnFeesAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.CreatePaymentAddressAsync(System.String)
+  name: CreatePaymentAddressAsync(String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_CreatePaymentAddressAsync_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.CreatePaymentAddressAsync(System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.CreatePaymentAddressAsync(System.String)
+  nameWithType: PaymentMethod.CreatePaymentAddressAsync(String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.CreatePaymentAddressAsync*
+  name: CreatePaymentAddressAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_CreatePaymentAddressAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.CreatePaymentAddressAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.CreatePaymentAddressAsync
+  nameWithType: PaymentMethod.CreatePaymentAddressAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetTxnFeesResponseAsync(System.String)
+  name: ParseGetTxnFeesResponseAsync(String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_ParseGetTxnFeesResponseAsync_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetTxnFeesResponseAsync(System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetTxnFeesResponseAsync(System.String)
+  nameWithType: PaymentMethod.ParseGetTxnFeesResponseAsync(String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetTxnFeesResponseAsync*
+  name: ParseGetTxnFeesResponseAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_ParseGetTxnFeesResponseAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetTxnFeesResponseAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetTxnFeesResponseAsync
+  nameWithType: PaymentMethod.ParseGetTxnFeesResponseAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetUtxoResponseAsync(System.String)
+  name: ParseGetUtxoResponseAsync(String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_ParseGetUtxoResponseAsync_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetUtxoResponseAsync(System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetUtxoResponseAsync(System.String)
+  nameWithType: PaymentMethod.ParseGetUtxoResponseAsync(String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetUtxoResponseAsync*
+  name: ParseGetUtxoResponseAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_ParseGetUtxoResponseAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetUtxoResponseAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseGetUtxoResponseAsync
+  nameWithType: PaymentMethod.ParseGetUtxoResponseAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParsePaymentResponseAsync(System.String)
+  name: ParsePaymentResponseAsync(String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_ParsePaymentResponseAsync_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.ParsePaymentResponseAsync(System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParsePaymentResponseAsync(System.String)
+  nameWithType: PaymentMethod.ParsePaymentResponseAsync(String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParsePaymentResponseAsync*
+  name: ParsePaymentResponseAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_ParsePaymentResponseAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.ParsePaymentResponseAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParsePaymentResponseAsync
+  nameWithType: PaymentMethod.ParsePaymentResponseAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseResponseWithFeesAsync(System.String)
+  name: ParseResponseWithFeesAsync(String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_ParseResponseWithFeesAsync_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseResponseWithFeesAsync(System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseResponseWithFeesAsync(System.String)
+  nameWithType: PaymentMethod.ParseResponseWithFeesAsync(String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseResponseWithFeesAsync*
+  name: ParseResponseWithFeesAsync
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentMethod.html#Hyperledger_Indy_PaymentsApi_PaymentMethod_ParseResponseWithFeesAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseResponseWithFeesAsync
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentMethod.ParseResponseWithFeesAsync
+  nameWithType: PaymentMethod.ParseResponseWithFeesAsync
+- uid: Hyperledger.Indy.PaymentsApi.PaymentResult
+  name: PaymentResult
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentResult.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.PaymentResult
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentResult
+  nameWithType: PaymentResult
+- uid: Hyperledger.Indy.PaymentsApi.PaymentResult.#ctor(System.String,System.String)
+  name: PaymentResult(String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentResult.html#Hyperledger_Indy_PaymentsApi_PaymentResult__ctor_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.PaymentResult.#ctor(System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentResult.PaymentResult(System.String, System.String)
+  nameWithType: PaymentResult.PaymentResult(String, String)
+- uid: Hyperledger.Indy.PaymentsApi.PaymentResult.#ctor*
+  name: PaymentResult
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentResult.html#Hyperledger_Indy_PaymentsApi_PaymentResult__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentResult.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentResult.PaymentResult
+  nameWithType: PaymentResult.PaymentResult
+- uid: Hyperledger.Indy.PaymentsApi.PaymentResult.PaymentMethod
+  name: PaymentMethod
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentResult.html#Hyperledger_Indy_PaymentsApi_PaymentResult_PaymentMethod
+  commentId: P:Hyperledger.Indy.PaymentsApi.PaymentResult.PaymentMethod
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentResult.PaymentMethod
+  nameWithType: PaymentResult.PaymentMethod
+- uid: Hyperledger.Indy.PaymentsApi.PaymentResult.PaymentMethod*
+  name: PaymentMethod
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentResult.html#Hyperledger_Indy_PaymentsApi_PaymentResult_PaymentMethod_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentResult.PaymentMethod
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentResult.PaymentMethod
+  nameWithType: PaymentResult.PaymentMethod
+- uid: Hyperledger.Indy.PaymentsApi.PaymentResult.Result
+  name: Result
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentResult.html#Hyperledger_Indy_PaymentsApi_PaymentResult_Result
+  commentId: P:Hyperledger.Indy.PaymentsApi.PaymentResult.Result
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentResult.Result
+  nameWithType: PaymentResult.Result
+- uid: Hyperledger.Indy.PaymentsApi.PaymentResult.Result*
+  name: Result
+  href: api/Hyperledger.Indy.PaymentsApi.PaymentResult.html#Hyperledger_Indy_PaymentsApi_PaymentResult_Result_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.PaymentResult.Result
+  fullName: Hyperledger.Indy.PaymentsApi.PaymentResult.Result
+  nameWithType: PaymentResult.Result
+- uid: Hyperledger.Indy.PaymentsApi.Payments
+  name: Payments
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html
+  commentId: T:Hyperledger.Indy.PaymentsApi.Payments
+  fullName: Hyperledger.Indy.PaymentsApi.Payments
+  nameWithType: Payments
+- uid: Hyperledger.Indy.PaymentsApi.Payments.#ctor
+  name: Payments()
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments__ctor
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.Payments()
+  nameWithType: Payments.Payments()
+- uid: Hyperledger.Indy.PaymentsApi.Payments.#ctor*
+  name: Payments
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments__ctor_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.#ctor
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.Payments
+  nameWithType: Payments.Payments
+- uid: Hyperledger.Indy.PaymentsApi.Payments.AddRequestFeesAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String)
+  name: AddRequestFeesAsync(Wallet, String, String, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_AddRequestFeesAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.AddRequestFeesAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.AddRequestFeesAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String, System.String)
+  nameWithType: Payments.AddRequestFeesAsync(Wallet, String, String, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.AddRequestFeesAsync*
+  name: AddRequestFeesAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_AddRequestFeesAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.AddRequestFeesAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.AddRequestFeesAsync
+  nameWithType: Payments.AddRequestFeesAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.BuildGetTxnFeesRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)
+  name: BuildGetTxnFeesRequestAsync(Wallet, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_BuildGetTxnFeesRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.BuildGetTxnFeesRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.BuildGetTxnFeesRequestAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String)
+  nameWithType: Payments.BuildGetTxnFeesRequestAsync(Wallet, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.BuildGetTxnFeesRequestAsync*
+  name: BuildGetTxnFeesRequestAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_BuildGetTxnFeesRequestAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.BuildGetTxnFeesRequestAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.BuildGetTxnFeesRequestAsync
+  nameWithType: Payments.BuildGetTxnFeesRequestAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.BuildGetUtxoRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)
+  name: BuildGetUtxoRequestAsync(Wallet, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_BuildGetUtxoRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.BuildGetUtxoRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.BuildGetUtxoRequestAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String)
+  nameWithType: Payments.BuildGetUtxoRequestAsync(Wallet, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.BuildGetUtxoRequestAsync*
+  name: BuildGetUtxoRequestAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_BuildGetUtxoRequestAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.BuildGetUtxoRequestAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.BuildGetUtxoRequestAsync
+  nameWithType: Payments.BuildGetUtxoRequestAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)
+  name: BuildMintRequestAsync(Wallet, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_BuildMintRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String)
+  nameWithType: Payments.BuildMintRequestAsync(Wallet, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync*
+  name: BuildMintRequestAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_BuildMintRequestAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.BuildMintRequestAsync
+  nameWithType: Payments.BuildMintRequestAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.BuildPaymentRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  name: BuildPaymentRequestAsync(Wallet, String, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_BuildPaymentRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.BuildPaymentRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.BuildPaymentRequestAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String)
+  nameWithType: Payments.BuildPaymentRequestAsync(Wallet, String, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.BuildPaymentRequestAsync*
+  name: BuildPaymentRequestAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_BuildPaymentRequestAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.BuildPaymentRequestAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.BuildPaymentRequestAsync
+  nameWithType: Payments.BuildPaymentRequestAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.BuildSetTxnFeesRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  name: BuildSetTxnFeesRequestAsync(Wallet, String, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_BuildSetTxnFeesRequestAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.BuildSetTxnFeesRequestAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.BuildSetTxnFeesRequestAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String)
+  nameWithType: Payments.BuildSetTxnFeesRequestAsync(Wallet, String, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.BuildSetTxnFeesRequestAsync*
+  name: BuildSetTxnFeesRequestAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_BuildSetTxnFeesRequestAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.BuildSetTxnFeesRequestAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.BuildSetTxnFeesRequestAsync
+  nameWithType: Payments.BuildSetTxnFeesRequestAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.CreatePaymentAddressAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)
+  name: CreatePaymentAddressAsync(Wallet, String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_CreatePaymentAddressAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.CreatePaymentAddressAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.CreatePaymentAddressAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String)
+  nameWithType: Payments.CreatePaymentAddressAsync(Wallet, String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.CreatePaymentAddressAsync*
+  name: CreatePaymentAddressAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_CreatePaymentAddressAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.CreatePaymentAddressAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.CreatePaymentAddressAsync
+  nameWithType: Payments.CreatePaymentAddressAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.ListPaymentAddressesAsync(Hyperledger.Indy.WalletApi.Wallet)
+  name: ListPaymentAddressesAsync(Wallet)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_ListPaymentAddressesAsync_Hyperledger_Indy_WalletApi_Wallet_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.ListPaymentAddressesAsync(Hyperledger.Indy.WalletApi.Wallet)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.ListPaymentAddressesAsync(Hyperledger.Indy.WalletApi.Wallet)
+  nameWithType: Payments.ListPaymentAddressesAsync(Wallet)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.ListPaymentAddressesAsync*
+  name: ListPaymentAddressesAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_ListPaymentAddressesAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.ListPaymentAddressesAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.ListPaymentAddressesAsync
+  nameWithType: Payments.ListPaymentAddressesAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.ParseGetTxnFeesResponseAsync(System.String,System.String)
+  name: ParseGetTxnFeesResponseAsync(String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_ParseGetTxnFeesResponseAsync_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.ParseGetTxnFeesResponseAsync(System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.ParseGetTxnFeesResponseAsync(System.String, System.String)
+  nameWithType: Payments.ParseGetTxnFeesResponseAsync(String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.ParseGetTxnFeesResponseAsync*
+  name: ParseGetTxnFeesResponseAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_ParseGetTxnFeesResponseAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.ParseGetTxnFeesResponseAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.ParseGetTxnFeesResponseAsync
+  nameWithType: Payments.ParseGetTxnFeesResponseAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.ParseGetUtxoResponseAsync(System.String,System.String)
+  name: ParseGetUtxoResponseAsync(String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_ParseGetUtxoResponseAsync_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.ParseGetUtxoResponseAsync(System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.ParseGetUtxoResponseAsync(System.String, System.String)
+  nameWithType: Payments.ParseGetUtxoResponseAsync(String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.ParseGetUtxoResponseAsync*
+  name: ParseGetUtxoResponseAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_ParseGetUtxoResponseAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.ParseGetUtxoResponseAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.ParseGetUtxoResponseAsync
+  nameWithType: Payments.ParseGetUtxoResponseAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.ParsePaymentResponseAsync(System.String,System.String)
+  name: ParsePaymentResponseAsync(String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_ParsePaymentResponseAsync_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.ParsePaymentResponseAsync(System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.ParsePaymentResponseAsync(System.String, System.String)
+  nameWithType: Payments.ParsePaymentResponseAsync(String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.ParsePaymentResponseAsync*
+  name: ParsePaymentResponseAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_ParsePaymentResponseAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.ParsePaymentResponseAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.ParsePaymentResponseAsync
+  nameWithType: Payments.ParsePaymentResponseAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.ParseResponseWithFeesAsync(System.String,System.String)
+  name: ParseResponseWithFeesAsync(String, String)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_ParseResponseWithFeesAsync_System_String_System_String_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.ParseResponseWithFeesAsync(System.String,System.String)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.ParseResponseWithFeesAsync(System.String, System.String)
+  nameWithType: Payments.ParseResponseWithFeesAsync(String, String)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.ParseResponseWithFeesAsync*
+  name: ParseResponseWithFeesAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_ParseResponseWithFeesAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.ParseResponseWithFeesAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.ParseResponseWithFeesAsync
+  nameWithType: Payments.ParseResponseWithFeesAsync
+- uid: Hyperledger.Indy.PaymentsApi.Payments.RegisterPaymentMethodAsync(System.String,Hyperledger.Indy.PaymentsApi.PaymentMethod)
+  name: RegisterPaymentMethodAsync(String, PaymentMethod)
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_RegisterPaymentMethodAsync_System_String_Hyperledger_Indy_PaymentsApi_PaymentMethod_
+  commentId: M:Hyperledger.Indy.PaymentsApi.Payments.RegisterPaymentMethodAsync(System.String,Hyperledger.Indy.PaymentsApi.PaymentMethod)
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.RegisterPaymentMethodAsync(System.String, Hyperledger.Indy.PaymentsApi.PaymentMethod)
+  nameWithType: Payments.RegisterPaymentMethodAsync(String, PaymentMethod)
+- uid: Hyperledger.Indy.PaymentsApi.Payments.RegisterPaymentMethodAsync*
+  name: RegisterPaymentMethodAsync
+  href: api/Hyperledger.Indy.PaymentsApi.Payments.html#Hyperledger_Indy_PaymentsApi_Payments_RegisterPaymentMethodAsync_
+  commentId: Overload:Hyperledger.Indy.PaymentsApi.Payments.RegisterPaymentMethodAsync
+  fullName: Hyperledger.Indy.PaymentsApi.Payments.RegisterPaymentMethodAsync
+  nameWithType: Payments.RegisterPaymentMethodAsync
 - uid: Hyperledger.Indy.PoolApi
   name: Hyperledger.Indy.PoolApi
   href: api/Hyperledger.Indy.PoolApi.html
@@ -1900,6 +2884,18 @@ references:
   commentId: Overload:Hyperledger.Indy.PoolApi.Pool.RefreshAsync
   fullName: Hyperledger.Indy.PoolApi.Pool.RefreshAsync
   nameWithType: Pool.RefreshAsync
+- uid: Hyperledger.Indy.PoolApi.Pool.SetProtocolVersionAsync(System.Int32)
+  name: SetProtocolVersionAsync(Int32)
+  href: api/Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_SetProtocolVersionAsync_System_Int32_
+  commentId: M:Hyperledger.Indy.PoolApi.Pool.SetProtocolVersionAsync(System.Int32)
+  fullName: Hyperledger.Indy.PoolApi.Pool.SetProtocolVersionAsync(System.Int32)
+  nameWithType: Pool.SetProtocolVersionAsync(Int32)
+- uid: Hyperledger.Indy.PoolApi.Pool.SetProtocolVersionAsync*
+  name: SetProtocolVersionAsync
+  href: api/Hyperledger.Indy.PoolApi.Pool.html#Hyperledger_Indy_PoolApi_Pool_SetProtocolVersionAsync_
+  commentId: Overload:Hyperledger.Indy.PoolApi.Pool.SetProtocolVersionAsync
+  fullName: Hyperledger.Indy.PoolApi.Pool.SetProtocolVersionAsync
+  nameWithType: Pool.SetProtocolVersionAsync
 - uid: Hyperledger.Indy.PoolApi.PoolConfigNotCreatedException
   name: PoolConfigNotCreatedException
   href: api/Hyperledger.Indy.PoolApi.PoolConfigNotCreatedException.html
