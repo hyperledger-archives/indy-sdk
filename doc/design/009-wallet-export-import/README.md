@@ -100,11 +100,9 @@ For deriving keys from passphrase **Argon2** memory-hard function is used with r
 * `header_hash`: 32B **SHA-256** hash of the header.
 * `record1_length`: length the serialized record as 4b unsigned little endian integer
 * `record1`: MessagePack serialized record entity
-* `record1_hash`: 32B **SHA-256** hash of the serialized record.
 * ...
 * `recordN_length`: length the serialized record as 4b unsigned little endian integer
 * `recordN`: MessagePack serialized record entity
-* `recordN_hash`: 32B **SHA-256** hash of the serialized record.
 * `STOP`: 4 zero bytes. Allows to make sure that there was no truncation of export file
 
 Where:
