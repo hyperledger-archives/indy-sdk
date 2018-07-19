@@ -42,9 +42,10 @@ build_test_artifacts(){
     pushd ${WORKDIR}
 
         cargo clean
-        EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/lib -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${INDY_DIR} -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lindy -lgnustl_shared" \
+        EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/lib -lz -lm -L${TOOLCHAIN_DIR}/${TRIPLET}/lib  -lgnustl_shared" \
                     cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
-    popd
+
+        popd
 }
 
 create_cargo_config(){
