@@ -94,10 +94,10 @@ For deriving keys from passphrase **Argon2** memory-hard function is used with r
 
 * `header_length`: length of the serialized header as 4b unsigned little endian integer
 * `header`: MessagePack serialized header entity
-* `header_hash`: 32B **SHA-256** hash of the header.
 
 --- encrypted stream ---
 
+* `header_hash`: 32B **SHA-256** hash of the header.
 * `record1_length`: length the serialized record as 4b unsigned little endian integer
 * `record1`: MessagePack serialized record entity
 * `record1_hash`: 32B **SHA-256** hash of the serialized record.

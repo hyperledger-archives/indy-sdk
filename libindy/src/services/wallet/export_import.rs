@@ -1,6 +1,4 @@
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use serde::Serialize;
-use serde::de::DeserializeOwned;
 use std::io;
 use std::io::{Write, Read, BufWriter, BufReader};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -30,134 +28,99 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
         version,
     };
 
-    // Writes plain structs
-    let mut writer = StructWriter::new(BufWriter::new(writer));
-    writer.write_next(&header)?;
+    let header = rmp_serde::to_vec(&header)
+        .map_err(|err| CommonError::InvalidState(format!("Can't serialize header: {:?}", err)))?;
 
-    // Writes encrypted structs
-    let mut writer = StructWriter::new(chacha20poly1305_ietf::Writer::new(writer.into_inner(),
-                                                                          chacha20poly1305_ietf::derive_key(passphrase, &salt)?,
-                                                                          nonce,
-                                                                          chunk_size));
+    // Write plain
+    let mut writer = BufWriter::new(writer);
+    writer.write_u32::<LittleEndian>(header.len() as u32)?;
+    writer.write_all(&header)?;
+
+    // Write ecnrypted
+    let mut writer = chacha20poly1305_ietf::Writer::new(writer,
+                                                        chacha20poly1305_ietf::derive_key(passphrase, &salt)?,
+                                                        nonce,
+                                                        chunk_size);
+
+    writer.write_all(&hash(&header)?)?;
 
     let mut records = wallet.get_all()?;
 
     while let Some(WalletRecord { type_, id, value, tags }) = records.next()? {
-        writer.write_next(&Record {
+        let record = Record {
             type_: type_.ok_or(CommonError::InvalidState("No type fetched for exported record".to_string()))?,
             id,
             value: value.ok_or(CommonError::InvalidState("No value fetched for exported record".to_string()))?,
             tags: tags.ok_or(CommonError::InvalidState("No tags fetched for exported record".to_string()))?,
-        })?;
+        };
+
+        let record = rmp_serde::to_vec(&record)
+            .map_err(|err| CommonError::InvalidState(format!("Can't serialize record: {:?}", err)))?;
+
+        writer.write_u32::<LittleEndian>(record.len() as u32)?;
+        writer.write_all(&record)?;
     }
 
-    writer.finalize()?;
-
+    writer.write_u32::<LittleEndian>(0)?; // END message
+    writer.flush()?;
     Ok(())
 }
 
 pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Result<(), WalletError> {
-    // Reads plain structs
-    let mut reader = StructReader::new(BufReader::new(reader));
+    // Reads plain
+    let mut reader = BufReader::new(reader);
 
-    let header: Header = reader.read_next()?
-        .ok_or(CommonError::InvalidStructure("No header found ".to_string()))?;
+    let header_len = reader.read_u32::<LittleEndian>().map_err(_map_io_err)? as usize;
 
-    // Reads encrypted structs
-    let mut reader = {
-        let mut reader = match header.encryption_method {
-            EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } => {
-                let salt = pwhash_argon2i13::Salt::from_slice(&salt)
-                    .map_err(|err| CommonError::InvalidStructure(format!("Invalid salt: {:?}", err)))?;
+    if header_len == 0 {
+        Err(CommonError::InvalidStructure("Invalid header length".to_string()))?;
+    }
 
-                let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
-                    .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
+    let mut header_bytes = vec![0u8; header_len];
+    reader.read_exact(&mut header_bytes).map_err(_map_io_err)?;
 
-                let key = chacha20poly1305_ietf::derive_key(passphrase, &salt)?;
+    let header: Header = rmp_serde::from_slice(&header_bytes)
+        .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize header: {}", err)))?;
 
-                chacha20poly1305_ietf::Reader::new(reader.into_inner(), key, nonce, chunk_size)
-            }
-        };
+    // Reads encrypted
+    let mut reader = match header.encryption_method {
+        EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } => {
+            let salt = pwhash_argon2i13::Salt::from_slice(&salt)
+                .map_err(|err| CommonError::InvalidStructure(format!("Invalid salt: {:?}", err)))?;
 
-        StructReader::new(reader)
+            let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
+                .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
+
+            let key = chacha20poly1305_ietf::derive_key(passphrase, &salt)?;
+
+            chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size)
+        }
     };
 
-    while let Some(record) = reader.read_next::<Record>()? {
+    let mut header_hash = vec![0u8; HASHBYTES];
+    reader.read_exact(&mut header_hash).map_err(_map_io_err)?;
+
+    if hash(&header_bytes)? != header_hash {
+        Err(CommonError::InvalidStructure("Invalid header hash".to_string()))?;
+    }
+
+    loop {
+        let record_len = reader.read_u32::<LittleEndian>().map_err(_map_io_err)? as usize;
+
+        if record_len == 0 {
+            break;
+        }
+
+        let mut record = vec![0u8; record_len];
+        reader.read_exact(&mut record).map_err(_map_io_err)?;
+
+        let record: Record = rmp_serde::from_slice(&record)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize record: {}", err)))?;
+
         wallet.add(&record.type_, &record.id, &record.value, &record.tags)?;
     }
 
     Ok(())
-}
-
-struct StructWriter<W: Write> {
-    inner: W,
-}
-
-impl<W: Write> StructWriter<W> {
-    pub fn new(inner: W) -> StructWriter<W> {
-        StructWriter {
-            inner,
-        }
-    }
-
-    pub fn write_next<T>(&mut self, obj: &T) -> Result<(), CommonError> where T: Serialize {
-        let obj = rmp_serde::to_vec(obj)
-            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize exported struct: {:?}", err)))?;
-
-        self.inner.write_u32::<LittleEndian>(obj.len() as u32)?;
-        self.inner.write_all(&obj)?;
-        self.inner.write_all(&hash(&obj)?)?;
-        Ok(())
-    }
-
-    pub fn finalize(mut self) -> Result<(), CommonError> {
-        self.inner.write_u32::<LittleEndian>(0)?; // END message
-        self.inner.flush()?;
-        Ok(())
-    }
-
-    pub fn into_inner(self) -> W {
-        self.inner
-    }
-}
-
-struct StructReader<R: Read> {
-    inner: R,
-}
-
-impl<R: Read> StructReader<R> {
-    pub fn new(inner: R) -> StructReader<R> {
-        StructReader {
-            inner,
-        }
-    }
-
-    pub fn read_next<T>(&mut self) -> Result<Option<T>, CommonError> where T: DeserializeOwned {
-        let len = self.inner.read_u32::<LittleEndian>().map_err(_map_io_err)? as usize;
-
-        if len > 0 {
-            let mut buf = vec![0u8; len + HASHBYTES];
-
-            self.inner.read_exact(&mut buf).map_err(_map_io_err)?;
-
-            let obj = &buf[..len];
-            let hashbytes = &buf[len..];
-
-            if hash(obj)? == hashbytes {
-                let obj: T = rmp_serde::from_slice(obj)
-                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize struct: {}", err)))?;
-                Ok(Some(obj))
-            } else {
-                Err(CommonError::InvalidStructure("Invalid hashbytes for serialized structure".to_string()))
-            }
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub fn into_inner(self) -> R {
-        self.inner
-    }
 }
 
 fn _map_io_err(e: io::Error) -> CommonError {
