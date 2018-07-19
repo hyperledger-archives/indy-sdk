@@ -2,8 +2,9 @@
 
 ## 1.6.0
 
-* Integrated tags based search to Anoncreds workflow:
+* Integrated tags based search in Anoncreds workflow:
     * Updated `indy_prover_store_credential` API function to create tags for a stored credential object.
+    * API functions `indy_prover_get_credentials` and `indy_prover_get_credentials_for_proof_req` marked as `Deprecated`.
     * Added two chains of APIs related to credentials search that allows fetching records by batches:
         * Simple credentials search - `indy_prover_search_credentials`
         * Search credentials for proof request - `indy_prover_search_credentials_for_proof_req`
@@ -18,6 +19,8 @@
     * Changed Pool connection logic to avoid unnecessary opened connections.
     * Changed Catch-up process to get all transactions from a single node.
     * Implemented logic of persisting of actual Pool Leger at the end of catch-up process and starting from this point on the next time.
+* Performed changes related to Libindy Payment API. The main idea of these changes is avoiding UTXO based payments and supporting non-UTXO based crypto payments and traditional payments like VISA. 
+* Removed EXPERIMENTAL notice from Libindy Payment API.
 * Bugfixes       
 
 Notes:

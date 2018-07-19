@@ -6,14 +6,15 @@ This document is written for developers using Libindy to provide necessary infor
 to simplify their transition to Libindy 1.6 from Libindy 1.5. If you are using older Libindy
 version you can check migration guides history:
 
-* [Libindy 1.3 to 1.4 migration](#libindy-1.3-to-1.4-migration)
-* [Libindy 1.4 to 1.5 migration](#libindy-1.4-to-1.5-migration)
+* [Libindy 1.3 to 1.4 migration](https://github.com/hyperledger/indy-sdk/blob/master/doc/migration-guide-1.3.0-1.4.0.md)
+* [Libindy 1.4 to 1.5 migration](https://github.com/hyperledger/indy-sdk/blob/master/doc/migration-guide-1.4.0-1.5.0.md)
 
 ## Table of contents
 
 * [Notes](#notes)
 * [Wallet API](#wallet-api)
 * [Anoncreds API](#anoncreds-api)
+* [Payments API](#payments-api)
 
 ## Notes
 
@@ -31,10 +32,19 @@ Functions from older version are listed in the left column, and the equivalent n
 
 ### Wallet API
 
-The main goal of changes performed in Wallet API is to avoid maintaining created wallet list on libindy side.
+The main idea of changes performed in Wallet API is to avoid maintaining created wallet list on Libindy side.
 It allows to access wallets from a cluster and solves some problems on mobile platforms.
-A significant part of Wallet APIs has been updated to accept wallet configuration as a single json 
-which provides wallet configuration, wallet storage configuration, and placement inside of storage.
+
+The following changes have been performed:
+* Changed Wallet export serialization:
+    * Use MsgPack instead of custom entities serialization to be more reliable and allow extend-ability in backward compatible way.
+    * Changed header format to be more reliable and allow extend-ability in backward compatible way.
+    * Use STOP message to make sure that there was no truncation of export file.
+    * Removed EXPERIMENTAL notice for import/export API endpoints.
+* Removed association between Wallet and Pool.
+* Removed persistence of Wallet configuration by Libindy.
+* A significant part of Wallet APIs has been updated to accept wallet configuration as a single json 
+which provides whole wallet configuration. 
 This wallet configuration json has the following format:
 ```
  {
@@ -53,6 +63,8 @@ This wallet configuration json has the following format:
    }
  }
 ```
+
+*WARNING* Wallet format of libindy v1.6 isn't compatible with a wallet format of libindy v1.5.
 
 <table>
   <tr>  
@@ -203,20 +215,40 @@ indy_list_wallets(command_handle: i32,
 
 ### Anoncreds API
 
-The main goal of changes performed in Anoncreds API is integration tags based search to Anoncreds workflow 
+The main idea of changes performed in Anoncreds API is integration tags based search to Anoncreds workflow 
 as it has done in Non-Secrets API.
  * Create tags for a stored object.
  * Provide efficient and flexible search for entities using WQL.
  * Avoid immediately returning all matched records.
  * Provide ability to fetch records by small batches.
 
+The following changes have been performed:
 * Updated behavior of `indy_prover_store_credential` API function to create tags for a stored credential object.
-* ```indy_prover_get_credentials``` endpoint is DEPRECATED and will be removed in the next release because immediately returns all fetched credentials.
-* ```indy_prover_get_credentials_for_proof_req``` endpoint is DEPRECATED and will be removed in the next release because immediately returns all fetched credentials.
+Here is the list of tags will be created:
+```
+{
+    "schema_id": <credential schema id>,
+    "schema_issuer_did": <credential schema issuer did>,
+    "schema_name": <credential schema name>,
+    "schema_version": <credential schema version>,
+    "issuer_did": <credential issuer did>,
+    "cred_def_id": <credential definition id>,
+    // for every attribute in <credential values>
+    "attr::<attribute name>::marker": "1", // to check existence of attribute
+    "attr::<attribute name>::value": <attribute raw value>, // to check value of attribute
+}
+```
+* ```indy_prover_get_credential``` was added to Libindy Anoncreds API to allow getting human readable credential by the given id.
+* Updated ```indy_prover_get_credentials``` and ```indy_prover_get_credentials_for_proof_req``` API functions to support tags based search.
+* ```indy_prover_get_credentials``` endpoint marked as DEPRECATED and will be removed in the next release because immediately returns all fetched credentials.
+* ```indy_prover_get_credentials_for_proof_req``` endpoint marked as DEPRECATED and will be removed in the next release because immediately returns all fetched credentials.
 * Added two chains of APIs related to credentials search that allows fetching records by batches:
      * Simple credentials search - `indy_prover_search_credentials` -> `indy_prover_fetch_credentials` -> `indy_prover_close_credentials_search`
      * Search credentials for proof request - `indy_prover_search_credentials_for_proof_req` -> `indy_prover_fetch_credentials_for_proof_req` -> `indy_prover_close_credentials_search_for_proof_req`
-* ```indy_prover_get_credential``` was added to Libindy Anoncreds API to allow getting human readable credential by the given id.
+
+**Note:** 
+* Functions ```indy_prover_get_credentials``` and ```indy_prover_get_credentials_for_proof_req``` support both formats of queries: old strict filter and WQL.
+* Functions ```indy_prover_search_credentials``` and ```indy_prover_search_credentials_for_proof_req``` support only WQL format of queries.
 
 References:
 
@@ -371,6 +403,9 @@ indy_prover_search_credentials_for_proof_req(
             cb: fn(xcommand_handle: i32, 
                    err: ErrorCode,
                    search_handle: i32))
+      <b>NOTE:</b> Added parameter <b>extra_query_json</b>.
+      Using this parameter you can pass an additional 
+      query to any attribute/predicate in a proof request.
       </pre>
     </td>
   </tr>
@@ -412,6 +447,283 @@ indy_prover_close_credentials_search_for_proof_req(
             search_handle: i32,
             cb: fn(command_handle_: i32, 
                    err: ErrorCode))
+      </pre>
+    </td>
+  </tr>
+</table>
+
+
+### Payments API
+
+The main idea of changes performed in Payment API is avoiding UTXO based payments approach. 
+Payment API has been updated to support non-UTXO based crypto payments and traditional payments like VISA.
+
+**Note:** Removed EXPERIMENTAL notice for API endpoints.
+
+The following changes have been performed:
+* Changed format of input and output parameters.
+* Changed format of result values of `indy_parse_response_with_fees` and `indy_parse_payment_response` API functions.
+* Renamed `indy_build_get_utxo_request` and `indy_parse_get_utxo_response` API functions.
+
+<table>
+  <tr>
+    <th>v1.5.0 - Payment API</th>
+    <th>v1.6.0 - Payment API</th>
+  </tr>  
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+            Modifies Indy request by adding information how to pay fees for this transaction
+            according to selected payment method
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_add_request_fees(
+        command_handle: i32,
+        wallet_handle: i32,
+        submitter_did: *const c_char,
+        req_json: *const c_char,
+        inputs_json: *const c_char,
+        outputs_json: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               req_with_fees_json: *const c_char,
+               payment_method: *const c_char))
+      </pre>
+    </td>
+    <td>
+<pre>
+Left the same but the format of outputs has been 
+changed to:
+[{
+  recipient: <str>, // payment address of recipient
+  amount: <int>, // amount
+  extra: <str>, // optional data
+}]
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+            Parses response for Indy request with fees
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_parse_response_with_fees(
+        command_handle: i32,
+        payment_method: *const c_char,
+        resp_json: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               utxo_json: *const c_char))
+      </pre>
+    </td>
+    <td>
+    <pre>
+indy_parse_response_with_fees(
+        command_handle: i32,
+        payment_method: *const c_char,
+        resp_json: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               receipts_json: *const c_char))
+<b>NOTE:</b> Format of result value has been changed to:
+[{
+   receipt: <str>, // receipt that can be used for 
+             payment referencing and verification
+   recipient: <str>, //payment address of recipient
+   amount: <int>, // amount
+   extra: <str>, // optional data from payment transaction
+}]
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+             Builds Indy request for getting sources list for payment address
+             according to this payment method
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_build_get_utxo_request(
+        command_handle: i32,
+        wallet_handle: i32,
+        submitter_did: *const c_char,
+        payment_address: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               get_utxo_txn_json: *const c_char,
+               payment_method: *const c_char))
+      </pre>
+    </td>
+    <td>
+    <pre>
+indy_build_get_sources_request(
+        command_handle: i32,
+        wallet_handle: i32,
+        submitter_did: *const c_char,
+        payment_address: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               get_sources_txn_json: *const c_char,
+               payment_method: *const c_char))
+    </pre>
+<b>NOTE:</b> Function and result value have been renamed.
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+             Parses response for Indy request for getting sources list
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_parse_get_utxo_response(
+        command_handle: i32,
+        payment_method: *const c_char,
+        resp_json: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               utxo_json: *const c_char))
+      </pre>
+    </td>
+    <td>
+    <pre>
+indy_parse_get_sources_response(
+        command_handle: i32,
+        payment_method: *const c_char,
+        resp_json: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               sources_json: *const c_char))
+<b>NOTE:</b> Function and result value have been renamed.
+<b>NOTE:</b> sources have the following format:
+[{
+   source: <str>, // source input
+   paymentAddress: <str>, //payment address for this source
+   amount: <int>, // amount
+   extra: <str>, // optional data from payment transaction
+}]
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+             Builds Indy request for doing payment according to this payment method
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_build_payment_req(
+        command_handle: i32,
+        wallet_handle: i32,
+        submitter_did: *const c_char,
+        inputs_json: *const c_char,
+        outputs_json: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               payment_req_json: *const c_char,
+               payment_method: *const c_char))
+      </pre>
+    </td>
+    <td>
+<pre>
+Left the same but the format of outputs has been 
+changed to:
+[{
+  recipient: <str>, // payment address of recipient
+  amount: <int>, // amount
+  extra: <str>, // optional data
+}]
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+             Builds Indy request for doing payment according to this payment method
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_parse_payment_response(
+            command_handle: i32,
+            payment_method: *const c_char,
+            resp_json: *const c_char,
+            cb: fn(command_handle_: i32,
+                   err: ErrorCode,
+                   utxo_json: *const c_char))
+      </pre>
+    </td>
+    <td>
+      <pre>
+indy_parse_payment_response(
+            command_handle: i32,
+            payment_method: *const c_char,
+            resp_json: *const c_char,
+            cb: fn(command_handle_: i32,
+                   err: ErrorCode,
+                   receipts_json: *const c_char))
+<b>NOTE:</b> Format of result value has been changed to:
+[{
+   receipt: <str>, // receipt that can be used for 
+             payment referencing and verification
+   recipient: <str>, //payment address of recipient
+   amount: <int>, // amount
+   extra: <str>, // optional data from payment transaction
+}]
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+             Builds Indy request for doing tokens minting according to this payment method
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_build_mint_req(
+        command_handle: i32,
+        wallet_handle: i32,
+        submitter_did: *const c_char,
+        outputs_json: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               mint_req_json: *const c_char,
+               payment_method: *const c_char))
+      </pre>
+    </td>
+    <td>
+<pre>
+Left the same but the format of outputs has been 
+changed to:
+[{
+  recipient: <str>, // payment address of recipient
+  amount: <int>, // amount
+  extra: <str>, // optional data
+}]
       </pre>
     </td>
   </tr>
