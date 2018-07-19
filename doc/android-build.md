@@ -57,7 +57,8 @@ Android emulator generally use x86 images
 ## How to build.
 - Unzip `libindy_android_<ARCH>_<VERSION>`
 - Copy the extracted folder to `indy-sdk/libnullpay/`
-- Run `android.build.sh -d arm <PATH_TO_LIBINDY>` to build libnullpay for arm
+- Run `indy-sdk/libnullpay/build-libnullpay-android.sh` to build libnullpay for arm, arm64 and x86
+- To build for individual architecture, run `indy-sdk/libnullpay/android.build.sh -d arm <PATH_TO_LIBINDY>` to build libnullpay for arm
     - Or set env variable `INDY_DIR=<PATH_TO_LIBINDY>` and run `android.build.sh -d arm` to generate for arm
     - Set env variable `INDY_DIR=<PATH_TO_LIBINDY>` and run `android.build.sh -d arm64` to generate for arm64
     - Set env variable `INDY_DIR=<PATH_TO_LIBINDY>` and run `android.build.sh -d x86` to generate for x86
