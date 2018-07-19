@@ -7,4 +7,4 @@ outputs = '[{"recipient": "pay:null:1", "amount":1, "extra":"1"}, {"recipient": 
 fees = '{"txnType1":1, "txnType2":2}'
 invalid_inputs = '["pay:null1"]'
 incompatible_inputs = '["pay:PAYMENT_METHOD_1:1", "pay:PAYMENT_METHOD_2:1"]'
-incompatible_outputs = '[{"recipient": "pay:PAYMENT_METHOD_1:1", "amount":1}, {"recipient+": "pay:PAYMENT_METHOD_2:1", "amount":1}]'
+incompatible_outputs = '[{"recipient": "pay:PAYMENT_METHOD_1:1", "amount":1}, {"recipient": "pay:PAYMENT_METHOD_2:1", "amount":1}]'
