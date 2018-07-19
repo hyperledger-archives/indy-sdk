@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 
-WORKDIR=${PWD}
-CI_DIR="../libindy/ci"
+WORKDIR="$( cd "$(dirname "$0")" ; pwd -P )"
+CI_DIR="${WORKDIR}/../libindy/ci"
 export ANDROID_BUILD_FOLDER="/tmp/android_build"
 DOWNLOAD_PREBUILTS="0"
 
@@ -90,6 +90,10 @@ setup_dependencies(){
             else
                 INDY_DIR=$2
             fi
+
+        if [ -d "${INDY_DIR}/lib" ] ; then
+            INDY_DIR="${INDY_DIR}/lib"
+        fi
      fi
 
 
