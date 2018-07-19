@@ -302,7 +302,7 @@ vcx_error_t vcx_credential_release(vcx_credential_handle_t credential_handle);
 vcx_error_t vcx_wallet_export(vcx_command_handle_t handle, const char *path, const char *backup_key, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 
 /** Import an encrypted file back into the wallet */
-vcx_error_t vcx_wallet_import(vcx_command_handle_t handle, const char *path, const char *backup_key, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
+vcx_error_t vcx_wallet_import(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 
 /** Add a record inside a wallet */
 vcx_error_t vcx_wallet_add_record(vcx_command_handle_t chandle, const char * type_, const char *record_id, const char *record_value, const char *tags_json, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));

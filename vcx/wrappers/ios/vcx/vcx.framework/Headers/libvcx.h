@@ -299,7 +299,7 @@ vcx_error_t vcx_credential_release(vcx_credential_handle_t credential_handle);
  */
 
 /** Export the wallet as an encrypted file */
-vcx_error_t vcx_wallet_export(vcx_command_handle_t handle, const char *path, const char *backup_key, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
+vcx_error_t vcx_wallet_export(vcx_command_handle_t handle, const char *config, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));
 
 /** Import an encrypted file back into the wallet */
 vcx_error_t vcx_wallet_import(vcx_command_handle_t handle, const char *path, const char *backup_key, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err));

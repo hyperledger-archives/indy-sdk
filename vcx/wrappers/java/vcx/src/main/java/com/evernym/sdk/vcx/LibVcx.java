@@ -455,7 +455,7 @@ public abstract class LibVcx {
         public int vcx_wallet_export(int command_handle, String path, String backup_key, Callback cb);
 
         /** Import an encrypted file back into the wallet */
-        public int vcx_wallet_import(int command_handle, String path, String backup_key, Callback cb);
+        public int vcx_wallet_import(int command_handle, String config, Callback cb);
 
         /** Add a record into wallet */
         public int vcx_wallet_add_record(int command_handle, String recordType, String recordId, String recordValue, String recordTag, Callback cb);
