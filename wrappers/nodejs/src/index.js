@@ -621,17 +621,17 @@ indy.parseResponseWithFees = function parseResponseWithFees (paymentMethod, resp
   return cb.promise
 }
 
-indy.buildGetUtxoRequest = function buildGetUtxoRequest (wh, submitterDid, paymentAddress, cb) {
+indy.buildGetSourcesRequest = function buildGetSourcesRequest (wh, submitterDid, paymentAddress, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
   })
-  capi.buildGetUtxoRequest(wh, submitterDid, paymentAddress, cb)
+  capi.buildGetSourcesRequest(wh, submitterDid, paymentAddress, cb)
   return cb.promise
 }
 
-indy.parseGetUtxoResponse = function parseGetUtxoResponse (paymentMethod, resp, cb) {
+indy.parseGetSourcesResponse = function parseGetSourcesResponse (paymentMethod, resp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.parseGetUtxoResponse(paymentMethod, toJson(resp), cb)
+  capi.parseGetSourcesResponse(paymentMethod, toJson(resp), cb)
   return cb.promise
 }
 

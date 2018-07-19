@@ -9,21 +9,21 @@ import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
 
-public class BuildGetUtxoRequestTest extends PaymentIntegrationTest {
+public class BuildGetSourcesRequestTest extends PaymentIntegrationTest {
 
 	@Test
-	public void testBuildGetUtxoRequestWorksForUnknownPaymentMethod() throws Exception {
+	public void testBuildGetSourcesRequestWorksForUnknownPaymentMethod() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(UnknownPaymentMethodException.class));
 
-		Payments.buildGetUtxoRequest(wallet, DID_TRUSTEE, paymentAddress).get();
+		Payments.buildGetSourcesRequest(wallet, DID_TRUSTEE, paymentAddress).get();
 	}
 
 	@Test
-	public void testBuildGetUtxoRequestWorksForInvalidPaymentAddress() throws Exception {
+	public void testBuildGetSourcesRequestWorksForInvalidPaymentAddress() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(IncompatiblePaymentException.class));
 
-		Payments.buildGetUtxoRequest(wallet, DID_TRUSTEE, "pay:null1").get();
+		Payments.buildGetSourcesRequest(wallet, DID_TRUSTEE, "pay:null1").get();
 	}
 }

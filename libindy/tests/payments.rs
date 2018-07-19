@@ -27,13 +27,13 @@ static EMPTY_ARRAY: &str = "[]";
 static PAYMENT_METHOD_NAME: &str = "null";
 static WRONG_PAYMENT_METHOD_NAME: &str = "null_payment_handler";
 static CORRECT_INPUTS: &str = r#"["pay:null:1", "pay:null:2"]"#;
-static CORRECT_OUTPUTS: &str = r#"[{"paymentAddress": "pay:null:1", "amount":1, "extra":"1"}, {"paymentAddress": "pay:null:2", "amount":2, "extra":"2"}]"#;
+static CORRECT_OUTPUTS: &str = r#"[{"recipient": "pay:null:1", "amount":1, "extra":"1"}, {"recipient": "pay:null:2", "amount":2, "extra":"2"}]"#;
 static INPUTS_UNKNOWN_METHOD: &str = r#"["pay:unknown_payment_method:1"]"#;
-static OUTPUTS_UNKNOWN_METHOD: &str = r#"[{"paymentAddress": "pay:unknown_payment_method:1", "amount":1, "extra":"1"}]"#;
+static OUTPUTS_UNKNOWN_METHOD: &str = r#"[{"recipient": "pay:unknown_payment_method:1", "amount":1, "extra":"1"}]"#;
 static INPUTS_INVALID_FORMAT: &str = r#"pay:null:1"#;
 static OUTPUTS_INVALID_FORMAT: &str = r#"["pay:null:1",1]"#;
 static INCOMPATIBLE_INPUTS: &str = r#"["pay:PAYMENT_METHOD_1:1", "pay:PAYMENT_METHOD_2:1"]"#;
-static INCOMPATIBLE_OUTPUTS: &str = r#"[{"paymentAddress": "pay:PAYMENT_METHOD_1:1", "amount":1}, {"paymentAddress": "pay:PAYMENT_METHOD_2:1", "amount":1}]"#;
+static INCOMPATIBLE_OUTPUTS: &str = r#"[{"recipient": "pay:PAYMENT_METHOD_1:1", "amount":1}, {"recipient": "pay:PAYMENT_METHOD_2:1", "amount":1}]"#;
 static EQUAL_INPUTS: &str = r#"["pay:null1:1", "pay:null1:1", "pay:null1:2"]"#;
 static EQUAL_OUTPUTS: &str = r#"[{"paymentAddress": "pay:null:1", "amount":1, "extra":"1"}, {"paymentAddress": "pay:null:1", "amount":2, "extra":"2"}, {"paymentAddress": "pay:null:2", "amount":2, "extra":"2"}]"#;
 static CORRECT_FEES: &str = r#"{"txnType1":1, "txnType2":2}"#;
@@ -562,7 +562,7 @@ mod medium_cases {
                                                  IDENTIFIER,
                                                  EMPTY_OBJECT,
                                                  r#"["pay:null1:1"]"#,
-                                                 r#"[{"paymentAddress": "pay:null2:1", "amount":1, "extra":"1"}]"#,
+                                                 r#"[{"recipient": "pay:null2:1", "amount":1, "extra":"1"}]"#,
             ).unwrap_err();
 
             assert_eq!(err, ErrorCode::PaymentIncompatibleMethodsError);
@@ -988,7 +988,7 @@ mod medium_cases {
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
             let inputs = r#"["pay:PAYMENT_METHOD_1:1"]"#;
-            let outputs = r#"[{"paymentAddress": "pay:PAYMENT_METHOD_2:1", "amount": 1}]"#;
+            let outputs = r#"[{"recipient": "pay:PAYMENT_METHOD_2:1", "amount": 1}]"#;
 
             let res = payments::build_payment_req(wallet_handle,
                                                   IDENTIFIER,
@@ -1215,7 +1215,7 @@ mod medium_cases {
             TestUtils::cleanup_storage();
             payments::mock_method::init();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
-            let outputs = r#"[{"paymentAddress": "pay:null", "amount":1, "extra":"1"}]"#;
+            let outputs = r#"[{"recipient": "pay:null", "amount":1, "extra":"1"}]"#;
 
             let res = payments::build_mint_req(wallet_handle,
                                                IDENTIFIER,

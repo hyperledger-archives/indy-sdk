@@ -470,7 +470,6 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 /// Format of inputs is specific for payment method. Usually it should reference payment transaction
 /// with at least one output that corresponds to payment address that user owns.
 ///
-///
 /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
 /// in the future releases.
 ///

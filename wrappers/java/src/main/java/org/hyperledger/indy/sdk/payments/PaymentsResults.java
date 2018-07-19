@@ -24,19 +24,19 @@ public class PaymentsResults {
     }
 
     /**
-     * Result from calling buildGetUtxoRequest
+     * Result from calling buildGetSourcesRequest
      */
-    public static class BuildGetUtxoRequestResult {
-        private String getUtxoTxnJson;
+    public static class BuildGetSourcesRequestResult {
+        private String getSourcesTxnJson;
         private String paymentMethod;
 
-        public BuildGetUtxoRequestResult(String getUtxoTxnJson, String paymentMethod) {
-            this.getUtxoTxnJson = getUtxoTxnJson;
+        public BuildGetSourcesRequestResult(String getSourcesTxnJson, String paymentMethod) {
+            this.getSourcesTxnJson = getSourcesTxnJson;
             this.paymentMethod = paymentMethod;
         }
 
-        public String getGetUtxoTxnJson() {
-            return getUtxoTxnJson;
+        public String getGetSourcesTxnJson() {
+            return getSourcesTxnJson;
         }
 
         public String getPaymentMethod() {
