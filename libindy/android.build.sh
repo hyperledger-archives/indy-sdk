@@ -107,10 +107,11 @@ package_library(){
     statically_link_dependencies_with_libindy &&
     pushd ${LIBINDY_WORKDIR}
         rm -f libindy_android_${TARGET_ARCH}.zip
+        cp -rf ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH} .
         if [ -z "${LIBINDY_VERSION}" ]; then
-            zip -r libindy_android_${TARGET_ARCH}.zip ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/*
+            zip -r libindy_android_${TARGET_ARCH}.zip libindy_${TARGET_ARCH}
         else
-            zip -r libindy_android_${TARGET_ARCH}_${LIBINDY_VERSION}.zip ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/*
+            zip -r libindy_android_${TARGET_ARCH}_${LIBINDY_VERSION}.zip libindy_${TARGET_ARCH}
         fi
 
     popd
