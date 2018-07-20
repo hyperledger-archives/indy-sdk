@@ -18,6 +18,7 @@ pub type AddRequestFeesCB = extern fn(command_handle: i32,
                                       req_json: *const c_char,
                                       inputs_json: *const c_char,
                                       outputs_json: *const c_char,
+                                      extra: *const c_char,
                                       cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
@@ -39,6 +40,7 @@ pub type BuildPaymentReqCB = extern fn(command_handle: i32,
                                        submitter_did: *const c_char,
                                        inputs_json: *const c_char,
                                        outputs_json: *const c_char,
+                                       extra: *const c_char,
                                        cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
@@ -49,6 +51,7 @@ pub type BuildMintReqCB = extern fn(command_handle: i32,
                                     wallet_handle: i32,
                                     submitter_did: *const c_char,
                                     outputs_json: *const c_char,
+                                    extra: *const c_char,
                                     cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,

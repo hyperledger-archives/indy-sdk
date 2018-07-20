@@ -192,8 +192,9 @@ public class Payments extends IndyJava.API {
      *   [{
      *     recipient: <str>, // payment address of recipient
      *     amount: <int>, // amount
-     *     extra: <str>, // optional data
      *   }]
+     * extra: // optional information for payment operation
+     *
      * @return modified Indy request with added fees info
      * @throws IndyException
      */
@@ -202,7 +203,8 @@ public class Payments extends IndyJava.API {
             String submitterDid,
             String reqJson,
             String inputsJson,
-            String outputsJson
+            String outputsJson,
+            String extra
     ) throws IndyException {
         ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(reqJson, "reqJson");
@@ -221,6 +223,7 @@ public class Payments extends IndyJava.API {
                 reqJson,
                 inputsJson,
                 outputsJson,
+                extra,
                 addRequestFeesCb);
 
         checkResult(result);
@@ -323,8 +326,9 @@ public class Payments extends IndyJava.API {
      *   [{
      *     recipient: <str>, // payment address of recipient
      *     amount: <int>, // amount
-     *     extra: <str>, // optional data
      *   }]
+     * extra: // optional information for payment operation
+     *
      * @return Indy request for doing payment
      * @throws IndyException
      */
@@ -332,7 +336,8 @@ public class Payments extends IndyJava.API {
             Wallet wallet,
             String submitterDid,
             String inputsJson,
-            String outputsJson
+            String outputsJson,
+            String extra
     ) throws IndyException {
         ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(inputsJson, "inputsJson");
@@ -349,6 +354,7 @@ public class Payments extends IndyJava.API {
                 submitterDid,
                 inputsJson,
                 outputsJson,
+                extra,
                 buildPaymentReqCb);
 
         checkResult(result);
@@ -389,13 +395,16 @@ public class Payments extends IndyJava.API {
      *     amount: <int>, // amount
      *     extra: <str>, // optional data
      *   }]
+     * extra: // optional information for payment operation
+     *
      * @return Indy request for doing minting
      * @throws IndyException
      */
     public static CompletableFuture<BuildMintReqResult> buildMintRequest(
             Wallet wallet,
             String submitterDid,
-            String outputsJson
+            String outputsJson,
+            String extra
     ) throws IndyException {
         ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(outputsJson, "outputsJson");
@@ -410,6 +419,7 @@ public class Payments extends IndyJava.API {
                 walletHandle,
                 submitterDid,
                 outputsJson,
+                extra,
                 buildMintReqCb);
 
         checkResult(result);

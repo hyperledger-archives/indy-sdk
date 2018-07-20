@@ -607,11 +607,11 @@ indy.listPaymentAddresses = function listPaymentAddresses (wh, cb) {
   return cb.promise
 }
 
-indy.addRequestFees = function addRequestFees (wh, submitterDid, req, inputs, outputs, cb) {
+indy.addRequestFees = function addRequestFees (wh, submitterDid, req, inputs, outputs, extra, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
   })
-  capi.addRequestFees(wh, submitterDid, toJson(req), toJson(inputs), toJson(outputs), cb)
+  capi.addRequestFees(wh, submitterDid, toJson(req), toJson(inputs), toJson(outputs), extra, cb)
   return cb.promise
 }
 
@@ -635,11 +635,11 @@ indy.parseGetPaymentSourcesResponse = function parseGetPaymentSourcesResponse (p
   return cb.promise
 }
 
-indy.buildPaymentReq = function buildPaymentReq (wh, submitterDid, inputs, outputs, cb) {
+indy.buildPaymentReq = function buildPaymentReq (wh, submitterDid, inputs, outputs, extra, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
   })
-  capi.buildPaymentReq(wh, submitterDid, toJson(inputs), toJson(outputs), cb)
+  capi.buildPaymentReq(wh, submitterDid, toJson(inputs), toJson(outputs), extra, cb)
   return cb.promise
 }
 

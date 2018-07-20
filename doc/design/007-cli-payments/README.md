@@ -57,7 +57,7 @@ Returns:
 Send payment transaction
 
 ```indy-cli
-indy> ledger payment inputs=<source-1>,..,<source-n> outputs=(<recipient-0>,<amount>,<extra>),..,(<recipient-n>,<amount>,<extra>)
+indy> ledger payment inputs=<source-1>,..,<source-n> outputs=(<recipient-0>,<amount>),..,(<recipient-n>,<amount>) [extra=<extra>]
 ```
 
 Returns:
@@ -83,7 +83,7 @@ Returns:
 Prepare MINT transaction as json.
 
 ```indy-cli
-indy> ledger mint-prepare outputs=(<pay-addr-0>,<amount-0>,<extra-0>),..,(<pay-addr-n>,<amount-n>,<extra-n>)
+indy> ledger mint-prepare outputs=(<pay-addr-0>,<amount-0>),..,(<pay-addr-n>,<amount-n>) [extra=<extra>]
 ```
 
 Returns:
@@ -139,7 +139,7 @@ Returns:
 All commands to send domain transactions require new optional params to add transactions fees:
 
 ```indy-cli
-[fees_inputs=<source-1>,..,<source-n>] [fees_outputs=(<recipient-0>,<amount>,<extra>),..,(<recipient-n>,<amount>,<extra>)]
+[fees_inputs=<source-1>,..,<source-n>] [fees_outputs=(<recipient-0>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 Note that "source-n" is identifier presented in "Source" column of ```ledger get-sources``` command output

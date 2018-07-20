@@ -57,8 +57,8 @@ pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for payment operation
 ///
 /// #Returns
 /// req_with_fees_json - modified Indy request with added fees info
@@ -68,6 +68,7 @@ pub type AddRequestFeesCB = extern fn(command_handle: i32,
                                       req_json: *const c_char,
                                       inputs_json: *const c_char,
                                       outputs_json: *const c_char,
+                                      extra: *const c_char,
                                       cb: Option<extern fn(command_handle_: i32,
                                                            err: ErrorCode,
                                                            req_with_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
@@ -152,8 +153,8 @@ pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for payment operation
 ///
 /// #Returns
 /// payment_req_json - Indy request for doing payment
@@ -162,6 +163,7 @@ pub type BuildPaymentReqCB = extern fn(command_handle: i32,
                                        submitter_did: *const c_char,
                                        inputs_json: *const c_char,
                                        outputs_json: *const c_char,
+                                       extra: *const c_char,
                                        cb: Option<extern fn(command_handle_: i32,
                                                             err: ErrorCode,
                                                             payment_req_json: *const c_char) -> ErrorCode>) -> ErrorCode;
@@ -198,8 +200,8 @@ pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for payment operation
 ///
 /// #Returns
 /// mint_req_json - Indy request for doing minting
@@ -207,6 +209,7 @@ pub type BuildMintReqCB = extern fn(command_handle: i32,
                                     wallet_handle: i32,
                                     submitter_did: *const c_char,
                                     outputs_json: *const c_char,
+                                    extra: *const c_char,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
                                                          mint_req_json: *const c_char) -> ErrorCode>) -> ErrorCode;
@@ -474,8 +477,8 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for payment operation
 ///
 /// #Returns
 /// req_with_fees_json - modified Indy request with added fees info
@@ -487,18 +490,22 @@ pub extern fn indy_add_request_fees(command_handle: i32,
                                     req_json: *const c_char,
                                     inputs_json: *const c_char,
                                     outputs_json: *const c_char,
+                                    extra: *const c_char,
                                     cb: Option<extern fn(command_handle_: i32,
                                                          err: ErrorCode,
                                                          req_with_fees_json: *const c_char,
                                                          payment_method: *const c_char)>) -> ErrorCode {
-    trace!("indy_add_request_fees: >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}", wallet_handle, submitter_did, req_json, inputs_json, outputs_json);
+    trace!("indy_add_request_fees: >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
+           wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra);
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(req_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam6);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
+    check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam7);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
-    trace!("indy_add_request_fees: entities >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}", wallet_handle, submitter_did, req_json, inputs_json, outputs_json);
+    trace!("indy_add_request_fees: entities >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
+           wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra);
 
     let result =
         CommandExecutor::instance().send(
@@ -509,6 +516,7 @@ pub extern fn indy_add_request_fees(command_handle: i32,
                     req_json,
                     inputs_json,
                     outputs_json,
+                    extra,
                     Box::new(move |result| {
                         let (err, req_with_fees_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
                         trace!("indy_add_request_fees: req_with_fees_json: {:?}, payment_method: {:?}", req_with_fees_json, payment_method);
@@ -694,8 +702,8 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for payment operation
 ///
 /// #Returns
 /// payment_req_json - Indy request for doing payment
@@ -706,17 +714,21 @@ pub extern fn indy_build_payment_req(command_handle: i32,
                                      submitter_did: *const c_char,
                                      inputs_json: *const c_char,
                                      outputs_json: *const c_char,
+                                     extra: *const c_char,
                                      cb: Option<extern fn(command_handle_: i32,
                                                           err: ErrorCode,
                                                           payment_req_json: *const c_char,
                                                           payment_method: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_payment_req: >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}", wallet_handle, submitter_did, inputs_json, outputs_json);
+    trace!("indy_build_payment_req: >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
+           wallet_handle, submitter_did, inputs_json, outputs_json, extra);
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam5);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+    check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam6);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
-    trace!("indy_build_payment_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}", wallet_handle, submitter_did, inputs_json, outputs_json);
+    trace!("indy_build_payment_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
+           wallet_handle, submitter_did, inputs_json, outputs_json, extra);
 
     let result =
         CommandExecutor::instance().send(
@@ -726,6 +738,7 @@ pub extern fn indy_build_payment_req(command_handle: i32,
                     submitter_did,
                     inputs_json,
                     outputs_json,
+                    extra,
                     Box::new(move |result| {
                         let (err, payment_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
                         trace!("indy_build_payment_req: payment_req_json: {:?}, payment_method: {:?}", payment_req_json, payment_method);
@@ -804,8 +817,8 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for mint operation
 ///
 /// #Returns
 /// mint_req_json - Indy request for doing minting
@@ -815,16 +828,18 @@ pub extern fn indy_build_mint_req(command_handle: i32,
                                   wallet_handle: i32,
                                   submitter_did: *const c_char,
                                   outputs_json: *const c_char,
+                                  extra: *const c_char,
                                   cb: Option<extern fn(command_handle_: i32,
                                                        err: ErrorCode,
                                                        mint_req_json: *const c_char,
                                                        payment_method: *const c_char)>) -> ErrorCode {
-    trace!("indy_build_mint_req: >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}", wallet_handle, submitter_did, outputs_json);
+    trace!("indy_build_mint_req: >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam4);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam5);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
-    trace!("indy_build_mint_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}", wallet_handle, submitter_did, outputs_json);
+    trace!("indy_build_mint_req: entities >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
 
     let result =
         CommandExecutor::instance().send(
@@ -833,6 +848,7 @@ pub extern fn indy_build_mint_req(command_handle: i32,
                     wallet_handle,
                     submitter_did,
                     outputs_json,
+                    extra,
                     Box::new(move |result| {
                         let (err, mint_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
                         trace!("indy_build_mint_req: mint_req_json: {:?}, payment_method: {:?}", mint_req_json, payment_method);

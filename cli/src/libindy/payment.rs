@@ -2,6 +2,7 @@ use super::ErrorCode;
 
 use libc::c_char;
 use std::ffi::CString;
+use std::ptr::null;
 
 pub struct Payment {}
 
@@ -35,13 +36,14 @@ impl Payment {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn add_request_fees(wallet_handle: i32, submitter_did: &str, req_json: &str, inputs_json: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
+    pub fn add_request_fees(wallet_handle: i32, submitter_did: &str, req_json: &str, inputs_json: &str, outputs_json: &str, extra: Option<&str>) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let req_json = CString::new(req_json).unwrap();
         let inputs_json = CString::new(inputs_json).unwrap();
         let outputs_json = CString::new(outputs_json).unwrap();
+        let extra_str = extra.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_add_request_fees(command_handle,
@@ -50,6 +52,7 @@ impl Payment {
                                   req_json.as_ptr(),
                                   inputs_json.as_ptr(),
                                   outputs_json.as_ptr(),
+                                  if extra.is_some() { extra_str.as_ptr() } else { null() },
                                   cb)
         };
 
@@ -92,13 +95,14 @@ impl Payment {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_payment_req(wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str) -> Result<(String, String), ErrorCode> {
+    pub fn build_payment_req(wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str, extra: Option<&str>) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
             super::callbacks::_closure_to_cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let inputs = CString::new(inputs).unwrap();
         let outputs = CString::new(outputs).unwrap();
+        let extra_str = extra.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_build_payment_req(command_handle,
@@ -106,6 +110,7 @@ impl Payment {
                                    submitter_did.as_ptr(),
                                    inputs.as_ptr(),
                                    outputs.as_ptr(),
+                                   if extra.is_some() { extra_str.as_ptr() } else { null() },
                                    cb)
         };
 
@@ -129,18 +134,20 @@ impl Payment {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_mint_req(wallet_handle: i32, submitter_did: &str, outputs_json: &str) -> Result<(String, String), ErrorCode> {
+    pub fn build_mint_req(wallet_handle: i32, submitter_did: &str, outputs_json: &str, extra: Option<&str>) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
             super::callbacks::_closure_to_cb_ec_string_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
         let outputs_json = CString::new(outputs_json).unwrap();
+        let extra_str = extra.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_build_mint_req(command_handle,
                                 wallet_handle,
                                 submitter_did.as_ptr(),
                                 outputs_json.as_ptr(),
+                                if extra.is_some() { extra_str.as_ptr() } else { null() },
                                 cb)
         };
 
@@ -244,6 +251,7 @@ extern {
                              req_json: *const c_char,
                              inputs_json: *const c_char,
                              outputs_json: *const c_char,
+                             extra: *const c_char,
                              cb: Option<extern fn(command_handle_: i32,
                                                   err: ErrorCode,
                                                   req_with_fees_json: *const c_char,
@@ -273,6 +281,7 @@ extern {
                               submitter_did: *const c_char,
                               inputs_json: *const c_char,
                               outputs_json: *const c_char,
+                              extra: *const c_char,
                               cb: Option<extern fn(command_handle_: i32,
                                                    err: ErrorCode,
                                                    payment_req_json: *const c_char,
@@ -291,6 +300,7 @@ extern {
                            wallet_handle: i32,
                            submitter_did: *const c_char,
                            outputs_json: *const c_char,
+                           extra: *const c_char,
                            cb: Option<extern fn(command_handle_: i32,
                                                 err: ErrorCode,
                                                 mint_req_json: *const c_char,
