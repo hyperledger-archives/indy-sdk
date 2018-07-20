@@ -118,14 +118,14 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")] //TODO Not implemented yet
+        #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_config() {
             TestUtils::cleanup_storage();
 
             PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let pool_name = "open_pool_ledger_works_for_config";
-            let config = r#"{"refresh_on_open": true}"#;
+            let config = r#"{"timeout": 20}"#;
 
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
@@ -481,12 +481,11 @@ mod medium_cases {
         }
 
         #[test]
-        #[ignore]
-        #[cfg(feature = "local_nodes_pool")] //TODO Not implemented yet
+        #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_invalid_config() {
             TestUtils::cleanup_storage();
             let name = "pool_open";
-            let config = r#"{"refresh_on_open": "true"}"#;
+            let config = r#"{"timeout": "true"}"#;
 
             PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
