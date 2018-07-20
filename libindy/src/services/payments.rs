@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::ffi::{CString, NulError};
 use std::collections::HashSet;
+use std::ptr::null;
 
 
 pub struct PaymentsService {
@@ -98,8 +99,9 @@ impl PaymentsService {
         res
     }
 
-    pub fn add_request_fees(&self, cmd_handle: i32, method_type: &str, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str) -> Result<(), PaymentsError> {
-        trace!("add_request_fees >>> method_type: {:?}, wallet_handle: {:?}, submitter_did: {:?}, req: {:?}, inputs: {:?}, outputs: {:?}", method_type, wallet_handle, submitter_did, req, inputs, outputs);
+    pub fn add_request_fees(&self, cmd_handle: i32, method_type: &str, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str, extra: Option<&str>) -> Result<(), PaymentsError> {
+        trace!("add_request_fees >>> method_type: {:?}, wallet_handle: {:?}, submitter_did: {:?}, req: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}",
+               method_type, wallet_handle, submitter_did, req, inputs, outputs, extra);
         let add_request_fees: AddRequestFeesCB = self.methods.borrow().get(method_type)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", method_type)))?.add_request_fees;
 
@@ -107,8 +109,16 @@ impl PaymentsService {
         let req = CString::new(req)?;
         let inputs = CString::new(inputs)?;
         let outputs = CString::new(outputs)?;
+        let extra_str = extra.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
-        let err = add_request_fees(cmd_handle, wallet_handle, submitter_did.as_ptr(), req.as_ptr(), inputs.as_ptr(), outputs.as_ptr(), cbs::add_request_fees_cb(cmd_handle));
+        let err = add_request_fees(cmd_handle,
+                                   wallet_handle,
+                                   submitter_did.as_ptr(),
+                                   req.as_ptr(),
+                                   inputs.as_ptr(),
+                                   outputs.as_ptr(),
+                                   if extra.is_some() { extra_str.as_ptr() } else { null() },
+                                   cbs::add_request_fees_cb(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
 
@@ -165,16 +175,23 @@ impl PaymentsService {
         res
     }
 
-    pub fn build_payment_req(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str) -> Result<(), PaymentsError> {
-        trace!("build_payment_req >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, inputs: {:?}, outputs: {:?}", type_, wallet_handle, submitter_did, inputs, outputs);
+    pub fn build_payment_req(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str, extra: Option<&str>) -> Result<(), PaymentsError> {
+        trace!("build_payment_req >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}", type_, wallet_handle, submitter_did, inputs, outputs, extra);
         let build_payment_req: BuildPaymentReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_payment_req;
 
         let submitter_did = CString::new(submitter_did)?;
         let inputs = CString::new(inputs)?;
         let outputs = CString::new(outputs)?;
+        let extra_str = extra.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
-        let err = build_payment_req(cmd_handle, wallet_handle, submitter_did.as_ptr(), inputs.as_ptr(), outputs.as_ptr(), cbs::build_payment_req_cb(cmd_handle));
+        let err = build_payment_req(cmd_handle,
+                                    wallet_handle,
+                                    submitter_did.as_ptr(),
+                                    inputs.as_ptr(),
+                                    outputs.as_ptr(),
+                                    if extra.is_some() { extra_str.as_ptr() } else { null() },
+                                    cbs::build_payment_req_cb(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
 
@@ -199,15 +216,21 @@ impl PaymentsService {
         res
     }
 
-    pub fn build_mint_req(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, outputs: &str) -> Result<(), PaymentsError> {
-        trace!("build_mint_req >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, outputs: {:?}", type_, wallet_handle, submitter_did, outputs);
+    pub fn build_mint_req(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, outputs: &str, extra: Option<&str>) -> Result<(), PaymentsError> {
+        trace!("build_mint_req >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, outputs: {:?}, extra: {:?}", type_, wallet_handle, submitter_did, outputs, extra);
         let build_mint_req: BuildMintReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_mint_req;
 
         let submitter_did = CString::new(submitter_did)?;
         let outputs = CString::new(outputs)?;
+        let extra_str = extra.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
-        let err = build_mint_req(cmd_handle, wallet_handle, submitter_did.as_ptr(), outputs.as_ptr(), cbs::build_mint_req_cb(cmd_handle));
+        let err = build_mint_req(cmd_handle,
+                                 wallet_handle,
+                                 submitter_did.as_ptr(),
+                                 outputs.as_ptr(),
+                                 if extra.is_some() { extra_str.as_ptr() } else { null() },
+                                 cbs::build_mint_req_cb(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
 
@@ -444,14 +467,14 @@ mod cbs {
     }
 
     pub fn build_get_payment_sources_request_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
-                                                                             err: ErrorCode,
-                                                                             c_str: *const c_char) -> ErrorCode> {
+                                                                                     err: ErrorCode,
+                                                                                     c_str: *const c_char) -> ErrorCode> {
         send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetPaymentSourcesRequestAck(cmd_handle, result)))
     }
 
     pub fn parse_get_payment_sources_response_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
-                                                                              err: ErrorCode,
-                                                                              c_str: *const c_char) -> ErrorCode> {
+                                                                                      err: ErrorCode,
+                                                                                      c_str: *const c_char) -> ErrorCode> {
         send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetPaymentSourcesResponseAck(cmd_handle, result)))
     }
 

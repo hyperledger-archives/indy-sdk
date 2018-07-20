@@ -127,8 +127,8 @@ extern "C" {
     ///   [{
     ///     recipient: <str>, // payment address of recipient
     ///     amount: <int>, // amount
-    ///     extra: <str>, // optional data
     ///   }]
+    /// extra: // optional information for payment operation
     ///
     /// #Returns
     /// req_with_fees_json - modified Indy request with added fees info
@@ -140,6 +140,7 @@ extern "C" {
                                               const char *  req_json,
                                               const char *  inputs_json,
                                               const char *  outputs_json,
+                                              const char *  extra,
 
                                               void           (*cb)(indy_handle_t xcommand_handle,
                                                                    indy_error_t  err,
@@ -242,8 +243,8 @@ extern "C" {
     ///   [{
     ///     recipient: <str>, // payment address of recipient
     ///     amount: <int>, // amount
-    ///     extra: <str>, // optional data
     ///   }]
+    /// extra: // optional information for payment operation
     ///
     /// #Returns
     /// payment_req_json - Indy request for doing payment
@@ -254,6 +255,7 @@ extern "C" {
                                                const char *  submitter_did,
                                                const char *  inputs_json,
                                                const char *  outputs_json,
+                                               const char *  extra,
 
                                                void           (*cb)(indy_handle_t xcommand_handle,
                                                                     indy_error_t  err,
@@ -298,8 +300,8 @@ extern "C" {
     ///   [{
     ///     recipient: <str>, // payment address of recipient
     ///     amount: <int>, // amount
-    ///     extra: <str>, // optional data
     ///   }]
+    /// extra: // optional information for payment operation
     ///
     /// #Returns
     /// mint_req_json - Indy request for doing minting
@@ -309,6 +311,7 @@ extern "C" {
                                             indy_handle_t wallet_handle,
                                             const char *  submitter_did,
                                             const char *  outputs_json,
+                                            const char *  extra,
 
                                             void           (*cb)(indy_handle_t xcommand_handle,
                                                                  indy_error_t  err,

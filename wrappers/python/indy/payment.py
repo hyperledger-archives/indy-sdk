@@ -85,7 +85,8 @@ async def add_request_fees(wallet_handle: int,
                            submitter_did: str,
                            req_json: str,
                            inputs_json: str,
-                           outputs_json: str) -> (str, str):
+                           outputs_json: str,
+                           extra: Optional[str]) -> (str, str):
     """
     Modifies Indy request by adding information how to pay fees for this transaction
     according to this payment method.
@@ -109,8 +110,9 @@ async def add_request_fees(wallet_handle: int,
       [{
         recipient: <str>, // payment address of recipient
         amount: <int>, // amount
-        extra: <str>, // optional data
       }]
+    :param extra: // optional information for payment operation
+
     :return:
         req_with_fees_json: modified Indy request with added fees info,
         payment_method: used payment method
@@ -118,12 +120,14 @@ async def add_request_fees(wallet_handle: int,
 
     logger = logging.getLogger(__name__)
     logger.debug(
-        "add_request_fees: >>> wallet_handle: %r, submitter_did: %r, req_json: %r, inputs_json: %r, outputs_json: %r",
+        "add_request_fees: >>> wallet_handle: %r, submitter_did: %r, req_json: %r, inputs_json: %r, outputs_json: %r, "
+        "extra: %r",
         wallet_handle,
         submitter_did,
         req_json,
         inputs_json,
-        outputs_json)
+        outputs_json,
+        extra)
 
     if not hasattr(add_request_fees, "cb"):
         logger.debug("add_request_fees: Creating callback")
@@ -134,6 +138,7 @@ async def add_request_fees(wallet_handle: int,
     c_req_json = c_char_p(req_json.encode('utf-8'))
     c_inputs_json = c_char_p(inputs_json.encode('utf-8'))
     c_outputs_json = c_char_p(outputs_json.encode('utf-8'))
+    c_extra = c_char_p(extra.encode('utf-8')) if extra is not None else None
 
     (req_with_fees_json, payment_method) = await do_call('indy_add_request_fees',
                                                          c_wallet_handle,
@@ -141,6 +146,7 @@ async def add_request_fees(wallet_handle: int,
                                                          c_req_json,
                                                          c_inputs_json,
                                                          c_outputs_json,
+                                                         c_extra,
                                                          add_request_fees.cb)
     res = (req_with_fees_json.decode(), payment_method.decode())
 
@@ -268,7 +274,8 @@ async def parse_get_payment_sources_response(payment_method: str,
 async def build_payment_req(wallet_handle: int,
                             submitter_did: str,
                             inputs_json: str,
-                            outputs_json: str) -> (str, str):
+                            outputs_json: str,
+                            extra: Optional[str]) -> (str, str):
     """
     Builds Indy request for doing payment
     according to this payment method.
@@ -287,18 +294,21 @@ async def build_payment_req(wallet_handle: int,
       [{
         recipient: <str>, // payment address of recipient
         amount: <int>, // amount
-        extra: <str>, // optional data
       }]
+    :param extra: // optional information for payment operation
+
     :return: payment_req_json: Indy request for doing payment
              payment_method: used payment method
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_payment_req: >>> wallet_handle: %r, submitter_did: %r, inputs_json: %r, outputs_json: %r",
+    logger.debug("build_payment_req: >>> wallet_handle: %r, submitter_did: %r, inputs_json: %r, outputs_json: %r,"
+                 " extra: %r",
                  wallet_handle,
                  submitter_did,
                  inputs_json,
-                 outputs_json)
+                 outputs_json,
+                 extra)
 
     if not hasattr(build_payment_req, "cb"):
         logger.debug("build_payment_req: Creating callback")
@@ -308,12 +318,14 @@ async def build_payment_req(wallet_handle: int,
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_inputs_json = c_char_p(inputs_json.encode('utf-8'))
     c_outputs_json = c_char_p(outputs_json.encode('utf-8'))
+    c_extra = c_char_p(extra.encode('utf-8')) if extra is not None else None
 
     (payment_req_json, payment_method) = await do_call('indy_build_payment_req',
                                                        c_wallet_handle,
                                                        c_submitter_did,
                                                        c_inputs_json,
                                                        c_outputs_json,
+                                                       c_extra,
                                                        build_payment_req.cb)
     res = (payment_req_json.decode(), payment_method.decode())
 
@@ -362,7 +374,8 @@ async def parse_payment_response(payment_method: str,
 
 async def build_mint_req(wallet_handle: int,
                          submitter_did: str,
-                         outputs_json: str) -> (str, str):
+                         outputs_json: str,
+                         extra: Optional[str]) -> (str, str):
     """
     Builds Indy request for doing minting
     according to this payment method.
@@ -375,15 +388,18 @@ async def build_mint_req(wallet_handle: int,
         amount: <int>, // amount
         extra: <str>, // optional data
       }]
+    :param extra: // optional information for payment operation
+
     :return: mint_req_json: Indy request for doing minting
              payment_method: used payment method
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_mint_req: >>> wallet_handle: %r, submitter_did: %r, outputs_json: %r",
+    logger.debug("build_mint_req: >>> wallet_handle: %r, submitter_did: %r, outputs_json: %r, extra: %r",
                  wallet_handle,
                  submitter_did,
-                 outputs_json)
+                 outputs_json,
+                 extra)
 
     if not hasattr(build_mint_req, "cb"):
         logger.debug("build_mint_req: Creating callback")
@@ -392,11 +408,13 @@ async def build_mint_req(wallet_handle: int,
     c_wallet_handle = c_int32(wallet_handle)
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_outputs_json = c_char_p(outputs_json.encode('utf-8'))
+    c_extra = c_char_p(extra.encode('utf-8')) if extra is not None else None
 
     (mint_req_json, payment_method) = await do_call('indy_build_mint_req',
                                                     c_wallet_handle,
                                                     c_submitter_did,
                                                     c_outputs_json,
+                                                    c_extra,
                                                     build_mint_req.cb)
     res = (mint_req_json.decode(), payment_method.decode())
 

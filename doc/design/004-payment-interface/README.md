@@ -133,8 +133,8 @@ type CreatePaymentAddressCB = extern fn(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for payment operation
 ///
 /// #Returns
 /// req_with_fees_json - modified Indy request with added fees info
@@ -228,8 +228,8 @@ type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for payment operation
 ///
 /// #Returns
 /// payment_req_json - Indy request for doing payment
@@ -274,8 +274,8 @@ type ParsePaymentResponseCB = extern fn(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for payment operation
 ///
 /// #Returns
 /// mint_req_json - Indy request for doing minting
@@ -421,8 +421,8 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for payment operation
 ///
 /// #Returns
 /// req_with_fees_json - modified Indy request with added fees info
@@ -524,8 +524,8 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for payment operation
 ///
 /// #Returns
 /// payment_req_json - Indy request for doing payment
@@ -574,8 +574,8 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 ///   [{
 ///     recipient: <str>, // payment address of recipient
 ///     amount: <int>, // amount
-///     extra: <str>, // optional data
 ///   }]
+/// extra: // optional information for mint operation
 ///
 /// #Returns
 /// mint_req_json - Indy request for doing minting

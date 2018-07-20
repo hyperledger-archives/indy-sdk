@@ -61,8 +61,8 @@
    [{
      recipient: <str>, // payment address of recipient
      amount: <int>, // amount
-     extra: <str>, // optional data
    }]
+ @param extra Optional information for payment operation
  @param completion Callback that takes command result as parameter. Returns addRequestFeesRequest json.
  */
 + (void)addFeesToRequest:(NSString *)requestJson
@@ -70,6 +70,7 @@
             submitterDid:(NSString *)submitterDid
               inputsJson:(NSString *)inputsJson
              outputsJson:(NSString *)outputsJson
+                   extra:(NSString *)extra
               completion:(void (^)(NSError *error, NSString *requestWithFeesJson, NSString *paymentMethod))completion;
 
 /**
@@ -104,9 +105,9 @@
     paymentMethod - used payment method
  */
 + (void)buildGetPaymentSourcesRequest:(IndyHandle)walletHandle
-                  submitterDid:(NSString *)submitterDid
-                paymentAddress:(NSString *)paymentAddress
-                    completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion;
+                         submitterDid:(NSString *)submitterDid
+                       paymentAddress:(NSString *)paymentAddress
+                           completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion;
 
 
 /**
@@ -124,8 +125,8 @@
    }]
  */
 + (void)parseGetPaymentSourcesResponse:(NSString *)responseJson
-                  paymentMethod:(NSString *)paymentMethod
-                     completion:(void (^)(NSError *error, NSString *sourcesJson))completion;
+                         paymentMethod:(NSString *)paymentMethod
+                            completion:(void (^)(NSError *error, NSString *sourcesJson))completion;
 
 
 /**
@@ -147,8 +148,8 @@
    [{
      recipient: <str>, // payment address of recipient
      amount: <int>, // amount
-     extra: <str>, // optional data
    }]
+ @param extra Optional information for payment operation
  @param completion Callback that takes command result as parameter. 
  Returns 
     paymentRequest - Indy request for doing payment.
@@ -158,6 +159,7 @@
                submitterDid:(NSString *)submitterDid
                  inputsJson:(NSString *)inputsJson
                 outputsJson:(NSString *)outputsJson
+                      extra:(NSString *)extra
                  completion:(void (^)(NSError *error, NSString *paymentReqJson, NSString *paymentMethod))completion;
 
 /**
@@ -188,8 +190,8 @@
    [{
      recipient: <str>, // payment address of recipient
      amount: <int>, // amount
-     extra: <str>, // optional data
    }]
+ @param extra Optional information for mint operation
  @param completion Callback that takes command result as parameter.
  Returns
     MintRequest - Indy request for doing minting
@@ -198,6 +200,7 @@
 + (void)buildMintRequest:(IndyHandle)walletHandle
             submitterDid:(NSString *)submitterDid
              outputsJson:(NSString *)outputsJson
+                   extra:(NSString *)extra
               completion:(void (^)(NSError *error, NSString *mintReqJson, NSString *paymentMethod))completion;
 
 /**

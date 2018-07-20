@@ -37,6 +37,7 @@ pub enum PaymentsCommand {
         String, //req
         String, //inputs
         String, //outputs
+        Option<String>, //extra
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     AddRequestFeesAck(
         i32, //handle
@@ -68,6 +69,7 @@ pub enum PaymentsCommand {
         String, //submitter did
         String, //inputs
         String, //outputs
+        Option<String>, //extra
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     BuildPaymentReqAck(
         i32,
@@ -83,6 +85,7 @@ pub enum PaymentsCommand {
         i32, //wallet_handle
         String, //submitter did
         String, //outputs
+        Option<String>, //extra
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     BuildMintReqAck(
         i32,
@@ -163,9 +166,9 @@ impl PaymentsCommandExecutor {
                 info!(target: "payments_command_executor", "ListAddresses command received");
                 self.list_addresses(wallet_handle, cb);
             }
-            PaymentsCommand::AddRequestFees(wallet_handle, submitter_did, req, inputs, outputs, cb) => {
+            PaymentsCommand::AddRequestFees(wallet_handle, submitter_did, req, inputs, outputs, extra, cb) => {
                 info!(target: "payments_command_executor", "AddRequestFees command received");
-                self.add_request_fees(wallet_handle, &submitter_did, &req, &inputs, &outputs, cb);
+                self.add_request_fees(wallet_handle, &submitter_did, &req, &inputs, &outputs, extra.as_ref().map(String::as_str), cb);
             }
             PaymentsCommand::AddRequestFeesAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "AddRequestFeesAck command received");
@@ -195,9 +198,9 @@ impl PaymentsCommandExecutor {
                 info!(target: "payments_command_executor", "ParseGetPaymentSourcesResponseAck command received");
                 self.parse_get_payment_sources_response_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildPaymentReq(wallet_handle, submitter_did, inputs, outputs, cb) => {
+            PaymentsCommand::BuildPaymentReq(wallet_handle, submitter_did, inputs, outputs, extra, cb) => {
                 info!(target: "payments_command_executor", "BuildPaymentReq command received");
-                self.build_payment_req(wallet_handle, &submitter_did, &inputs, &outputs, cb);
+                self.build_payment_req(wallet_handle, &submitter_did, &inputs, &outputs, extra.as_ref().map(String::as_str), cb);
             }
             PaymentsCommand::BuildPaymentReqAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "BuildPaymentReqAck command received");
@@ -211,9 +214,9 @@ impl PaymentsCommandExecutor {
                 info!(target: "payments_command_executor", "ParsePaymentResponseAck command received");
                 self.parse_payment_response_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildMintReq(wallet_handle, submitter_did, outputs, cb) => {
+            PaymentsCommand::BuildMintReq(wallet_handle, submitter_did, outputs, extra, cb) => {
                 info!(target: "payments_command_executor", "BuildMintReq command received");
-                self.build_mint_req(wallet_handle, &submitter_did, &outputs, cb);
+                self.build_mint_req(wallet_handle, &submitter_did, &outputs, extra.as_ref().map(String::as_str), cb);
             }
             PaymentsCommand::BuildMintReqAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "BuildMintReqAck command received");
@@ -329,8 +332,9 @@ impl PaymentsCommandExecutor {
         trace!("list_addresses <<<");
     }
 
-    fn add_request_fees(&self, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        trace!("add_request_fees >>> wallet_handle: {:?}, submitter_did: {:?}, req: {:?}, inputs: {:?}, outputs: {:?}", wallet_handle, submitter_did, req, inputs, outputs);
+    fn add_request_fees(&self, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        trace!("add_request_fees >>> wallet_handle: {:?}, submitter_did: {:?}, req: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}",
+               wallet_handle, submitter_did, req, inputs, outputs, extra);
         match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
@@ -354,7 +358,7 @@ impl PaymentsCommandExecutor {
                 let type_copy = type_.to_string();
                 self._process_method(
                     Box::new(move |result| cb(result.map(|e| (e, type_.to_string())))),
-                    &|i| self.payments_service.add_request_fees(i, &type_copy, wallet_handle, submitter_did, req, inputs, outputs)
+                    &|i| self.payments_service.add_request_fees(i, &type_copy, wallet_handle, submitter_did, req, inputs, outputs, extra)
                 );
             }
             Err(error) => {
@@ -427,8 +431,8 @@ impl PaymentsCommandExecutor {
         trace!("parse_get_payment_sources_response_ack <<<");
     }
 
-    fn build_payment_req(&self, wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        trace!("build_payment_req >>> wallet_handle: {:?}, submitter_did: {:?}, inputs: {:?}, outputs: {:?}", wallet_handle, submitter_did, inputs, outputs);
+    fn build_payment_req(&self, wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        trace!("build_payment_req >>> wallet_handle: {:?}, submitter_did: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, inputs, outputs, extra);
         match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
@@ -448,7 +452,7 @@ impl PaymentsCommandExecutor {
                 let type_copy = type_.to_string();
                 self._process_method(
                     Box::new(move |result| cb(result.map(|s| (s, type_.to_string())))),
-                    &|i| self.payments_service.build_payment_req(i, &type_copy, wallet_handle, submitter_did, inputs, outputs)
+                    &|i| self.payments_service.build_payment_req(i, &type_copy, wallet_handle, submitter_did, inputs, outputs, extra)
                 );
             }
             Err(error) => {
@@ -476,8 +480,8 @@ impl PaymentsCommandExecutor {
         trace!("parse_payment_response_ack <<<");
     }
 
-    fn build_mint_req(&self, wallet_handle: i32, submitter_did: &str, outputs: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        trace!("build_mint_req >>> wallet_handle: {:?}, submitter_did: {:?}, outputs: {:?}", wallet_handle, submitter_did, outputs);
+    fn build_mint_req(&self, wallet_handle: i32, submitter_did: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        trace!("build_mint_req >>> wallet_handle: {:?}, submitter_did: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs, extra);
         match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
@@ -494,7 +498,7 @@ impl PaymentsCommandExecutor {
                 let type_copy = type_.to_string();
                 self._process_method(
                     Box::new(move |result| cb(result.map(|s| (s, type_.to_string())))),
-                    &|i| self.payments_service.build_mint_req(i, &type_copy, wallet_handle, submitter_did, outputs)
+                    &|i| self.payments_service.build_mint_req(i, &type_copy, wallet_handle, submitter_did, outputs, extra)
                 );
             }
             Err(error) => cb(Err(IndyError::from(error)))

@@ -1906,7 +1906,7 @@ Lists all payment addresses that are stored in the wallet
 * __->__ `paymentAddresses`: Json - payment\_addresses\_json - json array of string with json addresses
 
 
-#### addRequestFees \( wh, submitterDid, req, inputs, outputs \) -&gt; \[ reqWithFees, paymentMethod \]
+#### addRequestFees \( wh, submitterDid, req, inputs, outputs, extra \) -&gt; \[ reqWithFees, paymentMethod \]
 
 Modifies Indy request by adding information how to pay fees for this transaction
 according to this payment method.
@@ -1932,9 +1932,10 @@ Notes:
   [{
     recipient: <str>, // payment address of recipient
     amount: <int>, // amount
-    extra: <str>, // optional data
   }]
 ````
+* `extra`: String - Optional information for payment operation.
+
 * __->__ [ `reqWithFees`: Json, `paymentMethod`: String ] - req\_with\_fees\_json - modified Indy request with added fees info
 payment\_method - used payment method
 
@@ -1987,7 +1988,7 @@ Note: this param will be used to determine payment\_method
 ````
 
 
-#### buildPaymentReq \( wh, submitterDid, inputs, outputs \) -&gt; \[ paymentReq, paymentMethod \]
+#### buildPaymentReq \( wh, submitterDid, inputs, outputs, extra \) -&gt; \[ paymentReq, paymentMethod \]
 
 Builds Indy request for doing payment
 according to this payment method.
@@ -2007,9 +2008,10 @@ Note that each source should reference payment address
   [{
     recipient: <str>, // payment address of recipient
     amount: <int>, // amount
-    extra: <str>, // optional data
   }]
 ````
+* `extra`: String - Optional information for payment operation.
+
 * __->__ [ `paymentReq`: Json, `paymentMethod`: String ] - payment\_req\_json - Indy request for doing payment
 payment\_method - used payment method
 
@@ -2032,7 +2034,7 @@ Note: this param will be used to determine payment\_method
 ````
 
 
-#### buildMintReq \( wh, submitterDid, outputs \) -&gt; \[ mintReq, paymentMethod \]
+#### buildMintReq \( wh, submitterDid, outputs, extra \) -&gt; \[ mintReq, paymentMethod \]
 
 Builds Indy request for doing minting
 according to this payment method.
@@ -2044,9 +2046,9 @@ according to this payment method.
   [{
     recipient: <str>, // payment address of recipient
     amount: <int>, // amount
-    extra: <str>, // optional data
   }]
 ````
+* `extra`: String - Optional information for mint operation.
 * __->__ [ `mintReq`: Json, `paymentMethod`: String ] - mint\_req\_json - Indy request for doing minting
 payment\_method - used payment method
 

@@ -35,12 +35,13 @@ pub mod create_payment_address {
 pub mod add_request_fees {
     use super::*;
 
-    pub extern fn handle(cmd_handle: i32, wallet_handle: i32, submitter_did: *const c_char, req_json: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
+    pub extern fn handle(cmd_handle: i32, wallet_handle: i32, submitter_did: *const c_char, req_json: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char, extra: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
         check_useful_c_str!(req_json, ErrorCode::CommonInvalidState);
         check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidState);
         check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidState);
         check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::add_request_fees::handle << req_json: {}, inputs_json: {}, outputs_json: {}, submitter_did: {}", req_json, inputs_json, outputs_json, submitter_did);
+        check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidState);
+        trace!("libnullpay::add_request_fees::handle << req_json: {}, inputs_json: {}, outputs_json: {}, submitter_did: {}, extra: {:?}", req_json, inputs_json, outputs_json, submitter_did, extra);
 
         trace!("parsing_json");
         parse_json!(inputs_json, Vec<String>, ErrorCode::CommonInvalidStructure);
@@ -94,7 +95,7 @@ pub mod add_request_fees {
                 _ => ()
             };
             //we have enough money for this txn, give it back
-            let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
+            let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone(), extra.as_ref().map(String::as_str));
 
             libindy::payments::list_payment_addresses(
                 wallet_handle,
@@ -179,11 +180,12 @@ pub mod parse_get_payment_sources_response {
 pub mod build_payment_req {
     use super::*;
 
-    pub extern fn handle(cmd_handle: i32, wallet_handle: i32, submitter_did: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
+    pub extern fn handle(cmd_handle: i32, wallet_handle: i32, submitter_did: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char, extra: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
         check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidState);
         check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_payment_req::handle << inputs_json: {}, outputs_json: {}, submitter_did: {}", inputs_json, outputs_json, submitter_did);
+        check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidState);
+        trace!("libnullpay::build_payment_req::handle << inputs_json: {}, outputs_json: {}, submitter_did: {}, extra: {:?}", inputs_json, outputs_json, submitter_did, extra);
 
         parse_json!(inputs_json, Vec<String>, ErrorCode::CommonInvalidStructure);
         parse_json!(outputs_json, Vec<Output>, ErrorCode::CommonInvalidStructure);
@@ -207,7 +209,7 @@ pub mod build_payment_req {
                 let total_payments = _count_total_payments(&outputs_json);
                 let ec_existance = _check_inputs_existance(&inputs_json);
 
-                let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone());
+                let seq_no = payment_ledger::add_txn(inputs_json.clone(), outputs_json.clone(), extra.as_ref().map(String::as_str));
 
                 let submitter_did = submitter_did.clone();
                 let inputs_json = inputs_json.clone();
@@ -253,10 +255,11 @@ pub mod parse_payment_response {
 pub mod build_mint_req {
     use super::*;
 
-    pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, outputs_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
+    pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, outputs_json: *const c_char, extra: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
         check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_mint_req::handle << outputs_json: {}, submitter_did: {}", outputs_json, submitter_did);
+        check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidState);
+        trace!("libnullpay::build_mint_req::handle << outputs_json: {}, submitter_did: {}, extra: {:?}", outputs_json, submitter_did, extra);
 
         parse_json!(outputs_json, Vec<Output>, ErrorCode::CommonInvalidStructure);
 
@@ -265,7 +268,7 @@ pub mod build_mint_req {
                                       1,
                                       Box::new(move |ec, res| {
                                           if ec == ErrorCode::Success {
-                                              let seq_no = payment_ledger::add_txn(vec![], outputs_json.clone());
+                                              let seq_no = payment_ledger::add_txn(vec![], outputs_json.clone(), extra.as_ref().map(String::as_str));
 
                                               outputs_json.clone().into_iter().for_each(|output| {
                                                   source_cache::add_source(&output.recipient, seq_no, output.amount);

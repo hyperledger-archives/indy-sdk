@@ -26,7 +26,7 @@ indy-cli --plugins <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n
 Example:
 
 ```bash
-indy-cli --plugins libsovplugin:sovplugin_init,libstorage:storage_init
+indy-cli --plugins libnullpay:nullpay_init,libstorage:storage_init
 ```
 
 ## Command to load plugin

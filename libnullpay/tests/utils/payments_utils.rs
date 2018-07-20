@@ -11,18 +11,17 @@ pub fn create_addresses(cfgs: Vec<&str>, wallet_handle: i32, payment_method: &st
     }).collect()
 }
 
-pub fn mint_sources(addresses: Vec<(String, i32, Option<&str>)>, wallet_handle: i32, pool_handle: i32, submitter_did: &str) {
-    let mint: Vec<Output> = addresses.into_iter().map(|(recipient, amount, extra)| {
+pub fn mint_sources(addresses: Vec<(String, i32)>, extra: Option<&str>, wallet_handle: i32, pool_handle: i32, submitter_did: &str) {
+    let mint: Vec<Output> = addresses.into_iter().map(|(recipient, amount)| {
         Output {
             recipient,
             amount,
-            extra: extra.map(|s| s.to_string()),
         }
     }).collect();
 
     let outputs = serde_json::to_string(&mint).unwrap();
 
-    let (req, _) = payments::build_mint_req(wallet_handle, submitter_did, outputs.as_str()).unwrap();
+    let (req, _) = payments::build_mint_req(wallet_handle, submitter_did, outputs.as_str(), extra).unwrap();
     ledger::submit_request(pool_handle, req.as_str()).unwrap();
 }
 

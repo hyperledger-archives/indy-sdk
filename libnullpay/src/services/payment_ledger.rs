@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::Mutex;
 
 lazy_static! {
-    static ref TXNS: Mutex<HashMap<i32, (Vec<String>, Vec<Output>)>> = Default::default();
+    static ref TXNS: Mutex<HashMap<i32, (Vec<String>, Vec<Output>, Option<String>)>> = Default::default();
 }
 
 lazy_static! {
@@ -17,16 +17,16 @@ fn _next_seq_no() -> i32 {
     (IDS_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32
 }
 
-pub fn add_txn(inputs: Vec<String>, outputs: Vec<Output>) -> i32 {
+pub fn add_txn(inputs: Vec<String>, outputs: Vec<Output>, extra: Option<&str>) -> i32 {
     let mut txns = TXNS.lock().unwrap();
     let next_seq_no = _next_seq_no();
-    txns.insert(next_seq_no, (inputs, outputs));
+    txns.insert(next_seq_no, (inputs, outputs, extra.map(String::from)));
     next_seq_no
 }
 
-pub fn get_txn(seq_no: i32) -> Option<(Vec<String>, Vec<Output>)> {
+pub fn get_txn(seq_no: i32) -> Option<(Vec<String>, Vec<Output>, Option<String>)> {
     let txns = TXNS.lock().unwrap();
-    txns.get(&seq_no).map(|&(ref a, ref b)| (a.clone(), b.clone()))
+    txns.get(&seq_no).map(|&(ref a, ref b, ref c)| (a.clone(), b.clone(), c.clone()))
 }
 
 pub fn get_receipt_info(source: String) -> Option<ReceiptInfo> {
@@ -35,13 +35,13 @@ pub fn get_receipt_info(source: String) -> Option<ReceiptInfo> {
         None => return None
     };
 
-    match get_txn(seq_no).map(|(_, outputs)| {
+    match get_txn(seq_no).map(|(_, outputs, extra)| {
         outputs.into_iter().find(|out| out.recipient == recipient).map(|out| {
             ReceiptInfo {
                 receipt: source,
                 recipient,
                 amount: out.amount,
-                extra: out.extra,
+                extra,
             }
         })
     }) {
@@ -56,13 +56,13 @@ pub fn get_source_info(source: String) -> Option<SourceInfo> {
         None => return None
     };
 
-    match get_txn(seq_no).map(|(_, outputs)| {
+    match get_txn(seq_no).map(|(_, outputs, extra)| {
         outputs.into_iter().find(|out| out.recipient == recipient).map(|out| {
             SourceInfo {
                 source,
                 payment_address: recipient,
                 amount: out.amount,
-                extra: out.extra,
+                extra,
             }
         })
     }) {
