@@ -471,6 +471,8 @@ pub struct PoolOpenConfig {
     pub timeout: i64,
     #[serde(default)]
     pub extended_timeout: i64,
+    #[serde(default)]
+    pub conn_limit: usize,
 }
 
 impl Default for PoolOpenConfig {
@@ -478,6 +480,7 @@ impl Default for PoolOpenConfig {
         PoolOpenConfig {
             timeout: super::networker::POOL_ACK_TIMEOUT,
             extended_timeout: super::networker::POOL_REPLY_TIMEOUT,
+            conn_limit: super::networker::MAX_REQ_PER_POOL_CON,
         }
     }
 }
