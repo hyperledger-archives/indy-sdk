@@ -11,7 +11,7 @@ async def test_delete_wallet_record_tags_works(wallet_handle):
     await check_record_field(wallet_handle, "tags", tags1)
 
     await non_secrets.delete_wallet_record_tags(wallet_handle, type_, id1, '["tagName1"]')
-    expected_tags = '{"tagName2": 5, "tagName3": 12}'
+    expected_tags = '{"tagName2": "5", "tagName3": "12"}'
     await check_record_field(wallet_handle, "tags", expected_tags)
 
 

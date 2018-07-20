@@ -25,7 +25,6 @@ async def test_add_wallet_record_tags_works_for_twice(wallet_handle):
 
     tags2 = '{"tagName2": "str2"}'
     await non_secrets.add_wallet_record_tags(wallet_handle, type_, id1, tags2)
-    await check_record_field(wallet_handle, "tags", tags2)
 
     expected_tags = '{"tagName1": "str1", "tagName2": "str2"}'
     await check_record_field(wallet_handle, "tags", expected_tags)
