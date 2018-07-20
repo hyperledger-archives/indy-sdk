@@ -96,14 +96,8 @@ const char *vcx_error_c_message(int);
 
 /** Returns version information for libvcx */
 const char *vcx_version();
-vcx_error_t vcx_shutdown(vcx_bool_t delete_wallet);
-
 /** Frees memory, resets configuration, closes wallet and pool, optionally deletes wallet */
 vcx_error_t vcx_shutdown(vcx_bool_t delete_wallet);
-
-/** Frees memory, resets configuration, closes wallet and pool, optionally deletes wallet */
-vcx_error_t vcx_shutdown(vcx_bool_t delete_wallet);
-
 
 /**
  * Schema object

@@ -46,7 +46,7 @@ public class WalletApi extends VcxJava.API {
     };
 
     public static CompletableFuture<Integer> importWallet(
-            String config,
+            String config
     ) throws VcxException {
         ParamGuard.notNull(config, "config");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();

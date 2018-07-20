@@ -47,7 +47,7 @@ public abstract class LibVcx {
         public int vcx_init(int command_handle, String config_path, Callback cb);
 
         public String vcx_error_c_message(int error_code);
-
+        public int vcx_shutdown(boolean delete);
         public int vcx_reset();
 /**
  * Schema object

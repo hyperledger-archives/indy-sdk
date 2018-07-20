@@ -655,6 +655,11 @@ completion:(void (^)(NSError *error))completion
    }
 }
 
+- (int)vcxShutdown:(BOOL *) deleteWallet {
+    int delete_wallet = deleteWallet;
+    return vcx_shutdown(delete_wallet);
+}
+
 - (void)deleteRecordWallet:(NSString *)recordType
             recordId:(NSString *)recordId
            completion:(void (^)(NSError *error))completion {
