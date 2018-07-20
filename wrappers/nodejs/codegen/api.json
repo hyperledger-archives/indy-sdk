@@ -50,7 +50,8 @@
     "c700": "PaymentUnknownMethodError",
     "c701": "PaymentIncompatibleMethodsError",
     "c702": "PaymentInsufficientFundsError",
-    "c703": "PaymentSourceDoesNotExistError"
+    "c703": "PaymentSourceDoesNotExistError",
+    "c704": "PaymentOperationNotSupportedError"
   },
   "functions": {
     "indy_issuer_create_schema": {
