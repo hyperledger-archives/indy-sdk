@@ -90,34 +90,62 @@ For deriving keys from passphrase **Argon2** memory-hard function is used with r
 
 ## File format
 
-File contains encrypted header and encrypted list of records using **ChaCha20-Poly1305-IETF** cypher in blocks per 1024 bytes (to allow streaming).
-This is similar encyption as recomended in libsodium secretstream but secretstream was not available in Rust wrapper.
+--- plain stream ---
 
-#### Header
-Header contains version of file format, time of creation, encryption method, nonce and salt used for encryption.
+* `header_length`: length of the serialized header as 4b unsigned little endian integer
+* `header`: MessagePack serialized header entity
 
- * `header_length`: 2B unsigned big endian integer (length of encrypted header)
- * `version`: 4B unsigned big endian integer
- * `time`: 8B unsigned big endian integer
- * `encryption_method_length`: 2B unsigned big endian integer
- * `encryption_method`: UTF-8 string of `encryption_method_length` length
- * `nonce_length`: 2B unsigned big endian integer
- * `nonce`: bytes of length `nonce_length`, containing nonce for encryption of body. Nonce is then incremented for every block.
- * `salt_length`: 2B unsigned big endian integer
- * `salt`: bytes of length `salt_length`, containing salt used for deriving export key
- * `header_hash`: 32B **SHA-256** hash of the header.
+--- encrypted stream ---
 
-#### Body
+* `header_hash`: 32B **SHA-256** hash of the header.
+* `record1_length`: length the serialized record as 4b unsigned little endian integer
+* `record1`: MessagePack serialized record entity
+* ...
+* `recordN_length`: length the serialized record as 4b unsigned little endian integer
+* `recordN`: MessagePack serialized record entity
+* `STOP`: 4 zero bytes. Allows to make sure that there was no truncation of export file
 
-Body format is list of records in falowing format:
+Where:
 
- * `record_length`: 4B unsigned big endian integer
- * `type_length`: 4B unsigned big endian integer
- * `type`: UTF-8 string of `type_length` bytes
- * `name_length`: 4B unsigned big endian integer
- * `name`: UTF-8 string of `name_length` bytes
- * `value_length`: 4B unsigned big endian integer
- * `value`: UTF-8 string of `value_length` bytes
- * `tags_json_length`: 4B unsigned big endian integer
- * `tags_json`: UTF-8 string of `tags_json_length` bytes
- 
+```Rust
+pub struct Header {
+    pub encryption_method: EncryptionMethod, // Method of encryption for encrypted stram
+    pub time: u64, // Export time in seconds from UNIX Epoch
+    pub version: u32, // Version of header
+}
+
+pub enum EncryptionMethod {
+    ChaCha20Poly1305IETF { // **ChaCha20-Poly1305-IETF** cypher in blocks per chunk_size bytes
+        salt: Vec<u8>,  // pwhash_argon2i13::Salt as bytes. Random salt used for deriving of key from passphrase
+        nonce: Vec<u8>, // chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency
+        chunk_size: usize, // size of encrypted chunk
+    },
+}
+
+// Note that we use externally tagged enum serialization and header will be represented as:
+//
+// {
+//   "encryption_method": {
+//     "ChaCha20Poly1305IETF": {
+//       "salt": ..,
+//       "nonce": ..,
+//       "chunk_size": ..,
+//     },
+//   },
+//   "time": ..,
+//   "version": ..,
+// }
+
+pub struct Record {
+    #[serde(rename = "type")]
+    pub type_: String, // Wallet record type
+    pub id: String, // Wallet record id
+    pub value: String, // Wallet record value
+    pub tags: HashMap<String, String>, // Wallet record tags
+}
+```
+
+The only supported from the beginning encryption method is **ChaCha20-Poly1305-IETF** cypher in blocks per 1024 bytes (to allow streaming).
+This is similar encryption as recommended in libsodium secretstream but secretstream was not available in Rust wrapper.
+Random salt used for deriving of key from passphrase. We increment nonce for each block to be sure in export file consistency.
+Also we use STOP message in encrypted stream that allows to make sure that there was no truncation of export file.

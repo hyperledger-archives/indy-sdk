@@ -314,8 +314,6 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	/**
 	 * Exports opened wallet to the file.
 	 *
-	 * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * the future releases.
 	 * @param wallet The wallet to export.
 	 * @param exportConfigJson: JSON containing settings for input operation.
 	 *   {
@@ -352,9 +350,6 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * Creates a new secure wallet with the given unique name and then imports its content
 	 * according to fields provided in import_config
 	 * This can be seen as an indy_create_wallet call with additional content import
-	 *
-	 * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * the future releases.
 	 *
 	 * @param config Wallet configuration json. List of supported keys are defined by wallet type.
 	 * @param credentials Wallet configuration json.

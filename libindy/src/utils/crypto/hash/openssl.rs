@@ -7,7 +7,13 @@ use self::openssl::error::ErrorStack;
 
 use std::error::Error;
 
-pub const HASH_OUTPUT_LEN: usize = 32;
+pub const HASHBYTES: usize = 32;
+
+pub fn hash(input: &[u8]) -> Result<Vec<u8>, CommonError> {
+    let mut hasher = Hash::new_context()?;
+    hasher.update(input)?;
+    Ok(hasher.finish2().map(|b| b.to_vec())?)
+}
 
 pub struct Digest {
     data: DigestBytes
