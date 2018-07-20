@@ -154,9 +154,6 @@
 /**
  Exports opened wallet.
 
- Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
- in the future releases.
-
  @param walletHandle  wallet handle returned by IndyWallet::openWalletWithName.
  @param exportConfigJson  JSON containing settings for input operation.
    {
@@ -173,9 +170,6 @@
  Creates a new secure wallet with the given unique name and then imports its content
  according to fields provided in import_config
  This can be seen as an indy_create_wallet call with additional content import
-
- Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
- in the future releases.
 
  @param config Wallet configuration json.
  {
