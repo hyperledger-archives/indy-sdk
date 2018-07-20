@@ -408,9 +408,6 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 /// Format of inputs is specific for payment method. Usually it should reference payment transaction
 /// with at least one output that corresponds to payment address that user owns.
 ///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
-///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
@@ -443,17 +440,11 @@ pub extern fn indy_add_request_fees(command_handle: i32,
 
 /// Parses response for Indy request with fees.
 ///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
-///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// payment_method: payment method to use
 /// resp_json: response for Indy request with fees
 ///   Note: this param will be used to determine payment_method
-///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
 ///
 /// #Returns
 /// receipts_json - parsed (payment method and node version agnostic) receipts info as json:
@@ -472,9 +463,6 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 
 /// Builds Indy request for getting sources list for payment address
 /// according to this payment method.
-///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
@@ -495,9 +483,6 @@ pub extern fn indy_build_get_sources_request(command_handle: i32,
                                                                payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Parses response for Indy request for getting sources list.
-///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
@@ -528,9 +513,6 @@ pub extern fn indy_parse_get_sources_response(command_handle: i32,
 /// Format of inputs is specific for payment method. Usually it should reference payment transaction
 /// with at least one output that corresponds to payment address that user owns.
 ///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
-///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
@@ -560,9 +542,6 @@ pub extern fn indy_build_payment_req(command_handle: i32,
 
 /// Parses response for Indy request for payment txn.
 ///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
-///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// payment_method: payment method to use
@@ -586,9 +565,6 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 
 /// Builds Indy request for doing minting
 /// according to this payment method.
-///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
 ///
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
@@ -615,9 +591,6 @@ pub extern fn indy_build_mint_req(command_handle: i32,
 
 /// Builds Indy request for setting fees for transactions in the ledger
 ///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
-///
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
@@ -642,9 +615,6 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
 
 /// Builds Indy get request for getting fees for transactions in the ledger
 ///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
-///
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
@@ -662,9 +632,6 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
                                                                get_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Parses response for Indy request for getting fees
-///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
 ///
 /// # Params
 /// command_handle: Command handle to map callback to caller context.

@@ -108,8 +108,6 @@ public class Payments extends IndyJava.API {
      * Note that payment method should be able to resolve this
      * secret by fully resolvable payment address format.
      *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      * @param wallet The wallet.
      * @param paymentMethod Payment method to use (for example, 'sov')
      * @param config payment address config as json:
@@ -148,8 +146,6 @@ public class Payments extends IndyJava.API {
     /**
      * Lists all payment addresses that are stored in the wallet
      *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      * @param wallet The wallet.
      * @return json array of string with json addresses
      * @throws IndyException
@@ -184,9 +180,6 @@ public class Payments extends IndyJava.API {
      *
      * Format of inputs is specific for payment method. Usually it should reference payment transaction
      * with at least one output that corresponds to payment address that user owns.
-     *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      *
      * @param wallet The wallet.
      * @param submitterDid DID of request sender
@@ -238,8 +231,6 @@ public class Payments extends IndyJava.API {
     /**
      * Parses response for Indy request with fees.
      *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      * @param paymentMethod
      * @param respJson response for Indy request with fees
      * @return receiptsJson - parsed (payment method and node version agnostic) receipts info as json:
@@ -261,9 +252,6 @@ public class Payments extends IndyJava.API {
     /**
      * Builds Indy request for getting sources list for payment address
      * according to this payment method.
-     *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      * 
      * @param wallet The wallet.
      * @param submitterDid DID of request sender
@@ -298,9 +286,6 @@ public class Payments extends IndyJava.API {
 
     /**
      * Parses response for Indy request for getting sources list.
-     *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      * 
      * @param paymentMethod payment method to use.
      * @param respJson response for Indy request for getting sources list
@@ -328,9 +313,6 @@ public class Payments extends IndyJava.API {
      *
      * Format of inputs is specific for payment method. Usually it should reference payment transaction
      * with at least one output that corresponds to payment address that user owns.
-     *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      * 
      * @param wallet The wallet.
      * @param submitterDid DID of request sender
@@ -377,8 +359,6 @@ public class Payments extends IndyJava.API {
     /**
      * Parses response for Indy request for payment txn.
      *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      * @param paymentMethod payment method to use
      * @param respJson response for Indy request for payment txn
      * @return parsed (payment method and node version agnostic) receipts info as json:
@@ -400,9 +380,6 @@ public class Payments extends IndyJava.API {
     /**
      * Builds Indy request for doing minting
      * according to this payment method.
-     *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      *
      * @param wallet The wallet.
      * @param submitterDid DID of request sender
@@ -443,8 +420,6 @@ public class Payments extends IndyJava.API {
     /**
      * Builds Indy request for setting fees for transactions in the ledger
      *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      * @param wallet The wallet.
      * @param submitterDid DID of request sender
      * @param paymentMethod payment method to use
@@ -488,8 +463,6 @@ public class Payments extends IndyJava.API {
     /**
      * Builds Indy get request for getting fees for transactions in the ledger
      *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      * @param wallet The wallet.
      * @param submitterDid DID of request sender
      * @param paymentMethod payment method to use
@@ -524,8 +497,6 @@ public class Payments extends IndyJava.API {
     /**
      * Parses response for Indy request for getting fees
      *
-     * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * in the future releases.
      * @param paymentMethod payment method to use
      * @param respJson response for Indy request for getting fees
      * @return fees_json {

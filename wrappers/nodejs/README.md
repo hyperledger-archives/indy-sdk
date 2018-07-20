@@ -1902,9 +1902,6 @@ in the future releases.
 
 Lists all payment addresses that are stored in the wallet
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * __->__ `paymentAddresses`: Json - payment\_addresses\_json - json array of string with json addresses
 
@@ -1921,9 +1918,6 @@ Not that this method also produces correct fee signatures.
 
 Format of inputs is specific for payment method. Usually it should reference payment transaction
 with at least one output that corresponds to payment address that user owns.
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
@@ -1949,9 +1943,6 @@ payment\_method - used payment method
 
 Parses response for Indy request with fees.
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `paymentMethod`: String - payment method to use
 * `resp`: Json - response for Indy request with fees
 Note: this param will be used to determine payment\_method
@@ -1971,9 +1962,6 @@ Note: this param will be used to determine payment\_method
 Builds Indy request for getting sources list for payment address
 according to this payment method.
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
 * `paymentAddress`: String - target payment address
@@ -1984,9 +1972,6 @@ payment\_method - used payment method
 #### parseGetSourcesResponse \( paymentMethod, resp \) -&gt; sources
 
 Parses response for Indy request for getting sources list.
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `paymentMethod`: String - payment method to use
 * `resp`: Json - response for Indy request for getting sources list
@@ -2012,9 +1997,6 @@ This method consumes set of inputs and outputs.
 Format of inputs is specific for payment method. Usually it should reference payment transaction
 with at least one output that corresponds to payment address that user owns.
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
 * `inputs`: Json - The list of payment sources as json array:
@@ -2036,9 +2018,6 @@ payment\_method - used payment method
 
 Parses response for Indy request for payment txn.
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `paymentMethod`: String
 * `resp`: Json - response for Indy request for payment txn
 Note: this param will be used to determine payment\_method
@@ -2058,9 +2037,6 @@ Note: this param will be used to determine payment\_method
 Builds Indy request for doing minting
 according to this payment method.
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
 * `outputs`: Json - The list of outputs as json array:
@@ -2078,9 +2054,6 @@ payment\_method - used payment method
 #### buildSetTxnFeesReq \( wh, submitterDid, paymentMethod, fees \) -&gt; setTxnFees
 
 Builds Indy request for setting fees for transactions in the ledger
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
@@ -2100,9 +2073,6 @@ txnTypeN: amountN,
 
 Builds Indy get request for getting fees for transactions in the ledger
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
 payment\_method
@@ -2113,9 +2083,6 @@ payment\_method
 #### parseGetTxnFeesResponse \( paymentMethod, resp \) -&gt; fees
 
 Parses response for Indy request for getting fees
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `paymentMethod`: String
 * `resp`: Json - response for Indy request for getting fees
@@ -2257,7 +2224,7 @@ Creates a new secure wallet with the given unique name.
 
 }
 ```
-````
+
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -2296,6 +2263,7 @@ It is impossible to open wallet with the same name more than once.
                           For 'default' storage type should be empty.
 
 }
+```
 * __->__ `handle`: Handle (Number) - Handle to opened wallet to use in methods that require wallet access.
 
 Errors: `Common*`, `Wallet*`
@@ -2303,9 +2271,6 @@ Errors: `Common*`, `Wallet*`
 #### exportWallet \( wh, exportConfig \) -&gt; void
 
 Exports opened wallet
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `exportConfig`: Json - JSON containing settings for input operation.
@@ -2365,6 +2330,7 @@ Creates a new secure wallet with the given unique name and then imports its cont
     "path": path of the file that contains exported wallet content
     "key": passphrase used to export key
 }
+```
 =======
 #### deleteWallet \( name, credentials \) -&gt; void
 

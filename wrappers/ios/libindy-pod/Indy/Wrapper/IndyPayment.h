@@ -50,9 +50,6 @@
  Format of inputs is specific for payment method. Usually it should reference payment transaction
  with at least one output that corresponds to payment address that user owns.
 
- Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
- in the future releases.
-
  @param requestJson Request data json.
  @param submitterDid Id of Identity stored in secured Wallet.
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
@@ -97,9 +94,6 @@
  Builds Indy request for getting sources list for payment address
  according to this payment method.
 
- Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
- in the future releases.
-
  @param requestJson Request data json.
  @param submitterDid Id of Identity stored in secured Wallet.
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
@@ -142,9 +136,6 @@
 
  Format of inputs is specific for payment method. Usually it should reference payment transaction
  with at least one output that corresponds to payment address that user owns.
-
- Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
- in the future releases.
 
  @param requestJson Request data json.
  @param submitterDid Id of Identity stored in secured Wallet.
