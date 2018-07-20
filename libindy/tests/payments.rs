@@ -64,6 +64,8 @@ mod high_cases {
                                                          Some(payments::mock_method::build_set_txn_fees_req::handle),
                                                          Some(payments::mock_method::build_get_txn_fees_req::handle),
                                                          Some(payments::mock_method::parse_get_txn_fees_response::handle),
+                                                         Some(payments::mock_method::build_verify_req::handle),
+                                                         Some(payments::mock_method::parse_verify_response::handle),
             ).unwrap();
 
             TestUtils::cleanup_storage();
@@ -359,6 +361,17 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+
+
+    mod build_verify_req {
+        use super::*;
+
+        #[test]
+        pub fn build_verify_req_works() {
+
+        }
+    }
 }
 
 mod medium_cases {
@@ -372,6 +385,8 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let err = payments::register_payment_method(PAYMENT_METHOD_NAME,
+                                                        None,
+                                                        None,
                                                         None,
                                                         None,
                                                         None,
