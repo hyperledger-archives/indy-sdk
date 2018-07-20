@@ -18,7 +18,9 @@ pub struct Peer<'a> {
     pub network: Option<Rc<RefCell<Network<'a>>>>,
     // Incase of multiple networks, needs to be an HashMap of inboxes
     // TODO: Add mutex
-    pub inbox: VecDeque<String>
+    pub inbox: VecDeque<String>,
+
+    pub outbox: HashMap<String, VecDeque<String>>
 }
 
 pub struct Network<'a> {
@@ -47,6 +49,20 @@ impl<'a> Network<'a> {
             None => Err(CommonError::InvalidState(format!("Cannot find peer id {}", dest_id)))
         }
     }
+
+    pub fn process_outboxes_for_all_peers(&mut self) -> Result<(), CommonError> {
+        for (peer_id, mut peer) in &self.peers {
+            let mut outbox = &mut peer.borrow_mut().outbox;
+            if !outbox.is_empty() {
+                for (remote_peer_id, mut msgs) in outbox {
+                    for msg in msgs.drain(..) {
+                        self.send_message(&msg, &remote_peer_id)?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 impl<'a> Peer<'a> {
@@ -54,7 +70,8 @@ impl<'a> Peer<'a> {
         Peer {
             name: name.to_string(),
             network: None,
-            inbox: VecDeque::new()
+            inbox: VecDeque::new(),
+            outbox: HashMap::new(),
         }
     }
 
@@ -72,6 +89,29 @@ impl<'a> Peer<'a> {
     pub fn process(&mut self) -> Vec<String> {
         self.inbox.drain(..).collect()
     }
+
+    pub fn add_to_outbox(&mut self, to_peer_id: &str, msg: &str) {
+        let mut peer_q = {
+            self.outbox.remove(to_peer_id)
+        };
+        if peer_q.is_none() {
+            peer_q = Some(VecDeque::new());
+        }
+        let mut pq = peer_q.unwrap();
+        pq.push_back(msg.to_string());
+        self.outbox.insert(to_peer_id.to_string(), pq);
+        /*let peer_q = self.outbox.get_mut(to_peer_id);
+        match peer_q {
+            Some(pq) => pq.push_back(msg.to_string()),
+            None => {
+                let mut peer_q: VecDeque<String> = VecDeque::new();
+                peer_q.push_back(msg.to_string());
+                {
+                    self.outbox.insert(to_peer_id.to_string(), peer_q);
+                }
+            }
+        }*/
+    }
 }
 
 #[cfg(test)]
@@ -82,6 +122,20 @@ pub mod tests {
         Rc::new(RefCell::new(Network::new(name)))
     }
 
+    // This does not work due to lifetime errors, weird, the upper one works
+    /*pub fn setup_network_and_2_peers() -> (Rc<RefCell<Network>>, Rc<RefCell<Peer>>, Rc<RefCell<Peer>>) {
+        let peer1_id = "a1";
+        let peer2_id = "a2";
+
+        let network = get_new_network("n");
+        let peer1 = Rc::new(RefCell::new(Peer::new(peer1_id)));
+        let peer2 = Rc::new(RefCell::new(Peer::new(peer2_id)));
+
+        network.borrow_mut().register_peer(Rc::clone(&peer1));
+        network.borrow_mut().register_peer(Rc::clone(&peer2));
+        (network, peer1, peer2)
+    }*/
+
     #[test]
     fn test_creation() {
         let network = get_new_network("n");
@@ -91,8 +145,10 @@ pub mod tests {
         assert!(network.borrow().peers.is_empty());
         assert!(peer1.network.is_none());
         assert!(peer1.inbox.is_empty());
+        assert!(peer1.outbox.is_empty());
         assert!(peer2.network.is_none());
         assert!(peer2.inbox.is_empty());
+        assert!(peer2.outbox.is_empty());
     }
 
     /*#[test]
@@ -129,6 +185,7 @@ pub mod tests {
         let peer1 = Rc::new(RefCell::new(Peer::new("a1")));
         let peer2 = Rc::new(RefCell::new(Peer::new("a2")));
 
+//        let (network, peer1, peer2) = setup_network_and_2_peers();
         assert!(network.borrow().peers.get(&peer1.borrow().name).is_none());
         assert!(network.borrow().peers.get(&peer2.borrow().name).is_none());
 
@@ -140,16 +197,11 @@ pub mod tests {
     }
 
     #[test]
-    fn test_messaging() {
-        let msg1 = json!({
-            "k1": "v1"
-        }).to_string();
-        let msg2 = json!({
-            "k2": "v2"
-        }).to_string();
-
+    fn test_inbox() {
         let peer1_id = "a1";
         let peer2_id = "a2";
+
+//        let (network, peer1, peer2) = setup_network_and_2_peers();
 
         let network = get_new_network("n");
         let peer1 = Rc::new(RefCell::new(Peer::new(peer1_id)));
@@ -157,6 +209,13 @@ pub mod tests {
 
         network.borrow_mut().register_peer(Rc::clone(&peer1));
         network.borrow_mut().register_peer(Rc::clone(&peer2));
+
+        let msg1 = json!({
+            "k1": "v1"
+        }).to_string();
+        let msg2 = json!({
+            "k2": "v2"
+        }).to_string();
 
         // sending msg1 to peer2
         assert_eq!(peer2.borrow().inbox.front(), None);
@@ -192,5 +251,41 @@ pub mod tests {
             network.borrow().send_message(&msg, peer1_id).unwrap();
         }
         assert_eq!(peer1.borrow_mut().process(), msgs);
+    }
+
+    #[test]
+    fn test_outbox() {
+        let peer1_id = "a1";
+        let peer2_id = "a2";
+//        let (network, peer1, peer2) = setup_network_and_2_peers();
+        let network = get_new_network("n");
+        let peer1 = Rc::new(RefCell::new(Peer::new(peer1_id)));
+        let peer2 = Rc::new(RefCell::new(Peer::new(peer2_id)));
+
+        network.borrow_mut().register_peer(Rc::clone(&peer1));
+        network.borrow_mut().register_peer(Rc::clone(&peer2));
+
+        let msg1 = json!({
+            "k1": "v1"
+        }).to_string();
+        let msg2 = json!({
+            "k2": "v2"
+        }).to_string();
+        let m1 = vec![msg1, msg2];
+        peer1.borrow_mut().outbox.insert(peer2_id.to_string(), VecDeque::from(m1.clone()));
+
+        let msg3 = json!({
+           "k3": "v3"
+        }).to_string();
+        let msg4 = json!({
+           "k4": "v4"
+        }).to_string();
+        let m2 = vec![msg3, msg4];
+        peer2.borrow_mut().outbox.insert(peer1_id.to_string(), VecDeque::from(m2.clone()));
+
+        network.borrow_mut().process_outboxes_for_all_peers().unwrap();
+
+        assert_eq!(peer1.borrow().inbox, VecDeque::from(m2));
+        assert_eq!(peer2.borrow().inbox, VecDeque::from(m1));
     }
 }

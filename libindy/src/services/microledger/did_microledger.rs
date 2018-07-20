@@ -15,6 +15,8 @@ use services::microledger::microledger::Microledger;
 use services::microledger::txn_builder::TxnBuilder;
 use services::microledger::helpers::byte_array_to_usize;
 use services::microledger::helpers::usize_to_byte_array;
+use utils::environment::EnvironmentUtils;
+use std::path::PathBuf;
 
 const TYP: [u8; 3] = [0, 1, 2];
 
@@ -142,6 +144,26 @@ impl Microledger for DidMicroledger where Self: Sized {
 }
 
 impl DidMicroledger {
+    // TODO: This should be enhanced further
+    pub fn create_options(storage_path: Option<&str>) -> HashMap<String, String> {
+        let mut options: HashMap<String, String> = HashMap::new();
+        options.insert("storage_type".to_string(), "sqlite".to_string());
+        let mut path = match storage_path {
+            Some(m) => {
+                let mut pf = PathBuf::new();
+                pf.push(m);
+                pf
+            },
+            None => {
+                EnvironmentUtils::tmp_path()
+            }
+        };
+        path.push("did_ml_path");
+        let storage_path = path.to_str().unwrap().to_owned();
+        options.insert("storage_path".to_string(), storage_path);
+        options
+    }
+
     fn parse_options(options: HashMap<String, String>) -> Result<HashMap<String, String>, CommonError> {
         // TODO: Support inmemory storage type
         match options.get("storage_type") {

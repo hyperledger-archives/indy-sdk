@@ -27,6 +27,10 @@ impl LedgerUpdate {
         })
     }
 
+    pub fn get_state_id(&self) -> String {
+        self.state.chars().skip(4).collect()
+    }
+
     pub fn new_as_json(did: &str, ml: &DidMicroledger, from: u64) -> Result<String, CommonError> {
         LedgerUpdate::new(did, ml, from)?.as_json()
 
@@ -36,6 +40,12 @@ impl LedgerUpdate {
         serde_json::to_string(self).map_err(|err|
             CommonError::InvalidState(format!("Unable to jsonify ledger udpdate message {:?}.", err)))
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum ValidProtocolMessages {
+    LedgerUpdate(LedgerUpdate)
 }
 
 pub mod tests {
