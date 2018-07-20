@@ -86,6 +86,8 @@ pub mod mock_method {
                                          Some(build_set_txn_fees_req::handle),
                                          Some(build_get_txn_fees_req::handle),
                                          Some(parse_get_txn_fees_response::handle),
+                                         Some(build_verify_req::handle),
+                                         Some(parse_verify_response::handle),
                                          cb,
             );
 
@@ -136,6 +138,14 @@ pub mod mock_method {
     pub mod parse_get_txn_fees_response {
         mocked_handler!(_resp_json: *const c_char);
     }
+
+    pub mod build_verify_req {
+        mocked_handler!(_wallet_handle: i32, _submitter_did: *const c_char, _receipt: *const c_char);
+    }
+
+    pub mod parse_verify_response {
+        mocked_handler!(_resp_json: *const c_char);
+    }
 }
 
 pub fn register_payment_method(payment_method_name: &str,
@@ -150,6 +160,8 @@ pub fn register_payment_method(payment_method_name: &str,
                                build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
                                build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
                                parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
+                               build_verify_req: Option<BuildVerifyReqCB>,
+                               parse_verify_response: Option<ParseVerifyResponseCB>,
 ) -> Result<(), ErrorCode> {
     let (receiver, cmd_handle, cb) = CallbackUtils::_closure_to_cb_ec();
 
@@ -168,6 +180,8 @@ pub fn register_payment_method(payment_method_name: &str,
                                            build_set_txn_fees_req,
                                            build_get_txn_fees_req,
                                            parse_get_txn_fees_response,
+                                           build_verify_req,
+                                           parse_verify_response,
                                            cb,
     );
 
