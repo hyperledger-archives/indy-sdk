@@ -316,6 +316,9 @@ vcx_error_t vcx_wallet_delete_record(vcx_command_handle_t chandle, const char * 
 /** Update a record in wallet if it is already added */
 vcx_error_t vcx_wallet_update_record_value(vcx_command_handle_t chandle, const char *type_, const char *record_id, const char *record_value, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 
+/** Shutdown vcx wallet */
+vcx_error_t vcx_shutdown(vcx_bool_t deleteWallet);
+
 /** For testing purposes only */
 void vcx_set_next_agency_response(int);
 #ifdef __cplusplus
