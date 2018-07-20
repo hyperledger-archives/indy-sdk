@@ -15,7 +15,7 @@ const CHUNK_SIZE: usize = 1024;
 
 pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32) -> Result<(), WalletError> {
 
-    if version != 1 {
+    if version != 0 {
         Err(CommonError::InvalidState("Unsupported version".to_string()))?;
     }
 
@@ -87,7 +87,7 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
     let header: Header = rmp_serde::from_slice(&header_bytes)
         .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize header: {}", err)))?;
 
-    if header.version != 1 {
+    if header.version != 0 {
         Err(CommonError::InvalidStructure("Unsupported version".to_string()))?;
     }
 
@@ -411,7 +411,7 @@ mod tests {
     }
 
     fn _version1() -> u32 {
-        1
+        0
     }
 
     fn _id(suffix: usize) -> String {
