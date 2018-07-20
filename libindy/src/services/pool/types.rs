@@ -465,6 +465,27 @@ impl PoolConfig {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PoolOpenConfig {
+    #[serde(default)]
+    pub timeout: i64,
+    #[serde(default)]
+    pub extended_timeout: i64,
+}
+
+impl Default for PoolOpenConfig {
+    fn default() -> Self {
+        PoolOpenConfig {
+            timeout: super::networker::POOL_ACK_TIMEOUT,
+            extended_timeout: super::networker::POOL_REPLY_TIMEOUT,
+        }
+    }
+}
+
+impl JsonEncodable for PoolOpenConfig {}
+
+impl<'a> JsonDecodable<'a> for PoolOpenConfig {}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RemoteNode {
     pub name: String,
