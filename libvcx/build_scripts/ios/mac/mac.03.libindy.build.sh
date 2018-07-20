@@ -53,8 +53,11 @@ fi
 #########################################################################################################################
 cd $WORK_DIR/vcx-indy-sdk/libindy
 
-if [ "$DEBUG_SYMBOLS" = "debuginfo" ]; then
+#if [ "$DEBUG_SYMBOLS" = "debuginfo" ]; then
     cat $START_DIR/cargo.toml.add.debug.txt >> Cargo.toml
+#fi
+if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
+    sed -i .bak 's/debug = true/debug = false/' Cargo.toml
 fi
 
 if [ "$CLEAN_BUILD" = "cleanbuild" ]; then
@@ -75,8 +78,11 @@ cargo lipo --release --verbose --targets="${IOS_TARGETS}"
 #########################################################################################################################
 cd $WORK_DIR/vcx-indy-sdk/libnullpay
 
-if [ "$DEBUG_SYMBOLS" = "debuginfo" ]; then
-    cat $START_DIR/cargo.toml.add.debug.txt >> Cargo.toml
+# if [ "$DEBUG_SYMBOLS" = "debuginfo" ]; then
+#     cat $START_DIR/cargo.toml.add.debug.txt >> Cargo.toml
+# fi
+if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
+    sed -i .bak 's/debug = true/debug = false/' Cargo.toml
 fi
 
 if [ "$CLEAN_BUILD" = "cleanbuild" ]; then
