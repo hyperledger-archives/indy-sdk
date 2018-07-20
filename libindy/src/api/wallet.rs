@@ -281,9 +281,6 @@ pub extern fn indy_open_wallet(command_handle: i32,
 
 /// Exports opened wallet
 ///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
-///
 /// #Params:
 /// wallet_handle: wallet handle returned by indy_open_wallet
 /// export_config: JSON containing settings for input operation.
@@ -331,9 +328,6 @@ pub extern fn indy_export_wallet(command_handle: i32,
 /// Creates a new secure wallet and then imports its content
 /// according to fields provided in import_config
 /// This can be seen as an indy_create_wallet call with additional content import
-///
-/// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-/// in the future releases.
 ///
 /// #Params
 /// config: Wallet configuration json.
