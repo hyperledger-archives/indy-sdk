@@ -29,4 +29,7 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
     <WarningsAsErrors></WarningsAsErrors>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="PaymentsApi\" />
+  </ItemGroup>
 </Project>
