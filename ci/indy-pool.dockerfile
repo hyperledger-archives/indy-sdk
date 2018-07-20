@@ -18,7 +18,7 @@ RUN pip3 install -U \
 	pip==9.0.3 \
 	setuptools
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88
+RUN wget -O- "http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x68DB5E88" | apt-key add -
 ARG indy_stream=stable
 RUN echo "deb https://repo.sovrin.org/deb xenial $indy_stream" >> /etc/apt/sources.list
 
