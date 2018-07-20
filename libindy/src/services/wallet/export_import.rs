@@ -14,6 +14,11 @@ use super::{WalletError, Wallet, WalletRecord};
 const CHUNK_SIZE: usize = 1024;
 
 pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32) -> Result<(), WalletError> {
+
+    if version != 1 {
+        Err(CommonError::InvalidState("Unsupported version".to_string()))?;
+    }
+
     let salt = pwhash_argon2i13::gen_salt();
     let nonce = chacha20poly1305_ietf::gen_nonce();
     let chunk_size = CHUNK_SIZE;
@@ -81,6 +86,10 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
 
     let header: Header = rmp_serde::from_slice(&header_bytes)
         .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize header: {}", err)))?;
+
+    if header.version != 1 {
+        Err(CommonError::InvalidStructure("Unsupported version".to_string()))?;
+    }
 
     // Reads encrypted
     let mut reader = match header.encryption_method {
