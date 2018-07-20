@@ -22,6 +22,7 @@ def recursive_walk(folder):
             f = open(folderName + '/' + filename, "r")
             print(folderName + '/' + filename + ".newrs")
             copy = open(folderName + '/' + filename + ".newrs", "w")
+            fileLineNumber = 0
             previousLine = ""
             previousTrimmedLine = ""
             insideExternCurly = 0
@@ -32,6 +33,7 @@ def recursive_walk(folder):
             openCurlys = -1
             ignoreEnding = 0
             for line in f:
+                fileLineNumber += 1
                 trimmedLine = line.strip()
                 
                 if (trimmedLine == "extern {"):
@@ -114,7 +116,7 @@ def recursive_walk(folder):
                     not previousLine.startswith("impl")
                 ):
                     traceNumber += 1
-                    copy.write("println!(\"TRACE[" + str(traceNumber) + "]: " + folderName + "/" + filename + "\");\n")
+                    copy.write("println!(\"TRACE[" + str(traceNumber) + "]: ABOVE LINE[" + str(fileLineNumber) + "]: " + trimmedLine.replace("\\","\\\\").replace("\"","\\\"").replace("{","{{").replace("}","}}") + " -- FILE: " + folderName + "/" + filename + "\");\n")
                 
                 copy.write(line)
 
@@ -157,7 +159,7 @@ def recursive_walk(folder):
                     not previousLine.startswith("impl")
                 ):
                     traceNumber += 1
-                    copy.write("println!(\"TRACE[" + str(traceNumber) + "]: " + folderName + "/" + filename + "\");\n")
+                    copy.write("println!(\"TRACE[" + str(traceNumber) + "]: BELOW LINE[" + str(fileLineNumber) + "]: " + trimmedLine.replace("\\","\\\\").replace("\"","\\\"").replace("{","{{").replace("}","}}") + " -- FILE: " + folderName + "/" + filename + "\");\n")
                 
                 if ( insideExternCurly == 1 and trimmedLine == "}" ):
                     insideExternCurly = 0

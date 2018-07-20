@@ -11,7 +11,7 @@ WORK_DIR=$(abspath "$WORK_DIR")
 COCOAPOD_BUILD_FOLDER=/Users/iosbuild1/forge/work/code/evernym/sdk/vcx/wrappers/ios/vcx/tmp
 PODSERVER_DOCROOT=/Users/norm/forge/work/code/evernym/podserver/public
 CONNECTME_IOS=/Users/norm/forge/work/code/evernym/ConnectMe/ios
-COCOAPOD_SPEC=/Users/norm/.cocoapods/repos/evernym-1/Specs/vcx/0.0.15/vcx.podspec
+COCOAPOD_SPEC=/Users/norm/.cocoapods/repos/evernym-1/Specs/vcx/0.0.19/vcx.podspec
 
 cd ${COCOAPOD_BUILD_FOLDER}
 COCOAPOD=$(ls *.zip)

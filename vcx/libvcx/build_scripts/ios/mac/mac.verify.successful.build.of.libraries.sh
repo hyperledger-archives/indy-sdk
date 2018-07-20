@@ -10,12 +10,12 @@ WORK_DIR=$(abspath "$WORK_DIR")
 VCX_SDK=$START_DIR/../../../../..
 VCX_SDK=$(abspath "$VCX_SDK")
 
-BUILD_UNDERWAY=$(sudo launchctl list|grep local.build_libvcx|awk '{print $1}')
+# BUILD_UNDERWAY=$(sudo launchctl list|grep local.build_libvcx|awk '{print $1}')
 
-if [ "$BUILD_UNDERWAY" != "-" ]; then
-    echo "The iOS build is currently running ($BUILD_UNDERWAY)! Please wait for it to finish before trying to verify whether or not the build was successful."
-    echo "The output from this script will not reflect the correct status of the full build!"
-fi
+# if [ "$BUILD_UNDERWAY" != "-" ]; then
+#     echo "The iOS build is currently running ($BUILD_UNDERWAY)! Please wait for it to finish before trying to verify whether or not the build was successful."
+#     echo "The output from this script will not reflect the correct status of the full build!"
+# fi
 
 # Verify that libindy, libnullpay, and libvcx built correctly for iOS...
 cd $START_DIR
