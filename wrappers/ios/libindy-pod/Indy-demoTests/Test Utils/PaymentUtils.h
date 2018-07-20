@@ -22,6 +22,7 @@
                  submitterDid:(NSString *)submitterDid
                    inputsJson:(NSString *)inputsJson
                   outputsJson:(NSString *)outputsJson
+        extra:(NSString *)extra
           requestWithFeesJson:(NSString **)requestWithFeesJson
                 paymentMethod:(NSString **)paymentMethod;
 
@@ -45,6 +46,7 @@
                     submitterDid:(NSString *)submitterDid
                       inputsJson:(NSString *)inputsJson
                      outputsJson:(NSString *)outputsJson
+        extra:(NSString *)extra
                   paymentReqJson:(NSString **)paymentReqJson
                    paymentMethod:(NSString **)paymentMethod;
 
@@ -56,6 +58,7 @@
 - (NSError *)buildMintRequest:(IndyHandle)walletHandle
                  submitterDid:(NSString *)submitterDid
                   outputsJson:(NSString *)outputsJson
+        extra:(NSString *)extra
                   mintReqJson:(NSString **)mintReqJson
                 paymentMethod:(NSString **)paymentMethod;
 

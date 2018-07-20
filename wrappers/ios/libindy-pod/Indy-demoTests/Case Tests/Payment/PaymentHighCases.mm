@@ -34,7 +34,7 @@
 NSString *paymentMethod = @"null";
 NSString *paymentAddress = @"pay:null:test";
 NSString *inputs = @"[\"pay:null:1\", \"pay:null:2\"]";
-NSString *outputs = @"[{\"recipient\": \"pay:null:1\", \"amount\":1, \"extra\":\"1\"}, {\"recipient\": \"pay:null:2\", \"amount\":2, \"extra\":\"2\"}]";
+NSString *outputs = @"[{\"recipient\": \"pay:null:1\", \"amount\":1}, {\"recipient\": \"pay:null:2\", \"amount\":2}]";
 NSString *fees = @"{\"txnType1\":1, \"txnType2\":2}";
 NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METHOD_2:1\"]";
 
@@ -68,6 +68,19 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
                                              submitterDid:[TestUtils trusteeDid]
                                                inputsJson:inputs
                                               outputsJson:outputs
+                                                    extra:nil
+                                      requestWithFeesJson:nil
+                                            paymentMethod:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+- (void)testAddRequestFeesWorksForExtra {
+    ret = [[PaymentUtils sharedInstance] addFeesToRequest:@"{}"
+                                             walletHandle:walletHandle
+                                             submitterDid:[TestUtils trusteeDid]
+                                               inputsJson:inputs
+                                              outputsJson:outputs
+                                                    extra:@"Extra data"
                                       requestWithFeesJson:nil
                                             paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
@@ -79,6 +92,7 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
                                              submitterDid:[TestUtils trusteeDid]
                                                inputsJson:incompatibleInputs
                                               outputsJson:@"[]"
+                                                    extra:nil
                                       requestWithFeesJson:nil
                                             paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentIncompatibleMethodsError);
@@ -97,10 +111,10 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
 
 - (void)testBuildGetPaymentSourcesRequestWorks {
     ret = [[PaymentUtils sharedInstance] buildGetPaymentSourcesRequest:walletHandle
-                                                   submitterDid:[TestUtils trusteeDid]
-                                                 paymentAddress:paymentAddress
-                                              getSourcesTxnJson:nil
-                                                  paymentMethod:nil];
+                                                          submitterDid:[TestUtils trusteeDid]
+                                                        paymentAddress:paymentAddress
+                                                     getSourcesTxnJson:nil
+                                                         paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
@@ -108,8 +122,8 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
 
 - (void)testParseGetPaymentSourcesResponseWorks {
     ret = [[PaymentUtils sharedInstance] parseGetPaymentSourcesResponse:@"{}"
-                                                   paymentMethod:paymentMethod
-                                                     sourcesJson:nil];
+                                                          paymentMethod:paymentMethod
+                                                            sourcesJson:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
@@ -120,6 +134,7 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
                                                 submitterDid:[TestUtils trusteeDid]
                                                   inputsJson:inputs
                                                  outputsJson:outputs
+                                                       extra:nil
                                               paymentReqJson:nil
                                                paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
@@ -140,6 +155,7 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
     ret = [[PaymentUtils sharedInstance] buildMintRequest:walletHandle
                                              submitterDid:[TestUtils trusteeDid]
                                               outputsJson:outputs
+                                                    extra:nil
                                               mintReqJson:nil
                                             paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);

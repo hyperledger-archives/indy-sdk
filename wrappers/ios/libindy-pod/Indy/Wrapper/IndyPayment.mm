@@ -52,6 +52,7 @@
             submitterDid:(NSString *)submitterDid
               inputsJson:(NSString *)inputsJson
              outputsJson:(NSString *)outputsJson
+                   extra:(NSString *)extra
               completion:(void (^)(NSError *error, NSString *requestWithFeesJson, NSString *paymentMethod))completion {
     indy_error_t ret;
 
@@ -64,6 +65,7 @@
             [requestJson UTF8String],
             [inputsJson UTF8String],
             [outputsJson UTF8String],
+            [extra UTF8String],
             IndyWrapperCommonStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -96,9 +98,9 @@
 }
 
 + (void)buildGetPaymentSourcesRequest:(IndyHandle)walletHandle
-                  submitterDid:(NSString *)submitterDid
-                paymentAddress:(NSString *)paymentAddress
-                    completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion {
+                         submitterDid:(NSString *)submitterDid
+                       paymentAddress:(NSString *)paymentAddress
+                           completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -119,8 +121,8 @@
 }
 
 + (void)parseGetPaymentSourcesResponse:(NSString *)responseJson
-                  paymentMethod:(NSString *)paymentMethod
-                     completion:(void (^)(NSError *error, NSString *sourcesJson))completion {
+                         paymentMethod:(NSString *)paymentMethod
+                            completion:(void (^)(NSError *error, NSString *sourcesJson))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -144,6 +146,7 @@
                submitterDid:(NSString *)submitterDid
                  inputsJson:(NSString *)inputsJson
                 outputsJson:(NSString *)outputsJson
+                      extra:(NSString *)extra
                  completion:(void (^)(NSError *error, NSString *paymentReqJson, NSString *paymentMethod))completion {
     indy_error_t ret;
 
@@ -155,6 +158,7 @@
             [submitterDid UTF8String],
             [inputsJson UTF8String],
             [outputsJson UTF8String],
+            [extra UTF8String],
             IndyWrapperCommonStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
@@ -189,6 +193,7 @@
 + (void)buildMintRequest:(IndyHandle)walletHandle
             submitterDid:(NSString *)submitterDid
              outputsJson:(NSString *)outputsJson
+                   extra:(NSString *)extra
               completion:(void (^)(NSError *error, NSString *mintReqJson, NSString *paymentMethod))completion {
     indy_error_t ret;
 
@@ -199,6 +204,7 @@
             walletHandle,
             [submitterDid UTF8String],
             [outputsJson UTF8String],
+            [extra UTF8String],
             IndyWrapperCommonStringStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
