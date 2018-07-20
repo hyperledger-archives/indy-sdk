@@ -24,13 +24,13 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
                                              resp_json: *const c_char,
                                              cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
-pub type BuildGetSourcesRequestCB = extern fn(command_handle: i32,
+pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: i32,
                                               wallet_handle: i32,
                                               submitter_did: *const c_char,
                                               payment_address: *const c_char,
                                               cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
-pub type ParseGetSourcesResponseCB = extern fn(command_handle: i32,
+pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,
                                                resp_json: *const c_char,
                                                cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
@@ -71,8 +71,8 @@ pub fn register_payment_method(
     create_payment_address: CreatePaymentAddressCB,
     add_request_fees: AddRequestFeesCB,
     parse_response_with_fees: ParseResponseWithFeesCB,
-    build_get_sources_request: BuildGetSourcesRequestCB,
-    parse_get_sources_response: ParseGetSourcesResponseCB,
+    build_get_payment_sources_request: BuildGetPaymentSourcesRequestCB,
+    parse_get_payment_sources_response: ParseGetPaymentSourcesResponseCB,
     build_payment_req: BuildPaymentReqCB,
     parse_payment_response: ParsePaymentResponseCB,
     build_mint_req: BuildMintReqCB,
@@ -95,8 +95,8 @@ pub fn register_payment_method(
             Some(create_payment_address),
             Some(add_request_fees),
             Some(parse_response_with_fees),
-            Some(build_get_sources_request),
-            Some(parse_get_sources_response),
+            Some(build_get_payment_sources_request),
+            Some(parse_get_payment_sources_response),
             Some(build_payment_req),
             Some(parse_payment_response),
             Some(build_mint_req),
@@ -130,8 +130,8 @@ extern {
         create_payment_address: Option<CreatePaymentAddressCB>,
         add_request_fees: Option<AddRequestFeesCB>,
         parse_response_with_fees: Option<ParseResponseWithFeesCB>,
-        build_get_sources_request: Option<BuildGetSourcesRequestCB>,
-        parse_get_sources_response: Option<ParseGetSourcesResponseCB>,
+        build_get_payment_sources_request: Option<BuildGetPaymentSourcesRequestCB>,
+        parse_get_payment_sources_response: Option<ParseGetPaymentSourcesResponseCB>,
         build_payment_req: Option<BuildPaymentReqCB>,
         parse_payment_response: Option<ParsePaymentResponseCB>,
         build_mint_req: Option<BuildMintReqCB>,

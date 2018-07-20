@@ -74,11 +74,11 @@ mod high_cases {
         }
     }
 
-    mod get_sources {
+    mod get_payment_sources {
         use super::*;
 
         #[test]
-        pub fn get_sources_works() {
+        pub fn get_payment_sources_works() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
@@ -89,13 +89,13 @@ mod high_cases {
 
             payments_utils::mint_sources(mint, wallet_handle, pool_handle, SUBMITTER_DID);
 
-            let (req_sources_1, payment_method) = payments::build_get_sources_request(wallet_handle, SUBMITTER_DID, addresses.get(0).unwrap().as_str()).unwrap();
+            let (req_sources_1, payment_method) = payments::build_get_payment_sources_request(wallet_handle, SUBMITTER_DID, addresses.get(0).unwrap().as_str()).unwrap();
             let resp_sources_1 = ledger::submit_request(pool_handle, req_sources_1.as_str()).unwrap();
-            let resp_sources_1 = payments::parse_get_sources_response(payment_method.as_str(), resp_sources_1.as_str()).unwrap();
+            let resp_sources_1 = payments::parse_get_payment_sources_response(payment_method.as_str(), resp_sources_1.as_str()).unwrap();
 
-            let (req_sources_2, payment_method) = payments::build_get_sources_request(wallet_handle, SUBMITTER_DID, addresses.get(1).unwrap().as_str()).unwrap();
+            let (req_sources_2, payment_method) = payments::build_get_payment_sources_request(wallet_handle, SUBMITTER_DID, addresses.get(1).unwrap().as_str()).unwrap();
             let resp_sources_2 = ledger::submit_request(pool_handle, req_sources_2.as_str()).unwrap();
-            let resp_sources_2 = payments::parse_get_sources_response(payment_method.as_str(), resp_sources_2.as_str()).unwrap();
+            let resp_sources_2 = payments::parse_get_payment_sources_response(payment_method.as_str(), resp_sources_2.as_str()).unwrap();
 
             let sources_1: Vec<SourceInfo> = serde_json::from_str(resp_sources_1.as_str()).unwrap();
             assert_eq!(sources_1.len(), 1);
@@ -113,7 +113,7 @@ mod high_cases {
         }
 
         #[test]
-        pub fn get_sources_works_for_no_sources() {
+        pub fn get_payment_sources_works_for_no_sources() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();

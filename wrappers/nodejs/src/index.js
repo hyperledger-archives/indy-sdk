@@ -621,17 +621,17 @@ indy.parseResponseWithFees = function parseResponseWithFees (paymentMethod, resp
   return cb.promise
 }
 
-indy.buildGetSourcesRequest = function buildGetSourcesRequest (wh, submitterDid, paymentAddress, cb) {
+indy.buildGetPaymentSourcesRequest = function buildGetPaymentSourcesRequest (wh, submitterDid, paymentAddress, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
   })
-  capi.buildGetSourcesRequest(wh, submitterDid, paymentAddress, cb)
+  capi.buildGetPaymentSourcesRequest(wh, submitterDid, paymentAddress, cb)
   return cb.promise
 }
 
-indy.parseGetSourcesResponse = function parseGetSourcesResponse (paymentMethod, resp, cb) {
+indy.parseGetPaymentSourcesResponse = function parseGetPaymentSourcesResponse (paymentMethod, resp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.parseGetSourcesResponse(paymentMethod, toJson(resp), cb)
+  capi.parseGetPaymentSourcesResponse(paymentMethod, toJson(resp), cb)
   return cb.promise
 }
 

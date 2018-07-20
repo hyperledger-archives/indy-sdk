@@ -315,8 +315,8 @@ Send custom transaction with user defined json body and optional signature
 ledger custom [txn=]<txn-json-value> [sign=<true|false>]
 ```
 
-#### GET_SOURCES transaction
-Send GET_SOURCES transaction
+#### GET_PAYMENT_SOURCES transaction
+Send GET_PAYMENT_SOURCES transaction
 ```
 ledger get-sources payment_address=<payment_address>
 ```

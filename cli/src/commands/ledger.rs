@@ -851,12 +851,12 @@ pub mod custom_command {
     }
 }
 
-pub mod get_sources_command {
+pub mod get_payment_sources_command {
     use super::*;
 
-    command!(CommandMetadata::build("get-sources", "Get sources list for payment address.")
+    command!(CommandMetadata::build("get-payment-sources", "Get sources list for payment address.")
                 .add_required_param("payment_address","Target payment address")
-                .add_example("ledger get-sources payment_address=pay:sov:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
+                .add_example("ledger get-payment-sources payment_address=pay:sov:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .finalize()
     );
 
@@ -869,13 +869,13 @@ pub mod get_sources_command {
 
         let payment_address = get_str_param("payment_address", params).map_err(error_err!())?;
 
-        let (request, payment_method) = Payment::build_get_sources_request(wallet_handle, &submitter_did, payment_address)
+        let (request, payment_method) = Payment::build_get_payment_sources_request(wallet_handle, &submitter_did, payment_address)
             .map_err(|err| handle_payment_error(err, None))?;
 
         let response = Ledger::submit_request(pool_handle, &request)
             .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
 
-        let res = match Payment::parse_get_sources_response(&payment_method, &response) {
+        let res = match Payment::parse_get_payment_sources_response(&payment_method, &response) {
             Ok(sources_json) => {
                 let mut sources: Vec<serde_json::Value> = serde_json::from_str(&sources_json)
                     .map_err(|_| println_err!("Wrong data has been received"))?;
@@ -2897,11 +2897,11 @@ pub mod tests {
     }
 
     #[cfg(feature = "nullpay_plugin")]
-    mod get_sources {
+    mod get_payment_sources {
         use super::*;
 
         #[test]
-        pub fn get_sources_works() {
+        pub fn get_payment_sources_works() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -2912,7 +2912,7 @@ pub mod tests {
             use_did(&ctx, DID_TRUSTEE);
             let payment_address = create_address_and_mint_sources(&ctx);
             {
-                let cmd = get_sources_command::new();
+                let cmd = get_payment_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", payment_address);
                 cmd.execute(&ctx, &params).unwrap();
@@ -2923,7 +2923,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_sources_works_for_no_sources() {
+        pub fn get_payment_sources_works_for_no_sources() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -2933,7 +2933,7 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             {
-                let cmd = get_sources_command::new();
+                let cmd = get_payment_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", PAYMENT_ADDRESS.to_string());
                 cmd.execute(&ctx, &params).unwrap();
@@ -2944,7 +2944,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_sources_works_for_unknown_payment_method() {
+        pub fn get_payment_sources_works_for_unknown_payment_method() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -2954,7 +2954,7 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             {
-                let cmd = get_sources_command::new();
+                let cmd = get_payment_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", format!("pay:{}:test", UNKNOWN_PAYMENT_METHOD));
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -2965,7 +2965,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_sources_works_for_invalid_payment_address() {
+        pub fn get_payment_sources_works_for_invalid_payment_address() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -2975,7 +2975,7 @@ pub mod tests {
             new_did(&ctx, SEED_TRUSTEE);
             use_did(&ctx, DID_TRUSTEE);
             {
-                let cmd = get_sources_command::new();
+                let cmd = get_payment_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", INVALID_PAYMENT_ADDRESS.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -2986,14 +2986,14 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_sources_works_for_no_active_wallet() {
+        pub fn get_payment_sources_works_for_no_active_wallet() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
             create_and_connect_pool(&ctx);
             load_null_payment_plugin(&ctx);
             {
-                let cmd = get_sources_command::new();
+                let cmd = get_payment_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", INVALID_PAYMENT_ADDRESS.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -3003,7 +3003,7 @@ pub mod tests {
         }
 
         #[test]
-        pub fn get_sources_works_for_no_active_did() {
+        pub fn get_payment_sources_works_for_no_active_did() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
 
@@ -3011,7 +3011,7 @@ pub mod tests {
             create_and_open_wallet(&ctx);
             load_null_payment_plugin(&ctx);
             {
-                let cmd = get_sources_command::new();
+                let cmd = get_payment_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", PAYMENT_ADDRESS.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
@@ -3871,10 +3871,10 @@ pub mod tests {
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
         let submitter_did = ensure_active_did(&ctx).unwrap();
 
-        let (get_sources_txn_json, _) = Payment::build_get_sources_request(wallet_handle, &submitter_did, payment_address).unwrap();
+        let (get_sources_txn_json, _) = Payment::build_get_payment_sources_request(wallet_handle, &submitter_did, payment_address).unwrap();
         let response = Ledger::submit_request(pool_handle, &get_sources_txn_json).unwrap();
 
-        let sources_json = Payment::parse_get_sources_response(NULL_PAYMENT_METHOD, &response).unwrap();
+        let sources_json = Payment::parse_get_payment_sources_response(NULL_PAYMENT_METHOD, &response).unwrap();
 
         let sources = serde_json::from_str::<serde_json::Value>(&sources_json).unwrap();
         let source: &serde_json::Value = &sources.as_array().unwrap()[0];

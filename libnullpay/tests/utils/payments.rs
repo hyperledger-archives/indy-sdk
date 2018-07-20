@@ -62,15 +62,15 @@ pub fn parse_response_with_fees(payment_method: &str, resp_json: &str) -> Result
 
     let err = unsafe {
         indy_parse_response_with_fees(command_handle,
-                                     payment_method.as_ptr(),
-                                     resp_json.as_ptr(),
-                                     cb)
+                                      payment_method.as_ptr(),
+                                      resp_json.as_ptr(),
+                                      cb)
     };
 
     super::results::result_to_string(err, receiver)
 }
 
-pub fn build_get_sources_request(wallet_handle: i32, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
+pub fn build_get_payment_sources_request(wallet_handle: i32, submitter_did: &str, payment_address: &str) -> Result<(String, String), ErrorCode> {
     let (receiver, command_handle, cb) =
         super::callbacks::_closure_to_cb_ec_string_string();
 
@@ -78,18 +78,18 @@ pub fn build_get_sources_request(wallet_handle: i32, submitter_did: &str, paymen
     let payment_address = CString::new(payment_address).unwrap();
 
     let err = unsafe {
-        indy_build_get_sources_request(command_handle,
-                                    wallet_handle,
-                                    submitter_did.as_ptr(),
-                                    payment_address.as_ptr(),
-                                    cb)
+        indy_build_get_payment_sources_request(command_handle,
+                                               wallet_handle,
+                                               submitter_did.as_ptr(),
+                                               payment_address.as_ptr(),
+                                               cb)
     };
 
     super::results::result_to_string_string(err, receiver)
 }
 
 
-pub fn parse_get_sources_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
+pub fn parse_get_payment_sources_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) =
         super::callbacks::_closure_to_cb_ec_string();
 
@@ -97,10 +97,10 @@ pub fn parse_get_sources_response(payment_method: &str, resp_json: &str) -> Resu
     let resp_json = CString::new(resp_json).unwrap();
 
     let err = unsafe {
-        indy_parse_get_sources_response(command_handle,
-                                     payment_method.as_ptr(),
-                                     resp_json.as_ptr(),
-                                     cb)
+        indy_parse_get_payment_sources_response(command_handle,
+                                                payment_method.as_ptr(),
+                                                resp_json.as_ptr(),
+                                                cb)
     };
 
     super::results::result_to_string(err, receiver)
@@ -255,22 +255,22 @@ extern {
                                                           receipts_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
-    fn indy_build_get_sources_request(command_handle: i32,
-                                   wallet_handle: i32,
-                                   submitter_did: *const c_char,
-                                   payment_address: *const c_char,
-                                   cb: Option<extern fn(command_handle_: i32,
-                                                        err: ErrorCode,
-                                                        get_sources_txn_json: *const c_char,
-                                                        payment_method: *const c_char)>) -> ErrorCode;
+    fn indy_build_get_payment_sources_request(command_handle: i32,
+                                              wallet_handle: i32,
+                                              submitter_did: *const c_char,
+                                              payment_address: *const c_char,
+                                              cb: Option<extern fn(command_handle_: i32,
+                                                                   err: ErrorCode,
+                                                                   get_sources_txn_json: *const c_char,
+                                                                   payment_method: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
-    fn indy_parse_get_sources_response(command_handle: i32,
-                                    payment_method: *const c_char,
-                                    resp_json: *const c_char,
-                                    cb: Option<extern fn(command_handle_: i32,
-                                                         err: ErrorCode,
-                                                         sources_json: *const c_char)>) -> ErrorCode;
+    fn indy_parse_get_payment_sources_response(command_handle: i32,
+                                               payment_method: *const c_char,
+                                               resp_json: *const c_char,
+                                               cb: Option<extern fn(command_handle_: i32,
+                                                                    err: ErrorCode,
+                                                                    sources_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_build_payment_req(command_handle: i32,

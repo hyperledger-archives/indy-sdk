@@ -30,13 +30,13 @@
                       receiptsJson:(NSString **)receiptsJson;
 
 // MARK: - Get sources request
-- (NSError *)buildGetSourcesRequest:(IndyHandle)walletHandle
+- (NSError *)buildGetPaymentSourcesRequest:(IndyHandle)walletHandle
                        submitterDid:(NSString *)submitterDid
                      paymentAddress:(NSString *)paymentAddress
                   getSourcesTxnJson:(NSString **)getSourcesTxnJson
                       paymentMethod:(NSString **)paymentMethod;
 
-- (NSError *)parseGetSourcesResponse:(NSString *)responseJson
+- (NSError *)parseGetPaymentSourcesResponse:(NSString *)responseJson
                        paymentMethod:(NSString *)paymentMethod
                          sourcesJson:(NSString **)sourcesJson;
 

@@ -40,12 +40,12 @@ Returns:
 
 * Table with columns: Payment Address, Payment Method
 
-### Send GET_SOURCES request
+### Send GET_PAYMENT_SOURCES request
 
 Send request to get list of sources for specified payment addresses
 
 ```indy-cli
-indy> ledger get-sources payment_address=<payment-address>
+indy> ledger get-payment-sources payment_address=<payment-address>
 ```
 
 Returns:

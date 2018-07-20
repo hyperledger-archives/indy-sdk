@@ -187,9 +187,9 @@ async def parse_response_with_fees(payment_method: str,
     return res
 
 
-async def build_get_sources_request(wallet_handle: int,
-                                    submitter_did: str,
-                                    payment_address: str) -> (str, str):
+async def build_get_payment_sources_request(wallet_handle: int,
+                                            submitter_did: str,
+                                            payment_address: str) -> (str, str):
     """
     Builds Indy request for getting sources list for payment address
     according to this payment method.
@@ -202,32 +202,32 @@ async def build_get_sources_request(wallet_handle: int,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_sources_request: >>> wallet_handle: %r, submitter_did: %r, payment_address: %r",
+    logger.debug("build_get_payment_sources_request: >>> wallet_handle: %r, submitter_did: %r, payment_address: %r",
                  wallet_handle,
                  submitter_did,
                  payment_address)
 
-    if not hasattr(build_get_sources_request, "cb"):
-        logger.debug("build_get_sources_request: Creating callback")
-        build_get_sources_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+    if not hasattr(build_get_payment_sources_request, "cb"):
+        logger.debug("build_get_payment_sources_request: Creating callback")
+        build_get_payment_sources_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
     c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
     c_payment_address = c_char_p(payment_address.encode('utf-8'))
 
-    (get_sources_txn_json, payment_method) = await do_call('indy_build_get_sources_request',
+    (get_sources_txn_json, payment_method) = await do_call('indy_build_get_payment_sources_request',
                                                            c_wallet_handle,
                                                            c_submitter_did,
                                                            c_payment_address,
-                                                           build_get_sources_request.cb)
+                                                           build_get_payment_sources_request.cb)
     res = (get_sources_txn_json.decode(), payment_method.decode())
 
-    logger.debug("build_get_sources_request: <<< res: %r", res)
+    logger.debug("build_get_payment_sources_request: <<< res: %r", res)
     return res
 
 
-async def parse_get_sources_response(payment_method: str,
-                                     resp_json: str) -> str:
+async def parse_get_payment_sources_response(payment_method: str,
+                                             resp_json: str) -> str:
     """
     Parses response for Indy request for getting sources list.
 
@@ -244,24 +244,24 @@ async def parse_get_sources_response(payment_method: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("parse_get_sources_response: >>> payment_method: %r, resp_json: %r",
+    logger.debug("parse_get_payment_sources_response: >>> payment_method: %r, resp_json: %r",
                  payment_method,
                  resp_json)
 
-    if not hasattr(parse_get_sources_response, "cb"):
-        logger.debug("parse_get_sources_response: Creating callback")
-        parse_get_sources_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(parse_get_payment_sources_response, "cb"):
+        logger.debug("parse_get_payment_sources_response: Creating callback")
+        parse_get_payment_sources_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
     c_resp_json = c_char_p(resp_json.encode('utf-8'))
 
-    sources_json = await do_call('indy_parse_get_sources_response',
+    sources_json = await do_call('indy_parse_get_payment_sources_response',
                                  c_payment_method,
                                  c_resp_json,
-                                 parse_get_sources_response.cb)
+                                 parse_get_payment_sources_response.cb)
 
     res = sources_json.decode()
-    logger.debug("parse_get_sources_response: <<< res: %r", res)
+    logger.debug("parse_get_payment_sources_response: <<< res: %r", res)
     return res
 
 

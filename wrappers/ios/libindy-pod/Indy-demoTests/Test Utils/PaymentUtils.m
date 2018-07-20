@@ -114,7 +114,7 @@
     return err;
 }
 
-- (NSError *)buildGetSourcesRequest:(IndyHandle)walletHandle
+- (NSError *)buildGetPaymentSourcesRequest:(IndyHandle)walletHandle
                        submitterDid:(NSString *)submitterDid
                      paymentAddress:(NSString *)paymentAddress
                   getSourcesTxnJson:(NSString **)getSourcesTxnJson
@@ -124,7 +124,7 @@
     __block NSString *outReq = nil;
     __block NSString *outPayMethod = nil;
 
-    [IndyPayment buildGetSourcesRequest:walletHandle
+    [IndyPayment buildGetPaymentSourcesRequest:walletHandle
                            submitterDid:submitterDid
                          paymentAddress:paymentAddress
                              completion:^(NSError *error, NSString *req, NSString *method) {
@@ -141,14 +141,14 @@
     return err;
 }
 
-- (NSError *)parseGetSourcesResponse:(NSString *)responseJson
+- (NSError *)parseGetPaymentSourcesResponse:(NSString *)responseJson
                        paymentMethod:(NSString *)paymentMethod
                          sourcesJson:(NSString **)sourcesJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *outSources = nil;
 
-    [IndyPayment parseGetSourcesResponse:responseJson
+    [IndyPayment parseGetPaymentSourcesResponse:responseJson
                            paymentMethod:paymentMethod
                               completion:^(NSError *error, NSString *sources) {
                                   err = error;

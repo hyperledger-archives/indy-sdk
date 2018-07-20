@@ -17,8 +17,8 @@ extern "C" {
     /// payment_method: The type of payment method also used as sub-prefix for fully resolvable payment address format ("sov" - for example)
     /// create_payment_address: "create_payment_address" operation handler
     /// add_request_fees: "add_request_fees" operation handler
-    /// build_get_sources_request: "build_get_sources_request" operation handler
-    /// parse_get_sources_response: "parse_get_sources_response" operation handler
+    /// build_get_payment_sources_request: "build_get_payment_sources_request" operation handler
+    /// parse_get_payment_sources_response: "parse_get_payment_sources_response" operation handler
     /// build_payment_req: "build_payment_req" operation handler
     /// build_mint_req: "build_mint_req" operation handler
     ///
@@ -186,16 +186,16 @@ extern "C" {
     /// get_sources_txn_json - Indy request for getting sources list for payment address
     /// payment_method - used payment method
 
-    extern indy_error_t indy_build_get_sources_request(indy_handle_t command_handle,
-                                                       indy_handle_t wallet_handle,
-                                                       const char *  submitter_did,
-                                                       const char *  payment_address,
+    extern indy_error_t indy_build_get_payment_sources_request(indy_handle_t command_handle,
+                                                               indy_handle_t wallet_handle,
+                                                               const char *  submitter_did,
+                                                               const char *  payment_address,
 
-                                                       void           (*cb)(indy_handle_t xcommand_handle,
-                                                                            indy_error_t  err,
-                                                                            const char*   get_sources_txn_json,
-                                                                            const char*   payment_method)
-                                                       );
+                                                               void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                    indy_error_t  err,
+                                                                                    const char*   get_sources_txn_json,
+                                                                                    const char*   payment_method)
+                                                               );
 
     /// Parses response for Indy request for getting sources list.
     ///
@@ -214,14 +214,14 @@ extern "C" {
     ///      extra: <str>, // optional data from payment transaction
     ///   }]
 
-    extern indy_error_t indy_parse_get_sources_response(indy_handle_t command_handle,
-                                                        const char *  payment_method,
-                                                        const char *  resp_json,
+    extern indy_error_t indy_parse_get_payment_sources_response(indy_handle_t command_handle,
+                                                                const char *  payment_method,
+                                                                const char *  resp_json,
 
-                                                        void           (*cb)(indy_handle_t xcommand_handle,
-                                                                             indy_error_t  err,
-                                                                             const char*   sources_json)
-                                                        );
+                                                                void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                     indy_error_t  err,
+                                                                                     const char*   sources_json)
+                                                                );
 
     /// Builds Indy request for doing payment
     /// according to this payment method.

@@ -95,8 +95,8 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
 
 // MARK: - Build Get Sources Request
 
-- (void)testBuildGetSourcesRequestWorks {
-    ret = [[PaymentUtils sharedInstance] buildGetSourcesRequest:walletHandle
+- (void)testBuildGetPaymentSourcesRequestWorks {
+    ret = [[PaymentUtils sharedInstance] buildGetPaymentSourcesRequest:walletHandle
                                                    submitterDid:[TestUtils trusteeDid]
                                                  paymentAddress:paymentAddress
                                               getSourcesTxnJson:nil
@@ -106,8 +106,8 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
 
 // MARK: - Parse Get Sources Response
 
-- (void)testParseGetSourcesResponseWorks {
-    ret = [[PaymentUtils sharedInstance] parseGetSourcesResponse:@"{}"
+- (void)testParseGetPaymentSourcesResponseWorks {
+    ret = [[PaymentUtils sharedInstance] parseGetPaymentSourcesResponse:@"{}"
                                                    paymentMethod:paymentMethod
                                                      sourcesJson:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);

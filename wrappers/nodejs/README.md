@@ -1957,7 +1957,7 @@ Note: this param will be used to determine payment\_method
 ````
 
 
-#### buildGetSourcesRequest \( wh, submitterDid, paymentAddress \) -&gt; \[ getSourcesTxn, paymentMethod \]
+#### buildGetPaymentSourcesRequest \( wh, submitterDid, paymentAddress \) -&gt; \[ getSourcesTxn, paymentMethod \]
 
 Builds Indy request for getting sources list for payment address
 according to this payment method.
@@ -1969,7 +1969,7 @@ according to this payment method.
 payment\_method - used payment method
 
 
-#### parseGetSourcesResponse \( paymentMethod, resp \) -&gt; sources
+#### parseGetPaymentSourcesResponse \( paymentMethod, resp \) -&gt; sources
 
 Parses response for Indy request for getting sources list.
 

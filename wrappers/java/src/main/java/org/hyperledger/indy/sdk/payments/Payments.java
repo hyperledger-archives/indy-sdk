@@ -50,15 +50,15 @@ public class Payments extends IndyJava.API {
     };
 
     /**
-     * Callback used when buildGetSourcesRequest completes.
+     * Callback used when buildGetPaymentSourcesRequest completes.
      */
-    private static Callback buildGetSourcesRequestCb = new Callback() {
+    private static Callback BuildGetPaymentSourcesRequestCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int xcommandHandle, int err, String sourcesJson, String paymentMethod) {
-            CompletableFuture<BuildGetSourcesRequestResult> future = (CompletableFuture<BuildGetSourcesRequestResult>) removeFuture(xcommandHandle);
+            CompletableFuture<BuildGetPaymentSourcesRequestResult> future = (CompletableFuture<BuildGetPaymentSourcesRequestResult>) removeFuture(xcommandHandle);
             if (!checkCallback(future, err)) return;
 
-            BuildGetSourcesRequestResult addRequestFeesResult = new BuildGetSourcesRequestResult(sourcesJson, paymentMethod);
+            BuildGetPaymentSourcesRequestResult addRequestFeesResult = new BuildGetPaymentSourcesRequestResult(sourcesJson, paymentMethod);
 
             future.complete(addRequestFeesResult);
         }
@@ -259,7 +259,7 @@ public class Payments extends IndyJava.API {
      * @return Indy request for getting sources list for payment address
      * @throws IndyException
      */
-    public static CompletableFuture<BuildGetSourcesRequestResult> buildGetSourcesRequest(
+    public static CompletableFuture<BuildGetPaymentSourcesRequestResult> buildGetPaymentSourcesRequest(
             Wallet wallet,
             String submitterDid,
             String paymentAddress
@@ -267,17 +267,17 @@ public class Payments extends IndyJava.API {
         ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(paymentAddress, "paymentAddress");
 
-        CompletableFuture<BuildGetSourcesRequestResult> future = new CompletableFuture<>();
+        CompletableFuture<BuildGetPaymentSourcesRequestResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int walletHandle = wallet.getWalletHandle();
 
-        int result = LibIndy.api.indy_build_get_sources_request(
+        int result = LibIndy.api.indy_build_get_payment_sources_request(
                 commandHandle,
                 walletHandle,
                 submitterDid,
                 paymentAddress,
-                buildGetSourcesRequestCb);
+                BuildGetPaymentSourcesRequestCB);
 
         checkResult(result);
 
@@ -298,11 +298,11 @@ public class Payments extends IndyJava.API {
      *   }]
      * @throws IndyException
      */
-    public static CompletableFuture<String> parseGetSourcesResponse(
+    public static CompletableFuture<String> parseGetPaymentSourcesResponse(
             String paymentMethod,
             String respJson
     ) throws IndyException {
-        return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_get_sources_response);
+        return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_get_payment_sources_response);
     }
 
     /**

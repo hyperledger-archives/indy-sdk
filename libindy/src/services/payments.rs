@@ -20,8 +20,8 @@ pub struct PaymentsMethod {
     create_address: CreatePaymentAddressCB,
     add_request_fees: AddRequestFeesCB,
     parse_response_with_fees: ParseResponseWithFeesCB,
-    build_get_sources_request: BuildGetSourcesRequestCB,
-    parse_get_sources_response: ParseGetSourcesResponseCB,
+    build_get_payment_sources_request: BuildGetPaymentSourcesRequestCB,
+    parse_get_payment_sources_response: ParseGetPaymentSourcesResponseCB,
     build_payment_req: BuildPaymentReqCB,
     parse_payment_response: ParsePaymentResponseCB,
     build_mint_req: BuildMintReqCB,
@@ -36,8 +36,8 @@ impl PaymentsMethodCBs {
     pub fn new(create_address: CreatePaymentAddressCB,
                add_request_fees: AddRequestFeesCB,
                parse_response_with_fees: ParseResponseWithFeesCB,
-               build_get_sources_request: BuildGetSourcesRequestCB,
-               parse_get_sources_response: ParseGetSourcesResponseCB,
+               build_get_payment_sources_request: BuildGetPaymentSourcesRequestCB,
+               parse_get_payment_sources_response: ParseGetPaymentSourcesResponseCB,
                build_payment_req: BuildPaymentReqCB,
                parse_payment_response: ParsePaymentResponseCB,
                build_mint_req: BuildMintReqCB,
@@ -48,8 +48,8 @@ impl PaymentsMethodCBs {
             create_address,
             add_request_fees,
             parse_response_with_fees,
-            build_get_sources_request,
-            parse_get_sources_response,
+            build_get_payment_sources_request,
+            parse_get_payment_sources_response,
             build_payment_req,
             parse_payment_response,
             build_mint_req,
@@ -126,35 +126,35 @@ impl PaymentsService {
         res
     }
 
-    pub fn build_get_sources_request(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, address: &str) -> Result<(), PaymentsError> {
-        trace!("build_get_sources_request >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, address: {:?}", type_, wallet_handle, submitter_did, address);
-        let build_get_sources_request: BuildGetSourcesRequestCB = self.methods.borrow().get(type_)
-            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_sources_request;
+    pub fn build_get_payment_sources_request(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, address: &str) -> Result<(), PaymentsError> {
+        trace!("build_get_payment_sources_request >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, address: {:?}", type_, wallet_handle, submitter_did, address);
+        let build_get_payment_sources_request: BuildGetPaymentSourcesRequestCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_payment_sources_request;
 
         let submitter_did = CString::new(submitter_did)?;
         let address = CString::new(address)?;
 
-        let err = build_get_sources_request(cmd_handle, wallet_handle, submitter_did.as_ptr(), address.as_ptr(), cbs::build_get_sources_request_cb(cmd_handle));
+        let err = build_get_payment_sources_request(cmd_handle, wallet_handle, submitter_did.as_ptr(), address.as_ptr(), cbs::build_get_payment_sources_request_cb(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
 
-        trace!("build_get_sources_request <<< result: {:?}", res);
+        trace!("build_get_payment_sources_request <<< result: {:?}", res);
 
         res
     }
 
-    pub fn parse_get_sources_response(&self, cmd_handle: i32, type_: &str, response: &str) -> Result<(), PaymentsError> {
-        trace!("parse_get_sources_response >>> type_: {:?}, response: {:?}", type_, response);
-        let parse_get_sources_response: ParseGetSourcesResponseCB = self.methods.borrow().get(type_)
-            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.parse_get_sources_response;
+    pub fn parse_get_payment_sources_response(&self, cmd_handle: i32, type_: &str, response: &str) -> Result<(), PaymentsError> {
+        trace!("parse_get_payment_sources_response >>> type_: {:?}, response: {:?}", type_, response);
+        let parse_get_payment_sources_response: ParseGetPaymentSourcesResponseCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.parse_get_payment_sources_response;
 
         let response = CString::new(response)?;
 
-        let err = parse_get_sources_response(cmd_handle, response.as_ptr(), cbs::parse_get_sources_response_cb(cmd_handle));
+        let err = parse_get_payment_sources_response(cmd_handle, response.as_ptr(), cbs::parse_get_payment_sources_response_cb(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
 
-        trace!("parse_get_sources_response <<< result: {:?}", res);
+        trace!("parse_get_payment_sources_response <<< result: {:?}", res);
 
         res
     }
@@ -404,16 +404,16 @@ mod cbs {
         send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseResponseWithFeesAck(cmd_handle, result)))
     }
 
-    pub fn build_get_sources_request_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
+    pub fn build_get_payment_sources_request_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                              err: ErrorCode,
                                                                              c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetSourcesRequestAck(cmd_handle, result)))
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildGetPaymentSourcesRequestAck(cmd_handle, result)))
     }
 
-    pub fn parse_get_sources_response_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
+    pub fn parse_get_payment_sources_response_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
                                                                               err: ErrorCode,
                                                                               c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetSourcesResponseAck(cmd_handle, result)))
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetPaymentSourcesResponseAck(cmd_handle, result)))
     }
 
     pub fn build_payment_req_cb(cmd_handle: i32) -> Option<extern fn(command_handle: i32,

@@ -24,13 +24,13 @@ public class PaymentsResults {
     }
 
     /**
-     * Result from calling buildGetSourcesRequest
+     * Result from calling BuildGetPaymentSourcesRequestResult
      */
-    public static class BuildGetSourcesRequestResult {
+    public static class BuildGetPaymentSourcesRequestResult {
         private String getSourcesTxnJson;
         private String paymentMethod;
 
-        public BuildGetSourcesRequestResult(String getSourcesTxnJson, String paymentMethod) {
+        public BuildGetPaymentSourcesRequestResult(String getSourcesTxnJson, String paymentMethod) {
             this.getSourcesTxnJson = getSourcesTxnJson;
             this.paymentMethod = paymentMethod;
         }

@@ -50,8 +50,8 @@ by calling ```indy_register_payment_method``` call:
 /// payment_method: The type of payment method also used as sub-prefix for fully resolvable payment address format ("sov" - for example)
 /// create_payment_address: "create_payment_address" operation handler
 /// add_request_fees: "add_request_fees" operation handler
-/// build_get_sources_request: "build_get_sources_request" operation handler
-/// parse_get_sources_response: "parse_get_sources_response" operation handler
+/// build_get_payment_sources_request: "build_get_payment_sources_request" operation handler
+/// parse_get_payment_sources_response: "parse_get_payment_sources_response" operation handler
 /// build_payment_req: "build_payment_req" operation handler
 /// build_mint_req: "build_mint_req" operation handler
 ///
@@ -64,8 +64,8 @@ pub extern fn indy_register_payment_method(command_handle: i32,
                                            create_payment_address: Option<CreatePaymentAddressCB>,
                                            add_request_fees: Option<AddRequestFeesCB>,
                                            parse_response_with_fees: Option<ParseResponseWithFeesCB>,
-                                           build_get_sources_request: Option<BuildGetSourcesRequestCB>,
-                                           parse_get_sources_response: Option<ParseGetSourcesResponseCB>,
+                                           build_get_payment_sources_request: Option<BuildGetPaymentSourcesRequestCB>,
+                                           parse_get_payment_sources_response: Option<ParseGetPaymentSourcesResponseCB>,
                                            build_payment_req: Option<BuildPaymentReqCB>,
                                            parse_payment_response: Option<ParsePaymentResponseCB>,
                                            build_mint_req: Option<BuildMintReqCB>,
@@ -180,7 +180,7 @@ type ParseResponseWithFeesCB = extern fn(command_handle: i32,
 ///
 /// #Returns
 /// get_sources_txn_json - Indy request for getting sources list for payment address
-type BuildGetSourcesRequestCB = extern fn(command_handle: i32,
+type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: i32,
                                        wallet_handle: i32,
                                        submitter_did: *const c_char,
                                        payment_address: *const c_char,
@@ -203,7 +203,7 @@ type BuildGetSourcesRequestCB = extern fn(command_handle: i32,
 ///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
-type ParseGetSourcesResponseCB = extern fn(command_handle: i32,
+type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,
                                         resp_json: *const c_char,
                                         cb: Option<extern fn(command_handle_: i32,
                                                              err: ErrorCode,
@@ -473,14 +473,14 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 /// #Returns
 /// get_sources_txn_json - Indy request for getting sources list for payment address
 /// payment_method - used payment method
-pub extern fn indy_build_get_sources_request(command_handle: i32,
-                                          wallet_handle: i32,
-                                          submitter_did: *const c_char,
-                                          payment_address: *const c_char,
-                                          cb: Option<extern fn(command_handle_: i32,
-                                                               err: ErrorCode,
-                                                               get_sources_txn_json: *const c_char,
-                                                               payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {}
+pub extern fn indy_build_get_payment_sources_request(command_handle: i32,
+                                                     wallet_handle: i32,
+                                                     submitter_did: *const c_char,
+                                                     payment_address: *const c_char,
+                                                     cb: Option<extern fn(command_handle_: i32,
+                                                                          err: ErrorCode,
+                                                                          get_sources_txn_json: *const c_char,
+                                                                          payment_method: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Parses response for Indy request for getting sources list.
 ///
@@ -498,12 +498,12 @@ pub extern fn indy_build_get_sources_request(command_handle: i32,
 ///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
-pub extern fn indy_parse_get_sources_response(command_handle: i32,
-                                           payment_method: *const c_char,
-                                           resp_json: *const c_char,
-                                           cb: Option<extern fn(command_handle_: i32,
-                                                                err: ErrorCode,
-                                                                sources_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
+pub extern fn indy_parse_get_payment_sources_response(command_handle: i32,
+                                                      payment_method: *const c_char,
+                                                      resp_json: *const c_char,
+                                                      cb: Option<extern fn(command_handle_: i32,
+                                                                           err: ErrorCode,
+                                                                           sources_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
 /// Builds Indy request for doing payment
 /// according to this payment method.

@@ -103,7 +103,7 @@
     getSourcesTxnJson - Indy request for getting sources list for payment address
     paymentMethod - used payment method
  */
-+ (void)buildGetSourcesRequest:(IndyHandle)walletHandle
++ (void)buildGetPaymentSourcesRequest:(IndyHandle)walletHandle
                   submitterDid:(NSString *)submitterDid
                 paymentAddress:(NSString *)paymentAddress
                     completion:(void (^)(NSError *error, NSString *getSourcesTxnJson, NSString *paymentMethod))completion;
@@ -123,7 +123,7 @@
       extra: <str>, // optional data from payment transaction
    }]
  */
-+ (void)parseGetSourcesResponse:(NSString *)responseJson
++ (void)parseGetPaymentSourcesResponse:(NSString *)responseJson
                   paymentMethod:(NSString *)paymentMethod
                      completion:(void (^)(NSError *error, NSString *sourcesJson))completion;
 
