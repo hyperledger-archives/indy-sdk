@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 echo ${PWD}
 ANDROID_JNI_LIB=vcx/wrappers/java/vcx/src/main/jniLibs
 echo $(ls runtime_android_build)

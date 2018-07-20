@@ -91,6 +91,8 @@ pub static MISSING_WALLET_NAME: Error = Error { code_num: 1076, message: "Missin
 pub static MISSING_EXPORTED_WALLET_PATH: Error = Error { code_num: 1077, message: "Missing exported wallet path in config"};
 pub static MISSING_BACKUP_KEY: Error = Error { code_num: 1078, message: "Missing exported backup key in config"};
 pub static WALLET_NOT_FOUND: Error = Error { code_num: 1079, message: "Wallet Not Found"};
+pub static LIBINDY_INVALID_STRUCTURE: Error = Error { code_num: 1080, message: "Object (json, config, key, credential and etc...) passed to libindy has invalid structure"};
+
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -175,6 +177,7 @@ lazy_static! {
         insert_c_message(&mut m, &MISSING_EXPORTED_WALLET_PATH);
         insert_c_message(&mut m, &MISSING_BACKUP_KEY);
         insert_c_message(&mut m, &WALLET_NOT_FOUND);
+        insert_c_message(&mut m, &LIBINDY_INVALID_STRUCTURE);
 
        m
     };
