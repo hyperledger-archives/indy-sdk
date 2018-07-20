@@ -21,9 +21,8 @@ pub(super) fn master_key_salt_from_slice(slice: &[u8]) -> Result<pwhash_argon2i1
 }
 
 pub(super) fn derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt) -> Result<chacha20poly1305_ietf::Key, WalletError> {
-    let mut key_bytes = [0u8; chacha20poly1305_ietf::KEYBYTES];
-    pwhash_argon2i13::pwhash(&mut key_bytes, passphrase.as_bytes(), salt)?;
-    Ok(chacha20poly1305_ietf::Key::new(key_bytes))
+    let key = chacha20poly1305_ietf::derive_key(passphrase, salt)?;
+    Ok(key)
 }
 
 pub(super) fn encrypt_tag_names(tag_names: &[&str], tag_name_key: &chacha20poly1305_ietf::Key, tags_hmac_key: &hmacsha256::Key) -> Vec<TagName> {

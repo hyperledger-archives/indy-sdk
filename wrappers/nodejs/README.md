@@ -2306,9 +2306,6 @@ Errors: `Common*`, `Wallet*`
 
 Exports opened wallet
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `exportConfig`: Json - JSON containing settings for input operation.
 ```
