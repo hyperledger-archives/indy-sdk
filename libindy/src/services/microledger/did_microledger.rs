@@ -150,23 +150,6 @@ impl DidMicroledger {
         create_storage_options(storage_path, vec!["did_ml_path"])
     }
 
-    /*fn parse_options(options: HashMap<String, String>) -> Result<HashMap<String, String>, CommonError> {
-        // TODO: Support in-memory storage type
-        match options.get("storage_type") {
-            Some(s) => {
-                if s != "sqlite" {
-                    return Err(CommonError::InvalidStructure(format!("storage_type needs to be sqlite")))
-                }
-            }
-            None => return Err(CommonError::InvalidStructure(format!("storage_type needs to be provided")))
-        }
-        if options.get("storage_path").is_none() {
-            // TODO: Make sure storage path is valid OsString
-            return Err(CommonError::InvalidStructure(format!("storage_path needs to be provided")))
-        }
-        Ok(options)
-    }*/
-
     // TODO: Temporary, fix it
     fn _metadata() -> Vec<u8> {
         return vec![
