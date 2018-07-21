@@ -13,10 +13,10 @@ use services::wallet::wallet::EncryptedValue;
 use errors::wallet::WalletStorageError;
 use services::microledger::microledger::Microledger;
 use services::microledger::txn_builder::TxnBuilder;
-use services::microledger::helpers::byte_array_to_usize;
-use services::microledger::helpers::usize_to_byte_array;
+use services::microledger::helpers::{byte_array_to_usize, usize_to_byte_array, parse_options, create_storage_options};
 use utils::environment::EnvironmentUtils;
 use std::path::PathBuf;
+use services::microledger::did_doc::DidDoc;
 
 const TYP: [u8; 3] = [0, 1, 2];
 
@@ -32,7 +32,7 @@ impl Microledger for DidMicroledger where Self: Sized {
     fn new(did: &str, options: HashMap<String, String>) -> Result<Self, CommonError> {
         let tree = MerkleTree::from_vec(vec![])?;
         // Parse options to see if all required are present
-        let parsed_options = DidMicroledger::parse_options(options)?;
+        let parsed_options = parse_options(options)?;
         // Create a new storage or load an existing storage
         let storage_path = DidMicroledger::get_storage_path_from_options(&parsed_options);
         let storage = DidMicroledger::get_ledger_storage(did, storage_path).map_err(|err|
@@ -146,28 +146,12 @@ impl Microledger for DidMicroledger where Self: Sized {
 }
 
 impl DidMicroledger {
-    // TODO: This should be enhanced further
     pub fn create_options(storage_path: Option<&str>) -> HashMap<String, String> {
-        let mut options: HashMap<String, String> = HashMap::new();
-        options.insert("storage_type".to_string(), "sqlite".to_string());
-        let mut path = match storage_path {
-            Some(m) => {
-                let mut pf = PathBuf::new();
-                pf.push(m);
-                pf
-            },
-            None => {
-                EnvironmentUtils::tmp_path()
-            }
-        };
-        path.push("did_ml_path");
-        let storage_path = path.to_str().unwrap().to_owned();
-        options.insert("storage_path".to_string(), storage_path);
-        options
+        create_storage_options(storage_path, vec!["did_ml_path"])
     }
 
-    fn parse_options(options: HashMap<String, String>) -> Result<HashMap<String, String>, CommonError> {
-        // TODO: Support inmemory storage type
+    /*fn parse_options(options: HashMap<String, String>) -> Result<HashMap<String, String>, CommonError> {
+        // TODO: Support in-memory storage type
         match options.get("storage_type") {
             Some(s) => {
                 if s != "sqlite" {
@@ -181,7 +165,7 @@ impl DidMicroledger {
             return Err(CommonError::InvalidStructure(format!("storage_path needs to be provided")))
         }
         Ok(options)
-    }
+    }*/
 
     // TODO: Temporary, fix it
     fn _metadata() -> Vec<u8> {
@@ -254,6 +238,10 @@ impl DidMicroledger {
         let ep_txn = TxnBuilder::build_endpoint_txn(verkey, address)?;
         self.add(&ep_txn)
     }
+
+    fn register_did_doc(&self, view: DidDoc) {
+
+    }
 }
 
 #[cfg(test)]
@@ -270,37 +258,6 @@ pub mod tests {
         }
         ml.get_size()
 
-    }
-
-    #[test]
-    fn test_parse_valid_options() {
-        let options = valid_storage_options();
-        let expected_options: HashMap<String, String> = options.clone();
-        assert_eq!(DidMicroledger::parse_options(options).unwrap(), expected_options);
-    }
-
-    #[test]
-    fn test_parse_options_without_required_keys() {
-        let mut options: HashMap<String, String> = HashMap::new();
-        options.insert("storage_type".to_string(), "sqlite".to_string());
-        assert!(DidMicroledger::parse_options(options).is_err());
-
-        let mut options: HashMap<String, String> = HashMap::new();
-        options.insert("storage_path".to_string(), "storage_path".to_string());
-        assert!(DidMicroledger::parse_options(options).is_err());
-
-        let mut options: HashMap<String, String> = HashMap::new();
-        options.insert("unknown key".to_string(), "unknown value".to_string());
-        assert!(DidMicroledger::parse_options(options).is_err());
-    }
-
-    #[test]
-    fn test_parse_options_incorrect_storage_type() {
-        let mut options: HashMap<String, String> = HashMap::new();
-        options.insert("storage_type".to_string(), "mysql".to_string());
-        options.insert("storage_path".to_string(), "/tmp".to_string());
-        let expected_options: HashMap<String, String> = options.clone();
-        assert!(DidMicroledger::parse_options(options).is_err());
     }
 
     #[test]

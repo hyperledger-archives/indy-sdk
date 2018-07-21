@@ -1,5 +1,9 @@
 use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
 use std::io::Cursor;
+use std::collections::HashMap;
+use errors::common::CommonError;
+use std::path::PathBuf;
+use utils::environment::EnvironmentUtils;
 
 pub fn usize_to_byte_array(n: usize) -> Vec<u8> {
     let mut wtr: Vec<u8> = Vec::new();
@@ -10,6 +14,45 @@ pub fn usize_to_byte_array(n: usize) -> Vec<u8> {
 pub fn byte_array_to_usize(v: Vec<u8>) -> usize {
     let mut rdr = Cursor::new(v);
     rdr.read_u64::<LittleEndian>().unwrap() as usize
+}
+
+pub fn parse_options(options: HashMap<String, String>) -> Result<HashMap<String, String>, CommonError> {
+    // TODO: Support in-memory storage type
+    match options.get("storage_type") {
+        Some(s) => {
+            if s != "sqlite" {
+                return Err(CommonError::InvalidStructure(format!("storage_type needs to be sqlite")))
+            }
+        }
+        None => return Err(CommonError::InvalidStructure(format!("storage_type needs to be provided")))
+    }
+    if options.get("storage_path").is_none() {
+        // TODO: Make sure storage path is valid OsString
+        return Err(CommonError::InvalidStructure(format!("storage_path needs to be provided")))
+    }
+    Ok(options)
+}
+
+// TODO: This should be enhanced further
+pub fn create_storage_options(base_storage_path: Option<&str>, extra_paths: Vec<&str>) -> HashMap<String, String> {
+    let mut options: HashMap<String, String> = HashMap::new();
+    options.insert("storage_type".to_string(), "sqlite".to_string());
+    let mut path = match base_storage_path {
+        Some(m) => {
+            let mut pf = PathBuf::new();
+            pf.push(m);
+            pf
+        },
+        None => {
+            EnvironmentUtils::tmp_path()
+        }
+    };
+    for ep in extra_paths{
+        path.push(ep);
+    }
+    let storage_path = path.to_str().unwrap().to_owned();
+    options.insert("storage_path".to_string(), storage_path);
+    options
 }
 
 pub mod tests {
@@ -57,5 +100,36 @@ pub mod tests {
             txns.push(txn)
         }
         txns
+    }
+
+    #[test]
+    fn test_parse_valid_options() {
+        let options = valid_storage_options();
+        let expected_options: HashMap<String, String> = options.clone();
+        assert_eq!(parse_options(options).unwrap(), expected_options);
+    }
+
+    #[test]
+    fn test_parse_options_without_required_keys() {
+        let mut options: HashMap<String, String> = HashMap::new();
+        options.insert("storage_type".to_string(), "sqlite".to_string());
+        assert!(parse_options(options).is_err());
+
+        let mut options: HashMap<String, String> = HashMap::new();
+        options.insert("storage_path".to_string(), "storage_path".to_string());
+        assert!(parse_options(options).is_err());
+
+        let mut options: HashMap<String, String> = HashMap::new();
+        options.insert("unknown key".to_string(), "unknown value".to_string());
+        assert!(parse_options(options).is_err());
+    }
+
+    #[test]
+    fn test_parse_options_incorrect_storage_type() {
+        let mut options: HashMap<String, String> = HashMap::new();
+        options.insert("storage_type".to_string(), "mysql".to_string());
+        options.insert("storage_path".to_string(), "/tmp".to_string());
+        let expected_options: HashMap<String, String> = options.clone();
+        assert!(parse_options(options).is_err());
     }
 }

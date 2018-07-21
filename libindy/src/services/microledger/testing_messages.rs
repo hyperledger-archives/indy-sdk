@@ -293,21 +293,18 @@ mod tests {
     use super::*;
     use super::super::testing_utils::tests::{get_new_network};
     use services::microledger::helpers::tests::{valid_storage_options, get_new_microledger};
+    use services::microledger::helpers::{create_storage_options};
     use utils::test::TestUtils;
     use utils::environment::EnvironmentUtils;
     use services::microledger::testing_utils::Network;
 
     pub fn gen_storage_options(extra_path: Option<&str>) -> HashMap<String, String>{
-        let mut options: HashMap<String, String> = HashMap::new();
         let mut path = EnvironmentUtils::tmp_path();
-        path.push("did_ml_path");
+        let mut extra_paths = vec!["did_ml_path"];
         if extra_path.is_some() {
-            path.push(extra_path.unwrap());
+            extra_paths.push(extra_path.unwrap());
         }
-        let storage_path = path.to_str().unwrap().to_owned();
-        options.insert("storage_type".to_string(), "sqlite".to_string());
-        options.insert("storage_path".to_string(), storage_path);
-        options
+        create_storage_options(path.to_str(), extra_paths)
     }
 
     fn get_new_agent(did: &str, seed: String, extra_path: String) -> Agent {
@@ -400,6 +397,7 @@ mod tests {
         let events_3: Vec<(u64, String)> = vec![(2, "t1".into()), (3, "t2".into()), (4, "t3".into())];
         let events_4: Vec<(u64, String)> = vec![(1, "t1".into()), (2, "t2".into()), (4, "t3".into())];
         let events_5: Vec<(u64, String)> = vec![(1, "t1".into()), (2, "t2".into()), (3, "t3".into())];
+
         assert!(Agent::get_validate_ledger_update_events(events_1).is_err());
         assert!(Agent::get_validate_ledger_update_events(events_2).is_err());
         assert!(Agent::get_validate_ledger_update_events(events_3).is_err());
@@ -474,7 +472,7 @@ mod tests {
     }
 
     #[test]
-    fn test_message_passing() {
+    fn test_message_sending() {
         TestUtils::cleanup_temp();
         let (mut network, mut agent1, mut agent2) = connected_agents();
     }

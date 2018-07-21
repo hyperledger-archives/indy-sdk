@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use errors::common::CommonError;
-//use services::microledger::view::View;
+use services::microledger::view::View;
 
 
 pub trait Microledger where Self: Sized {
@@ -19,8 +19,8 @@ pub trait Microledger where Self: Sized {
     fn get(&self, from: u64, to: Option<u64>) -> Result<Vec<String>, CommonError>;
     // get txns in seq_no range [from, to], including the seq no
     fn get_with_seq_no(&self, from: u64, to: Option<u64>) -> Result<Vec<(u64, String)>, CommonError>;
-    /*// registers a view
-    fn register_view(&self, view: View);
+    // registers a view
+//    fn register_view(&self, view: View);
     // deregisters a view
-    fn deregister_view(&self, view_id: &str);*/
+    //fn deregister_view(&self, view_id: &str);
 }

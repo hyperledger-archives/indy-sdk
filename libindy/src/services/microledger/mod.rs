@@ -7,3 +7,4 @@ pub mod helpers;
 pub mod testing_messages;
 pub mod testing_utils;
 pub mod messages;
+pub mod did_doc;
