@@ -17,9 +17,9 @@ use services::microledger::messages::ValidProtocolMessages;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum MsgTypes {
-    Connection = 1,
-    ConnectionResponse = 2,
-    Message = 3
+    Connection,
+    ConnectionResponse,
+    Message
 }
 
 // NOTE: THIS STRUCT IS VERY LIKELY TO CHANGE
@@ -150,8 +150,56 @@ impl<'a> Agent<'a> {
         let recvd_msgs = self.peer.borrow_mut().process();
 
         for msg in recvd_msgs {
-            let j: ValidMessages = serde_json::from_str(&msg).map_err(|err|
+            let j: JValue = serde_json::from_str(&msg).map_err(|err|
                 CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
+            let j1 = j.clone();
+            let t = j1.get("type");
+            match t {
+                Some(t) => {
+                    match t.as_str() {
+                        Some("Connection") => {
+                            let c: Connection = serde_json::from_value(j).map_err(|err|
+                                CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
+                            let msg = c.message;
+                            let jpm: ValidProtocolMessages = serde_json::from_str(&msg).map_err(|err|
+                                CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
+                            match jpm {
+                                ValidProtocolMessages::LedgerUpdate(l) => {
+                                    println!("{} Parsing inner connection message", &self.managing_did);
+                                    if self.process_ledger_update_from_connection(l)? {
+                                        println!("{} Inner connection message success", &self.managing_did);
+                                        let self_ml = self.get_self_microledger()?;
+                                        let conn_resp = self.get_connection_resp(&c.id, self_ml)?;
+                                        msgs_to_sent.push((c.id.to_string(), conn_resp));
+                                    }
+                                },
+                                _ => return Err(CommonError::InvalidStructure(String::from(
+                                    "Cannot parse inner message")))
+                            }
+                        },
+                        Some("ConnectionResponse") => {
+                            let r: Connection = serde_json::from_value(j).map_err(|err|
+                                CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
+                            let msg = r.message;
+                            let jpm: ValidProtocolMessages = serde_json::from_str(&msg).map_err(|err|
+                                CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
+                            match jpm {
+                                ValidProtocolMessages::LedgerUpdate(l) => {
+                                    println!("{} Parsing inner connection response message", &self.managing_did);
+                                    self.process_ledger_update_from_connection(l)?;
+                                },
+                                _ => return Err(CommonError::InvalidStructure(String::from(
+                                    "Cannot parse inner message")))
+                            }
+                        },
+                        _ => return Err(CommonError::InvalidStructure(String::from("Cannot find required type")))
+                    }
+                }
+                None => return Err(CommonError::InvalidStructure(String::from("Cannot find type")))
+            }
+            /*let j: ValidMessages = serde_json::from_str(&msg).map_err(|err|
+                CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
+            println!("{:#?}", &j);
             match j {
                 ValidMessages::Connection(c) => {
                     let msg = c.message;
@@ -159,10 +207,13 @@ impl<'a> Agent<'a> {
                         CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
                     match jpm {
                         ValidProtocolMessages::LedgerUpdate(l) => {
-                            self.process_ledger_update_from_connection(l)?;
-                            let self_ml = self.get_self_microledger()?;
-                            let conn_resp = self.get_connection_resp(&c.id, self_ml)?;
-                            msgs_to_sent.push((c.id.to_string(), conn_resp));
+                            println!("{} Parsing inner connection message", &self.managing_did);
+                            if self.process_ledger_update_from_connection(l)? {
+                                println!("{} Inner connection message success", &self.managing_did);
+                                let self_ml = self.get_self_microledger()?;
+                                let conn_resp = self.get_connection_resp(&c.id, self_ml)?;
+                                msgs_to_sent.push((c.id.to_string(), conn_resp));
+                            }
                         },
                         _ => return Err(CommonError::InvalidStructure(String::from(
                             "Cannot parse inner message")))
@@ -174,6 +225,7 @@ impl<'a> Agent<'a> {
                         CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
                     match jpm {
                         ValidProtocolMessages::LedgerUpdate(l) => {
+                            println!("{} Parsing inner connection response message", &self.managing_did);
                             self.process_ledger_update_from_connection(l)?;
                         },
                         _ => return Err(CommonError::InvalidStructure(String::from(
@@ -181,7 +233,7 @@ impl<'a> Agent<'a> {
                     }
                 }
                 _ => return Err(CommonError::InvalidStructure(String::from("Cannot parse message")))
-            }
+            }*/
         }
 
         for (peer_id, msg) in msgs_to_sent {
@@ -190,23 +242,29 @@ impl<'a> Agent<'a> {
         Ok(())
     }
 
-    fn process_ledger_update_from_connection(&mut self, l: LedgerUpdate) -> Result<(), CommonError> {
-        // Assuming one time delivery
+    fn process_ledger_update_from_connection(&mut self, l: LedgerUpdate) -> Result<bool, CommonError> {
+        // TODO: Move part of this in microledger since processing LedgerUpdate is a core function
         let did = l.get_state_id();
         if self.m_ledgers.get(&did).is_none() {
+            println!("Don't have ledger for {}", &did);
             let txns = Agent::get_validate_ledger_update_events(l.events)?;
             let s_opts = DidMicroledger::create_options(None);
             let mut ml = DidMicroledger::new(&did, s_opts)?;
-            ml.add_multiple(txns.iter().map(|t|t.as_ref()).collect())?;
+            println!("Existing size {}", &ml.get_size());
+            let txns: Vec<&str> = txns.iter().map(|t|t.as_ref()).collect();
+            println!("Inserting in ledger {} txns", &txns.len());
+            ml.add_multiple(txns)?;
             self.m_ledgers.insert(did.to_string(), ml);
             self.remote_did = Some(did.to_string());
+            Ok(true)
         } else {
-            println!("Already have ledger for {}", &did)
+            println!("Already have ledger for {}", &did);
+            Ok(false)
         }
-        Ok(())
     }
 
     fn get_validate_ledger_update_events(events: Vec<(u64, String)>) -> Result<Vec<String>, CommonError> {
+        // TODO: Move this to microledger
         let mut txns: Vec<String> = vec![];
         let mut i = 0u64;
         for (j, txn) in events {
@@ -236,9 +294,24 @@ mod tests {
     use super::super::testing_utils::tests::{get_new_network};
     use services::microledger::helpers::tests::{valid_storage_options, get_new_microledger};
     use utils::test::TestUtils;
+    use utils::environment::EnvironmentUtils;
+    use services::microledger::testing_utils::Network;
 
-    fn get_new_agent(did: &str, seed: String) -> Agent {
-        Agent::new(did, Some(seed), valid_storage_options()).unwrap()
+    pub fn gen_storage_options(extra_path: Option<&str>) -> HashMap<String, String>{
+        let mut options: HashMap<String, String> = HashMap::new();
+        let mut path = EnvironmentUtils::tmp_path();
+        path.push("did_ml_path");
+        if extra_path.is_some() {
+            path.push(extra_path.unwrap());
+        }
+        let storage_path = path.to_str().unwrap().to_owned();
+        options.insert("storage_type".to_string(), "sqlite".to_string());
+        options.insert("storage_path".to_string(), storage_path);
+        options
+    }
+
+    fn get_new_agent(did: &str, seed: String, extra_path: String) -> Agent {
+        Agent::new(did, Some(seed), gen_storage_options(Some(&extra_path))).unwrap()
     }
 
     fn get_agent1_genesis_txns() -> Vec<String> {
@@ -258,7 +331,7 @@ mod tests {
     }
 
     fn bootstrap_agent1(did: &str, seed: String) -> (Agent, String) {
-        let mut agent1 = get_new_agent(did, seed);
+        let mut agent1 = get_new_agent(did, seed, String::from("agent1"));
         let txns = get_agent1_genesis_txns();
         let txns = txns.iter().map(|s|s.as_ref()).collect();
         {
@@ -270,7 +343,7 @@ mod tests {
     }
 
     fn bootstrap_agent2(did: &str, seed: String) -> (Agent, String) {
-        let mut agent2 = get_new_agent(did, seed);
+        let mut agent2 = get_new_agent(did, seed, String::from("agent2"));
         let txns = get_agent2_genesis_txns();
         let txns = txns.iter().map(|s|s.as_ref()).collect();
         {
@@ -281,12 +354,34 @@ mod tests {
         (agent2, msg)
     }
 
+    fn connected_agents<'a>() -> (Rc<RefCell<Network<'a>>>, Agent<'a>, Agent<'a>) {
+
+        let network = get_new_network("n");
+        let did1 = "75KUW8tPUQNBS4W7ibFeY8";
+        let seed1 = String::from("11111111111111111111111111111111");
+        let did2 = "84qiTnsJrdefBDMrF49kfa";
+        let seed2 = String::from("99999999999999999999999999999999");
+
+        let (mut agent1, conn1) = bootstrap_agent1(did1, seed1);
+        let (mut agent2, _) = bootstrap_agent2(did2, seed2);
+
+        network.borrow_mut().register_peer(Rc::clone(&agent1.peer));
+        network.borrow_mut().register_peer(Rc::clone(&agent2.peer));
+
+        network.borrow().send_message(&conn1, &agent2.get_peer_id()).unwrap();
+        agent2.process_inbox().unwrap();
+
+        network.borrow_mut().process_outboxes_for_all_peers().unwrap();
+        agent1.process_inbox().unwrap();
+        (network, agent1, agent2)
+    }
+
     #[test]
     fn test_new_agent_create_new_microledger() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let seed1 = String::from("11111111111111111111111111111111");
-        let agent1 = get_new_agent(did, seed1);
+        let agent1 = get_new_agent(did, seed1, String::from(""));
         assert_eq!(agent1.managing_did, did);
         assert_eq!(agent1.verkey, "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC");
         assert_eq!(agent1.get_peer_id(), did.to_string());
@@ -297,6 +392,22 @@ mod tests {
         assert_eq!(ml.get_size(), 0);
         assert_eq!(agent1.has_microledger("somerandomstring"), false);
     }
+
+    #[test]
+    fn test_parse_ledger_events() {
+        let events_1: Vec<(u64, String)> = vec![(0, "t1".into()), (1, "t2".into()), (2, "t3".into())];
+        let events_2: Vec<(u64, String)> = vec![(1, "t1".into()), (3, "t2".into()), (4, "t3".into())];
+        let events_3: Vec<(u64, String)> = vec![(2, "t1".into()), (3, "t2".into()), (4, "t3".into())];
+        let events_4: Vec<(u64, String)> = vec![(1, "t1".into()), (2, "t2".into()), (4, "t3".into())];
+        let events_5: Vec<(u64, String)> = vec![(1, "t1".into()), (2, "t2".into()), (3, "t3".into())];
+        assert!(Agent::get_validate_ledger_update_events(events_1).is_err());
+        assert!(Agent::get_validate_ledger_update_events(events_2).is_err());
+        assert!(Agent::get_validate_ledger_update_events(events_3).is_err());
+        assert!(Agent::get_validate_ledger_update_events(events_4).is_err());
+        let e: Vec<String> = vec!["t1".into(), "t2".into(), "t3".into()];
+        assert_eq!(Agent::get_validate_ledger_update_events(events_5).unwrap(), e);
+    }
+
 
     #[test]
     fn test_new_connection_message() {
@@ -316,6 +427,7 @@ mod tests {
 
     #[test]
     fn test_connection_response() {
+        TestUtils::cleanup_temp();
         let network = get_new_network("n");
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let seed1 = String::from("11111111111111111111111111111111");
@@ -323,7 +435,7 @@ mod tests {
         let seed2 = String::from("99999999999999999999999999999999");
 
         let (mut agent1, conn1) = bootstrap_agent1(did1, seed1);
-        let mut agent2 = get_new_agent(did2, seed2);
+        let (mut agent2, _) = bootstrap_agent2(did2, seed2);
 
         network.borrow_mut().register_peer(Rc::clone(&agent1.peer));
         network.borrow_mut().register_peer(Rc::clone(&agent2.peer));
@@ -335,8 +447,11 @@ mod tests {
         assert!(&agent2.m_ledgers.get(did1).is_none());
         assert!(&agent2.m_ledgers.get(did2).is_some());
 
+        // Send connection message
         network.borrow().send_message(&conn1, &agent2.get_peer_id()).unwrap();
         agent2.process_inbox().unwrap();
+
+        // Process received connection response message
         network.borrow_mut().process_outboxes_for_all_peers().unwrap();
         agent1.process_inbox().unwrap();
 
@@ -351,11 +466,16 @@ mod tests {
 
         let a1_ml_r = agent1.m_ledgers.get(did2).unwrap();
         let a2_ml_r = agent2.m_ledgers.get(did1).unwrap();
-
         let a1_ml_r_root_hash = a1_ml_r.get_root_hash();
         let a2_ml_r_root_hash = a2_ml_r.get_root_hash();
 
         assert_eq!(&a1_ml_s_root_hash, &a2_ml_r_root_hash);
         assert_eq!(&a2_ml_s_root_hash, &a1_ml_r_root_hash);
+    }
+
+    #[test]
+    fn test_message_passing() {
+        TestUtils::cleanup_temp();
+        let (mut network, mut agent1, mut agent2) = connected_agents();
     }
 }

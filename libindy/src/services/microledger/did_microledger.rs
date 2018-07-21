@@ -51,6 +51,8 @@ impl Microledger for DidMicroledger where Self: Sized {
         self.merkle_tree.root_hash_hex()
     }
 
+    // TODO: Resolve usize and u64 in `get_size` and `add*`
+
     fn get_size(&self) -> usize {
         self.merkle_tree.count
     }
