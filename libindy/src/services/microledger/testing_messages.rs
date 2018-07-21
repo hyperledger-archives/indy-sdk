@@ -292,7 +292,7 @@ impl<'a> Agent<'a> {
 mod tests {
     use super::*;
     use super::super::testing_utils::tests::{get_new_network};
-    use services::microledger::helpers::tests::{valid_storage_options, get_new_microledger};
+    use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger};
     use services::microledger::helpers::{create_storage_options};
     use utils::test::TestUtils;
     use utils::environment::EnvironmentUtils;

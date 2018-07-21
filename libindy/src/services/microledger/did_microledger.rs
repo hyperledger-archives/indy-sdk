@@ -233,7 +233,7 @@ pub mod tests {
     use utils::environment::EnvironmentUtils;
     use super::super::super::super::utils::test::TestUtils;
     use services::microledger::constants::*;
-    use services::microledger::helpers::tests::{valid_storage_options, get_new_microledger, get_4_txns};
+    use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger, get_4_txns};
 
     fn add_4_txns(ml: &mut DidMicroledger) -> usize {
         for txn in get_4_txns() {
@@ -246,7 +246,7 @@ pub mod tests {
     #[test]
     fn test_get_ledger_storage() {
         TestUtils::cleanup_temp();
-        let options = valid_storage_options();
+        let options = valid_did_ml_storage_options();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let storage = DidMicroledger::get_ledger_storage(
             did, DidMicroledger::get_storage_path_from_options(&options)).unwrap();

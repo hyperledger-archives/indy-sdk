@@ -63,18 +63,25 @@ pub mod tests {
     use services::microledger::microledger::Microledger;
     use services::microledger::did_microledger::DidMicroledger;
 
-    pub fn valid_storage_options() -> HashMap<String, String>{
-        let mut options: HashMap<String, String> = HashMap::new();
+    pub fn valid_did_ml_storage_options() -> HashMap<String, String>{
+        /*let mut options: HashMap<String, String> = HashMap::new();
         let mut path = EnvironmentUtils::tmp_path();
         path.push("did_ml_path");
         let storage_path = path.to_str().unwrap().to_owned();
         options.insert("storage_type".to_string(), "sqlite".to_string());
         options.insert("storage_path".to_string(), storage_path);
-        options
+        options*/
+        create_storage_options(EnvironmentUtils::tmp_path().to_str(),
+                               vec!["did_ml_path"])
+    }
+
+    pub fn valid_did_doc_storage_options() -> HashMap<String, String>{
+        create_storage_options(EnvironmentUtils::tmp_path().to_str(),
+                               vec!["did_doc_path"])
     }
 
     pub fn get_new_microledger(did: &str) -> DidMicroledger {
-        let options = valid_storage_options();
+        let options = valid_did_ml_storage_options();
         DidMicroledger::new(did, options).unwrap()
     }
 
@@ -104,7 +111,7 @@ pub mod tests {
 
     #[test]
     fn test_parse_valid_options() {
-        let options = valid_storage_options();
+        let options = valid_did_ml_storage_options();
         let expected_options: HashMap<String, String> = options.clone();
         assert_eq!(parse_options(options).unwrap(), expected_options);
     }

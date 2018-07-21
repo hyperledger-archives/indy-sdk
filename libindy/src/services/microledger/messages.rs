@@ -51,7 +51,7 @@ pub enum ValidProtocolMessages {
 pub mod tests {
     use super::*;
 //    use utils::test::TestUtils;
-    use services::microledger::helpers::tests::{valid_storage_options, get_new_microledger, get_10_txns};
+    use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger, get_10_txns};
 
     #[test]
     fn test_create_ledger_update_message() {
