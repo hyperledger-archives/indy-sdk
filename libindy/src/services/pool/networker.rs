@@ -1,6 +1,7 @@
 extern crate zmq;
 extern crate time;
 
+use domain::pool::{POOL_ACK_TIMEOUT, POOL_REPLY_TIMEOUT, MAX_REQ_PER_POOL_CON, POOL_CON_ACTIVE_TO};
 use errors::common::CommonError;
 use errors::pool::PoolError;
 use self::zmq::PollItem;
@@ -29,11 +30,6 @@ pub struct ZMQNetworker {
     extended_timeout: i64,
     conn_limit: usize,
 }
-
-const POOL_CON_ACTIVE_TO: i64 = 5;
-pub const POOL_ACK_TIMEOUT: i64 = 10;
-pub const POOL_REPLY_TIMEOUT: i64 = 50;
-pub const MAX_REQ_PER_POOL_CON: usize = 5;
 
 impl Networker for ZMQNetworker {
     fn new(timeout: i64, extended_timeout: i64, conn_limit: usize) -> Self {

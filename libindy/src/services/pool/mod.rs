@@ -19,7 +19,6 @@ extern crate sha2;
 extern crate time;
 extern crate zmq;
 
-
 use self::byteorder::{ByteOrder, LittleEndian};
 use serde_json;
 use std::cell::RefCell;
@@ -29,6 +28,7 @@ use std::fs;
 use std::io::Write;
 
 use api::ledger::{CustomFree, CustomTransactionParser};
+use domain::pool::PoolOpenConfig;
 use errors::pool::PoolError;
 use errors::common::CommonError;
 use self::types::*;
