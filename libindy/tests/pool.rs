@@ -484,7 +484,7 @@ mod medium_cases {
         #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_invalid_config() {
             TestUtils::cleanup_storage();
-            let name = "pool_open";
+            let name = "pool_open_invalid_confi";
             let config = r#"{"timeout": "true"}"#;
 
             PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();

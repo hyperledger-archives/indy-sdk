@@ -446,6 +446,7 @@ pub struct Pool<S: Networker, R: RequestHandler<S>> {
 
 impl<S: Networker, R: RequestHandler<S>> Pool<S, R> {
     pub fn new(name: &str, id: i32, config: PoolOpenConfig) -> Self {
+        trace!("Pool::new name {}, id {}, config {:?}", name, id, config);
         Pool {
             _pd: PhantomData::<(S, R)>,
             worker: None,
