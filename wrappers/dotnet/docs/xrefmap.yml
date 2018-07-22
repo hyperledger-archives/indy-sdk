@@ -1714,6 +1714,204 @@ references:
   commentId: Overload:Hyperledger.Indy.LedgerApi.ParseResponseResult.ObjectJson
   fullName: Hyperledger.Indy.LedgerApi.ParseResponseResult.ObjectJson
   nameWithType: ParseResponseResult.ObjectJson
+- uid: Hyperledger.Indy.NonSecretsApi
+  name: Hyperledger.Indy.NonSecretsApi
+  href: api/Hyperledger.Indy.NonSecretsApi.html
+  commentId: N:Hyperledger.Indy.NonSecretsApi
+  fullName: Hyperledger.Indy.NonSecretsApi
+  nameWithType: Hyperledger.Indy.NonSecretsApi
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets
+  name: NonSecrets
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html
+  commentId: T:Hyperledger.Indy.NonSecretsApi.NonSecrets
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets
+  nameWithType: NonSecrets
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String)
+  name: AddRecordAsync(Wallet, String, String, String, String)
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_AddRecordAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String, System.String)
+  nameWithType: NonSecrets.AddRecordAsync(Wallet, String, String, String, String)
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordAsync*
+  name: AddRecordAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_AddRecordAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordAsync
+  nameWithType: NonSecrets.AddRecordAsync
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordTagsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  name: AddRecordTagsAsync(Wallet, String, String, String)
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_AddRecordTagsAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordTagsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordTagsAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String)
+  nameWithType: NonSecrets.AddRecordTagsAsync(Wallet, String, String, String)
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordTagsAsync*
+  name: AddRecordTagsAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_AddRecordTagsAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordTagsAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.AddRecordTagsAsync
+  nameWithType: NonSecrets.AddRecordTagsAsync
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.CloseWalletSearchAsync(Hyperledger.Indy.NonSecretsApi.WalletSearch)
+  name: CloseWalletSearchAsync(WalletSearch)
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_CloseWalletSearchAsync_Hyperledger_Indy_NonSecretsApi_WalletSearch_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.NonSecrets.CloseWalletSearchAsync(Hyperledger.Indy.NonSecretsApi.WalletSearch)
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.CloseWalletSearchAsync(Hyperledger.Indy.NonSecretsApi.WalletSearch)
+  nameWithType: NonSecrets.CloseWalletSearchAsync(WalletSearch)
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.CloseWalletSearchAsync*
+  name: CloseWalletSearchAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_CloseWalletSearchAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.NonSecrets.CloseWalletSearchAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.CloseWalletSearchAsync
+  nameWithType: NonSecrets.CloseWalletSearchAsync
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)
+  name: DeleteRecordAsync(Wallet, String, String)
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_DeleteRecordAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String)
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String)
+  nameWithType: NonSecrets.DeleteRecordAsync(Wallet, String, String)
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordAsync*
+  name: DeleteRecordAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_DeleteRecordAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordAsync
+  nameWithType: NonSecrets.DeleteRecordAsync
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordTagsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  name: DeleteRecordTagsAsync(Wallet, String, String, String)
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_DeleteRecordTagsAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordTagsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordTagsAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String)
+  nameWithType: NonSecrets.DeleteRecordTagsAsync(Wallet, String, String, String)
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordTagsAsync*
+  name: DeleteRecordTagsAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_DeleteRecordTagsAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordTagsAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.DeleteRecordTagsAsync
+  nameWithType: NonSecrets.DeleteRecordTagsAsync
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.FetchNextRecordsAsync(Hyperledger.Indy.WalletApi.Wallet,Hyperledger.Indy.NonSecretsApi.WalletSearch,System.Int32)
+  name: FetchNextRecordsAsync(Wallet, WalletSearch, Int32)
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_FetchNextRecordsAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_NonSecretsApi_WalletSearch_System_Int32_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.NonSecrets.FetchNextRecordsAsync(Hyperledger.Indy.WalletApi.Wallet,Hyperledger.Indy.NonSecretsApi.WalletSearch,System.Int32)
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.FetchNextRecordsAsync(Hyperledger.Indy.WalletApi.Wallet, Hyperledger.Indy.NonSecretsApi.WalletSearch, System.Int32)
+  nameWithType: NonSecrets.FetchNextRecordsAsync(Wallet, WalletSearch, Int32)
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.FetchNextRecordsAsync*
+  name: FetchNextRecordsAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_FetchNextRecordsAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.NonSecrets.FetchNextRecordsAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.FetchNextRecordsAsync
+  nameWithType: NonSecrets.FetchNextRecordsAsync
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.GetRecordAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  name: GetRecordAsync(Wallet, String, String, String)
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_GetRecordAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.NonSecrets.GetRecordAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.GetRecordAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String)
+  nameWithType: NonSecrets.GetRecordAsync(Wallet, String, String, String)
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.GetRecordAsync*
+  name: GetRecordAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_GetRecordAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.NonSecrets.GetRecordAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.GetRecordAsync
+  nameWithType: NonSecrets.GetRecordAsync
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.OpenSearchAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  name: OpenSearchAsync(Wallet, String, String, String)
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_OpenSearchAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.NonSecrets.OpenSearchAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.OpenSearchAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String)
+  nameWithType: NonSecrets.OpenSearchAsync(Wallet, String, String, String)
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.OpenSearchAsync*
+  name: OpenSearchAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_OpenSearchAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.NonSecrets.OpenSearchAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.OpenSearchAsync
+  nameWithType: NonSecrets.OpenSearchAsync
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordTagsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  name: UpdateRecordTagsAsync(Wallet, String, String, String)
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_UpdateRecordTagsAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordTagsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordTagsAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String)
+  nameWithType: NonSecrets.UpdateRecordTagsAsync(Wallet, String, String, String)
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordTagsAsync*
+  name: UpdateRecordTagsAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_UpdateRecordTagsAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordTagsAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordTagsAsync
+  nameWithType: NonSecrets.UpdateRecordTagsAsync
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordValueAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  name: UpdateRecordValueAsync(Wallet, String, String, String)
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_UpdateRecordValueAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordValueAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordValueAsync(Hyperledger.Indy.WalletApi.Wallet, System.String, System.String, System.String)
+  nameWithType: NonSecrets.UpdateRecordValueAsync(Wallet, String, String, String)
+- uid: Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordValueAsync*
+  name: UpdateRecordValueAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html#Hyperledger_Indy_NonSecretsApi_NonSecrets_UpdateRecordValueAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordValueAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.NonSecrets.UpdateRecordValueAsync
+  nameWithType: NonSecrets.UpdateRecordValueAsync
+- uid: Hyperledger.Indy.NonSecretsApi.NoRecordsException
+  name: NoRecordsException
+  href: api/Hyperledger.Indy.NonSecretsApi.NoRecordsException.html
+  commentId: T:Hyperledger.Indy.NonSecretsApi.NoRecordsException
+  fullName: Hyperledger.Indy.NonSecretsApi.NoRecordsException
+  nameWithType: NoRecordsException
+- uid: Hyperledger.Indy.NonSecretsApi.WalletSearch
+  name: WalletSearch
+  href: api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html
+  commentId: T:Hyperledger.Indy.NonSecretsApi.WalletSearch
+  fullName: Hyperledger.Indy.NonSecretsApi.WalletSearch
+  nameWithType: WalletSearch
+- uid: Hyperledger.Indy.NonSecretsApi.WalletSearch.Dispose
+  name: Dispose()
+  href: api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html#Hyperledger_Indy_NonSecretsApi_WalletSearch_Dispose
+  commentId: M:Hyperledger.Indy.NonSecretsApi.WalletSearch.Dispose
+  fullName: Hyperledger.Indy.NonSecretsApi.WalletSearch.Dispose()
+  nameWithType: WalletSearch.Dispose()
+- uid: Hyperledger.Indy.NonSecretsApi.WalletSearch.Dispose(System.Boolean)
+  name: Dispose(Boolean)
+  href: api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html#Hyperledger_Indy_NonSecretsApi_WalletSearch_Dispose_System_Boolean_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.WalletSearch.Dispose(System.Boolean)
+  fullName: Hyperledger.Indy.NonSecretsApi.WalletSearch.Dispose(System.Boolean)
+  nameWithType: WalletSearch.Dispose(Boolean)
+- uid: Hyperledger.Indy.NonSecretsApi.WalletSearch.Dispose*
+  name: Dispose
+  href: api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html#Hyperledger_Indy_NonSecretsApi_WalletSearch_Dispose_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.WalletSearch.Dispose
+  fullName: Hyperledger.Indy.NonSecretsApi.WalletSearch.Dispose
+  nameWithType: WalletSearch.Dispose
+- uid: Hyperledger.Indy.NonSecretsApi.WalletSearch.Finalize
+  name: Finalize()
+  href: api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html#Hyperledger_Indy_NonSecretsApi_WalletSearch_Finalize
+  commentId: M:Hyperledger.Indy.NonSecretsApi.WalletSearch.Finalize
+  fullName: Hyperledger.Indy.NonSecretsApi.WalletSearch.Finalize()
+  nameWithType: WalletSearch.Finalize()
+- uid: Hyperledger.Indy.NonSecretsApi.WalletSearch.Finalize*
+  name: Finalize
+  href: api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html#Hyperledger_Indy_NonSecretsApi_WalletSearch_Finalize_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.WalletSearch.Finalize
+  fullName: Hyperledger.Indy.NonSecretsApi.WalletSearch.Finalize
+  nameWithType: WalletSearch.Finalize
+- uid: Hyperledger.Indy.NonSecretsApi.WalletSearch.Handle
+  name: Handle
+  href: api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html#Hyperledger_Indy_NonSecretsApi_WalletSearch_Handle
+  commentId: P:Hyperledger.Indy.NonSecretsApi.WalletSearch.Handle
+  fullName: Hyperledger.Indy.NonSecretsApi.WalletSearch.Handle
+  nameWithType: WalletSearch.Handle
+- uid: Hyperledger.Indy.NonSecretsApi.WalletSearch.Handle*
+  name: Handle
+  href: api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html#Hyperledger_Indy_NonSecretsApi_WalletSearch_Handle_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.WalletSearch.Handle
+  fullName: Hyperledger.Indy.NonSecretsApi.WalletSearch.Handle
+  nameWithType: WalletSearch.Handle
+- uid: Hyperledger.Indy.NonSecretsApi.WalletSearch.NextAsync(Hyperledger.Indy.WalletApi.Wallet,System.Int32)
+  name: NextAsync(Wallet, Int32)
+  href: api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html#Hyperledger_Indy_NonSecretsApi_WalletSearch_NextAsync_Hyperledger_Indy_WalletApi_Wallet_System_Int32_
+  commentId: M:Hyperledger.Indy.NonSecretsApi.WalletSearch.NextAsync(Hyperledger.Indy.WalletApi.Wallet,System.Int32)
+  fullName: Hyperledger.Indy.NonSecretsApi.WalletSearch.NextAsync(Hyperledger.Indy.WalletApi.Wallet, System.Int32)
+  nameWithType: WalletSearch.NextAsync(Wallet, Int32)
+- uid: Hyperledger.Indy.NonSecretsApi.WalletSearch.NextAsync*
+  name: NextAsync
+  href: api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html#Hyperledger_Indy_NonSecretsApi_WalletSearch_NextAsync_
+  commentId: Overload:Hyperledger.Indy.NonSecretsApi.WalletSearch.NextAsync
+  fullName: Hyperledger.Indy.NonSecretsApi.WalletSearch.NextAsync
+  nameWithType: WalletSearch.NextAsync
 - uid: Hyperledger.Indy.PairwiseApi
   name: Hyperledger.Indy.PairwiseApi
   href: api/Hyperledger.Indy.PairwiseApi.html
@@ -3019,12 +3217,12 @@ references:
   commentId: Overload:Hyperledger.Indy.WalletApi.Wallet.CloseAsync
   fullName: Hyperledger.Indy.WalletApi.Wallet.CloseAsync
   nameWithType: Wallet.CloseAsync
-- uid: Hyperledger.Indy.WalletApi.Wallet.CreateWalletAsync(System.String,System.String,System.String,System.String,System.String)
-  name: CreateWalletAsync(String, String, String, String, String)
-  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_CreateWalletAsync_System_String_System_String_System_String_System_String_System_String_
-  commentId: M:Hyperledger.Indy.WalletApi.Wallet.CreateWalletAsync(System.String,System.String,System.String,System.String,System.String)
-  fullName: Hyperledger.Indy.WalletApi.Wallet.CreateWalletAsync(System.String, System.String, System.String, System.String, System.String)
-  nameWithType: Wallet.CreateWalletAsync(String, String, String, String, String)
+- uid: Hyperledger.Indy.WalletApi.Wallet.CreateWalletAsync(System.String,System.String)
+  name: CreateWalletAsync(String, String)
+  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_CreateWalletAsync_System_String_System_String_
+  commentId: M:Hyperledger.Indy.WalletApi.Wallet.CreateWalletAsync(System.String,System.String)
+  fullName: Hyperledger.Indy.WalletApi.Wallet.CreateWalletAsync(System.String, System.String)
+  nameWithType: Wallet.CreateWalletAsync(String, String)
 - uid: Hyperledger.Indy.WalletApi.Wallet.CreateWalletAsync*
   name: CreateWalletAsync
   href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_CreateWalletAsync_
@@ -3055,6 +3253,18 @@ references:
   commentId: Overload:Hyperledger.Indy.WalletApi.Wallet.Dispose
   fullName: Hyperledger.Indy.WalletApi.Wallet.Dispose
   nameWithType: Wallet.Dispose
+- uid: Hyperledger.Indy.WalletApi.Wallet.ExportAsync(System.String)
+  name: ExportAsync(String)
+  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_ExportAsync_System_String_
+  commentId: M:Hyperledger.Indy.WalletApi.Wallet.ExportAsync(System.String)
+  fullName: Hyperledger.Indy.WalletApi.Wallet.ExportAsync(System.String)
+  nameWithType: Wallet.ExportAsync(String)
+- uid: Hyperledger.Indy.WalletApi.Wallet.ExportAsync*
+  name: ExportAsync
+  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_ExportAsync_
+  commentId: Overload:Hyperledger.Indy.WalletApi.Wallet.ExportAsync
+  fullName: Hyperledger.Indy.WalletApi.Wallet.ExportAsync
+  nameWithType: Wallet.ExportAsync
 - uid: Hyperledger.Indy.WalletApi.Wallet.Finalize
   name: Finalize()
   href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_Finalize
@@ -3067,42 +3277,30 @@ references:
   commentId: Overload:Hyperledger.Indy.WalletApi.Wallet.Finalize
   fullName: Hyperledger.Indy.WalletApi.Wallet.Finalize
   nameWithType: Wallet.Finalize
-- uid: Hyperledger.Indy.WalletApi.Wallet.ListWalletsAsync
-  name: ListWalletsAsync()
-  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_ListWalletsAsync
-  commentId: M:Hyperledger.Indy.WalletApi.Wallet.ListWalletsAsync
-  fullName: Hyperledger.Indy.WalletApi.Wallet.ListWalletsAsync()
-  nameWithType: Wallet.ListWalletsAsync()
-- uid: Hyperledger.Indy.WalletApi.Wallet.ListWalletsAsync*
-  name: ListWalletsAsync
-  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_ListWalletsAsync_
-  commentId: Overload:Hyperledger.Indy.WalletApi.Wallet.ListWalletsAsync
-  fullName: Hyperledger.Indy.WalletApi.Wallet.ListWalletsAsync
-  nameWithType: Wallet.ListWalletsAsync
-- uid: Hyperledger.Indy.WalletApi.Wallet.OpenWalletAsync(System.String,System.String,System.String)
-  name: OpenWalletAsync(String, String, String)
-  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_OpenWalletAsync_System_String_System_String_System_String_
-  commentId: M:Hyperledger.Indy.WalletApi.Wallet.OpenWalletAsync(System.String,System.String,System.String)
-  fullName: Hyperledger.Indy.WalletApi.Wallet.OpenWalletAsync(System.String, System.String, System.String)
-  nameWithType: Wallet.OpenWalletAsync(String, String, String)
+- uid: Hyperledger.Indy.WalletApi.Wallet.ImportAsync(System.String,System.String,System.String)
+  name: ImportAsync(String, String, String)
+  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_ImportAsync_System_String_System_String_System_String_
+  commentId: M:Hyperledger.Indy.WalletApi.Wallet.ImportAsync(System.String,System.String,System.String)
+  fullName: Hyperledger.Indy.WalletApi.Wallet.ImportAsync(System.String, System.String, System.String)
+  nameWithType: Wallet.ImportAsync(String, String, String)
+- uid: Hyperledger.Indy.WalletApi.Wallet.ImportAsync*
+  name: ImportAsync
+  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_ImportAsync_
+  commentId: Overload:Hyperledger.Indy.WalletApi.Wallet.ImportAsync
+  fullName: Hyperledger.Indy.WalletApi.Wallet.ImportAsync
+  nameWithType: Wallet.ImportAsync
+- uid: Hyperledger.Indy.WalletApi.Wallet.OpenWalletAsync(System.String,System.String)
+  name: OpenWalletAsync(String, String)
+  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_OpenWalletAsync_System_String_System_String_
+  commentId: M:Hyperledger.Indy.WalletApi.Wallet.OpenWalletAsync(System.String,System.String)
+  fullName: Hyperledger.Indy.WalletApi.Wallet.OpenWalletAsync(System.String, System.String)
+  nameWithType: Wallet.OpenWalletAsync(String, String)
 - uid: Hyperledger.Indy.WalletApi.Wallet.OpenWalletAsync*
   name: OpenWalletAsync
   href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_OpenWalletAsync_
   commentId: Overload:Hyperledger.Indy.WalletApi.Wallet.OpenWalletAsync
   fullName: Hyperledger.Indy.WalletApi.Wallet.OpenWalletAsync
   nameWithType: Wallet.OpenWalletAsync
-- uid: Hyperledger.Indy.WalletApi.Wallet.RegisterWalletTypeAsync(System.String,Hyperledger.Indy.WalletApi.WalletType)
-  name: RegisterWalletTypeAsync(String, WalletType)
-  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_RegisterWalletTypeAsync_System_String_Hyperledger_Indy_WalletApi_WalletType_
-  commentId: M:Hyperledger.Indy.WalletApi.Wallet.RegisterWalletTypeAsync(System.String,Hyperledger.Indy.WalletApi.WalletType)
-  fullName: Hyperledger.Indy.WalletApi.Wallet.RegisterWalletTypeAsync(System.String, Hyperledger.Indy.WalletApi.WalletType)
-  nameWithType: Wallet.RegisterWalletTypeAsync(String, WalletType)
-- uid: Hyperledger.Indy.WalletApi.Wallet.RegisterWalletTypeAsync*
-  name: RegisterWalletTypeAsync
-  href: api/Hyperledger.Indy.WalletApi.Wallet.html#Hyperledger_Indy_WalletApi_Wallet_RegisterWalletTypeAsync_
-  commentId: Overload:Hyperledger.Indy.WalletApi.Wallet.RegisterWalletTypeAsync
-  fullName: Hyperledger.Indy.WalletApi.Wallet.RegisterWalletTypeAsync
-  nameWithType: Wallet.RegisterWalletTypeAsync
 - uid: Hyperledger.Indy.WalletApi.WalletAlreadyOpenedException
   name: WalletAlreadyOpenedException
   href: api/Hyperledger.Indy.WalletApi.WalletAlreadyOpenedException.html
