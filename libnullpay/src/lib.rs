@@ -23,7 +23,7 @@ use std::ffi::CString;
 
 #[no_mangle]
 pub extern fn nullpay_init() -> ErrorCode {
-    utils::logger::init();
+    utils::logger::LoggerUtils::init();
     let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
 
     libindy::payments::register_payment_method(
