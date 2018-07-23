@@ -50,7 +50,7 @@ indy> ledger get-payment-sources payment_address=<payment-address>
 
 Returns:
 
-* Table with columns: Txo, Payment Address, Amount, Extra
+* Table with columns: Source, Payment Address, Amount, Extra
 
 ### Send PAYMENT transaction
 
@@ -62,7 +62,7 @@ indy> ledger payment inputs=<source-1>,..,<source-n> outputs=(<recipient-0>,<amo
 
 Returns:
 
-* Success or error message
+* Table with columns: Receipt, Recipient Payment Address, Amount, Extra
 
 Note that "source-n" is identifier presented in "Source" column of ```ledger get-sources``` command output
 

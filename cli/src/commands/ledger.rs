@@ -50,7 +50,7 @@ pub mod nym_command {
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX verkey=GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=TRUSTEE")
                 .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX role=")
-                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX fees_inputs=txo:sov:111_rBuQo2A1sc9jrJg fees_outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
+                .add_example("ledger nym did=VsKV7grR1BUE29mG2Fm2kX fees_inputs=pay:null:111_rBuQo2A1sc9jrJg fees_outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
                 .finalize()
     );
 
@@ -163,7 +163,7 @@ pub mod attrib_command {
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX raw={"endpoint":{"ha":"127.0.0.1:5555"}}"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3"#)
                 .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d"#)
-                .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d fees_inputs=txo:sov:111_rBuQo2A1sc9jrJg fees_outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)"#)
+                .add_example(r#"ledger attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d fees_inputs=pay:null:111_rBuQo2A1sc9jrJg fees_outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)"#)
                 .finalize()
     );
 
@@ -276,7 +276,7 @@ pub mod schema_command {
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
                 .add_example("ledger schema name=gvt version=1.0 attr_names=name,age")
-                .add_example("ledger schema name=gvt version=1.0 attr_names=name,age fees_inputs=txo:sov:111_rBuQo2A1sc9jrJg fees_outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
+                .add_example("ledger schema name=gvt version=1.0 attr_names=name,age fees_inputs=pay:null:111_rBuQo2A1sc9jrJg fees_outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
                 .finalize()
     );
 
@@ -911,9 +911,9 @@ pub mod payment_command {
                 .add_required_param("inputs","The list of payment sources")
                 .add_required_param("outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_required_param("extra","Optional information for payment operation")
-                .add_example("ledger payment inputs=txo:sov:111_rBuQo2A1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
-                .add_example("ledger payment inputs=txo:sov:111_rBuQo2A1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100) extra=some_extra")
-                .add_example("ledger payment inputs=txo:sov:111_rBuQo2A1sc9jrJg,txo:sov:222_aEwACvA1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100),(pay:sov:ABABefwrhscbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
+                .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
+                .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100) extra=some_extra")
+                .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg,pay:null:222_aEwACvA1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100),(pay:sov:ABABefwrhscbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
                 .finalize()
     );
 
@@ -944,7 +944,7 @@ pub mod payment_command {
 
                 print_list_table(&receipts,
                                  &vec![("receipt", "Receipt"),
-                                       ("recipient", "Payment Address of recipient"),
+                                       ("recipient", "Recipient Payment Address"),
                                        ("amount", "Amount"),
                                        ("extra", "Extra")],
                                  "There are no receipts's");
@@ -1423,13 +1423,13 @@ pub mod tests {
     #[cfg(feature = "nullpay_plugin")]
     pub const INVALID_PAYMENT_ADDRESS: &'static str = "null";
     #[cfg(feature = "nullpay_plugin")]
-    pub const INPUT: &'static str = "txo:null:111_rBuQo2A1sc9jrJg";
+    pub const INPUT: &'static str = "pay:null:111_rBuQo2A1sc9jrJg";
     #[cfg(feature = "nullpay_plugin")]
     pub const OUTPUT: &'static str = "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,10)";
     #[cfg(feature = "nullpay_plugin")]
     pub const OUTPUT_2: &'static str = "(pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa,25)";
     #[cfg(feature = "nullpay_plugin")]
-    pub const INVALID_INPUT: &'static str = "txo:null";
+    pub const INVALID_INPUT: &'static str = "pay:null";
     #[cfg(feature = "nullpay_plugin")]
     pub const INVALID_OUTPUT: &'static str = "pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100";
     #[cfg(feature = "nullpay_plugin")]
@@ -3305,7 +3305,7 @@ pub mod tests {
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
-                params.insert("inputs", format!("txo:{}:111_rBuQo2A1sc9jrJg", UNKNOWN_PAYMENT_METHOD));
+                params.insert("inputs", format!("pay:{}:111_rBuQo2A1sc9jrJg", UNKNOWN_PAYMENT_METHOD));
                 params.insert("outputs", format!("(pay:{}:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100)", UNKNOWN_PAYMENT_METHOD));
                 cmd.execute(&ctx, &params).unwrap_err();
             }
@@ -3327,7 +3327,7 @@ pub mod tests {
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
-                params.insert("inputs", "txo:null_method_1:111_rBuQo2A1sc9jrJg".to_string());
+                params.insert("inputs", "pay:null_method_1:111_rBuQo2A1sc9jrJg".to_string());
                 params.insert("outputs", "(pay:null_method_2:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100))".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
@@ -3422,7 +3422,7 @@ pub mod tests {
             {
                 let cmd = payment_command::new();
                 let mut params = CommandParams::new();
-                params.insert("inputs", r#"txo:null"#.to_string());
+                params.insert("inputs", r#"pay:null"#.to_string());
                 params.insert("outputs", INVALID_OUTPUT.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
