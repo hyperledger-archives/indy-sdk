@@ -76,8 +76,8 @@ async def run():
     faber_wallet_config = json.dumps({"id": "faber_wallet"})
     faber_wallet_credentials = json.dumps({"key": "faber_wallet_key"})
     faber_wallet, steward_faber_key, faber_steward_did, faber_steward_key, _ = \
-        await onboarding(pool_handle, "Sovrin Steward", steward_wallet, steward_did, "Faber", None,
-                         faber_wallet_config, faber_wallet_credentials)
+        await onboarding(pool_handle, "Sovrin Steward", steward_wallet, steward_did, "Faber", None, faber_wallet_config,
+                         faber_wallet_credentials)
 
     logger.info("==============================")
     logger.info("== Getting Trust Anchor credentials - Faber getting Verinym  ==")
@@ -93,8 +93,8 @@ async def run():
     acme_wallet_config = json.dumps({"id": "acme_wallet"})
     acme_wallet_credentials = json.dumps({"key": "acme_wallet_key"})
     acme_wallet, steward_acme_key, acme_steward_did, acme_steward_key, _ = \
-        await onboarding(pool_handle, "Sovrin Steward", steward_wallet, steward_did, "Acme", None,
-                         acme_wallet_config, acme_wallet_credentials)
+        await onboarding(pool_handle, "Sovrin Steward", steward_wallet, steward_did, "Acme", None, acme_wallet_config,
+                         acme_wallet_credentials)
 
     logger.info("==============================")
     logger.info("== Getting Trust Anchor credentials - Acme getting Verinym  ==")
@@ -107,7 +107,7 @@ async def run():
     logger.info("== Getting Trust Anchor credentials - Thrift Onboarding  ==")
     logger.info("------------------------------")
 
-    thrift_wallet_config = json.dumps({"id": "thrift_wallet"})
+    thrift_wallet_config = json.dumps({"id": " thrift_wallet"})
     thrift_wallet_credentials = json.dumps({"key": "thrift_wallet_key"})
     thrift_wallet, steward_thrift_key, thrift_steward_did, thrift_steward_key, _ = \
         await onboarding(pool_handle, "Sovrin Steward", steward_wallet, steward_did, "Thrift", None,
@@ -160,7 +160,7 @@ async def run():
     logger.info("=== Acme Credential Definition Setup ==")
     logger.info("------------------------------")
 
-    logger.info("\"Acme\" ->  Get from Ledger \"Job-Certificate\" Schema")
+    logger.info("\"Acme\" -> Get from Ledger \"Job-Certificate\" Schema")
     (_, job_certificate_schema) = await get_schema(pool_handle, acme_did, job_certificate_schema_id)
 
     logger.info("\"Acme\" -> Create and store in Wallet \"Acme Job-Certificate\" Credential Definition")
@@ -177,12 +177,11 @@ async def run():
     logger.info("== Getting Transcript with Faber - Onboarding ==")
     logger.info("------------------------------")
 
-    alice_wallet_config = json.dumps({"id": "alice_wallet"})
+    alice_wallet_config = json.dumps({"id": " alice_wallet"})
     alice_wallet_credentials = json.dumps({"key": "alice_wallet_key"})
     alice_wallet, faber_alice_key, alice_faber_did, alice_faber_key, faber_alice_connection_response \
-        = await onboarding(pool_handle, "Faber", faber_wallet, faber_did, "Alice", None,
-                           alice_wallet_config, alice_wallet_credentials)
-    time.sleep(1)
+        = await onboarding(pool_handle, "Faber", faber_wallet, faber_did, "Alice", None, alice_wallet_config,
+                           alice_wallet_credentials)
 
     logger.info("==============================")
     logger.info("== Getting Transcript with Faber - Getting Transcript Credential ==")
@@ -265,8 +264,8 @@ async def run():
     logger.info("------------------------------")
 
     alice_wallet, acme_alice_key, alice_acme_did, alice_acme_key, acme_alice_connection_response = \
-        await onboarding(pool_handle, "Acme", acme_wallet, acme_did, "Alice", alice_wallet,
-                         alice_wallet_config, alice_wallet_credentials)
+        await onboarding(pool_handle, "Acme", acme_wallet, acme_did, "Alice", alice_wallet, alice_wallet_config,
+                         alice_wallet_credentials)
 
     logger.info("==============================")
     logger.info("== Apply for the job with Acme - Transcript proving ==")
@@ -456,12 +455,12 @@ async def run():
                                                  authdecrypted_job_certificate_cred_request_json,
                                                  alice_job_certificate_cred_values_json, None, None)
 
-    logger.info("\"Acme\" ->  Authcrypt \"Job-Certificate\" Credential for Alice")
+    logger.info("\"Acme\" -> Authcrypt \"Job-Certificate\" Credential for Alice")
     authcrypted_job_certificate_cred_json = \
         await crypto.auth_crypt(acme_wallet, acme_alice_key, alice_acme_verkey,
                                 job_certificate_cred_json.encode('utf-8'))
 
-    logger.info("\"Acme\" ->  Send authcrypted \"Job-Certificate\" Credential to Alice")
+    logger.info("\"Acme\" -> Send authcrypted \"Job-Certificate\" Credential to Alice")
 
     logger.info("\"Alice\" -> Authdecrypted \"Job-Certificate\" Credential from Acme")
     _, authdecrypted_job_certificate_cred_json, _ = \
@@ -720,8 +719,8 @@ async def run():
     logger.info("Getting started -> done")
 
 
-async def onboarding(pool_handle, _from, from_wallet, from_did, to,
-                     to_wallet: Optional[str], to_wallet_config: str, to_wallet_credentials: str):
+async def onboarding(pool_handle, _from, from_wallet, from_did, to, to_wallet: Optional[str], to_wallet_config: str,
+                     to_wallet_credentials: str):
     logger.info("\"{}\" -> Create and store in Wallet \"{} {}\" DID".format(_from, _from, to))
     (from_to_did, from_to_key) = await did.create_and_store_my_did(from_wallet, "{}")
 
