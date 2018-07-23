@@ -91,7 +91,7 @@ extern {
     pub fn indy_prover_search_credentials(command_handle: Handle,
                                           wallet_handle: Handle,
                                           query_json: CString,
-                                          cb: Option<ResponseI32USizeCB>) -> Error;
+                                          cb: Option<ResponseI32UsizeCB>) -> Error;
     #[no_mangle]
     pub fn indy_prover_fetch_credentials(command_handle: Handle,
                                          search_handle: Handle,

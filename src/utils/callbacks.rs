@@ -13,7 +13,7 @@ use std::sync::mpsc::{channel, Receiver};
 
 use ffi::{ResponseEmptyCB,
           ResponseI32CB,
-          ResponseI32USizeCB,
+          ResponseI32UsizeCB,
           ResponseStringCB,
           ResponseStringStringCB,
           ResponseStringStringStringCB,
@@ -88,7 +88,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_i32_usize() -> (Receiver<(ErrorCode, IndyHandle, usize)>, IndyHandle, Option<ResponseI32USizeCB>) {
+    pub fn cb_ec_i32_usize() -> (Receiver<(ErrorCode, IndyHandle, usize)>, IndyHandle, Option<ResponseI32UsizeCB>) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val1, val2| {
@@ -100,7 +100,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_i32_usize(closure: Box<FnMut(ErrorCode, IndyHandle, usize) + Send>) -> (IndyHandle, Option<ResponseI32USizeCB>) {
+    pub fn convert_cb_ec_i32_usize(closure: Box<FnMut(ErrorCode, IndyHandle, usize) + Send>) -> (IndyHandle, Option<ResponseI32UsizeCB>) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, IndyHandle, usize) + Send>>> = Default::default();
         }
