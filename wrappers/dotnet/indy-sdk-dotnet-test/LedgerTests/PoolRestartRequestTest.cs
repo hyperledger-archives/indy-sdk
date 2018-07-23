@@ -1,5 +1,4 @@
 ﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.SignusApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
@@ -11,7 +10,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
     {
         [TestMethod]
         public async Task TestBuildPoolRestartRequestWorks()
-        {                   
+        {
             var expectedResult = string.Format("\"identifier\":\"%s\"," +
                 "\"operation\":{\"type\":\"118\"," +
                 "\"action\":\"start\"," +
@@ -19,7 +18,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var action = "start";
             var schedule = "{}";
-            var poolRestartRequest = await Ledger.BuildPoolRestartRequestAsync(DID1, action, schedule);
+            //var poolRestartRequest = await Ledger.BuildPoolRestartRequestAsync(DID1, action, schedule);
 
             Assert.IsTrue(poolRestartRequest.Replace("\\", "").Contains(expectedResult));
         }
