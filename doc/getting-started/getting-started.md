@@ -44,7 +44,7 @@ Ready?
 
 As a graduate of Faber College, Alice receives an alumni newsletter where she learns that her alma mater is offering digital transcripts. She logs in to the college alumni website and requests her transcript by clicking **Get Transcript**.  (Other ways to initiate this request might include scanning a QR code, downloading a transcript package from a published URL, etc.)
 
-Alice doesn’t realize it yet, but in order to use this digital transcript she will need a new type of identity — not the traditional identity that Faber College has built for her in its on-campus database, but a new and portable one that belongs to her, independent of all past and future relationships, that nobody can revoke or co-opt or correlate without her permission. This is a **_self-sovereign identity_** and it is the core feature of indy.
+Alice doesn’t realize it yet, but in order to use this digital transcript she will need a new type of identity — not the traditional identity that Faber College has built for her in its on-campus database, but a new and portable one that belongs to her, independent of all past and future relationships, that nobody can revoke or co-opt or correlate without her permission. This is a **_self-sovereign identity_** and it is the core feature of Indy.
 
 In normal contexts, managing a self-sovereign identity will require a tool such as a desktop or mobile application. It might be a standalone app or it might leverage a third party service provider that the ledger calls an **agency**. The Sovrin Foundation publishes reference versions of such tools. Faber College will have studied these requirements and will recommend an **_Indy app_** to Alice if she doesn’t already have one. This app will install as part of the workflow from the **Get Transcript** button.
 
@@ -80,16 +80,16 @@ We are ready to start writing the code that will cover Alice's use case from sta
 
 The first code block will contain the code of the **Steward's** agent.
 
-**To write and read the ledger's transactions after gaining the proper role, you'll need to make a connection to the Indy nodes pool. To make a connection to the different pools that exist, like the Sovrin pool or the local pool we started by ourself as part of this tutorial, you'll need to set up a pool configuration.**
+**To write and read the ledger's transactions after gaining the proper role, you'll need to make a connection to the Indy nodes pool. To make a connection to the different pools that exist, like the Sovrin pool or the [local pool we started by ourselves](../../README.md#how-to-start-local-nodes-pool-with-docker) as part of this tutorial, you'll need to set up a pool configuration.**
 
 The list of nodes in the pool is stored in the ledger as NODE transactions. Libindy allows you to restore the actual list of NODE transactions by a few known transactions that we call genesis transactions. Each **Pool Configuration** is defined as a pair of pool configuration name and pool configuration JSON. The most important field in pool configuration json is the path to the file with the list of genesis transactions. Make sure this path is correct.
 
 The ``pool.create_pool_ledger_config`` call allows you to create a named pool configuration. After the pool configuration is created we can connect to the nodes pool that this configuration describes by calling ``pool.open_pool_ledger``. This call returns the pool handle that can be used to reference this opened connection in future libindy calls.
 
-The below code block below contains each of these items. Note how the comments denote that this is the code for the "Steward Agent."
+The code block below contains each of these items. Note how the comments denote that this is the code for the "Steward Agent."
 
 ```python
-  " # Steward Agent
+  # Steward Agent
   pool_name = 'pool1'
   pool_genesis_txn_path = get_pool_genesis_txn_path(pool_name)
   pool_config = json.dumps({"genesis_txn": str(pool_genesis_txn_path)})
@@ -97,7 +97,7 @@ The below code block below contains each of these items. Note how the comments d
   pool_handle = await pool.open_pool_ledger(pool_name, None)
 ```
 
-#### Step 3: Getting the ownership for Stewards's Verinym
+#### Step 3: Getting the ownership for Steward's Verinym
 
 **Next, the Steward's agent should get the ownership for the DID that has corresponding NYM transactions with the Steward role on the ledger.**
 
@@ -137,7 +137,7 @@ In our case, one party will always be the Trust Anchor. Real enterprise scenario
 ##### Connecting the Establishment
 Let's look the process of connection establishment between **Steward** and **Faber College**.
 
-1. **Faber** and **Steward** contact in a some way to initiate onboarding process.
+1. **Faber** and **Steward** contact in some way to initiate onboarding process.
    It can be filling the form on web site or a phone call.
 
 2. **Steward** creates a new DID record in the wallet by calling ``did.create_and_store_my_did`` that he will use for secure interactions only with **Faber**.
@@ -287,7 +287,7 @@ After the connection is established **Faber** must create new DID record that he
 8. **Steward** sends the corresponded NYM transaction to the Ledger with `TRUST ANCHOR` role.
 Please note that despite the fact that the Steward is the sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.
     ```python    
-    # Steward Agen
+    # Steward Agent
     nym_request = await ledger.build_nym_request(steward_did, decrypted_faber_did_info_json['did'],
                                                  decrypted_faber_did_info_json['verkey'], None, 'TRUST_ANCHOR')
     await ledger.sign_and_submit_request(pool_handle, steward_wallet, steward_did, nym_request)
@@ -397,7 +397,7 @@ The usefulness and reliability of a credential are tied to the reputation of the
 For Alice to self-issue a credential that she likes chocolate ice cream may be perfectly reasonable, but for her to self-issue a credential that she graduated from Faber College should not impress anyone.
 
 
-As we mentioned in [About Alice](#about-alice) **Alice** graduated from **Faber College**.
+As we mentioned in [About Alice](#about-alice), **Alice** graduated from **Faber College**.
 After **Faber College** had established a connection with Alice, it created for her a Credential Offer about the issuance of the **Transcript** Credential.
 ```python
   # Faber Agent

@@ -29,7 +29,7 @@ public class LedgerDemoTest extends IndyIntegrationTest {
 		// 1. Create ledger config from genesis txn file
 		String poolName = PoolUtils.createPoolLedgerConfig();
 		
-		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
+		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null);
 		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		// 2. Create and Open My Wallet
