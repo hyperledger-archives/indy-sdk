@@ -173,7 +173,10 @@ pub enum ErrorCode
     PaymentInsufficientFundsError = 702,
 
     // No such source on a ledger
-    PaymentSourceDoesNotExistError = 703
+    PaymentSourceDoesNotExistError = 703,
+
+    // Operation is not supported for payment method
+    PaymentOperationNotSupportedError = 704
 }
 
 impl ErrorCode {
@@ -233,6 +236,7 @@ impl ErrorCode {
             PaymentIncompatibleMethodsError => "Multiple different payment methods were specified",
             PaymentInsufficientFundsError => "Insufficient funds on inputs",
             PaymentSourceDoesNotExistError => "No such source found",
+            PaymentOperationNotSupportedError => "Operation is not supported for payment method",
         }
     }
 }
