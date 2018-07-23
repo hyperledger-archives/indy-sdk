@@ -464,6 +464,7 @@ The following changes have been performed:
 * Changed format of input and output parameters.
 * Changed format of result values of `indy_parse_response_with_fees` and `indy_parse_payment_response` API functions.
 * Renamed `indy_build_get_utxo_request` and `indy_parse_get_utxo_response` API functions.
+* Added `indy_build_verify_payment_req` and `indy_parse_verify_payment_response` API functions.
 
 <table>
   <tr>
@@ -724,6 +725,50 @@ changed to:
   amount: <int>, // amount
   extra: <str>, // optional data
 }]
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+             Builds Indy request for information to verify the payment receipt
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td><b>NEW</b></td>
+    <td>
+      <pre>
+indy_build_verify_payment_req(
+        command_handle: i32,
+        wallet_handle: i32,
+        submitter_did: *const c_char,
+        receipt: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               verify_txn_json: *const c_char,
+               payment_method: *const c_char))
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+             Parses Indy response with information to verify receipt
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td><b>NEW</b></td>
+    <td>
+      <pre>
+indy_parse_verify_payment_response(
+        command_handle: i32,
+        payment_method: *const c_char,
+        resp_json: *const c_char,
+        cb: fn(command_handle_: i32,
+               err: ErrorCode,
+               txn_json: *const c_char))
       </pre>
     </td>
   </tr>

@@ -19,14 +19,22 @@
     * Changed Pool connection logic to avoid unnecessary opened connections.
     * Changed Catch-up process to get all transactions from a single node.
     * Implemented logic of persisting of actual Pool Leger at the end of catch-up process and starting from this point on the next time.
-* Performed changes related to Libindy Payment API. The main idea of these changes is avoiding UTXO based payments and supporting non-UTXO based crypto payments and traditional payments like VISA. 
-* Removed EXPERIMENTAL notice from Libindy Payment API.
+* Payment API has been updated to support non-UTXO based crypto payments and traditional payments like VISA.
+Performed the following changes related to Libindy Payments API:
+    * Changed format of input and output parameters.
+    * Changed format of result values of `indy_parse_response_with_fees` and `indy_parse_payment_response` API functions.
+    * Renamed `indy_build_get_utxo_request` and `indy_parse_get_utxo_response` API functions.
+    * Added `indy_build_verify_payment_req` and `indy_parse_verify_payment_response` API functions.
+    * Removed EXPERIMENTAL notice from endpoints.
+* Added `ledger verify-payment-receipt` command in Indy CLI.
 * Bugfixes       
 
 Notes:
 
 * There is [migration guide](doc/migration-guide-1.5.0-1.6.0.md) about API changes.
-
+* Wallet format of libindy v1.6 isn't compatible with a wallet format of libindy v1.5. As result it is impossible to use wallets
+  created with older libindy versions with libindy v1.6.
+  
 ## 1.5.0
 
 * Introduction of [Wallet Storage](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/003-wallet-storage) concept:
