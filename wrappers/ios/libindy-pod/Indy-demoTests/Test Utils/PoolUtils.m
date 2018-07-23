@@ -134,7 +134,7 @@
     __block NSError *err = nil;
     __block IndyHandle poolHandle = 0;
 
-    NSString *configStr = (config) ? config : @"";
+    NSString *configStr = (config) ? config : nil;
 
     [IndyPool openPoolLedgerWithName:poolName
                           poolConfig:configStr

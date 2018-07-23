@@ -96,36 +96,18 @@ namespace Hyperledger.Indy.WalletApi
         /// <param name="value">A pointer to the value to be freed.</param>
         internal delegate ErrorCode WalletTypeFreeDelegate(int handle, IntPtr value);
 
-
-        /// <summary>
-        /// Creates a new secure wallet with the given unique name.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="pool_name">Name of the pool that corresponds to this wallet.</param>
-        /// <param name="name">Name of the wallet.</param>
-        /// <param name="xtype">Type of the wallet. Defaults to 'default'.</param>
-        /// <param name="config">Wallet configuration json.</param>
-        /// <param name="credentials">Wallet credentials json. </param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_create_wallet(int command_handle, string pool_name, string name, string xtype, string config, string credentials, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_create_wallet(int command_handle, string config, string credentials, IndyMethodCompletedDelegate cb);
 
-        /// <summary>
-        /// Opens the wallet with specific name.
-        /// </summary>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="name">Name of the wallet.</param>
-        /// <param name="runtime_config">Runtime wallet configuration json. if NULL, then default runtime_config will be used. </param>
-        /// <param name="credentials">Wallet credentials json.</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        /// <remarks>
-        /// Wallet with corresponded name must be previously created with indy_create_wallet method.
-        /// It is impossible to open wallet with the same name more than once.
-        /// </remarks>
-        /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_open_wallet(int command_handle, string name, string runtime_config, string credentials, OpenWalletCompletedDelegate cb);
+        internal static extern int indy_open_wallet(int command_handle, string config, string credentials, OpenWalletCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_export_wallet(int command_handle, IntPtr wallet_handle, string export_config, IndyMethodCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_import_wallet(int command_handle, string config, string credentials, string import_config, IndyMethodCompletedDelegate cb);
+
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_open_wallet.
@@ -139,35 +121,21 @@ namespace Hyperledger.Indy.WalletApi
         /// Closes opened wallet and frees allocated resources.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="handle">wallet handle returned by indy_open_wallet.</param>
+        /// <param name="wallet_handle">wallet handle returned by indy_open_wallet.</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_close_wallet(int command_handle, IntPtr handle, IndyMethodCompletedDelegate cb);
+        internal static extern int indy_close_wallet(int command_handle, IntPtr wallet_handle, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Deletes created wallet.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="name">Name of the wallet to delete.</param>
+        /// <param name="config">Name of the wallet to delete.</param>
         /// <param name="credentials">Wallet credentials json</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_delete_wallet(int command_handle, string name, string credentials, IndyMethodCompletedDelegate cb);
-
-        /// <summary>
-        /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
-        /// </summary>
-        /// <returns>The list wallets.</returns>
-        /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
-        /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
-        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
-        internal static extern int indy_list_wallets(int command_handle, ListWalletsCompletedDelegate cb);
-
-        /// <summary>
-        /// Delegate to be used on completion of calls to indy_list_wallets.
-        /// </summary>
-        internal delegate void ListWalletsCompletedDelegate(int xcommand_handle, int err, string wallets);
+        internal static extern int indy_delete_wallet(int command_handle, string config, string credentials, IndyMethodCompletedDelegate cb);
     }
 }

@@ -29,7 +29,7 @@ public class CryptoDemoTest extends IndyIntegrationTest {
 		//1. Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
 
-		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
+		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null);
 		Pool pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		//2. Create and Open My Wallet
