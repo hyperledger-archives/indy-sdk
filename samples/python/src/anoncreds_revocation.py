@@ -17,9 +17,8 @@ logger = logging.getLogger(__name__)
 async def demo():
     logger.info("Anoncreds Revocation sample -> started")
 
-    pool_name = 'pool1'
-    issuer_wallet_name = 'issuer_wallet'
-    prover_wallet_name = 'prover_wallet'
+    issuer_wallet_config = json.dumps({"id": "issuer_wallet"})
+    prover_wallet_config = json.dumps({"id": "prover_wallet"})
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
     prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
 
@@ -28,13 +27,13 @@ async def demo():
 
     # 1. Create Issuer Wallet and Get Wallet Handle
     issuer_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
-    await wallet.create_wallet(pool_name, issuer_wallet_name, None, None, issuer_wallet_credentials)
-    issuer_wallet = await wallet.open_wallet(issuer_wallet_name, None, issuer_wallet_credentials)
+    await wallet.create_wallet(issuer_wallet_config, issuer_wallet_credentials)
+    issuer_wallet = await wallet.open_wallet(issuer_wallet_config, issuer_wallet_credentials)
 
     # 2. Create Prover Wallet and Get Wallet Handle
     prover_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
-    await wallet.create_wallet(pool_name, prover_wallet_name, None, None, prover_wallet_credentials)
-    prover_wallet = await wallet.open_wallet(prover_wallet_name, None, prover_wallet_credentials)
+    await wallet.create_wallet(prover_wallet_config, prover_wallet_credentials)
+    prover_wallet = await wallet.open_wallet(prover_wallet_config, prover_wallet_credentials)
 
     # 3. Issuer create Credential Schema
     schema_name = 'gvt'
@@ -148,11 +147,11 @@ async def demo():
 
     # 13. Close and delete Issuer wallet
     await wallet.close_wallet(issuer_wallet)
-    await wallet.delete_wallet(issuer_wallet_name, issuer_wallet_credentials)
+    await wallet.delete_wallet(issuer_wallet_config, issuer_wallet_credentials)
 
     # 14. Close and delete Prover wallet
     await wallet.close_wallet(prover_wallet)
-    await wallet.delete_wallet(prover_wallet_name, prover_wallet_credentials)
+    await wallet.delete_wallet(prover_wallet_config, prover_wallet_credentials)
 
     logger.info("Anoncreds Revocation sample -> completed")
 
