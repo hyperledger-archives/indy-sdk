@@ -37,6 +37,7 @@ NSString *inputs = @"[\"pay:null:1\", \"pay:null:2\"]";
 NSString *outputs = @"[{\"recipient\": \"pay:null:1\", \"amount\":1}, {\"recipient\": \"pay:null:2\", \"amount\":2}]";
 NSString *fees = @"{\"txnType1\":1, \"txnType2\":2}";
 NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METHOD_2:1\"]";
+NSString *receipt = @"pay:null:0_PqVjwJC42sxCTJp";
 
 // MARK: - Create Payment Address
 
@@ -188,6 +189,26 @@ NSString *incompatibleInputs = @"[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METH
     ret = [[PaymentUtils sharedInstance] parseGetTxnFeesResponse:@"{}"
                                                    paymentMethod:paymentMethod
                                                         feesJson:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+// MARK: - Build Verify Request
+
+- (void)testBuildVerifyRequestWorks {
+    ret = [[PaymentUtils sharedInstance] buildVerifyRequest:walletHandle
+                                               submitterDid:[TestUtils trusteeDid]
+                                                    receipt:receipt
+                                              verifyReqJson:nil
+                                              paymentMethod:nil];
+    XCTAssertEqual(ret.code, PaymentUnknownMethodError);
+}
+
+// MARK: - Parse Verify Response
+
+- (void)testParseVerifyResponseWorks {
+    ret = [[PaymentUtils sharedInstance] parseVerifyResponse:@"{}"
+                                               paymentMethod:paymentMethod
+                                             receiptInfoJson:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
