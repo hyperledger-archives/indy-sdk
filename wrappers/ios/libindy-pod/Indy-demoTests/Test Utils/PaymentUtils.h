@@ -22,7 +22,7 @@
                  submitterDid:(NSString *)submitterDid
                    inputsJson:(NSString *)inputsJson
                   outputsJson:(NSString *)outputsJson
-        extra:(NSString *)extra
+                        extra:(NSString *)extra
           requestWithFeesJson:(NSString **)requestWithFeesJson
                 paymentMethod:(NSString **)paymentMethod;
 
@@ -32,21 +32,21 @@
 
 // MARK: - Get sources request
 - (NSError *)buildGetPaymentSourcesRequest:(IndyHandle)walletHandle
-                       submitterDid:(NSString *)submitterDid
-                     paymentAddress:(NSString *)paymentAddress
-                  getSourcesTxnJson:(NSString **)getSourcesTxnJson
-                      paymentMethod:(NSString **)paymentMethod;
+                              submitterDid:(NSString *)submitterDid
+                            paymentAddress:(NSString *)paymentAddress
+                         getSourcesTxnJson:(NSString **)getSourcesTxnJson
+                             paymentMethod:(NSString **)paymentMethod;
 
 - (NSError *)parseGetPaymentSourcesResponse:(NSString *)responseJson
-                       paymentMethod:(NSString *)paymentMethod
-                         sourcesJson:(NSString **)sourcesJson;
+                              paymentMethod:(NSString *)paymentMethod
+                                sourcesJson:(NSString **)sourcesJson;
 
 // MARK: - Payment request
 - (NSError *)buildPaymentRequest:(IndyHandle)walletHandle
                     submitterDid:(NSString *)submitterDid
                       inputsJson:(NSString *)inputsJson
                      outputsJson:(NSString *)outputsJson
-        extra:(NSString *)extra
+                           extra:(NSString *)extra
                   paymentReqJson:(NSString **)paymentReqJson
                    paymentMethod:(NSString **)paymentMethod;
 
@@ -58,7 +58,7 @@
 - (NSError *)buildMintRequest:(IndyHandle)walletHandle
                  submitterDid:(NSString *)submitterDid
                   outputsJson:(NSString *)outputsJson
-        extra:(NSString *)extra
+                        extra:(NSString *)extra
                   mintReqJson:(NSString **)mintReqJson
                 paymentMethod:(NSString **)paymentMethod;
 
@@ -77,5 +77,16 @@
 - (NSError *)parseGetTxnFeesResponse:(NSString *)responseJson
                        paymentMethod:(NSString *)paymentMethod
                             feesJson:(NSString **)feesJson;
+
+// MARK: - Verify request
+- (NSError *)buildVerifyRequest:(IndyHandle)walletHandle
+                   submitterDid:(NSString *)submitterDid
+                        receipt:(NSString *)receipt
+                  verifyReqJson:(NSString **)verifyReqJson
+                  paymentMethod:(NSString **)paymentMethod;
+
+- (NSError *)parseVerifyResponse:(NSString *)responseJson
+                   paymentMethod:(NSString *)paymentMethod
+                 receiptInfoJson:(NSString **)receiptInfoJson;
 @end
 

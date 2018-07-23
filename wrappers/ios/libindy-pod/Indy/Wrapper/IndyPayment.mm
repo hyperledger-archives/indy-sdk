@@ -284,5 +284,47 @@
     }
 }
 
++ (void)buildVerifyRequest:(IndyHandle)walletHandle
+              submitterDid:(NSString *)submitterDid
+                   receipt:(NSString *)receipt
+                completion:(void (^)(NSError *error, NSString *verifyReqJson, NSString *paymentMethod))completion {
+    indy_error_t ret;
 
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+
+    ret = indy_build_verify_req(handle,
+            walletHandle,
+            [submitterDid UTF8String],
+            [receipt UTF8String],
+            IndyWrapperCommonStringStringCallback);
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil, nil);
+        });
+    }
+}
+
++ (void)parseVerifyResponse:(NSString *)responseJson
+              paymentMethod:(NSString *)paymentMethod
+                 completion:(void (^)(NSError *error, NSString *txnJson))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_parse_verify_response(handle,
+            [paymentMethod UTF8String],
+            [responseJson UTF8String],
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
 @end
