@@ -345,6 +345,12 @@ Prepare SET_FEES transaction
 ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amount-1>,..,<txn-type-n>:<amount-n>
 ```
 
+#### VERIFY_PAYMENT_RECEIPT transaction
+Prepare VERIFY_PAYMENT_RECEIPT transaction
+```
+ledger verify-payment-receipt <receipts>
+```
+
 #### Add multi signature to transaction
 Add multi signature by current DID to transaction
 ```

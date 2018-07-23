@@ -122,6 +122,18 @@ Sending SET_FEES process is the following:
 * All Stewards sign the request
 * The latest Steward calls ```ledger send-custom``` to send request signed by all Stewards
 
+
+#### Send VERIFY_PAYMENT_RECEIPT request
+
+Send request to get information to verify the payment receipt
+```
+ledger verify-payment-receipt <receipts>
+```
+
+Returns:
+
+* Receipt info as json
+
 ### Sign the transaction (for multi-sign case)
 
 Add signature (for multi-sign case) by current DID to transaction json.
