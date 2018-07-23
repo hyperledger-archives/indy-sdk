@@ -9,7 +9,7 @@ use utils::results::ResultHandler;
 
 use ffi::anoncreds;
 use ffi::{ResponseStringStringCB,
-          ResponseI32USizeCB,
+          ResponseI32UsizeCB,
           ResponseStringStringStringCB,
           ResponseStringCB,
           ResponseI32CB,
@@ -493,7 +493,7 @@ impl Prover {
         Prover::_search_credentials(command_handle, wallet_handle, query_json, cb)
     }
 
-    fn _search_credentials(command_handle: IndyHandle, wallet_handle: IndyHandle, query_json: Option<&str>, cb: Option<ResponseI32USizeCB>) -> ErrorCode {
+    fn _search_credentials(command_handle: IndyHandle, wallet_handle: IndyHandle, query_json: Option<&str>, cb: Option<ResponseI32UsizeCB>) -> ErrorCode {
         let query_json_str = opt_c_str!(query_json);
 
         ErrorCode::from(unsafe {
