@@ -20,8 +20,8 @@ impl LoggerUtils {
         if cfg!(target_os = "android") {
             #[cfg(target_os = "android")]
             let log_filter = match env::var("RUST_LOG") {
-                Ok(val) => android_logger::Filter::parse(val.as_ref().map(String::as_str).unwrap_or("")).try_init().ok() ,
-                Err(..) => android_logger::Filter::default().with_min_level(log::Level::Off)
+                Ok(val) => Filter::parse(val.as_ref().map(String::as_str).unwrap_or("")).try_init().ok() ,
+                Err(..) => Filter::default().with_min_level(log::Level::Info)
             };
 
             //Set logging to off when deploying production android app.
