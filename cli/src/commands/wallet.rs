@@ -433,7 +433,6 @@ pub mod tests {
     use std::path::PathBuf;
 
     const WALLET: &'static str = "wallet";
-    const POOL: &'static str = "pool";
     const WALLET_KEY: &'static str = "wallet_key";
     const EXPORT_KEY: &'static str = "export_key";
 

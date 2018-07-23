@@ -1902,21 +1902,16 @@ in the future releases.
 
 Lists all payment addresses that are stored in the wallet
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * __->__ `paymentAddresses`: Json - payment\_addresses\_json - json array of string with json addresses
 
 
-#### addRequestFees \( wh, submitterDid, req, inputs, outputs \) -&gt; \[ reqWithFees, paymentMethod \]
+#### addRequestFees \( wh, submitterDid, req, inputs, outputs, extra \) -&gt; \[ reqWithFees, paymentMethod \]
 
 Modifies Indy request by adding information how to pay fees for this transaction
-according to selected payment method.
+according to this payment method.
 
-Payment selection is performed by looking to o
-
-This method consumes set of UTXO inputs and outputs. The difference between inputs balance
+This method consumes set of inputs and outputs. The difference between inputs balance
 and outputs balance is the fee for this transaction.
 
 Not that this method also produces correct fee signatures.
@@ -1924,165 +1919,142 @@ Not that this method also produces correct fee signatures.
 Format of inputs is specific for payment method. Usually it should reference payment transaction
 with at least one output that corresponds to payment address that user owns.
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
 * `req`: Json - initial transaction request as json
-* `inputs`: Json - The list of UTXO inputs as json array:
-\["input1", ...\]
+* `inputs`: Json - The list of payment sources as json array:
+\["source1", ...\]
 Notes:
-- each input should reference paymentAddress
+- input should reference paymentAddress
 - this param will be used to determine payment\_method
-* `outputs`: Json - The list of UTXO outputs as json array:
+* `outputs`: Json - The list of outputs as json array:
 ```
   [{
-    paymentAddress: <str>, // payment address used as output
-    amount: <int>, // amount of tokens to transfer to this payment address
-    extra: <str>, // optional data
+    recipient: <str>, // payment address of recipient
+    amount: <int>, // amount
   }]
 ````
+* `extra`: String - Optional information for payment operation.
+
 * __->__ [ `reqWithFees`: Json, `paymentMethod`: String ] - req\_with\_fees\_json - modified Indy request with added fees info
-payment\_method
+payment\_method - used payment method
 
 
-#### parseResponseWithFees \( paymentMethod, resp \) -&gt; utxo
+#### parseResponseWithFees \( paymentMethod, resp \) -&gt; receipts
 
 Parses response for Indy request with fees.
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
-* `paymentMethod`: String
+* `paymentMethod`: String - payment method to use
 * `resp`: Json - response for Indy request with fees
 Note: this param will be used to determine payment\_method
-* __->__ `utxo`: Json - utxo\_json - parsed \(payment method and node version agnostic\) utxo info as json:
+* __->__ `receipts`: Json - receipts\_json - parsed \(payment method and node version agnostic\) receipts info as json:
 ```
   [{
-     txo: <str>, // UTXO input
-     paymentAddress: <str>, //payment address for this UTXO
-     amount: <int>, // amount of tokens in this input
+     receipt: <str>, // receipt that can be used for payment referencing and verification
+     recipient: <str>, //payment address of recipient
+     amount: <int>, // amount
      extra: <str>, // optional data from payment transaction
   }]
 ````
 
 
-#### buildGetUtxoRequest \( wh, submitterDid, paymentAddress \) -&gt; \[ getUtxoTxn, paymentMethod \]
+#### buildGetPaymentSourcesRequest \( wh, submitterDid, paymentAddress \) -&gt; \[ getSourcesTxn, paymentMethod \]
 
-Builds Indy request for getting UTXO list for payment address
+Builds Indy request for getting sources list for payment address
 according to this payment method.
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
 * `paymentAddress`: String - target payment address
-* __->__ [ `getUtxoTxn`: Json, `paymentMethod`: String ] - get\_utxo\_txn\_json - Indy request for getting UTXO list for payment address
-payment\_method
+* __->__ [ `getSourcesTxn`: Json, `paymentMethod`: String ] - get\_sources\_txn\_json - Indy request for getting sources list for payment address
+payment\_method - used payment method
 
 
-#### parseGetUtxoResponse \( paymentMethod, resp \) -&gt; utxo
+#### parseGetPaymentSourcesResponse \( paymentMethod, resp \) -&gt; sources
 
-Parses response for Indy request for getting UTXO list.
+Parses response for Indy request for getting sources list.
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
-* `paymentMethod`: String
-* `resp`: Json - response for Indy request for getting UTXO list
+* `paymentMethod`: String - payment method to use
+* `resp`: Json - response for Indy request for getting sources list
 Note: this param will be used to determine payment\_method
-* __->__ `utxo`: Json - utxo\_json - parsed \(payment method and node version agnostic\) utxo info as json:
+* __->__ `sources`: Json - sources\_json - parsed \(payment method and node version agnostic\) sources info as json:
 ```
   [{
-     txo: <str>, // UTXO input
-     paymentAddress: <str>, //payment address for this UTXO
-     amount: <int>, // amount of tokens in this input
+     source: <str>, // source input
+     paymentAddress: <str>, //payment address for this source
+     amount: <int>, // amount
      extra: <str>, // optional data from payment transaction
   }]
 ````
 
+#### buildPaymentReq \( wh, submitterDid, inputs, outputs, extra \) -&gt; \[ paymentReq, paymentMethod \]
 
-#### buildPaymentReq \( wh, submitterDid, inputs, outputs \) -&gt; \[ paymentReq, paymentMethod \]
-
-Builds Indy request for doing tokens payment
+Builds Indy request for doing payment
 according to this payment method.
 
-This method consumes set of UTXO inputs and outputs.
+This method consumes set of inputs and outputs.
 
 Format of inputs is specific for payment method. Usually it should reference payment transaction
 with at least one output that corresponds to payment address that user owns.
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
-* `inputs`: Json - The list of UTXO inputs as json array:
-\["input1", ...\]
-Note that each input should reference paymentAddress
-* `outputs`: Json - The list of UTXO outputs as json array:
+* `inputs`: Json - The list of payment sources as json array:
+\["source1", ...\]
+Note that each source should reference payment address
+* `outputs`: Json - The list of outputs as json array:
 ```
   [{
-    paymentAddress: <str>, // payment address used as output
-    amount: <int>, // amount of tokens to transfer to this payment address
-    extra: <str>, // optional data
+    recipient: <str>, // payment address of recipient
+    amount: <int>, // amount
   }]
 ````
-* __->__ [ `paymentReq`: Json, `paymentMethod`: String ] - payment\_req\_json - Indy request for doing tokens payment
-payment\_method
+* `extra`: String - Optional information for payment operation.
+
+* __->__ [ `paymentReq`: Json, `paymentMethod`: String ] - payment\_req\_json - Indy request for doing payment
+payment\_method - used payment method
 
 
-#### parsePaymentResponse \( paymentMethod, resp \) -&gt; utxo
+#### parsePaymentResponse \( paymentMethod, resp \) -&gt; receipts
 
 Parses response for Indy request for payment txn.
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `paymentMethod`: String
 * `resp`: Json - response for Indy request for payment txn
 Note: this param will be used to determine payment\_method
-* __->__ `utxo`: Json - utxo\_json - parsed \(payment method and node version agnostic\) utxo info as json:
+* __->__ `receipts`: Json - receipts\_json - parsed \(payment method and node version agnostic\) receipts info as json:
 ```
   [{
-     txo: <str>, // UTXO input
-     paymentAddress: <str>, //payment address for this UTXO
-     amount: <int>, // amount of tokens in this input
+     receipt: <str>, // receipt that can be used for payment referencing and verification
+     recipient: <str>, // payment address of recipient
+     amount: <int>, // amount
      extra: <str>, // optional data from payment transaction
   }]
 ````
 
 
-#### buildMintReq \( wh, submitterDid, outputs \) -&gt; \[ mintReq, paymentMethod \]
+#### buildMintReq \( wh, submitterDid, outputs, extra \) -&gt; \[ mintReq, paymentMethod \]
 
-Builds Indy request for doing tokens minting
+Builds Indy request for doing minting
 according to this payment method.
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
-* `outputs`: Json - The list of UTXO outputs as json array:
+* `outputs`: Json - The list of outputs as json array:
 ```
   [{
-    paymentAddress: <str>, // payment address used as output
-    amount: <int>, // amount of tokens to transfer to this payment address
-    extra: <str>, // optional data
+    recipient: <str>, // payment address of recipient
+    amount: <int>, // amount
   }]
 ````
-* __->__ [ `mintReq`: Json, `paymentMethod`: String ] - mint\_req\_json - Indy request for doing tokens minting
-payment\_method
+* `extra`: String - Optional information for mint operation.
+* __->__ [ `mintReq`: Json, `paymentMethod`: String ] - mint\_req\_json - Indy request for doing minting
+payment\_method - used payment method
 
 
 #### buildSetTxnFeesReq \( wh, submitterDid, paymentMethod, fees \) -&gt; setTxnFees
 
 Builds Indy request for setting fees for transactions in the ledger
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
@@ -2102,22 +2074,16 @@ txnTypeN: amountN,
 
 Builds Indy get request for getting fees for transactions in the ledger
 
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
-
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
 payment\_method
-* `paymentMethod`: String
+* `paymentMethod`: String - payment method to use
 * __->__ `getTxnFees`: Json - get\_txn\_fees\_json - Indy request for getting fees for transactions in the ledger
 
 
 #### parseGetTxnFeesResponse \( paymentMethod, resp \) -&gt; fees
 
 Parses response for Indy request for getting fees
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `paymentMethod`: String
 * `resp`: Json - response for Indy request for getting fees
@@ -2127,6 +2093,38 @@ txnType2: amount2,
 .................
 txnTypeN: amountN,
 }
+
+#### buildVerifyPaymentReq \( wh, submitterDid, receipt \) -&gt; \[ verifyReq, paymentMethod \]
+
+Builds Indy request for information to verify the payment receipt
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `submitterDid`: String - DID of request sender
+* `receipt`: String - payment receipt to verify
+
+* __->__ [ `verifyReq`: Json, `paymentMethod`: String ] - verify\_req\_json - Indy request for verification receipt
+payment\_method - used payment method
+
+
+#### parseVerifyPaymentResponse \( paymentMethod, resp \) -&gt; receiptInfo
+
+Parses Indy response with information to verify receipt.
+
+* `paymentMethod`: String - payment method to use
+* `resp`: Json - response of the ledger for verify txn
+Note: this param will be used to determine payment\_method
+* __->__ `receiptInfo`: Json - txn\_json - parsed \(payment method and node version agnostic\) receipt verification info as json:
+```
+txn_json: {
+    sources: [<str>, ]
+    receipts: [ {
+        recipient: <str>, // payment address of recipient
+        receipt: <str>, // receipt that can be used for payment referencing and verification
+        amount: <int>, // amount
+    } ],
+    extra: <str>, //optional data
+}
+````
 
 
 ### pool
@@ -2259,7 +2257,7 @@ Creates a new secure wallet with the given unique name.
 
 }
 ```
-````
+
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -2298,6 +2296,7 @@ It is impossible to open wallet with the same name more than once.
                           For 'default' storage type should be empty.
 
 }
+```
 * __->__ `handle`: Handle (Number) - Handle to opened wallet to use in methods that require wallet access.
 
 Errors: `Common*`, `Wallet*`
@@ -2364,6 +2363,7 @@ Creates a new secure wallet with the given unique name and then imports its cont
     "path": path of the file that contains exported wallet content
     "key": passphrase used to export key
 }
+```
 =======
 #### deleteWallet \( name, credentials \) -&gt; void
 
