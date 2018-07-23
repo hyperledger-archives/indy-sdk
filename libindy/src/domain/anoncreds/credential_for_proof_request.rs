@@ -17,6 +17,12 @@ impl JsonEncodable for CredentialsForProofRequest {}
 
 impl<'a> JsonDecodable<'a> for CredentialsForProofRequest {}
 
+impl Default for CredentialsForProofRequest {
+    fn default() -> Self {
+        CredentialsForProofRequest { attrs: HashMap::new(), predicates: HashMap::new() }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RequestedCredential {
     pub cred_info: CredentialInfo,

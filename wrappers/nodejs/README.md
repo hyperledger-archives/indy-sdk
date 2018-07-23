@@ -233,7 +233,7 @@ Example:
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_def_id", Optional<string>,
-        "values": <see cred_values_json above>,
+        "values": <see credValues above>,
         // Fields below can depend on Cred Def type
         "signature": <signature>,
         "signature_correctness_proof": <signature_correctness_proof>
@@ -317,6 +317,21 @@ Errors: `Annoncreds*`, `Common*`, `Wallet*`
 Check credential provided by Issuer for the given credential request,
 updates the credential by a master secret and stores in a secure wallet.
 
+To support efficient search the following tags will be created for stored credential:
+```
+    {
+        "schema_id": <credential schema id>,
+        "schema_issuer_did": <credential schema issuer did>,
+        "schema_name": <credential schema name>,
+        "schema_version": <credential schema version>,
+        "issuer_did": <credential issuer did>,
+        "cred_def_id": <credential definition id>,
+        // for every attribute in <credValues>
+        "attr::<attribute name>::marker": "1",
+        "attr::<attribute name>::value": <attribute raw value>,
+    }
+```
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `credId`: String - \(optional, default is a random one\) identifier by which credential will be stored in the wallet
 * `credReqMetadata`: Json - a credential request metadata created by indy\_prover\_create\_credential\_req
@@ -333,23 +348,17 @@ Gets human readable credentials according to the filter.
 If filter is NULL, then all credentials are returned.
 Credentials can be filtered by Issuer, credential\_def and\/or Schema.
 
+NOTE: This method is deprecated. Use `proverSearchCredentials` instead.
+
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `filter`: Json - filter for credentials
-```
-       {
-           "schema_id": string, (Optional)
-           "schema_issuer_did": string, (Optional)
-           "schema_name": string, (Optional)
-           "schema_version": string, (Optional)
-           "issuer_did": string, (Optional)
-           "cred_def_id": string, (Optional)
-       }
-````
+* `filter`: Json - wql style query for credentials searching based on tags created during the saving of credential
+where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+
 * __->__ `credentials`: Json - credentials json
 ```
     [{
         "referent": string, // cred_id in the wallet
-        "values": <see cred_values_json above>,
+        "values": <see credValues above>,
         "schema_id": string,
         "cred_def_id": string,
         "rev_reg_id": Optional<string>,
@@ -359,7 +368,75 @@ Credentials can be filtered by Issuer, credential\_def and\/or Schema.
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
+#### proverGetCredential \( wh, credId \) -&gt; credential
+
+Gets human readable credential by the given id.
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `credId`: String - identifier by which requested credential is stored in the wallet
+* __->__ `credential`: Json - credential json
+```
+    {
+        "referent": string, // cred_id in the wallet
+        "values": <see credValues above>,
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_id": Optional<string>,
+        "cred_rev_id": Optional<string>
+    }
+````
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverSearchCredentials \( wh, filter \) -&gt; \[ searchHandle, totalCount \]
+
+Search for credentials stored in wallet.
+
+Instead of immediately returning of fetched credentials this call returns search_handle that can be used later 
+to fetch records by small batches (with proverFetchCredentials).
+
+* `wh`: Handle (Number) - wallet handle (created by openWallet)
+* `filter`: Json - wql style filter for credentials searching based on tags created during the saving of credential
+where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+
+* __->__ `searchHandle`: Number - handle that can be used later to fetch records by small batches (with proverFetchCredentials)
+* __->__ `totalCount`: Number -  total count of records
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverFetchCredentials \( sh, count \) -&gt; credentials
+
+Fetch next records for wallet search.
+
+* `sh`: Handle (Number) - search handle (created by proverSearchCredentials)
+* `count`: Number - count of records to fetch
+* __->__ `credentials`: Json - credentials json
+```
+    [{
+        "referent": string, // cred_id in the wallet
+        "values": <see credValues above>,
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_id": Optional<string>,
+        "cred_rev_id": Optional<string>
+    }]
+````
+NOTE: The list of length less than the requested count means credentials search iterator is completed.
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverCloseCredentialsSearch \( sh \) -&gt;
+
+Close credentials search (make search handle invalid).
+
+* `sh`: Handle (Number) - search handle (created by proverSearchCredentials)
+* __->__ void
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
 #### proverGetCredentialsForProofReq \( wh, proofRequest \) -&gt; credentials
+
+NOTE: This method is deprecated. Use `proverSearchCredentialsForProofReq` instead.
 
 Gets human readable credentials matching the given proof request.
 
@@ -383,9 +460,9 @@ Gets human readable credentials matching the given proof request.
                        // for date in this interval for each attribute
                        // (can be overridden on attribute level)
     }
-where
 ````
-* __->__ `credentials`: Json - credentials\_json: json with credentials for the given pool request.
+
+* __->__ `credentials`: Json - credentials\_json: json with credentials for the given proof request.
 ```
     {
         "requested_attrs": {
@@ -406,6 +483,84 @@ where
         "cred_rev_id": Optional<int>,
     }
 ````
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverSearchCredentialsForProofReq \( wh, proofRequest, extraQuery \) -&gt; searchHandle
+
+Search for credentials matching the given proof request.
+
+Instead of immediately returning of fetched credentials this call returns search_handle that can be used later
+to fetch records by small batches (with proverFetchCredentialsForProofReq).
+
+* `proofRequest`: Json - proof request json
+```
+    {
+        "name": string,
+        "version": string,
+        "nonce": string,
+        "requested_attributes": { // set of requested attributes
+             "<attr_referent>": <attr_info>, // see below
+             ...,
+        },
+        "requested_predicates": { // set of requested predicates
+             "<predicate_referent>": <predicate_info>, // see below
+             ...,
+         },
+        "non_revoked": Optional<<non_revoc_interval>>, // see below,
+                       // If specified prover must proof non-revocation
+                       // for date in this interval for each attribute
+                       // (can be overridden on attribute level)
+    }
+````
+* `extraQuery`: Json - (Optional) List of extra queries that will be applied to correspondent attribute/predicate.
+where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md
+```
+    {
+        "<attr_referent>": <wql query>,
+        "<predicate_referent>": <wql query>,
+    }
+```
+
+* __->__ `searchHandle`: Number - handle that can be used later to fetch records by small batches (with proverFetchCredentialsForProofReq)
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverFetchCredentialsForProofReq \( sh, itemReferent, count \) -&gt; credentials
+
+Fetch next records for the requested item using proof request search handle (created by proverSearchCredentialsForProofReq).
+
+* `sh`: Handle (Number) - search handle (created by proverSearchCredentialsForProofReq)
+* `itemReferent`: Number - referent of attribute/predicate in the proof request
+* `count`: Number - count of records to fetch
+* __->__ `credentials`: Json - credentials json
+```
+    [{
+        cred_info: <credential_info>,
+        interval: Optional<non_revoc_interval>
+    }]
+````
+where credential_info is:
+```
+    {
+        "referent": <string>,
+        "attrs": [{"attr_name" : "attr_raw_value"}],
+        "schema_id": string,
+        "cred_def_id": string,
+        "rev_reg_id": Optional<int>,
+        "cred_rev_id": Optional<int>,
+    }
+```
+NOTE: The list of length less than the requested `count` means that search iterator correspondent to the requested `itemReferent` is completed.
+
+Errors: `Annoncreds*`, `Common*`, `Wallet*`
+
+#### proverCloseCredentialsSearchForProofReq \( sh \) -&gt;
+
+Close credentials search for proof request (make search handle invalid)
+
+* `sh`: Handle (Number) - search handle (created by proverSearchCredentialsForProofReq)
+* __->__ void
 
 Errors: `Annoncreds*`, `Common*`, `Wallet*`
 
@@ -2150,9 +2305,6 @@ Errors: `Common*`, `Wallet*`
 #### exportWallet \( wh, exportConfig \) -&gt; void
 
 Exports opened wallet
-
-Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-in the future releases.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `exportConfig`: Json - JSON containing settings for input operation.

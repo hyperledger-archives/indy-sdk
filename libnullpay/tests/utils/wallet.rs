@@ -1,7 +1,6 @@
 use nullpay::ErrorCode;
 
 use std::ffi::CString;
-use std::ptr::null;
 use std::os::raw::c_char;
 
 pub const DEFAULT_WALLET_CREDENTIALS: &'static str = r#"{"key":"key"}"#;
