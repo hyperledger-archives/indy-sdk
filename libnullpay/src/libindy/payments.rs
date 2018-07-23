@@ -69,6 +69,20 @@ pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
                                                resp_json: *const c_char,
                                                cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
+pub type BuildVerifyReqCB = extern fn(command_handle: i32,
+                                      wallet_handle: i32,
+                                      submitter_did: *const c_char,
+                                      receipt: *const c_char,
+                                      cb: Option<extern fn(command_handle_: i32,
+                                                           err: ErrorCode,
+                                                           verify_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
+pub type ParseVerifyResponseCB = extern fn(command_handle: i32,
+                                           resp_json: *const c_char,
+                                           cb: Option<extern fn(command_handle_: i32,
+                                                                err: ErrorCode,
+                                                                txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
 pub fn register_payment_method(
     payment_method: *const c_char,
     create_payment_address: CreatePaymentAddressCB,
@@ -82,6 +96,8 @@ pub fn register_payment_method(
     build_set_txn_fees_req: BuildSetTxnFeesReqCB,
     build_get_txn_fees_req: BuildGetTxnFeesReqCB,
     parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
+    build_verify_req: BuildVerifyReqCB,
+    parse_verify_response: ParseVerifyResponseCB,
 ) -> ErrorCode {
     let (sender, receiver) = channel();
 
@@ -106,6 +122,8 @@ pub fn register_payment_method(
             Some(build_set_txn_fees_req),
             Some(build_get_txn_fees_req),
             Some(parse_get_txn_fees_response),
+            Some(build_verify_req),
+            Some(parse_verify_response),
             cb,
         );
     }
@@ -141,6 +159,8 @@ extern {
         build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
         build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
         parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
+        build_verify_req: Option<BuildVerifyReqCB>,
+        parse_verify_response: Option<ParseVerifyResponseCB>,
         cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode;
 
     #[no_mangle]

@@ -38,7 +38,9 @@ pub extern fn nullpay_init() -> ErrorCode {
         payment_method::build_mint_req::handle,
         payment_method::build_set_txn_fees_req::handle,
         payment_method::build_get_txn_fees_req::handle,
-        payment_method::parse_get_txn_fees_response::handle
+        payment_method::parse_get_txn_fees_response::handle,
+        payment_method::build_verify_req::handle,
+        payment_method::parse_verify_response::handle,
     )
 }
 

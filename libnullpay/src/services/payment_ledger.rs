@@ -1,5 +1,5 @@
-use utils::types::{Output, ReceiptInfo, SourceInfo};
-use utils::source::from_source;
+use utils::types::{Output, ReceiptInfo, SourceInfo, ReceiptVerificationInfo, ShortReceiptInfo};
+use utils::source::{from_source, to_source};
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
@@ -27,6 +27,34 @@ pub fn add_txn(inputs: Vec<String>, outputs: Vec<Output>, extra: Option<&str>) -
 pub fn get_txn(seq_no: i32) -> Option<(Vec<String>, Vec<Output>, Option<String>)> {
     let txns = TXNS.lock().unwrap();
     txns.get(&seq_no).map(|&(ref a, ref b, ref c)| (a.clone(), b.clone(), c.clone()))
+}
+
+pub fn get_receipt_verification_info(source: String) -> Option<ReceiptVerificationInfo> {
+    let (seq_no, _) = match from_source(source.as_str()) {
+        Some(e) => e,
+        None => return None
+    };
+
+    match get_txn(seq_no).map(|(sources, outputs, extra)|
+        {
+            let receipts: Vec<ShortReceiptInfo> =
+                outputs.iter().map(|output|
+                    ShortReceiptInfo {
+                        receipt: to_source(&output.recipient, seq_no).unwrap(), // TODO: FIXME
+                        recipient: output.recipient.clone(),
+                        amount: output.amount.clone(),
+                    }
+                ).collect();
+
+            ReceiptVerificationInfo {
+                sources,
+                receipts,
+                extra,
+            }
+        }) {
+        Some(o) => Some(o),
+        _ => None
+    }
 }
 
 pub fn get_receipt_info(source: String) -> Option<ReceiptInfo> {

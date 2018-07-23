@@ -774,6 +774,90 @@ mod high_cases {
             test_utils::cleanup_storage();
         }
     }
+
+    mod verify {
+        use super::*;
+
+        #[test]
+        pub fn verify_works() {
+            test_utils::cleanup_storage();
+            plugin::init_plugin();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
+
+            //1. Create addresses
+            let addresses = payments_utils::create_addresses(vec!["{}", "{}"], wallet_handle, PAYMENT_METHOD_NAME);
+
+            //2. Mint sources and get created sources
+            let mint: Vec<(String, i32)> = addresses.clone().into_iter().enumerate().map(|(i, addr)| (addr, ((i + 2) * 10) as i32)).collect();
+            payments_utils::mint_sources(mint, None, wallet_handle, pool_handle, SUBMITTER_DID);
+
+            let sources = payments_utils::get_sources_with_balance(addresses.clone(), wallet_handle, pool_handle, SUBMITTER_DID);
+
+            //3. Prepare inputs and outputs for payment txn
+            let addr_1 = addresses.get(0).unwrap();
+            let sources_1: Vec<String> = sources.get(addr_1.as_str()).unwrap().into_iter().map(|info| info.source.clone()).collect();
+            let inputs = serde_json::to_string(&sources_1).unwrap();
+
+            let recipient_1 = addresses.get(1).unwrap().to_string();
+            let recipient_2 = addresses.get(0).unwrap().to_string();
+            let outputs = vec![Output {
+                recipient: recipient_1.clone(),
+                amount: 19,
+            }, Output {
+                recipient: recipient_2.clone(),
+                amount: 1,
+            }];
+            let outputs = serde_json::to_string(&outputs).unwrap();
+
+            //4. Build and send payment txn
+            let (payment_req, payment_method) = payments::build_payment_req(wallet_handle, SUBMITTER_DID, inputs.as_str(), outputs.as_str(), None).unwrap();
+            let payment_resp = ledger::submit_request(pool_handle, payment_req.as_str()).unwrap();
+            let payment_resp_parsed = payments::parse_payment_response(payment_method.as_str(), payment_resp.as_str()).unwrap();
+
+            //5. Check response sources
+            let sources: Vec<ReceiptInfo> = serde_json::from_str(payment_resp_parsed.as_str()).unwrap();
+            assert_eq!(sources.len(), 2);
+
+            //6. Verify receipts
+            let receipt_1 = sources[0].receipt.clone();
+            let receipt_2 = sources[1].receipt.clone();
+
+            let expected_info = ReceiptVerificationInfo {
+                sources: sources_1,
+                receipts: vec![ShortReceiptInfo {
+                    receipt: receipt_1.clone(),
+                    recipient: recipient_1.clone(),
+                    amount: 19,
+                }, ShortReceiptInfo {
+                    receipt: receipt_2.clone(),
+                    recipient: recipient_2.clone(),
+                    amount: 1,
+                }],
+                extra: None,
+            };
+
+            // Verify receipt 1
+            let (verify_txn_json, payment_method) = payments::build_verify_req(wallet_handle, SUBMITTER_DID, receipt_1.as_str()).unwrap();
+            let verify_txn_resp = ledger::submit_request(pool_handle, verify_txn_json.as_str()).unwrap();
+            let verification_info = payments::parse_verify_response(payment_method.as_str(), verify_txn_resp.as_str()).unwrap();
+
+            let info: ReceiptVerificationInfo = serde_json::from_str(verification_info.as_str()).unwrap();
+            assert_eq!(info, expected_info);
+
+            // Verify receipt 2
+            let (verify_txn_json, payment_method) = payments::build_verify_req(wallet_handle, SUBMITTER_DID, receipt_2.as_str()).unwrap();
+            let verify_txn_resp = ledger::submit_request(pool_handle, verify_txn_json.as_str()).unwrap();
+            let verification_info = payments::parse_verify_response(payment_method.as_str(), verify_txn_resp.as_str()).unwrap();
+
+            let info: ReceiptVerificationInfo = serde_json::from_str(verification_info.as_str()).unwrap();
+            assert_eq!(info, expected_info);
+
+            pool::close(pool_handle).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            test_utils::cleanup_storage();
+        }
+    }
 }
 
 mod medium_cases {
@@ -875,6 +959,29 @@ mod medium_cases {
 
             let err = payments::build_set_txn_fees_req(wallet_handle, SUBMITTER_DID, PAYMENT_METHOD_NAME, "{1}").unwrap_err();
             assert_eq!(err, ErrorCode::CommonInvalidStructure);
+
+            pool::close(pool_handle).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            test_utils::cleanup_storage();
+        }
+    }
+
+    mod verify {
+        use super::*;
+
+        #[test]
+        pub fn verify_works_for_not_found_receipt() {
+            test_utils::cleanup_storage();
+            plugin::init_plugin();
+            let wallet_handle = wallet::create_and_open_wallet().unwrap();
+            let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
+
+            // Verify receipt
+            let receipt = "pay:null:0_PqVjwJC42sxCTJp";
+            let (verify_txn_json, payment_method) = payments::build_verify_req(wallet_handle, SUBMITTER_DID, receipt).unwrap();
+            let verify_txn_resp = ledger::submit_request(pool_handle, verify_txn_json.as_str()).unwrap();
+            let res = payments::parse_verify_response(payment_method.as_str(), verify_txn_resp.as_str());
+            assert_eq!(res.unwrap_err(), ErrorCode::PaymentSourceDoesNotExistError);
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();

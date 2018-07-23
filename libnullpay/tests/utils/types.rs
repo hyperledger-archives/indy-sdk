@@ -29,3 +29,18 @@ pub struct SourceInfo {
     pub amount: i32,
     pub extra: Option<String>
 }
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub struct ReceiptVerificationInfo {
+    pub sources: Vec<String>,
+    pub receipts: Vec<ShortReceiptInfo>,
+    pub extra: Option<String>
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub struct ShortReceiptInfo {
+    pub receipt: String,
+    pub recipient: String,
+    pub amount: i32
+}

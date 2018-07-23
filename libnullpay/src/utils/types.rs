@@ -1,8 +1,7 @@
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Output {
     pub recipient: String,
-    pub amount: i32,
-    pub extra: Option<String>
+    pub amount: i32
 }
 
 impl Clone for Output {
@@ -10,7 +9,6 @@ impl Clone for Output {
         Output {
             recipient: self.recipient.clone(),
             amount: self.amount.clone(),
-            extra: self.extra.clone()
         }
     }
 }
@@ -30,4 +28,19 @@ pub struct SourceInfo {
     pub payment_address: String,
     pub amount: i32,
     pub extra: Option<String>
+}
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub struct ReceiptVerificationInfo {
+    pub sources: Vec<String>,
+    pub receipts: Vec<ShortReceiptInfo>,
+    pub extra: Option<String>
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub struct ShortReceiptInfo {
+    pub receipt: String,
+    pub recipient: String,
+    pub amount: i32
 }
