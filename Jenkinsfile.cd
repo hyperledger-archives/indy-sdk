@@ -724,7 +724,7 @@ def publishingRCtoStable() {
     node('ubuntu') {
         stage('Moving RC artifacts to Stable') {
             try {
-                echo 'Moving RC artifacts to Stable: Checkout csm'
+                echo 'Moving RC artifacts to Stable: Checkout scm'
                 checkout scm
 
                 echo 'Moving RC artifacts to Stable: Download packaging utils'
