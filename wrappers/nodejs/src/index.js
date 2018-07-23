@@ -675,17 +675,17 @@ indy.parseGetTxnFeesResponse = function parseGetTxnFeesResponse (paymentMethod, 
   return cb.promise
 }
 
-indy.buildVerifyReq = function buildVerifyReq (wh, submitterDid, receipt, cb) {
+indy.buildVerifyPaymentReq = function buildVerifyPaymentReq (wh, submitterDid, receipt, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
   })
-  capi.buildVerifyReq(wh, submitterDid, receipt, cb)
+  capi.buildVerifyPaymentReq(wh, submitterDid, receipt, cb)
   return cb.promise
 }
 
-indy.parseVerifyResponse = function parseVerifyResponse (paymentMethod, resp, cb) {
+indy.parseVerifyPaymentResponse = function parseVerifyPaymentResponse (paymentMethod, resp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.parseVerifyResponse(paymentMethod, toJson(resp), cb)
+  capi.parseVerifyPaymentResponse(paymentMethod, toJson(resp), cb)
   return cb.promise
 }
 

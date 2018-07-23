@@ -87,13 +87,13 @@ public class PaymentsResults {
 	}
 
 	/**
-	 * Result from calling BuildVerifyReq
+	 * Result from calling BuildVerifyPaymentReqResult
 	 */
-	public static class BuildVerifyReqResult {
+	public static class BuildVerifyPaymentReqResult {
 		private String verifytReqJson;
 		private String paymentMethod;
 
-		public BuildVerifyReqResult(String verifytReqJson, String paymentMethod) {
+		public BuildVerifyPaymentReqResult(String verifytReqJson, String paymentMethod) {
 			this.verifytReqJson = verifytReqJson;
 			this.paymentMethod = paymentMethod;
 		}

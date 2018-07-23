@@ -343,13 +343,13 @@ pub mod parse_get_txn_fees_response {
     }
 }
 
-pub mod build_verify_req {
+pub mod build_verify_payment_req {
     use super::*;
 
     pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, receipt: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
         check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(receipt, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_verify_req::handle << submitter_did: {}, receipt: {}", submitter_did, receipt);
+        trace!("libnullpay::build_verify_payment_req::handle << submitter_did: {}, receipt: {}", submitter_did, receipt);
 
         ledger::build_get_txn_request(
             submitter_did.as_str(),
@@ -367,18 +367,18 @@ pub mod build_verify_req {
                         None =>  _add_response(&res, "NO_SOURCE")
                     }
                 } else { ec };
-                trace!("libnullpay::build_verify_req::handle >>");
+                trace!("libnullpay::build_verify_payment_req::handle >>");
                 _process_callback(cmd_handle, ec, res, cb);
             }),
         )
     }
 }
 
-pub mod parse_verify_response {
+pub mod parse_verify_payment_response {
     use super::*;
 
     pub extern fn handle(cmd_handle: i32, resp_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-        trace!("libnullpay::parse_verify_response::handle <<");
+        trace!("libnullpay::parse_verify_payment_response::handle <<");
         _process_parse_response(cmd_handle, resp_json, cb)
     }
 }

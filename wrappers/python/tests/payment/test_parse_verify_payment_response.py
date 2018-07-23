@@ -7,7 +7,7 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_build_verify_request_works_for_unknown_payment_method(wallet_handle, did_trustee):
+async def test_parse_verify_payment_response_works_for_unknown_payment_method():
     with pytest.raises(IndyError) as e:
-        await payment.build_verify_req(wallet_handle, did_trustee, receipt)
+        await payment.parse_payment_response(payment_method, empty_object)
     assert ErrorCode.PaymentUnknownMethodError == e.value.error_code

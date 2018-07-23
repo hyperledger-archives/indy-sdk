@@ -8,13 +8,13 @@ import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
 
-public class BuildVerifyRequestTest extends PaymentIntegrationTest {
+public class ParseVerifyPaymentResponseTest extends PaymentIntegrationTest {
 
 	@Test
-	public void testBuildVerifyRequestWorksForUnknownPaymentMethod() throws Exception {
+	public void testParseVerifyPaymentResponseWorksForUnknownPaymentMethod() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(UnknownPaymentMethodException.class));
 
-		Payments.buildVerifyRequest(wallet, DID_TRUSTEE, receipt).get();
+		Payments.parseVerifyPaymentResponse(paymentMethod, emptyObject).get();
 	}
 }

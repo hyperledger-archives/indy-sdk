@@ -8,52 +8,6 @@
 extern "C" {
 #endif
 
-    /// Register custom payment implementation.
-    ///
-    /// It allows library user to provide custom payment method implementation as set of handlers.
-    ///
-    /// #Params
-    /// command_handle: Command handle to map callback to caller context.
-    /// payment_method: The type of payment method also used as sub-prefix for fully resolvable payment address format ("sov" - for example)
-    /// create_payment_address: "create_payment_address" operation handler
-    /// add_request_fees: "add_request_fees" operation handler
-    /// build_get_payment_sources_request: "build_get_payment_sources_request" operation handler
-    /// parse_get_payment_sources_response: "parse_get_payment_sources_response" operation handler
-    /// build_payment_req: "build_payment_req" operation handler
-    /// build_mint_req: "build_mint_req" operation handler
-    ///
-    /// #Returns
-    /// Error code
-
-    extern indy_error_t indy_register_payment_method(indy_handle_t  command_handle,
-                                                     const char*    payment_method,
-                                                     indy_error_t (*createPaymentAddress)(const char* config,
-                                                                                          const char ** const payment_address_ptr),
-                                                     indy_error_t (*addRequestFees)(const char* req_json,
-                                                                                    const char* inputs_json,
-                                                                                    const char* outputs_json,
-                                                                                    const char ** const req_with_fees_ptr),
-                                                     indy_error_t (*parseResponseWithFees)(const char* resp_json,
-                                                                                           const char ** const receipts_ptr),
-                                                     indy_error_t (*buildGetSourcesRequest)(const char* payment_address,
-                                                                                            const char ** const get_sources_txn_ptr),
-                                                     indy_error_t (*parseGetSourcesResponse)(const char* resp_json,
-                                                                                            const char ** const sources_ptr),
-                                                     indy_error_t (*buildPaymentReq)(const char* inputs_json,
-                                                                                     const char* outputs_json,
-                                                                                     const char ** const payment_req_ptr),
-                                                     indy_error_t (*parsePaymentResponse)(const char* resp_json,
-                                                                                          const char ** const receipts_ptr),
-                                                     indy_error_t (*buildMintReq)(const char* outputs_json,
-                                                                                  const char ** const mint_req_ptr),
-                                                     indy_error_t (*buildSetTxnFeesReq)(const char* fees_json,
-                                                                                        const char ** const set_txn_fees_ptr),
-                                                     indy_error_t (*buildGetTxnFeesReq)(const char ** const get_txn_fees_ptr),
-                                                     indy_error_t (*parseGetTxnFeesResponse)(const char* resp_json,
-                                                                                             const char ** const fees_ptr),
-                                                     void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
-                                                     );
-
     /// Create the payment address for specified payment method
     ///
     ///
@@ -391,28 +345,28 @@ extern "C" {
                                                                               const char*   fees_json)
                                                          );
 
-    /// Builds Indy request for information to verify the receipt
+    /// Builds Indy request for information to verify the payment receipt
     ///
-    /// #Params
+    /// # Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
     /// submitter_did : DID of request sender
-    /// receipt: receipt to verify
+    /// receipt: payment receipt to verify
     ///
-    /// #Returns
-    /// verify_txn_json: Indy request for verification receipt for transactions in the ledger
+    /// # Return
+    /// verify_txn_json: Indy request for verification receipt
     /// payment_method: used payment method
 
-    extern indy_error_t indy_build_verify_req(indy_handle_t command_handle,
-                                              indy_handle_t wallet_handle,
-                                              const char *  submitter_did,
-                                              const char *  receipt,
+    extern indy_error_t indy_build_verify_payment_req(indy_handle_t command_handle,
+                                                      indy_handle_t wallet_handle,
+                                                      const char *  submitter_did,
+                                                      const char *  receipt,
 
-                                              void           (*cb)(indy_handle_t xcommand_handle,
-                                                                   indy_error_t  err,
-                                                                   const char*   verify_txn_json,
-                                                                   const char*   payment_method)
-                                              );
+                                                      void           (*cb)(indy_handle_t xcommand_handle,
+                                                                           indy_error_t  err,
+                                                                           const char*   verify_txn_json,
+                                                                           const char*   payment_method)
+                                                      );
 
     /// Parses Indy response with information to verify receipt
     ///
@@ -432,14 +386,14 @@ extern "C" {
     ///     extra: <str>, //optional data
     /// }
 
-    extern indy_error_t indy_parse_verify_response(indy_handle_t command_handle,
-                                                   const char *  payment_method,
-                                                   const char *  resp_json,
+    extern indy_error_t indy_parse_verify_payment_response(indy_handle_t command_handle,
+                                                           const char *  payment_method,
+                                                           const char *  resp_json,
 
-                                                   void           (*cb)(indy_handle_t xcommand_handle,
-                                                                        indy_error_t  err,
-                                                                        const char*   txn_json)
-                                                   );
+                                                           void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                indy_error_t  err,
+                                                                                const char*   txn_json)
+                                                           );
 
 #ifdef __cplusplus
 }

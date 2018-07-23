@@ -1100,13 +1100,13 @@ pub mod verify_payment_receipt_command {
 
         let receipt = get_str_param("receipt", params).map_err(error_err!())?;
 
-        let (request, payment_method) = Payment::build_verify_req(wallet_handle, &submitter_did, receipt)
+        let (request, payment_method) = Payment::build_verify_payment_req(wallet_handle, &submitter_did, receipt)
             .map_err(|err| handle_payment_error(err, None))?;
 
         let response = Ledger::submit_request(pool_handle, &request)
             .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
 
-        let res = match Payment::parse_verify_response(&payment_method, &response) {
+        let res = match Payment::parse_verify_payment_response(&payment_method, &response) {
             Ok(info_json) => {
                 println_succ!("Following Payment Receipt Verification Info has been received.");
                 println!("{}", info_json);

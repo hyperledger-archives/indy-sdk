@@ -2094,23 +2094,23 @@ txnType2: amount2,
 txnTypeN: amountN,
 }
 
-#### buildVerifyReq \( wh, submitterDid, receipt \) -&gt; \[ verifyReq, paymentMethod \]
+#### buildVerifyPaymentReq \( wh, submitterDid, receipt \) -&gt; \[ verifyReq, paymentMethod \]
 
-Builds Indy request for information to verify the receipt
+Builds Indy request for information to verify the payment receipt
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
 * `submitterDid`: String - DID of request sender
-* `receipt`: String - receipt to verify
+* `receipt`: String - payment receipt to verify
 
 * __->__ [ `verifyReq`: Json, `paymentMethod`: String ] - verify\_req\_json - Indy request for verification receipt
 payment\_method - used payment method
 
 
-#### parseVerifyResponse \( paymentMethod, resp \) -&gt; receiptInfo
+#### parseVerifyPaymentResponse \( paymentMethod, resp \) -&gt; receiptInfo
 
 Parses Indy response with information to verify receipt.
 
-* `paymentMethod`: String
+* `paymentMethod`: String - payment method to use
 * `resp`: Json - response of the ledger for verify txn
 Note: this param will be used to determine payment\_method
 * __->__ `receiptInfo`: Json - txn\_json - parsed \(payment method and node version agnostic\) receipt verification info as json:

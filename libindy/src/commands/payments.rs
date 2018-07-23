@@ -114,19 +114,19 @@ pub enum PaymentsCommand {
     ParseGetTxnFeesResponseAck(
         i32,
         Result<String, PaymentsError>),
-    BuildVerifyReq(
+    BuildVerifyPaymentReq(
         i32, //wallet_handle
         String, //submitter_did
         String, //receipt
         Box<Fn(Result<(String, String), IndyError>) + Send>),
-    BuildVerifyReqAck(
+    BuildVerifyPaymentReqAck(
         i32,
         Result<String, PaymentsError>),
-    ParseVerifyResponse(
+    ParseVerifyPaymentResponse(
         String, //payment_method
         String, //resp_json
         Box<Fn(Result<String, IndyError>) + Send>),
-    ParseVerifyResponseAck(
+    ParseVerifyPaymentResponseAck(
         i32,
         Result<String, PaymentsError>)
 }
@@ -246,21 +246,21 @@ impl PaymentsCommandExecutor {
                 info!(target: "payments_command_executor", "ParseGetTxnFeesResponseAck command received");
                 self.parse_get_txn_fees_response_ack(cmd_handle, result);
             }
-            PaymentsCommand::BuildVerifyReq(wallet_handle, submitter_did, receipt, cb) => {
-                info!(target: "payments_command_executor", "BuildVerifyReq command received");
-                self.build_verify_request(wallet_handle, &submitter_did, &receipt, cb);
+            PaymentsCommand::BuildVerifyPaymentReq(wallet_handle, submitter_did, receipt, cb) => {
+                info!(target: "payments_command_executor", "BuildVerifyPaymentReq command received");
+                self.build_verify_payment_request(wallet_handle, &submitter_did, &receipt, cb);
             }
-            PaymentsCommand::BuildVerifyReqAck(command_handle, result) => {
+            PaymentsCommand::BuildVerifyPaymentReqAck(command_handle, result) => {
                 info!(target: "payments_command_executor", "BuildVerifyReqAck command received");
-                self.build_verify_request_ack(command_handle, result);
+                self.build_verify_payment_request_ack(command_handle, result);
             }
-            PaymentsCommand::ParseVerifyResponse(payment_method, resp_json, cb) => {
-                info!(target: "payments_command_executor", "ParseVerifyResponse command received");
-                self.parse_verify_response(&payment_method, &resp_json, cb);
+            PaymentsCommand::ParseVerifyPaymentResponse(payment_method, resp_json, cb) => {
+                info!(target: "payments_command_executor", "ParseVerifyPaymentResponse command received");
+                self.parse_verify_payment_response(&payment_method, &resp_json, cb);
             }
-            PaymentsCommand::ParseVerifyResponseAck(command_handle, result) => {
+            PaymentsCommand::ParseVerifyPaymentResponseAck(command_handle, result) => {
                 info!(target: "payments_command_executor", "ParseVerifyResponseAck command received");
-                self.parse_verify_response_ack(command_handle, result);
+                self.parse_verify_payment_response_ack(command_handle, result);
             }
         }
     }
@@ -572,8 +572,8 @@ impl PaymentsCommandExecutor {
         trace!("parse_get_txn_fees_response_ack <<<");
     }
 
-    fn build_verify_request(&self, wallet_handle: i32, submitter_did: &str, receipt: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
-        trace!("build_verify_request >>> wallet_handle: {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
+    fn build_verify_payment_request(&self, wallet_handle: i32, submitter_did: &str, receipt: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+        trace!("build_verify_payment_request >>> wallet_handle: {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
         match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
@@ -592,28 +592,28 @@ impl PaymentsCommandExecutor {
         };
         let method_copy = method.to_string();
         self._process_method(
-            Box::new(move |get_sources_txn_json| cb(get_sources_txn_json.map(|s| (s, method.to_string())))),
-            &|i| self.payments_service.build_verify_req(i, &method_copy, wallet_handle, &submitter_did, receipt)
+            Box::new(move |result| cb(result.map(|s| (s, method.to_string())))),
+            &|i| self.payments_service.build_verify_payment_req(i, &method_copy, wallet_handle, &submitter_did, receipt)
         );
-        trace!("build_get_payment_sources_request <<<");
+        trace!("build_verify_payment_request <<<");
     }
 
-    fn build_verify_request_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
-        trace!("build_verify_request_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "BuildVerifyRequestAck");
-        trace!("build_verify_request_ack <<<");
+    fn build_verify_payment_request_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
+        trace!("build_verify_payment_request_ack >>> result: {:?}", result);
+        self._common_ack_payments(cmd_handle, result, "BuildVerifyPaymentReqAck");
+        trace!("build_verify_payment_request_ack <<<");
     }
 
-    fn parse_verify_response(&self, type_: &str, resp_json: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        trace!("parse_verify_response >>> response: {:?}", resp_json);
-        self._process_method(cb, &|i| self.payments_service.parse_verify_response(i, type_, resp_json));
-        trace!("parse_verify_response <<<");
+    fn parse_verify_payment_response(&self, type_: &str, resp_json: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        trace!("parse_verify_payment_response >>> response: {:?}", resp_json);
+        self._process_method(cb, &|i| self.payments_service.parse_verify_payment_response(i, type_, resp_json));
+        trace!("parse_verify_payment_response <<<");
     }
 
-    fn parse_verify_response_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
-        trace!("parse_verify_response_ack >>> result: {:?}", result);
-        self._common_ack_payments(cmd_handle, result, "ParseVerifyResponseAck");
-        trace!("parse_verify_response_ack <<<");
+    fn parse_verify_payment_response_ack(&self, cmd_handle: i32, result: Result<String, PaymentsError>) {
+        trace!("parse_verify_payment_response_ack >>> result: {:?}", result);
+        self._common_ack_payments(cmd_handle, result, "ParseVerifyPaymentResponseAck");
+        trace!("parse_verify_payment_response_ack <<<");
     }
 
     // HELPERS

@@ -29,8 +29,8 @@ pub struct PaymentsMethod {
     build_set_txn_fees_req: BuildSetTxnFeesReqCB,
     build_get_txn_fees_req: BuildGetTxnFeesReqCB,
     parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
-    build_verify_req: BuildVerifyReqCB,
-    parse_verify_response: ParseVerifyResponseCB,
+    build_verify_payment_req: BuildVerifyPaymentReqCB,
+    parse_verify_payment_response: ParseVerifyPaymentResponseCB,
 }
 
 pub type PaymentsMethodCBs = PaymentsMethod;
@@ -47,8 +47,8 @@ impl PaymentsMethodCBs {
                build_set_txn_fees_req: BuildSetTxnFeesReqCB,
                build_get_txn_fees_req: BuildGetTxnFeesReqCB,
                parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
-               build_verify_req: BuildVerifyReqCB,
-               parse_verify_response: ParseVerifyResponseCB) -> Self {
+               build_verify_payment_req: BuildVerifyPaymentReqCB,
+               parse_verify_payment_response: ParseVerifyPaymentResponseCB) -> Self {
         PaymentsMethodCBs {
             create_address,
             add_request_fees,
@@ -61,8 +61,8 @@ impl PaymentsMethodCBs {
             build_set_txn_fees_req,
             build_get_txn_fees_req,
             parse_get_txn_fees_response,
-            build_verify_req,
-            parse_verify_response,
+            build_verify_payment_req,
+            parse_verify_payment_response,
         }
     }
 }
@@ -288,35 +288,35 @@ impl PaymentsService {
         res
     }
 
-    pub fn build_verify_req(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, receipt: &str) -> Result<(), PaymentsError> {
-        trace!("build_verify_req >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, receipt: {:?}", type_, wallet_handle, submitter_did, receipt);
-        let build_verify_req: BuildVerifyReqCB = self.methods.borrow().get(type_)
-            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_verify_req;
+    pub fn build_verify_payment_req(&self, cmd_handle: i32, type_: &str, wallet_handle: i32, submitter_did: &str, receipt: &str) -> Result<(), PaymentsError> {
+        trace!("build_verify_payment_req >>> type_: {:?}, wallet_handle: {:?}, submitter_did: {:?}, receipt: {:?}", type_, wallet_handle, submitter_did, receipt);
+        let build_verify_payment_req: BuildVerifyPaymentReqCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_verify_payment_req;
 
         let submitter_did = CString::new(submitter_did)?;
         let receipt = CString::new(receipt)?;
 
-        let err = build_verify_req(cmd_handle, wallet_handle, submitter_did.as_ptr(), receipt.as_ptr(), cbs::build_verify_req(cmd_handle));
+        let err = build_verify_payment_req(cmd_handle, wallet_handle, submitter_did.as_ptr(), receipt.as_ptr(), cbs::build_verify_payment_req(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
 
-        trace!("build_verify_req <<< result: {:?}", res);
+        trace!("build_verify_payment_req <<< result: {:?}", res);
 
         res
     }
 
-    pub fn parse_verify_response(&self, cmd_handle: i32, type_: &str, resp_json: &str) -> Result<(), PaymentsError> {
-        trace!("parse_verify_response >>> type_: {:?}, resp_json: {:?}", type_, resp_json);
-        let parse_verify_response: ParseVerifyResponseCB = self.methods.borrow().get(type_)
-            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.parse_verify_response;
+    pub fn parse_verify_payment_response(&self, cmd_handle: i32, type_: &str, resp_json: &str) -> Result<(), PaymentsError> {
+        trace!("parse_verify_payment_response >>> type_: {:?}, resp_json: {:?}", type_, resp_json);
+        let parse_verify_payment_response: ParseVerifyPaymentResponseCB = self.methods.borrow().get(type_)
+            .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.parse_verify_payment_response;
 
         let resp_json = CString::new(resp_json)?;
 
-        let err = parse_verify_response(cmd_handle, resp_json.as_ptr(), cbs::parse_verify_response(cmd_handle));
+        let err = parse_verify_payment_response(cmd_handle, resp_json.as_ptr(), cbs::parse_verify_payment_response(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
 
-        trace!("parse_verify_response <<< result: {:?}", res);
+        trace!("parse_verify_payment_response <<< result: {:?}", res);
 
         res
     }
@@ -514,16 +514,16 @@ mod cbs {
         send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseGetTxnFeesResponseAck(cmd_handle, result)))
     }
 
-    pub fn build_verify_req(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
-                                                                       err: ErrorCode,
-                                                                       c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildVerifyReqAck(cmd_handle, result)))
+    pub fn build_verify_payment_req(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
+                                                                         err: ErrorCode,
+                                                                         c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::BuildVerifyPaymentReqAck(cmd_handle, result)))
     }
 
-    pub fn parse_verify_response(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
-                                                                            err: ErrorCode,
-                                                                            c_str: *const c_char) -> ErrorCode> {
-        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseVerifyResponseAck(cmd_handle, result)))
+    pub fn parse_verify_payment_response(cmd_handle: i32) -> Option<extern fn(command_handle: i32,
+                                                                              err: ErrorCode,
+                                                                              c_str: *const c_char) -> ErrorCode> {
+        send_ack(cmd_handle, Box::new(move |cmd_handle, result| PaymentsCommand::ParseVerifyPaymentResponseAck(cmd_handle, result)))
     }
 
     fn send_ack(cmd_handle: i32, builder: Box<Fn(i32, Result<String, PaymentsError>) -> PaymentsCommand + Send>) -> Option<extern fn(command_handle: i32,

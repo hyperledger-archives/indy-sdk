@@ -775,11 +775,11 @@ mod high_cases {
         }
     }
 
-    mod verify {
+    mod verify_payment {
         use super::*;
 
         #[test]
-        pub fn verify_works() {
+        pub fn verify_payment_works() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
@@ -838,17 +838,17 @@ mod high_cases {
             };
 
             // Verify receipt 1
-            let (verify_txn_json, payment_method) = payments::build_verify_req(wallet_handle, SUBMITTER_DID, receipt_1.as_str()).unwrap();
+            let (verify_txn_json, payment_method) = payments::build_verify_payment_req(wallet_handle, SUBMITTER_DID, receipt_1.as_str()).unwrap();
             let verify_txn_resp = ledger::submit_request(pool_handle, verify_txn_json.as_str()).unwrap();
-            let verification_info = payments::parse_verify_response(payment_method.as_str(), verify_txn_resp.as_str()).unwrap();
+            let verification_info = payments::parse_verify_payment_response(payment_method.as_str(), verify_txn_resp.as_str()).unwrap();
 
             let info: ReceiptVerificationInfo = serde_json::from_str(verification_info.as_str()).unwrap();
             assert_eq!(info, expected_info);
 
             // Verify receipt 2
-            let (verify_txn_json, payment_method) = payments::build_verify_req(wallet_handle, SUBMITTER_DID, receipt_2.as_str()).unwrap();
+            let (verify_txn_json, payment_method) = payments::build_verify_payment_req(wallet_handle, SUBMITTER_DID, receipt_2.as_str()).unwrap();
             let verify_txn_resp = ledger::submit_request(pool_handle, verify_txn_json.as_str()).unwrap();
-            let verification_info = payments::parse_verify_response(payment_method.as_str(), verify_txn_resp.as_str()).unwrap();
+            let verification_info = payments::parse_verify_payment_response(payment_method.as_str(), verify_txn_resp.as_str()).unwrap();
 
             let info: ReceiptVerificationInfo = serde_json::from_str(verification_info.as_str()).unwrap();
             assert_eq!(info, expected_info);
@@ -966,11 +966,11 @@ mod medium_cases {
         }
     }
 
-    mod verify {
+    mod verify_payment {
         use super::*;
 
         #[test]
-        pub fn verify_works_for_not_found_receipt() {
+        pub fn verify_payment_works_for_not_found_receipt() {
             test_utils::cleanup_storage();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
@@ -978,9 +978,9 @@ mod medium_cases {
 
             // Verify receipt
             let receipt = "pay:null:0_PqVjwJC42sxCTJp";
-            let (verify_txn_json, payment_method) = payments::build_verify_req(wallet_handle, SUBMITTER_DID, receipt).unwrap();
+            let (verify_txn_json, payment_method) = payments::build_verify_payment_req(wallet_handle, SUBMITTER_DID, receipt).unwrap();
             let verify_txn_resp = ledger::submit_request(pool_handle, verify_txn_json.as_str()).unwrap();
-            let res = payments::parse_verify_response(payment_method.as_str(), verify_txn_resp.as_str());
+            let res = payments::parse_verify_payment_response(payment_method.as_str(), verify_txn_resp.as_str());
             assert_eq!(res.unwrap_err(), ErrorCode::PaymentSourceDoesNotExistError);
 
             pool::close(pool_handle).unwrap();

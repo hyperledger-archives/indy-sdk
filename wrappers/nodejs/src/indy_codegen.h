@@ -4107,18 +4107,18 @@ NAN_METHOD(parseGetTxnFeesResponse) {
   delete arg0UTF;
   delete arg1UTF;
 }
-void buildVerifyReq_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1) {
+void buildVerifyPaymentReq_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0, const char* arg1) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
     icb->cbStringString(xerr, arg0, arg1);
   }
 }
-NAN_METHOD(buildVerifyReq) {
+NAN_METHOD(buildVerifyPaymentReq) {
   if(info.Length() != 4){
-    return Nan::ThrowError(Nan::New("Expected 4 arguments: buildVerifyReq(wallet_handle, submitter_did, receipt,  cb(err, [ verifyReq, paymentMethod ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 4 arguments: buildVerifyPaymentReq(wallet_handle, submitter_did, receipt,  cb(err, [ verifyReq, paymentMethod ]))").ToLocalChecked());
   }
   if(!info[0]->IsNumber()){
-    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: buildVerifyReq(wallet_handle, submitter_did, receipt, cb(err, [ verifyReq, paymentMethod ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected IndyHandle for wallet_handle: buildVerifyPaymentReq(wallet_handle, submitter_did, receipt, cb(err, [ verifyReq, paymentMethod ]))").ToLocalChecked());
   }
   indy_handle_t arg0 = info[0]->Int32Value();
   Nan::Utf8String* arg1UTF = nullptr;
@@ -4127,7 +4127,7 @@ NAN_METHOD(buildVerifyReq) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildVerifyReq(wallet_handle, submitter_did, receipt, cb(err, [ verifyReq, paymentMethod ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildVerifyPaymentReq(wallet_handle, submitter_did, receipt, cb(err, [ verifyReq, paymentMethod ]))").ToLocalChecked());
   }
   Nan::Utf8String* arg2UTF = nullptr;
   const char* arg2 = nullptr;
@@ -4135,26 +4135,26 @@ NAN_METHOD(buildVerifyReq) {
     arg2UTF = new Nan::Utf8String(info[2]);
     arg2 = (const char*)(**arg2UTF);
   } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for receipt: buildVerifyReq(wallet_handle, submitter_did, receipt, cb(err, [ verifyReq, paymentMethod ]))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for receipt: buildVerifyPaymentReq(wallet_handle, submitter_did, receipt, cb(err, [ verifyReq, paymentMethod ]))").ToLocalChecked());
   }
   if(!info[3]->IsFunction()) {
-    return Nan::ThrowError(Nan::New("buildVerifyReq arg 3 expected callback Function").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("buildVerifyPaymentReq arg 3 expected callback Function").ToLocalChecked());
   }
   IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[3]).ToLocalChecked());
-  indyCalled(icb, indy_build_verify_req(icb->handle, arg0, arg1, arg2, buildVerifyReq_cb));
+  indyCalled(icb, indy_build_verify_payment_req(icb->handle, arg0, arg1, arg2, buildVerifyPaymentReq_cb));
   delete arg1UTF;
   delete arg2UTF;
 }
 
-void parseVerifyResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+void parseVerifyPaymentResponse_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
     icb->cbString(xerr, arg0);
   }
 }
-NAN_METHOD(parseVerifyResponse) {
+NAN_METHOD(parseVerifyPaymentResponse) {
   if(info.Length() != 3){
-    return Nan::ThrowError(Nan::New("Expected 3 arguments: parseVerifyResponse(payment_method, resp_json, cb(err, txn))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected 3 arguments: parseVerifyPaymentResponse(payment_method, resp_json, cb(err, txn))").ToLocalChecked());
   }
   Nan::Utf8String* arg0UTF = nullptr;
   const char* arg0 = nullptr;
@@ -4162,7 +4162,7 @@ NAN_METHOD(parseVerifyResponse) {
     arg0UTF = new Nan::Utf8String(info[0]);
     arg0 = (const char*)(**arg0UTF);
   } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for payment_method: parseVerifyResponse(payment_method, resp_json, cb(err, txn))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for payment_method: parseVerifyPaymentResponse(payment_method, resp_json, cb(err, txn))").ToLocalChecked());
   }
   Nan::Utf8String* arg1UTF = nullptr;
   const char* arg1 = nullptr;
@@ -4170,13 +4170,13 @@ NAN_METHOD(parseVerifyResponse) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for resp_json: parseVerifyResponse(payment_method, resp_json, cb(err, txn))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for resp_json: parseVerifyPaymentResponse(payment_method, resp_json, cb(err, txn))").ToLocalChecked());
   }
   if(!info[2]->IsFunction()) {
-    return Nan::ThrowError(Nan::New("parseVerifyResponse arg 2 expected callback Function").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("parseVerifyPaymentResponse arg 2 expected callback Function").ToLocalChecked());
   }
   IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
-  indyCalled(icb, indy_parse_verify_response(icb->handle, arg0, arg1, parseVerifyResponse_cb));
+  indyCalled(icb, indy_parse_verify_payment_response(icb->handle, arg0, arg1, parseVerifyPaymentResponse_cb));
   delete arg0UTF;
   delete arg1UTF;
 }
@@ -4662,8 +4662,8 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "buildSetTxnFeesReq", buildSetTxnFeesReq);
   Nan::Export(target, "buildGetTxnFeesReq", buildGetTxnFeesReq);
   Nan::Export(target, "parseGetTxnFeesResponse", parseGetTxnFeesResponse);
-  Nan::Export(target, "buildVerifyReq", buildVerifyReq);
-  Nan::Export(target, "parseVerifyResponse", parseVerifyResponse);
+  Nan::Export(target, "buildVerifyPaymentReq", buildVerifyPaymentReq);
+  Nan::Export(target, "parseVerifyPaymentResponse", parseVerifyPaymentResponse);
   Nan::Export(target, "createPoolLedgerConfig", createPoolLedgerConfig);
   Nan::Export(target, "openPoolLedger", openPoolLedger);
   Nan::Export(target, "refreshPoolLedger", refreshPoolLedger);

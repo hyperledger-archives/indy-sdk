@@ -95,15 +95,15 @@ public class Payments extends IndyJava.API {
     };
 
 	/**
-	 * Callback used when buildVerifyRequest completes.
+	 * Callback used when buildVerifyPaymentRequest completes.
 	 */
-	private static Callback buildVerifyReqCb = new Callback() {
+	private static Callback buildVerifyPaymentReqCb = new Callback() {
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommandHandle, int err, String verifyReqJson, String paymentMethod) {
-			CompletableFuture<BuildVerifyReqResult> future = (CompletableFuture<BuildVerifyReqResult>) removeFuture(xcommandHandle);
+			CompletableFuture<BuildVerifyPaymentReqResult> future = (CompletableFuture<BuildVerifyPaymentReqResult>) removeFuture(xcommandHandle);
 			if (!checkCallback(future, err)) return;
 
-			BuildVerifyReqResult verifyRequestResult = new BuildVerifyReqResult(verifyReqJson, paymentMethod);
+			BuildVerifyPaymentReqResult verifyRequestResult = new BuildVerifyPaymentReqResult(verifyReqJson, paymentMethod);
 
 			future.complete(verifyRequestResult);
 		}
@@ -541,15 +541,15 @@ public class Payments extends IndyJava.API {
 
 
     /**
-     * Builds Indy request for information to verify the receipt
+     * Builds Indy request for information to verify the payment receipt
      *
      * @param wallet The wallet.
      * @param submitterDid DID of request sender
-     * @param receipt receipt to verify
+     * @param receipt payment receipt to verify
      * @return Indy request for doing verification
      * @throws IndyException
      */
-    public static CompletableFuture<BuildVerifyReqResult> buildVerifyRequest(
+    public static CompletableFuture<BuildVerifyPaymentReqResult> buildVerifyPaymentRequest(
             Wallet wallet,
             String submitterDid,
             String receipt
@@ -557,17 +557,17 @@ public class Payments extends IndyJava.API {
         ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(receipt, "receipt");
 
-        CompletableFuture<BuildVerifyReqResult> future = new CompletableFuture<>();
+        CompletableFuture<BuildVerifyPaymentReqResult> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int walletHandle = wallet.getWalletHandle();
 
-        int result = LibIndy.api.indy_build_verify_req(
+        int result = LibIndy.api.indy_build_verify_payment_req(
                 commandHandle,
                 walletHandle,
                 submitterDid,
 		        receipt,
-		        buildVerifyReqCb);
+                buildVerifyPaymentReqCb);
 
         checkResult(result);
 
@@ -591,11 +591,11 @@ public class Payments extends IndyJava.API {
      * }
      * @throws IndyException
      */
-    public static CompletableFuture<String> parseVerifyResponse (
+    public static CompletableFuture<String> parseVerifyPaymentResponse(
             String paymentMethod,
             String respJson
     ) throws IndyException {
-        return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_verify_response);
+        return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_verify_payment_response);
     }
 
     private static CompletableFuture<String> parseResponse(
