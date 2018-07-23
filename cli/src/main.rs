@@ -35,7 +35,7 @@ use std::io::BufReader;
 use std::rc::Rc;
 
 fn main() {
-    utils::logger::LoggerUtils::init();
+    utils::logger::init();
 
     if env::args().find(|a| a == "-h" || a == "--help").is_some() {
         return _print_help();
