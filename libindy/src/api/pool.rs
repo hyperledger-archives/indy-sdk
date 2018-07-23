@@ -149,6 +149,13 @@ pub extern fn indy_refresh_pool_ledger(command_handle: i32,
 }
 
 /// Lists names of created pool ledgers
+///
+/// #Params
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
 #[no_mangle]
 pub extern fn indy_list_pools(command_handle: i32,
                               cb: Option<extern fn(xcommand_handle: i32,
@@ -164,7 +171,7 @@ pub extern fn indy_list_pools(command_handle: i32,
         .send(Command::Pool(PoolCommand::List(
             Box::new(move |result| {
                 let (err, pools) = result_to_err_code_1!(result, String::new());
-                trace!("indy_refresh_pool_ledger: pools: {:?}", pools);
+                trace!("indy_list_pools: pools: {:?}", pools);
                 let pools = CStringUtils::string_to_cstring(pools);
                 cb(command_handle, err, pools.as_ptr())
             })
@@ -172,7 +179,7 @@ pub extern fn indy_list_pools(command_handle: i32,
 
     let res = result_to_err_code!(result);
 
-    trace!("indy_refresh_pool_ledger: <<< res: {:?}", res);
+    trace!("indy_list_pools: <<< res: {:?}", res);
 
     res
 }
