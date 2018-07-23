@@ -222,14 +222,20 @@ class Wallet:
         return result
 
     @staticmethod
-    async def create_payment_address() -> str:
+    async def create_payment_address(seed: str = None) -> str:
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.create_payment_address, "cb"):
             logger.debug("vcx_wallet_create_payment_address: Creating callback")
             Wallet.create_payment_address.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
+        if seed:
+            c_seed = c_char_p(seed.encode('utf-8'))
+        else:
+            c_seed = None
+
         result = await do_call('vcx_wallet_create_payment_address',
+                               c_seed,
                                Wallet.create_payment_address.cb)
 
         logger.debug("vcx_wallet_create_payment_address completed")

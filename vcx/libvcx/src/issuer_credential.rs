@@ -304,7 +304,7 @@ impl IssuerCredential {
 
     fn generate_payment_info(&mut self) -> Result<Option<PaymentInfo>, IssuerCredError> {
         if self.price > 0 {
-            let address: String = ::utils::libindy::payments::create_address().map_err(|x| IssuerCredError::CommonError(x))?;
+            let address: String = ::utils::libindy::payments::create_address(None).map_err(|x| IssuerCredError::CommonError(x))?;
             self.payment_address = Some(address.clone());
             Ok(Some(PaymentInfo {
                 payment_required: "one-time".to_string(),

@@ -46,6 +46,12 @@ async def test_create_payment_address():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_create_payment_address_with_seed():
+    address = await Wallet.create_payment_address("0000000000000000000000WHATEVER00")
+    assert address
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_validate_payment_address():
     await Wallet.validate_payment_address('sov:1:1234')
 

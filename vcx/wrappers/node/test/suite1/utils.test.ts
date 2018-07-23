@@ -3,6 +3,7 @@ import '../module-resolver-helper'
 import { assert } from 'chai'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import {
+  downloadMessages,
   getLedgerFees,
   getVersion,
   provisionAgent,
@@ -20,6 +21,11 @@ describe('utils:', () => {
   const updateInstitutionConfigsData = {
     logoUrl: 'https://google.com',
     name: 'New Name'
+  }
+  const downloadMessagesData = {
+    pairwiseDids: 'asdf',
+    status: 'MS-104',
+    uids: 'asdf'
   }
 
   describe('provisionAgent:', () => {
@@ -76,6 +82,14 @@ describe('utils:', () => {
     it('success', async () => {
       const fees = await getLedgerFees()
       assert.ok(fees)
+    })
+  })
+
+  describe('downloadMessages:', () => {
+    it('success', async () => {
+      const messages = await downloadMessages(downloadMessagesData)
+      console.log(messages)
+      assert.ok(messages)
     })
   })
 })

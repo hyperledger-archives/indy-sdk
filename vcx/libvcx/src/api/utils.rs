@@ -244,6 +244,7 @@ pub extern fn vcx_set_next_agency_response(message_index: u32) {
 pub extern fn vcx_messages_download(command_handle: u32,
                                     message_status: *const c_char,
                                     uids: *const c_char,
+                                    pw_dids: *const c_char,
                                     cb: Option<extern fn(xcommand_handle: u32, err: u32, messages: *const c_char)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
@@ -266,11 +267,20 @@ pub extern fn vcx_messages_download(command_handle: u32,
         None
     };
 
+    let pw_dids = if !pw_dids.is_null() {
+        check_useful_c_str!(pw_dids, error::INVALID_OPTION.code_num);
+        let v: Vec<&str> = pw_dids.split(',').collect();
+        let v = v.iter().map(|s| s.to_string()).collect::<Vec<String>>();
+        Some(v.to_owned())
+    } else {
+        None
+    };
+
     info!("vcx_messages_download(command_handle: {}, message_status: {:?}, uids: {:?})",
           command_handle, message_status, uids);
 
     thread::spawn(move|| {
-        match ::messages::get_message::download_messages(message_status, uids) {
+        match ::messages::get_message::download_messages(pw_dids, message_status, uids) {
             Ok(x) => {
                 match  serde_json::to_string(&x) {
                     Ok(x) => {
@@ -317,25 +327,19 @@ pub extern fn vcx_messages_download(command_handle: u32,
 
 #[no_mangle]
 pub extern fn vcx_messages_update_status(command_handle: u32,
-                                         connection_handle: u32,
                                          message_status: *const c_char,
-                                         uids: *const c_char,
+                                         msg_json: *const c_char,
                                          cb: Option<extern fn(xcommand_handle: u32, err: u32)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(message_status, error::INVALID_OPTION.code_num);
-    check_useful_c_str!(uids, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(msg_json, error::INVALID_OPTION.code_num);
 
-    info!("vcx_messages_set_status(command_handle: {}, connection_handle: {}, message_status: {:?}, uids: {:?})",
-          command_handle, connection_handle, message_status, uids);
-
-    if !::connection::is_valid_handle(connection_handle) {
-        error!("vcx_messages_set_status - invalid connection handle");
-        return error::INVALID_CONNECTION_HANDLE.code_num;
-    }
+    info!("vcx_messages_set_status(command_handle: {}, message_status: {:?}, uids: {:?})",
+          command_handle, message_status, msg_json);
 
     thread::spawn(move|| {
-        match ::messages::update_message::update_agency_messages(connection_handle, &message_status, &uids) {
+        match ::messages::update_message::update_agency_messages(&message_status, &msg_json) {
             Ok(_) => {
                 info!("vcx_messages_set_status_cb(command_handle: {}, rc: {})",
                     command_handle, error::error_string(0));
@@ -461,20 +465,18 @@ mod tests {
     fn test_messages_download() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        ::utils::httpclient::set_next_u8_response(::utils::constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
 
-        let rc = vcx_messages_download(0, ptr::null_mut(), ptr::null_mut(), Some(get_agency_messages_cb));
+        let rc = vcx_messages_download(0, ptr::null_mut(), ptr::null_mut(), ptr::null_mut(), Some(get_agency_messages_cb));
         assert_eq!(rc, error::SUCCESS.code_num);
         thread::sleep(Duration::from_secs(1));
     }
 
-    #[ignore]
     #[test]
     fn test_messages_update_status() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
-        let rc = vcx_messages_update_status(0, 0, ptr::null_mut(), ptr::null_mut(), Some(update_cb));
+        let rc = vcx_messages_update_status(0, ptr::null_mut(), ptr::null_mut(), Some(update_cb));
         assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 }

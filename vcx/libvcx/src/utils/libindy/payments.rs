@@ -116,10 +116,15 @@ impl PaymentTxn {
     }
 }
 
-pub fn create_address() -> Result<String, u32> {
+pub fn create_address(seed: Option<String>) -> Result<String, u32> {
     if settings::test_indy_mode_enabled() { return Ok(r#"pay:null:J81AxU9hVHYFtJc"#.to_string()); }
 
-    Payment::create_payment_address(get_wallet_handle() as i32, PAYMENT_METHOD_NAME, EMPTY_CONFIG)
+    let config = match seed {
+        Some(x) => format!("{{\"seed\":\"{}\"}}", x),
+        None => format!("{{}}"),
+    };
+
+    Payment::create_payment_address(get_wallet_handle() as i32, PAYMENT_METHOD_NAME, &config)
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -349,7 +354,7 @@ pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Opti
 
     let mut outputs = Vec::new();
     if remainder > 0 {
-        outputs.push(json!({ "paymentAddress": create_address().map_err(|ec| PaymentError::CommonError(ec))?, "amount": remainder, "extra": null }));
+        outputs.push(json!({ "paymentAddress": create_address(None).map_err(|ec| PaymentError::CommonError(ec))?, "amount": remainder, "extra": null }));
     }
 
     if let Some(address) = payee_address {
@@ -364,14 +369,17 @@ pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Opti
 }
 
 // This is used for testing purposes only!!!
-pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>, fees: Option<&str>) -> Result<(), u32> {
+pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>, fees: Option<&str>, use_seed: bool) -> Result<(), u32> {
     let did_1 = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
     let number_of_addresses = number_of_addresses.unwrap_or(3);
     let tokens_per_address = tokens_per_address.unwrap_or(15);
     let mut addresses = Vec::new();
 
-    for n in 0..number_of_addresses {addresses.push(create_address().unwrap())}
+    for n in 0..number_of_addresses {
+        //let seed = format!("000000000000000000000000Issuer{:02}", n);
+        addresses.push(create_address(None).unwrap())
+    }
 
     let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(i, payment_address)|
         json!( { "paymentAddress": payment_address, "amount": tokens_per_address, "extra": null } )
@@ -425,13 +433,13 @@ pub mod tests {
 
     pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>) {
         init_payments().unwrap();
-        mint_tokens_and_set_fees(number_of_addresses, tokens_per_address, None).unwrap();
+        mint_tokens_and_set_fees(number_of_addresses, tokens_per_address, None, false).unwrap();
     }
 
     pub fn create_throwaway_address() -> String {
         ::utils::libindy::wallet::init_wallet("throwaway").unwrap();
         init_payments().unwrap();
-        let address = create_address().unwrap();
+        let address = create_address(None).unwrap();
         ::utils::libindy::wallet::delete_wallet("throwaway").unwrap();
         address
     }
@@ -448,7 +456,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         init_payments().unwrap();
-        create_address().unwrap();
+        create_address(None).unwrap();
     }
 
     #[test]
@@ -456,7 +464,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         init_payments().unwrap();
-        create_address().unwrap();
+        create_address(None).unwrap();
         let addresses = list_addresses().unwrap();
     }
 
@@ -465,7 +473,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         init_payments().unwrap();
-        create_address().unwrap();
+        create_address(None).unwrap();
         let balance = get_wallet_token_info().unwrap().to_string();
         assert_eq!(balance, r#"{"balance":6,"addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"txo":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"txo":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]},{"address":"pay:null:zR3GN9lfbCVtHjp","balance":3,"utxo":[{"txo":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"txo":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]}]}"#);
     }
@@ -473,6 +481,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_wallet_token_info_real() {
+        ::utils::logger::LoggerUtils::init_test_logging("trace");
         let name = "test_get_wallet_info_real";
         ::utils::devsetup::tests::setup_ledger_env(name);
         let wallet_info = get_wallet_token_info().unwrap();
@@ -633,7 +642,7 @@ pub mod tests {
         let result_from_paying = pay_a_payee(price, &address);
         assert!(result_from_paying.is_ok());
         assert_eq!(get_my_balance(), 0);
-        mint_tokens_and_set_fees(None, None, None).unwrap();
+        mint_tokens_and_set_fees(None, None, None, false).unwrap();
         assert_eq!(get_my_balance(), 45);
 
         let price = get_my_balance() - 5;

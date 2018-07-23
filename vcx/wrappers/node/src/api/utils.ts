@@ -4,6 +4,7 @@ import { VCXInternalError } from '../errors'
 import { initRustAPI, rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { IInitVCXOptions } from './common'
+// import { resolve } from 'url';
 
 export async function provisionAgent (configAgent: string, options: IInitVCXOptions = {}): Promise<string> {
   try {
@@ -100,4 +101,65 @@ export function updateInstitutionConfigs ({ name, logoUrl }: IUpdateInstitutionC
     throw new VCXInternalError(rc)
   }
   return rc
+}
+
+export interface IDownloadMessagesConfigs {
+  status: string,
+  uids: string,
+  pairwiseDids: string
+}
+
+export async function downloadMessages
+({ status, uids, pairwiseDids }: IDownloadMessagesConfigs): Promise<string> {
+  try {
+    return await createFFICallbackPromise<string>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_messages_download(0, status, uids, pairwiseDids, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['uint32','uint32','string'],
+        (xhandle: number, err: number, messages: string) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(messages)
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
+}
+
+export interface IUpdateMessagesConfigs {
+  msgIds: string
+}
+
+export async function updateMessages ({ msgIds }: IUpdateMessagesConfigs): Promise<number> {
+  try {
+    return await createFFICallbackPromise<number>(
+      (resolve, reject, cb) => {
+        const rc = rustAPI().vcx_messages_update_status(0, msgIds, cb)
+        if (rc) {
+          reject(rc)
+        }
+      },
+      (resolve, reject) => Callback(
+        'void',
+        ['unit32','unit32'],
+        (xhandle: number, err: number) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(err)
+        })
+    )
+  } catch (err) {
+    throw new VCXInternalError(err)
+  }
 }

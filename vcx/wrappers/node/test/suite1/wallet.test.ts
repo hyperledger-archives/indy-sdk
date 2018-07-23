@@ -31,6 +31,10 @@ const UPDATE_WALLET_TAGS = {
   value: ''
 }
 
+const PAYMENT_ADDRESS_SEED = {
+  seed: '0000000000000000000WHATEVER00000'
+}
+
 const TAGS = '{"tagName1":"str1","tagName2":"5","tagName3":"12"}'
 
 const SEARCHED_RECORD = {
@@ -81,7 +85,7 @@ describe('Wallet:', () => {
 
   describe('createPaymentAddress:', () => {
     it('success', async () => {
-      const address = await Wallet.createPaymentAddress()
+      const address = await Wallet.createPaymentAddress(PAYMENT_ADDRESS_SEED)
       assert.ok(address)
     })
   })
