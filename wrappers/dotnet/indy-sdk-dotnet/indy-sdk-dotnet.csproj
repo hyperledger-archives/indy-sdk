@@ -31,5 +31,6 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
 
   <ItemGroup>
     <Folder Include="PaymentsApi\" />
+    <Folder Include="NonSecretsApi\" />
   </ItemGroup>
 </Project>

@@ -423,7 +423,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.IndyException.html",
-          "hash": "xmM1dfw9zK9xDfQUJaznfA=="
+          "hash": "EeX9xnsNCjIW0UNRtUGMTw=="
         }
       },
       "is_incremental": false,
@@ -544,6 +544,54 @@
         ".html": {
           "relative_path": "api/Hyperledger.Indy.LedgerApi.html",
           "hash": "RqH3u/o5Hz2NdLraM280pg=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.NonSecretsApi.NoRecordsException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.NonSecretsApi.NoRecordsException.html",
+          "hash": "eH+Bs9O/5wUQWJp2ekbzgw=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.NonSecretsApi.NonSecrets.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.NonSecretsApi.NonSecrets.html",
+          "hash": "VWYvqmwIQF8m1GaHCHT4vQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.NonSecretsApi.WalletSearch.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.NonSecretsApi.WalletSearch.html",
+          "hash": "hvAx0QJVLZLXDQDVJBE3FA=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "obj/api/Hyperledger.Indy.NonSecretsApi.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Hyperledger.Indy.NonSecretsApi.html",
+          "hash": "sjHRkkbpJojIiZuJT6WCbw=="
         }
       },
       "is_incremental": false,
@@ -891,7 +939,7 @@
       "output": {
         ".html": {
           "relative_path": "api/Hyperledger.Indy.WalletApi.Wallet.html",
-          "hash": "nqMtbrGvrTOh49qZczlZEw=="
+          "hash": "+zgHAcBDZTGJ4F9ZfpVCvw=="
         }
       },
       "is_incremental": false,
@@ -987,7 +1035,7 @@
       "output": {
         ".html": {
           "relative_path": "api/toc.html",
-          "hash": "EOz8u6ydLZlwX2qicyVmnw=="
+          "hash": "QWSQualOx84QBHUdK5BkbA=="
         }
       },
       "is_incremental": false,
@@ -1013,6 +1061,11 @@
         "incrementalPhase": "build"
       },
       "processors": {
+        "ResourceDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build"
+        },
         "RestApiDocumentProcessor": {
           "can_incremental": false,
           "details": "Processor RestApiDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
@@ -1023,17 +1076,12 @@
           "details": "Processor TocDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
           "incrementalPhase": "build"
         },
-        "ConceptualDocumentProcessor": {
-          "can_incremental": true,
-          "incrementalPhase": "build"
-        },
         "ManagedReferenceDocumentProcessor": {
           "can_incremental": true,
           "incrementalPhase": "build"
         },
-        "ResourceDocumentProcessor": {
-          "can_incremental": false,
-          "details": "Processor ResourceDocumentProcessor cannot suppport incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+        "ConceptualDocumentProcessor": {
+          "can_incremental": true,
           "incrementalPhase": "build"
         }
       }
