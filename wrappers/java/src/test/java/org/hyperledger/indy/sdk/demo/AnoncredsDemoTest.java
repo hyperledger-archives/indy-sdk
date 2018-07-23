@@ -59,7 +59,7 @@ public class AnoncredsDemoTest extends IndyIntegrationTest {
 		// Create and Open Pool
 		String poolName = PoolUtils.createPoolLedgerConfig();
 
-		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null, null);
+		PoolJSONParameters.OpenPoolLedgerJSONParameter config2 = new PoolJSONParameters.OpenPoolLedgerJSONParameter(null, null);
 		pool = Pool.openPoolLedger(poolName, config2.toJson()).get();
 
 		// Issuer Create and Open Wallet
