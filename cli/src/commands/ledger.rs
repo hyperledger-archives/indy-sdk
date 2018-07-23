@@ -1082,6 +1082,44 @@ pub mod set_fees_prepare_command {
     }
 }
 
+pub mod verify_payment_receipt_command {
+    use super::*;
+
+    command!(CommandMetadata::build("verify-payment-receipt", "Get payment receipt verification info.")
+                .add_main_param("receipt","Receipt to verify")
+                .add_example("ledger verify-payment-receipt pay:null:0_PqVjwJC42sxCTJp")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let submitter_did = ensure_active_did(&ctx)?;
+
+        let receipt = get_str_param("receipt", params).map_err(error_err!())?;
+
+        let (request, payment_method) = Payment::build_verify_req(wallet_handle, &submitter_did, receipt)
+            .map_err(|err| handle_payment_error(err, None))?;
+
+        let response = Ledger::submit_request(pool_handle, &request)
+            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
+
+        let res = match Payment::parse_verify_response(&payment_method, &response) {
+            Ok(info_json) => {
+                println_succ!("Following Payment Receipt Verification Info has been received.");
+                println!("{}", info_json);
+                Ok(())
+            }
+            Err(err) => Err(handle_payment_error(err, None)),
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod sign_multi_command {
     use super::*;
 
@@ -3833,6 +3871,77 @@ pub mod tests {
                 params.insert("fees", FEES.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    #[cfg(feature = "nullpay_plugin")]
+    mod verify_payment_receipts {
+        use super::*;
+
+        #[test]
+        pub fn verify_payment_receipts_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
+            {
+                let cmd = verify_payment_receipt_command::new();
+                let mut params = CommandParams::new();
+                params.insert("receipt", input);
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn verify_payment_receipts_works_for_not_found() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = verify_payment_receipt_command::new();
+                let mut params = CommandParams::new();
+                params.insert("receipt", "pay:null:0_PqVjwJC42sxCTJp".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn verify_payment_receipts_works_for_invalid_receipt() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = verify_payment_receipt_command::new();
+                let mut params = CommandParams::new();
+                params.insert("receipt", "invalid_receipt".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
             TestUtils::cleanup_storage();
         }

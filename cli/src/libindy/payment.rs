@@ -225,6 +225,41 @@ impl Payment {
 
         super::results::result_to_string(err, receiver)
     }
+
+    pub fn build_verify_req(wallet_handle: i32, submitter_did: &str, receipt: &str) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) =
+            super::callbacks::_closure_to_cb_ec_string_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let receipt = CString::new(receipt).unwrap();
+
+        let err = unsafe {
+            indy_build_verify_req(command_handle,
+                                  wallet_handle,
+                                  submitter_did.as_ptr(),
+                                  receipt.as_ptr(),
+                                  cb)
+        };
+
+        super::results::result_to_string_string(err, receiver)
+    }
+
+    pub fn parse_verify_response(payment_method: &str, resp_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) =
+            super::callbacks::_closure_to_cb_ec_string();
+
+        let payment_method = CString::new(payment_method).unwrap();
+        let resp_json = CString::new(resp_json).unwrap();
+
+        let err = unsafe {
+            indy_parse_verify_response(command_handle,
+                                       payment_method.as_ptr(),
+                                       resp_json.as_ptr(),
+                                       cb)
+        };
+
+        super::results::result_to_string(err, receiver)
+    }
 }
 
 extern {
@@ -340,4 +375,22 @@ extern {
                                      cb: Option<extern fn(command_handle_: i32,
                                                           err: ErrorCode,
                                                           receipts_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_build_verify_req(command_handle: i32,
+                             wallet_handle: i32,
+                             submitter_did: *const c_char,
+                             receipt: *const c_char,
+                             cb: Option<extern fn(command_handle_: i32,
+                                                  err: ErrorCode,
+                                                  verify_txn_json: *const c_char,
+                                                  payment_method: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_parse_verify_response(command_handle: i32,
+                                  payment_method: *const c_char,
+                                  resp_json: *const c_char,
+                                  cb: Option<extern fn(command_handle_: i32,
+                                                       err: ErrorCode,
+                                                       txn_json: *const c_char)>) -> ErrorCode;
 }
