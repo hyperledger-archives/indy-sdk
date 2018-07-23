@@ -79,14 +79,14 @@
                             feesJson:(NSString **)feesJson;
 
 // MARK: - Verify request
-- (NSError *)buildVerifyRequest:(IndyHandle)walletHandle
-                   submitterDid:(NSString *)submitterDid
-                        receipt:(NSString *)receipt
-                  verifyReqJson:(NSString **)verifyReqJson
-                  paymentMethod:(NSString **)paymentMethod;
+- (NSError *)buildVerifyPaymentRequest:(IndyHandle)walletHandle
+                          submitterDid:(NSString *)submitterDid
+                               receipt:(NSString *)receipt
+                         verifyReqJson:(NSString **)verifyReqJson
+                         paymentMethod:(NSString **)paymentMethod;
 
-- (NSError *)parseVerifyResponse:(NSString *)responseJson
-                   paymentMethod:(NSString *)paymentMethod
-                 receiptInfoJson:(NSString **)receiptInfoJson;
+- (NSError *)parseVerifyPaymentResponse:(NSString *)responseJson
+                          paymentMethod:(NSString *)paymentMethod
+                        receiptInfoJson:(NSString **)receiptInfoJson;
 @end
 

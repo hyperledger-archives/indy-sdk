@@ -284,16 +284,16 @@
     }
 }
 
-+ (void)buildVerifyRequest:(IndyHandle)walletHandle
-              submitterDid:(NSString *)submitterDid
-                   receipt:(NSString *)receipt
-                completion:(void (^)(NSError *error, NSString *verifyReqJson, NSString *paymentMethod))completion {
++ (void)buildVerifyPaymentRequest:(IndyHandle)walletHandle
+                     submitterDid:(NSString *)submitterDid
+                          receipt:(NSString *)receipt
+                       completion:(void (^)(NSError *error, NSString *verifyReqJson, NSString *paymentMethod))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
 
-    ret = indy_build_verify_req(handle,
+    ret = indy_build_verify_payment_req(handle,
             walletHandle,
             [submitterDid UTF8String],
             [receipt UTF8String],
@@ -307,14 +307,14 @@
     }
 }
 
-+ (void)parseVerifyResponse:(NSString *)responseJson
-              paymentMethod:(NSString *)paymentMethod
-                 completion:(void (^)(NSError *error, NSString *txnJson))completion {
++ (void)parseVerifyPaymentResponse:(NSString *)responseJson
+                     paymentMethod:(NSString *)paymentMethod
+                        completion:(void (^)(NSError *error, NSString *txnJson))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
 
-    ret = indy_parse_verify_response(handle,
+    ret = indy_parse_verify_payment_response(handle,
             [paymentMethod UTF8String],
             [responseJson UTF8String],
             IndyWrapperCommonStringCallback);

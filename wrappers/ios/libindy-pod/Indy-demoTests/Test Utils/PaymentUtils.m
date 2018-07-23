@@ -320,25 +320,25 @@
     return err;
 }
 
-- (NSError *)buildVerifyRequest:(IndyHandle)walletHandle
-                   submitterDid:(NSString *)submitterDid
-                        receipt:(NSString *)receipt
-                  verifyReqJson:(NSString **)verifyReqJson
-                  paymentMethod:(NSString **)paymentMethod {
+- (NSError *)buildVerifyPaymentRequest:(IndyHandle)walletHandle
+                          submitterDid:(NSString *)submitterDid
+                               receipt:(NSString *)receipt
+                         verifyReqJson:(NSString **)verifyReqJson
+                         paymentMethod:(NSString **)paymentMethod {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *outReq = nil;
     __block NSString *outPayMethod = nil;
 
-    [IndyPayment buildVerifyRequest:walletHandle
-                       submitterDid:submitterDid
-                            receipt:receipt
-                         completion:^(NSError *error, NSString *req, NSString *method) {
-                             err = error;
-                             outReq = req;
-                             outPayMethod = method;
-                             [completionExpectation fulfill];
-                         }];
+    [IndyPayment buildVerifyPaymentRequest:walletHandle
+                              submitterDid:submitterDid
+                                   receipt:receipt
+                                completion:^(NSError *error, NSString *req, NSString *method) {
+                                    err = error;
+                                    outReq = req;
+                                    outPayMethod = method;
+                                    [completionExpectation fulfill];
+                                }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
@@ -347,20 +347,20 @@
     return err;
 }
 
-- (NSError *)parseVerifyResponse:(NSString *)responseJson
-                   paymentMethod:(NSString *)paymentMethod
-                 receiptInfoJson:(NSString **)receiptInfoJson {
+- (NSError *)parseVerifyPaymentResponse:(NSString *)responseJson
+                          paymentMethod:(NSString *)paymentMethod
+                        receiptInfoJson:(NSString **)receiptInfoJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *outReceipts = nil;
 
-    [IndyPayment parseVerifyResponse:responseJson
-                       paymentMethod:paymentMethod
-                          completion:^(NSError *error, NSString *receipts) {
-                              err = error;
-                              outReceipts = receipts;
-                              [completionExpectation fulfill];
-                          }];
+    [IndyPayment parseVerifyPaymentResponse:responseJson
+                              paymentMethod:paymentMethod
+                                 completion:^(NSError *error, NSString *receipts) {
+                                     err = error;
+                                     outReceipts = receipts;
+                                     [completionExpectation fulfill];
+                                 }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 

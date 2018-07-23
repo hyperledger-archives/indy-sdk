@@ -192,23 +192,23 @@ NSString *receipt = @"pay:null:0_PqVjwJC42sxCTJp";
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
-// MARK: - Build Verify Request
+// MARK: - Build Verify Payment Request
 
-- (void)testBuildVerifyRequestWorks {
-    ret = [[PaymentUtils sharedInstance] buildVerifyRequest:walletHandle
-                                               submitterDid:[TestUtils trusteeDid]
-                                                    receipt:receipt
-                                              verifyReqJson:nil
-                                              paymentMethod:nil];
+- (void)testBuildVerifyPaymentRequestWorks {
+    ret = [[PaymentUtils sharedInstance] buildVerifyPaymentRequest:walletHandle
+                                                      submitterDid:[TestUtils trusteeDid]
+                                                           receipt:receipt
+                                                     verifyReqJson:nil
+                                                     paymentMethod:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 
-// MARK: - Parse Verify Response
+// MARK: - Parse Verify Payment Response
 
-- (void)testParseVerifyResponseWorks {
-    ret = [[PaymentUtils sharedInstance] parseVerifyResponse:@"{}"
-                                               paymentMethod:paymentMethod
-                                             receiptInfoJson:nil];
+- (void)testParseVerifyPaymentResponseWorks {
+    ret = [[PaymentUtils sharedInstance] parseVerifyPaymentResponse:@"{}"
+                                                      paymentMethod:paymentMethod
+                                                    receiptInfoJson:nil];
     XCTAssertEqual(ret.code, PaymentUnknownMethodError);
 }
 

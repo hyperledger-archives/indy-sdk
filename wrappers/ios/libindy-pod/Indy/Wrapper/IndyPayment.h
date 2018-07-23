@@ -257,21 +257,20 @@
 
 
 /**
- Builds Indy request for information to verify the receipt
+ Builds Indy request for information to verify the payment receipt
 
- @param requestJson Request data json.
  @param submitterDid Id of Identity stored in secured Wallet.
  @param walletHandle Wallet handle (created by IndyWallet::openWalletWithName).
- @param receipt: receipt to verify
+ @param receipt: Payment receipt to verify
  @param completion Callback that takes command result as parameter. 
  Returns 
     verifyReqJson - Indy request for verification receipt
     paymentMethod - used payment method
  */
-+ (void)buildVerifyRequest:(IndyHandle)walletHandle
-              submitterDid:(NSString *)submitterDid
-                   receipt:(NSString *)receipt
-                completion:(void (^)(NSError *error, NSString *verifyReqJson, NSString *paymentMethod))completion;
++ (void)buildVerifyPaymentRequest:(IndyHandle)walletHandle
+                     submitterDid:(NSString *)submitterDid
+                          receipt:(NSString *)receipt
+                       completion:(void (^)(NSError *error, NSString *verifyReqJson, NSString *paymentMethod))completion;
 
 /**
  Parses Indy response with information to verify receipt
@@ -290,8 +289,8 @@
      extra: <str>, //optional data
  }
  */
-+ (void)parseVerifyResponse:(NSString *)responseJson
-              paymentMethod:(NSString *)paymentMethod
-                 completion:(void (^)(NSError *error, NSString *txnJson))completion;
++ (void)parseVerifyPaymentResponse:(NSString *)responseJson
+                     paymentMethod:(NSString *)paymentMethod
+                        completion:(void (^)(NSError *error, NSString *txnJson))completion;
 
 @end
