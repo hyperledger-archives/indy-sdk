@@ -1,27 +1,18 @@
 extern crate env_logger;
 extern crate log;
 
-use self::env_logger::LogBuilder;
-use self::log::{LogRecord, LogLevelFilter};
+use self::env_logger::Builder;
+use self::log::LevelFilter;
 use std::env;
-use std::sync::{Once, ONCE_INIT};
-
-static LOGGER_INIT: Once = ONCE_INIT;
+use std::io::Write;
 
 pub fn init() {
-    LOGGER_INIT.call_once(|| {
-        let format = |record: &LogRecord| {
-            format!("{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.location().file(), record.location().line(), record.args())
-        };
-        let mut builder = LogBuilder::new();
-        builder.format(format).filter(None, LogLevelFilter::Off);
-
-        if env::var("RUST_LOG").is_ok() {
-            builder.parse(&env::var("RUST_LOG").unwrap());
-        }
-
-        builder.init().unwrap();
-    });
+    Builder::new()
+        .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
+        .filter(None, LevelFilter::Off)
+        .parse(env::var("RUST_LOG").as_ref().map(String::as_str).unwrap_or(""))
+        .try_init()
+        .ok();
 }
 
 #[macro_export]
