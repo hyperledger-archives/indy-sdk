@@ -597,7 +597,7 @@ indy.setPairwiseMetadata = function setPairwiseMetadata (wh, theirDid, metadata,
 
 indy.createPaymentAddress = function createPaymentAddress (wh, paymentMethod, config, cb) {
   cb = wrapIndyCallback(cb)
-  capi.createPaymentAddress(wh, paymentMethod, config, cb)
+  capi.createPaymentAddress(wh, paymentMethod, toJson(config), cb)
   return cb.promise
 }
 
@@ -649,11 +649,11 @@ indy.parsePaymentResponse = function parsePaymentResponse (paymentMethod, resp, 
   return cb.promise
 }
 
-indy.buildMintReq = function buildMintReq (wh, submitterDid, outputs, cb) {
+indy.buildMintReq = function buildMintReq (wh, submitterDid, outputs, extra, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
   })
-  capi.buildMintReq(wh, submitterDid, toJson(outputs), cb)
+  capi.buildMintReq(wh, submitterDid, toJson(outputs), extra, cb)
   return cb.promise
 }
 
