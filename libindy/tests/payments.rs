@@ -456,6 +456,26 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod parse_verify_response {
+        use super::*;
+
+        #[test]
+        fn parse_verify_response_works() {
+            TestUtils::cleanup_storage();
+            payments::mock_method::init();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            payments::mock_method::parse_verify_response::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+
+            let res_plugin = payments::parse_verify_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap();
+
+            assert_eq!(res_plugin, TEST_RES_STRING);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+    }
 }
 
 mod medium_cases {
@@ -1688,6 +1708,38 @@ mod medium_cases {
                                                            IDENTIFIER,
                                                            CORRECT_PAYMENT_ADDRESS,
             ).unwrap_err();
+
+            assert_eq!(err, ErrorCode::WalletAccessFailed);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod parse_verify_response {
+        use super::*;
+
+        #[test]
+        pub fn parse_verify_response_works_for_nonexistent_plugin() {
+            TestUtils::cleanup_storage();
+            payments::mock_method::init();
+
+            let err = payments::parse_verify_response(WRONG_PAYMENT_METHOD_NAME, CORRECT_OUTPUTS).unwrap_err();
+
+            assert_eq!(err, ErrorCode::PaymentUnknownMethodError);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn parse_verify_response_works_for_generic_error() {
+            TestUtils::cleanup_storage();
+            payments::mock_method::init();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            payments::mock_method::parse_verify_response::inject_mock(ErrorCode::WalletAccessFailed, "");
+
+            let err = payments::parse_verify_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap_err();
 
             assert_eq!(err, ErrorCode::WalletAccessFailed);
 
