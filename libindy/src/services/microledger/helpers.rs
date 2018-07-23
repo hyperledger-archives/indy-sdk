@@ -1,9 +1,15 @@
+use rand::{thread_rng, Rng};
+
 use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
 use std::io::Cursor;
 use std::collections::HashMap;
 use errors::common::CommonError;
 use std::path::PathBuf;
 use utils::environment::EnvironmentUtils;
+use services::wallet::storage::default::SQLiteStorageType;
+use services::wallet::storage::WalletStorage;
+use errors::wallet::WalletStorageError;
+use services::wallet::storage::WalletStorageType;
 
 pub fn usize_to_byte_array(n: usize) -> Vec<u8> {
     let mut wtr: Vec<u8> = Vec::new();
@@ -55,13 +61,37 @@ pub fn create_storage_options(base_storage_path: Option<&str>, extra_paths: Vec<
     options
 }
 
+pub fn get_storage_path_from_options(parsed_options: &HashMap<String, String>) -> &str {
+    parsed_options.get("storage_path").unwrap()
+}
+
+pub fn get_ledger_storage(did: &str, storage_path: &str, metadata: &[u8])  -> Result<Box<WalletStorage>, WalletStorageError> {
+    let config = json!({
+            "path": storage_path
+        }).to_string();
+    let storage_type = SQLiteStorageType::new();
+    match storage_type.create_storage(did, Some(&config), None,
+                                      &metadata) {
+        Ok(_) => (),
+        Err(WalletStorageError::AlreadyExists) => (),
+        Err(e) => return Err(e)
+    }
+    storage_type.open_storage(did, Some(&config), None)
+}
+
+pub fn gen_enc_key(size: usize) -> Vec<u8> {
+    thread_rng().gen_iter().take(size).collect()
+}
+
 pub mod tests {
     use super::*;
-    use utils::environment::EnvironmentUtils;
+    use utils;
     use services::microledger::constants::*;
     use std::collections::HashMap;
     use services::microledger::microledger::Microledger;
     use services::microledger::did_microledger::DidMicroledger;
+    use services::microledger::did_doc::DidDoc;
+    use services::microledger::view::View;
 
     pub fn valid_did_ml_storage_options() -> HashMap<String, String>{
         /*let mut options: HashMap<String, String> = HashMap::new();
@@ -80,9 +110,20 @@ pub mod tests {
                                vec!["did_doc_path"])
     }
 
+    pub fn check_empty_storage(storage: Box<WalletStorage>) {
+        let mut storage_iterator = storage.get_all().unwrap();
+        let record = storage_iterator.next().unwrap();
+        assert!(record.is_none());
+    }
+
     pub fn get_new_microledger(did: &str) -> DidMicroledger {
         let options = valid_did_ml_storage_options();
         DidMicroledger::new(did, options).unwrap()
+    }
+
+    pub fn get_new_did_doc(did: &str) -> DidDoc {
+        let options = valid_did_doc_storage_options();
+        DidDoc::new(did, options).unwrap()
     }
 
     pub fn get_4_txns() -> Vec<String> {
@@ -138,5 +179,34 @@ pub mod tests {
         options.insert("storage_path".to_string(), "/tmp".to_string());
         let expected_options: HashMap<String, String> = options.clone();
         assert!(parse_options(options).is_err());
+    }
+
+    #[test]
+    fn test_get_ledger_storage() {
+        utils::test::TestUtils::cleanup_temp();
+        let options = valid_did_ml_storage_options();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let metadata = vec![
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8
+        ];
+        let storage = get_ledger_storage(
+            did, get_storage_path_from_options(&options),
+            &metadata).unwrap();
+        check_empty_storage(storage);
+
+        /*let parsed_options = DidMicroledger::parse_options(options).unwrap();
+        let storage_path = get_storage_path_from_options(&parsed_options);
+        let config = json!({
+            "path": storage_path
+        }).to_string();
+        let storage_type = SQLiteStorageType::new();
+        storage_type.delete_storage(did, Some(&config), None).unwrap();*/
     }
 }

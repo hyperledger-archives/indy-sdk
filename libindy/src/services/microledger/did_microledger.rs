@@ -13,10 +13,13 @@ use services::wallet::wallet::EncryptedValue;
 use errors::wallet::WalletStorageError;
 use services::microledger::microledger::Microledger;
 use services::microledger::txn_builder::TxnBuilder;
-use services::microledger::helpers::{byte_array_to_usize, usize_to_byte_array, parse_options, create_storage_options};
+use services::microledger::helpers::{byte_array_to_usize, usize_to_byte_array, parse_options,
+                                     create_storage_options, gen_enc_key};
 use utils::environment::EnvironmentUtils;
 use std::path::PathBuf;
 use services::microledger::did_doc::DidDoc;
+use services::microledger::helpers::get_storage_path_from_options;
+use services::microledger::helpers::get_ledger_storage;
 
 const TYP: [u8; 3] = [0, 1, 2];
 
@@ -34,8 +37,9 @@ impl Microledger for DidMicroledger where Self: Sized {
         // Parse options to see if all required are present
         let parsed_options = parse_options(options)?;
         // Create a new storage or load an existing storage
-        let storage_path = DidMicroledger::get_storage_path_from_options(&parsed_options);
-        let storage = DidMicroledger::get_ledger_storage(did, storage_path).map_err(|err|
+        let storage_path = get_storage_path_from_options(&parsed_options);
+        let storage = get_ledger_storage(did, storage_path,
+                                         &DidMicroledger::get_metadata()).map_err(|err|
             CommonError::InvalidStructure(format!("Error while getting storage for ledger: {:?}.", err)))?;
         let mut ml = DidMicroledger {
             did: did.to_string(),
@@ -62,7 +66,7 @@ impl Microledger for DidMicroledger where Self: Sized {
         let txn_bytes_len = txn_bytes.len();
         self.merkle_tree.append(txn_bytes.clone())?;
         // TODO: Fix this, find out the correct size of the key
-        let key = thread_rng().gen_iter().take(txn_bytes_len).collect();
+        let key = gen_enc_key(txn_bytes_len);
         let enc = EncryptedValue::new(txn_bytes, key);
         let new_size = self.get_size();
         let id = usize_to_byte_array(new_size);
@@ -90,11 +94,6 @@ impl Microledger for DidMicroledger where Self: Sized {
             return Err(CommonError::InvalidStructure(format!("Invalid seq no: {}", from)))
         }
 
-        // TODO: Use `storage.search` instead of `storage.get_all`
-        let mut storage_iterator = self.storage.get_all().map_err(|err|
-            CommonError::InvalidStructure(format!("Error getting ledger storage iterator: {:?}.", err)))?;
-
-        // Question: Why does get_total_count return a result of Option? When can the option be None
         match to {
             Some(t) => {
                 let ledger_size = self.get_size() as u64;
@@ -104,6 +103,10 @@ impl Microledger for DidMicroledger where Self: Sized {
             },
             None => ()
         }
+
+        // TODO: Use `storage.search` instead of `storage.get_all`
+        let mut storage_iterator = self.storage.get_all().map_err(|err|
+            CommonError::InvalidStructure(format!("Error getting ledger storage iterator: {:?}.", err)))?;
 
         let mut res: Vec<String> = Vec::new();
         // TODO Duplicated from `populate_merkle_tree`, change when changing iterator
@@ -121,7 +124,6 @@ impl Microledger for DidMicroledger where Self: Sized {
                                 },
                                 None => continue
                             }
-                            continue
                         }
                         None => break
                     }
@@ -151,7 +153,7 @@ impl DidMicroledger {
     }
 
     // TODO: Temporary, fix it
-    fn _metadata() -> Vec<u8> {
+    fn get_metadata() -> Vec<u8> {
         return vec![
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8,
@@ -162,24 +164,6 @@ impl DidMicroledger {
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8
         ];
-    }
-
-    pub fn get_ledger_storage(did: &str, storage_path: &str)  -> Result<Box<WalletStorage>, WalletStorageError> {
-        let config = json!({
-            "path": storage_path
-        }).to_string();
-        let storage_type = SQLiteStorageType::new();
-        match storage_type.create_storage(did, Some(&config), None,
-                                    &DidMicroledger::_metadata()) {
-            Ok(_) => (),
-            Err(WalletStorageError::AlreadyExists) => (),
-            Err(e) => return Err(e)
-        }
-        storage_type.open_storage(did, Some(&config), None)
-    }
-
-    pub fn get_storage_path_from_options(parsed_options: &HashMap<String, String>) -> &str {
-        parsed_options.get("storage_path").unwrap()
     }
 
     fn populate_merkle_tree(&mut self) -> Result<(), CommonError> {
@@ -233,7 +217,8 @@ pub mod tests {
     use utils::environment::EnvironmentUtils;
     use super::super::super::super::utils::test::TestUtils;
     use services::microledger::constants::*;
-    use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger, get_4_txns};
+    use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger,
+                                                get_4_txns, check_empty_storage};
 
     fn add_4_txns(ml: &mut DidMicroledger) -> usize {
         for txn in get_4_txns() {
@@ -244,26 +229,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_get_ledger_storage() {
-        TestUtils::cleanup_temp();
-        let options = valid_did_ml_storage_options();
-        let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let storage = DidMicroledger::get_ledger_storage(
-            did, DidMicroledger::get_storage_path_from_options(&options)).unwrap();
-        let mut storage_iterator = storage.get_all().unwrap();
-        let record = storage_iterator.next().unwrap();
-        assert!(record.is_none());
-
-        /*let parsed_options = DidMicroledger::parse_options(options).unwrap();
-        let storage_path = DidMicroledger::get_storage_path_from_options(&parsed_options);
-        let config = json!({
-            "path": storage_path
-        }).to_string();
-        let storage_type = SQLiteStorageType::new();
-        storage_type.delete_storage(did, Some(&config), None).unwrap();*/
-    }
-
-    #[test]
     fn test_did_create_microledger() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
@@ -271,9 +236,7 @@ pub mod tests {
         assert_eq!(ml.did, did);
         assert_eq!(ml.get_root_hash(), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
         assert_eq!(ml.get_size(), 0);
-        let mut storage_iterator = ml.storage.get_all().unwrap();
-        let record = storage_iterator.next().unwrap();
-        assert!(record.is_none());
+        check_empty_storage(ml.storage)
     }
 
     #[test]

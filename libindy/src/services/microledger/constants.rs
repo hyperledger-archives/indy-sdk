@@ -7,6 +7,7 @@ pub const ADDRESS: &'static str = "address";
 pub const AUTHZ_ALL: &'static str = "all";
 pub const AUTHZ_ADD_KEY: &'static str = "add_key";
 pub const AUTHZ_REM_KEY: &'static str = "rem_key";
+pub const AUTHZ_MPROX: &'static str = "mprox";
 
 pub const KEY_TXN: &'static str = "2";
 pub const ENDPOINT_TXN: &'static str = "3";

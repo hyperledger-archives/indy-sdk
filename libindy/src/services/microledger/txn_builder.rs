@@ -8,6 +8,7 @@ use serde_json::Value as JValue;
 use errors::common::CommonError;
 use services::ledger::LedgerService;
 use services::microledger::constants::*;
+use services::microledger::auth::Auth;
 
 lazy_static! {
     pub static ref ML_PROTOCOL_VERSION: AtomicUsize = AtomicUsize::new(1);
@@ -81,17 +82,15 @@ impl TxnBuilder {
         let mut authz: Vec<JValue> = Vec::new();
 
         for auth in authorisations.to_vec() {
-            match auth {
-                AUTHZ_ALL => authz.push(JValue::String(AUTHZ_ALL.to_string())),
-                AUTHZ_ADD_KEY => authz.push(JValue::String(AUTHZ_ADD_KEY.to_string())),
-                AUTHZ_REM_KEY => authz.push(JValue::String(AUTHZ_REM_KEY.to_string())),
-                a @ _ => return Err(CommonError::InvalidStructure(format!("Invalid authorization: {}", a)))
+            if Auth::is_valid_auth(auth) {
+                authz.push(JValue::String(auth.to_string()))
+            } else {
+                return Err(CommonError::InvalidStructure(format!("Invalid authorization: {}", &auth)))
             }
         }
         let mut operation: JValue = JValue::Object(serde_json::map::Map::new());
         operation["type"] = JValue::String(KEY_TXN.to_string());
         operation[VERKEY] = JValue::String(verkey.to_string());
-//        operation[AUTHORIZATIONS] = JValue::Array(authorisations.iter().map(|s| JValue::String(s.to_string())).collect());
         operation[AUTHORIZATIONS] = JValue::Array(authz);
         Ok(operation)
     }
