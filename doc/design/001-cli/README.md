@@ -125,7 +125,7 @@ indy> wallet <command>
 ```
 
 #### Wallet create
-Create new wallet with specified name and pool:
+Create new wallet with specified name:
 ```
 indy> wallet create <wallet name> key=<key> [storage_type=<storage_type>] [storage_config={config json}]
 ```
@@ -166,8 +166,8 @@ indy> wallet export export_path=<path-to-file> export_key=[<export key>]
 Create new wallet and then import content from the specified file.
 
 ```indy-cli
-indy> wallet import <wallet name> key=<key> export_path=<path-to-file> export_key=<key used for export>  [storage_type=<storage_type>] [storage_config=<key1:value1,key2:value2>]
-
+indy> wallet import <wallet name> key=<key> export_path=<path-to-file> export_key=<key used for export>  [storage_type=<storage_type>] [storage_config={config json}]
+```
 
 ### Pool management commands
 ```
@@ -318,7 +318,7 @@ ledger custom [txn=]<txn-json-value> [sign=<true|false>]
 #### GET_PAYMENT_SOURCES transaction
 Send GET_PAYMENT_SOURCES transaction
 ```
-ledger get-sources payment_address=<payment_address>
+ledger get-payment-sources payment_address=<payment_address>
 ```
 
 #### PAYMENT transaction
@@ -330,13 +330,13 @@ ledger payment inputs=<source-1>,..,<source-n> outputs=(<recipient-1>,<amount>),
 #### GET_FEES transaction
 Send GET_FEES transaction
 ```
-ledger get-fees payment_address=<payment_address>
+ledger get-fees payment_method=<payment_method>
 ```
 
 #### MINT transaction
 Prepare MINT transaction
 ```
-ledger mint-prepare outputs=(<pay-addr-1>,<amount>),..,(<pay-addr-n>,<amount>) [extra=<extra>]
+ledger mint-prepare outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>) [extra=<extra>]
 ```
 
 #### SET_FEES transaction
@@ -348,7 +348,7 @@ ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amoun
 #### VERIFY_PAYMENT_RECEIPT transaction
 Prepare VERIFY_PAYMENT_RECEIPT transaction
 ```
-ledger verify-payment-receipt <receipts>
+ledger verify-payment-receipt <receipt>
 ```
 
 #### Add multi signature to transaction
@@ -385,8 +385,8 @@ pool(sandbox):indy> pool list
 
 #### Create and open wallet
 ```
-sandbox|indy> wallet create alice_wallet
-sandbox|indy> wallet open alice_wallet
+sandbox|indy> wallet create alice_wallet key=key
+sandbox|indy> wallet open alice_wallet key=key
 pool(sandbox):wallet(alice_wallet):indy> wallet list
 ```
 

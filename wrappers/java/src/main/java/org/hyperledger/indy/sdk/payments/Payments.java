@@ -205,10 +205,10 @@ public class Payments extends IndyJava.API {
      *     - this param will be used to determine payment_method
      * @param outputsJson The list of outputs as json array:
      *   [{
-     *     recipient: <str>, // payment address of recipient
-     *     amount: <int>, // amount
+     *     recipient: "str", // payment address of recipient
+     *     amount: int, // amount
      *   }]
-     * extra: // optional information for payment operation
+     * @param extra Optional information for payment operation
      *
      * @return modified Indy request with added fees info
      * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -249,14 +249,14 @@ public class Payments extends IndyJava.API {
     /**
      * Parses response for Indy request with fees.
      *
-     * @param paymentMethod
+     * @param paymentMethod Payment method to use
      * @param respJson response for Indy request with fees
      * @return receiptsJson - parsed (payment method and node version agnostic) receipts info as json:
      *   [{
-     *      receipt: <str>, // receipt that can be used for payment referencing and verification
-     *      recipient: <str>, //payment address of recipient
-     *      amount: <int>, // amount
-     *      extra: <str>, // optional data from payment transaction
+     *      receipt: "str", // receipt that can be used for payment referencing and verification
+     *      recipient: "str", //payment address of recipient
+     *      amount: int, // amount
+     *      extra: "str", // optional data from payment transaction
      *   }]
      * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
@@ -309,10 +309,10 @@ public class Payments extends IndyJava.API {
      * @param respJson response for Indy request for getting sources list
      * @return parsed (payment method and node version agnostic) sources info as json:
      *   [{
-     *      source: <str>, // source input
-     *      paymentAddress: <str>, //payment address for this source
-     *      amount: <int>, // amount
-     *      extra: <str>, // optional data from payment transaction
+     *      source: "str", // source input
+     *      paymentAddress: "str", //payment address for this source
+     *      amount: int, // amount
+     *      extra: "str", // optional data from payment transaction
      *   }]
      * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
@@ -339,10 +339,10 @@ public class Payments extends IndyJava.API {
      *   Note that each source should reference payment address
      * @param outputsJson The list of outputs as json array:
      *   [{
-     *     recipient: <str>, // payment address of recipient
-     *     amount: <int>, // amount
+     *     recipient: "str", // payment address of recipient
+     *     amount: int, // amount
      *   }]
-     * extra: // optional information for payment operation
+     * @param extra: Optional information for payment operation
      *
      * @return Indy request for doing payment
      * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -384,10 +384,10 @@ public class Payments extends IndyJava.API {
      * @param respJson response for Indy request for payment txn
      * @return parsed (payment method and node version agnostic) receipts info as json:
      *   [{
-     *      receipt: <str>, // receipt that can be used for payment referencing and verification
-     *      recipient: <str>, // payment address of recipient
-     *      amount: <int>, // amount
-     *      extra: <str>, // optional data from payment transaction
+     *      receipt: "str", // receipt that can be used for payment referencing and verification
+     *      recipient: "str", // payment address of recipient
+     *      amount: int, // amount
+     *      extra: "str", // optional data from payment transaction
      *   }]
      * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
@@ -406,11 +406,11 @@ public class Payments extends IndyJava.API {
      * @param submitterDid DID of request sender
      * @param outputsJson The list of outputs as json array:
      *   [{
-     *     recipient: <str>, // payment address of recipient
-     *     amount: <int>, // amount
-     *     extra: <str>, // optional data
+     *     recipient: "str", // payment address of recipient
+     *     amount: int, // amount
+     *     extra: "str", // optional data
      *   }]
-     * extra: // optional information for payment operation
+     * @param extra Optional information for payment operation
      *
      * @return Indy request for doing minting
      * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -523,7 +523,6 @@ public class Payments extends IndyJava.API {
      * Parses response for Indy request for getting fees
      *
      * @param paymentMethod payment method to use
-     * @param paymentMethod Payment method to use (for example, 'sov')
      * @param respJson response for Indy request for getting fees
      * @return fees_json {
      *   txnType1: amount1,
@@ -548,7 +547,7 @@ public class Payments extends IndyJava.API {
      * @param submitterDid DID of request sender
      * @param receipt payment receipt to verify
      * @return Indy request for doing verification
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<BuildVerifyPaymentReqResult> buildVerifyPaymentRequest(
             Wallet wallet,
@@ -582,15 +581,15 @@ public class Payments extends IndyJava.API {
      * @param respJson response of the ledger for verify txn
      * @return parsed (payment method and node version agnostic) receipt verification info as json:
      *   {
-     *     sources: [<str>, ]
+     *     sources: ["str", ]
      *     receipts: [ {
-     *         recipient: <str>, // payment address of recipient
-     *         receipt: <str>, // receipt that can be used for payment referencing and verification
-     *         amount: <int>, // amount
+     *         recipient: "str", // payment address of recipient
+     *         receipt: "str", // receipt that can be used for payment referencing and verification
+     *         amount: int, // amount
      *     } ],
-     *     extra: <str>, //optional data
+     *     extra: "str", //optional data
      * }
-     * @throws IndyException
+     * @throws IndyException Thrown if a call to the underlying SDK fails.
      */
     public static CompletableFuture<String> parseVerifyPaymentResponse(
             String paymentMethod,
