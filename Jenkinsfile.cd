@@ -42,7 +42,7 @@ def publishing() {
                 //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
                 'ubuntu-files' : { ubuntuPublishing() },
                 'windows-files': { windowsPublishing() },
-                'android-files': { androidPublishing() },
+                'android-files': { androidPublishing("0") },
         ])
 
         if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
@@ -402,7 +402,7 @@ def androidTesting() {
 
                 //TODO: Enable emulator test when the unit test start passing on android device
                 //androidEmulatorTest(buildEnv)
-                buildAndroid(buildEnv,libindyVersion,libnullpayVersion,false)
+                buildAndroid(buildEnv,libindyVersion,libnullpayVersion,false,"0")
 
 
 
@@ -496,7 +496,7 @@ def ubuntuPublishing() {
     }
     return libindyVersion
 }
-def androidPublishing(){
+def androidPublishing(isStable){
     def libindyVersion
     def libnullpayVersion
 
@@ -511,7 +511,7 @@ def androidPublishing(){
 
                 echo 'Publish Android binaries: Building docker image'
                 buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
-                buildAndroid(buildEnv,libindyVersion,libnullpayVersion,true)
+                buildAndroid(buildEnv,libindyVersion,libnullpayVersion,true,isStable)
 
             }
             finally{
@@ -626,7 +626,7 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
     }
 }
 
-def buildAndroid(buildEnv,libIndyVersion,libnullpayVersion,shouldPublish) {
+def buildAndroid(buildEnv,libIndyVersion,libnullpayVersion,shouldPublish,isStable) {
 
 
 
@@ -640,7 +640,7 @@ def buildAndroid(buildEnv,libIndyVersion,libnullpayVersion,shouldPublish) {
     }
     if(shouldPublish){
         echo 'Publish Libindy android files for arm'
-        androidPublishArtifacts(buildEnv, libIndyVersion,"arm" ,"libindy" )
+        androidPublishArtifacts(buildEnv, libIndyVersion,"arm" ,"libindy", isStable )
     }
 
 
@@ -653,7 +653,7 @@ def buildAndroid(buildEnv,libIndyVersion,libnullpayVersion,shouldPublish) {
     }
     if(shouldPublish){
         echo 'Publish Libindy android files for x86'
-        androidPublishArtifacts(buildEnv, libIndyVersion,"x86" , "libindy")
+        androidPublishArtifacts(buildEnv, libIndyVersion,"x86" , "libindy",isStable)
     }
 
 
@@ -667,19 +667,19 @@ def buildAndroid(buildEnv,libIndyVersion,libnullpayVersion,shouldPublish) {
     }
     if (shouldPublish){
         echo 'Publish Libindy android files for arm64'
-        androidPublishArtifacts(buildEnv, libIndyVersion,"arm64" ,"libindy")
+        androidPublishArtifacts(buildEnv, libIndyVersion,"arm64" ,"libindy",isStable)
     }
 
 
 }
 
 
-def androidPublishArtifacts(buildEnv, packageVersion,arch,artifact) {
+def androidPublishArtifacts(buildEnv, packageVersion,arch,artifact,isStable) {
     buildEnv.inside {
         sh 'chmod -R 777 ci'
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
+            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact $isStable"
         }
     }
 }
@@ -760,6 +760,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving Ubuntu RC artifacts to Stable: libnullpay'
                 publishLibnullpayDebRCtoStable(testEnv)
+
+                echo 'Moving Android RC artifacts to Stable: libindy'
+                androidPublishing("1")
 
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'

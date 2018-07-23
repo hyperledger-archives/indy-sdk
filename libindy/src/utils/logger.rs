@@ -26,9 +26,9 @@ impl LoggerUtils {
                     "info" => Filter::default().with_min_level(log::Level::Info),
                     "debug" => Filter::default().with_min_level(log::Level::Debug),
                     "trace" => Filter::default().with_min_level(log::Level::Trace),
-                    _ => Filter::default().with_min_level(log::Level::Info),
+                    _ => Filter::default().with_min_level(log::Level::Error),
                 },
-                Err(..) => Filter::default().with_min_level(log::Level::Info)
+                Err(..) => Filter::default().with_min_level(log::Level::Error)
             };
 
             //Set logging to off when deploying production android app.
