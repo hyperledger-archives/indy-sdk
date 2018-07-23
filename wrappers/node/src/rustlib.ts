@@ -49,10 +49,12 @@ export interface IFFIEntryPoint {
   vcx_error_c_message: (errorCode: number) => string,
   vcx_mint_tokens: (numberOfAddresses: number, tokensPerAddress: number) => void,
   vcx_version: () => string,
+  vcx_messages_download: (commandId: number, status: string, uids: string, pairwiseDids: string, cb: any) => number,
+  vcx_messages_update_status: (commandId: number, msgIds: string, cb: any) => number,
 
   // wallet
   vcx_wallet_get_token_info: (commandId: number, payment: number | undefined | null, cb: any) => number,
-  vcx_wallet_create_payment_address: (commandId: number, cb: any) => number,
+  vcx_wallet_create_payment_address: (commandId: number, seed: string | null, cb: any) => number,
   vcx_wallet_send_tokens: (commandId: number, payment: number, tokens: number, recipient: string, cb: any) => number,
   vcx_wallet_add_record: (commandId: number, type: string, id: string, value: string, tags: string, cb: any) => number,
   vcx_wallet_update_record_value: (commandId: number, type: string, id: string, value: string, cb: any) => number,
@@ -174,10 +176,13 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_agent_update_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
   vcx_update_institution_info: [FFI_ERROR_CODE, [FFI_STRING_DATA, FFI_STRING_DATA]],
   vcx_mint_tokens: [FFI_VOID, [FFI_UNSIGNED_INT, FFI_UNSIGNED_INT]],
+  vcx_messages_download: [FFI_VOID, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
+    FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_messages_update_status: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
 
   // wallet
   vcx_wallet_get_token_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
-  vcx_wallet_create_payment_address: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CALLBACK_PTR]],
+  vcx_wallet_create_payment_address: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING, FFI_CALLBACK_PTR]],
   vcx_wallet_send_tokens: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PAYMENT_HANDLE, FFI_PRICE, FFI_STRING_DATA,
     FFI_CALLBACK_PTR]],
   vcx_ledger_get_fees: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_CALLBACK_PTR]],

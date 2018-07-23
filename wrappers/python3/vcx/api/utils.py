@@ -47,3 +47,50 @@ async def vcx_ledger_get_fees() -> str:
 
     logger.debug("vcx_ledger_get_fees completed")
     return result
+
+async def vcx_messages_download(status: str = None, uids: str = None, pw_dids: str = None) -> str:
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_messages_download, "cb"):
+        logger.debug("vcx_messages_download: Creating callback")
+        vcx_messages_download.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
+
+    if status:
+        c_status = c_char_p(status.encode('utf-8'))
+    else:
+        c_status = None
+
+    if uids:
+        c_uids = c_char_p(uids.encode('utf-8'))
+    else:
+        c_uids = None
+
+    if pw_dids:
+        c_pw_dids = c_char_p(pw_dids.encode('utf-8'))
+    else:
+        c_pw_dids = None
+
+    result = await do_call('vcx_messages_download',
+                           c_status,
+                           c_uids,
+                           c_pw_dids,
+                           vcx_messages_download.cb)
+
+    logger.debug("vcx_messages_download completed")
+    return result
+
+async def vcx_messages_update_status(msg_ids: str):
+    logger = logging.getLogger(__name__)
+
+    if not hasattr(vcx_messages_update_status, "cb"):
+        logger.debug("vcx_messages_update_status: Creating callback")
+        vcx_messages_update_status.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32))
+
+    c_msg_ids = c_char_p(msg_ids.encode('utf-8'))
+
+    result = await do_call('vcx_messages_update_status',
+                           c_msg_ids,
+                           vcx_messages_update_status.cb)
+
+    logger.debug("vcx_messages_update_status completed")
+    return result

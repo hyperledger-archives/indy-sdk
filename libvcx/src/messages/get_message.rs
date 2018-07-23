@@ -265,7 +265,7 @@ pub struct GetConnectionMessagesResponse {
 #[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectionMessages {
-    pairwise_did: String,
+    pub pairwise_did: String,
     pub msgs: Vec<Message>,
 }
 
@@ -349,11 +349,16 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
     }
 }
 
-pub fn download_messages(status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> Result<Vec<ConnectionMessages>, u32> {
+pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Option<Vec<String>>, uids: Option<Vec<String>>) -> Result<Vec<ConnectionMessages>, u32> {
+
+    if settings::test_agency_mode_enabled() {
+        ::utils::httpclient::set_next_u8_response(::utils::constants::GET_ALL_MESSAGES_RESPONSE.to_vec());
+    }
 
     match get_messages()
         .uid(uids)
         .status_codes(status_codes)
+        .pairwise_dids(pairwise_dids)
         .download_messages() {
         Err(x) => {
             error!("could not post get_messages: {}", x);
@@ -468,15 +473,15 @@ mod tests {
         thread::sleep(Duration::from_millis(2000));
         // AS CONSUMER GET MESSAGES
         ::utils::devsetup::tests::set_consumer();
-        let all_messages = download_messages(None, None).unwrap();
+        let all_messages = download_messages(None, None, None).unwrap();
         println!("{}", serde_json::to_string(&all_messages).unwrap());
-        let pending = download_messages(Some(vec!["MS-103".to_string()]), None).unwrap();
+        let pending = download_messages(None, Some(vec!["MS-103".to_string()]), None).unwrap();
         assert_eq!(pending.len(), 1);
-        let accepted = download_messages(Some(vec!["MS-104".to_string()]), None).unwrap();
+        let accepted = download_messages(None, Some(vec!["MS-104".to_string()]), None).unwrap();
         assert_eq!(accepted[0].msgs.len(), 2);
-        let specific = download_messages(None, Some(vec![accepted[0].msgs[0].uid.clone()])).unwrap();
+        let specific = download_messages(None, None, Some(vec![accepted[0].msgs[0].uid.clone()])).unwrap();
         assert_eq!(specific.len(), 1);
-        let none = download_messages(Some(vec!["MS-103".to_string()]), Some(vec![accepted[0].msgs[0].uid.clone()]));
+        let none = download_messages(None, Some(vec!["MS-103".to_string()]), Some(vec![accepted[0].msgs[0].uid.clone()]));
         assert!(none.is_err());
         ::utils::devsetup::tests::cleanup_dev_env("test_download_messages");
     }

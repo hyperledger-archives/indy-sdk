@@ -648,7 +648,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_retrieve_credentials";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        ::utils::libindy::payments::mint_tokens_and_set_fees(None, Some(10000000), None).unwrap();
+        ::utils::libindy::payments::mint_tokens_and_set_fees(None, Some(10000000), None, false).unwrap();
         ::utils::libindy::anoncreds::tests::create_and_store_credential();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (_, _, req, _) = ::utils::libindy::anoncreds::tests::create_proof();

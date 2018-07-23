@@ -92,7 +92,9 @@ pub fn set_defaults() -> u32 {
 pub fn validate_config(config: &HashMap<String, String>) -> Result<u32, u32> {
 
     //Mandatory parameters
-    get_config_value(CONFIG_WALLET_KEY).or(Err(error::MISSING_WALLET_KEY.code_num))?;
+    if config.get(CONFIG_WALLET_KEY).is_none() {
+        return Err(error::MISSING_WALLET_KEY.code_num);
+    }
 
     // If values are provided, validate they're in the correct format
     validate_optional_config_val(config.get(CONFIG_INSTITUTION_DID), error::INVALID_DID.code_num, validation::validate_did)?;
@@ -341,40 +343,49 @@ pub mod tests {
         let valid_ver = DEFAULT_VERKEY;
 
         let mut config: HashMap<String, String> = HashMap::new();
-        assert_eq!(validate_config(&config), Ok(error::SUCCESS.code_num));
+        assert_eq!(validate_config(&config), Err(error::MISSING_WALLET_KEY.code_num));
 
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
         config.insert(CONFIG_INSTITUTION_DID.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config), Err(error::INVALID_DID.code_num));
         config.drain();
 
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
         config.insert(CONFIG_INSTITUTION_VERKEY.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config), Err(error::INVALID_VERKEY.code_num));
         config.drain();
 
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
         config.insert(CONFIG_AGENCY_DID.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config), Err(error::INVALID_DID.code_num));
         config.drain();
 
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
         config.insert(CONFIG_AGENCY_VERKEY.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config), Err(error::INVALID_VERKEY.code_num));
         config.drain();
 
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
         config.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config), Err(error::INVALID_DID.code_num));
         config.drain();
 
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
         config.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config), Err(error::INVALID_VERKEY.code_num));
         config.drain();
 
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
         config.insert(CONFIG_REMOTE_TO_SDK_DID.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config), Err(error::INVALID_DID.code_num));
         config.drain();
 
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
         config.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config), Err(error::INVALID_VERKEY.code_num));
         config.drain();
 
+        config.insert(CONFIG_WALLET_KEY.to_string(), "password".to_string());
         config.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(), invalid.to_string());
         assert_eq!(validate_config(&config), Err(error::INVALID_URL.code_num));
         config.drain();

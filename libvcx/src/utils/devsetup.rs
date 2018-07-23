@@ -143,7 +143,6 @@ pub mod tests {
         delete_wallet(test_name).or(Err(format!("Unable to delete wallet: {}", test_name)))
     }
 
-    #[ignore]
     #[cfg(feature = "pool_tests")]
     #[test]
     pub fn test_two_enterprise_connections() {
@@ -153,17 +152,14 @@ pub mod tests {
         use api::VcxStateType;
 
         let wallet_name = "two";
-        println!("**********************\nsetting up env\n****************************");
         setup_local_env(wallet_name);
 
-        println!("**********************\ncreating first connections\n****************************");
         let (faber, alice) = ::connection::tests::create_connected_connections();
         ::api::vcx::vcx_shutdown(false);
 
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::TEST_WALLET_KEY);
 
-        println!("**********************\nregistering second institution\n****************************");
         let config = ::messages::agent_utils::connect_register_provision(AGENCY_ENDPOINT,
                                                                          AGENCY_DID,
                                                                          AGENCY_VERKEY,
@@ -184,18 +180,14 @@ pub mod tests {
         wallet::open_wallet(wallet_name).unwrap();
         set_institution();
 
-        println!("**********************\nsecond institution sending connection\n****************************");
         let alice = build_connection("alice").unwrap();
         connect(alice, Some("{}".to_string())).unwrap();
         let details = get_invite_details(alice, false).unwrap();
-        println!("sending connection invite");
         //BE CONSUMER AND ACCEPT INVITE FROM INSTITUTION
         ::utils::devsetup::tests::set_consumer();
-        println!("**********************\nalice accepting second connection\n****************************");
         let faber = build_connection_with_invite("faber", &details).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(faber));
         connect(faber, Some("{}".to_string())).unwrap();
-        println!("accepting connection invite");
         //BE INSTITUTION AND CHECK THAT INVITE WAS ACCEPTED
         ::utils::devsetup::tests::set_institution();
         thread::sleep(Duration::from_millis(2000));

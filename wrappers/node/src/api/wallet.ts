@@ -72,6 +72,10 @@ export interface IWalletTokenInfo {
   addresses: IPaymentAddress[]
 }
 
+export interface IPaymentAddressSeed {
+  seed?: string
+}
+
 /**
  * @class Class representing a Wallet
  */
@@ -120,11 +124,12 @@ export class Wallet {
    * @param
    * @returns {Promise<string>} New address
    */
-  public static async createPaymentAddress (): Promise<string> {
+  public static async createPaymentAddress (seed: IPaymentAddressSeed): Promise<string> {
+    const cSeed = seed.seed ? seed.seed : null
     try {
       return await createFFICallbackPromise<string>(
         (resolve, reject, cb) => {
-          const rc = rustAPI().vcx_wallet_create_payment_address(0, cb)
+          const rc = rustAPI().vcx_wallet_create_payment_address(0, cSeed, cb)
           if (rc) {
             reject(rc)
           }

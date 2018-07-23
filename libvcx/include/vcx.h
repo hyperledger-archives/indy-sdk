@@ -305,7 +305,7 @@ vcx_error_t vcx_disclosed_proof_release(vcx_proof_handle_t proof_handle);
 vcx_error_t vcx_credential_create_with_offer(vcx_command_handle_t command_handle, const char *source_id, const char *credential_offer,void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));
 
 /** Retrieves payment information string from the specified credential handle */
-vcx_error_t vcx_credential_get_payment_info(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *info));
+vcx_error_t vcx_credential_get_payment_info(vcx_command_handle_t command_handle, vcx_credential_handle_t credential_handle, void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, const char *info));
 
 /** Creates a credential object from the connection and msg id. Populates a handle the new credential. */
 vcx_error_t vcx_credential_create_with_msgid(vcx_command_handle_t command_handle, const char *source_id, vcx_connection_handle_t connection, const char *msg_id,void (*cb)(vcx_command_handle_t command_handle, vcx_error_t err, vcx_credential_handle_t credential_handle));

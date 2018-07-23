@@ -96,14 +96,22 @@ pub extern fn vcx_wallet_get_token_info(command_handle: u32,
 
 #[no_mangle]
 pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
+                                                seed: *const c_char,
                                                 cb: Option<extern fn(xcommand_handle: u32, err:u32, address: *const c_char)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
+    let seed = if !seed.is_null() {
+        check_useful_opt_c_str!(seed, error::INVALID_OPTION.code_num);
+        seed
+    } else {
+        None
+    };
+
     info!("vcx_wallet_create_payment_address(command_handle: {})",
           command_handle);
 
     thread::spawn(move|| {
-        match create_address() {
+        match create_address(seed) {
             Ok(x) => {
                 info!("vcx_wallet_create_payment_address_cb(command_handle: {}, rc: {}, address: {})",
                     command_handle, error_string(0), x);
@@ -778,7 +786,7 @@ pub mod tests {
     fn test_create_address() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-        assert_eq!(vcx_wallet_create_payment_address(0, Some(generic_cb)), error::SUCCESS.code_num);
+        assert_eq!(vcx_wallet_create_payment_address(0, ptr::null_mut(), Some(generic_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
