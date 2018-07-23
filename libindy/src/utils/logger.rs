@@ -16,12 +16,16 @@ pub struct LoggerUtils {}
 impl LoggerUtils {
     pub fn init() {
         log_panics::init(); //Logging of panics is essential for android. As android does not log to stdout for native code
+
         if cfg!(target_os = "android") {
+            let log_filter =match env::var("SODIUM_LIB_DIR") {
+                Ok(val) => Filter::parse(env::var("RUST_LOG").as_ref().map(String::as_str).unwrap_or("")).try_init().ok() ,
+                Err(..) => Filter::default().with_min_level(log::Level::Off);
+            };
+
             //Set logging to off when deploying production android app.
             #[cfg(target_os = "android")]
-                android_logger::init_once(
-                Filter::default().with_min_level(log::Level::Trace)
-            );
+                android_logger::init_once(log_filter);
             info!("Logging for Android");
         } else {
             Builder::new()
