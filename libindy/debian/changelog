@@ -24,7 +24,7 @@ libindy (1.5.0) unstable; urgency=medium
   [the main payments operations](https://github.com/hyperledger/indy-sdk/tree/master/doc/design/007-cli-payments):
   * Creation of payment address
   * Listing of payment addresses
-  * Getting list of UTXO for payment address
+  * Getting list of sources for payment address
   * Sending payment transaction
   * Adding fees to transactions
   * Getting transactions fees amount

@@ -235,7 +235,7 @@ indy> ledger <subcommand>
 #### NYM transaction
 Send NYM transaction
 ```
-ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+ledger nym did=<did-value> [verkey=<verkey-value>] [role=<role-value>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 #### GET_NYM transaction
@@ -247,7 +247,7 @@ ledger get-nym did=<did-value>
 #### ATTRIB transaction
 Send ATTRIB transaction
 ```
-ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+ledger attrib did=<did-value> [hash=<hash-value>] [raw=<raw-value>] [enc=<enc-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 #### GET_ATTRIB transaction
@@ -259,7 +259,7 @@ ledger get-attrib did=<did-value> [raw=<raw-value>] [hash=<hash-value>] [enc=<en
 #### SCHEMA transaction
 Send SCHEMA transaction
 ```
-ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+ledger schema name=<name-value> version=<version-value> attr_names=<attr_names-value>  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 #### GET_SCHEMA transaction
@@ -270,7 +270,7 @@ ledger get-schema did=<did-value> name=<name-value> version=<version-value>
 #### CRED_DEF transaction
 Send CRED_DEF transaction
 ```
-ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<utxo-1,..,utxo-n>] [fees_outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)]
+ledger cred-def schema_id=<schema_id-value> signature_type=<signature_type-value> [tag=<tag>] primary=<primary-value> [revocation=<revocation-value>]  [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 #### GET_CRED_DEF transaction
@@ -315,16 +315,16 @@ Send custom transaction with user defined json body and optional signature
 ledger custom [txn=]<txn-json-value> [sign=<true|false>]
 ```
 
-#### GET_UTXO transaction
-Send GET_UTXO transaction
+#### GET_PAYMENT_SOURCES transaction
+Send GET_PAYMENT_SOURCES transaction
 ```
-ledger get-utxo payment_address=<payment_address>
+ledger get-sources payment_address=<payment_address>
 ```
 
 #### PAYMENT transaction
 Send PAYMENT transaction
 ```
-ledger payment inputs=<utxo-1>,..,<utxo-n> outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+ledger payment inputs=<source-1>,..,<source-n> outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>) [extra=<extra>]
 ```
 
 #### GET_FEES transaction
@@ -336,13 +336,19 @@ ledger get-fees payment_address=<payment_address>
 #### MINT transaction
 Prepare MINT transaction
 ```
-ledger mint-prepare outputs=(<pay-addr-1>,<amount>,<extra>),..,(<pay-addr-n>,<amount>,<extra>)
+ledger mint-prepare outputs=(<pay-addr-1>,<amount>),..,(<pay-addr-n>,<amount>) [extra=<extra>]
 ```
 
 #### SET_FEES transaction
 Prepare SET_FEES transaction
 ```
 ledger set-fees-prepare payment_method=<payment_method> fees=<txn-type-1>:<amount-1>,..,<txn-type-n>:<amount-n>
+```
+
+#### VERIFY_PAYMENT_RECEIPT transaction
+Prepare VERIFY_PAYMENT_RECEIPT transaction
+```
+ledger verify-payment-receipt <receipts>
 ```
 
 #### Add multi signature to transaction
@@ -379,7 +385,7 @@ pool(sandbox):indy> pool list
 
 #### Create and open wallet
 ```
-sandbox|indy> wallet create alice_wallet pool_name=sandbox
+sandbox|indy> wallet create alice_wallet
 sandbox|indy> wallet open alice_wallet
 pool(sandbox):wallet(alice_wallet):indy> wallet list
 ```
