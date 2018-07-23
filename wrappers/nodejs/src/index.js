@@ -597,7 +597,7 @@ indy.setPairwiseMetadata = function setPairwiseMetadata (wh, theirDid, metadata,
 
 indy.createPaymentAddress = function createPaymentAddress (wh, paymentMethod, config, cb) {
   cb = wrapIndyCallback(cb)
-  capi.createPaymentAddress(wh, paymentMethod, config, cb)
+  capi.createPaymentAddress(wh, paymentMethod, toJson(config), cb)
   return cb.promise
 }
 
@@ -607,11 +607,11 @@ indy.listPaymentAddresses = function listPaymentAddresses (wh, cb) {
   return cb.promise
 }
 
-indy.addRequestFees = function addRequestFees (wh, submitterDid, req, inputs, outputs, cb) {
+indy.addRequestFees = function addRequestFees (wh, submitterDid, req, inputs, outputs, extra, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
   })
-  capi.addRequestFees(wh, submitterDid, toJson(req), toJson(inputs), toJson(outputs), cb)
+  capi.addRequestFees(wh, submitterDid, toJson(req), toJson(inputs), toJson(outputs), extra, cb)
   return cb.promise
 }
 
@@ -621,25 +621,25 @@ indy.parseResponseWithFees = function parseResponseWithFees (paymentMethod, resp
   return cb.promise
 }
 
-indy.buildGetUtxoRequest = function buildGetUtxoRequest (wh, submitterDid, paymentAddress, cb) {
+indy.buildGetPaymentSourcesRequest = function buildGetPaymentSourcesRequest (wh, submitterDid, paymentAddress, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
   })
-  capi.buildGetUtxoRequest(wh, submitterDid, paymentAddress, cb)
+  capi.buildGetPaymentSourcesRequest(wh, submitterDid, paymentAddress, cb)
   return cb.promise
 }
 
-indy.parseGetUtxoResponse = function parseGetUtxoResponse (paymentMethod, resp, cb) {
+indy.parseGetPaymentSourcesResponse = function parseGetPaymentSourcesResponse (paymentMethod, resp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.parseGetUtxoResponse(paymentMethod, toJson(resp), cb)
+  capi.parseGetPaymentSourcesResponse(paymentMethod, toJson(resp), cb)
   return cb.promise
 }
 
-indy.buildPaymentReq = function buildPaymentReq (wh, submitterDid, inputs, outputs, cb) {
+indy.buildPaymentReq = function buildPaymentReq (wh, submitterDid, inputs, outputs, extra, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
   })
-  capi.buildPaymentReq(wh, submitterDid, toJson(inputs), toJson(outputs), cb)
+  capi.buildPaymentReq(wh, submitterDid, toJson(inputs), toJson(outputs), extra, cb)
   return cb.promise
 }
 
@@ -649,11 +649,11 @@ indy.parsePaymentResponse = function parsePaymentResponse (paymentMethod, resp, 
   return cb.promise
 }
 
-indy.buildMintReq = function buildMintReq (wh, submitterDid, outputs, cb) {
+indy.buildMintReq = function buildMintReq (wh, submitterDid, outputs, extra, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [fromJson(data[0]), data[1]]
   })
-  capi.buildMintReq(wh, submitterDid, toJson(outputs), cb)
+  capi.buildMintReq(wh, submitterDid, toJson(outputs), extra, cb)
   return cb.promise
 }
 
@@ -672,6 +672,20 @@ indy.buildGetTxnFeesReq = function buildGetTxnFeesReq (wh, submitterDid, payment
 indy.parseGetTxnFeesResponse = function parseGetTxnFeesResponse (paymentMethod, resp, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.parseGetTxnFeesResponse(paymentMethod, toJson(resp), cb)
+  return cb.promise
+}
+
+indy.buildVerifyPaymentReq = function buildVerifyPaymentReq (wh, submitterDid, receipt, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.buildVerifyPaymentReq(wh, submitterDid, receipt, cb)
+  return cb.promise
+}
+
+indy.parseVerifyPaymentResponse = function parseVerifyPaymentResponse (paymentMethod, resp, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.parseVerifyPaymentResponse(paymentMethod, toJson(resp), cb)
   return cb.promise
 }
 

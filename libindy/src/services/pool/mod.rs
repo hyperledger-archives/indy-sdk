@@ -19,7 +19,6 @@ extern crate sha2;
 extern crate time;
 extern crate zmq;
 
-
 use self::byteorder::{ByteOrder, LittleEndian};
 use serde_json;
 use std::cell::RefCell;
@@ -29,6 +28,7 @@ use std::fs;
 use std::io::Write;
 
 use api::ledger::{CustomFree, CustomTransactionParser};
+use domain::pool::PoolOpenConfig;
 use errors::pool::PoolError;
 use errors::common::CommonError;
 use self::types::*;
@@ -116,7 +116,7 @@ impl PoolService {
         fs::remove_dir_all(path).map_err(PoolError::from)
     }
 
-    pub fn open(&self, name: &str, _config: Option<&str>) -> Result<i32, PoolError> {
+    pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
         for ref pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.pool.get_name()) {
                 //TODO change error
@@ -124,9 +124,14 @@ impl PoolService {
             }
         }
 
+        let config: PoolOpenConfig = if let Some(config) = config {
+            JsonDecodable::from_json(config)?
+        } else {
+            PoolOpenConfig::default()
+        };
+
         let pool_handle: i32 = SequenceUtils::get_next_id();
-        let mut new_pool = Pool::new(name, pool_handle);
-        //FIXME process config: check None (use default), transfer to Pool instance
+        let mut new_pool = Pool::new(name, pool_handle, config);
 
         let zmq_ctx = zmq::Context::new();
         let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR)?;
@@ -282,7 +287,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id), send_soc));
+            ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id, PoolOpenConfig::default()), send_soc));
             let cmd_id = ps.close(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
             assert_eq!(recv.len(), 2);
@@ -301,7 +306,7 @@ mod tests {
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             recv_soc.bind("inproc://test").unwrap();
             send_soc.connect("inproc://test").unwrap();
-            ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id), send_soc));
+            ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id, PoolOpenConfig::default()), send_soc));
             let cmd_id = ps.refresh(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
             assert_eq!(recv.len(), 2);
@@ -338,7 +343,7 @@ mod tests {
             recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
             send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
 
-            let pool = Pool::new(pool_name, pool_id);
+            let pool = Pool::new(pool_name, pool_id, PoolOpenConfig::default());
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(pool, send_cmd_sock));
 
             fs::create_dir_all(path.as_path()).unwrap();
@@ -359,7 +364,7 @@ mod tests {
             let inproc_sock_name: String = format!("inproc://pool_{}", name);
             recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
             send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
-            let pool = Pool::new(name, 0);
+            let pool = Pool::new(name, 0, PoolOpenConfig::default());
             let ps = PoolService::new();
             ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
             let test_data = "str_instead_of_tx_json";
@@ -375,7 +380,7 @@ mod tests {
             let zmq_ctx = zmq::Context::new();
             let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
 
-            let pool = Pool::new(name, 0);
+            let pool = Pool::new(name, 0, PoolOpenConfig::default());
             let ps = PoolService::new();
             ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
             let res = ps.send_tx(-1, "test_data");
@@ -444,7 +449,7 @@ mod tests {
             let ps = PoolService::new();
             let zmq_ctx = zmq::Context::new();
             let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
-            let pool = Pool::new(name, 0);
+            let pool = Pool::new(name, 0, PoolOpenConfig::default());
             ps.pending_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
             assert_match!(Ok(-1), ps.add_open_pool(-1));
         }
@@ -489,7 +494,7 @@ mod tests {
             let mut file = fs::File::create(pool_path).unwrap();
             file.write(&gen_txn.as_bytes()).unwrap();
 
-            let mut pool = Pool::new(pool_name, -1);
+            let mut pool = Pool::new(pool_name, -1, PoolOpenConfig::default());
             pool.work(recv_cmd_sock);
             ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
             thread::sleep(time::Duration::from_secs(1));

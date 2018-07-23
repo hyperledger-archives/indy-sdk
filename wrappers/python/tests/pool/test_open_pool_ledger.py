@@ -6,7 +6,7 @@ from indy.error import ErrorCode, IndyError
 
 @pytest.mark.parametrize(
     "pool_genesis_txn_count, pool_config",
-    [(2, None), (3, None), (4, None), (4, '{"refresh_on_open": true}')])
+    [(2, None), (3, None), (4, None), (4, '{"timeout": 20}')])
 @pytest.mark.asyncio
 async def test_open_pool_ledger_works(pool_handle):
     pass
