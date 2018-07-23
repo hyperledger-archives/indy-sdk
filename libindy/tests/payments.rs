@@ -441,7 +441,19 @@ mod high_cases {
 
         #[test]
         pub fn build_verify_req_works() {
+            TestUtils::cleanup_storage();
+            payments::mock_method::init();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
+            payments::mock_method::build_verify_req::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+
+            let (req, pm) = payments::build_verify_req(wallet_handle, IDENTIFIER, "pay:null:test").unwrap();
+
+            assert_eq!(req, TEST_RES_STRING);
+            assert_eq!(pm, PAYMENT_METHOD_NAME);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
         }
     }
 }
@@ -1594,6 +1606,88 @@ mod medium_cases {
             payments::mock_method::parse_get_txn_fees_response::inject_mock(ErrorCode::WalletAccessFailed, "");
 
             let err = payments::parse_get_txn_fees_response(PAYMENT_METHOD_NAME, EMPTY_OBJECT).unwrap_err();
+
+            assert_eq!(err, ErrorCode::WalletAccessFailed);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod build_verify_req {
+        use super::*;
+
+        #[test]
+        pub fn build_verify_req_works_for_incorrect_payment_method() {
+            TestUtils::cleanup_storage();
+            payments::mock_method::init();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            payments::mock_method::build_verify_req::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+
+            let ec = payments::build_verify_req(wallet_handle, IDENTIFIER, "pay:null1:test").unwrap_err();
+
+            assert_eq!(ec, ErrorCode::PaymentUnknownMethodError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn build_verify_req_works_for_incorrect_payment_address() {
+            TestUtils::cleanup_storage();
+            payments::mock_method::init();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            payments::mock_method::build_verify_req::inject_mock(ErrorCode::Success, TEST_RES_STRING);
+
+            let ec = payments::build_verify_req(wallet_handle, IDENTIFIER, "pay:null1").unwrap_err();
+
+            assert_eq!(ec, ErrorCode::PaymentIncompatibleMethodsError);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn build_verify_req_works_for_invalid_wallet_handle() {
+            TestUtils::cleanup_storage();
+            payments::mock_method::init();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            let err = payments::build_verify_req(wallet_handle + 1, IDENTIFIER, CORRECT_PAYMENT_ADDRESS).unwrap_err();
+            assert_eq!(err, ErrorCode::WalletInvalidHandle);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn build_verify_req_works_for_invalid_submitter_did() {
+            TestUtils::cleanup_storage();
+            payments::mock_method::init();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            let err = payments::build_verify_req(wallet_handle, INVALID_IDENTIFIER, CORRECT_PAYMENT_ADDRESS).unwrap_err();
+
+            assert_eq!(err, ErrorCode::CommonInvalidStructure);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn build_verify_req_works_for_generic_error() {
+            TestUtils::cleanup_storage();
+            payments::mock_method::init();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            payments::mock_method::build_verify_req::inject_mock(ErrorCode::WalletAccessFailed, "");
+
+            let err = payments::build_verify_req(wallet_handle,
+                                                           IDENTIFIER,
+                                                           CORRECT_PAYMENT_ADDRESS,
+            ).unwrap_err();
 
             assert_eq!(err, ErrorCode::WalletAccessFailed);
 
