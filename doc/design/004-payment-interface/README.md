@@ -72,7 +72,8 @@ pub extern fn indy_register_payment_method(command_handle: i32,
                                            build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
                                            build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
                                            parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
-
+                                           build_verify_req: Option<BuildVerifyReqCB>,
+                                           parse_verify_response: Option<ParseVerifyResponseCB>,
                                            cb: Option<extern fn(command_handle_: i32,
                                                                 err: ErrorCode) -> ErrorCode>) -> ErrorCode {}
 ```
@@ -346,6 +347,46 @@ type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
                                                                 err: ErrorCode,
                                                                 fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;                                                       
 
+/// Builds Indy request for information to verify the receipt
+///
+/// # Params
+/// command_handle
+/// wallet_handle
+/// submitter_did
+/// receipt -- receipt to verify
+///
+/// # Return
+/// verify_txn_json -- request to be sent to ledger
+
+pub type BuildVerifyReqCB = extern fn(command_handle: i32,
+                                      wallet_handle: i32,
+                                      submitter_did: *const c_char,
+                                      receipt: *const c_char,
+                                      cb: Option<extern fn(command_handle_: i32,
+                                                           err: ErrorCode,
+                                                           verify_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
+/// Parses Indy response with information to verify receipt
+///
+/// # Params
+/// command_handle
+/// resp_json -- response of the ledger for verify txn
+///
+/// # Return
+/// txn_json: {
+///     sources: [<str>, ]
+///     receipts: [ {
+///         recipient: <str>, // payment address of recipient
+///         receipt: <str>, // receipt that can be used for payment referencing and verification
+///         amount: <int>, // amount
+///     }, ]
+///     extra: <str>, //optional data
+/// }
+pub type ParseVerifyResponseCB = extern fn(command_handle: i32,
+                                           resp_json: *const c_char,
+                                           cb: Option<extern fn(command_handle_: i32,
+                                                                err: ErrorCode,
+                                                                txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 ```
 
 ## Payment API
@@ -652,4 +693,49 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: i32,
                                                                     err: ErrorCode,
                                                                     fees_json: *const c_char) -> ErrorCode>) -> ErrorCode {}
 
+/// Builds Indy request for information to verify the receipt
+///
+/// # Params
+/// command_handle: Command handle to map callback to caller context.
+/// wallet_handle: wallet handle
+/// submitter_did : DID of request sender
+/// receipt: receipt to verify
+///
+/// # Return
+/// verify_txn_json: Indy request for verification receipt
+/// payment_method: used payment method
+#[no_mangle]
+pub extern fn indy_build_verify_req(command_handle: i32,
+                                    wallet_handle: i32,
+                                    submitter_did: *const c_char,
+                                    receipt: *const c_char,
+                                    cb: Option<extern fn(command_handle_: i32,
+                                                         err: ErrorCode,
+                                                         verify_txn_json: *const c_char,
+                                                         payment_method: *const c_char)>) -> ErrorCode {}
+
+/// Parses Indy response with information to verify receipt
+///
+/// # Params
+/// command_handle: Command handle to map callback to caller context.
+/// payment_method: payment method to use
+/// resp_json: response of the ledger for verify txn
+///
+/// # Return
+/// txn_json: {
+///     sources: [<str>, ]
+///     receipts: [ {
+///         recipient: <str>, // payment address of recipient
+///         receipt: <str>, // receipt that can be used for payment referencing and verification
+///         amount: <int>, // amount
+///     } ],
+///     extra: <str>, //optional data
+/// }
+#[no_mangle]
+pub extern fn indy_parse_verify_response(command_handle: i32,
+                                         payment_method: *const c_char,
+                                         resp_json: *const c_char,
+                                         cb: Option<extern fn(command_handle_: i32,
+                                                              err: ErrorCode,
+                                                              txn_json: *const c_char)>) -> ErrorCode {}
 ```
