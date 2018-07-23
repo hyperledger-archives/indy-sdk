@@ -89,7 +89,7 @@ See [wrapper iOS install documentation](wrappers/ios/README.md "How to install")
 
 ### Android
 
-1. Go to https://repo.sovrin.org/android/libindy/{release-channel}.
+1. Go to `https://repo.sovrin.org/android/libindy/{release-channel}`.
 2. 3 architecture are supported as of now arm,arm64 and x86.
 3. Download latest version of libindy.
 4. Unzip archives to the directory where you want to save the `.so` files.
@@ -121,9 +121,13 @@ that may be need for your applications.
 {release channel} must be replaced with rc or stable to define corresponded release channel.
 See section "Release channels" for more details.
 
-Notes:
+ **Note** :
+ 
+ - [WARNING] This library should be considered as experimental as currently unit tests are *not* executed in the CI phase.
+ 
  - We are using the [NDK16b](https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip) because it is the last NDK to have support for `gnustl_shared` stl. 
  gnustl_shared is deprecated in latest NDK. gnustal_shared is needed because the dependencies are compiled using gnustal_shared and you will get build errors if more than one type of stl while compiling.
+ 
  
 ### MacOS
 
