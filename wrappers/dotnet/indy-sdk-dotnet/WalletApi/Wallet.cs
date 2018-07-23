@@ -16,7 +16,7 @@ namespace Hyperledger.Indy.WalletApi
         /// Wallet type registrations by type name.
         /// </summary>
         private static ConcurrentBag<WalletType> _registeredWalletTypes = new ConcurrentBag<WalletType>();
-        
+
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
         /// </summary>
@@ -30,116 +30,99 @@ namespace Hyperledger.Indy.WalletApi
             taskCompletionSource.SetResult(new Wallet(wallet_handle));
         };
 
-        private static ListWalletsCompletedDelegate _listWalletsCallback = (xcommand_handle, err, wallets) =>
-        {
-            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+        ///// <summary>
+        ///// Registers a custom wallet type implementation.
+        ///// </summary>
+        ///// <remarks>
+        ///// <para>This method allows custom wallet implementations to be registered at runtime so that alternatives
+        ///// to the default wallet type can be used.  Implementing a custom wallet is achieved by
+        ///// deriving from the <see cref="WalletType"/> class - see the <see cref="WalletType"/> and 
+        ///// <see cref="ICustomWallet"/> classes for further detail.
+        ///// </para>
+        ///// <para>Each custom wallet type is registered with a name which can subsequently be used when 
+        ///// creating a new wallet using the <see cref="CreateWalletAsync(string, string, string, string, string)"/> method.
+        ///// </para>
+        ///// </remarks>
+        ///// <param name="typeName">The name of the custom wallet type.</param>
+        ///// <param name="walletType">An instance of a class derived from <see cref="WalletType "/> containing the logic for 
+        ///// the custom wallet type.</param>
+        ///// <returns>An asynchronous <see cref="Task"/> with no return value that completes when
+        ///// the registration is complete.</returns>
+        //public static Task RegisterWalletTypeAsync(string typeName, WalletType walletType)
+        //{
+        //    ParamGuard.NotNullOrWhiteSpace(typeName, "typeName");
+        //    ParamGuard.NotNull(walletType, "walletType");
 
-            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
-                return;
+        //    var taskCompletionSource = new TaskCompletionSource<bool>();
+        //    var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            taskCompletionSource.SetResult(wallets);
-        };
+        //    _registeredWalletTypes.Add(walletType);
 
-        /// <summary>
-        /// Registers a custom wallet type implementation.
-        /// </summary>
-        /// <remarks>
-        /// <para>This method allows custom wallet implementations to be registered at runtime so that alternatives
-        /// to the default wallet type can be used.  Implementing a custom wallet is achieved by
-        /// deriving from the <see cref="WalletType"/> class - see the <see cref="WalletType"/> and 
-        /// <see cref="ICustomWallet"/> classes for further detail.
-        /// </para>
-        /// <para>Each custom wallet type is registered with a name which can subsequently be used when 
-        /// creating a new wallet using the <see cref="CreateWalletAsync(string, string, string, string, string)"/> method.
-        /// </para>
-        /// </remarks>
-        /// <param name="typeName">The name of the custom wallet type.</param>
-        /// <param name="walletType">An instance of a class derived from <see cref="WalletType "/> containing the logic for 
-        /// the custom wallet type.</param>
-        /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when
-        /// the registration is complete.</returns>
-        public static Task RegisterWalletTypeAsync(string typeName, WalletType walletType)
-        {
-            ParamGuard.NotNullOrWhiteSpace(typeName, "typeName");
-            ParamGuard.NotNull(walletType, "walletType");
+        //    var result = NativeMethods.indy_register_wallet_type(
+        //        commandHandle,
+        //        typeName,
+        //        walletType.CreateCallback,
+        //        walletType.OpenCallback,
+        //        walletType.SetCallback,
+        //        walletType.GetCallback,
+        //        walletType.GetNotExpiredCallback,
+        //        walletType.ListCallback,
+        //        walletType.CloseCallback,
+        //        walletType.DeleteCallback,
+        //        walletType.FreeCallback,
+        //        CallbackHelper.TaskCompletingNoValueCallback);
 
-            var taskCompletionSource = new TaskCompletionSource<bool>();
-            var commandHandle = PendingCommands.Add(taskCompletionSource);
+        //    CallbackHelper.CheckResult(result);
 
-            _registeredWalletTypes.Add(walletType);          
-
-            var result = NativeMethods.indy_register_wallet_type(
-                commandHandle,
-                typeName,
-                walletType.CreateCallback,
-                walletType.OpenCallback,
-                walletType.SetCallback,
-                walletType.GetCallback,
-                walletType.GetNotExpiredCallback,
-                walletType.ListCallback,
-                walletType.CloseCallback,
-                walletType.DeleteCallback,
-                walletType.FreeCallback,
-                CallbackHelper.TaskCompletingNoValueCallback);
-
-            CallbackHelper.CheckResult(result);
-
-            return taskCompletionSource.Task;
-        }
+        //    return taskCompletionSource.Task;
+        //}
 
         /// <summary>
-        /// Creates a new wallet.
+        /// Create a new secure wallet.
         /// </summary>
-        /// <remarks>
-        /// <para>Each created wallet is given a name which is then subsequently used to open it
-        /// with the <see cref="OpenWalletAsync(string, string, string)"/> or delete it using the
-        /// <see cref="DeleteWalletAsync(string, string)"/> static methods.    
-        /// <note type="note">Wallet names must be unique within a pool.</note>
-        /// </para>
-        /// <para>
-        /// When creating a new Wallet the <paramref name="type"/> parameter can be null or "default" to
-        /// use the default wallet implementation, or a type name specified in an earlier call to the 
-        /// <see cref="RegisterWalletTypeAsync(string, WalletType)"/> method to use a custom wallet implementation.
-        /// Attempting to use a wallet type that hasn't previously been registered will result in an error.
-        /// </para>
-        /// <para>The <paramref name="config"/> parameter allows configuration values to be passed to the wallet
-        /// when it is created.  When using the default wallet this value can be null to use the default 
-        /// wallet configuration or a JSON string with the following format can be used:
+        /// <returns>The wallet async.</returns>
+        /// <param name="config">
+        /// Wallet configuration json.
         /// <code>
         /// {
-        ///     "freshness_time": int
+        ///   "id": string, Identifier of the wallet.
+        ///         Configured storage uses this identifier to lookup exact wallet data placement.
+        ///   "storage_type": optional&lt;string>, Type of the wallet storage. Defaults to 'default'.
+        ///                  'Default' storage type allows to store wallet data in the local file.
+        ///                  Custom storage types can be registered with indy_register_wallet_storage call.
+        ///   "storage_config": optional&lt;object>, Storage configuration json. Storage type defines set of supported keys.
+        ///                     Can be optional if storage supports default configuration.
+        ///                     For 'default' storage type configuration is:
+        ///   {
+        ///     "path": optional&lt;string>, Path to the directory with wallet files.
+        ///             Defaults to $HOME/.indy_client/wallets.
+        ///             Wallet will be stored in the file {path}/{id}/sqlite.db
+        ///   }
         /// }
         /// </code>
-        /// The value of the <c>freshness_time</c> key is an integer representing the number of seconds
-        /// a value in the wallet will remain valid before expiring.  If not specified the default value 
-        /// for <c>freshness_time</c> is 24 * 60 seconds.
-        /// </para>
-        /// <para>If using a custom wallet type the content of the <paramref name="config"/> parameter can
-        /// be any string value; it is up to the custom wallet type implementer to interpret the value.
-        /// </para>
-        /// <para>The <paramref name="credentials"/> parameter is unused in the default wallet at present, 
-        /// however the value can be used by custom wallet implementations; it is up to the custom wallet 
-        /// type implementer to interpret the value.</para>
-        /// </remarks>
-        /// <param name="poolName">The name of the pool the wallet is associated with.</param>
-        /// <param name="name">The name of the wallet.</param>
-        /// <param name="type">The type of the wallet. </param>
-        /// <param name="config">The wallet configuration JSON.</param>
-        /// <param name="credentials">The wallet credentials JSON or null to use the default credentials.</param>
-        /// <returns>An asynchronous <see cref="Task"/> with no return value the completes when the operation has finished.</returns>
-        public static Task CreateWalletAsync(string poolName, string name, string type, string config, string credentials)
+        /// </param>
+        /// <param name="credentials">
+        /// Wallet credentials json
+        /// <code>
+        /// {
+        ///   "key": string, Passphrase used to derive wallet master key
+        ///   "storage_credentials": optional&lt;object> Credentials for wallet storage. Storage type defines set of supported keys.
+        ///                          Can be optional if storage supports default configuration.
+        ///                          For 'default' storage type should be empty.
+        ///
+        /// }
+        /// </code>
+        /// </param>
+        public static Task CreateWalletAsync(string config, string credentials)
         {
-            ParamGuard.NotNullOrWhiteSpace(poolName, "poolName");
-            ParamGuard.NotNullOrWhiteSpace(name, "name");
+            ParamGuard.NotNullOrWhiteSpace(config, "config");
+            ParamGuard.NotNullOrWhiteSpace(credentials, "credentials");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var result = NativeMethods.indy_create_wallet(
                 commandHandle,
-                poolName,
-                name,
-                type,
                 config,
                 credentials,
                 CallbackHelper.TaskCompletingNoValueCallback);
@@ -150,41 +133,54 @@ namespace Hyperledger.Indy.WalletApi
         }
 
         /// <summary>
-        /// Opens a Wallet.
+        /// Open the wallet.
+        ///
+        /// Wallet must be previously created with <see cref="CreateWalletAsync(string, string)"/> method.
         /// </summary>
-        /// <remarks>
-        /// <para>Opens a wallet by name using the name of a wallet created earlier using the 
-        /// <see cref="CreateWalletAsync(string, string, string, string, string)"/> method.
-        /// </para>
-        /// <note type="note">Attempting to open the same wallet more than once will result in an error.</note>
-        /// <para>
-        /// The <paramref name="runtimeConfig"/> parameter allows the default configuration of the wallet
-        /// to be overridden while opening the wallet; this does not replace the configuration registered
-        /// when the wallet was created but instead overrides it for the duration of this opening only.
-        /// See the <see cref="CreateWalletAsync(string, string, string, string, string)"/> method for 
-        /// details on the configuration string supported by the default wallet type; custom wallet
-        /// types will can support their own format.
-        /// </para>
-        /// <para>The <paramref name="credentials"/> parameter is unused in the default wallet at present, 
-        /// however the value can be used by custom wallet implementations; it is up to the custom wallet 
-        /// type implementer to interpret the value.
-        /// </para>
-        /// </remarks>
-        /// <param name="name">The name of the Wallet to open.</param>
-        /// <param name="runtimeConfig">The runtime configuration to override the configuration the wallet was created with.</param>
-        /// <param name="credentials">The wallet credentials.</param>
-        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="Wallet"/> instance when the operation completes.</returns>
-        public static Task<Wallet> OpenWalletAsync(string name, string runtimeConfig, string credentials)
+        /// <returns>Handle to opened wallet to use in methods that require wallet access.</returns>
+        /// <param name="config">
+        /// Wallet configuration json.
+        /// <code>
+        /// {
+        ///   "id": string, Identifier of the wallet.
+        ///         Configured storage uses this identifier to lookup exact wallet data placement.
+        ///   "storage_type": optional&lt;string>, Type of the wallet storage. Defaults to 'default'.
+        ///                  'Default' storage type allows to store wallet data in the local file.
+        ///                  Custom storage types can be registered with indy_register_wallet_storage call.
+        ///   "storage_config": optional&lt;object>, Storage configuration json. Storage type defines set of supported keys.
+        ///                     Can be optional if storage supports default configuration.
+        ///                     For 'default' storage type configuration is:
+        ///   {
+        ///     "path": optional&lt;string>, Path to the directory with wallet files.
+        ///             Defaults to $HOME/.indy_client/wallets.
+        ///             Wallet will be stored in the file {path}/{id}/sqlite.db
+        ///   }
+        /// }
+        /// </code>
+        /// </param>
+        /// <param name="credentials">
+        /// Wallet credentials json
+        ///   {
+        ///       "key": string, Passphrase used to derive current wallet master key
+        ///       "rekey": optional&lt;string>, If present than wallet master key will be rotated to a new one
+        ///                                  derived from this passphrase.
+        ///       "storage_credentials": optional&lt;object> Credentials for wallet storage. Storage type defines set of supported keys.
+        ///                              Can be optional if storage supports default configuration.
+        ///                              For 'default' storage type should be empty.
+        ///
+        ///   }
+        /// </param>
+        public static Task<Wallet> OpenWalletAsync(string config, string credentials)
         {
-            ParamGuard.NotNullOrWhiteSpace(name, "name");
+            ParamGuard.NotNullOrWhiteSpace(config, "config");
+            ParamGuard.NotNullOrWhiteSpace(credentials, "credentials");
 
             var taskCompletionSource = new TaskCompletionSource<Wallet>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var result = NativeMethods.indy_open_wallet(
                 commandHandle,
-                name,
-                runtimeConfig,
+                config,
                 credentials,
                 _openWalletCallback
                 );
@@ -195,17 +191,104 @@ namespace Hyperledger.Indy.WalletApi
         }
 
         /// <summary>
-        /// Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool
+        /// Exports opened wallet
+        ///
+        /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+        /// in the future releases.
         /// </summary>
-        /// <returns>The wallets async.</returns>
-        public static Task<string> ListWalletsAsync()
+        /// <returns>The async.</returns>
+        /// <param name="exportConfig">
+        /// <code>
+        /// JSON containing settings for input operation.
+        ///   {
+        ///     "path": &lt;string>, Path of the file that contains exported wallet content
+        ///     "key": &lt;string>, Passphrase used to derive export key
+        ///   }
+        /// </code>
+        /// </param>
+        public Task ExportAsync(string exportConfig)
         {
-            var taskCompletionSource = new TaskCompletionSource<string>();
+            ParamGuard.NotNullOrWhiteSpace(exportConfig, "exportConfig");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = NativeMethods.indy_list_wallets(
+            var result = NativeMethods.indy_export_wallet(
                 commandHandle,
-                _listWalletsCallback
+                this.Handle,
+                exportConfig,
+                CallbackHelper.TaskCompletingNoValueCallback
+                );
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Creates a new secure wallet and then imports its content
+        /// according to fields provided in import_config
+        /// This can be seen as an <see cref="CreateWalletAsync(string, string)"/> call with additional content import
+        ///
+        /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
+        /// in the future releases.
+        /// </summary>
+        /// <returns>The async.</returns>
+        /// <param name="config">
+        /// Wallet configuration json.
+        /// <code>
+        /// {
+        ///   "id": string, Identifier of the wallet.
+        ///         Configured storage uses this identifier to lookup exact wallet data placement.
+        ///   "storage_type": optional&lt;string>, Type of the wallet storage. Defaults to 'default'.
+        ///                  'Default' storage type allows to store wallet data in the local file.
+        ///                  Custom storage types can be registered with indy_register_wallet_storage call.
+        ///   "storage_config": optional&lt;object>, Storage configuration json. Storage type defines set of supported keys.
+        ///                     Can be optional if storage supports default configuration.
+        ///                     For 'default' storage type configuration is:
+        ///   {
+        ///     "path": optional&lt;string>, Path to the directory with wallet files.
+        ///             Defaults to $HOME/.indy_client/wallets.
+        ///             Wallet will be stored in the file {path}/{id}/sqlite.db
+        ///   }
+        /// }
+        /// </code>
+        /// </param>
+        /// <param name="credentials">Wallet credentials json
+        /// <code>
+        /// {
+        ///   "key": string, Passphrase used to derive wallet master key
+        ///   "storage_credentials": optional&lt;object> Credentials for wallet storage. Storage type defines set of supported keys.
+        ///                          Can be optional if storage supports default configuration.
+        ///                          For 'default' storage type should be empty.
+        ///
+        /// }
+        /// </code>
+        /// </param>
+        /// <param name="importConfig">
+        /// Import settings json.
+        /// <code>
+        /// {
+        ///   "path": &lt;string>, path of the file that contains exported wallet content
+        ///   "key": &lt;string>, passphrase used to derive export key
+        /// }
+        /// </code>
+        /// </param>
+        public static Task ImportAsync(string config, string credentials, string importConfig)
+        {
+            ParamGuard.NotNullOrWhiteSpace(config, "config");
+            ParamGuard.NotNullOrWhiteSpace(credentials, "credentials");
+            ParamGuard.NotNullOrWhiteSpace(importConfig, "importConfig");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_import_wallet(
+                commandHandle,
+                config,
+                credentials,
+                importConfig,
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -217,7 +300,7 @@ namespace Hyperledger.Indy.WalletApi
         /// Deletes a wallet.
         /// </summary>
         /// <remarks>
-        /// <para>Deletes a wallet created earlier using the <see cref="CreateWalletAsync(string, string, string, string, string)"/>
+        /// <para>Deletes a wallet created earlier using the <see cref="CreateWalletAsync(string, string)"/>
         /// by name.
         /// </para>
         /// <para>The <paramref name="credentials"/> parameter is unused in the default wallet at present, 
@@ -225,19 +308,20 @@ namespace Hyperledger.Indy.WalletApi
         /// type implementer to interpret the value.
         /// </para>
         /// </remarks>
-        /// <param name="name">The name of the wallet to delete.</param>
+        /// <param name="config">The name of the wallet to delete.</param>
         /// <param name="credentials">The wallet credentials.</param>
         /// <returns>An asynchronous <see cref="Task"/> with no return value that completes when the operation completes.</returns>
-        public static Task DeleteWalletAsync(string name, string credentials)
+        public static Task DeleteWalletAsync(string config, string credentials)
         {
-            ParamGuard.NotNullOrWhiteSpace(name, "name");
+            ParamGuard.NotNullOrWhiteSpace(config, "config");
+            ParamGuard.NotNullOrWhiteSpace(credentials, "credentials");
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var result = NativeMethods.indy_delete_wallet(
                 commandHandle,
-                name,
+                config,
                 credentials,
                 CallbackHelper.TaskCompletingNoValueCallback
                 );
@@ -314,4 +398,4 @@ namespace Hyperledger.Indy.WalletApi
             }
         }
     }
-}    
+}
