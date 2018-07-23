@@ -13,6 +13,7 @@ use std::sync::mpsc::{channel, Receiver};
 
 use ffi::{ResponseEmptyCB,
           ResponseI32CB,
+          ResponseI32USizeCB,
           ResponseStringCB,
           ResponseStringStringCB,
           ResponseStringStringStringCB,
@@ -78,6 +79,36 @@ impl ClosureHandler {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             cb(ErrorCode::from(err), val)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = SequenceUtils::get_next_id();
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(_callback))
+    }
+
+    pub fn cb_ec_i32_usize() -> (Receiver<(ErrorCode, IndyHandle, usize)>, IndyHandle, Option<ResponseI32USizeCB>) {
+        let (sender, receiver) = channel();
+
+        let closure = Box::new(move |err, val1, val2| {
+            sender.send((err, val1, val2)).unwrap_or_else(log_error);
+        });
+
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32_usize(closure);
+
+        (receiver, command_handle, cb)
+    }
+
+    pub fn convert_cb_ec_i32_usize(closure: Box<FnMut(ErrorCode, IndyHandle, usize) + Send>) -> (IndyHandle, Option<ResponseI32USizeCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, IndyHandle, usize) + Send>>> = Default::default();
+        }
+
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, val1: i32, val2: usize) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(ErrorCode::from(err), val1, val2)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
