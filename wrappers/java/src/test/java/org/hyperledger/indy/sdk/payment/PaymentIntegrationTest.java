@@ -15,5 +15,6 @@ class PaymentIntegrationTest extends IndyIntegrationTestWithSingleWallet {
 	static final String incompatibleInputs = "[\"pay:PAYMENT_METHOD_1:1\", \"pay:PAYMENT_METHOD_2:1\"]";
 	static final String incompatibleOutputs = "[{\"recipient\": \"pay:PAYMENT_METHOD_1:1\", \"amount\":1}, {\"recipient\": \"pay:PAYMENT_METHOD_2:1\", \"amount\":1}]";
 	static final String fees = "{\"txnType1\":1, \"txnType2\":2}";
+	static final String receipt = "pay:null:0_PqVjwJC42sxCTJp";
 
 }

@@ -391,6 +391,56 @@ extern "C" {
                                                                               const char*   fees_json)
                                                          );
 
+    /// Builds Indy request for information to verify the receipt
+    ///
+    /// #Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// wallet_handle: wallet handle
+    /// submitter_did : DID of request sender
+    /// receipt: receipt to verify
+    ///
+    /// #Returns
+    /// verify_txn_json: Indy request for verification receipt for transactions in the ledger
+    /// payment_method: used payment method
+
+    extern indy_error_t indy_build_verify_req(indy_handle_t command_handle,
+                                              indy_handle_t wallet_handle,
+                                              const char *  submitter_did,
+                                              const char *  receipt,
+
+                                              void           (*cb)(indy_handle_t xcommand_handle,
+                                                                   indy_error_t  err,
+                                                                   const char*   verify_txn_json,
+                                                                   const char*   payment_method)
+                                              );
+
+    /// Parses Indy response with information to verify receipt
+    ///
+    /// # Params
+    /// command_handle: Command handle to map callback to caller context.
+    /// payment_method: payment method to use
+    /// resp_json: response of the ledger for verify txn
+    ///
+    /// # Return
+    /// txn_json: {
+    ///     sources: [<str>, ]
+    ///     receipts: [ {
+    ///         recipient: <str>, // payment address of recipient
+    ///         receipt: <str>, // receipt that can be used for payment referencing and verification
+    ///         amount: <int>, // amount
+    ///     } ],
+    ///     extra: <str>, //optional data
+    /// }
+
+    extern indy_error_t indy_parse_verify_response(indy_handle_t command_handle,
+                                                   const char *  payment_method,
+                                                   const char *  resp_json,
+
+                                                   void           (*cb)(indy_handle_t xcommand_handle,
+                                                                        indy_error_t  err,
+                                                                        const char*   txn_json)
+                                                   );
+
 #ifdef __cplusplus
 }
 #endif

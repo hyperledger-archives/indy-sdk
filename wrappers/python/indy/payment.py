@@ -541,3 +541,84 @@ async def parse_get_txn_fees_response(payment_method: str,
     res = fees_json.decode()
     logger.debug("parse_get_txn_fees_response: <<< res: %r", res)
     return res
+
+
+async def build_verify_req(wallet_handle: int,
+                           submitter_did: str,
+                           receipt: str) -> (str, str):
+    """
+    Builds Indy request for information to verify the receipt
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param submitter_did : DID of request sender
+    :param receipt: receipt to verify
+
+    :return: verify_txn_json: Indy request for verification receipt for transactions in the ledger
+             payment_method: used payment method
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_verify_req: >>> wallet_handle: %r, submitter_did: %r, receipt: %r",
+                 wallet_handle,
+                 submitter_did,
+                 receipt)
+
+    if not hasattr(build_payment_req, "cb"):
+        logger.debug("build_verify_req: Creating callback")
+        build_verify_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_receipt = c_char_p(receipt.encode('utf-8'))
+
+    (verify_txn_json, payment_method) = await do_call('indy_build_verify_req',
+                                                      c_wallet_handle,
+                                                      c_submitter_did,
+                                                      c_receipt,
+                                                      build_verify_req.cb)
+    res = (verify_txn_json.decode(), payment_method.decode())
+
+    logger.debug("build_verify_req: <<< res: %r", res)
+    return res
+
+
+async def parse_verify_response(payment_method: str,
+                                resp_json: str) -> str:
+    """
+    Parses Indy response with information to verify receipt
+
+    :param payment_method: Payment method to use (for example, 'sov').
+    :param resp_json: resp_json: response for Indy request for payment txn
+      Note: this param will be used to determine payment_method
+    :return: receipts_json: parsed (payment method and node version agnostic) receipt verification info as json:
+    {
+         sources: [<str>, ]
+         receipts: [ {
+             recipient: <str>, // payment address of recipient
+             receipt: <str>, // receipt that can be used for payment referencing and verification
+             amount: <int>, // amount
+         } ],
+         extra: <str>, //optional data
+    }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("parse_verify_response: >>> wallet_handle: %r, payment_method: %r, resp_json: %r",
+                 payment_method,
+                 resp_json)
+
+    if not hasattr(parse_payment_response, "cb"):
+        logger.debug("parse_verify_response: Creating callback")
+        parse_verify_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_payment_method = c_char_p(payment_method.encode('utf-8'))
+    c_resp_json = c_char_p(resp_json.encode('utf-8'))
+
+    receipts_json = await do_call('indy_parse_verify_response',
+                                  c_payment_method,
+                                  c_resp_json,
+                                  parse_verify_response.cb)
+
+    res = receipts_json.decode()
+    logger.debug("parse_verify_response: <<< res: %r", res)
+    return res

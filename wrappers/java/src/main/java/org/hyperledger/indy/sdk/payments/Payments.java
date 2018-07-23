@@ -94,6 +94,21 @@ public class Payments extends IndyJava.API {
         }
     };
 
+	/**
+	 * Callback used when buildVerifyRequest completes.
+	 */
+	private static Callback buildVerifyReqCb = new Callback() {
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommandHandle, int err, String verifyReqJson, String paymentMethod) {
+			CompletableFuture<BuildVerifyReqResult> future = (CompletableFuture<BuildVerifyReqResult>) removeFuture(xcommandHandle);
+			if (!checkCallback(future, err)) return;
+
+			BuildVerifyReqResult verifyRequestResult = new BuildVerifyReqResult(verifyReqJson, paymentMethod);
+
+			future.complete(verifyRequestResult);
+		}
+	};
+	
     /*
      * STATIC METHODS
      */
@@ -522,6 +537,65 @@ public class Payments extends IndyJava.API {
             String respJson
     ) throws IndyException {
         return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_get_txn_fees_response);
+    }
+
+
+    /**
+     * Builds Indy request for information to verify the receipt
+     *
+     * @param wallet The wallet.
+     * @param submitterDid DID of request sender
+     * @param receipt receipt to verify
+     * @return Indy request for doing verification
+     * @throws IndyException
+     */
+    public static CompletableFuture<BuildVerifyReqResult> buildVerifyRequest(
+            Wallet wallet,
+            String submitterDid,
+            String receipt
+    ) throws IndyException {
+        ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
+        ParamGuard.notNullOrWhiteSpace(receipt, "receipt");
+
+        CompletableFuture<BuildVerifyReqResult> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int walletHandle = wallet.getWalletHandle();
+
+        int result = LibIndy.api.indy_build_verify_req(
+                commandHandle,
+                walletHandle,
+                submitterDid,
+		        receipt,
+		        buildVerifyReqCb);
+
+        checkResult(result);
+
+        return future;
+    }
+
+    /**
+     * Parses Indy response with information to verify receipt
+     *
+     * @param paymentMethod payment method to use
+     * @param respJson response of the ledger for verify txn
+     * @return parsed (payment method and node version agnostic) receipt verification info as json:
+     *   {
+     *     sources: [<str>, ]
+     *     receipts: [ {
+     *         recipient: <str>, // payment address of recipient
+     *         receipt: <str>, // receipt that can be used for payment referencing and verification
+     *         amount: <int>, // amount
+     *     } ],
+     *     extra: <str>, //optional data
+     * }
+     * @throws IndyException
+     */
+    public static CompletableFuture<String> parseVerifyResponse (
+            String paymentMethod,
+            String respJson
+    ) throws IndyException {
+        return parseResponse(paymentMethod, respJson, LibIndy.api::indy_parse_verify_response);
     }
 
     private static CompletableFuture<String> parseResponse(

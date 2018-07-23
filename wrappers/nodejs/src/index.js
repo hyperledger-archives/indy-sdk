@@ -675,6 +675,20 @@ indy.parseGetTxnFeesResponse = function parseGetTxnFeesResponse (paymentMethod, 
   return cb.promise
 }
 
+indy.buildVerifyReq = function buildVerifyReq (wh, submitterDid, receipt, cb) {
+  cb = wrapIndyCallback(cb, function (data) {
+    return [fromJson(data[0]), data[1]]
+  })
+  capi.buildVerifyReq(wh, submitterDid, receipt, cb)
+  return cb.promise
+}
+
+indy.parseVerifyResponse = function parseVerifyResponse (paymentMethod, resp, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.parseVerifyResponse(paymentMethod, toJson(resp), cb)
+  return cb.promise
+}
+
 indy.createPoolLedgerConfig = function createPoolLedgerConfig (configName, config, cb) {
   cb = wrapIndyCallback(cb)
   capi.createPoolLedgerConfig(configName, toJson(config), cb)
