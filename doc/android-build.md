@@ -14,7 +14,9 @@
 - Run `indy-sdk/libindy/build-libindy-android.sh` to build libindy for arm, arm64 and x86
 
 ## Usage 
-- Copy generated `indy-sdk/libindy/build_scripts/android/libindy_<ARCHITECTURE>/libindy.so` to the jniLibs folder of your android project
+Copy generated files to the jniLibs folder of your android project
+- Copy generated `indy-sdk/libindy/build_scripts/android/libindy_arm/libindy.so`, `indy-sdk/libindy/build_scripts/android/indy-android-dependencies/prebuild/sodium/libsodium_arm/lib/libsodium.so`, and `indy-sdk/libindy/build_scripts/android/indy-android-dependencies/prebuild/zmq/libzmq_arm/lib/libzmq.so` to the jniLibs/armeabi-v7a folder of your android project
+- Copy the corresponding files for jniLibs/arm64-v8a and jniLibs/x86 (similar to step above)
 - Load library using the JNA
 
 
