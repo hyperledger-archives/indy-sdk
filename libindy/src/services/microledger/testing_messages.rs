@@ -127,14 +127,14 @@ impl<'a> Agent<'a> {
         })
     }
 
-    pub fn get_self_microledger(&self) -> Result<&DidMicroledger, CommonError> {
+    pub fn get_self_microledger(&self) -> Result<&DidMicroledger<'a>, CommonError> {
         match self.m_ledgers.get(&self.managing_did) {
             Some(ml) => Ok(ml),
             None => Err(CommonError::InvalidState(String::from("Microledger not present")))
         }
     }
 
-    pub fn get_self_microledger_mut(&mut self) -> Result<&mut DidMicroledger, CommonError> {
+    pub fn get_self_microledger_mut(&mut self) -> Result<&mut DidMicroledger<'a>, CommonError> {
         match self.m_ledgers.get_mut(&self.managing_did) {
             Some(ml) => Ok(ml),
             None => Err(CommonError::InvalidState(String::from("Microledger not present")))

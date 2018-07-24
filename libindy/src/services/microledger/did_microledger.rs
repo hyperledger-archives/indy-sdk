@@ -226,9 +226,16 @@ impl<'a> DidMicroledger<'a> {
     }
 
     fn update_views_with_txn(&mut self, txn: &str) -> Result<(), CommonError> {
-       for (_, mut view) in self.views {
+        match self.views.get_mut(&self.did) {
+            Some(mut v) => {
+                v.apply_txn(txn)?;
+            }
+            None => ()
+        }
+        // TODO: Use the next block of code instead
+        /*for (_, view) in self.views {
            view.apply_txn(txn)?;
-       }
+        }*/
        Ok(())
     }
 }
@@ -434,10 +441,10 @@ pub mod tests {
     fn test_did_doc_registered_with_ledger() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let mut ml = get_new_microledger(did);
         let mut doc = get_new_did_doc(did);
+        let mut ml = get_new_microledger(did);
         assert!(ml.views.is_empty());
-        ml.register_did_doc(doc);
+        ml.register_did_doc(&mut doc);
         assert!(ml.views.get(did).is_some());
         ml.deregister_did_doc(did);
         assert!(ml.views.is_empty());
@@ -447,14 +454,22 @@ pub mod tests {
     fn test_did_doc_updated_with_ledger_txns() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let mut ml = get_new_microledger(did);
         let mut doc = get_new_did_doc(did);
-        ml.register_did_doc(&mut doc);
+        // TODO: Use Rc here
+        {
+            let mut ml = get_new_microledger(did);
+            ml.register_did_doc(&mut doc);
 
-        let verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
-        let authorisations: Vec<&str> = vec![AUTHZ_ALL];
-        ml.add_key_txn(verkey, &authorisations).unwrap();
-        let expected_did_doc_1 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"]}}"#;
+            let verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
+            let authorisations: Vec<&str> = vec![AUTHZ_ALL];
+            ml.add_key_txn(verkey, &authorisations).unwrap();
+            let e1 = "https://agent.example.com";
+            let e2 = "https://agent2.example.com";
+            ml.add_endpoint_txn(verkey, e1).unwrap();
+            ml.add_endpoint_txn(verkey, e2).unwrap();
+            ml.add_endpoint_rem_txn(verkey, e2).unwrap();
+        }
+        let expected_did_doc_1 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{}}}}"#;;
         assert_eq!(doc.as_json().unwrap(), expected_did_doc_1);
     }
 
