@@ -177,11 +177,11 @@ impl PoolConnection {
         thread_rng().shuffle(nodes.as_mut());
 
         if !preordered_nodes.is_empty(){
-            let get_predefined_index = |node_name: &str| {
-                preordered_nodes.iter().position(|&ref name| node_name.to_string().eq(name)).unwrap_or(usize::max_value())
-            };
-
-            nodes.sort_by(|n1, n2| get_predefined_index(&n1.name).cmp(&get_predefined_index(&n2.name)));
+            nodes.sort_by_key(|node: &RemoteNode| -> usize {
+                preordered_nodes.iter()
+                    .position(|&ref name| node.name.eq(name))
+                    .unwrap_or(usize::max_value())
+            });
         }
 
         let mut sockets: Vec<Option<ZSocket>> = Vec::new();
