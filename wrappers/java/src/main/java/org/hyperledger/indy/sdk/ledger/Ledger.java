@@ -572,7 +572,7 @@ public class Ledger extends IndyJava.API {
 	 *     tag: string - allows to distinct between credential definitions for the same issuer and schema
 	 *     value: Dictionary with Credential Definition's data: {
 	 *         primary: primary credential public key,
-	 *         Optional<revocation>: revocation credential public key
+	 *         Optional[revocation]: revocation credential public key
 	 *     },
 	 *     ver: Version of the CredDef json
 	 * }
@@ -642,7 +642,7 @@ public class Ledger extends IndyJava.API {
 	 *     tag: string - allows to distinct between credential definitions for the same issuer and schema
 	 *     value: Dictionary with Credential Definition's data: {
 	 *         primary: primary credential public key,
-	 *         Optional<revocation>: revocation credential public key
+	 *         Optional[revocation]: revocation credential public key
 	 *     },
 	 *     ver: Version of the Credential Definition json
 	 * }
@@ -678,7 +678,7 @@ public class Ledger extends IndyJava.API {
 	 *     client_port: string - (Optional) Node's client listener port.
 	 *     node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
 	 *     node_port: string - (Optional) The port other Nodes use to communicate with this Node.
-	 *     services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.
+	 *     services: array["string"] - (Optional) The service of the Node. VALIDATOR is the only supported one now.
 	 * }
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -802,10 +802,11 @@ public class Ledger extends IndyJava.API {
 	/**
 	 * Builds a POOL_RESTART request.
 	 *
-	 * param submitter_did: Id of Identity that sender transaction
-	 * param action       : Action that pool has to do after received transaction.
-	 * 						Can be "start" or "cancel"
-	 * schedule           : Time when pool must be restarted.
+	 * @param submitterDid Id of Identity that sender transaction
+	 * @param action       Action that pool has to do after received transaction. Can be "start" or "cancel"
+	 * @param datetime     Restart time in datetime format. Skip to restart as early as possible.
+	 * @return A future resolving to a JSON request string.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
 	public static CompletableFuture<String> buildPoolRestartRequest(
 			String submitterDid,
@@ -899,7 +900,7 @@ public class Ledger extends IndyJava.API {
 	 *             "maxCredNum": number - Maximum number of credentials the Registry can serve.
 	 *             "tailsHash": string - Hash of tails.
 	 *             "tailsLocation": string - Location of tails file.
-	 *             "publicKeys": <public_keys> - Registry's public key.
+	 *             "publicKeys": {public_keys} - Registry's public key.
 	 *         },
 	 *         "ver": string - version of revocation registry definition json.
 	 *     }
@@ -971,7 +972,7 @@ public class Ledger extends IndyJava.API {
 	 *         "maxCredNum": number - Maximum number of credentials the Registry can serve.
 	 *         "tailsHash": string - Hash of tails.
 	 *         "tailsLocation": string - Location of tails file.
-	 *         "publicKeys": <public_keys> - Registry's public key.
+	 *         "publicKeys": {public_keys} - Registry's public key.
 	 *     },
 	 *     "ver": string - version of revocation registry definition json.
 	 * }
@@ -1008,8 +1009,8 @@ public class Ledger extends IndyJava.API {
 	 *     value: {
 	 *         prevAccum: string - previous accumulator value.
 	 *         accum: string - current accumulator value.
-	 *         issued: array<number> - an array of issued indices.
-	 *         revoked: array<number> an array of revoked indices.
+	 *         issued: array[number] - an array of issued indices.
+	 *         revoked: array[number] an array of revoked indices.
 	 *     },
 	 *     ver: string - version revocation registry entry json
 	 *
@@ -1153,8 +1154,8 @@ public class Ledger extends IndyJava.API {
 	 *     "value": Registry-specific data {
 	 *         prevAccum: string - previous accumulator value.
 	 *         accum: string - current accumulator value.
-	 *         issued: array<number> - an array of issued indices.
-	 *         revoked: array<number> an array of revoked indices.
+	 *         issued: array[number] - an array of issued indices.
+	 *         revoked: array[number] an array of revoked indices.
 	 *     },
 	 *     "ver": string
 	 * }

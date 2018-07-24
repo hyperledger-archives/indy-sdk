@@ -124,7 +124,7 @@ impl Prover {
 
         requested_proof.self_attested_attrs = requested_credentials.self_attested_attributes.clone();
 
-        let credentials_for_proving = Prover::_prepare_credentials_for_proving(requested_credentials, proof_req);
+        let credentials_for_proving = Prover::_prepare_credentials_for_proving(requested_credentials, proof_req)?;
         let mut sub_proof_index = 0;
         let non_credential_schema = build_non_credential_schema()?;
 
@@ -200,13 +200,14 @@ impl Prover {
     }
 
     pub fn _prepare_credentials_for_proving(requested_credentials: &RequestedCredentials,
-                                            proof_req: &ProofRequest) -> HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)> {
+                                            proof_req: &ProofRequest) -> Result<HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)>, AnoncredsError> {
         trace!("_prepare_credentials_for_proving >>> requested_credentials: {:?}, proof_req: {:?}", requested_credentials, proof_req);
 
         let mut credentials_for_proving: HashMap<ProvingCredentialKey, (Vec<RequestedAttributeInfo>, Vec<RequestedPredicateInfo>)> = HashMap::new();
 
         for (attr_referent, requested_attr) in requested_credentials.requested_attributes.iter() {
-            let attr_info = proof_req.requested_attributes.get(attr_referent.as_str()).unwrap();
+            let attr_info = proof_req.requested_attributes.get(attr_referent.as_str())
+                .ok_or(CommonError::InvalidStructure(format!("AttributeInfo not found in ProofRequest for referent \"{}\"", attr_referent.as_str())))?;
             let req_attr_info = RequestedAttributeInfo {
                 attr_referent: attr_referent.clone(),
                 attr_info: attr_info.clone(),
@@ -225,7 +226,8 @@ impl Prover {
         }
 
         for (predicate_referent, proving_cred_key) in requested_credentials.requested_predicates.iter() {
-            let predicate_info = proof_req.requested_predicates.get(predicate_referent.as_str()).unwrap();
+            let predicate_info = proof_req.requested_predicates.get(predicate_referent.as_str())
+                .ok_or(CommonError::InvalidStructure(format!("PredicateInfo not found in ProofRequest for referent \"{}\"", predicate_referent.as_str())))?;
             let req_predicate_info = RequestedPredicateInfo {
                 predicate_referent: predicate_referent.clone(),
                 predicate_info: predicate_info.clone()
@@ -244,7 +246,7 @@ impl Prover {
 
         trace!("_prepare_credentials_for_proving <<< credentials_for_proving: {:?}", credentials_for_proving);
 
-        credentials_for_proving
+        Ok(credentials_for_proving)
     }
 
     fn _get_credential_values_for_attribute(credential_attrs: &HashMap<String, AttributeValues>,
@@ -663,6 +665,131 @@ mod tests {
             let ps = Prover::new();
             let res = ps.attribute_satisfy_predicate(&predicate_info(), "string");
             assert_match!(Err(CommonError::InvalidStructure(_)), res);
+        }
+    }
+
+
+    mod prepare_credentials_for_proving {
+        use super::*;
+        use domain::anoncreds::requested_credential::RequestedAttribute;
+        use domain::anoncreds::proof_request::{AttributeInfo, PredicateInfo};
+
+        const CRED_ID: &'static str = "8591bcac-ee7d-4bef-ba7e-984696440b30";
+        const ATTRIBUTE_REFERENT: &'static str = "attribute_referent";
+        const PREDICATE_REFERENT: &'static str = "predicate_referent";
+
+        fn _attr_info() -> AttributeInfo{
+            AttributeInfo {
+                name: "name".to_string(),
+                restrictions: None,
+                non_revoked: None,
+            }
+        }
+
+        fn _predicate_info() -> PredicateInfo{
+            PredicateInfo {
+                name: "age".to_string(),
+                p_type: PredicateTypes::GE,
+                p_value: 8,
+                restrictions: None,
+                non_revoked: None,
+            }
+        }
+
+        fn _proof_req() -> ProofRequest {
+            ProofRequest {
+                nonce: indy_crypto::cl::new_nonce().unwrap(),
+                name: "Job-Application".to_string(),
+                version: "0.1".to_string(),
+                requested_attributes: hashmap!(
+                    ATTRIBUTE_REFERENT.to_string() => _attr_info()
+                ),
+                requested_predicates: hashmap!(
+                    PREDICATE_REFERENT.to_string() => _predicate_info()
+                ),
+                non_revoked: None,
+            }
+        }
+
+        fn _req_cred() -> RequestedCredentials {
+            RequestedCredentials {
+                self_attested_attributes: HashMap::new(),
+                requested_attributes: hashmap!(
+                    ATTRIBUTE_REFERENT.to_string() => RequestedAttribute{
+                        cred_id: CRED_ID.to_string(),
+                        timestamp: None,
+                        revealed: false,
+                    }
+                ),
+                requested_predicates: hashmap!(
+                    PREDICATE_REFERENT.to_string() => ProvingCredentialKey{ cred_id: CRED_ID.to_string(), timestamp: None }
+                ),
+            }
+        }
+
+        #[test]
+        fn prepare_credentials_for_proving_works() {
+            let req_cred = _req_cred();
+            let proof_req = _proof_req();
+
+            let res = Prover::_prepare_credentials_for_proving(&req_cred, &proof_req).unwrap();
+
+
+            assert_eq!(1, res.len());
+            assert!(res.contains_key(&ProvingCredentialKey{ cred_id: CRED_ID.to_string(), timestamp: None }));
+
+            let (req_attr_info, req_pred_info) = res.get(&ProvingCredentialKey{ cred_id: CRED_ID.to_string(), timestamp: None }).unwrap();
+            assert_eq!(1, req_attr_info.len());
+            assert_eq!(1, req_pred_info.len());
+        }
+
+        #[test]
+        fn prepare_credentials_for_proving_works_for_multiple_attributes_with_same_credential() {
+            let mut req_cred = _req_cred();
+            let mut proof_req = _proof_req();
+
+            req_cred.requested_attributes.insert("attribute_referent_2".to_string(), RequestedAttribute{
+                cred_id: CRED_ID.to_string(),
+                timestamp: None,
+                revealed: false,
+            });
+
+            proof_req.requested_attributes.insert("attribute_referent_2".to_string(), AttributeInfo {
+                name: "last_name".to_string(),
+                restrictions: None,
+                non_revoked: None,
+            });
+
+            let res = Prover::_prepare_credentials_for_proving(&req_cred, &proof_req).unwrap();
+
+            assert_eq!(1, res.len());
+            assert!(res.contains_key(&ProvingCredentialKey{ cred_id: CRED_ID.to_string(), timestamp: None }));
+
+            let (req_attr_info, req_pred_info) = res.get(&ProvingCredentialKey{ cred_id: CRED_ID.to_string(), timestamp: None }).unwrap();
+            assert_eq!(2, req_attr_info.len());
+            assert_eq!(1, req_pred_info.len());
+        }
+
+        #[test]
+        fn prepare_credentials_for_proving_works_for_missed_attribute() {
+            let req_cred = _req_cred();
+            let mut proof_req = _proof_req();
+
+            proof_req.requested_attributes.clear();
+
+            let res = Prover::_prepare_credentials_for_proving(&req_cred, &proof_req);
+            assert_match!(Err(AnoncredsError::CommonError(CommonError::InvalidStructure(_))), res);
+        }
+
+        #[test]
+        fn prepare_credentials_for_proving_works_for_missed_predicate() {
+            let req_cred = _req_cred();
+            let mut proof_req = _proof_req();
+
+            proof_req.requested_predicates.clear();
+
+            let res = Prover::_prepare_credentials_for_proving(&req_cred, &proof_req);
+            assert_match!(Err(AnoncredsError::CommonError(CommonError::InvalidStructure(_))), res);
         }
     }
 }
