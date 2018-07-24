@@ -44,7 +44,10 @@ pub struct ConnectionResponse {
 pub struct Message {
     #[serde(rename = "type")]
     pub type_: MsgTypes,
-    pub message: String
+    pub did: String,
+    pub verkey: String,
+    pub payload: String,
+    pub signature: String
 }
 
 #[derive(Debug, Deserialize)]
@@ -75,13 +78,25 @@ impl ConnectionResponse {
     }
 }
 
+impl Message {
+    pub fn new(payload: &str, did:&str, verkey: &str, sig: &str) -> Self {
+        Message {
+            type_: MsgTypes::Message,
+            did: did.to_string(),
+            verkey: verkey.to_string(),
+            payload: payload.to_string(),
+            signature: sig.to_string()
+        }
+    }
+}
+
 struct Agent<'a> {
     // TODO: FIX THIS!!!. Should have a wallet, not a signing key
     pub sigkey: String,
     pub verkey: String,
     pub managing_did: String,
     pub remote_did: Option<String>,
-    pub m_ledgers: HashMap<String, DidMicroledger>,
+    pub m_ledgers: HashMap<String, DidMicroledger<'a>>,
     pub peer: Rc<RefCell<Peer<'a>>>
 }
 
@@ -176,7 +191,7 @@ impl<'a> Agent<'a> {
                                 _ => return Err(CommonError::InvalidStructure(String::from(
                                     "Cannot parse inner message")))
                             }
-                        },
+                        }
                         Some("ConnectionResponse") => {
                             let r: Connection = serde_json::from_value(j).map_err(|err|
                                 CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
@@ -191,7 +206,10 @@ impl<'a> Agent<'a> {
                                 _ => return Err(CommonError::InvalidStructure(String::from(
                                     "Cannot parse inner message")))
                             }
-                        },
+                        }
+                        Some("Message") => {
+
+                        }
                         _ => return Err(CommonError::InvalidStructure(String::from("Cannot find required type")))
                     }
                 }

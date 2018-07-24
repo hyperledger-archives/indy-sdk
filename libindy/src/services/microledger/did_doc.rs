@@ -322,7 +322,6 @@ impl DidDoc {
                                 Some(ev) => {
                                     let vk = str::from_utf8(&r.id).unwrap().to_string();
                                     let val = serde_json::from_str(&str::from_utf8(&ev.data).unwrap().to_string()).unwrap();
-                                    println!(">>>>>>4 {:?}", &val);
                                     res.insert(vk, val);
                                 },
                                 None => continue
@@ -334,7 +333,6 @@ impl DidDoc {
                 Err(e) => return Err(CommonError::InvalidStructure(format!("Error getting DID doc storage iterator: {:?}.", e)))
             }
         }
-        println!(">>>>>>>>1 {:?}", &res);
         serde_json::to_string(&res).map_err(|err|
             CommonError::InvalidState(format!("Unable to jsonify ledger udpdate message {:?}.", err)))
     }

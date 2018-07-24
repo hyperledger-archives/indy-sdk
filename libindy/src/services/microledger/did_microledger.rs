@@ -18,18 +18,21 @@ use services::microledger::helpers::{byte_array_to_usize, usize_to_byte_array, p
 use utils::environment::EnvironmentUtils;
 use std::path::PathBuf;
 use services::microledger::did_doc::DidDoc;
+use services::microledger::view::View;
 use services::microledger::helpers::get_storage_path_from_options;
 use services::microledger::helpers::get_ledger_storage;
 
 const TYP: [u8; 3] = [0, 1, 2];
 
-pub struct DidMicroledger {
+pub struct DidMicroledger<'a> {
     pub did: String,
     merkle_tree: MerkleTree,
-    storage: Box<WalletStorage>
+    storage: Box<WalletStorage>,
+    // TODO: Change DidDoc to View
+    pub views: HashMap<String, &'a mut DidDoc>
 }
 
-impl Microledger for DidMicroledger where Self: Sized {
+impl<'a> Microledger for DidMicroledger<'a> where Self: Sized {
     // Creates a persistent ledger in a sqlite file. Loads the sqlite file if found. Uses the DID as the db name
     // Creates an in-memory merkle tree and loads the records from ledger database and populates it
     fn new(did: &str, options: HashMap<String, String>) -> Result<Self, CommonError> {
@@ -41,10 +44,12 @@ impl Microledger for DidMicroledger where Self: Sized {
         let storage = get_ledger_storage(did, storage_path,
                                          &DidMicroledger::get_metadata()).map_err(|err|
             CommonError::InvalidStructure(format!("Error while getting storage for ledger: {:?}.", err)))?;
+        let views: HashMap<String, &mut DidDoc> = HashMap::new();
         let mut ml = DidMicroledger {
             did: did.to_string(),
             merkle_tree: tree,
-            storage
+            storage,
+            views
         };
         // Build a merkle tree from ledger storage
         ml.populate_merkle_tree()?;
@@ -72,6 +77,7 @@ impl Microledger for DidMicroledger where Self: Sized {
         let id = usize_to_byte_array(new_size);
         self.storage.add(&TYP, &id, &enc, &vec![]).map_err(|err|
             CommonError::InvalidStructure(format!("Error while adding to ledger storage: {:?}.", err)))?;
+        self.update_views_with_txn(txn)?;
         Ok(new_size)
     }
 
@@ -147,7 +153,7 @@ impl Microledger for DidMicroledger where Self: Sized {
     }
 }
 
-impl DidMicroledger {
+impl<'a> DidMicroledger<'a> {
     pub fn create_options(storage_path: Option<&str>) -> HashMap<String, String> {
         create_storage_options(storage_path, vec!["did_ml_path"])
     }
@@ -211,8 +217,19 @@ impl DidMicroledger {
         self.add(&ep_txn)
     }
 
-    fn register_did_doc(&self, view: DidDoc) {
+    fn register_did_doc(&mut self, view: &'a mut DidDoc) {
+        self.views.insert(view.did.clone(), view);
+    }
 
+    fn deregister_did_doc(&mut self, view_id: &str) {
+        self.views.remove(view_id);
+    }
+
+    fn update_views_with_txn(&mut self, txn: &str) -> Result<(), CommonError> {
+       for (_, mut view) in self.views {
+           view.apply_txn(txn)?;
+       }
+       Ok(())
     }
 }
 
@@ -223,7 +240,7 @@ pub mod tests {
     use super::super::super::super::utils::test::TestUtils;
     use services::microledger::constants::*;
     use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger,
-                                                get_4_txns, check_empty_storage};
+                                                get_4_txns, check_empty_storage, get_new_did_doc};
 
     fn add_4_txns(ml: &mut DidMicroledger) -> usize {
         for txn in get_4_txns() {
@@ -412,4 +429,33 @@ pub mod tests {
             assert_eq!(t[i-1], (i as u64 + 1, txns[i].clone()))
         }
     }
+
+    #[test]
+    fn test_did_doc_registered_with_ledger() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let mut ml = get_new_microledger(did);
+        let mut doc = get_new_did_doc(did);
+        assert!(ml.views.is_empty());
+        ml.register_did_doc(doc);
+        assert!(ml.views.get(did).is_some());
+        ml.deregister_did_doc(did);
+        assert!(ml.views.is_empty());
+    }
+
+    #[test]
+    fn test_did_doc_updated_with_ledger_txns() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let mut ml = get_new_microledger(did);
+        let mut doc = get_new_did_doc(did);
+        ml.register_did_doc(&mut doc);
+
+        let verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
+        let authorisations: Vec<&str> = vec![AUTHZ_ALL];
+        ml.add_key_txn(verkey, &authorisations).unwrap();
+        let expected_did_doc_1 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"]}}"#;
+        assert_eq!(doc.as_json().unwrap(), expected_did_doc_1);
+    }
+
 }

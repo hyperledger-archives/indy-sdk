@@ -123,6 +123,9 @@ impl TxnBuilder {
         serde_json::to_string(&Txn::new(MLProtocolVersion::get(),
                                         MLTxnVersion::get(), operation))
     }
+
+    // TODO: Add method to sign txn, should take a wallet with keys already present and txn
+    // built by `build_txn` and add signature to it
 }
 
 #[cfg(test)]
