@@ -844,7 +844,7 @@ pub mod networker_tests {
             let handle_2 = nodes_emulator::start(&mut txn_2);
             let rn_2 = _remote_node(&txn_2);
 
-            let mut conn = PoolConnection::new(vec![rn_1, rn_2], POOL_CON_ACTIVE_TO, vec![]);
+            let mut conn = PoolConnection::new(vec![rn_1, rn_2], POOL_CON_ACTIVE_TO, vec!["n1".to_string(), "n2".to_string()]);
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
