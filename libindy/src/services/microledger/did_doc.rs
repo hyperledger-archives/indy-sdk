@@ -12,7 +12,8 @@ use services::microledger::helpers::get_ledger_storage;
 use services::microledger::helpers::{create_storage_options, gen_enc_key};
 use services::microledger::view::View;
 use serde_json::Map;
-use services::microledger::constants::{KEY_TXN, ENDPOINT_TXN, VERKEY, AUTHORIZATIONS};
+use services::microledger::constants::{KEY_TXN, ENDPOINT_TXN, ENDPOINT_REM_TXN, VERKEY,
+                                       AUTHORIZATIONS, ADDRESS, ENDPOINTS};
 use services::wallet::language::{Operator, TagName, TargetValue};
 use services::wallet::storage::Tag;
 use services::microledger::auth::Auth;
@@ -28,15 +29,15 @@ pub struct DidDoc {
 
 impl View for DidDoc where Self: Sized {
     // initialize
-    fn new(name: &str, options: HashMap<String, String>) -> Result<Self, CommonError> {
+    fn new(did: &str, options: HashMap<String, String>) -> Result<Self, CommonError> {
         let parsed_options = parse_options(options)?;
         // Create a new storage or load an existing storage
         let storage_path = get_storage_path_from_options(&parsed_options);
-        let storage = get_ledger_storage(name, storage_path,
+        let storage = get_ledger_storage(did, storage_path,
                                          &DidDoc::get_metadata()).map_err(|err|
             CommonError::InvalidStructure(format!("Error while getting storage for ledger: {:?}.", err)))?;
         Ok(DidDoc {
-            did: name.to_string(),
+            did: did.to_string(),
             storage
         })
     }
@@ -59,6 +60,9 @@ impl View for DidDoc where Self: Sized {
                                         }
                                         ENDPOINT_TXN => {
                                             self.add_endpoint_from_txn(&op)
+                                        }
+                                        ENDPOINT_REM_TXN => {
+                                            self.remove_endpoint_from_txn(&op)
                                         }
                                         _ => Err(CommonError::InvalidState(format!("Unknown txn type {}", typ)))
                                     }
@@ -95,8 +99,8 @@ impl DidDoc {
         ];
     }
 
-    fn get_key_and_authz_from_txn(txn: &JValue) -> Result<(String, Vec<String>), CommonError> {
-        match (txn.get(VERKEY), txn.get(AUTHORIZATIONS)) {
+    pub fn get_key_and_authz_from_operation(operation: &JValue) -> Result<(String, Vec<String>), CommonError> {
+        match (operation.get(VERKEY), operation.get(AUTHORIZATIONS)) {
             (Some(vk), Some(ath)) => match (vk.as_str(), ath.as_array()) {
                 (Some(v), Some(a)) => {
                     let mut auths: Vec<String> = vec![];
@@ -120,6 +124,18 @@ impl DidDoc {
         }
     }
 
+    pub fn get_key_and_endpoint_from_operation(operation: &JValue) -> Result<(String, String), CommonError> {
+        match (operation.get(VERKEY), operation.get(ADDRESS)) {
+            (Some(vk), Some(ep)) => match (vk.as_str(), ep.as_str()) {
+                (Some(v), Some(e)) => {
+                    Ok((v.to_string(), e.to_string()))
+                },
+                _ => return Err(CommonError::InvalidStructure(String::from("Cannot convert verkey/address to string")))
+            },
+            _ => Err(CommonError::InvalidStructure(String::from("Both verkey and address are needed")))
+        }
+    }
+
     fn get_search_options() -> String {
         let mut map = HashMap::new();
 
@@ -132,12 +148,19 @@ impl DidDoc {
         serde_json::to_string(&map).unwrap()
     }
 
-    fn new_key_entry(key: String, authorisations: Vec<String>) -> Result<String, CommonError> {
-        let v = json!({
-            AUTHORIZATIONS: authorisations
-        });
-        println!(">>>>>>>>2 {:?}", &v);
-        serde_json::to_string(&v).map_err(|err|
+    fn new_key_entry(key: String, authorisations: Vec<String>, endpoint: Option<HashMap<String, JValue>>) -> Result<String, CommonError> {
+        let mut m: Map<String, JValue> = Map::new();
+        m.insert(AUTHORIZATIONS.to_string(), JValue::from(authorisations));
+        match endpoint {
+            Some(ref e) => {
+                m.insert(ENDPOINTS.to_string(), serde_json::to_value(&endpoint).map_err(|err|
+                    CommonError::InvalidStructure(format!("Failed to jsonify: {:?}.", err)))?);
+            }
+            None => ()
+        }
+
+        println!(">>>>>>>>2 {:?}", &m);
+        serde_json::to_string(&m).map_err(|err|
             CommonError::InvalidStructure(format!("Failed to jsonify: {:?}.", err)))
     }
 
@@ -176,8 +199,8 @@ impl DidDoc {
         Ok(entry)
     }
 
-    pub fn add_key_from_txn(&mut self, txn: &JValue) -> Result<(), CommonError> {
-        let (verkey, auths) = DidDoc::get_key_and_authz_from_txn(txn)?;
+    pub fn add_key_from_txn(&mut self, operation: &JValue) -> Result<(), CommonError> {
+        let (verkey, auths) = DidDoc::get_key_and_authz_from_operation(operation)?;
         let key_entry = self.get_key_entry(&verkey)?;
         match key_entry {
             Some(r) => {
@@ -197,7 +220,7 @@ impl DidDoc {
             None => {
                 let id = verkey.as_bytes();
                 let tags: [Tag; 1] = [Tag::PlainText(id.to_vec(), verkey.clone()), ];
-                let key_entry = DidDoc::new_key_entry(verkey.clone(), auths)?;
+                let key_entry = DidDoc::new_key_entry(verkey.clone(), auths, None)?;
                 println!(">>>>>>3 {}", &key_entry);
                 let key_entry_bytes = key_entry.as_bytes().to_vec();
                 let enc_key = gen_enc_key(key_entry_bytes.len());
@@ -208,8 +231,81 @@ impl DidDoc {
         }
     }
 
-    pub fn add_endpoint_from_txn(&mut self, txn: &JValue) -> Result<(), CommonError> {
-        Ok(())
+    fn extract_endpoints(key_entry: &mut JValue) -> Map<String, JValue> {
+        match key_entry.get(ENDPOINTS) {
+            Some(v) => {
+                v.as_object().unwrap().clone()
+            }
+            None => {
+                let m: Map<String, JValue> = Map::new();
+                m
+            }
+        }
+    }
+
+    fn add_endpoint_in_json(key_entry: &mut JValue, endpoint: String) -> Result<JValue, CommonError> {
+        let mut endpoints = DidDoc::extract_endpoints(key_entry);
+        endpoints.insert(endpoint, JValue::Object(Map::new()));
+        serde_json::to_value(endpoints).map_err(|e|
+            CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", e)))
+    }
+
+    fn remove_endpoint_from_json(key_entry: &mut JValue, endpoint: String) -> Result<JValue, CommonError> {
+        let mut endpoints = DidDoc::extract_endpoints(key_entry);
+        endpoints.remove(&endpoint);
+        serde_json::to_value(endpoints).map_err(|e|
+            CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", e)))
+    }
+
+    pub fn add_endpoint_from_txn(&mut self, operation: &JValue) -> Result<(), CommonError> {
+        let (verkey, endpoint) = DidDoc::get_key_and_endpoint_from_operation(operation)?;
+        let mut key_entry = self.get_key_entry(&verkey)?;
+        match key_entry {
+            Some(r) => {
+                match r.value {
+                    Some(ev) => {
+                        let mut val: JValue = serde_json::from_str(&str::from_utf8(&ev.data).unwrap().to_string()).unwrap();
+                        val[ENDPOINTS.to_string()] = DidDoc::add_endpoint_in_json(&mut val, endpoint)?;
+                        let data: String = serde_json::to_string(&val).map_err(|err|
+                            CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", err)))?;
+                        let enc_data = EncryptedValue {data: data.as_bytes().to_vec(), key: ev.key.clone()};
+                        self.storage.update(&TYP, &r.id, &enc_data).map_err(|err|
+                            CommonError::InvalidStructure(format!("Error while updating to DID doc storage: {:?}.", err)))?;
+                        Ok(())
+                    },
+                    None => Err(CommonError::InvalidStructure(format!("No value found in record")))
+                }
+            }
+            None => {
+                Err(CommonError::InvalidStructure(format!("Key txn not present for: {}.", &verkey)))
+            }
+        }
+    }
+
+    pub fn remove_endpoint_from_txn(&mut self, operation: &JValue) -> Result<(), CommonError> {
+        // TODO: Fix duplicate code from `add_endpoint_from_txn`
+        let (verkey, endpoint) = DidDoc::get_key_and_endpoint_from_operation(operation)?;
+        let mut key_entry = self.get_key_entry(&verkey)?;
+        match key_entry {
+            Some(r) => {
+                match r.value {
+                    Some(ev) => {
+                        let mut val: JValue = serde_json::from_str(&str::from_utf8(&ev.data).unwrap().to_string()).unwrap();
+                        val[ENDPOINTS.to_string()] = DidDoc::remove_endpoint_from_json(&mut val, endpoint)?;
+                        let data: String = serde_json::to_string(&val).map_err(|err|
+                            CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", err)))?;
+                        let enc_data = EncryptedValue {data: data.as_bytes().to_vec(), key: ev.key.clone()};
+                        self.storage.update(&TYP, &r.id, &enc_data).map_err(|err|
+                            CommonError::InvalidStructure(format!("Error while updating to DID doc storage: {:?}.", err)))?;
+                        Ok(())
+                    },
+                    None => Err(CommonError::InvalidStructure(format!("No value found in record")))
+                }
+            }
+            None => {
+                Err(CommonError::InvalidStructure(format!("Key txn not present for: {}.", &verkey)))
+            }
+        }
     }
 
     pub fn as_json(&self) -> Result<String, CommonError> {
@@ -294,8 +390,6 @@ pub mod tests {
         doc.apply_txn(txn_1).unwrap();
         let expected_did_doc_1 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"]}}"#;
         assert_eq!(doc.as_json().unwrap(), expected_did_doc_1);
-        /*let keys: HashMap<String, Vec<String>> = doc.get_all_keys();
-        assert_eq!(&keys, );*/
 
         let txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
         doc.apply_txn(txn_2).unwrap();
@@ -331,7 +425,35 @@ pub mod tests {
     }
 
     #[test]
-    fn test_add_endpoint_txns_did_doc() {
+    fn test_add_rem_endpoint_txns_in_did_doc() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let mut doc = get_new_did_doc(did);
+        let key_txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(key_txn_1).unwrap();
 
+        let end_point_txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent.example.com","type":"3","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(end_point_txn_1).unwrap();
+        let expected_did_doc_1 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{}}}}"#;
+        assert_eq!(doc.as_json().unwrap(), expected_did_doc_1);
+
+        let end_point_txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent2.example.com","type":"3","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(end_point_txn_2).unwrap();
+        let expected_did_doc_2 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{},"https://agent2.example.com":{}}}}"#;
+        assert_eq!(doc.as_json().unwrap(), expected_did_doc_2);
+
+        let end_point_txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent2.example.com","type":"4","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(end_point_txn_3).unwrap();
+        let expected_did_doc_3 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{}}}}"#;
+        assert_eq!(doc.as_json().unwrap(), expected_did_doc_3);
+
+        let key_txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB"}}"#;
+        doc.apply_txn(key_txn_2).unwrap();
+
+        let end_point_txn_4 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent3.example.com","type":"3","verkey":"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB"}}"#;
+        doc.apply_txn(end_point_txn_4).unwrap();
+
+        let expected_did_doc_4 = r#"{"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB":{"authorizations":["all"],"endpoints":{"https://agent3.example.com":{}}},"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{}}}}"#;
+        assert_eq!(doc.as_json().unwrap(), expected_did_doc_4);
     }
 }

@@ -78,6 +78,12 @@ impl TxnBuilder {
             CommonError::InvalidState(format!("ENDPOINT txn operation is invalid {:?}.", err)))
     }
 
+    pub fn build_endpoint_rem_txn(verkey: &str, address: &str) -> Result<String, CommonError> {
+        let operation = TxnBuilder::build_endpoint_rem_operation(verkey, address)?;
+        TxnBuilder::build_txn(operation).map_err(|err|
+            CommonError::InvalidState(format!("ENDPOINT_REM txn operation is invalid {:?}.", err)))
+    }
+
     fn build_key_operation(verkey: &str, authorisations: &Vec<&str>) -> Result<JValue, CommonError> {
         let mut authz: Vec<JValue> = Vec::new();
 
@@ -99,6 +105,15 @@ impl TxnBuilder {
         // TODO: Validate if endpoint is a valid URL (HTTP(S)/TCP/???)
         let mut operation: JValue = JValue::Object(serde_json::map::Map::new());
         operation["type"] = JValue::String(ENDPOINT_TXN.to_string());
+        operation[VERKEY] = JValue::String(verkey.to_string());
+        operation[ADDRESS] = JValue::String(address.to_string());
+        Ok(operation)
+    }
+
+    fn build_endpoint_rem_operation(verkey: &str, address: &str) -> Result<JValue, CommonError> {
+        // TODO: Validate if endpoint is a valid URL (HTTP(S)/TCP/???)
+        let mut operation: JValue = JValue::Object(serde_json::map::Map::new());
+        operation["type"] = JValue::String(ENDPOINT_REM_TXN.to_string());
         operation[VERKEY] = JValue::String(verkey.to_string());
         operation[ADDRESS] = JValue::String(address.to_string());
         Ok(operation)
@@ -191,6 +206,23 @@ mod tests {
         let expected_result_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"tcp://123.88.912.091:9876","type":"3","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
         let ep_txn_3 = TxnBuilder::build_endpoint_txn(verkey, address_3).unwrap();
         assert_eq!(ep_txn_3, expected_result_3);
+    }
+
+    #[test]
+    fn test_build_endpoint_rem_txn() {
+        let verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
+        let address_1 = "https://agent.example.com";
+        let address_2 = "https://agent1.example.com:9080";
+        let ep_txn_1 = TxnBuilder::build_endpoint_txn(verkey, address_1).unwrap();
+        let ep_txn_2 = TxnBuilder::build_endpoint_txn(verkey, address_2).unwrap();
+
+        let ep_rem_txn_1 = TxnBuilder::build_endpoint_rem_txn(verkey, address_2).unwrap();
+        let expected_result_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent1.example.com:9080","type":"4","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        assert_eq!(ep_rem_txn_1, expected_result_1);
+
+        let ep_rem_txn_2 = TxnBuilder::build_endpoint_rem_txn(verkey, address_1).unwrap();
+        let expected_result_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent.example.com","type":"4","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        assert_eq!(ep_rem_txn_2, expected_result_2);
     }
 
     #[test]

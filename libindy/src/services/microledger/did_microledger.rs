@@ -206,6 +206,11 @@ impl DidMicroledger {
         self.add(&ep_txn)
     }
 
+    pub fn add_endpoint_rem_txn(&mut self, verkey: &str, address: &str) -> Result<usize, CommonError> {
+        let ep_txn = TxnBuilder::build_endpoint_rem_txn(verkey, address)?;
+        self.add(&ep_txn)
+    }
+
     fn register_did_doc(&self, view: DidDoc) {
 
     }
@@ -329,6 +334,19 @@ pub mod tests {
         let mut ml = get_new_microledger(did);
         let s = ml.add_endpoint_txn(verkey, address).unwrap();
         assert_eq!(s, 1);
+    }
+
+    #[test]
+    fn test_add_endpoint_rem_txn() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
+        let address = "https://agent.example.com";
+        let mut ml = get_new_microledger(did);
+        let s = ml.add_endpoint_txn(verkey, address).unwrap();
+        assert_eq!(s, 1);
+        let t = ml.add_endpoint_rem_txn(verkey, address).unwrap();
+        assert_eq!(t, 2);
     }
 
     #[test]
