@@ -17,6 +17,8 @@ pub struct PoolOpenConfig {
     pub conn_limit: usize,
     #[serde(default="PoolOpenConfig::default_conn_active_timeout")]
     pub conn_active_timeout: i64,
+    #[serde(default="PoolOpenConfig::default_preordered_nodes")]
+    pub preordered_nodes: Vec<String>,
 }
 
 impl Default for PoolOpenConfig {
@@ -26,6 +28,7 @@ impl Default for PoolOpenConfig {
             extended_timeout: PoolOpenConfig::default_extended_timeout(),
             conn_limit: PoolOpenConfig::default_conn_limit(),
             conn_active_timeout: PoolOpenConfig::default_conn_active_timeout(),
+            preordered_nodes: PoolOpenConfig::default_preordered_nodes()
         }
     }
 }
@@ -45,6 +48,10 @@ impl PoolOpenConfig {
 
     fn default_conn_active_timeout() -> i64 {
         POOL_CON_ACTIVE_TO
+    }
+
+    fn default_preordered_nodes() -> Vec<String> {
+        Vec::new()
     }
 }
 

@@ -762,7 +762,7 @@ pub mod tests {
     }
 
     fn _request_handler(f: usize, nodes_cnt: usize) -> RequestHandlerImpl<MockNetworker> {
-        let networker = Rc::new(RefCell::new(MockNetworker::new(0, 0)));
+        let networker = Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![])));
 
         let mut default_nodes: HashMap<String, Option<VerKey>> = HashMap::new();
         default_nodes.insert(NODE.to_string(), None);
