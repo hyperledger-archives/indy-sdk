@@ -83,7 +83,7 @@ Returns:
 Prepare MINT transaction as json.
 
 ```indy-cli
-indy> ledger mint-prepare outputs=(<pay-addr-0>,<amount-0>),..,(<pay-addr-n>,<amount-n>) [extra=<extra>]
+indy> ledger mint-prepare outputs=(<recipient-0>,<amount-0>),..,(<recipient-n>,<amount-n>) [extra=<extra>]
 ```
 
 Returns:

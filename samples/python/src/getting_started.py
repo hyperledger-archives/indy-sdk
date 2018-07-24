@@ -324,16 +324,20 @@ async def run():
         await auth_decrypt(alice_wallet, alice_acme_key, authcrypted_job_application_proof_request_json)
 
     logger.info("\"Alice\" -> Get credentials for \"Job-Application\" Proof Request")
-    creds_for_job_application_proof_request = json.loads(
-        await anoncreds.prover_get_credentials_for_proof_req(alice_wallet,
-                                                             authdecrypted_job_application_proof_request_json))
 
-    cred_for_attr1 = creds_for_job_application_proof_request['attrs']['attr1_referent'][0]['cred_info']
-    cred_for_attr2 = creds_for_job_application_proof_request['attrs']['attr2_referent'][0]['cred_info']
-    cred_for_attr3 = creds_for_job_application_proof_request['attrs']['attr3_referent'][0]['cred_info']
-    cred_for_attr4 = creds_for_job_application_proof_request['attrs']['attr4_referent'][0]['cred_info']
-    cred_for_attr5 = creds_for_job_application_proof_request['attrs']['attr5_referent'][0]['cred_info']
-    cred_for_predicate1 = creds_for_job_application_proof_request['predicates']['predicate1_referent'][0]['cred_info']
+    search_for_job_application_proof_request = \
+        await anoncreds.prover_search_credentials_for_proof_req(alice_wallet,
+                                                                authdecrypted_job_application_proof_request_json, None)
+
+    cred_for_attr1 = await get_credential_for_referent(search_for_job_application_proof_request, 'attr1_referent')
+    cred_for_attr2 = await get_credential_for_referent(search_for_job_application_proof_request, 'attr2_referent')
+    cred_for_attr3 = await get_credential_for_referent(search_for_job_application_proof_request, 'attr3_referent')
+    cred_for_attr4 = await get_credential_for_referent(search_for_job_application_proof_request, 'attr4_referent')
+    cred_for_attr5 = await get_credential_for_referent(search_for_job_application_proof_request, 'attr5_referent')
+    cred_for_predicate1 = \
+        await get_credential_for_referent(search_for_job_application_proof_request, 'predicate1_referent')
+
+    await anoncreds.prover_close_credentials_search_for_proof_req(search_for_job_application_proof_request)
 
     creds_for_job_application_proof = {cred_for_attr1['referent']: cred_for_attr1,
                                        cred_for_attr2['referent']: cred_for_attr2,
@@ -523,13 +527,16 @@ async def run():
         await auth_decrypt(alice_wallet, alice_thrift_key, authcrypted_apply_loan_proof_request_json)
 
     logger.info("\"Alice\" -> Get credentials for \"Loan-Application-Basic\" Proof Request")
-    creds_json_for_apply_loan_proof_request = \
-        await anoncreds.prover_get_credentials_for_proof_req(alice_wallet, authdecrypted_apply_loan_proof_request_json)
-    creds_for_apply_loan_proof_request = json.loads(creds_json_for_apply_loan_proof_request)
 
-    cred_for_attr1 = creds_for_apply_loan_proof_request['attrs']['attr1_referent'][0]['cred_info']
-    cred_for_predicate1 = creds_for_apply_loan_proof_request['predicates']['predicate1_referent'][0]['cred_info']
-    cred_for_predicate2 = creds_for_apply_loan_proof_request['predicates']['predicate2_referent'][0]['cred_info']
+    search_for_apply_loan_proof_request = \
+        await anoncreds.prover_search_credentials_for_proof_req(alice_wallet,
+                                                                authdecrypted_apply_loan_proof_request_json, None)
+
+    cred_for_attr1 = await get_credential_for_referent(search_for_apply_loan_proof_request, 'attr1_referent')
+    cred_for_predicate1 = await get_credential_for_referent(search_for_apply_loan_proof_request, 'predicate1_referent')
+    cred_for_predicate2 = await get_credential_for_referent(search_for_apply_loan_proof_request, 'predicate2_referent')
+
+    await anoncreds.prover_close_credentials_search_for_proof_req(search_for_apply_loan_proof_request)
 
     creds_for_apply_loan_proof = {cred_for_attr1['referent']: cred_for_attr1,
                                   cred_for_predicate1['referent']: cred_for_predicate1,
@@ -614,14 +621,16 @@ async def run():
         await auth_decrypt(alice_wallet, alice_thrift_key, authcrypted_apply_loan_kyc_proof_request_json)
 
     logger.info("\"Alice\" -> Get credentials for \"Loan-Application-KYC\" Proof Request")
-    creds_json_for_apply_loan_kyc_proof_request = \
-        await anoncreds.prover_get_credentials_for_proof_req(alice_wallet,
-                                                             authdecrypted_apply_loan_kyc_proof_request_json)
-    creds_for_apply_loan_kyc_proof_request = json.loads(creds_json_for_apply_loan_kyc_proof_request)
 
-    cred_for_attr1 = creds_for_apply_loan_kyc_proof_request['attrs']['attr1_referent'][0]['cred_info']
-    cred_for_attr2 = creds_for_apply_loan_kyc_proof_request['attrs']['attr2_referent'][0]['cred_info']
-    cred_for_attr3 = creds_for_apply_loan_kyc_proof_request['attrs']['attr3_referent'][0]['cred_info']
+    search_for_apply_loan_kyc_proof_request = \
+        await anoncreds.prover_search_credentials_for_proof_req(alice_wallet,
+                                                                authdecrypted_apply_loan_kyc_proof_request_json, None)
+
+    cred_for_attr1 = await get_credential_for_referent(search_for_apply_loan_kyc_proof_request, 'attr1_referent')
+    cred_for_attr2 = await get_credential_for_referent(search_for_apply_loan_kyc_proof_request, 'attr2_referent')
+    cred_for_attr3 = await get_credential_for_referent(search_for_apply_loan_kyc_proof_request, 'attr3_referent')
+
+    await anoncreds.prover_close_credentials_search_for_proof_req(search_for_apply_loan_kyc_proof_request)
 
     creds_for_apply_loan_kyc_proof = {cred_for_attr1['referent']: cred_for_attr1,
                                       cred_for_attr2['referent']: cred_for_attr2,
@@ -818,6 +827,12 @@ async def get_cred_def(pool_handle, _did, schema_id):
     get_cred_def_request = await ledger.build_get_cred_def_request(_did, schema_id)
     get_cred_def_response = await ledger.submit_request(pool_handle, get_cred_def_request)
     return await ledger.parse_get_cred_def_response(get_cred_def_response)
+
+
+async def get_credential_for_referent(search_handle, referent):
+    credentials = json.loads(
+        await anoncreds.prover_fetch_credentials_for_proof_req(search_handle, referent, 10))
+    return credentials[0]['cred_info']
 
 
 async def prover_get_entities_from_ledger(pool_handle, _did, identifiers, actor):
