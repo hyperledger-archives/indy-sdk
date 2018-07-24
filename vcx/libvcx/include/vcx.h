@@ -33,7 +33,6 @@ typedef unsigned int vcx_proof_handle_t;
 typedef unsigned int vcx_command_handle_t;
 typedef unsigned int vcx_payment_handle_t;
 typedef unsigned int vcx_wallet_search_handle_t;
-typedef signed int indy_signed_t;
 typedef unsigned int vcx_bool_t;
 typedef unsigned int count_t;
 typedef unsigned long vcx_price_t;
@@ -76,13 +75,13 @@ vcx_error_t vcx_wallet_create_payment_address(vcx_command_handle_t chandle, void
 vcx_error_t vcx_wallet_send_tokens(vcx_command_handle_t chandle, vcx_payment_handle_t phandle, vcx_price_t tokens, const char *recipient, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *receipt));
 
 /** Passthroughs to libindy wallet record API (see libindy documentation) */
-vcx_error_t vcx_wallet_add_record(indy_signed_t chandle, const char * type_, const char *id, const char *value, const char *tags_json, void (*cb)(indy_signed_t xhandle, indy_signed_t err));
-vcx_error_t vcx_wallet_update_record_value(indy_signed_t chandle, const char * type_, const char *id, const char *value, void (*cb)(indy_signed_t xhandle, indy_signed_t err));
+vcx_error_t vcx_wallet_add_record(vcx_command_handle_t chandle, const char * type_, const char *id, const char *value, const char *tags_json, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
+vcx_error_t vcx_wallet_update_record_value(vcx_command_handle_t chandle, const char * type_, const char *id, const char *value, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 vcx_error_t vcx_wallet_update_record_tags(vcx_command_handle_t chandle, const char * type_, const char *id, const char *tags_json, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 vcx_error_t vcx_wallet_add_record_tags(vcx_command_handle_t chandle, const char * type_, const char *id, const char *tags_json, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 vcx_error_t vcx_wallet_delete_record_tags(vcx_command_handle_t chandle, const char * type_, const char *id, const char *tags_json, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
-vcx_error_t vcx_wallet_get_record(indy_signed_t chandle, const char * type_, const char *id, const char *options, void (*cb)(indy_signed_t xhandle, indy_signed_t err, const char *record_json));
-vcx_error_t vcx_wallet_delete_record(indy_signed_t chandle, const char * type_, const char *id, void (*cb)(indy_signed_t xhandle, indy_signed_t err));
+vcx_error_t vcx_wallet_get_record(vcx_command_handle_t chandle, const char * type_, const char *id, const char *options, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *record_json));
+vcx_error_t vcx_wallet_delete_record(vcx_command_handle_t chandle, const char * type_, const char *id, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 vcx_error_t vcx_wallet_open_search(vcx_command_handle_t chandle, const char * type_, const char *query_json, const char *options_json, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, vcx_wallet_search_handle_t search_handle));
 vcx_error_t vcx_wallet_close_search(vcx_command_handle_t chandle, vcx_command_handle_t shandle, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 vcx_error_t vcx_wallet_search_next_records(vcx_command_handle_t chandle, vcx_wallet_search_handle_t shandle, count_t count, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *results));

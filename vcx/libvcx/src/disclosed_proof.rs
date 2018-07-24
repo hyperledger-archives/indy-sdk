@@ -214,8 +214,14 @@ impl DisclosedProof {
         let credentials_identifiers = credential_def_identifiers(credentials)?;
         let requested_credentials = self._build_requested_credentials(&credentials_identifiers,
                                                                       self_attested_attrs)?;
-        let schemas = self._find_schemas(&credentials_identifiers)?;
-        let credential_defs_json = self._find_credential_def(&credentials_identifiers)?;
+        let schemas = match self._find_schemas(&credentials_identifiers) {
+            Ok(x) => x,
+            Err(_) => format!("{{}}"),
+        };
+        let credential_defs_json = match self._find_credential_def(&credentials_identifiers) {
+            Ok(x) => x,
+            Err(_) => format!("{{}}"),
+        };
         let revoc_regs_json = Some("{}");
 
         let proof = anoncreds::libindy_prover_create_proof(&proof_req_data_json,
@@ -799,6 +805,52 @@ mod tests {
 
         let self_attested: Value = json!({
               "self_attested_attr_3":"attested_val"
+        });
+
+        let mut proof: DisclosedProof = Default::default();
+        proof.proof_request = Some(proof_req);
+        proof.link_secret_alias = "main".to_string();
+        let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
+
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
+        assert!(generated_proof.is_ok());
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_generate_self_attested_proof() {
+        use utils::libindy::wallet::delete_wallet;
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        let wallet_name = "test_generate_self_attested_proof";
+        match delete_wallet(wallet_name) {
+            Ok(_) => {},
+            Err(_) => {},
+        };
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+
+        let mut proof_req = ProofRequestMessage::create();
+        let indy_proof_req = json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": json!({
+               "address1_1": json!({
+                   "name":"address1",
+               }),
+               "zip_2": json!({
+                   "name":"zip",
+               }),
+           }),
+           "requested_predicates": json!({}),
+        }).to_string();
+        proof_req.proof_request_data = serde_json::from_str(&indy_proof_req).unwrap();
+
+        let selected_credentials : Value = json!({});
+
+        let self_attested: Value = json!({
+              "address1_1":"attested_address",
+              "zip_2": "attested_zip"
         });
 
         let mut proof: DisclosedProof = Default::default();

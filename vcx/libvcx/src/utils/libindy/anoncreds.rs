@@ -286,6 +286,48 @@ pub mod tests {
         (schemas, cred_defs, proof_req, proof)
     }
 
+    pub fn create_self_attested_proof() -> (String, String) {
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+
+        let proof_req = json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": json!({
+               "address1_1": json!({
+                   "name":"address1",
+               }),
+               "zip_2": json!({
+                   "name":"zip",
+               }),
+           }),
+           "requested_predicates": json!({}),
+        }).to_string();
+
+        let requested_credentials_json = json!({
+              "self_attested_attributes":{
+                 "address1_1": "my_self_attested_address",
+                 "zip_2": "my_self_attested_zip"
+              },
+              "requested_attributes":{},
+              "requested_predicates":{}
+        }).to_string();
+
+        let schemas = json!({}).to_string();
+        let cred_defs = json!({}).to_string();
+
+       libindy_prover_get_credentials_for_proof_req(&proof_req).unwrap();
+
+        let proof = libindy_prover_create_proof(
+            &proof_req,
+            &requested_credentials_json,
+            "main",
+            &schemas,
+            &cred_defs,
+            None).unwrap();
+        (proof_req, proof)
+    }
+
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_prover_verify_proof() {
