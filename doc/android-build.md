@@ -33,6 +33,11 @@ Add following line to AndroidManifest.xml
 
 Android emulator generally use x86 images
 
+If you receive a JNA error, you may need to add additonal files into your jniLibs folder. 
+- Add the correct version of libjnidispatch.so to the corresponding subfolder in jniLibs -> https://github.com/java-native-access/jna/tree/master/lib/native
+- For example, android-aarch64.jar goes into the jniLibs/arm64-v8a subfolder
+- NOTE: You need to download the correct version of libjnidispatch.so (tag 4.5.1 in the jna repo is the version accepted by Indy SDK v1.5)
+
 ##Known Issues
 
 - The Android build does not successfully compile on OSX
