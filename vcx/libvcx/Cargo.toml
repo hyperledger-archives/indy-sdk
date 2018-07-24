@@ -42,7 +42,7 @@ rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
 num-traits = "0.2.0"
-rust-indy-sdk = {git = "https://github.com/mikelodder7/rust-indy-sdk.git"}
+rust-indy-sdk = {git = "https://github.com/mikelodder7/rust-indy-sdk.git", rev = "e1f26fb5e2b320b3accb1832442b04b89edc7dfe"}
 log-panics = "2.0.0"
 
 [target.'cfg(target_os = "android")'.dependencies]
