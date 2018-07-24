@@ -17,7 +17,11 @@
 Copy generated files to the jniLibs folder of your android project
 - Copy generated `indy-sdk/libindy/build_scripts/android/libindy_arm/libindy.so`, `indy-sdk/libindy/build_scripts/android/indy-android-dependencies/prebuild/sodium/libsodium_arm/lib/libsodium.so`, and `indy-sdk/libindy/build_scripts/android/indy-android-dependencies/prebuild/zmq/libzmq_arm/lib/libzmq.so` to the jniLibs/armeabi-v7a folder of your android project
 - Copy the corresponding files for jniLibs/arm64-v8a and jniLibs/x86 (similar to step above)
-- Load library using the JNA
+- In order to use the library in Android, you need to set the EXTERNAL_STORAGE environment variable and load the library using JNA
+
+`Os.setenv("EXTERNAL_STORAGE", getExternalFilesDir(null).getAbsolutePath(), true);`
+
+`System.loadLibrary("indy");`
 
 
 ## Notes:
