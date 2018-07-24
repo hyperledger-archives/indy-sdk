@@ -586,7 +586,6 @@ impl WalletStorage for SQLiteStorage {
             };
 
             let (query_string, query_arguments) = query::wql_to_sql(&type_, query, options)?;
-
             let statement = self._prepare_statement(&query_string)?;
             let tag_retriever = if fetch_options.retrieve_tags {
                 Some(TagRetriever::new_owned(self.conn.clone())?)

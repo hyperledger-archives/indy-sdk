@@ -17,6 +17,7 @@ use services::wallet::language::{Operator, TagName, TargetValue};
 use services::wallet::storage::Tag;
 use services::microledger::auth::Auth;
 use services::wallet::wallet::EncryptedValue;
+use services::wallet::storage::StorageRecord;
 
 const TYP: [u8; 3] = [1, 2, 3];
 
@@ -140,45 +141,70 @@ impl DidDoc {
             CommonError::InvalidStructure(format!("Failed to jsonify: {:?}.", err)))
     }
 
-    pub fn add_key_from_txn(&mut self, txn: &JValue) -> Result<(), CommonError> {
-        let (verkey, auths) = DidDoc::get_key_and_authz_from_txn(txn)?;
-        let query = Operator::Eq(
+    fn get_key_entry(&self, verkey: &str) -> Result<Option<StorageRecord>, CommonError> {
+        /*let query = Operator::Eq(
             TagName::PlainTagName(VERKEY.as_bytes().to_vec()),
-            TargetValue::Unencrypted(verkey.clone())
+            TargetValue::Unencrypted(verkey.to_string())
         );
+
         let mut storage_iterator = self.storage.search(&TYP, &query,
                                                        Some(&DidDoc::get_search_options())).map_err(|err|
             CommonError::InvalidStructure(format!("Error getting DID doc storage iterator: {:?}.", err)))?;
-        match storage_iterator.next() {
-            // TODO: Check if more than 1 entry for key exists
-            Ok(v) => match v {
-                Some(r) => {
-                    match r.value {
-                        Some(ev) => {
-                            let mut val: JValue = serde_json::from_str(&str::from_utf8(&ev.data).unwrap().to_string()).unwrap();
-                            val[AUTHORIZATIONS] = JValue::from(auths);
-                            let data: String = serde_json::from_value(val).map_err(|err|
-                                CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", err)))?;
-                            let enc_data = EncryptedValue {data: data.as_bytes().to_vec(), key: ev.key.clone()};
-                            self.storage.update(&TYP, &r.id, &enc_data).map_err(|err|
-                                CommonError::InvalidStructure(format!("Error while updating to DID doc storage: {:?}.", err)))
-                        },
-                        None => Err(CommonError::InvalidStructure(format!("No value found in record")))
+        storage_iterator.next().map_err(|e| CommonError::InvalidStructure(format!("Error getting DID doc storage iterator: {:?}.", e)))*/
+        // TODO: Use `storage.search` instead of `storage.get_all`
+        let mut storage_iterator = self.storage.get_all().map_err(|e|
+            CommonError::InvalidStructure(format!("Error getting DID doc storage iterator: {:?}.", e)))?;
+        let mut entry:Option<StorageRecord> = None;
+
+        loop {
+            match storage_iterator.next() {
+                Ok(v) => {
+                    match v {
+                        Some(r) => {
+                            let vk = str::from_utf8(&r.id).unwrap();
+                            if vk == verkey {
+                                entry = Some(r.clone());
+                                break
+                            }
+                        }
+                        None => break
                     }
-                }
-                None => {
-                    let id = verkey.as_bytes();
-                    let tags: [Tag; 1] = [Tag::PlainText(id.to_vec(), verkey.clone()), ];
-                    let key_entry = DidDoc::new_key_entry(verkey.clone(), auths)?;
-                    println!(">>>>>>3 {}", &key_entry);
-                    let key_entry_bytes = key_entry.as_bytes().to_vec();
-                    let enc_key = gen_enc_key(key_entry_bytes.len());
-                    let enc_data = EncryptedValue::new(key_entry_bytes, enc_key);
-                    self.storage.add(&TYP, &id, &enc_data, &tags).map_err(|err|
-                        CommonError::InvalidStructure(format!("Error while adding to DID doc storage: {:?}.", err)))
+                },
+                Err(e) => return Err(CommonError::InvalidStructure(format!("Error getting ledger storage iterator: {:?}.", e)))
+            }
+        }
+        Ok(entry)
+    }
+
+    pub fn add_key_from_txn(&mut self, txn: &JValue) -> Result<(), CommonError> {
+        let (verkey, auths) = DidDoc::get_key_and_authz_from_txn(txn)?;
+        let key_entry = self.get_key_entry(&verkey)?;
+        match key_entry {
+            Some(r) => {
+                match r.value {
+                    Some(ev) => {
+                        let mut val: JValue = serde_json::from_str(&str::from_utf8(&ev.data).unwrap().to_string()).unwrap();
+                        val[AUTHORIZATIONS] = JValue::from(auths);
+                        let data: String = serde_json::to_string(&val).map_err(|err|
+                            CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", err)))?;
+                        let enc_data = EncryptedValue {data: data.as_bytes().to_vec(), key: ev.key.clone()};
+                        self.storage.update(&TYP, &r.id, &enc_data).map_err(|err|
+                            CommonError::InvalidStructure(format!("Error while updating to DID doc storage: {:?}.", err)))
+                    },
+                    None => Err(CommonError::InvalidStructure(format!("No value found in record")))
                 }
             }
-            Err(e) => Err(CommonError::InvalidStructure(format!("Error getting DID doc storage iterator: {:?}.", e)))
+            None => {
+                let id = verkey.as_bytes();
+                let tags: [Tag; 1] = [Tag::PlainText(id.to_vec(), verkey.clone()), ];
+                let key_entry = DidDoc::new_key_entry(verkey.clone(), auths)?;
+                println!(">>>>>>3 {}", &key_entry);
+                let key_entry_bytes = key_entry.as_bytes().to_vec();
+                let enc_key = gen_enc_key(key_entry_bytes.len());
+                let enc_data = EncryptedValue::new(key_entry_bytes, enc_key);
+                self.storage.add(&TYP, &id, &enc_data, &tags).map_err(|err|
+                    CommonError::InvalidStructure(format!("Error while adding to DID doc storage: {:?}.", err)))
+            }
         }
     }
 
@@ -295,12 +321,12 @@ pub mod tests {
 
         let txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key","rem_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
         doc.apply_txn(txn_2).unwrap();
-        let expected_did_doc_2 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["add_key","rem_key]}}"#;
+        let expected_did_doc_2 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["add_key","rem_key"]}}"#;
         assert_eq!(doc.as_json().unwrap(), expected_did_doc_2);
 
         let txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["rem_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
         doc.apply_txn(txn_3).unwrap();
-        let expected_did_doc_3 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["rem_key]}}"#;
+        let expected_did_doc_3 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["rem_key"]}}"#;
         assert_eq!(doc.as_json().unwrap(), expected_did_doc_3);
     }
 
