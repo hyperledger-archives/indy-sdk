@@ -19,6 +19,7 @@ libindy (1.5.0) unstable; urgency=medium
     * Changed Pool connection logic to avoid unnecessary opened connections.
     * Changed Catch-up process to get all transactions from a single node.
     * Implemented logic of persisting of actual Pool Leger at the end of catch-up process and starting from this point on the next time.
+    * Updated format of `config` parameter in `indy_open_pool_ledger` API function to specify runtime Pool configuration.
 * Payment API has been updated to support non-UTXO based crypto payments and traditional payments like VISA.
 Performed the following changes related to Libindy Payments API:
     * Changed format of input and output parameters.

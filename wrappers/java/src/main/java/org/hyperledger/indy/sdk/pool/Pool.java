@@ -110,7 +110,16 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 	 * Opens pool ledger and performs connecting to pool nodes.
 	 * 
 	 * @param configName Name of the pool ledger configuration.
-	 * @param config Runtime pool configuration json. If NULL, then default config will be used.
+	 * @param config Runtime pool configuration json. Optional. If NULL, then default config will be used.
+	 *               Example:
+	 * {
+	 *     "timeout": int (optional), timeout for network request (in sec).
+	 *     "extended_timeout": int (optional), extended timeout for network request (in sec).
+	 *     "preordered_nodes": array[string] -  (optional), names of nodes which will have a priority during request sending:
+	 *         [ "name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+	 *         Note: Not specified nodes will be placed in a random way.
+	 * }
+	 *
 	 * @return A future that resolves to an opened Pool instance.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
