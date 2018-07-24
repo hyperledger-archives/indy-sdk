@@ -12,12 +12,17 @@ INDY_SDK=$WORK_DIR/vcx-indy-sdk
 VCX_SDK=$START_DIR/../../../../..
 VCX_SDK=$(abspath "$VCX_SDK")
 
+# declare -a archs=(
+#     "arm" "arm" "arm-linux-androideabi" "armeabi"
+#     "arm" "armv7" "arm-linux-androideabi" "armeabi-v7a"
+#     "arm64" "arm64" "aarch64-linux-android" "arm64-v8a"
+#     "x86" "x86" "i686-linux-android" "x86"
+#     "x86_64" "x86_64" "x86_64-linux-android" "x86_64"
+#     )
+# For now, we need only two architectures
 declare -a archs=(
-    "arm" "arm" "arm-linux-androideabi" "armeabi"
     "arm" "armv7" "arm-linux-androideabi" "armeabi-v7a"
-    "arm64" "arm64" "aarch64-linux-android" "arm64-v8a"
     "x86" "x86" "i686-linux-android" "x86"
-    "x86_64" "x86_64" "x86_64-linux-android" "x86_64"
     )
 archslen=${#archs[@]}
 
@@ -39,11 +44,11 @@ do
     cd $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/${target_arch}
     rm ./libvcx.so
     $NDK_DIR/${ndk_arch}/bin/${cross_compile}-clang -v -shared -o libvcx.so -Wl,--whole-archive \
-    libindy.a \
-    libnullpay.a \
     libvcx.a \
     libzmq.a \
     libsodium.a \
+    libssl.a \
+    libcrypto.a \
     ${LIB_GNUSTL} \
     $NDK_DIR/${ndk_arch}/sysroot/usr/${LIB_FOLDER}/libz.so \
     $NDK_DIR/${ndk_arch}/sysroot/usr/${LIB_FOLDER}/libm.a \

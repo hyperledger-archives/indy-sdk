@@ -9,38 +9,8 @@ WORK_DIR=$(abspath "$WORK_DIR")
 VCX_SDK=$START_DIR/../../../../..
 VCX_SDK=$(abspath "$VCX_SDK")
 
-# DATETIME=$1
-# if [ "$DATETIME" = "" ]; then
-#     echo "You must pass the datetime as the first parameter to the script. (i.e. 20180522.1354 - YYYYmmdd.hhMM)"
-#     exit 1
-# fi
-
-# cd $VCX_SDK/vcx/wrappers/java/android/vcxtest/app/jni
-
-# mv libvcxall_arm.zip libvcxall_${DATETIME}_arm.zip
-# curl --insecure -u normjarvis -X POST -F file=@./libvcxall_${DATETIME}_arm.zip https://kraken.corp.evernym.com/repo/android/upload
-# sudo cp -v ./libvcxall_${DATETIME}_arm.zip  /usr/local/var/www/download/android
-
-# mv libvcxall_arm64.zip libvcxall_${DATETIME}_arm64.zip
-# curl --insecure -u normjarvis -X POST -F file=@./libvcxall_${DATETIME}_arm64.zip https://kraken.corp.evernym.com/repo/android/upload
-# sudo cp -v ./libvcxall_${DATETIME}_arm64.zip  /usr/local/var/www/download/android
-
-# mv libvcxall_armv7.zip libvcxall_${DATETIME}_armv7.zip
-# curl --insecure -u normjarvis -X POST -F file=@./libvcxall_${DATETIME}_armv7.zip https://kraken.corp.evernym.com/repo/android/upload
-# sudo cp -v ./libvcxall_${DATETIME}_armv7.zip  /usr/local/var/www/download/android
-
-# mv libvcxall_x86.zip libvcxall_${DATETIME}_x86.zip
-# curl --insecure -u normjarvis -X POST -F file=@./libvcxall_${DATETIME}_x86.zip https://kraken.corp.evernym.com/repo/android/upload
-# sudo cp -v ./libvcxall_${DATETIME}_x86.zip  /usr/local/var/www/download/android
-
-# mv libvcxall_x86_64.zip libvcxall_${DATETIME}_x86-64.zip
-# curl --insecure -u normjarvis -X POST -F file=@./libvcxall_${DATETIME}_x86-64.zip https://kraken.corp.evernym.com/repo/android/upload
-# sudo cp -v ./libvcxall_${DATETIME}_x86-64.zip  /usr/local/var/www/download/android
-
-
-# rm libvcxall_${target_arch}.zip
 cd $VCX_SDK/vcx/wrappers/java/vcx/
-sed -i .bak 's/evernym/androidbuild1/g' local.properties
+# sed -i .bak 's/evernym/androidbuild1/g' local.properties
 ./gradlew clean assembleDebug
 cd $VCX_SDK/vcx/wrappers/java/vcx/build/outputs/aar/
 AAR_FILE=$(ls *-debug.aar)
@@ -59,7 +29,3 @@ mvn install:install-file -Dfile=${AAR_FILE} -DgroupId=com.connectme \
 # cp $VCX_SDK/vcx/wrappers/java/android/vcxtest/app/jni/x86/*.so ./jni/x86
 # cp $VCX_SDK/vcx/wrappers/java/android/vcxtest/app/jni/arm64/*.so ./jni/arm64
 # cp $VCX_SDK/vcx/wrappers/java/android/vcxtest/app/jni/x86_64/*.so ./jni/x86_64
-
-# zip -r vcx_1.0.0-${DATETIME}_all.aar *
-#curl --insecure -u normjarvis -X POST -F file=@./${AAR_FILE} https://kraken.corp.evernym.com/repo/android/upload
-#sudo cp ./${AAR_FILE}  /usr/local/var/www/download/android
