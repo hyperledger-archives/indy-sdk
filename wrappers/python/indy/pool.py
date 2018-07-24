@@ -3,6 +3,7 @@ from .libindy import do_call, create_cb
 from typing import Optional
 from ctypes import *
 
+import json
 import logging
 
 
@@ -110,6 +111,24 @@ async def refresh_pool_ledger(handle: int) -> None:
     logger.debug("refresh_pool_ledger: <<< res: %r", res)
     return res
 
+async def list_pools() -> None:
+    """
+    Lists names of created pool ledgers
+    :return: Error code
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("list_pools: >>> ")
+
+    if not hasattr(list_pools, "cb"):
+        logger.debug("list_pools: Creating callback")
+        list_pools.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    res = await do_call('indy_list_pools',
+                        list_pools.cb)
+    res = json.loads(res.decode())
+    logger.debug("list_pools: <<< res: %r", res)
+    return res
 
 async def close_pool_ledger(handle: int) -> None:
     """
