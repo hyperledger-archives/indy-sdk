@@ -33,7 +33,6 @@ do
     libvcx.a \
     libcrypto.a \
     libsodium.a \
-    libsqlite3.a \
     libssl.a \
     libzmq.a \
     $NDK_DIR/${ndk_arch}/${cross_compile}/${LIB_FOLDER}/libgnustl_shared.so \

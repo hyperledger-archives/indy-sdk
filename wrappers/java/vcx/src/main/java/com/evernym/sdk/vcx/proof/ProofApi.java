@@ -202,5 +202,4 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
-
 }
