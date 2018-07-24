@@ -3,8 +3,8 @@ extern crate indy_crypto;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 pub const POOL_CON_ACTIVE_TO: i64 = 5;
-pub const POOL_ACK_TIMEOUT: i64 = 10;
-pub const POOL_REPLY_TIMEOUT: i64 = 50;
+pub const POOL_ACK_TIMEOUT: i64 = 20;
+pub const POOL_REPLY_TIMEOUT: i64 = 60;
 pub const MAX_REQ_PER_POOL_CON: usize = 5;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
