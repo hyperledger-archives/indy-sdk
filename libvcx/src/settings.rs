@@ -111,16 +111,8 @@ pub fn validate_config(config: &HashMap<String, String>) -> Result<u32, u32> {
 
     validate_optional_config_val(config.get(CONFIG_AGENCY_ENDPOINT), error::INVALID_URL.code_num, Url::parse)?;
     validate_optional_config_val(config.get(CONFIG_INSTITUTION_LOGO_URL), error::INVALID_URL.code_num, Url::parse)?;
-    validate_optional_config_val(config.get(CONFIG_POOL_NAME), error::INVALID_POOL_NAME.code_num, validate_pool_name)?;
 
 
-    Ok(error::SUCCESS.code_num)
-}
-
-fn validate_pool_name(value: &str) -> Result<u32, u32> {
-    for c in value.chars() {
-        if !c.is_alphanumeric() && c != '_' { return Err(error::INVALID_POOL_NAME.code_num);}
-    }
     Ok(error::SUCCESS.code_num)
 }
 
@@ -410,13 +402,6 @@ pub mod tests {
         assert_eq!(validate_optional_config_val(config.get("invalid"),
                                                 error::INVALID_URL.code_num,
                                                 closure), Err(error::INVALID_URL.code_num));
-    }
-
-    #[test]
-    fn test_validate_pool_name() {
-        assert_eq!(validate_pool_name("pool1"), Ok(error::SUCCESS.code_num));
-
-        assert_eq!(validate_pool_name("**pool_name**"), Err(error::INVALID_POOL_NAME.code_num));
     }
 
     #[test]

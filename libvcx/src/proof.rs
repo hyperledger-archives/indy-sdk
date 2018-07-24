@@ -157,12 +157,19 @@ impl Proof {
 
         let credential_data = proof_msg.get_credential_info()?;
 
-        if credential_data.len() == 0 {
-            return Err(ProofError::InvalidCredData())
-        }
+        //if credential_data.len() == 0 {
+        //    return Err(ProofError::InvalidCredData())
+        //}
 
-        let credential_def_msg = self.build_credential_defs_json(&credential_data)?;
-        let schemas_json = self.build_schemas_json(&credential_data)?;
+        let credential_def_msg = match self.build_credential_defs_json(&credential_data) {
+            Ok(x) => x,
+            Err(_) => format!("{{}}"),
+        };
+
+        let schemas_json = match self.build_schemas_json(&credential_data) {
+            Ok(x) => x,
+            Err(_) => format!("{{}}"),
+        };
         let proof_json = self.build_proof_json()?;
         let proof_req_json = self.build_proof_req_json()?;
         debug!("*******\n{}\n********", credential_def_msg);
@@ -903,6 +910,32 @@ mod tests {
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (schemas, cred_defs, proof_req, proof) = ::utils::libindy::anoncreds::tests::create_proof();
+
+        let mut proof_req_obj = ProofRequestMessage::create();
+        proof_req_obj.proof_request_data = serde_json::from_str(&proof_req).unwrap();
+
+        let mut proof_msg = ProofMessage::new();
+        proof_msg.libindy_proof = proof;
+
+        let mut proof = create_boxed_proof();
+        proof.proof = Some(proof_msg);
+        proof.proof_request = Some(proof_req_obj);
+
+        let rc = proof.proof_validation();
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
+
+        println!("{}", serde_json::to_string(&proof).unwrap());
+        assert!(rc.is_ok());
+        assert_eq!(proof.proof_state,ProofStateType::ProofValidated);
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_self_attested_proof_verification() {
+        let wallet_name = "test_self_attested_proof_verification";
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let (proof_req, proof) = ::utils::libindy::anoncreds::tests::create_self_attested_proof();
 
         let mut proof_req_obj = ProofRequestMessage::create();
         proof_req_obj.proof_request_data = serde_json::from_str(&proof_req).unwrap();
