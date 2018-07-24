@@ -33,8 +33,8 @@ EOF
     ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 mkdir -p /var/repository/repos/android/${artifact}/${branchName}/${version}-${buildNumber}
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
-cd /var/repository/repos/android/${artifact}/rc/$version-$buildNumber
+cd /var/repository/repos/android/${artifact}/${branchName}/$version-$buildNumber
 put -r ${artifact}/${artifact}_android_${arch}_${version}.zip
-ls -l /var/repository/repos/android/${artifact}/rc/$version-$buildNumber
+ls -l /var/repository/repos/android/${artifact}/${branchName}/$version-$buildNumber
 EOF
 fi
