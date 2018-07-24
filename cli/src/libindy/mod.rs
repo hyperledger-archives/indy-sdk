@@ -166,7 +166,7 @@ pub enum ErrorCode
     // Unknown payment method was given
     PaymentUnknownMethodError = 700,
 
-    //No method were scraped from inputs/outputs or more than one were scraped
+    //No methods were scraped from inputs/outputs or more than one was scraped
     PaymentIncompatibleMethodsError = 701,
 
     // Insufficient funds on inputs

@@ -15,12 +15,11 @@ logger = logging.getLogger(__name__)
 async def demo():
     logger.info("Crypto sample -> started")
 
-    wallet_config = json.dumps({"id": "wallet1"})
-
     # Set protocol version 2 to work with Indy Node 1.4
     await pool.set_protocol_version(PROTOCOL_VERSION)
 
     # 1. Create Wallet and Get Wallet Handle
+    wallet_config = json.dumps({"id":"wallet"})
     wallet_credentials = json.dumps({"key": "wallet_key"})
     await wallet.create_wallet(wallet_config, wallet_credentials)
     wallet_handle = await wallet.open_wallet(wallet_config, wallet_credentials)
