@@ -66,7 +66,7 @@ pub mod new_command {
                 println_succ!("Did \"{}\" has been created with \"{}\" verkey", did, vk);
                 Ok(did)
             }
-            Err(ErrorCode::DidAlreadyExistsError) => Err(println_err!("Did already exists: {:?}", did.unwrap_or(""))),
+            Err(ErrorCode::DidAlreadyExistsError) => Err(println_err!("Did already exists")),
             Err(ErrorCode::UnknownCryptoTypeError) => Err(println_err!("Unknown crypto type")),
             Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),

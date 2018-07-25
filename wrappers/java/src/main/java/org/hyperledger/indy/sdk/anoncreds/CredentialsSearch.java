@@ -97,8 +97,8 @@ public class CredentialsSearch extends IndyJava.API implements AutoCloseable {
 	 *         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
 	 *         "schema_id": string,
 	 *         "cred_def_id": string,
-	 *         "rev_reg_id": Optional<string>,
-	 *         "cred_rev_id": Optional<string>
+	 *         "rev_reg_id": Optional["string"],
+	 *         "cred_rev_id": Optional["string"]
 	 *     }]
 	 * NOTE: The list of length less than the requested count means credentials search iterator is completed.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.

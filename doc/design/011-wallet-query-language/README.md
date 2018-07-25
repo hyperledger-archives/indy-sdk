@@ -16,3 +16,10 @@ subquery = "tagName": {$lte: tagValue} - WHERE tagName <= tagValue
 subquery = "tagName": {$like: tagValue} - WHERE tagName LIKE tagValue
 subquery = "tagName": {$in: [tagValue, ..., tagValue]} - WHERE tagName IN (tagValue, ..., tagValue)
 ```
+
+#### Tag types
+There are two types of tags:
+* Un-encrypted - Tag name starts with "~". That tag will be stored un-encrypted that will allow usage of this tag in complex search queries (comparison, predicates).
+* Encrypted - That tag will be stored encrypted. The tag can be searched only for exact matching.
+
+NOTE: Combinators $or, $and, $not can be used with both tag types.

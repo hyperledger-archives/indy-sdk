@@ -66,6 +66,7 @@
                  submitterDid:(NSString *)submitterDid
                    inputsJson:(NSString *)inputsJson
                   outputsJson:(NSString *)outputsJson
+                        extra:(NSString *)extra
           requestWithFeesJson:(NSString **)requestWithFeesJson
                 paymentMethod:(NSString **)paymentMethod {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
@@ -78,6 +79,7 @@
                      submitterDid:submitterDid
                        inputsJson:inputsJson
                       outputsJson:outputsJson
+                            extra:extra
                        completion:^(NSError *error, NSString *req, NSString *method) {
                            err = error;
                            outReq = req;
@@ -94,71 +96,71 @@
 
 - (NSError *)parseResponseWithFees:(NSString *)responseJson
                      paymentMethod:(NSString *)paymentMethod
-                          utxoJson:(NSString **)utxoJson {
+                      receiptsJson:(NSString **)receiptsJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
-    __block NSString *outUtxo = nil;
+    __block NSString *outReceipts = nil;
 
     [IndyPayment parseResponseWithFees:responseJson
                          paymentMethod:paymentMethod
-                            completion:^(NSError *error, NSString *utxo) {
+                            completion:^(NSError *error, NSString *receipts) {
                                 err = error;
-                                outUtxo = utxo;
+                                outReceipts = receipts;
                                 [completionExpectation fulfill];
                             }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    if (utxoJson) {*utxoJson = outUtxo;}
+    if (receiptsJson) {*receiptsJson = outReceipts;}
 
     return err;
 }
 
-- (NSError *)buildGetUtxoRequest:(IndyHandle)walletHandle
-                    submitterDid:(NSString *)submitterDid
-                  paymentAddress:(NSString *)paymentAddress
-                  getUtxoTxnJson:(NSString **)getUtxoTxnJson
-                   paymentMethod:(NSString **)paymentMethod {
+- (NSError *)buildGetPaymentSourcesRequest:(IndyHandle)walletHandle
+                              submitterDid:(NSString *)submitterDid
+                            paymentAddress:(NSString *)paymentAddress
+                         getSourcesTxnJson:(NSString **)getSourcesTxnJson
+                             paymentMethod:(NSString **)paymentMethod {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
     __block NSString *outReq = nil;
     __block NSString *outPayMethod = nil;
 
-    [IndyPayment buildGetUtxoRequest:walletHandle
-                        submitterDid:submitterDid
-                      paymentAddress:paymentAddress
-                          completion:^(NSError *error, NSString *req, NSString *method) {
-                              err = error;
-                              outReq = req;
-                              outPayMethod = method;
-                              [completionExpectation fulfill];
-                          }];
+    [IndyPayment buildGetPaymentSourcesRequest:walletHandle
+                                  submitterDid:submitterDid
+                                paymentAddress:paymentAddress
+                                    completion:^(NSError *error, NSString *req, NSString *method) {
+                                        err = error;
+                                        outReq = req;
+                                        outPayMethod = method;
+                                        [completionExpectation fulfill];
+                                    }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    if (getUtxoTxnJson) {*getUtxoTxnJson = outReq;}
+    if (getSourcesTxnJson) {*getSourcesTxnJson = outReq;}
     if (paymentMethod) {*paymentMethod = outPayMethod;}
     return err;
 }
 
-- (NSError *)parseGetUtxoResponse:(NSString *)responseJson
-                    paymentMethod:(NSString *)paymentMethod
-                         utxoJson:(NSString **)utxoJson {
+- (NSError *)parseGetPaymentSourcesResponse:(NSString *)responseJson
+                              paymentMethod:(NSString *)paymentMethod
+                                sourcesJson:(NSString **)sourcesJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
-    __block NSString *outUtxo = nil;
+    __block NSString *outSources = nil;
 
-    [IndyPayment parseGetUtxoResponse:responseJson
-                        paymentMethod:paymentMethod
-                           completion:^(NSError *error, NSString *utxo) {
-                               err = error;
-                               outUtxo = utxo;
-                               [completionExpectation fulfill];
-                           }];
+    [IndyPayment parseGetPaymentSourcesResponse:responseJson
+                                  paymentMethod:paymentMethod
+                                     completion:^(NSError *error, NSString *sources) {
+                                         err = error;
+                                         outSources = sources;
+                                         [completionExpectation fulfill];
+                                     }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    if (utxoJson) {*utxoJson = outUtxo;}
+    if (sourcesJson) {*sourcesJson = outSources;}
 
     return err;
 }
@@ -167,6 +169,7 @@
                     submitterDid:(NSString *)submitterDid
                       inputsJson:(NSString *)inputsJson
                      outputsJson:(NSString *)outputsJson
+                           extra:(NSString *)extra
                   paymentReqJson:(NSString **)paymentReqJson
                    paymentMethod:(NSString **)paymentMethod {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
@@ -178,6 +181,7 @@
                         submitterDid:submitterDid
                           inputsJson:inputsJson
                          outputsJson:outputsJson
+                               extra:extra
                           completion:^(NSError *error, NSString *req, NSString *method) {
                               err = error;
                               outReq = req;
@@ -194,22 +198,22 @@
 
 - (NSError *)parsePaymentResponse:(NSString *)responseJson
                     paymentMethod:(NSString *)paymentMethod
-                         utxoJson:(NSString **)utxoJson {
+                     receiptsJson:(NSString **)receiptsJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
-    __block NSString *outUtxo = nil;
+    __block NSString *outReceipts = nil;
 
     [IndyPayment parsePaymentResponse:responseJson
                         paymentMethod:paymentMethod
-                           completion:^(NSError *error, NSString *utxo) {
+                           completion:^(NSError *error, NSString *receipts) {
                                err = error;
-                               outUtxo = utxo;
+                               outReceipts = receipts;
                                [completionExpectation fulfill];
                            }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    if (utxoJson) {*utxoJson = outUtxo;}
+    if (receiptsJson) {*receiptsJson = outReceipts;}
 
     return err;
 }
@@ -217,6 +221,7 @@
 - (NSError *)buildMintRequest:(IndyHandle)walletHandle
                  submitterDid:(NSString *)submitterDid
                   outputsJson:(NSString *)outputsJson
+                        extra:(NSString *)extra
                   mintReqJson:(NSString **)mintReqJson
                 paymentMethod:(NSString **)paymentMethod {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
@@ -227,6 +232,7 @@
     [IndyPayment buildMintRequest:walletHandle
                      submitterDid:submitterDid
                       outputsJson:outputsJson
+                            extra:extra
                        completion:
                                ^(NSError *error, NSString *req, NSString *method) {
                                    err = error;
@@ -249,21 +255,21 @@
                   setTxnFeesReqJson:(NSString **)setTxnFeesReqJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
-    __block NSString *outUtxo = nil;
+    __block NSString *outSources = nil;
 
     [IndyPayment buildSetTxnFeesRequest:walletHandle
                            submitterDid:submitterDid
                           paymentMethod:paymentMethod
                                feesJson:feesJson
-                             completion:^(NSError *error, NSString *utxo) {
+                             completion:^(NSError *error, NSString *sources) {
                                  err = error;
-                                 outUtxo = utxo;
+                                 outSources = sources;
                                  [completionExpectation fulfill];
                              }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    if (setTxnFeesReqJson) {*setTxnFeesReqJson = outUtxo;}
+    if (setTxnFeesReqJson) {*setTxnFeesReqJson = outSources;}
 
     return err;
 }
@@ -274,20 +280,20 @@
                   getTxnFeesReqJson:(NSString **)getTxnFeesReqJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
-    __block NSString *outUtxo = nil;
+    __block NSString *outU = nil;
 
     [IndyPayment buildGetTxnFeesRequest:walletHandle
                            submitterDid:submitterDid
                           paymentMethod:paymentMethod
-                             completion:^(NSError *error, NSString *utxo) {
+                             completion:^(NSError *error, NSString *temp) {
                                  err = error;
-                                 outUtxo = utxo;
+                                 outU = temp;
                                  [completionExpectation fulfill];
                              }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
-    if (getTxnFeesReqJson) {*getTxnFeesReqJson = outUtxo;}
+    if (getTxnFeesReqJson) {*getTxnFeesReqJson = outU;}
 
     return err;
 }
@@ -310,6 +316,55 @@
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
 
     if (feesJson) {*feesJson = outFees;}
+
+    return err;
+}
+
+- (NSError *)buildVerifyPaymentRequest:(IndyHandle)walletHandle
+                          submitterDid:(NSString *)submitterDid
+                               receipt:(NSString *)receipt
+                         verifyReqJson:(NSString **)verifyReqJson
+                         paymentMethod:(NSString **)paymentMethod {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outReq = nil;
+    __block NSString *outPayMethod = nil;
+
+    [IndyPayment buildVerifyPaymentRequest:walletHandle
+                              submitterDid:submitterDid
+                                   receipt:receipt
+                                completion:^(NSError *error, NSString *req, NSString *method) {
+                                    err = error;
+                                    outReq = req;
+                                    outPayMethod = method;
+                                    [completionExpectation fulfill];
+                                }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (verifyReqJson) {*verifyReqJson = outReq;}
+    if (paymentMethod) {*paymentMethod = outPayMethod;}
+    return err;
+}
+
+- (NSError *)parseVerifyPaymentResponse:(NSString *)responseJson
+                          paymentMethod:(NSString *)paymentMethod
+                        receiptInfoJson:(NSString **)receiptInfoJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outReceipts = nil;
+
+    [IndyPayment parseVerifyPaymentResponse:responseJson
+                              paymentMethod:paymentMethod
+                                 completion:^(NSError *error, NSString *receipts) {
+                                     err = error;
+                                     outReceipts = receipts;
+                                     [completionExpectation fulfill];
+                                 }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+
+    if (receiptInfoJson) {*receiptInfoJson = outReceipts;}
 
     return err;
 }

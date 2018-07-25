@@ -16,8 +16,6 @@ logger = logging.getLogger(__name__)
 async def demo():
     logger.info("Anoncreds sample -> started")
 
-    issuer_wallet_config = json.dumps({"id": "issuer_wallet"})
-    prover_wallet_config = json.dumps({"id": "prover_wallet"})
     issuer_did = 'NcYxiDXkpYi6ov5FcYDi1e'
     prover_did = 'VsKV7grR1BUE29mG2Fm2kX'
 
@@ -25,11 +23,13 @@ async def demo():
     await pool.set_protocol_version(PROTOCOL_VERSION)
 
     # 1. Create Issuer Wallet and Get Wallet Handle
+    issuer_wallet_config = json.dumps({"id": "issuer_wallet"})
     issuer_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
     await wallet.create_wallet(issuer_wallet_config, issuer_wallet_credentials)
     issuer_wallet = await wallet.open_wallet(issuer_wallet_config, issuer_wallet_credentials)
 
     # 2. Create Prover Wallet and Get Wallet Handle
+    prover_wallet_config = json.dumps({"id": "prover_wallet"})
     prover_wallet_credentials = json.dumps({"key": "issuer_wallet_key"})
     await wallet.create_wallet(prover_wallet_config, prover_wallet_credentials)
     prover_wallet = await wallet.open_wallet(prover_wallet_config, prover_wallet_credentials)
@@ -87,17 +87,25 @@ async def demo():
         }
     })
 
-    credential_for_proof_json = await anoncreds.prover_get_credentials_for_proof_req(prover_wallet, proof_req_json)
-    creds_for_proof = json.loads(credential_for_proof_json)
+    search_handle = await anoncreds.prover_search_credentials_for_proof_req(prover_wallet, proof_req_json, None)
 
-    cred_for_attr1 = creds_for_proof['attrs']['attr1_referent']
-    referent = cred_for_attr1[0]['cred_info']['referent']
+    # Prover gets Credentials for attr1_referent
+    credentials = json.loads(
+        await anoncreds.prover_fetch_credentials_for_proof_req(search_handle, 'attr1_referent', 10))
+    cred_for_attribute = credentials[0]['cred_info']
+
+    # Prover gets Credentials for predicate1_referent
+    credentials = json.loads(
+        await anoncreds.prover_fetch_credentials_for_proof_req(search_handle, 'predicate1_referent', 10))
+    cred_for_predicate = credentials[0]['cred_info']
+
+    await anoncreds.prover_close_credentials_search_for_proof_req(search_handle)
 
     # 11. Prover create Proof for Proof Request
     requested_credentials_json = json.dumps({
         'self_attested_attributes': {},
-        'requested_attributes': {'attr1_referent': {'cred_id': referent, 'revealed': True}},
-        'requested_predicates': {'predicate1_referent': {'cred_id': referent}}
+        'requested_attributes': {'attr1_referent': {'cred_id': cred_for_attribute['referent'], 'revealed': True}},
+        'requested_predicates': {'predicate1_referent': {'cred_id': cred_for_predicate['referent']}}
     })
 
     schemas_json = json.dumps({schema_id: json.loads(schema_json)})
