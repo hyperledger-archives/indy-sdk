@@ -931,6 +931,7 @@ pub extern fn indy_build_get_validator_info_request(command_handle: i32,
 ///     DOMAIN - used default,
 ///     POOL,
 ///     CONFIG
+///     any number
 /// seq_no: requested transaction sequence number as it's stored on Ledger.
 /// cb: Callback that takes command result as parameter.
 ///

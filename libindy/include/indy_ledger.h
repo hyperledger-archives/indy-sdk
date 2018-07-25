@@ -506,6 +506,7 @@ extern "C" {
     ///     DOMAIN - used default,
     ///     POOL,
     ///     CONFIG
+    ///     any number
     /// seq_no: seq_no of transaction in ledger.
     /// cb: Callback that takes command result as parameter.
     ///
