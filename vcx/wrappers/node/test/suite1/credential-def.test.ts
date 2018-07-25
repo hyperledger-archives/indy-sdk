@@ -6,7 +6,7 @@ import { credentialDefCreate } from 'helpers/entities'
 import { gcTest } from 'helpers/gc'
 import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { CredentialDef, rustAPI, VCXCode } from 'src'
+import { CredentialDef, CredentialDefPaymentManager, rustAPI, VCXCode } from 'src'
 
 describe('CredentialDef:', () => {
   before(() => initVcxTestMode())
@@ -92,11 +92,18 @@ describe('CredentialDef:', () => {
     })
   })
 
-  describe('getPaymentTxn:', () => {
-    it('success', async () => {
+  describe('paymentManager:', () => {
+    it('exists', async () => {
       const credentialDef = await credentialDefCreate()
-      const paymentTxn = await credentialDef.getPaymentTxn()
-      validatePaymentTxn(paymentTxn)
+      assert.instanceOf(credentialDef.paymentManager, CredentialDefPaymentManager)
+    })
+
+    describe('getPaymentTxn:', () => {
+      it('success', async () => {
+        const credentialDef = await credentialDefCreate()
+        const paymentTxn = await credentialDef.paymentManager.getPaymentTxn()
+        validatePaymentTxn(paymentTxn)
+      })
     })
   })
 

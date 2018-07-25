@@ -10,7 +10,16 @@ import {
 import { gcTest } from 'helpers/gc'
 import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { Connection, IssuerCredential, rustAPI, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
+import {
+  Connection,
+  IssuerCredential,
+  IssuerCredentialPaymentManager,
+  rustAPI,
+  StateType,
+  VCXCode,
+  VCXMock,
+  VCXMockMessage
+} from 'src'
 
 describe('IssuerCredential:', () => {
   before(() => initVcxTestMode())
@@ -210,19 +219,26 @@ describe('IssuerCredential:', () => {
     })
   })
 
-  describe('getPaymentTxn:', () => {
-    it('success', async () => {
-      const connection = await connectionCreateConnect()
+  describe('paymentManager:', () => {
+    it('exists', async () => {
       const issuerCredential = await issuerCredentialCreate()
-      await issuerCredential.sendOffer(connection)
-      VCXMock.setVcxMock(VCXMockMessage.IssuerCredentialReq)
-      VCXMock.setVcxMock(VCXMockMessage.UpdateIssuerCredential)
-      await issuerCredential.updateState()
-      assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
-      await issuerCredential.sendCredential(connection)
-      assert.equal(await issuerCredential.getState(), StateType.Accepted)
-      const paymentTxn = await issuerCredential.getPaymentTxn()
-      validatePaymentTxn(paymentTxn)
+      assert.instanceOf(issuerCredential.paymentManager, IssuerCredentialPaymentManager)
+    })
+
+    describe('getPaymentTxn:', () => {
+      it('success', async () => {
+        const connection = await connectionCreateConnect()
+        const issuerCredential = await issuerCredentialCreate()
+        await issuerCredential.sendOffer(connection)
+        VCXMock.setVcxMock(VCXMockMessage.IssuerCredentialReq)
+        VCXMock.setVcxMock(VCXMockMessage.UpdateIssuerCredential)
+        await issuerCredential.updateState()
+        assert.equal(await issuerCredential.getState(), StateType.RequestReceived)
+        await issuerCredential.sendCredential(connection)
+        assert.equal(await issuerCredential.getState(), StateType.Accepted)
+        const paymentTxn = await issuerCredential.paymentManager.getPaymentTxn()
+        validatePaymentTxn(paymentTxn)
+      })
     })
   })
 

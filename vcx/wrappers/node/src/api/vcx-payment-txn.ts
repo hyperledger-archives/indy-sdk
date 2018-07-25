@@ -8,41 +8,37 @@ export interface IPaymentTxn {
   inputs: string[],
   outputs: IUTXO[]
 }
-
-export type Constructor<T> = new(...args: any[]) => T
-/** Represents a transaction on the ledger that shows that this was paid for. */
-export interface IVCXPaymentTxnRes {
-  getPaymentTxn: () => Promise<IPaymentTxn>
+export interface IPamentManagerConstructorData {
+  handle: string
 }
-/** Represents a transaction on the ledger that shows that this was paid for. */
-export const VCXPaymentTxn = <T extends Constructor<{ handle: string }>>(Base: T):
-  T & Constructor<IVCXPaymentTxnRes> => {
-  class BasePaymentTxn extends Base implements IVCXPaymentTxnRes {
-    public async getPaymentTxn (): Promise<IPaymentTxn> {
-      try {
-        const paymentTxnStr = await createFFICallbackPromise<string>(
-            (resolve, reject, cb) => {
-              // Can not really enforce presence of _getPaymentTxnFn
-              const rc = (this as any)._getPaymentTxnFn(0, this.handle, cb)
-              if (rc) {
-                reject(rc)
-              }
-            },
-            (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'],
-            (xcommandHandle: number, err: number, info: any) => {
-              if (err) {
-                reject(err)
-                return
-              }
-              resolve(info)
-            })
-          )
-        const paymentTxn = JSON.parse(paymentTxnStr)
-        return paymentTxn
-      } catch (err) {
-        throw new VCXInternalError(err)
-      }
+export abstract class PaymentManager {
+  protected _handle: string
+  protected abstract _getPaymentTxnFn: (commandId: number, handle: string, cb: any) => number
+  constructor ({ handle }: IPamentManagerConstructorData) {
+    this._handle = handle
+  }
+  public async getPaymentTxn (): Promise<IPaymentTxn> {
+    try {
+      const paymentTxnStr = await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = this._getPaymentTxnFn(0, this._handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback('void', ['uint32', 'uint32', 'string'],
+          (xcommandHandle: number, err: number, info: any) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve(info)
+          })
+        )
+      const paymentTxn = JSON.parse(paymentTxnStr)
+      return paymentTxn
+    } catch (err) {
+      throw new VCXInternalError(err)
     }
   }
-  return BasePaymentTxn
 }

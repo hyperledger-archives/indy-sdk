@@ -4,7 +4,7 @@ import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { ISerializedData } from './common'
 import { VCXBase } from './vcx-base'
-import { VCXPaymentTxn } from './vcx-payment-txn'
+import { PaymentManager } from './vcx-payment-txn'
 
 /**
  * @interface
@@ -41,74 +41,15 @@ export interface ICredentialDefParams {
   name: string,
 }
 
+// tslint:disable max-classes-per-file
+export class CredentialDefPaymentManager extends PaymentManager {
+  protected _getPaymentTxnFn = rustAPI().vcx_credentialdef_get_payment_txn
+}
+
 /**
  * @class Class representing a credential Definition
  */
-class CredentialDefBase extends VCXBase<ICredentialDefData> {
-  protected _releaseFn = rustAPI().vcx_credentialdef_release
-  protected _serializeFn = rustAPI().vcx_credentialdef_serialize
-  protected _deserializeFn = rustAPI().vcx_credentialdef_deserialize
-  protected _getPaymentTxnFn = rustAPI().vcx_credentialdef_get_payment_txn
-  private _name: string
-  private _schemaId: string
-  private _credDefId: string | null
-
-  constructor (sourceId: string, { name, schemaId }: ICredentialDefParams) {
-    super(sourceId)
-    this._name = name
-    this._schemaId = schemaId
-    this._credDefId = null
-  }
-
-  /**
-   * @memberof CredentialDef
-   * @description Retrieves the credential definition id associated with the created cred def.
-   * @async
-   * @function getCredDefId
-   * @returns {Promise<string>} - CredDef's Identifier
-   */
-  public async getCredDefId (): Promise<string> {
-    try {
-      const credDefId = await createFFICallbackPromise<string>(
-          (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credentialdef_get_cred_def_id(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
-          },
-          (resolve, reject) => ffi.Callback(
-            'void',
-            ['uint32', 'uint32', 'string'],
-            (xcommandHandle: number, err: number, credDefIdVal: string) => {
-              if (err) {
-                reject(err)
-                return
-              }
-              this._credDefId = credDefIdVal
-              resolve(credDefIdVal)
-            })
-        )
-      return credDefId
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
-
-  get name () {
-    return this._name
-  }
-
-  get schemaId () {
-    return this._schemaId
-  }
-
-  get credDefId () {
-    return this._credDefId
-  }
-}
-
-// tslint:disable max-classes-per-file
-export class CredentialDef extends VCXPaymentTxn(CredentialDefBase) {
+export class CredentialDef extends VCXBase<ICredentialDefData> {
   /**
    * @memberof CredentialDef
    * creates a credential definition on the ledger and returns an associated object.
@@ -173,5 +114,67 @@ export class CredentialDef extends VCXPaymentTxn(CredentialDefBase) {
       schemaId: null
     }
     return super._deserialize(CredentialDef, credentialDef, credentialDefParams)
+  }
+
+  public readonly paymentManager: CredentialDefPaymentManager
+  protected _releaseFn = rustAPI().vcx_credentialdef_release
+  protected _serializeFn = rustAPI().vcx_credentialdef_serialize
+  protected _deserializeFn = rustAPI().vcx_credentialdef_deserialize
+  private _name: string
+  private _schemaId: string
+  private _credDefId: string | null
+
+  constructor (sourceId: string, { name, schemaId }: ICredentialDefParams) {
+    super(sourceId)
+    this._name = name
+    this._schemaId = schemaId
+    this._credDefId = null
+    this.paymentManager = new CredentialDefPaymentManager({ handle: this.handle })
+  }
+
+  /**
+   * @memberof CredentialDef
+   * @description Retrieves the credential definition id associated with the created cred def.
+   * @async
+   * @function getCredDefId
+   * @returns {Promise<string>} - CredDef's Identifier
+   */
+  public async getCredDefId (): Promise<string> {
+    try {
+      const credDefId = await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credentialdef_get_cred_def_id(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xcommandHandle: number, err: number, credDefIdVal: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              this._credDefId = credDefIdVal
+              resolve(credDefIdVal)
+            })
+        )
+      return credDefId
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  get name () {
+    return this._name
+  }
+
+  get schemaId () {
+    return this._schemaId
+  }
+
+  get credDefId () {
+    return this._credDefId
   }
 }
