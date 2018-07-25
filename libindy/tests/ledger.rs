@@ -930,6 +930,22 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_build_get_txn_request_for_ledger_type_as_predefined_string_constan() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{},"ledgerId":0}}"#, IDENTIFIER, SEQ_NO);
+
+            let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO, Some("POOL")).unwrap();
+            assert!(get_txn_request.contains(&expected_result));
+        }
+
+        #[test]
+        fn indy_build_get_txn_request_for_ledger_type_as_number() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{},"ledgerId":10}}"#, IDENTIFIER, SEQ_NO);
+
+            let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO, Some("10")).unwrap();
+            assert!(get_txn_request.contains(&expected_result));
+        }
+
+        #[test]
         fn indy_build_get_txn_request_for_ledger_type() {
             let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{},"ledgerId":0}}"#, IDENTIFIER, SEQ_NO);
 

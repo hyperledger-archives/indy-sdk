@@ -278,9 +278,11 @@ impl LedgerService {
         info!("build_get_txn_request >>> identifier: {:?}, seq_no {:?}, ledger_type {:?}", identifier, ledger_type, seq_no);
 
         let ledger_id = match ledger_type {
-            Some(type_) => LedgerType::from_json(&format!(r#""{}""#, type_))
-                .map_err(|_| CommonError::InvalidStructure(format!("Ledger type: {} does not supported", type_)))?
-                .to_id(),
+            Some(type_) =>
+                LedgerType::from_json(&format!(r#""{}""#, type_))
+                    .map(|type_| type_.to_id())
+                    .or_else(|_|type_.parse::<i32>())
+                    .map_err(|_| CommonError::InvalidStructure(format!("Invalid Ledger type: {}", type_)))?,
             None => LedgerType::DOMAIN.to_id()
         };
 
@@ -822,7 +824,7 @@ mod tests {
     }
 
     #[test]
-    fn build_get_txn_request_works_for_ledger_type() {
+    fn build_get_tan_request_works_for_ledger_type_as_predefined_string_constant() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
 
@@ -830,5 +832,25 @@ mod tests {
 
         let get_txn_request = ledger_service.build_get_txn_request(identifier, Some("POOL"), 1).unwrap();
         assert!(get_txn_request.contains(expected_result));
+    }
+
+    #[test]
+    fn build_get_txn_request_works_for_ledger_type_as_number() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1,"ledgerId":10}"#;
+
+        let get_txn_request = ledger_service.build_get_txn_request(identifier, Some("10"), 1).unwrap();
+        assert!(get_txn_request.contains(expected_result));
+    }
+
+    #[test]
+    fn build_get_txn_request_works_for_invalid_type() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+
+        let res = ledger_service.build_get_txn_request(identifier, Some("type"), 1);
+        assert_match!(Err(CommonError::InvalidStructure(_)), res);
     }
 }
