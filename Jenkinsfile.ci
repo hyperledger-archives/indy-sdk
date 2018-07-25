@@ -288,10 +288,18 @@ def linuxTesting(file, env_name, network_name) {
                         }
                     }
                 },
-                "${env_name}-java-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
-                "${env_name}-python-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
-                "${env_name}-nodejs-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
-                "${env_name}-cli-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
+                "${env_name}-java-test"      : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
+                },
+                "${env_name}-python-test"    : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                },
+                "${env_name}-nodejs-test"    : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting, 'ubuntu-slow')
+                },
+                "${env_name}-cli-test"       : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting, 'ubuntu-slow')
+                }
         ])
     }
     finally {
@@ -299,8 +307,8 @@ def linuxTesting(file, env_name, network_name) {
     }
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester) {
-    node('ubuntu') {
+def linuxModuleTesting(file, env_name, network_name, module_tester, node_type = 'ubuntu') {
+    node(node_type) {
         def poolInst
         try {
             echo "${env_name} Test: Checkout csm"
