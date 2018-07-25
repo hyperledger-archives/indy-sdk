@@ -1,7 +1,3 @@
-extern crate indy_crypto;
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-
 pub const POOL_CON_ACTIVE_TO: i64 = 5;
 pub const POOL_ACK_TIMEOUT: i64 = 10;
 pub const POOL_REPLY_TIMEOUT: i64 = 50;
@@ -47,7 +43,3 @@ impl PoolOpenConfig {
         POOL_CON_ACTIVE_TO
     }
 }
-
-impl JsonEncodable for PoolOpenConfig {}
-
-impl<'a> JsonDecodable<'a> for PoolOpenConfig {}

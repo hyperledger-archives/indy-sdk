@@ -1,16 +1,9 @@
-extern crate time;
-extern crate indy_crypto;
-extern crate serde_json;
-extern crate rmp_serde;
-extern crate byteorder;
-
 use indy::api::ErrorCode;
 use indy::api::pool::*;
 
 use utils::callback::CallbackUtils;
 use utils::environment::EnvironmentUtils;
-use self::indy_crypto::utils::json::JsonEncodable;
-use self::byteorder::{LittleEndian, WriteBytesExt};
+use byteorder::{LittleEndian, WriteBytesExt};
 
 use std::fs;
 use std::ffi::CString;
@@ -25,8 +18,6 @@ use utils::constants::PROTOCOL_VERSION;
 struct PoolConfig {
     pub genesis_txn: String
 }
-
-impl JsonEncodable for PoolConfig {}
 
 pub struct PoolUtils {}
 

@@ -39,8 +39,6 @@ use utils::pool::PoolUtils;
 use utils::ledger::LedgerUtils;
 use utils::did::DidUtils;
 
-use indy_crypto::utils::json::JsonDecodable;
-
 use std::thread;
 
 #[cfg(feature = "revocation_tests")]

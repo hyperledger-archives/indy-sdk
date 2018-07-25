@@ -731,7 +731,6 @@ mod tests {
     }
 
     mod pool_sm {
-        use indy_crypto::utils::json::JsonEncodable;
         use std::fs;
         use std::io::Write;
         use super::*;
