@@ -26,7 +26,7 @@ if [ "${is_stable}" == "1" ]; then
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
 cd /var/repository/repos/android/${artifact}/stable/$version
-cp -vr /var/repository/repos/android/${artifact}/rc/$version/${artifact}/${artifact}_android_${arch}_${version}.zip .
+cp -vr /var/repository/repos/android/${artifact}/rc/${version}-${buildNumber}/${artifact}_android_${arch}_${version}.zip .
 ls -l /var/repository/repos/android/${artifact}/stable/$version
 EOF
     else
