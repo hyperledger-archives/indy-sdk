@@ -13,13 +13,13 @@ buildNumber="$5"
 artifact="$6"
 is_stable="$7"
 
-${arch:?'arch variable is not set'}
-${version:?'version variable is not set'}
-${key:?'key variable is not set'}
-${branchName:?'branchName variable is not set'}
-${buildNumber:?'buildNumber variable is not set'}
-${artifact:?'artifact variable is not set'}
-${is_stable:?'is_stable variable is not set'}
+[ -z $arch ] && exit 1
+[ -z $version ] && exit 2
+[ -z $key ] && exit 3
+[ -z $branchName ] && exit 4
+[ -z $buildNumber ] && exit 5
+[ -z $artifact ] && exit 6
+[ -z $is_stable ] && exit 7
 
 if [ "${is_stable}" == "1" ]; then
     ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 mkdir -p /var/repository/repos/android/${artifact}/stable/${version}
