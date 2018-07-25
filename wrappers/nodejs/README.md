@@ -1411,9 +1411,10 @@ Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
 * `submitterDid`: String - DID of the request submitter.
 * `ledgerType`: String - \(Optional\) type of the ledger the requested transaction belongs to:
-DOMAIN - used default,
-POOL,
-CONFIG
+    * DOMAIN - used default,
+    * POOL,
+    * CONFIG
+    * any number
 * `data`: Number
 * __->__ `request`: Json
 

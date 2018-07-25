@@ -740,6 +740,7 @@ public class Ledger extends IndyJava.API {
 	 *    DOMAIN - used default,
 	 *    POOL,
 	 *    CONFIG
+	 *    any number
 	 * @param seqNo         requested transaction sequence number as it's stored on Ledger.
 	 * @return A future resolving to a request result as json.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
