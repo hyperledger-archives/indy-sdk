@@ -18,27 +18,29 @@ pub type AddRequestFeesCB = extern fn(command_handle: i32,
                                       req_json: *const c_char,
                                       inputs_json: *const c_char,
                                       outputs_json: *const c_char,
+                                      extra: *const c_char,
                                       cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
                                              resp_json: *const c_char,
                                              cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
-pub type BuildGetUTXORequestCB = extern fn(command_handle: i32,
-                                           wallet_handle: i32,
-                                           submitter_did: *const c_char,
-                                           payment_address: *const c_char,
-                                           cb: Option<IndyPaymentCallback>) -> ErrorCode;
+pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: i32,
+                                              wallet_handle: i32,
+                                              submitter_did: *const c_char,
+                                              payment_address: *const c_char,
+                                              cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
-pub type ParseGetUTXOResponseCB = extern fn(command_handle: i32,
-                                            resp_json: *const c_char,
-                                            cb: Option<IndyPaymentCallback>) -> ErrorCode;
+pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,
+                                               resp_json: *const c_char,
+                                               cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type BuildPaymentReqCB = extern fn(command_handle: i32,
                                        wallet_handle: i32,
                                        submitter_did: *const c_char,
                                        inputs_json: *const c_char,
                                        outputs_json: *const c_char,
+                                       extra: *const c_char,
                                        cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
@@ -49,6 +51,7 @@ pub type BuildMintReqCB = extern fn(command_handle: i32,
                                     wallet_handle: i32,
                                     submitter_did: *const c_char,
                                     outputs_json: *const c_char,
+                                    extra: *const c_char,
                                     cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
 pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
@@ -66,19 +69,35 @@ pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
                                                resp_json: *const c_char,
                                                cb: Option<IndyPaymentCallback>) -> ErrorCode;
 
+pub type BuildVerifyPaymentReqCB = extern fn(command_handle: i32,
+                                             wallet_handle: i32,
+                                             submitter_did: *const c_char,
+                                             receipt: *const c_char,
+                                             cb: Option<extern fn(command_handle_: i32,
+                                                           err: ErrorCode,
+                                                           verify_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
+pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: i32,
+                                                  resp_json: *const c_char,
+                                                  cb: Option<extern fn(command_handle_: i32,
+                                                                err: ErrorCode,
+                                                                txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
+
 pub fn register_payment_method(
     payment_method: *const c_char,
     create_payment_address: CreatePaymentAddressCB,
     add_request_fees: AddRequestFeesCB,
     parse_response_with_fees: ParseResponseWithFeesCB,
-    build_get_utxo_request: BuildGetUTXORequestCB,
-    parse_get_utxo_response: ParseGetUTXOResponseCB,
+    build_get_payment_sources_request: BuildGetPaymentSourcesRequestCB,
+    parse_get_payment_sources_response: ParseGetPaymentSourcesResponseCB,
     build_payment_req: BuildPaymentReqCB,
     parse_payment_response: ParsePaymentResponseCB,
     build_mint_req: BuildMintReqCB,
     build_set_txn_fees_req: BuildSetTxnFeesReqCB,
     build_get_txn_fees_req: BuildGetTxnFeesReqCB,
     parse_get_txn_fees_response: ParseGetTxnFeesResponseCB,
+    build_verify_payment_req: BuildVerifyPaymentReqCB,
+    parse_verify_payment_response: ParseVerifyPaymentResponseCB,
 ) -> ErrorCode {
     let (sender, receiver) = channel();
 
@@ -95,14 +114,16 @@ pub fn register_payment_method(
             Some(create_payment_address),
             Some(add_request_fees),
             Some(parse_response_with_fees),
-            Some(build_get_utxo_request),
-            Some(parse_get_utxo_response),
+            Some(build_get_payment_sources_request),
+            Some(parse_get_payment_sources_response),
             Some(build_payment_req),
             Some(parse_payment_response),
             Some(build_mint_req),
             Some(build_set_txn_fees_req),
             Some(build_get_txn_fees_req),
             Some(parse_get_txn_fees_response),
+            Some(build_verify_payment_req),
+            Some(parse_verify_payment_response),
             cb,
         );
     }
@@ -130,14 +151,16 @@ extern {
         create_payment_address: Option<CreatePaymentAddressCB>,
         add_request_fees: Option<AddRequestFeesCB>,
         parse_response_with_fees: Option<ParseResponseWithFeesCB>,
-        build_get_utxo_request: Option<BuildGetUTXORequestCB>,
-        parse_get_utxo_response: Option<ParseGetUTXOResponseCB>,
+        build_get_payment_sources_request: Option<BuildGetPaymentSourcesRequestCB>,
+        parse_get_payment_sources_response: Option<ParseGetPaymentSourcesResponseCB>,
         build_payment_req: Option<BuildPaymentReqCB>,
         parse_payment_response: Option<ParsePaymentResponseCB>,
         build_mint_req: Option<BuildMintReqCB>,
         build_set_txn_fees_req: Option<BuildSetTxnFeesReqCB>,
         build_get_txn_fees_req: Option<BuildGetTxnFeesReqCB>,
         parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
+        build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,
+        parse_verify_payment_response: Option<ParseVerifyPaymentResponseCB>,
         cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode;
 
     #[no_mangle]

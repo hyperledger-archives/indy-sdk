@@ -31,14 +31,16 @@ pub extern fn nullpay_init() -> ErrorCode {
         payment_method::create_payment_address::handle,
         payment_method::add_request_fees::handle,
         payment_method::parse_response_with_fees::handle,
-        payment_method::build_get_utxo_request::handle,
-        payment_method::parse_get_utxo_response::handle,
+        payment_method::build_get_payment_sources_request::handle,
+        payment_method::parse_get_payment_sources_response::handle,
         payment_method::build_payment_req::handle,
         payment_method::parse_payment_response::handle,
         payment_method::build_mint_req::handle,
         payment_method::build_set_txn_fees_req::handle,
         payment_method::build_get_txn_fees_req::handle,
-        payment_method::parse_get_txn_fees_response::handle
+        payment_method::parse_get_txn_fees_response::handle,
+        payment_method::build_verify_payment_req::handle,
+        payment_method::parse_verify_payment_response::handle,
     )
 }
 
@@ -206,4 +208,7 @@ pub enum ErrorCode
 
     // No such source on a ledger
     PaymentSourceDoesNotExistError = 703,
+
+    // Operation is not supported for payment method
+    PaymentOperationNotSupportedError = 704
 }
