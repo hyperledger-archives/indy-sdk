@@ -1,7 +1,6 @@
 extern crate libc;
 
 use self::libc::c_char;
-use std::ptr;
 use std::thread;
 use utils::cstring::CStringUtils;
 use utils::error;
@@ -77,7 +76,8 @@ pub extern fn vcx_wallet_get_token_info(command_handle: u32,
                 warn!("vcx_wallet_get_token_info_cb(command_handle: {}, rc: {}, info: {})",
                     command_handle, error_string(x), "null");
 
-                cb(command_handle, x, ptr::null_mut());
+		let msg = CStringUtils::string_to_cstring("".to_string());
+                cb(command_handle, x, msg.as_ptr());
             },
         }
     });
@@ -123,7 +123,8 @@ pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
                 warn!("vcx_wallet_create_payment_address_cb(command_handle: {}, rc: {}, address: {})",
                     command_handle, error_string(x), "null");
 
-                cb(command_handle, x, ptr::null_mut());
+		let msg = CStringUtils::string_to_cstring("".to_string());
+                cb(command_handle, x, msg.as_ptr());
             },
         }
     });
@@ -397,7 +398,8 @@ pub extern fn vcx_wallet_get_record(command_handle: u32,
                 info!("vcx_wallet_get_record(command_handle: {}, rc: {}, record_json: {})",
                       command_handle, error_string(x), "null");
 
-                cb(command_handle, x, ptr::null());
+                let msg = CStringUtils::string_to_cstring("".to_string());
+                cb(command_handle, x, msg.as_ptr());
             },
         }
     });
@@ -496,7 +498,8 @@ pub extern fn vcx_wallet_send_tokens(command_handle: u32,
             Err(e) => {
                 let msg = "Failed to send tokens".to_string();
                 info!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, reciept: {})", command_handle, e.to_error_code(), msg);
-                cb(command_handle, e.to_error_code(), ptr::null());
+                let msg = CStringUtils::string_to_cstring("".to_string());
+                cb(command_handle, e.to_error_code(), msg.as_ptr());
             },
         }
     });
@@ -726,6 +729,7 @@ pub mod tests {
     extern crate serde_json;
 
     use super::*;
+    use std::ptr;
     use std::ffi::CString;
     use std::time::Duration;
     use settings;

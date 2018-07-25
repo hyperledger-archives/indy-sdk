@@ -8,22 +8,13 @@ use settings;
 use utils::httpclient;
 use utils::error;
 use messages::*;
+use messages::send_message::CreateMessagePayload;
 use utils::constants::*;
 use serde::Deserialize;
 use self::rmp_serde::Deserializer;
 use self::rmp_serde::encode;
 use std::str;
 
-
-#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
-struct CreateMsgPayload {
-    #[serde(rename = "@type")]
-    msg_type: MsgType,
-    mtype: String,
-    #[serde(rename = "replyToMsgId")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    reply_to_msg_id: Option<String>
-}
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
@@ -62,25 +53,16 @@ struct AcceptMsgDetailPayload {
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
-struct SendMsgPayload {
-    #[serde(rename = "@type")]
-    msg_type: MsgType,
-}
-
-#[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
-#[serde(rename_all = "camelCase")]
 struct SendInvitePayload{
-    create_payload: CreateMsgPayload,
+    create_payload: CreateMessagePayload,
     msg_detail_payload: SendMsgDetailPayload,
-    send_payload: SendMsgPayload,
 }
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 struct AcceptInvitePayload{
-    create_payload: CreateMsgPayload,
+    create_payload: CreateMessagePayload,
     msg_detail_payload: AcceptMsgDetailPayload,
-    send_payload: SendMsgPayload,
 }
 
 #[derive(Clone, Serialize, Debug, PartialEq, PartialOrd)]
@@ -195,12 +177,11 @@ impl SendInvite{
             to_did: String::new(),
             to_vk: String::new(),
             payload: SendInvitePayload {
-                create_payload: CreateMsgPayload { msg_type: MsgType { name: "CREATE_MSG".to_string(), ver: "1.0".to_string(), } , mtype: "connReq".to_string(), reply_to_msg_id: None } ,
+                create_payload: CreateMessagePayload { msg_type: MsgType { name: "CREATE_MSG".to_string(), ver: "1.0".to_string(), } , mtype: "connReq".to_string(), reply_to_msg_id: None, send_msg: true} ,
                 msg_detail_payload: SendMsgDetailPayload {
                     msg_type: MsgType { name: "MSG_DETAIL".to_string(), ver: "1.0".to_string(), } ,
                     key_proof: KeyDlgProofPayload { agent_did: String::new(), agent_delegated_key: String::new(), signature: String::new() , } ,
                     phone: None, } ,
-                send_payload: SendMsgPayload { msg_type: MsgType { name: "SEND_MSG".to_string(), ver: "1.0".to_string(), }, } ,
             },
             validate_rc: error::SUCCESS.code_num,
             agent_did: String::new(),
@@ -267,7 +248,6 @@ impl SendInvite{
         println!("\n****\n**** message pack: Send Invite");
         println!("create_payload {}", serde_json::to_string(&self.payload.create_payload).unwrap());
         println!("msg_detail_payload {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap());
-        println!("send_payload {}", serde_json::to_string(&self.payload.send_payload).unwrap());
         println!("self.to_vk: {}", &self.to_vk);
         println!("self.agent_did: {}", &self.agent_did);
         println!("self.agent_vk: {}", &self.agent_vk);
@@ -281,7 +261,6 @@ impl AcceptInvite{
         println!("\n****\n**** message pack: Accept Invite");
         println!("create_payload {}", serde_json::to_string(&self.payload.create_payload).unwrap());
         println!("msg_detail_payload {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap());
-        println!("send_payload {}", serde_json::to_string(&self.payload.send_payload).unwrap());
         println!("self.to_vk: {}", &self.to_vk);
         println!("self.agent_did: {}", &self.agent_did);
         println!("self.agent_vk: {}", &self.agent_vk);
@@ -292,7 +271,7 @@ impl AcceptInvite{
             to_did: String::new(),
             to_vk: String::new(),
             payload: AcceptInvitePayload {
-                create_payload: CreateMsgPayload { msg_type: MsgType { name: "CREATE_MSG".to_string(), ver: "1.0".to_string(), } , mtype: "connReqAnswer".to_string(), reply_to_msg_id: None } ,
+                create_payload: CreateMessagePayload { msg_type: MsgType { name: "CREATE_MSG".to_string(), ver: "1.0".to_string(), } , mtype: "connReqAnswer".to_string(), reply_to_msg_id: None, send_msg: true } ,
                 msg_detail_payload: AcceptMsgDetailPayload
                 {
                     msg_type: MsgType { name: "MSG_DETAIL".to_string(), ver: "1.0".to_string(), } ,
@@ -301,7 +280,6 @@ impl AcceptInvite{
                     sender_agency_detail: None,
                     answer_status_code: None
                 },
-                send_payload: SendMsgPayload { msg_type: MsgType { name: "SEND_MSG".to_string(), ver: "1.0".to_string(), }, } ,
             },
             validate_rc: error::SUCCESS.code_num,
             agent_did: String::new(),
@@ -395,11 +373,9 @@ impl GeneralMessage for SendInvite{
         debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
         let create = encode::to_vec_named(&self.payload.create_payload).unwrap();
         let details = encode::to_vec_named(&self.payload.msg_detail_payload).unwrap();
-        let send = encode::to_vec_named(&self.payload.send_payload).unwrap();
 
         let mut bundle = Bundled::create(create);
         bundle.bundled.push(details);
-        bundle.bundled.push(send);
 
         let msg = bundle.encode()?;
 
@@ -433,11 +409,9 @@ impl GeneralMessage for AcceptInvite{
         debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
         let create = encode::to_vec_named(&self.payload.create_payload).unwrap();
         let details = encode::to_vec_named(&self.payload.msg_detail_payload).unwrap();
-        let send = encode::to_vec_named(&self.payload.send_payload).unwrap();
 
         let mut bundle = Bundled::create(create);
         bundle.bundled.push(details);
-        bundle.bundled.push(send);
 
         let msg = bundle.encode()?;
 

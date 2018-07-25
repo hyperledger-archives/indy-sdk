@@ -23,6 +23,7 @@ struct GetMessagesPayload{
     #[serde(skip_serializing_if = "Option::is_none")]
     status_codes: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "pairwiseDIDs")]
     pairwise_dids: Option<Vec<String>>,
 }
 
@@ -263,8 +264,8 @@ pub struct GetConnectionMessagesResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, PartialOrd, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct ConnectionMessages {
+    #[serde(rename = "pairwiseDID")]
     pub pairwise_did: String,
     pub msgs: Vec<Message>,
 }

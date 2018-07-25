@@ -215,7 +215,7 @@ impl Proof {
 
         self.proof_request = Some(proof_obj);
         let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST").map_err(|_| ProofError::ProofConnectionError())?;
-        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_CREDENTIAL_OFFER_RESPONSE.to_vec()); }
+        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
         let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap(), self.name);
 
         match messages::send_message().to(&self.prover_did)
@@ -430,8 +430,8 @@ fn get_proof_details(response: &str) -> Result<String, ProofError> {
     match serde_json::from_str(response) {
         Ok(json) => {
             let json: serde_json::Value = json;
-            let detail = match json["uid"].as_str() {
-                Some(x) => x,
+            let detail = match json["uids"].as_array() {
+                Some(x) => x[0].as_str().unwrap(),
                 None => {
                     warn!("response had no uid");
                     return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
