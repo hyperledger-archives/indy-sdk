@@ -4,7 +4,7 @@ name = "libvcx"
 version = "0.1.2097319"
 authors = [ "Evernym Inc." ]
 publish = false
-description = "C callable library for libvcx"
+description = "This is the official SDK for Evernym's VCX"
 license = ""
 
 [lib]
@@ -63,7 +63,7 @@ maintainer = "Evernym, Inc."
 copyright = "2018, Evernym Inc."
 depends = "$auto, libindy (=1.5.0~619), libnullpay (=1.5.0~619)"
 extended-description = """\
-"C callable library for libvcx"""
+This is Evernym's SDK for managing Verifiable Credential eXchange against an Indy network. For specific instructions on building see the README in the corresponding github repo https://github.com/evernym/sdk"""
 section = "admin"
 revision = "338ad01"
 priority = "optional"
