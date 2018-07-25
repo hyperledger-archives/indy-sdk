@@ -5,7 +5,7 @@ extern crate log;
 extern crate android_logger;
 
 use self::env_logger::Builder;
-use self::log::{Record, LevelFilter, Level};
+use self::log::LevelFilter;
 use std::env;
 use std::io::Write;
 #[cfg(target_os = "android")]
