@@ -675,6 +675,7 @@ async def build_get_txn_request(submitter_did: str,
         DOMAIN - used default,
         POOL,
         CONFIG
+        any number
     :param seq_no: requested transaction sequence number as it's stored on Ledger.
     :return: Request result as json.
     """

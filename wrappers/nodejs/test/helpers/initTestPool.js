@@ -17,7 +17,6 @@ module.exports = async function () {
     cleanup: async function () {
       await indy.closePoolLedger(poolH)
       await indy.deletePoolLedgerConfig(pool.name)
-      pool.cleanup()
     }
   }
 }

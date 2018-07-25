@@ -6,6 +6,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
+                'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
                 'redhat-test' : { rhelTesting() },
@@ -45,7 +46,7 @@ def windowsTesting() {
                                 "PATH=$WORKSPACE\\libindy\\prebuilt\\lib;$PATH",
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo build"
+                            bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
                             echo "Windows Libindy Test: Run tests"
@@ -64,7 +65,7 @@ def windowsTesting() {
                         withEnv([
                                 "RUST_BACKTRACE=1"
                         ]) {
-                            bat "cargo build"
+                            bat "cargo build --features fatal_warnings"
                             bat "cargo test --no-run"
 
                             echo "Windows Libnullpay Test: Run tests"
@@ -133,7 +134,7 @@ def macosTesting() {
                     echo "MacOS Test: Build"
                     setupRust()
                     setupBrewPackages()
-                    sh "cargo build"
+                    sh "cargo build --features fatal_warnings"
                     sh "cargo test --no-run"
                     // TODO testing
                 }
@@ -144,6 +145,64 @@ def macosTesting() {
             }
         }
     }
+}
+
+def androidTesting() {
+
+    node('ubuntu') {
+        stage('Android Test') {
+            try {
+                echo 'Building android binaries.This will start emulator and test android binaries'
+                checkout scm
+
+                dir('libindy') {
+                    echo 'Building android binaries: Building docker image'
+                    def testEnv
+                    testEnv = dockerBuild('libindy', "ci/ubuntu.dockerfile ci")
+                    sh 'chmod -R 777 ci/*.sh'
+                    sh 'chmod -R 777 *.sh'
+                    //TODO: IS-835 Tests on emulator fails as of now. Enable device testing when all tests starts passing
+                    //androidTestingOnEmulator(testEnv)
+
+                    //Meanwhile use "build success" as test
+                    buildAndroid(testEnv)
+                }
+            }
+            finally {
+                echo 'Building Android binaries: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
+def androidTestingOnEmulator(testEnv) {
+    ANDROID_SCRIPT_PATH = 'android.test.sh'
+    echo 'Testing Libindy android files for arm'
+    testEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} arm"
+    }
+}
+
+def buildAndroid(buildEnv) {
+
+    ANDROID_SCRIPT_PATH = 'android.build.sh'
+
+    echo 'Building Libindy android files for arm'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} -d arm"
+    }
+
+    echo 'Building Libindy android files for x86'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} -d x86"
+    }
+
+    echo 'Building Libindy android files for arm64'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} -d arm64"
+    }
+
 }
 
 def iosTesting() {
@@ -226,7 +285,7 @@ def linuxTesting(file, env_name, network_name) {
         poolInst = openPool(env_name, network_name)
 
         def testEnv
-        def libindyFeatures = "--features sodium_static"
+        def additionalFeatures = "sodium_static"
 
         dir('libindy') {
             echo "${env_name} Libindy Test: Build docker image"
@@ -234,7 +293,7 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libindy Test: Build"
-                sh "cargo build $libindyFeatures"
+                sh "cargo build --features \"fatal_warnings $additionalFeatures\""
             }
         }
 
@@ -249,7 +308,7 @@ def linuxTesting(file, env_name, network_name) {
 
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libnullpay Test: Build"
-                sh "LIBRARY_PATH=./ cargo build"
+                sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
             }
         }
 
@@ -262,16 +321,16 @@ def linuxTesting(file, env_name, network_name) {
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
 
         parallel([
-                "${env_name}-libindy-test": {
+                "${env_name}-libindy-test"   : {
                     dir('libindy') {
                         testEnv.inside("--network=${network_name}") {
                             echo "${env_name} Libindy Test: Test"
 
                             echo "${env_name} Libindy Test: Build Test"
-                            sh "RUST_BACKTRACE=1 cargo test --no-run $libindyFeatures"
+                            sh "RUST_BACKTRACE=1 cargo test --no-run --features $additionalFeatures"
 
                             echo "${env_name} Libindy Test: Run tests"
-                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test $libindyFeatures"
+                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features  $additionalFeatures"
                         }
                     }
                 },
@@ -288,10 +347,10 @@ def linuxTesting(file, env_name, network_name) {
                         }
                     }
                 },
-                "${env_name}-java-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
-                "${env_name}-python-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
-                "${env_name}-nodejs-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
-                "${env_name}-cli-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
+                "${env_name}-java-test"     : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
+                "${env_name}-python-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
+                "${env_name}-nodejs-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
+                "${env_name}-cli-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
         ])
     }
     finally {
@@ -362,10 +421,6 @@ def linuxNodejsTesting(env_name, network_name, testEnv) {
 }
 
 def linuxCLITesting(env_name, network_name, testEnv) {
-    if (env_name == "RedHat"){ // TODO: Delete it IS-702
-        return;
-    }
-
     unstash name: "LibindyCliSO${env_name}"
     unstash name: "LibnullpayCliSO${env_name}"
 
@@ -399,7 +454,7 @@ def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
 def dockerClean(env_name, network_name) {
     try {
         try {
-            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true" //TODO: FIXME
+            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true"//TODO: FIXME
         } catch (error) {
             echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
         }

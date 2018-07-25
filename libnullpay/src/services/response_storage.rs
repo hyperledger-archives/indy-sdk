@@ -35,6 +35,7 @@ pub fn get_response(response: &str) -> Result<String, ErrorCode> {
     let mut responses = RESPONSES.lock().unwrap();
     match responses.remove(req_id.to_string().as_str()) {
         Some(ref resp) if resp == "INSUFFICIENT_FUNDS" => Err(ErrorCode::PaymentInsufficientFundsError),
+        Some(ref resp) if resp == "NO_SOURCE" => Err(ErrorCode::PaymentSourceDoesNotExistError),
         Some(resp) => Ok(resp),
         None => Err(ErrorCode::CommonInvalidState)
     }

@@ -26,8 +26,7 @@ Returns:
 Create new wallet and then import content from the specified file
 
 ```indy-cli
-indy> wallet import <wallet name> pool_name=<pool name> key=<key> export_path=<path-to-file> export_key=<key used for export>
-
+indy> wallet import <wallet name> key=<key> export_path=<path-to-file> export_key=<key used for export>  [storage_type=<storage_type>] [storage_config={config json}]
 ```
 
 Returns:

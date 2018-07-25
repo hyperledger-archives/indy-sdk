@@ -304,6 +304,11 @@
  Builds a GET_TXN request. Request to get any transaction by its seq_no.
 
  @param submitterDid DID of the request submitter.
+ @param ledgerType (Optional) type of the ledger the requested transaction belongs to:
+          DOMAIN - used default,
+          POOL,
+          CONFIG
+          any number
  @param data seq_no of transaction in ledger.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */

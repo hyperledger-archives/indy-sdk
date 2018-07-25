@@ -94,7 +94,7 @@ pub mod load_plugin_command {
     command!(CommandMetadata::build("load-plugin", "Load plugin in Libindy")
                             .add_required_param("library", "Name of plugin (can be absolute or relative path)")
                             .add_required_param("initializer", "Name of plugin init function")
-                            .add_example("load-plugin library=libsovtoken initializer=sovtoken_init")
+                            .add_example("load-plugin library=libnullpay initializer=libnullpay_init")
                             .finalize());
 
     fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
@@ -112,7 +112,7 @@ pub mod load_plugin_command {
 }
 
 pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Result<(), ()> {
-    let lib = libloading::Library::new(library)
+    let lib = _load_lib(library)
         .map_err(|_| println_err!("Plugin not found: {:?}", library))?;
 
     unsafe {
@@ -129,6 +129,17 @@ pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Re
     ctx.add_plugin(library, lib);
 
     Ok(())
+}
+
+#[cfg(all(unix, test))]
+fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
+    libloading::os::unix::Library::open(Some(library), ::libc::RTLD_NOW | ::libc::RTLD_NODELETE)
+        .map(libloading::Library::from)
+}
+
+#[cfg(any(not(unix), not(test)))]
+fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
+    libloading::Library::new(library)
 }
 
 pub mod exit_command {
@@ -202,7 +213,7 @@ pub mod tests {
     }
 
     pub fn load_null_payment_plugin(ctx: &CommandContext) -> () {
-        let lib = libloading::Library::new(NULL_PAYMENT_PLUGIN).unwrap();
+        let lib = _load_lib(NULL_PAYMENT_PLUGIN).unwrap();
         unsafe {
             let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = lib.get(NULL_PAYMENT_PLUGIN_INIT_FUNCTION.as_bytes()).unwrap();
             init_func();

@@ -17,7 +17,7 @@ public class AddRequestFeesTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(UnknownPaymentMethodException.class));
 
-		Payments.addRequestFees(wallet, DID_TRUSTEE, emptyObject, inputs, outputs).get();
+		Payments.addRequestFees(wallet, DID_TRUSTEE, emptyObject, inputs, outputs, null).get();
 	}
 
 	@Test
@@ -25,7 +25,7 @@ public class AddRequestFeesTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Payments.addRequestFees(wallet, DID_TRUSTEE, emptyObject, emptyArray, outputs).get();
+		Payments.addRequestFees(wallet, DID_TRUSTEE, emptyObject, emptyArray, outputs, null).get();
 	}
 
 	@Test
@@ -33,7 +33,7 @@ public class AddRequestFeesTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(IncompatiblePaymentException.class));
 
-		Payments.addRequestFees(wallet, DID_TRUSTEE, emptyObject, incompatibleInputs, emptyObject).get();
+		Payments.addRequestFees(wallet, DID_TRUSTEE, emptyObject, incompatibleInputs, emptyObject, null).get();
 	}
 
 	@Test
@@ -41,6 +41,6 @@ public class AddRequestFeesTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Payments.addRequestFees(wallet, DID_TRUSTEE, emptyObject, invalidInputs, emptyObject).get();
+		Payments.addRequestFees(wallet, DID_TRUSTEE, emptyObject, invalidInputs, emptyObject, null).get();
 	}
 }

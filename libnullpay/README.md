@@ -2,7 +2,7 @@
 
 This is a plugin that can be used for development of applications that use Payments API of Indy SDK.
 
-This plugin acts like a local payment ledger -- you can create payment addresses, mint funds on them, make payments from one address to another, pay fees for your transactions and manage UTXOs and fees.
+This plugin acts like a local payment ledger -- you can create payment addresses, mint funds on them, make payments from one address to another, pay fees for your transactions and manage sources and fees.
 
 To use this plugin you should link it to the application after and the same way as Indy SDK library. After that, you should call ```nullpay_init()``` function to register the methods of plugin to be used by libindy. Then you can call methods of libindy Payments API using ```payment_method = "null"```.
 

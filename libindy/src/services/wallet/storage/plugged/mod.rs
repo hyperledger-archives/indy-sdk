@@ -1,26 +1,19 @@
-extern crate libc;
-extern crate indy_crypto;
-extern crate serde_json;
-
-use std::ffi::{CString, CStr};
-use std::ptr;
-use std::{slice, str};
-use std::collections::HashMap;
-use base64;
+use super::{StorageIterator, WalletStorageType, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
+use super::super::{RecordOptions, SearchOptions};
 
 use api::wallet::*;
 use api::ErrorCode;
 use errors::common::CommonError;
 use errors::wallet::WalletStorageError;
+use utils::crypto::base64;
 use services::wallet::language;
 
-
-use super::{StorageIterator, WalletStorageType, WalletStorage, StorageEntity, EncryptedValue, Tag, TagName};
-use super::super::{RecordOptions,SearchOptions};
-
-use self::libc::c_char;
-use self::indy_crypto::utils::json::JsonDecodable;
-
+use serde_json;
+use std::ffi::{CString, CStr};
+use std::ptr;
+use std::{slice, str};
+use std::collections::HashMap;
+use libc::c_char;
 
 #[derive(Debug, Deserialize)]
 pub struct PluggedWalletJSONValue {
@@ -32,9 +25,6 @@ pub struct PluggedWalletJSONValue {
 pub struct PluggedWalletJSONValues {
     pub values: Vec<PluggedWalletJSONValue>
 }
-
-impl<'a> JsonDecodable<'a> for PluggedWalletJSONValues {}
-
 
 // This struct is used as a helper to free the resource even in case of error.
 // It is workaround for Rust's lack of try/catch.
@@ -98,7 +88,7 @@ impl PluggedStorageIterator {
 }
 
 impl StorageIterator for PluggedStorageIterator {
-    fn next(&mut self) -> Result<Option<StorageEntity>, WalletStorageError> {
+    fn next(&mut self) -> Result<Option<StorageRecord>, WalletStorageError> {
         let mut record_handle = -1;
 
         let err = (self.fetch_search_next_record_handler)(self.storage_handle,
@@ -107,10 +97,9 @@ impl StorageIterator for PluggedStorageIterator {
 
         if err == ErrorCode::WalletItemNotFound {
             return Ok(None);
+        } else if err != ErrorCode::Success {
+            return Err(WalletStorageError::PluggedStorageError(err));
         }
-            else if err != ErrorCode::Success {
-                return Err(WalletStorageError::PluggedStorageError(err));
-            }
 
         let record_free_helper = ResourceGuard {
             storage_handle: self.storage_handle,
@@ -174,9 +163,9 @@ impl StorageIterator for PluggedStorageIterator {
             Some(_tags_from_json(tags_json)?)
         } else { None };
 
-        Ok(Some(StorageEntity{
+        Ok(Some(StorageRecord {
             type_: type_,
-            name: id,
+            id: id,
             value: value,
             tags: tags,
         }))
@@ -195,8 +184,7 @@ impl StorageIterator for PluggedStorageIterator {
             }
 
             Ok(Some(total_count))
-        }
-        else {
+        } else {
             Ok(None)
         }
     }
@@ -336,12 +324,11 @@ fn _tags_names_to_json(tag_names: &[TagName]) -> Result<String, WalletStorageErr
 }
 
 impl WalletStorage for PluggedStorage {
-    fn get(&self, type_: &Vec<u8>, name: &Vec<u8>, options: &str) -> Result<StorageEntity, WalletStorageError> {
-        let type_param = type_;
-        let type_ = CString::new(base64::encode(type_))?;
-        let id = CString::new(base64::encode(name))?;
+    fn get(&self, type_: &[u8], id: &[u8], options: &str) -> Result<StorageRecord, WalletStorageError> {
+        let type_cstr = CString::new(base64::encode(type_))?;
+        let id_cstr = CString::new(base64::encode(id))?;
+        let options_cstr = CString::new(options)?;
 
-        let options_json = CString::new(options)?;
         let mut record_handle: i32 = -1;
 
         let options: RecordOptions = serde_json::from_str(options)
@@ -351,17 +338,16 @@ impl WalletStorage for PluggedStorage {
 
 
         let err = (self.get_record_handler)(self.handle,
-                                            type_.as_ptr(),
-                                            id.as_ptr(),
-                                            options_json.as_ptr(),
+                                            type_cstr.as_ptr(),
+                                            id_cstr.as_ptr(),
+                                            options_cstr.as_ptr(),
                                             &mut record_handle);
 
         if err == ErrorCode::WalletItemNotFound {
             return Err(WalletStorageError::ItemNotFound);
+        } else if err != ErrorCode::Success {
+            return Err(WalletStorageError::PluggedStorageError(err));
         }
-            else if err != ErrorCode::Success {
-                return Err(WalletStorageError::PluggedStorageError(err));
-            }
 
         let record_free_helper = ResourceGuard {
             storage_handle: self.handle,
@@ -399,9 +385,9 @@ impl WalletStorage for PluggedStorage {
             Some(_tags_from_json(tags_json)?)
         } else { None };
 
-        let result = StorageEntity {
-            name: name.to_owned(),
-            type_: if options.retrieve_type {Some(type_param.clone())} else {None},
+        let result = StorageRecord {
+            id: id.to_owned(),
+            type_: if options.retrieve_type { Some(type_.to_vec()) } else { None },
             value,
             tags
         };
@@ -413,18 +399,18 @@ impl WalletStorage for PluggedStorage {
         Ok(result)
     }
 
-    fn add(&self, type_: &Vec<u8>, id: &Vec<u8>, value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let joined_value = value.to_bytes();
-        let tags_json = CString::new(_tags_to_json(&tags)?)?;
+        let tags = CString::new(_tags_to_json(&tags)?)?;
 
         let err = (self.add_record_handler)(self.handle,
                                             type_.as_ptr(),
                                             id.as_ptr(),
                                             joined_value.as_ptr(),
                                             joined_value.len(),
-                                            tags_json.as_ptr());
+                                            tags.as_ptr());
 
         if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
@@ -433,15 +419,15 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn add_tags(&self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
-        let tags_json = CString::new(_tags_to_json(&tags)?)?;
+        let tags = CString::new(_tags_to_json(&tags)?)?;
 
         let err = (self.add_record_tags_handler)(self.handle,
                                                  type_.as_ptr(),
                                                  id.as_ptr(),
-                                                 tags_json.as_ptr());
+                                                 tags.as_ptr());
 
         if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
@@ -450,15 +436,15 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn update_tags(&self, type_: &Vec<u8>, id: &Vec<u8>, tags: &[Tag]) -> Result<(), WalletStorageError> {
+    fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
-        let tags_json = CString::new(_tags_to_json(&tags)?)?;
+        let tags = CString::new(_tags_to_json(&tags)?)?;
 
         let err = (self.update_record_tags_handler)(self.handle,
                                                     type_.as_ptr(),
                                                     id.as_ptr(),
-                                                    tags_json.as_ptr());
+                                                    tags.as_ptr());
 
         if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
@@ -467,15 +453,15 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn delete_tags(&self, type_: &Vec<u8>, id: &Vec<u8>, tag_names: &[TagName]) -> Result<(), WalletStorageError> {
+    fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
-        let tag_names_json = CString::new(_tags_names_to_json(tag_names)?)?;
+        let tag_names = CString::new(_tags_names_to_json(tag_names)?)?;
 
         let err = (self.delete_record_tags_handler)(self.handle,
                                                     type_.as_ptr(),
                                                     id.as_ptr(),
-                                                    tag_names_json.as_ptr());
+                                                    tag_names.as_ptr());
 
         if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
@@ -484,7 +470,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn update(&self, type_: &Vec<u8>, id: &Vec<u8>, value: &EncryptedValue) -> Result<(), WalletStorageError> {
+    fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
         let joined_value = value.to_bytes();
@@ -502,7 +488,7 @@ impl WalletStorage for PluggedStorage {
         Ok(())
     }
 
-    fn delete(&self, type_: &Vec<u8>, id: &Vec<u8>) -> Result<(), WalletStorageError> {
+    fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
         let id = CString::new(base64::encode(id))?;
 
@@ -542,7 +528,7 @@ impl WalletStorage for PluggedStorage {
         Ok(metadata)
     }
 
-    fn set_storage_metadata(&self, metadata: &Vec<u8>) -> Result<(), WalletStorageError> {
+    fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), WalletStorageError> {
         let metadata = CString::new(base64::encode(metadata))?;
 
         let err = (self.set_storage_metadata_handler)(self.handle, metadata.as_ptr());
@@ -578,17 +564,18 @@ impl WalletStorage for PluggedStorage {
         ))
     }
 
-    fn search(&self, type_: &Vec<u8>, query: &language::Operator, options_json: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
+    fn search(&self, type_: &[u8], query: &language::Operator, options: Option<&str>) -> Result<Box<StorageIterator>, WalletStorageError> {
         let type_ = CString::new(base64::encode(type_))?;
-        let query_json = CString::new(query.to_string())?;
-        let options: SearchOptions = serde_json::from_str(options_json.unwrap_or(""))?;
-        let options_json = CString::new(options_json.unwrap_or(""))?;
+        let query = CString::new(query.to_string())?;
+        let options_cstr = CString::new(options.unwrap_or("{}"))?;
+        let options: SearchOptions = serde_json::from_str(options.unwrap_or("{}"))?;
+
         let mut search_handle: i32 = -1;
 
         let err = (self.search_records_handler)(self.handle,
                                                 type_.as_ptr(),
-                                                query_json.as_ptr(),
-                                                options_json.as_ptr(),
+                                                query.as_ptr(),
+                                                options_cstr.as_ptr(),
                                                 &mut search_handle);
 
         if err != ErrorCode::Success {
@@ -711,20 +698,21 @@ impl PluggedStorageType {
 }
 
 impl WalletStorageType for PluggedStorageType {
-    fn create_storage(&self, name: &str, config: Option<&str>, credentials: &str, metadata: &Vec<u8>) -> Result<(), WalletStorageError> {
-        let name = CString::new(name)?;
+    fn create_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>, metadata: &[u8]) -> Result<(), WalletStorageError> {
+        let name = CString::new(id)?;
         let metadata = CString::new(base64::encode(metadata))?;
 
-        let config = match config {
-            Some(config) => Some(CString::new(config)?),
-            None => None
-        };
+        let config = config
+            .map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some))?;
 
-        let credentials = CString::new(credentials)?;
+        let credentials = credentials
+            .map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some))?;
 
         let err = (self.create_handler)(name.as_ptr(),
                                         config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                        credentials.as_ptr(),
+                                        credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                         metadata.as_ptr());
 
         if err != ErrorCode::Success {
@@ -734,21 +722,21 @@ impl WalletStorageType for PluggedStorageType {
         Ok(())
     }
 
-    fn open_storage(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<Box<WalletStorage>, WalletStorageError> {
+    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletStorageError> {
         let mut handle: i32 = -1;
-        let cname = CString::new(name)?;
+        let id = CString::new(id)?;
 
-        let config = match config {
-            Some(config) => Some(CString::new(config)?),
-            None => None
-        };
+        let config = config
+            .map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some))?;
 
-        let credentials = CString::new(credentials)?;
+        let credentials = credentials
+            .map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some))?;
 
-        let err = (self.open_handler)(cname.as_ptr(),
+        let err = (self.open_handler)(id.as_ptr(),
                                       config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                      "".as_ptr() as *const i8, // TODO!!!
-                                      credentials.as_ptr(),
+                                      credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
                                       &mut handle);
 
         if err != ErrorCode::Success {
@@ -781,19 +769,20 @@ impl WalletStorageType for PluggedStorageType {
                 self.close_handler)))
     }
 
-    fn delete_storage(&self, name: &str, config: Option<&str>, credentials: &str) -> Result<(), WalletStorageError> {
-        let name = CString::new(name)?;
+    fn delete_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletStorageError> {
+        let id = CString::new(id)?;
 
-        let config = match config {
-            Some(config) => Some(CString::new(config)?),
-            None => None
-        };
+        let config = config
+            .map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some))?;
 
-        let credentials = CString::new(credentials)?;
+        let credentials = credentials
+            .map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some))?;
 
-        let err = (self.delete_handler)(name.as_ptr(),
+        let err = (self.delete_handler)(id.as_ptr(),
                                         config.as_ref().map_or(ptr::null(), |x| x.as_ptr()),
-                                        credentials.as_ptr());
+                                        credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
 
         if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
@@ -814,9 +803,9 @@ mod tests {
     use self::rand::{thread_rng, Rng};
     use std::clone::Clone;
 
-    impl PartialEq for StorageEntity {
-        fn eq(&self, other: &StorageEntity) -> bool {
-            self.name == other.name &&
+    impl PartialEq for StorageRecord {
+        fn eq(&self, other: &StorageRecord) -> bool {
+            self.id == other.id &&
                 self.type_ == other.type_ &&
                 self.value == other.value &&
                 match (&self.tags, &other.tags) {
@@ -926,16 +915,16 @@ mod tests {
         unsafe { slice::from_raw_parts(ptr, len) }.to_owned()
     }
 
-    extern "C" fn _mock_create_handler(name: *const c_char,
+    extern "C" fn _mock_create_handler(id: *const c_char,
                                        config: *const c_char,
                                        credentials: *const c_char,
                                        metadata: *const c_char) -> ErrorCode {
-        assert_ne!(name, ptr::null());
+        assert_ne!(id, ptr::null());
         assert_ne!(credentials, ptr::null());
 
         DEBUG_VEC.write().unwrap().push(
             Call::CreateHandler(
-                _convert_c_string(name),
+                _convert_c_string(id),
                 _convert_c_string(config),
                 _convert_c_string(credentials),
                 _convert_c_string(metadata)
@@ -945,17 +934,16 @@ mod tests {
         ErrorCode::Success
     }
 
-    extern "C" fn _mock_open_handler(name: *const c_char,
+    extern "C" fn _mock_open_handler(id: *const c_char,
                                      config: *const c_char,
-                                     runtime_config: *const c_char,
                                      credentials: *const c_char,
                                      storage_handle_p: *mut i32) -> ErrorCode {
-        assert_ne!(name, ptr::null());
+        assert_ne!(id, ptr::null());
         assert_ne!(credentials, ptr::null());
 
         DEBUG_VEC.write().unwrap().push(
             Call::OpenHandler(
-                _convert_c_string(name),
+                _convert_c_string(id),
                 _convert_c_string(config),
                 _convert_c_string(credentials)
             )
@@ -974,15 +962,15 @@ mod tests {
         ErrorCode::Success
     }
 
-    extern "C" fn _mock_delete_handler(name: *const c_char,
+    extern "C" fn _mock_delete_handler(id: *const c_char,
                                        config: *const c_char,
                                        credentials: *const c_char) -> ErrorCode {
-        assert_ne!(name, ptr::null());
+        assert_ne!(id, ptr::null());
         assert_ne!(credentials, ptr::null());
 
         DEBUG_VEC.write().unwrap().push(
             Call::DeleteHandler(
-                _convert_c_string(name),
+                _convert_c_string(id),
                 _convert_c_string(config),
                 _convert_c_string(credentials)
             )
@@ -1378,7 +1366,7 @@ mod tests {
         let credentials = "credentials";
         let metadata = vec![1, 2, 3];
 
-        storage_type.create_storage(storage_name, None, &credentials, &metadata).unwrap();
+        storage_type.create_storage(storage_name, None, Some(credentials), &metadata).unwrap();
 
         let expected_call = Call::CreateHandler(
             Some(storage_name.to_owned()),
@@ -1401,7 +1389,7 @@ mod tests {
         let storage_name = "wallet1";
         let credentials = "credentials";
 
-        let mut storage = storage_type.open_storage(storage_name, None, &credentials).unwrap();
+        let mut storage = storage_type.open_storage(storage_name, None, Some(credentials)).unwrap();
         storage.close().unwrap();
 
         let expected_open_call = Call::OpenHandler(
@@ -1429,7 +1417,7 @@ mod tests {
         let storage_name = "wallet1";
         let credentials = "credentials";
 
-        let storage = storage_type.delete_storage(storage_name, None, &credentials).unwrap();
+        let storage = storage_type.delete_storage(storage_name, None, Some(credentials)).unwrap();
 
         let expected_call = Call::DeleteHandler(
             Some(storage_name.to_owned()),
@@ -1451,7 +1439,7 @@ mod tests {
         let storage_name = "wallet1";
         let credentials = "credentials";
 
-        let storage = storage_type.open_storage(storage_name, None, &credentials).unwrap();
+        let storage = storage_type.open_storage(storage_name, None, Some(credentials)).unwrap();
 
         let expected_call = Call::OpenHandler(
             Some(storage_name.to_owned()),
@@ -1499,7 +1487,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let value = EncryptedValue{data: _random_vector(256), key: _random_vector(60)};
+        let value = EncryptedValue { data: _random_vector(256), key: _random_vector(60) };
         let mut tags = Vec::new();
         tags.push(Tag::Encrypted(_random_vector(32), _random_vector(64)));
         tags.push(Tag::PlainText(_random_vector(32), _random_string(64)));
@@ -1531,7 +1519,7 @@ mod tests {
 
         let type_ = _random_vector(32);
         let id = _random_vector(32);
-        let value = EncryptedValue{data: _random_vector(256), key: _random_vector(44)};
+        let value = EncryptedValue { data: _random_vector(256), key: _random_vector(44) };
 
         storage.update(&type_, &id, &value).unwrap();
 
@@ -1624,9 +1612,9 @@ mod tests {
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
-        let expected_storage_entity = StorageEntity {
+        let expected_storage_entity = StorageRecord {
             type_: Some(type_.clone()),
-            name: id.clone(),
+            id: id.clone(),
             value: Some(RETURN_VALUE.read().unwrap().1.clone()),
             tags: Some(RETURN_TAGS.read().unwrap().1.clone()),
         };
@@ -1676,9 +1664,9 @@ mod tests {
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
-        let expected_storage_entity = StorageEntity {
+        let expected_storage_entity = StorageRecord {
             type_: None,
-            name: id.clone(),
+            id: id.clone(),
             value: Some(RETURN_VALUE.read().unwrap().1.clone()),
             tags: Some(RETURN_TAGS.read().unwrap().1.clone()),
         };
@@ -1727,9 +1715,9 @@ mod tests {
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
-        let expected_storage_entity = StorageEntity {
+        let expected_storage_entity = StorageRecord {
             type_: None,
-            name: id.clone(),
+            id: id.clone(),
             value: Some(RETURN_VALUE.read().unwrap().1.clone()),
             tags: None,
         };
@@ -1773,9 +1761,9 @@ mod tests {
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
-        let expected_storage_entity = StorageEntity {
+        let expected_storage_entity = StorageRecord {
             type_: None,
-            name: id.clone(),
+            id: id.clone(),
             value: None,
             tags: Some(RETURN_TAGS.read().unwrap().1.clone()),
         };
@@ -1820,9 +1808,9 @@ mod tests {
 
         let storage_entity = storage.get(&type_, &id, &options).unwrap();
 
-        let expected_storage_entity = StorageEntity {
+        let expected_storage_entity = StorageRecord {
             type_: None,
-            name: id.clone(),
+            id: id.clone(),
             value: None,
             tags: None,
         };
@@ -1940,9 +1928,9 @@ mod tests {
 
             let storage_entity = storage_iterator.next().unwrap();
 
-            let expected_storage_entity = StorageEntity {
+            let expected_storage_entity = StorageRecord {
                 type_: None,
-                name: RETURN_ID.read().unwrap().1.clone(),
+                id: RETURN_ID.read().unwrap().1.clone(),
                 value: Some(RETURN_VALUE.read().unwrap().1.clone()),
                 tags: Some(RETURN_TAGS.read().unwrap().1.clone()),
             };
@@ -2040,9 +2028,9 @@ mod tests {
 
             let storage_entity = storage_iterator.next().unwrap();
 
-            let expected_storage_entity = StorageEntity {
+            let expected_storage_entity = StorageRecord {
                 type_: None,
-                name: RETURN_ID.read().unwrap().1.clone(),
+                id: RETURN_ID.read().unwrap().1.clone(),
                 value: Some(RETURN_VALUE.read().unwrap().1.clone()),
                 tags: Some(RETURN_TAGS.read().unwrap().1.clone()),
             };
@@ -2121,9 +2109,9 @@ mod tests {
 
             let storage_entity = storage_iterator.next().unwrap();
 
-            let expected_storage_entity = StorageEntity {
+            let expected_storage_entity = StorageRecord {
                 type_: Some(RETURN_TYPE.read().unwrap().1.clone()),
-                name: RETURN_ID.read().unwrap().1.clone(),
+                id: RETURN_ID.read().unwrap().1.clone(),
                 value: Some(RETURN_VALUE.read().unwrap().1.clone()),
                 tags: Some(RETURN_TAGS.read().unwrap().1.clone()),
             };

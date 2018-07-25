@@ -23,15 +23,15 @@ public class IndyIntegrationTestWithPoolAndSingleWallet extends IndyIntegrationT
 		String poolName = PoolUtils.createPoolLedgerConfig();
 		pool = Pool.openPoolLedger(poolName, null).get();
 
-		Wallet.createWallet(poolName, WALLET, TYPE, null, CREDENTIALS).get();
-		this.wallet = Wallet.openWallet(WALLET, null, CREDENTIALS).get();
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		this.wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 	}
 
 	@After
 	public void deletePoolAndWallet() throws Exception {
 		pool.closePoolLedger().get();
 		wallet.closeWallet().get();
-		Wallet.deleteWallet(WALLET, CREDENTIALS).get();
+		Wallet.deleteWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 	}
 
 	protected void checkResponseType(String response, String expectedType) {

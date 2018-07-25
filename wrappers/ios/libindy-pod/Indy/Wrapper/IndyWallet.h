@@ -39,25 +39,36 @@
 
 /**
  Creates a new secure wallet with the given unique name.
- 
- @param poolName   Name of the pool that corresponds to this wallet.
- @param name Name of the wallet.
- @param type Type of the wallet. Defaults to 'default'.
-             Custom types can be registered with IndyWallet:registerWalletType:withImplementation:completion.
- @param config Wallet configuration json. List of supported keys are defined by wallet type.
-               If NULL, then default config will be used.
 
- @param credentials Wallet credentials json: {
-     "key": <string>
+ @param config Wallet configuration json.
+ {
+   "id": string, Identifier of the wallet.
+         Configured storage uses this identifier to lookup exact wallet data placement.
+   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                  'Default' storage type allows to store wallet data in the local file.
+                  Custom storage types can be registered with indy_register_wallet_storage call.
+   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                     Can be optional if storage supports default configuration.
+                     For 'default' storage type configuration is:
+   {
+     "path": optional<string>, Path to the directory with wallet files.
+             Defaults to $HOME/.indy_client/wallets.
+             Wallet will be stored in the file {path}/{id}/sqlite.db
+   }
+ }
+
+ @param credentials Wallet credentials json
+ {
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
  }
  @param completion Completion callback that returns error code.
 */
-- (void)createWalletWithName:(NSString *)name
-                    poolName:(NSString *)poolName
-                        type:(NSString *)type
-                      config:(NSString *)config
-                 credentials:(NSString *)credentials
-                  completion:(void (^)(NSError *error))completion;
+- (void)createWalletWithConfig:(NSString *)config
+                   credentials:(NSString *)credentials
+                    completion:(void (^)(NSError *error))completion;
 
 /**
  Opens the wallet with specific name.
@@ -66,25 +77,34 @@
  
  @warning It is impossible to open wallet with the same name more than once.
  
- @param name Name of the wallet.
- @param config Runtime wallet configuration json. if NULL, then default runtime_config will be used.
- Example:
- 
- @code
+ @param config Wallet configuration json.
  {
- "freshness_time": string (optional), Amount of minutes to consider wallet value as fresh. Defaults to 24*60.
- ... List of additional supported keys are defined by wallet type.
+   "id": string, Identifier of the wallet.
+         Configured storage uses this identifier to lookup exact wallet data placement.
+   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                  'Default' storage type allows to store wallet data in the local file.
+                  Custom storage types can be registered with indy_register_wallet_storage call.
+   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                     Can be optional if storage supports default configuration.
+                     For 'default' storage type configuration is:
+   {
+     "path": optional<string>, Path to the directory with wallet files.
+             Defaults to $HOME/.indy_client/wallets.
+             Wallet will be stored in the file {path}/{id}/sqlite.db
+   }
  }
- @endcode
- 
- @param credentials Wallet credentials json: {
-     "key": <string>
+
+ @param credentials Wallet credentials json
+ {
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
  }
  
  @param completion Completion callback that returns error code and created handle to opened wallet to use in methods that require wallet access.
  */
-- (void)openWalletWithName:(NSString *)name
-             runtimeConfig:(NSString *)config
+- (void)openWalletWithConfig:(NSString *)config
                credentials:(NSString *)credentials
                 completion:(void (^)(NSError *error, IndyHandle walletHandle))completion;
 
@@ -100,23 +120,39 @@
 /**
  Deletes created wallet.
  
- @param walletName of the wallet to delete.
- 
- @param credentials Wallet credentials json: {
-     "key": <string>
+ @param config Wallet configuration json.
+ {
+   "id": string, Identifier of the wallet.
+         Configured storage uses this identifier to lookup exact wallet data placement.
+   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                  'Default' storage type allows to store wallet data in the local file.
+                  Custom storage types can be registered with indy_register_wallet_storage call.
+   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                     Can be optional if storage supports default configuration.
+                     For 'default' storage type configuration is:
+   {
+     "path": optional<string>, Path to the directory with wallet files.
+             Defaults to $HOME/.indy_client/wallets.
+             Wallet will be stored in the file {path}/{id}/sqlite.db
+   }
+ }
+
+ @param credentials Wallet credentials json
+ {
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
  }
  @param completion Completion callback that returns error code.
  */
-- (void)deleteWalletWithName:(NSString *)walletName
+- (void)deleteWalletWithConfig:(NSString *)config
                  credentials:(NSString *)credentials
                   completion:(void (^)(NSError *error))completion;
 
 
 /**
  Exports opened wallet.
-
- Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
- in the future releases.
 
  @param walletHandle  wallet handle returned by IndyWallet::openWalletWithName.
  @param exportConfigJson  JSON containing settings for input operation.
@@ -135,17 +171,29 @@
  according to fields provided in import_config
  This can be seen as an indy_create_wallet call with additional content import
 
- Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
- in the future releases.
+ @param config Wallet configuration json.
+ {
+   "id": string, Identifier of the wallet.
+         Configured storage uses this identifier to lookup exact wallet data placement.
+   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+                  'Default' storage type allows to store wallet data in the local file.
+                  Custom storage types can be registered with indy_register_wallet_storage call.
+   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+                     Can be optional if storage supports default configuration.
+                     For 'default' storage type configuration is:
+   {
+     "path": optional<string>, Path to the directory with wallet files.
+             Defaults to $HOME/.indy_client/wallets.
+             Wallet will be stored in the file {path}/{id}/sqlite.db
+   }
+ }
 
- @param poolName   Name of the pool that corresponds to this wallet.
- @param name Name of the wallet.
- @param type Type of the wallet. Defaults to 'default'.
-             Custom types can be registered with IndyWallet:registerWalletType:withImplementation:completion.
- @param config Wallet configuration json. List of supported keys are defined by wallet type.
-               If NULL, then default config will be used.
- @param credentials Wallet credentials json: {
-     "key": <string>
+ @param credentials Wallet credentials json
+ {
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
  }
  @param importConfigJson  JSON containing settings for input operation.
    {
@@ -154,10 +202,7 @@
    }
  @param completion Completion callback that returns error code.
 */
-- (void)importWalletWithName:(NSString *)name
-                    poolName:(NSString *)poolName
-                        type:(NSString *)type
-                      config:(NSString *)config
+- (void)importWalletWithConfig:(NSString *)config
                  credentials:(NSString *)credentials
             importConfigJson:(NSString *)importConfigJson
                   completion:(void (^)(NSError *error))completion;

@@ -105,7 +105,7 @@ pub mod connect_command {
                     Err(ErrorCode::PoolLedgerTerminated) => Err(println_err!("Pool \"{}\" does not exist.", name)),
                     Err(ErrorCode::PoolLedgerTimeout) => Err(println_err!("Pool \"{}\" has not been connected.", name)),
                     Err(ErrorCode::PoolIncompatibleProtocolVersion) =>
-                        Err(println_err!("Pool \"{}\" are not compatible with Protocol Version \"{}\".", name, protocol_version)),
+                        Err(println_err!("Pool \"{}\" is not compatible with Protocol Version \"{}\".", name, protocol_version)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             });
@@ -121,7 +121,7 @@ pub mod connect_command {
             match Pool::close(handle) {
                 Ok(()) => {
                     set_connected_pool(ctx, Some((handle, name.to_owned())));
-                    println_succ!("Pool \"{}\" has been connected", name)
+                    println_succ!("Pool \"{}\" has been disconnected", name)
                 }
                 Err(err) => println_err!("Indy SDK error occurred {:?}", err),
             }
