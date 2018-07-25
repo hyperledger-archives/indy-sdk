@@ -14,8 +14,14 @@
 - Run `indy-sdk/libindy/build-libindy-android.sh` to build libindy for arm, arm64 and x86
 
 ## Usage 
-- Copy generated `indy-sdk/libindy/build_scripts/android/libindy_<ARCHITECTURE>/libindy.so` to the jniLibs folder of your android project
-- Load library using the JNA
+Copy generated files to the jniLibs folder of your android project
+- Copy generated `indy-sdk/libindy/build_scripts/android/libindy_arm/libindy.so`, `indy-sdk/libindy/build_scripts/android/indy-android-dependencies/prebuild/sodium/libsodium_arm/lib/libsodium.so`, and `indy-sdk/libindy/build_scripts/android/indy-android-dependencies/prebuild/zmq/libzmq_arm/lib/libzmq.so` to the jniLibs/armeabi-v7a folder of your android project
+- Copy the corresponding files for jniLibs/arm64-v8a and jniLibs/x86 (similar to step above)
+- In order to use the library in Android, you need to set the EXTERNAL_STORAGE environment variable and load the library using JNA
+
+`Os.setenv("EXTERNAL_STORAGE", getExternalFilesDir(null).getAbsolutePath(), true);`
+
+`System.loadLibrary("indy");`
 
 
 ## Notes:
@@ -26,6 +32,11 @@ Add following line to AndroidManifest.xml
 `<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>`
 
 Android emulator generally use x86 images
+
+If you receive a JNA error, you may need to add additonal files into your jniLibs folder. 
+- Add the correct version of libjnidispatch.so to the corresponding subfolder in jniLibs -> https://github.com/java-native-access/jna/tree/master/lib/native
+- For example, android-aarch64.jar goes into the jniLibs/arm64-v8a subfolder
+- NOTE: You need to download the correct version of libjnidispatch.so (tag 4.5.1 in the jna repo is the version accepted by Indy SDK v1.5)
 
 ##Known Issues
 
