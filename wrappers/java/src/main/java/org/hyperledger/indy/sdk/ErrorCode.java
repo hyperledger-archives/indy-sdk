@@ -288,6 +288,11 @@ public enum ErrorCode {
 	 * No such source on a ledger
 	 */
 	PaymentSourceDoesNotExistError(703),
+
+	/**
+	 * Operation is not supported for payment method
+	 */
+	PaymentOperationNotSupportedError(704),
 	;
 
 	private int value;

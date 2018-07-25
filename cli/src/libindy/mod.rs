@@ -166,14 +166,17 @@ pub enum ErrorCode
     // Unknown payment method was given
     PaymentUnknownMethodError = 700,
 
-    //No method were scraped from inputs/outputs or more than one were scraped
+    //No methods were scraped from inputs/outputs or more than one was scraped
     PaymentIncompatibleMethodsError = 701,
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
 
     // No such source on a ledger
-    PaymentSourceDoesNotExistError = 703
+    PaymentSourceDoesNotExistError = 703,
+
+    // Operation is not supported for payment method
+    PaymentOperationNotSupportedError = 704
 }
 
 impl ErrorCode {
@@ -233,6 +236,7 @@ impl ErrorCode {
             PaymentIncompatibleMethodsError => "Multiple different payment methods were specified",
             PaymentInsufficientFundsError => "Insufficient funds on inputs",
             PaymentSourceDoesNotExistError => "No such source found",
+            PaymentOperationNotSupportedError => "Operation is not supported for payment method",
         }
     }
 }

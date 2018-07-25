@@ -68,6 +68,9 @@ pub extern fn indy_create_pool_ledger_config(command_handle: i32,
 /// {
 ///     "timeout": int (optional), timeout for network request (in sec).
 ///     "extended_timeout": int (optional), extended timeout for network request (in sec).
+///     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
+///         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+///         Note: Not specified nodes will be placed in a random way.
 /// }
 ///
 /// #Returns
@@ -149,6 +152,13 @@ pub extern fn indy_refresh_pool_ledger(command_handle: i32,
 }
 
 /// Lists names of created pool ledgers
+///
+/// #Params
+///
+/// #Returns
+/// Error code
+///
+/// #Errors
 #[no_mangle]
 pub extern fn indy_list_pools(command_handle: i32,
                               cb: Option<extern fn(xcommand_handle: i32,
@@ -164,7 +174,7 @@ pub extern fn indy_list_pools(command_handle: i32,
         .send(Command::Pool(PoolCommand::List(
             Box::new(move |result| {
                 let (err, pools) = result_to_err_code_1!(result, String::new());
-                trace!("indy_refresh_pool_ledger: pools: {:?}", pools);
+                trace!("indy_list_pools: pools: {:?}", pools);
                 let pools = CStringUtils::string_to_cstring(pools);
                 cb(command_handle, err, pools.as_ptr())
             })
@@ -172,7 +182,7 @@ pub extern fn indy_list_pools(command_handle: i32,
 
     let res = result_to_err_code!(result);
 
-    trace!("indy_refresh_pool_ledger: <<< res: {:?}", res);
+    trace!("indy_list_pools: <<< res: {:?}", res);
 
     res
 }
