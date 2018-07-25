@@ -12,9 +12,18 @@
 
 ## How to build.
 - Run `indy-sdk/libindy/build-libindy-android.sh` to build libindy for arm, arm64 and x86
+    - This generates the libindy zip file with each architecture in the indy-sdk/libindy
+    - You can also set the `LIBINDY_VERSION` environment variable to append version number to generated zip file.
+- To generate the build for a single architecture run `android.build.sh`
+    - e.g  `android.build.sh -d arm` . The flag `-d` will download the dependencies automatically
+    - e.g  `android.build.sh arm <PATH_TO_OPENSSL> <PATH_TO_SODIUM> <PATH_TO_ZMQ>`. If `-d` flag is not passed you have to give paths to dependencies
 
 ## Usage 
-- Copy generated `indy-sdk/libindy/build_scripts/android/libindy_<ARCHITECTURE>/libindy.so` to the jniLibs folder of your android project
+- Unzip the generated library.
+- Copy `lib/libindy.so` to the jniLibs folder of your android project
+    - `libindy.so` file is the dynamic library which is statically linked to its dependencies. This library can be loaded into apk without having dependencies along with it.
+    - `libindy_shared.so` file is the dynamic library which is dunamically linked to its dependencies. you need to pass the dependencies into apk.
+    
 - Load library using the JNA
 
 
@@ -32,10 +41,6 @@ Android emulator generally use x86 images
 - The Android build does not successfully compile on OSX
     - It fails on the libzmq linking
 
-- If you are using Linux and want to build without docker, use the script`indy-sdk/libindy/build_scripts/android/build.withoutdocker.sh` .
- - usage e.g `./build.withoutdocker.sh -d x86 16 i686-linux-android` to download the prebuilt binaries and build for x86 using api level 16 with ABI i686-linux-android
- - e.g `./build.withoutdocker.sh x86 16 i686-linux-android openssl_x86 libsodium_x86 libzmq_x86` if you want to pass the dependencies to the script
-
 
 # Building binaries of Libnullpay for Android
 
@@ -50,8 +55,13 @@ Android emulator generally use x86 images
 
 
 ## How to build.
-- Copy the `indy-sdk/libindy/build_scripts/android/libindy_<ARCHITECTURE>` folders to `indy-sdk/libnullpay/build_scripts/android/`
+- Unzip `libindy_android_<ARCH>_<VERSION>`
+- Copy the extracted folder to `indy-sdk/libnullpay/`
 - Run `indy-sdk/libnullpay/build-libnullpay-android.sh` to build libnullpay for arm, arm64 and x86
+- To build for individual architecture, run `indy-sdk/libnullpay/android.build.sh -d arm <PATH_TO_LIBINDY>` to build libnullpay for arm
+    - Or set env variable `INDY_DIR=<PATH_TO_LIBINDY>` and run `android.build.sh -d arm` to generate for arm
+    - Set env variable `INDY_DIR=<PATH_TO_LIBINDY>` and run `android.build.sh -d arm64` to generate for arm64
+    - Set env variable `INDY_DIR=<PATH_TO_LIBINDY>` and run `android.build.sh -d x86` to generate for x86
 
 
 
