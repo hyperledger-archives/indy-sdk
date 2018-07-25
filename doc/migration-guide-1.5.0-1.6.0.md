@@ -15,6 +15,7 @@ version you can check migration guides history:
 * [Wallet API](#wallet-api)
 * [Anoncreds API](#anoncreds-api)
 * [Payments API](#payments-api)
+* [Pool API](#payments-api)
 
 ## Notes
 
@@ -74,7 +75,7 @@ This wallet configuration json has the following format:
     <tr>
     <th colspan="2">
         <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L142">
-            Create a new secure wallet.
+            Create a new secure wallet
         </a>
     </th>
   <tr>
@@ -104,7 +105,7 @@ indy_create_wallet(command_handle: i32,
   <tr>
     <th colspan="2">
         <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L208">
-            Open the wallet.
+            Open the wallet
         </a>
     </th>
   <tr>
@@ -133,7 +134,7 @@ indy_open_wallet(command_handle: i32,
   </tr>
     <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L449">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L443">
             Deletes created wallet
         </a>
     </th>
@@ -158,7 +159,7 @@ indy_delete_wallet(command_handle: i32,
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L359">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L328">
             Import wallet
         </a>
     </th>
@@ -193,7 +194,7 @@ indy_import_wallet(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/rc/libindy/src/api/wallet.rs#L271">
+        <a href="">
             Lists created wallets
         </a>
     </th>
@@ -473,7 +474,7 @@ The following changes have been performed:
   </tr>  
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L505">
             Modifies Indy request by adding information how to pay fees for this transaction
             according to selected payment method
         </a>
@@ -509,7 +510,7 @@ changed to:
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L585">
             Parses response for Indy request with fees
         </a>
     </th>
@@ -548,7 +549,7 @@ indy_parse_response_with_fees(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L632">
              Builds Indy request for getting sources list for payment address
              according to this payment method
         </a>
@@ -585,7 +586,7 @@ indy_build_get_sources_request(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L683">
              Parses response for Indy request for getting sources list
         </a>
     </th>
@@ -624,7 +625,7 @@ indy_parse_get_sources_response(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L733">
              Builds Indy request for doing payment according to this payment method
         </a>
     </th>
@@ -658,7 +659,7 @@ changed to:
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L805">
              Builds Indy request for doing payment according to this payment method
         </a>
     </th>
@@ -697,7 +698,7 @@ indy_parse_payment_response(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L855">
              Builds Indy request for doing tokens minting according to this payment method
         </a>
     </th>
@@ -730,7 +731,7 @@ changed to:
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L1065">
              Builds Indy request for information to verify the payment receipt
         </a>
     </th>
@@ -753,7 +754,7 @@ indy_build_verify_payment_req(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payment.rs">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L1114">
              Parses Indy response with information to verify receipt
         </a>
     </th>
@@ -769,6 +770,48 @@ indy_parse_verify_payment_response(
         cb: fn(command_handle_: i32,
                err: ErrorCode,
                txn_json: *const c_char))
+      </pre>
+    </td>
+  </tr>
+</table>
+
+
+### Pool API
+
+<table>
+  <tr>
+    <th>v1.5.0 - Pool API</th>
+    <th>v1.6.0 - Pool API</th>
+  </tr>  
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/pool.rs#L59">
+            Opens pool ledger and performs connecting to pool nodes
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_open_pool_ledger(command_handle: i32,
+                      config_name: *const c_char,
+                      config: *const c_char,
+                      cb: fn(xcommand_handle: i32,
+                           err: ErrorCode,
+                           pool_handle: i32))
+      </pre>
+    </td>
+    <td>
+<pre>
+Left the same but the format of config has been changed to:
+{
+   "timeout": int (optional), timeout for network request (in sec).
+   "extended_timeout": int (optional), extended timeout for network request (in sec).
+   "preordered_nodes": array<string> - (optional), names of nodes which will 
+       have a priority during request sending:
+       ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+       Note: Not specified nodes will be placed in a random way.
+}
       </pre>
     </td>
   </tr>

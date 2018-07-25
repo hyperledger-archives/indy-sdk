@@ -68,6 +68,9 @@ pub extern fn indy_create_pool_ledger_config(command_handle: i32,
 /// {
 ///     "timeout": int (optional), timeout for network request (in sec).
 ///     "extended_timeout": int (optional), extended timeout for network request (in sec).
+///     "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
+///         ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+///         Note: Not specified nodes will be placed in a random way.
 /// }
 ///
 /// #Returns
