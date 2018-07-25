@@ -11,7 +11,7 @@ import {
 import { gcTest } from 'helpers/gc'
 import { TIMEOUT_GC } from 'helpers/test-constants'
 import { initVcxTestMode, shouldThrow } from 'helpers/utils'
-import { rustAPI, Schema, VCXCode } from 'src'
+import { rustAPI, Schema, SchemaPaymentManager, VCXCode } from 'src'
 
 describe('Schema:', () => {
   before(() => initVcxTestMode())
@@ -154,11 +154,18 @@ describe('Schema:', () => {
     })
   })
 
-  describe('getPaymentTxn:', () => {
-    it('success', async () => {
+  describe('paymentManager:', () => {
+    it('exists', async () => {
       const schema = await schemaCreate()
-      const paymentTxn = await schema.getPaymentTxn()
-      validatePaymentTxn(paymentTxn)
+      assert.instanceOf(schema.paymentManager, SchemaPaymentManager)
+    })
+
+    describe('getPaymentTxn:', () => {
+      it('success', async () => {
+        const schema = await schemaCreate()
+        const paymentTxn = await schema.paymentManager.getPaymentTxn()
+        validatePaymentTxn(paymentTxn)
+      })
     })
   })
 

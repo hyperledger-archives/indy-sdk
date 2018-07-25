@@ -5,7 +5,7 @@ import { rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { ISerializedData } from './common'
 import { VCXBase } from './vcx-base'
-import { VCXPaymentTxn } from './vcx-payment-txn'
+import { PaymentManager } from './vcx-payment-txn'
 
 export interface ISchemaCreateData {
   sourceId: string,
@@ -58,64 +58,12 @@ export interface ISchemaLookupData {
   schemaId: string
 }
 
-class SchemaBase extends VCXBase<ISchemaSerializedData> {
-  protected _releaseFn = rustAPI().vcx_schema_release
-  protected _serializeFn = rustAPI().vcx_schema_serialize
-  protected _deserializeFn = rustAPI().vcx_schema_deserialize
+// tslint:disable max-classes-per-file
+export class SchemaPaymentManager extends PaymentManager {
   protected _getPaymentTxnFn = rustAPI().vcx_schema_get_payment_txn
-  protected _name: string
-  protected _schemaId: string
-  protected _schemaAttrs: ISchemaAttrs
-
-  constructor (sourceId: string, { name, schemaId, schemaAttrs }: ISchemaParams) {
-    super(sourceId)
-    this._name = name
-    this._schemaId = schemaId
-    this._schemaAttrs = schemaAttrs
-  }
-
-  get schemaAttrs (): ISchemaAttrs {
-    return this._schemaAttrs
-  }
-
-  get schemaId () {
-    return this._schemaId
-  }
-
-  get name () {
-    return this._name
-  }
-
-  protected async getSchemaId (): Promise<string> {
-    try {
-      const schemaId = await createFFICallbackPromise<string>(
-          (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_schema_get_schema_id(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
-          },
-          (resolve, reject) => ffi.Callback(
-            'void',
-            ['uint32', 'uint32', 'string'],
-            (xcommandHandle: number, err: number, schemaIdVal: string) => {
-              if (err) {
-                reject(err)
-                return
-              }
-              this._schemaId = schemaIdVal
-              resolve(schemaIdVal)
-            })
-        )
-      return schemaId
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
 }
 
-// tslint:disable max-classes-per-file
-export class Schema extends VCXPaymentTxn(SchemaBase) {
+export class Schema extends VCXBase<ISchemaSerializedData> {
   /**
    * @memberof Schema
    * @description Builds a generic Schema object
@@ -214,6 +162,61 @@ export class Schema extends VCXPaymentTxn(SchemaBase) {
       const newSchema = new Schema(sourceId, schemaParams)
       newSchema._setHandle(schemaLookupData.handle.toString())
       return newSchema
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  public readonly paymentManager: SchemaPaymentManager
+  protected _releaseFn = rustAPI().vcx_schema_release
+  protected _serializeFn = rustAPI().vcx_schema_serialize
+  protected _deserializeFn = rustAPI().vcx_schema_deserialize
+  protected _name: string
+  protected _schemaId: string
+  protected _schemaAttrs: ISchemaAttrs
+
+  constructor (sourceId: string, { name, schemaId, schemaAttrs }: ISchemaParams) {
+    super(sourceId)
+    this._name = name
+    this._schemaId = schemaId
+    this._schemaAttrs = schemaAttrs
+    this.paymentManager = new SchemaPaymentManager({ handle: this.handle })
+  }
+
+  get schemaAttrs (): ISchemaAttrs {
+    return this._schemaAttrs
+  }
+
+  get schemaId () {
+    return this._schemaId
+  }
+
+  get name () {
+    return this._name
+  }
+
+  protected async getSchemaId (): Promise<string> {
+    try {
+      const schemaId = await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_schema_get_schema_id(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => ffi.Callback(
+            'void',
+            ['uint32', 'uint32', 'string'],
+            (xcommandHandle: number, err: number, schemaIdVal: string) => {
+              if (err) {
+                reject(err)
+                return
+              }
+              this._schemaId = schemaIdVal
+              resolve(schemaIdVal)
+            })
+        )
+      return schemaId
     } catch (err) {
       throw new VCXInternalError(err)
     }

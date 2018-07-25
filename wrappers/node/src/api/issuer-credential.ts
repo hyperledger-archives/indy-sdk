@@ -6,7 +6,7 @@ import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { ISerializedData, StateType } from './common'
 import { Connection } from './connection'
 import { VCXBaseWithState } from './vcx-base-with-state'
-import { VCXPaymentTxn } from './vcx-payment-txn'
+import { PaymentManager } from './vcx-payment-txn'
 
 export interface IIssuerCredentialCreateData {
   sourceId: string,
@@ -46,16 +46,87 @@ export interface IIssuerCredentialData {
   price: number
 }
 
+// tslint:disable max-classes-per-file
+export class IssuerCredentialPaymentManager extends PaymentManager {
+  protected _getPaymentTxnFn = rustAPI().vcx_issuer_credential_get_payment_txn
+}
+
 /**
- * Class representing an Issuer Credential
+ * A Credential created by the issuing party (institution)
  */
-class IssuerCredentialBase extends VCXBaseWithState<IIssuerCredentialData> {
+export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
+  /**
+   * Builds a generic Issuer Credential object
+   * ```
+   * issuerCredential = await IssuerCredential.create({sourceId: "12",
+   * credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: 0})
+   * ```
+   * @returns {Promise<IssuerCredential>} An Issuer credential Object
+   */
+  public static async create ({ attr, sourceId, credDefId,
+                         credentialName, price }: IIssuerCredentialCreateData): Promise<IssuerCredential> {
+    try {
+      const attrsVCX: IIssuerCredentialVCXAttributes = Object.keys(attr)
+      .reduce((accum, attrKey) => ({ ...accum, [attrKey]: [attr[attrKey]] }), {})
+      const credential = new IssuerCredential(sourceId, { credDefId, credentialName, attr: attrsVCX, price })
+      const attrsStringified = JSON.stringify(attrsVCX)
+      const commandHandle = 0
+      const issuerDid = null
+      await credential._create((cb) => rustAPI().vcx_issuer_create_credential(
+        commandHandle,
+        sourceId,
+        credDefId,
+        issuerDid,
+        attrsStringified,
+        credentialName,
+        price,
+        cb
+        )
+      )
+      return credential
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  /**
+   * Builds an Issuer credential object with defined attributes.
+   *
+   * Attributes are provided by a previous call to the serialize function.
+   * ```
+   * issuerCredential = await IssuerCredential.create({sourceId: "12",
+   * credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: 0})
+   * data1 = await issuerCredential.serialize()
+   * issuerCredential2 = await IssuerCredential.deserialize(data1)
+   * ```
+   */
+  public static async deserialize (credentialData: ISerializedData<IIssuerCredentialData>) {
+    try {
+      const { data: { credential_name, price, credential_attributes, cred_def_id } } = credentialData
+      const attr: IIssuerCredentialVCXAttributes = JSON.parse(credential_attributes)
+      const params: IIssuerCredentialParams = {
+        attr,
+        credDefId: cred_def_id,
+        credentialName: credential_name,
+        price
+      }
+      const credential = await super._deserialize<IssuerCredential, IIssuerCredentialParams>(
+        IssuerCredential,
+        credentialData,
+        params
+      )
+      return credential
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  public readonly paymentManager: IssuerCredentialPaymentManager
   protected _releaseFn = rustAPI().vcx_issuer_credential_release
   protected _updateStFn = rustAPI().vcx_issuer_credential_update_state
   protected _getStFn = rustAPI().vcx_issuer_credential_get_state
   protected _serializeFn = rustAPI().vcx_issuer_credential_serialize
   protected _deserializeFn = rustAPI().vcx_issuer_credential_deserialize
-  protected _getPaymentTxnFn = rustAPI().vcx_issuer_credential_get_payment_txn
   private _credDefId: string
   private _credentialName: string
   private _attr: IIssuerCredentialVCXAttributes
@@ -67,6 +138,7 @@ class IssuerCredentialBase extends VCXBaseWithState<IIssuerCredentialData> {
     this._credentialName = credentialName
     this._attr = attr
     this._price = price
+    this.paymentManager = new IssuerCredentialPaymentManager({ handle: this.handle })
   }
 
   /**
@@ -161,74 +233,5 @@ class IssuerCredentialBase extends VCXBaseWithState<IIssuerCredentialData> {
 
   get price () {
     return this._price
-  }
-}
-/** A Credential created by the issuing party (institution) */
-// tslint:disable max-classes-per-file
-export class IssuerCredential extends VCXPaymentTxn(IssuerCredentialBase) {
-  /**
-   * Builds a generic Issuer Credential object
-   * ```
-   * issuerCredential = await IssuerCredential.create({sourceId: "12",
-   * credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: 0})
-   * ```
-   * @returns {Promise<IssuerCredential>} An Issuer credential Object
-   */
-  public static async create ({ attr, sourceId, credDefId,
-                         credentialName, price }: IIssuerCredentialCreateData): Promise<IssuerCredential> {
-    try {
-      const attrsVCX: IIssuerCredentialVCXAttributes = Object.keys(attr)
-      .reduce((accum, attrKey) => ({ ...accum, [attrKey]: [attr[attrKey]] }), {})
-      const credential = new IssuerCredential(sourceId, { credDefId, credentialName, attr: attrsVCX, price })
-      const attrsStringified = JSON.stringify(attrsVCX)
-      const commandHandle = 0
-      const issuerDid = null
-      await credential._create((cb) => rustAPI().vcx_issuer_create_credential(
-        commandHandle,
-        sourceId,
-        credDefId,
-        issuerDid,
-        attrsStringified,
-        credentialName,
-        price,
-        cb
-        )
-      )
-      return credential
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
-
-/**
- * Builds an Issuer credential object with defined attributes.
- *
- * Attributes are provided by a previous call to the serialize function.
- * ```
- * issuerCredential = await IssuerCredential.create({sourceId: "12",
- * credDefId: "credDefId", attr: {key: "value"}, credentialName: "name", price: 0})
- * data1 = await issuerCredential.serialize()
- * issuerCredential2 = await IssuerCredential.deserialize(data1)
- * ```
- */
-  public static async deserialize (credentialData: ISerializedData<IIssuerCredentialData>) {
-    try {
-      const { data: { credential_name, price, credential_attributes, cred_def_id } } = credentialData
-      const attr: IIssuerCredentialVCXAttributes = JSON.parse(credential_attributes)
-      const params: IIssuerCredentialParams = {
-        attr,
-        credDefId: cred_def_id,
-        credentialName: credential_name,
-        price
-      }
-      const credential = await super._deserialize<IssuerCredential, IIssuerCredentialParams>(
-        IssuerCredential,
-        credentialData,
-        params
-      )
-      return credential
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
   }
 }

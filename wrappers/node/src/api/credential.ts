@@ -6,7 +6,7 @@ import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { ISerializedData } from './common'
 import { Connection } from './connection'
 import { VCXBaseWithState } from './vcx-base-with-state'
-import { VCXPaymentTxn } from './vcx-payment-txn'
+import { PaymentManager } from './vcx-payment-txn'
 
 export interface ICredentialStructData {
   source_id: string,
@@ -32,165 +32,55 @@ export interface ICredentialSendData {
   payment: number
 }
 
-class CredentialBase extends VCXBaseWithState<ICredentialStructData> {
-  /**
-   * Retrieves all pending credential offers.
-   *
-   * ```
-   * connection = await Connection.create({id: 'foobar'})
-   * inviteDetails = await connection.connect()
-   * offers = await Credential.getOffers(connection)
-   * ```
-   */
-  public static async getOffers (connection: Connection): Promise<ICredentialOffer[]> {
-    try {
-      const offersStr = await createFFICallbackPromise<string>(
-        (resolve, reject, cb) => {
-          const rc = rustAPI().vcx_credential_get_offers(0, connection.handle, cb)
-          if (rc) {
-            reject(rc)
-          }
-        },
-        (resolve, reject) => Callback(
-          'void',
-          ['uint32', 'uint32', 'string'],
-          (handle: number, err: number, messages: string) => {
-            if (err) {
-              reject(err)
-              return
-            }
-            resolve(messages)
-          })
-      )
-      const offers: ICredentialOffer[] = JSON.parse(offersStr)
-      return offers
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
-
-  protected _releaseFn = rustAPI().vcx_credential_release
-  protected _updateStFn = rustAPI().vcx_credential_update_state
-  protected _getStFn = rustAPI().vcx_credential_get_state
-  protected _serializeFn = rustAPI().vcx_credential_serialize
-  protected _deserializeFn = rustAPI().vcx_credential_deserialize
+// tslint:disable max-classes-per-file
+export class CredentialPaymentManager extends PaymentManager {
   protected _getPaymentTxnFn = rustAPI().vcx_credential_get_payment_txn
-  protected _credOffer: string = ''
-/**
- * Approves the credential offer and submits a credential request.
- * The result will be a credential stored in the prover's wallet.
- *
- * ```
- * connection = await Connection.create({id: 'foobar'})
- * inviteDetails = await connection.connect()
- * credential = Credential.create(data)
- * await credential.sendRequest({ connection, 1000 })
- * ```
- *
- */
-  public async sendRequest ({ connection, payment }: ICredentialSendData): Promise<void> {
-    try {
-      await createFFICallbackPromise<void>(
-          (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credential_send_request(0, this.handle, connection.handle, payment, cb)
-            if (rc) {
-              reject(rc)
-            }
-          },
-          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle: number, err: number) => {
-            if (err) {
-              reject(err)
-              return
-            }
-            resolve()
-          })
-        )
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
-
-  get credOffer (): string {
-    return this._credOffer
-  }
-/**
- * Retrieve Payment Transaction Information for this Credential. Typically this will include
- * how much payment is requried by the issuer, which needs to be provided by the prover, before
- * the issuer will issue the credential to the prover. Ideally a prover would want to know
- * how much payment is being asked before submitting the credential request (which triggers
- * the payment to be made).
- * ```
- * EXAMPLE HERE
- * ```
- */
-  public async getPaymentInfo (): Promise<string> {
-    try {
-      return await createFFICallbackPromise<string>(
-          (resolve, reject, cb) => {
-            const rc = rustAPI().vcx_credential_get_payment_info(0, this.handle, cb)
-            if (rc) {
-              reject(rc)
-            }
-          },
-          (resolve, reject) => Callback('void', ['uint32', 'uint32', 'string'],
-          (xcommandHandle: number, err: number, info: any) => {
-            if (err) {
-              reject(err)
-            } else {
-              resolve(info)
-            }
-          })
-        )
-    } catch (err) {
-      throw new VCXInternalError(err)
-    }
-  }
 }
+
 /**
  * A Credential Object, which is issued by the issuing party to the prover and stored in the prover's wallet.
  */
-// tslint:disable max-classes-per-file
-export class Credential extends VCXPaymentTxn(CredentialBase) {
-/**
- * Creates a credential with an offer.
- *
- * * Requires a credential offer to be submitted to prover.
- *
- * ```
- * credentialOffer = [
- *   {
- *     claim_id: 'defaultCredentialId',
- *     claim_name: 'Credential',
- *     cred_def_id: 'id',
- *     credential_attrs: {
- *     address1: ['101 Tela Lane'],
- *     address2: ['101 Wilson Lane'],
- *     city: ['SLC'],
- *     state: ['UT'],
- *     zip: ['87121']
- *   },
- *   from_did: '8XFh8yBzrpJQmNyZzgoTqB',
- *   libindy_offer: '{}',
- *   msg_ref_id: '123',
- *   msg_type: 'CLAIM_OFFER',
- *   schema_seq_no: 1487,
- *   to_did: '8XFh8yBzrpJQmNyZzgoTqB',
- *   version: '0.1'
- * },
- * {
- *   payment_addr: 'pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j',
- *   payment_required: 'one-time',
- *   price: 5
- * }]
- *
- * {
- *   JSON.stringify(credentialOffer),
- *   'testCredentialSourceId'
- * }
- * credential = Credential.create(data)
- * ```
- *
- */
+export class Credential extends VCXBaseWithState<ICredentialStructData> {
+  /**
+   * Creates a credential with an offer.
+   *
+   * * Requires a credential offer to be submitted to prover.
+   *
+   * ```
+   * credentialOffer = [
+   *   {
+   *     claim_id: 'defaultCredentialId',
+   *     claim_name: 'Credential',
+   *     cred_def_id: 'id',
+   *     credential_attrs: {
+   *     address1: ['101 Tela Lane'],
+   *     address2: ['101 Wilson Lane'],
+   *     city: ['SLC'],
+   *     state: ['UT'],
+   *     zip: ['87121']
+   *   },
+   *   from_did: '8XFh8yBzrpJQmNyZzgoTqB',
+   *   libindy_offer: '{}',
+   *   msg_ref_id: '123',
+   *   msg_type: 'CLAIM_OFFER',
+   *   schema_seq_no: 1487,
+   *   to_did: '8XFh8yBzrpJQmNyZzgoTqB',
+   *   version: '0.1'
+   * },
+   * {
+   *   payment_addr: 'pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j',
+   *   payment_required: 'one-time',
+   *   price: 5
+   * }]
+   *
+   * {
+   *   JSON.stringify(credentialOffer),
+   *   'testCredentialSourceId'
+   * }
+   * credential = Credential.create(data)
+   * ```
+   *
+   */
   public static async create ({ sourceId, offer }: ICredentialCreateWithOffer): Promise<Credential> {
     const credential = new Credential(sourceId)
     try {
@@ -207,18 +97,18 @@ export class Credential extends VCXPaymentTxn(CredentialBase) {
     }
   }
 
-/**
- *
- * ```
- * credential = Credential.createWithMsgId({
- *   connection,
- *   msgId: 'testCredentialMsgId',
- *   sourceId: 'testCredentialSourceId'
- * })
- * ```
- *
- *
- */
+  /**
+   *
+   * ```
+   * credential = Credential.createWithMsgId({
+   *   connection,
+   *   msgId: 'testCredentialMsgId',
+   *   sourceId: 'testCredentialSourceId'
+   * })
+   * ```
+   *
+   *
+   */
   public static async createWithMsgId (
     { connection, sourceId, msgId }: ICredentialCreateWithMsgId
   ): Promise<Credential> {
@@ -259,5 +149,123 @@ export class Credential extends VCXPaymentTxn(CredentialBase) {
   public static async deserialize (credentialData: ISerializedData<ICredentialStructData>) {
     const credential = await super._deserialize<Credential, {}>(Credential, credentialData)
     return credential
+  }
+  /**
+   * Retrieves all pending credential offers.
+   *
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * offers = await Credential.getOffers(connection)
+   * ```
+   */
+  public static async getOffers (connection: Connection): Promise<ICredentialOffer[]> {
+    try {
+      const offersStr = await createFFICallbackPromise<string>(
+        (resolve, reject, cb) => {
+          const rc = rustAPI().vcx_credential_get_offers(0, connection.handle, cb)
+          if (rc) {
+            reject(rc)
+          }
+        },
+        (resolve, reject) => Callback(
+          'void',
+          ['uint32', 'uint32', 'string'],
+          (handle: number, err: number, messages: string) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve(messages)
+          })
+      )
+      const offers: ICredentialOffer[] = JSON.parse(offersStr)
+      return offers
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  public readonly paymentManager: CredentialPaymentManager
+  protected _releaseFn = rustAPI().vcx_credential_release
+  protected _updateStFn = rustAPI().vcx_credential_update_state
+  protected _getStFn = rustAPI().vcx_credential_get_state
+  protected _serializeFn = rustAPI().vcx_credential_serialize
+  protected _deserializeFn = rustAPI().vcx_credential_deserialize
+  protected _credOffer: string = ''
+
+  constructor (sourceId: string) {
+    super(sourceId)
+    this.paymentManager = new CredentialPaymentManager({ handle: this.handle })
+  }
+
+  /**
+   * Approves the credential offer and submits a credential request.
+   * The result will be a credential stored in the prover's wallet.
+   *
+   * ```
+   * connection = await Connection.create({id: 'foobar'})
+   * inviteDetails = await connection.connect()
+   * credential = Credential.create(data)
+   * await credential.sendRequest({ connection, 1000 })
+   * ```
+   *
+   */
+  public async sendRequest ({ connection, payment }: ICredentialSendData): Promise<void> {
+    try {
+      await createFFICallbackPromise<void>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credential_send_request(0, this.handle, connection.handle, payment, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback('void', ['uint32', 'uint32'], (xcommandHandle: number, err: number) => {
+            if (err) {
+              reject(err)
+              return
+            }
+            resolve()
+          })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
+  }
+
+  get credOffer (): string {
+    return this._credOffer
+  }
+  /**
+   * Retrieve Payment Transaction Information for this Credential. Typically this will include
+   * how much payment is requried by the issuer, which needs to be provided by the prover, before
+   * the issuer will issue the credential to the prover. Ideally a prover would want to know
+   * how much payment is being asked before submitting the credential request (which triggers
+   * the payment to be made).
+   * ```
+   * EXAMPLE HERE
+   * ```
+   */
+  public async getPaymentInfo (): Promise<string> {
+    try {
+      return await createFFICallbackPromise<string>(
+          (resolve, reject, cb) => {
+            const rc = rustAPI().vcx_credential_get_payment_info(0, this.handle, cb)
+            if (rc) {
+              reject(rc)
+            }
+          },
+          (resolve, reject) => Callback('void', ['uint32', 'uint32', 'string'],
+          (xcommandHandle: number, err: number, info: any) => {
+            if (err) {
+              reject(err)
+            } else {
+              resolve(info)
+            }
+          })
+        )
+    } catch (err) {
+      throw new VCXInternalError(err)
+    }
   }
 }
