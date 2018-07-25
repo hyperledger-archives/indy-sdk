@@ -27,16 +27,19 @@ pub struct SendMessage {
 }
 
 #[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateMessagePayload {
     #[serde(rename = "@type")]
-    msg_type: MsgType,
-    mtype: String,
+    pub msg_type: MsgType,
+    pub mtype: String,
     #[serde(rename = "replyToMsgId")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    reply_to_msg_id: Option<String>
+    pub reply_to_msg_id: Option<String>,
+    pub send_msg: bool,
 }
 
 #[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MessageDetailPayload {
     #[serde(rename = "@type")]
     msg_type: MsgType,
@@ -46,12 +49,6 @@ pub struct MessageDetailPayload {
     title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     detail: Option<String>,
-}
-
-#[derive(Serialize, Debug, PartialEq, PartialOrd, Clone)]
-pub struct SendMessagePayload {
-    #[serde(rename = "@type")]
-    msg_type: MsgType,
 }
 
 impl SendMessage{
@@ -153,9 +150,8 @@ impl GeneralMessage for SendMessage{
             return Err(self.validate_rc)
         }
 
-        let create = CreateMessagePayload { msg_type: MsgType { name: "CREATE_MSG".to_string(), ver: "1.0".to_string(), }, mtype: self.message.to_string(), reply_to_msg_id: self.ref_msg_id.clone()};
+        let create = CreateMessagePayload { msg_type: MsgType { name: "CREATE_MSG".to_string(), ver: "1.0".to_string(), }, mtype: self.message.to_string(), reply_to_msg_id: self.ref_msg_id.clone(), send_msg: true};
         let detail = MessageDetailPayload { msg_type: MsgType { name: "MSG_DETAIL".to_string(), ver: "1.0".to_string(), }, msg: self.payload.clone(), title: self.title.clone(), detail: self.detail.clone(), };
-        let send = SendMessagePayload { msg_type: MsgType { name: "SEND_MSG".to_string(), ver: "1.0".to_string(), }, };
 
         match serde_json::to_string(&detail) {
             Ok(x) => debug!("sending message: {}", x),
@@ -165,11 +161,9 @@ impl GeneralMessage for SendMessage{
         debug!("SendMessage details: {:?}", detail);
         let create = encode::to_vec_named(&create).unwrap();
         let detail = encode::to_vec_named(&detail).unwrap();
-        let send = encode::to_vec_named(&send).unwrap();
 
         let mut bundle = Bundled::create(create);
         bundle.bundled.push(detail);
-        bundle.bundled.push(send);
 
         let msg = bundle.encode()?;
         bundle_for_agent(msg, &self.to_vk, &self.agent_did, &self.agent_vk)
@@ -181,7 +175,7 @@ impl GeneralMessage for SendMessage{
 pub struct SendMessageResponse {
     #[serde(rename = "@type")]
     msg_type: MsgType,
-    uid: String,
+    uids: Vec<String>,
 }
 
 fn parse_send_message_response(response: Vec<u8>) -> Result<String, u32> {
@@ -208,8 +202,10 @@ pub fn parse_msg_uid(response: &str) -> Result<String,u32> {
     match serde_json::from_str(response) {
         Ok(json) => {
             let json: serde_json::Value = json;
-            match json["uid"].as_str() {
-                Some(x) => Ok(String::from(x)),
+            match json["uids"].as_array() {
+                Some(x) => {
+                    Ok(String::from(x[0].as_str().unwrap()))
+                },
                 None => {
                     info!("response had no uid");
                     Err(error::INVALID_JSON.code_num)
@@ -260,7 +256,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let result = parse_send_message_response(SEND_MESSAGE_RESPONSE.to_vec()).unwrap();
 
-        assert_eq!("{\"@type\":{\"name\":\"MSG_SENT\",\"ver\":\"1.0\"},\"uid\":\"ntc2ytb\"}", result);
+        assert_eq!("{\"@type\":{\"name\":\"MSG_SENT\",\"ver\":\"1.0\"},\"uids\":[\"ntc2ytb\"]}", result);
     }
 
     #[test]
@@ -268,26 +264,21 @@ mod tests {
 
         let test_val = "devin";
         let test_json = json!({
-            "uid": test_val
+            "uids": [test_val]
         });
 
         let to_str = serde_json::to_string(&test_json).unwrap();
         let uid = parse_msg_uid(&to_str).unwrap();
         assert_eq!(test_val, uid);
 
-
-
         let test_val = "devin";
         let test_json = json!({
-            "uid": ["test_val"]
+            "uids": "test_val"
         });
 
         let to_str = serde_json::to_string(&test_json).unwrap();
         let uid = parse_msg_uid(&to_str).unwrap_err();
         assert_eq!(error::INVALID_JSON.code_num, uid);
-
-
-
 
         let test_val = "devin";
         let test_json = json!({});

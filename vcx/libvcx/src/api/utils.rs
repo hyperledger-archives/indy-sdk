@@ -415,7 +415,7 @@ mod tests {
     }
 
     extern "C" fn update_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("update_cb failed")}
+        if err != 0 {panic!("update_cb failed: {}", err)}
         println!("successfully called update_cb")
     }
 
@@ -458,7 +458,6 @@ mod tests {
     extern "C" fn get_agency_messages_cb(command_handle: u32, err: u32, messages: *const c_char) {
         if err != 0 {panic!("get_agency_messages failed")}
         check_useful_c_str!(messages, ());
-        println!("{}", messages);
     }
 
     #[test]
@@ -476,7 +475,11 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
-        let rc = vcx_messages_update_status(0, ptr::null_mut(), ptr::null_mut(), Some(update_cb));
-        assert_eq!(rc, error::INVALID_OPTION.code_num);
+        let status = CString::new("MS-103").unwrap().into_raw();
+        let json = CString::new(r#"[{"pairwiseDID":"QSrw8hebcvQxiwBETmAaRs","uids":["mgrmngq"]}]"#).unwrap().into_raw();
+
+        let rc = vcx_messages_update_status(0, status, json, Some(update_cb));
+        assert_eq!(rc, error::SUCCESS.code_num);
+        thread::sleep(Duration::from_secs(1));
     }
 }

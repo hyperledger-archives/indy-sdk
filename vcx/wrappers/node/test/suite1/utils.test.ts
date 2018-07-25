@@ -9,6 +9,7 @@ import {
   provisionAgent,
   updateAgentInfo,
   updateInstitutionConfigs,
+  updateMessages,
   VCXCode
 } from 'src'
 
@@ -26,6 +27,9 @@ describe('utils:', () => {
     pairwiseDids: 'asdf',
     status: 'MS-104',
     uids: 'asdf'
+  }
+  const updateMessagesData = {
+    msgJson: '[{"pairwiseDID":"QSrw8hebcvQxiwBETmAaRs","uids":["mgrmngq"]}]'
   }
 
   describe('provisionAgent:', () => {
@@ -88,8 +92,13 @@ describe('utils:', () => {
   describe('downloadMessages:', () => {
     it('success', async () => {
       const messages = await downloadMessages(downloadMessagesData)
-      console.log(messages)
       assert.ok(messages)
+    })
+  })
+
+  describe('updateMessages:', () => {
+    it('success', async () => {
+      await updateMessages(updateMessagesData)
     })
   })
 })

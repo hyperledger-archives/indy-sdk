@@ -136,21 +136,21 @@ export async function downloadMessages
 }
 
 export interface IUpdateMessagesConfigs {
-  msgIds: string
+  msgJson: string
 }
 
-export async function updateMessages ({ msgIds }: IUpdateMessagesConfigs): Promise<number> {
+export async function updateMessages ({ msgJson }: IUpdateMessagesConfigs): Promise<number> {
   try {
     return await createFFICallbackPromise<number>(
       (resolve, reject, cb) => {
-        const rc = rustAPI().vcx_messages_update_status(0, msgIds, cb)
+        const rc = rustAPI().vcx_messages_update_status(0, 'MS-106', msgJson, cb)
         if (rc) {
           reject(rc)
         }
       },
       (resolve, reject) => Callback(
         'void',
-        ['unit32','unit32'],
+        ['uint32','uint32'],
         (xhandle: number, err: number) => {
           if (err) {
             reject(err)

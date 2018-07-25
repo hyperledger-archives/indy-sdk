@@ -50,7 +50,7 @@ export interface IFFIEntryPoint {
   vcx_mint_tokens: (numberOfAddresses: number, tokensPerAddress: number) => void,
   vcx_version: () => string,
   vcx_messages_download: (commandId: number, status: string, uids: string, pairwiseDids: string, cb: any) => number,
-  vcx_messages_update_status: (commandId: number, msgIds: string, cb: any) => number,
+  vcx_messages_update_status: (commandId: number, status: string, msgIds: string, cb: any) => number,
 
   // wallet
   vcx_wallet_get_token_info: (commandId: number, payment: number | undefined | null, cb: any) => number,
@@ -178,7 +178,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
   vcx_mint_tokens: [FFI_VOID, [FFI_UNSIGNED_INT, FFI_UNSIGNED_INT]],
   vcx_messages_download: [FFI_VOID, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
     FFI_STRING_DATA, FFI_CALLBACK_PTR]],
-  vcx_messages_update_status: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_CALLBACK_PTR]],
+  vcx_messages_update_status: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_STRING_DATA, FFI_STRING_DATA,
+    FFI_CALLBACK_PTR]],
 
   // wallet
   vcx_wallet_get_token_info: [FFI_ERROR_CODE, [FFI_COMMAND_HANDLE, FFI_PAYMENT_HANDLE, FFI_CALLBACK_PTR]],
