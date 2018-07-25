@@ -15,6 +15,7 @@ RUN apt-get update -y && apt-get install -y \
     cmake \
     apt-transport-https \
     ca-certificates \
+    software-properties-common \
     debhelper \
     wget \
     git \
@@ -24,37 +25,15 @@ RUN apt-get update -y && apt-get install -y \
     ruby-dev \ 
 	sudo \
     rubygems \
-    libzmq5
-
+    libzmq5 \
+    python3
 
 # Install Nodejs 
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
     && apt-get install -y nodejs
 
-ARG LIBINDY_VER="1.5.0~619"
-ARG LIBNULL_VER="1.5.0~619"
-ARG RUST_VER="1.26.0"
-
-# Install libindy
-RUN mkdir -p /libindy
-WORKDIR /libindy
-
-ENV LIBINDY_DEB=libindy_${LIBINDY_VER}_amd64.deb
-ENV LIBINDY_DOWNLOAD_URL=https://repo.sovrin.org/sdk/lib/apt/xenial/master/${LIBINDY_DEB}
-
-RUN curl -fsOSL $LIBINDY_DOWNLOAD_URL \
-    && dpkg -i $LIBINDY_DEB \
-    && apt-get -f install
-
-# Install libnullpay
-ENV LIBNULLPAY_DEB=libnullpay_${LIBNULL_VER}_amd64.deb
-ENV LIBNULLPAY_DOWNLOAD_URL=https://repo.sovrin.org/sdk/lib/apt/xenial/master/${LIBNULLPAY_DEB}
-
-RUN curl -fOL $LIBNULLPAY_DOWNLOAD_URL\
-    && dpkg -i $LIBNULLPAY_DEB\
-    && apt-get -f install
-
 # Install Rust
+ARG RUST_VER="1.27.0"
 ENV RUST_ARCHIVE=rust-${RUST_VER}-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
@@ -74,3 +53,19 @@ RUN apt-get install rpm -y
 COPY ./vcx/ci/scripts/installCert.sh /tmp
 RUN /tmp/installCert.sh
 
+# Add sovrin to sources.list
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 && \
+    add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master" && \
+    add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" && \
+    add-apt-repository 'deb https://repo.sovrin.org/deb xenial master' && \
+    add-apt-repository 'deb https://repo.corp.evernym.com/deb evernym-agency-dev-ubuntu main' && \
+    curl https://repo.corp.evernym.com/repo.corp.evenym.com-sig.key | apt-key add - && \
+    apt-get update
+
+ARG LIBINDY_VER="1.5.0~619"
+ARG LIBNULL_VER="1.5.0~619"
+ARG LIBSOVTOKEN_VER="0.7.0+23.49"
+
+RUN apt-get install -y \
+    libsovtoken=${LIBSOVTOKEN_VER} \
+    libindy=${LIBINDY_VER} \
