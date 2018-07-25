@@ -87,6 +87,48 @@ See section "Release channels" for more details.
 ### iOS
 See [wrapper iOS install documentation](wrappers/ios/README.md "How to install").
 
+### Android
+
+1. Go to `https://repo.sovrin.org/android/libindy/{release-channel}`.
+2. 3 architecture are supported as of now arm,arm64 and x86.
+3. Download latest version of libindy.
+4. Unzip archives to the directory where you want to save the `.so` files.
+5. After unzip you will get next structure of files:
+
+* `Your working directory`
+    * `include`
+        * `...`
+    * `lib`
+        * `libindy.so`
+        * `libindy_shared.so`
+        * `libindy.a`
+
+`include` contains c-header files which contains all necessary declarations
+that may be need for your applications.
+
+`lib` contains three types of binaries.
+ * `libindy.so` - This is a shared library which is statically linked with all the depenedencies. 
+ You dont need to sidelaod other dependencies like zmq, sodium and openssl to android app if you use this.
+ 
+ * `libindy_shared.so` - This is pure shared library. It is not dynamically linked to its dependencies. 
+ You need to sideload the binaries with its dependencies. You can download the needed pre-built dependencies from [here](https://github.com/evernym/indy-android-dependencies/tree/v1.0.2)
+    * Rename this library to `libindy.so` before loading it into the app. This will help you in having the compatibility with existing wrappers.
+    
+ * `libindy.a` - This is a static library, which is compiled with NDK.
+ 
+ [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/doc/android-build.md#usage)  
+
+{release channel} must be replaced with rc or stable to define corresponded release channel.
+See section "Release channels" for more details.
+
+ **Note** :
+ 
+ - [WARNING] This library should be considered as experimental as currently unit tests are *not* executed in the CI phase.
+ 
+ - We are using the [NDK16b](https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip) because it is the last NDK to have support for `gnustl_shared` stl. 
+ gnustl_shared is deprecated in latest NDK. gnustal_shared is needed because the dependencies are compiled using gnustal_shared and you will get build errors if more than one type of stl while compiling.
+ 
+ 
 ### MacOS
 
 Pre-built libraries are not provided for MacOS. Please look [here](doc/mac-build.md)
