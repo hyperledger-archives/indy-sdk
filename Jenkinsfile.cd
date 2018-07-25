@@ -29,7 +29,7 @@ def testing() {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
                 'redhat-test' : { rhelTesting() },
-                'android-test' : { androidTesting() },
+                'android-test': { androidTesting() },
                 'windows-test': { windowsTesting() }
         ])
     }
@@ -385,8 +385,7 @@ def ubuntuTesting() {
 }
 
 
-
-def androidEmulatorTest(buildEnv){
+def androidEmulatorTest(buildEnv) {
     dir('libindy') {
         echo 'Building android binaries: Building docker image'
         ANDROID_SCRIPT_PATH = 'android.test.sh'
@@ -727,13 +726,13 @@ def setupRust() {
     sh "rustup default 1.26.0"
 }
 
-def androidPublishing(isStable){
+def androidPublishing(isStable) {
     def libindyVersion
     def libnullpayVersion
 
-    node('ubuntu'){
-        stage('Publish Android binaries'){
-            try{
+    node('ubuntu') {
+        stage('Publish Android binaries') {
+            try {
                 echo 'Publish Android files: Checkout scm'
                 checkout scm
 
@@ -742,10 +741,10 @@ def androidPublishing(isStable){
 
                 echo 'Publish Android binaries: Building docker image'
                 buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
-                buildAndroid(buildEnv,libindyVersion,libnullpayVersion,true,isStable)
+                buildAndroid(buildEnv, libindyVersion, libnullpayVersion, true, isStable)
 
             }
-            finally{
+            finally {
                 echo 'Publish Android binaries: Cleanup'
                 step([$class: 'WsCleanup'])
             }
@@ -755,26 +754,20 @@ def androidPublishing(isStable){
 
 def buildAndroid(buildEnv, libIndyVersion, libnullpayVersion, shouldPublish, isStable) {
 
-
-
     //ARM
     def arch = "arm"
-    androidBuildAndPublish(buildEnv, arch,libIndyVersion,'libindy',shouldPublish,isStable)
-    androidBuildAndPublish(buildEnv, arch,libnullpayVersion,'libnullpay',shouldPublish,isStable)
+    androidBuildAndPublish(buildEnv, arch, libIndyVersion, 'libindy', shouldPublish, isStable)
+    androidBuildAndPublish(buildEnv, arch, libnullpayVersion, 'libnullpay', shouldPublish, isStable)
 
     //x86
     arch = "x86"
-    androidBuildAndPublish(buildEnv, arch,libIndyVersion,'libindy',shouldPublish,isStable)
-    androidBuildAndPublish(buildEnv, arch,libnullpayVersion,'libnullpay',shouldPublish,isStable)
+    androidBuildAndPublish(buildEnv, arch, libIndyVersion, 'libindy', shouldPublish, isStable)
+    androidBuildAndPublish(buildEnv, arch, libnullpayVersion, 'libnullpay', shouldPublish, isStable)
 
     //arm64
     arch = "arm64"
-    androidBuildAndPublish(buildEnv, arch,libIndyVersion,'libindy',shouldPublish,isStable)
-    androidBuildAndPublish(buildEnv, arch,libnullpayVersion,'libnullpay',shouldPublish,isStable)
-
-
-
-
+    androidBuildAndPublish(buildEnv, arch, libIndyVersion, 'libindy', shouldPublish, isStable)
+    androidBuildAndPublish(buildEnv, arch, libnullpayVersion, 'libnullpay', shouldPublish, isStable)
 }
 
 def androidBuildAndPublish(buildEnv, arch, libVersion, artifact, shouldPublish, isStable) {
@@ -805,7 +798,7 @@ def androidBuildAndPublish(buildEnv, arch, libVersion, artifact, shouldPublish, 
         if (artifactName == "LIBINDY") {
             echo 'Publish Libindy android files for arm'
             androidPublishArtifacts(buildEnv, libVersion, arch, "libindy", isStable)
-        }else{
+        } else {
             echo 'Publish libnullpay android files for arm'
             androidPublishArtifacts(buildEnv, libVersion, arch, "libnullpay", isStable)
         }
@@ -814,7 +807,7 @@ def androidBuildAndPublish(buildEnv, arch, libVersion, artifact, shouldPublish, 
     }
 }
 
-def androidPublishArtifacts(buildEnv, packageVersion,arch,artifact,isStable) {
+def androidPublishArtifacts(buildEnv, packageVersion, arch, artifact, isStable) {
     buildEnv.inside {
         sh 'chmod -R 777 ci'
 
@@ -827,9 +820,9 @@ def androidPublishArtifacts(buildEnv, packageVersion,arch,artifact,isStable) {
 def androidTesting() {
     def libindyVersion
 
-    node('ubuntu'){
-        stage('Android test'){
-            try{
+    node('ubuntu') {
+        stage('Android test') {
+            try {
                 echo 'Building android binaries. This will act as a minimal test for android'
                 checkout scm
 
@@ -840,14 +833,11 @@ def androidTesting() {
                 sh 'chmod -R 777 libindy/'
                 sh 'chmod -R 777 libindy/ci/'
 
-                //TODO: Enable emulator test when the unit test start passing on android device
+                //TODO: IS-835 Enable emulator test when the unit test start passing on android device
                 //androidEmulatorTest(buildEnv)
-                buildAndroid(buildEnv,libindyVersion,libnullpayVersion,false,"0")
-
-
-
+                buildAndroid(buildEnv, libindyVersion, libnullpayVersion, false, "0")
             }
-            finally{
+            finally {
                 echo 'Building Android binaries: Cleanup'
                 step([$class: 'WsCleanup'])
             }

@@ -6,7 +6,7 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'android-test': { androidTesting()},
+                'android-test': { androidTesting() },
                 'macos-test'  : { macosTesting() },
                 'ios-test'    : { iosTesting() },
                 'redhat-test' : { rhelTesting() },
@@ -149,29 +149,26 @@ def macosTesting() {
 
 def androidTesting() {
 
-    node('ubuntu'){
-        stage('Android Test'){
-            try{
+    node('ubuntu') {
+        stage('Android Test') {
+            try {
                 echo 'Building android binaries.This will start emulator and test android binaries'
                 checkout scm
 
                 dir('libindy') {
                     echo 'Building android binaries: Building docker image'
                     def testEnv
-                    testEnv = dockerBuild('libindy',"ci/ubuntu.dockerfile ci")
+                    testEnv = dockerBuild('libindy', "ci/ubuntu.dockerfile ci")
                     sh 'chmod -R 777 ci/*.sh'
                     sh 'chmod -R 777 *.sh'
-                    //TODO: Tests on emulator fails as of now. Enable device testing when all tests starts passing
+                    //TODO: IS-835 Tests on emulator fails as of now. Enable device testing when all tests starts passing
                     //androidTestingOnEmulator(testEnv)
 
                     //Meanwhile use "build success" as test
                     buildAndroid(testEnv)
-
                 }
-
-
             }
-            finally{
+            finally {
                 echo 'Building Android binaries: Cleanup'
                 step([$class: 'WsCleanup'])
             }
@@ -179,7 +176,7 @@ def androidTesting() {
     }
 }
 
-def androidTestingOnEmulator(testEnv){
+def androidTestingOnEmulator(testEnv) {
     ANDROID_SCRIPT_PATH = 'android.test.sh'
     echo 'Testing Libindy android files for arm'
     testEnv.inside {
@@ -324,7 +321,7 @@ def linuxTesting(file, env_name, network_name) {
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
 
         parallel([
-                "${env_name}-libindy-test": {
+                "${env_name}-libindy-test"   : {
                     dir('libindy') {
                         testEnv.inside("--network=${network_name}") {
                             echo "${env_name} Libindy Test: Test"
@@ -350,10 +347,10 @@ def linuxTesting(file, env_name, network_name) {
                         }
                     }
                 },
-                "${env_name}-java-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
-                "${env_name}-python-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
-                "${env_name}-nodejs-test" : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
-                "${env_name}-cli-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
+                "${env_name}-java-test"     : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
+                "${env_name}-python-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
+                "${env_name}-nodejs-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
+                "${env_name}-cli-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
         ])
     }
     finally {
@@ -457,7 +454,7 @@ def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
 def dockerClean(env_name, network_name) {
     try {
         try {
-            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true" //TODO: FIXME
+            sh "docker ps --format '{{.ID}}' --filter network=${network_name} | xargs docker rm -f || true"//TODO: FIXME
         } catch (error) {
             echo "${env_name} Test: error while force clean-up network ${network_name} - ${error}"
         }
