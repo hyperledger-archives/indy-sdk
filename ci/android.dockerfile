@@ -14,7 +14,8 @@ RUN apt-get update -y && apt-get install -y \
     libtool \
     libzmq3-dev \
     python3 \
-    openjdk-8-jdk
+    openjdk-8-jdk \
+    maven
 
 # Install Gradle
 RUN wget https://services.gradle.org/distributions/gradle-3.4.1-bin.zip

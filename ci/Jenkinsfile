@@ -207,11 +207,11 @@ def packageAndroid(envn) {
 
 def publishAndroid(envn) {
     envn.inside {
-        CERT_SCRIPT = 'vcx/ci/scripts/getCert.sh'
-        sh "${CERT_SCRIPT}"
-        withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
-            sh "echo before publishing"
-            sh "find vcx/wrappers/java/vcx/build/outputs/aar/ -type f -name 'com.evernym-vcx_*-release.aar' -exec curl --cacert /tmp/cert/ca.crt -u \"${KRAKEN_CREDENTIALS}\" -X POST  https://kraken.corp.evernym.com/repo/android/upload -F 'file=@{}' \\;"
+        withCredentials([file(credentialsId: 'cloudrepo-artifactory-settings-libvcx', variable: 'settingsFile')]) {
+            sh 'cp $settingsFile .'
+            ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidPublish.sh'
+            sh "chmod +x ${ANDROID_SCRIPT_PATH}"
+            sh "./${ANDROID_SCRIPT_PATH}"
         }
     }
 }
