@@ -610,7 +610,7 @@ impl AnoncredsUtils {
                        "sex".to_string() => "male".to_string(),
                        "name".to_string() => "Alexander".to_string(),
                        "height".to_string() => "170".to_string(),
-                       "age".to_string() => "28".to_string()
+                       "Age".to_string() => "28".to_string()
                    }
         }
     }
