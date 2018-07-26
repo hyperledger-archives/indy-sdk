@@ -282,7 +282,7 @@ ledger get-cred-def schema_id=<schema_id-value> signature_type=<signature_type-v
 #### NODE transaction
 Send NODE transaction
 ```
-ledger node target=<target-value> node_ip=<node_ip-value> node_port=<node_port-value> client_ip=<client_ip-value> client_port=<client_port-value> alias=<alias-value> blskey=<blskey-value> [services=<services-value>]
+ledger node target=<target-value> alias=<alias-value> [node_ip=<node_ip-value>] [node_port=<node_port-value>] [client_ip=<client_ip-value>] [client_port=<client_port-value>] [blskey=<blskey-value>] [blskey_pop=<blskey-proof-of-possession>] [services=<services-value>]
 ```
 
 #### GET_VALIDATOR_INFO transaction
