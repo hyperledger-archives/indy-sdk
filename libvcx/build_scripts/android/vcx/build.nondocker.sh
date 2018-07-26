@@ -77,6 +77,10 @@ if [ -z "${LIBINDY_DIR}" ] ; then
     else
         LIBINDY_DIR=$7
     fi
+
+    if [ -d "${LIBINDY_DIR}/lib" ] ; then
+            LIBINDY_DIR="${LIBINDY_DIR}/lib"
+    fi
 fi
 
 if [ -z "${LIBNULLPAY_DIR}" ] ; then
@@ -89,6 +93,9 @@ if [ -z "${LIBNULLPAY_DIR}" ] ; then
         exit 1
     else
         LIBNULLPAY_DIR=$8
+    fi
+    if [ -d "${LIBNULLPAY_DIR}/lib" ] ; then
+            LIBNULLPAY_DIR="${LIBNULLPAY_DIR}/lib"
     fi
 fi
 
