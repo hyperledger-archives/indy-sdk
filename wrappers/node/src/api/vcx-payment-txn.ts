@@ -12,16 +12,16 @@ export interface IPamentManagerConstructorData {
   handle: string
 }
 export abstract class PaymentManager {
-  protected _handle: string
+  public readonly handle: string
   protected abstract _getPaymentTxnFn: (commandId: number, handle: string, cb: any) => number
   constructor ({ handle }: IPamentManagerConstructorData) {
-    this._handle = handle
+    this.handle = handle
   }
   public async getPaymentTxn (): Promise<IPaymentTxn> {
     try {
       const paymentTxnStr = await createFFICallbackPromise<string>(
           (resolve, reject, cb) => {
-            const rc = this._getPaymentTxnFn(0, this._handle, cb)
+            const rc = this._getPaymentTxnFn(0, this.handle, cb)
             if (rc) {
               reject(rc)
             }

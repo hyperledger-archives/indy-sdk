@@ -99,7 +99,7 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
             resolve(handleStr)
           })
     )
-    super._setHandle(handleRes)
+    this._setHandle(handleRes)
   }
 
   private async _initFromData (objData: object): Promise<void> {
@@ -122,7 +122,7 @@ export abstract class VCXBase<SerializedData> extends GCWatcher {
             resolve(handleStr)
           })
     )
-    super._setHandle(objHandle)
+    this._setHandle(objHandle)
   }
 
 }

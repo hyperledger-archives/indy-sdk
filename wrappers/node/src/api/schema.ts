@@ -167,7 +167,7 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
     }
   }
 
-  public readonly paymentManager: SchemaPaymentManager
+  public paymentManager!: SchemaPaymentManager
   protected _releaseFn = rustAPI().vcx_schema_release
   protected _serializeFn = rustAPI().vcx_schema_serialize
   protected _deserializeFn = rustAPI().vcx_schema_deserialize
@@ -180,7 +180,6 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
     this._name = name
     this._schemaId = schemaId
     this._schemaAttrs = schemaAttrs
-    this.paymentManager = new SchemaPaymentManager({ handle: this.handle })
   }
 
   get schemaAttrs (): ISchemaAttrs {
@@ -220,5 +219,10 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
     } catch (err) {
       throw new VCXInternalError(err)
     }
+  }
+
+  protected _setHandle (handle: string) {
+    super._setHandle(handle)
+    this.paymentManager = new SchemaPaymentManager({ handle })
   }
 }

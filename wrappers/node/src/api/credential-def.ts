@@ -116,7 +116,7 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     return super._deserialize(CredentialDef, credentialDef, credentialDefParams)
   }
 
-  public readonly paymentManager: CredentialDefPaymentManager
+  public paymentManager!: CredentialDefPaymentManager
   protected _releaseFn = rustAPI().vcx_credentialdef_release
   protected _serializeFn = rustAPI().vcx_credentialdef_serialize
   protected _deserializeFn = rustAPI().vcx_credentialdef_deserialize
@@ -129,7 +129,6 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
     this._name = name
     this._schemaId = schemaId
     this._credDefId = null
-    this.paymentManager = new CredentialDefPaymentManager({ handle: this.handle })
   }
 
   /**
@@ -176,5 +175,10 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
 
   get credDefId () {
     return this._credDefId
+  }
+
+  protected _setHandle (handle: string) {
+    super._setHandle(handle)
+    this.paymentManager = new CredentialDefPaymentManager({ handle })
   }
 }

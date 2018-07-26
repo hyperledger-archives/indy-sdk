@@ -96,6 +96,7 @@ describe('CredentialDef:', () => {
     it('exists', async () => {
       const credentialDef = await credentialDefCreate()
       assert.instanceOf(credentialDef.paymentManager, CredentialDefPaymentManager)
+      assert.equal(credentialDef.paymentManager.handle, credentialDef.handle)
     })
 
     describe('getPaymentTxn:', () => {

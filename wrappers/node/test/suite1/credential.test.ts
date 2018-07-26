@@ -209,6 +209,7 @@ describe('Credential:', () => {
     it('exists', async () => {
       const credential = await credentialCreateWithOffer()
       assert.instanceOf(credential.paymentManager, CredentialPaymentManager)
+      assert.equal(credential.paymentManager.handle, credential.handle)
     })
 
     describe('getPaymentTxn:', () => {
