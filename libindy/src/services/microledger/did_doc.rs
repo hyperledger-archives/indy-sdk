@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::str;
+use std::marker::PhantomData;
 
 use serde_json;
 use serde_json::Value as JValue;
@@ -14,6 +15,7 @@ use services::microledger::view::View;
 use serde_json::Map;
 use services::microledger::constants::{KEY_TXN, ENDPOINT_TXN, ENDPOINT_REM_TXN, VERKEY,
                                        AUTHORIZATIONS, ADDRESS, ENDPOINTS};
+use domain::ledger::constants::NYM;
 use services::wallet::language::{Operator, TagName, TargetValue};
 use services::wallet::storage::Tag;
 use services::microledger::auth::Auth;
@@ -22,12 +24,13 @@ use services::wallet::storage::StorageRecord;
 
 const TYP: [u8; 3] = [1, 2, 3];
 
-pub struct DidDoc {
+pub struct DidDoc<'a> {
     pub did: String,
     storage: Box<WalletStorage>,
+    phantom: PhantomData<&'a ()>,
 }
 
-impl View for DidDoc where Self: Sized {
+impl<'a> View for DidDoc<'a> where Self: Sized {
     // initialize
     fn new(did: &str, options: HashMap<String, String>) -> Result<Self, CommonError> {
         let parsed_options = parse_options(options)?;
@@ -38,7 +41,8 @@ impl View for DidDoc where Self: Sized {
             CommonError::InvalidStructure(format!("Error while getting storage for ledger: {:?}.", err)))?;
         Ok(DidDoc {
             did: did.to_string(),
-            storage
+            storage,
+            phantom: PhantomData
         })
     }
 
@@ -55,6 +59,10 @@ impl View for DidDoc where Self: Sized {
                             Some(t) => {
                                 match t.as_str() {
                                     Some(typ) => match typ {
+                                        NYM => {
+                                            println!("NYM txn {}", typ);
+                                            Ok(())
+                                        },
                                         KEY_TXN => {
                                             self.add_key_from_txn(&op)
                                         }
@@ -80,7 +88,7 @@ impl View for DidDoc where Self: Sized {
     }
 }
 
-impl DidDoc {
+impl<'a> DidDoc<'a> {
     pub fn create_options(storage_path: Option<&str>) -> HashMap<String, String> {
         create_storage_options(storage_path, vec!["did_doc_path"])
     }
@@ -231,32 +239,6 @@ impl DidDoc {
         }
     }
 
-    fn extract_endpoints(key_entry: &mut JValue) -> Map<String, JValue> {
-        match key_entry.get(ENDPOINTS) {
-            Some(v) => {
-                v.as_object().unwrap().clone()
-            }
-            None => {
-                let m: Map<String, JValue> = Map::new();
-                m
-            }
-        }
-    }
-
-    fn add_endpoint_in_json(key_entry: &mut JValue, endpoint: String) -> Result<JValue, CommonError> {
-        let mut endpoints = DidDoc::extract_endpoints(key_entry);
-        endpoints.insert(endpoint, JValue::Object(Map::new()));
-        serde_json::to_value(endpoints).map_err(|e|
-            CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", e)))
-    }
-
-    fn remove_endpoint_from_json(key_entry: &mut JValue, endpoint: String) -> Result<JValue, CommonError> {
-        let mut endpoints = DidDoc::extract_endpoints(key_entry);
-        endpoints.remove(&endpoint);
-        serde_json::to_value(endpoints).map_err(|e|
-            CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", e)))
-    }
-
     pub fn add_endpoint_from_txn(&mut self, operation: &JValue) -> Result<(), CommonError> {
         let (verkey, endpoint) = DidDoc::get_key_and_endpoint_from_operation(operation)?;
         let mut key_entry = self.get_key_entry(&verkey)?;
@@ -335,6 +317,32 @@ impl DidDoc {
         }
         serde_json::to_string(&res).map_err(|err|
             CommonError::InvalidState(format!("Unable to jsonify ledger udpdate message {:?}.", err)))
+    }
+
+    fn extract_endpoints(key_entry: &mut JValue) -> Map<String, JValue> {
+        match key_entry.get(ENDPOINTS) {
+            Some(v) => {
+                v.as_object().unwrap().clone()
+            }
+            None => {
+                let m: Map<String, JValue> = Map::new();
+                m
+            }
+        }
+    }
+
+    fn add_endpoint_in_json(key_entry: &mut JValue, endpoint: String) -> Result<JValue, CommonError> {
+        let mut endpoints = DidDoc::extract_endpoints(key_entry);
+        endpoints.insert(endpoint, JValue::Object(Map::new()));
+        serde_json::to_value(endpoints).map_err(|e|
+            CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", e)))
+    }
+
+    fn remove_endpoint_from_json(key_entry: &mut JValue, endpoint: String) -> Result<JValue, CommonError> {
+        let mut endpoints = DidDoc::extract_endpoints(key_entry);
+        endpoints.remove(&endpoint);
+        serde_json::to_value(endpoints).map_err(|e|
+            CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", e)))
     }
 }
 

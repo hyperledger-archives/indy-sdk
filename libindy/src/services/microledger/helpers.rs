@@ -10,6 +10,11 @@ use services::wallet::storage::default::SQLiteStorageType;
 use services::wallet::storage::WalletStorage;
 use errors::wallet::WalletStorageError;
 use services::wallet::storage::WalletStorageType;
+use services::wallet::WalletService;
+use utils::inmem_wallet::InmemWallet;
+use services::wallet::RecordOptions;
+use services::crypto::CryptoService;
+use utils::crypto::base58::encode;
 
 pub fn usize_to_byte_array(n: usize) -> Vec<u8> {
     let mut wtr: Vec<u8> = Vec::new();
@@ -81,6 +86,55 @@ pub fn get_ledger_storage(did: &str, storage_path: &str, metadata: &[u8])  -> Re
 
 pub fn gen_enc_key(size: usize) -> Vec<u8> {
     thread_rng().gen_iter().take(size).collect()
+}
+
+pub fn register_inmem_wallet(wallet_service: &WalletService) {
+    wallet_service
+        .register_wallet_storage(
+            "inmem",
+            InmemWallet::create,
+            InmemWallet::open,
+            InmemWallet::close,
+            InmemWallet::delete,
+            InmemWallet::add_record,
+            InmemWallet::update_record_value,
+            InmemWallet::update_record_tags,
+            InmemWallet::add_record_tags,
+            InmemWallet::delete_record_tags,
+            InmemWallet::delete_record,
+            InmemWallet::get_record,
+            InmemWallet::get_record_id,
+            InmemWallet::get_record_type,
+            InmemWallet::get_record_value,
+            InmemWallet::get_record_tags,
+            InmemWallet::free_record,
+            InmemWallet::get_storage_metadata,
+            InmemWallet::set_storage_metadata,
+            InmemWallet::free_storage_metadata,
+            InmemWallet::search_records,
+            InmemWallet::search_all_records,
+            InmemWallet::get_search_total_count,
+            InmemWallet::fetch_search_next_record,
+            InmemWallet::free_search
+        )
+        .unwrap();
+}
+
+pub fn sign_msg(wallet_service: &WalletService, crypto_service: &CryptoService,
+                wallet_handle: i32, verkey: &str, msg: &[u8]) -> Result<String, CommonError> {
+    let key = wallet_service.get_indy_object(wallet_handle, verkey,
+                                                  &RecordOptions::id_value(),
+                                                  &mut String::new()).map_err(|err|
+        CommonError::InvalidState(format!("Cannot get key {:?}.", err)))?;
+    let res = crypto_service.sign(&key, msg).map_err(|err|
+        CommonError::InvalidState(format!("Cannot sign {:?}.", err)))?;
+    Ok(encode(&res))
+}
+
+pub fn verify_msg(crypto_service: &CryptoService, verkey: &str, msg: &[u8], sig: &[u8]) -> Result<bool, CommonError> {
+    let res = crypto_service.verify(verkey, &msg, &sig).map_err(|err|
+        CommonError::InvalidState(format!("Cannot verify {:?}.", err)))?;
+    Ok(res)
 }
 
 pub mod tests {

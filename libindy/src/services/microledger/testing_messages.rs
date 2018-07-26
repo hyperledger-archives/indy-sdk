@@ -13,7 +13,14 @@ use domain::crypto::key::KeyInfo;
 use services::microledger::microledger::Microledger;
 use services::microledger::messages::LedgerUpdate;
 use services::microledger::messages::ValidProtocolMessages;
-
+use services::wallet::WalletService;
+use services::wallet::RecordOptions;
+use utils::crypto::base58::{encode, decode};
+use services::microledger::view::View;
+use services::microledger::did_doc::DidDoc;
+use services::microledger::helpers::register_inmem_wallet;
+use services::microledger::helpers::sign_msg;
+use services::microledger::helpers::verify_msg;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum MsgTypes {
@@ -23,7 +30,7 @@ pub enum MsgTypes {
 }
 
 // NOTE: THIS STRUCT IS VERY LIKELY TO CHANGE
-// ASSUMPTION: THERE IS A SECURE MECHANISM TO DELIVER THESE STRUCTS
+// ASSUMPTION: THERE IS A SECURE (CONFIDENTIALITY+INTEGRITY) MECHANISM TO DELIVER THESE STRUCTS
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Connection {
     #[serde(rename = "type")]
@@ -91,23 +98,28 @@ impl Message {
 }
 
 struct Agent<'a> {
-    // TODO: FIX THIS!!!. Should have a wallet, not a signing key
-    pub sigkey: String,
+    pub crypto_service: CryptoService,
+    pub wallet_service: WalletService,
+    pub wallet_handle: i32,
     pub verkey: String,
     pub managing_did: String,
     pub remote_did: Option<String>,
     pub m_ledgers: HashMap<String, DidMicroledger<'a>>,
+    pub did_docs: HashMap<String, Rc<RefCell<DidDoc<'a>>>>,
     pub peer: Rc<RefCell<Peer<'a>>>
 }
 
 impl<'a> Agent<'a> {
     // TODO: Fix this, seed should not be required, a verkey should be passed and the given wallet should be checked for the verkey
     pub fn new(did: &str, seed: Option<String>, options: HashMap<String, String>) -> Result<Self, CommonError> {
+        let crypto_service = CryptoService::new();
+        let wallet_service = WalletService::new();
+        register_inmem_wallet(&wallet_service);
+
         let ml = DidMicroledger::new(did, options)?;
         let mut m_ledgers: HashMap<String, DidMicroledger> = HashMap::new();
         m_ledgers.insert(did.to_string(), ml);
 
-        let crypto_service = CryptoService::new();
         let key_info = KeyInfo {
             seed: seed,
             crypto_type: None
@@ -115,14 +127,25 @@ impl<'a> Agent<'a> {
         let key = crypto_service.create_key(&key_info).map_err(|err|
             CommonError::InvalidState(format!("Cannot create a key {:?}.", err)))?;
 
+        let id = format!("{}:{}", did, &key.verkey);
+        let config = json!({"id": &id, "storage_type": "inmem"}).to_string();
+        let credentials = json!({"key": &id}).to_string();
+        wallet_service.create_wallet(&config, &credentials).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&config, &credentials).unwrap();
+
+        wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).unwrap();
+
         let peer = Rc::new(RefCell::new(Peer::new(did)));
 
         Ok(Agent {
-            sigkey: key.signkey,
+            crypto_service,
+            wallet_service,
+            wallet_handle,
             verkey: key.verkey,
             managing_did: did.to_string(),
             remote_did: None,
             m_ledgers,
+            did_docs: HashMap::new(),
             peer
         })
     }
@@ -162,6 +185,7 @@ impl<'a> Agent<'a> {
     pub fn process_inbox(&mut self) -> Result<(), CommonError> {
         let mut msgs_to_sent: Vec<(String, String)> = vec![];
 
+        // TODO: Process one by one as error on a single message will cause error and early return
         let recvd_msgs = self.peer.borrow_mut().process();
 
         for msg in recvd_msgs {
@@ -193,7 +217,7 @@ impl<'a> Agent<'a> {
                             }
                         }
                         Some("ConnectionResponse") => {
-                            let r: Connection = serde_json::from_value(j).map_err(|err|
+                            let r: ConnectionResponse = serde_json::from_value(j).map_err(|err|
                                 CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
                             let msg = r.message;
                             let jpm: ValidProtocolMessages = serde_json::from_str(&msg).map_err(|err|
@@ -208,6 +232,18 @@ impl<'a> Agent<'a> {
                             }
                         }
                         Some("Message") => {
+                            let m: Message = serde_json::from_value(j).map_err(|err|
+                                CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
+                            let remote_did = &m.did;
+                            let remote_verkey = &m.verkey;
+                            if !self.verify_msg(remote_verkey, m.payload.clone().as_bytes(),
+                                                &decode(&m.signature).unwrap()).unwrap() {
+                                return Err(CommonError::InvalidStructure(String::from(
+                                    "Verification failed")));
+                            }
+                            let payload_json: JValue = serde_json::from_str(&m.payload).map_err(|err|
+                                CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
+
 
                         }
                         _ => return Err(CommonError::InvalidStructure(String::from("Cannot find required type")))
@@ -268,11 +304,15 @@ impl<'a> Agent<'a> {
             let txns = Agent::get_validate_ledger_update_events(l.events)?;
             let s_opts = DidMicroledger::create_options(None);
             let mut ml = DidMicroledger::new(&did, s_opts)?;
+            let s_opts = DidDoc::create_options(None);
+            let mut doc = Rc::new(RefCell::new(DidDoc::new(&did, s_opts)?));
+            ml.register_did_doc(Rc::clone(&doc));
             println!("Existing size {}", &ml.get_size());
             let txns: Vec<&str> = txns.iter().map(|t|t.as_ref()).collect();
             println!("Inserting in ledger {} txns", &txns.len());
             ml.add_multiple(txns)?;
             self.m_ledgers.insert(did.to_string(), ml);
+            self.did_docs.insert(did.to_string(), Rc::clone(&doc));
             self.remote_did = Some(did.to_string());
             Ok(true)
         } else {
@@ -304,17 +344,26 @@ impl<'a> Agent<'a> {
             CommonError::InvalidState(format!("Unable to jsonify connection {:?}.", err)))?;
         Ok(conn_resp)
     }
+
+    fn sign_msg(&self, msg: &[u8]) -> Result<String, CommonError> {
+        sign_msg(&self.wallet_service, &self.crypto_service, self.wallet_handle, &self.verkey, msg)
+    }
+
+    fn verify_msg(&self, verkey: &str, msg: &[u8], sig: &[u8]) -> Result<bool, CommonError> {
+        verify_msg(&self.crypto_service, verkey, msg, sig)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use super::super::testing_utils::tests::{get_new_network};
-    use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger};
+    use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger, valid_did_doc_storage_options};
     use services::microledger::helpers::{create_storage_options};
     use utils::test::TestUtils;
     use utils::environment::EnvironmentUtils;
     use services::microledger::testing_utils::Network;
+    use services::microledger::constants::AUTHZ_ADD_KEY;
 
     pub fn gen_storage_options(extra_path: Option<&str>) -> HashMap<String, String>{
         let mut path = EnvironmentUtils::tmp_path();
@@ -490,8 +539,37 @@ mod tests {
     }
 
     #[test]
-    fn test_message_sending() {
+    fn test_messaging() {
         TestUtils::cleanup_temp();
+        let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let (mut network, mut agent1, mut agent2) = connected_agents();
+        let payload = json!({
+            "type": "greetings",
+            "msg": "hey there"
+        }).to_string();
+
+        // Correct sig
+        let sig = agent1.sign_msg(payload.as_bytes()).unwrap();
+        let msg = Message::new(&payload, did1, &agent1.verkey, &sig);
+        network.borrow().send_message(&serde_json::to_string(&msg).unwrap(), &agent2.get_peer_id()).unwrap();
+        assert!(agent2.process_inbox().is_ok());
+
+        // Incorrect sig
+        let msg = Message::new(&payload, did1, &agent1.verkey, "4Be93xNcmaoHzUVK89Qz4aeQg9zMiC2PooegFWEY5aQEfzZo9uNgdjJJDQPj3K5Jj4gE5mERBetqLUBUu6G5cyX2");
+        network.borrow().send_message(&serde_json::to_string(&msg).unwrap(), &agent2.get_peer_id()).unwrap();
+        assert!(agent2.process_inbox().is_err());
+    }
+
+    #[test]
+    fn test_key_rotation() {
+        TestUtils::cleanup_temp();
+        let did1 = "75KUW8tPUQNBS4W7ibFeY8";
+        let did2 = "84qiTnsJrdefBDMrF49kfa";
+        let (mut network, mut agent1, mut agent2) = connected_agents();
+        /*{
+            let ml = agent1.get_self_microledger_mut().unwrap();
+            let new_verkey = "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ";
+            let key_txn = ml.add_key_txn(new_verkey, &vec![AUTHZ_ADD_KEY]).unwrap();
+        }*/
     }
 }

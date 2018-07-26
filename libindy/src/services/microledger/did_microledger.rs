@@ -21,6 +21,11 @@ use services::microledger::did_doc::DidDoc;
 use services::microledger::view::View;
 use services::microledger::helpers::get_storage_path_from_options;
 use services::microledger::helpers::get_ledger_storage;
+use std::cell::RefCell;
+use std::rc::Rc;
+use services::crypto::CryptoService;
+use services::wallet::WalletService;
+use services::microledger::helpers::sign_msg;
 
 const TYP: [u8; 3] = [0, 1, 2];
 
@@ -28,8 +33,10 @@ pub struct DidMicroledger<'a> {
     pub did: String,
     merkle_tree: MerkleTree,
     storage: Box<WalletStorage>,
+    pub crypto_service: CryptoService,
+    pub wallet_service: WalletService,
     // TODO: Change DidDoc to View
-    pub views: HashMap<String, &'a mut DidDoc>
+    pub views: HashMap<String, Rc<RefCell<DidDoc<'a>>>>
 }
 
 impl<'a> Microledger for DidMicroledger<'a> where Self: Sized {
@@ -44,11 +51,15 @@ impl<'a> Microledger for DidMicroledger<'a> where Self: Sized {
         let storage = get_ledger_storage(did, storage_path,
                                          &DidMicroledger::get_metadata()).map_err(|err|
             CommonError::InvalidStructure(format!("Error while getting storage for ledger: {:?}.", err)))?;
-        let views: HashMap<String, &mut DidDoc> = HashMap::new();
+        let crypto_service = CryptoService::new();
+        let wallet_service = WalletService::new();
+        let views: HashMap<String, Rc<RefCell<DidDoc>>> = HashMap::new();
         let mut ml = DidMicroledger {
             did: did.to_string(),
             merkle_tree: tree,
             storage,
+            crypto_service,
+            wallet_service,
             views
         };
         // Build a merkle tree from ledger storage
@@ -202,8 +213,17 @@ impl<'a> DidMicroledger<'a> {
         self.add(&nym_txn)
     }
 
-    pub fn add_key_txn(&mut self, verkey: &str, authorisations: &Vec<&str>) -> Result<usize, CommonError> {
-        let key_txn = TxnBuilder::build_key_txn(verkey, authorisations)?;
+    pub fn add_key_txn(&mut self, verkey: &str, authorisations: &Vec<&str>,
+                       wallet_handle: Option<i32>,
+                       signing_verkey: Option<&str>) -> Result<usize, CommonError> {
+        let mut key_txn = TxnBuilder::build_key_txn(verkey, authorisations)?;
+        match (wallet_handle, signing_verkey) {
+            (Some(wh), Some(sv)) => {
+                let sig = sign_msg(&self.wallet_service, &self.crypto_service, wh, &sv, key_txn.as_bytes())?;
+                key_txn = TxnBuilder::add_signature_to_txn(&key_txn, &sig)?;
+            }
+            _ => ()
+        }
         self.add(&key_txn)
     }
 
@@ -217,18 +237,23 @@ impl<'a> DidMicroledger<'a> {
         self.add(&ep_txn)
     }
 
-    fn register_did_doc(&mut self, view: &'a mut DidDoc) {
-        self.views.insert(view.did.clone(), view);
+    pub fn register_did_doc(&mut self, view: Rc<RefCell<DidDoc<'a>>>) {
+        let did = view.borrow().did.clone();
+        self.views.insert(did, view);
     }
 
-    fn deregister_did_doc(&mut self, view_id: &str) {
+    pub fn deregister_did_doc(&mut self, view_id: &str) {
         self.views.remove(view_id);
     }
 
     fn update_views_with_txn(&mut self, txn: &str) -> Result<(), CommonError> {
         match self.views.get_mut(&self.did) {
             Some(mut v) => {
-                v.apply_txn(txn)?;
+                println!("Updating view with txn {}", txn);
+                {
+                    v.borrow_mut().apply_txn(txn)?;
+                }
+                println!("{}", v.borrow().as_json().unwrap());
             }
             None => ()
         }
@@ -248,6 +273,8 @@ pub mod tests {
     use services::microledger::constants::*;
     use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger,
                                                 get_4_txns, check_empty_storage, get_new_did_doc};
+    use services::microledger::helpers::register_inmem_wallet;
+    use domain::crypto::key::KeyInfo;
 
     fn add_4_txns(ml: &mut DidMicroledger) -> usize {
         for txn in get_4_txns() {
@@ -255,6 +282,25 @@ pub mod tests {
         }
         ml.get_size()
 
+    }
+
+    fn in_memory_wallet_with_key(wallet_service: &WalletService, seed: Option<String>) -> i32 {
+        let crypto_service = CryptoService::new();
+        let key_info = KeyInfo {
+            seed: seed,
+            crypto_type: None
+        };
+        let key = crypto_service.create_key(&key_info).map_err(|err|
+            CommonError::InvalidState(format!("Cannot create a key {:?}.", err))).unwrap();
+
+        register_inmem_wallet(wallet_service);
+        let config = json!({"id": &key.verkey, "storage_type": "inmem"}).to_string();
+        let credentials = json!({"key": &id}).to_string();
+        wallet_service.create_wallet(&config, &credentials).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&config, &credentials).unwrap();
+        wallet_service.add_indy_object(wallet_handle, &key.verkey, &key,
+                                       &HashMap::new()).unwrap();
+        wallet_handle
     }
 
     #[test]
@@ -342,11 +388,19 @@ pub mod tests {
     fn test_add_key_txn() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
+        let verkey = "4Yk9HoDSfJv9QcmJbLcXdWVgS7nfvdUqiVcvbSu8VBru";
         let authorisations: Vec<&str> = vec![AUTHZ_ALL, AUTHZ_ADD_KEY, AUTHZ_REM_KEY];
         let mut ml = get_new_microledger(did);
-        let s = ml.add_key_txn(verkey, &authorisations).unwrap();
+        let s = ml.add_key_txn(verkey, &authorisations, None, None).unwrap();
         assert_eq!(s, 1);
+
+        let wallet_handle = in_memory_wallet_with_key(&ml.wallet_service,
+                                                      Some("ffffffffffffffffffffffffffffffff".to_string()));
+        let signing_verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
+        let s = ml.add_key_txn(verkey, &vec![AUTHZ_MPROX], Some(wallet_handle),
+                               Some(signing_verkey)).unwrap();
+        assert_eq!(s, 2);
+
     }
 
     #[test]
@@ -441,10 +495,10 @@ pub mod tests {
     fn test_did_doc_registered_with_ledger() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let mut doc = get_new_did_doc(did);
+        let mut doc = Rc::new(RefCell::new(get_new_did_doc(did)));
         let mut ml = get_new_microledger(did);
         assert!(ml.views.is_empty());
-        ml.register_did_doc(&mut doc);
+        ml.register_did_doc(Rc::clone(&doc));
         assert!(ml.views.get(did).is_some());
         ml.deregister_did_doc(did);
         assert!(ml.views.is_empty());
@@ -454,15 +508,15 @@ pub mod tests {
     fn test_did_doc_updated_with_ledger_txns() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let mut doc = get_new_did_doc(did);
+        let mut doc = Rc::new(RefCell::new(get_new_did_doc(did)));
         // TODO: Use Rc here
         {
             let mut ml = get_new_microledger(did);
-            ml.register_did_doc(&mut doc);
+            ml.register_did_doc(Rc::clone(&doc));
 
             let verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
             let authorisations: Vec<&str> = vec![AUTHZ_ALL];
-            ml.add_key_txn(verkey, &authorisations).unwrap();
+            ml.add_key_txn(verkey, &authorisations, None, None).unwrap();
             let e1 = "https://agent.example.com";
             let e2 = "https://agent2.example.com";
             ml.add_endpoint_txn(verkey, e1).unwrap();
@@ -470,7 +524,7 @@ pub mod tests {
             ml.add_endpoint_rem_txn(verkey, e2).unwrap();
         }
         let expected_did_doc_1 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{}}}}"#;;
-        assert_eq!(doc.as_json().unwrap(), expected_did_doc_1);
+        assert_eq!(doc.borrow().as_json().unwrap(), expected_did_doc_1);
     }
 
 }
