@@ -20,7 +20,7 @@ import java9.util.concurrent.CompletableFuture;
  * by the Java wrapper of libvcx.
  */
 public class VcxJava {
-	static String TAG ="JAVA_WRAPPER:VCX_JAVA ";
+	static String TAG ="JAVA_WRAPPER::VCX_JAVA ";
 	/*
 	 * API
 	 */
