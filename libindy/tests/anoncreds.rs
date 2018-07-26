@@ -1985,6 +1985,33 @@ mod high_cases {
 
                 WalletUtils::close_wallet(wallet_handle).unwrap();
             }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_uppercase() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"AGe", "p_type":">=", "p_value":18 })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
         }
 
         mod predicate_restrictions_wql_format {

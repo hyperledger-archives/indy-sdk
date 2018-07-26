@@ -19,7 +19,7 @@ use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use super::tails::SDKTailsAccessor;
 
 use domain::anoncreds::schema::{Schema, schemas_map_to_schemas_v1_map};
-use domain::anoncreds::credential::{Credential, CredentialInfo};
+use domain::anoncreds::credential::{Credential, CredentialInfo, AttributeValues};
 use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, cred_defs_map_to_cred_defs_v1_map};
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
@@ -805,8 +805,15 @@ impl ProverCommandExecutor {
             let (referent, credential) = self._get_credential(&credential_record)?;
 
             if let Some(predicate) = predicate_info {
+
+                let cred_values_common_view: HashMap<String, AttributeValues> =
+                    credential.values
+                        .iter()
+                        .map(|(key, value)| (attr_common_view(&key), value.clone()))
+                        .collect();
+
                 let satisfy = self.anoncreds_service.prover.attribute_satisfy_predicate(predicate,
-                                                                                        &credential.values[&attr_common_view(&predicate.name)].encoded)?;
+                                                                                        &cred_values_common_view[&attr_common_view(&predicate.name)].encoded)?;
                 if !satisfy { continue; }
             }
 
