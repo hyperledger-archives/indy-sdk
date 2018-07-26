@@ -20,10 +20,10 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
-default = ["bn_openssl", "sign_sodium", "box_sodium", "sealedbox_sodium", "base58_rust_base58", "base64_rust_base64", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests", "pwhash_argon2i13_sodium", "hmacsha256_sodium", "memzero_sodium"]
+default = ["bn_openssl", "ed25519_sign_sodium", "ed25519_box_sodium", "sealedbox_sodium", "base58_rust_base58", "base64_rust_base64", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests", "pwhash_argon2i13_sodium", "hmacsha256_sodium", "memzero_sodium", "randombytes_sodium"]
 bn_openssl = ["openssl", "int_traits"]
-sign_sodium = ["sodiumoxide"]
-box_sodium = ["sodiumoxide"]
+ed25519_sign_sodium = ["sodiumoxide"]
+ed25519_box_sodium = ["sodiumoxide"]
 sealedbox_sodium = ["sodiumoxide"]
 base58_rust_base58 = ["rust-base58"]
 base64_rust_base64 = ["base64"]
@@ -37,6 +37,7 @@ revocation_tests = []
 sodium_static = []
 hmacsha256_sodium = ["sodiumoxide"]
 memzero_sodium = ["sodiumoxide"]
+randombytes_sodium = ["sodiumoxide"]
 
 # Causes the build to fail on all warnings
 fatal_warnings = []

@@ -10,8 +10,8 @@ use domain::crypto::combo_box::ComboBox;
 use utils::crypto::base58;
 use utils::crypto::base64;
 use utils::crypto::verkey_builder::build_full_verkey;
-use utils::crypto::sign;
-use utils::crypto::box_;
+use utils::crypto::ed25519_sign;
+use utils::crypto::ed25519_box;
 
 use std::collections::HashMap;
 use std::str;
@@ -19,15 +19,15 @@ use std::str;
 pub const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
 trait CryptoType {
-    fn encrypt(&self, sk: &sign::SecretKey, vk: &sign::PublicKey, doc: &[u8], nonce: &box_::Nonce) -> Result<Vec<u8>, CryptoError>;
-    fn decrypt(&self, sk: &sign::SecretKey, vk: &sign::PublicKey, doc: &[u8], nonce: &box_::Nonce) -> Result<Vec<u8>, CryptoError>;
-    fn gen_nonce(&self) -> box_::Nonce;
-    fn create_key(&self, seed: Option<&sign::Seed>) -> Result<(sign::PublicKey, sign::SecretKey), CryptoError>;
-    fn validate_key(&self, _vk: &sign::PublicKey) -> Result<(), CryptoError>;
-    fn sign(&self, sk: &sign::SecretKey, doc: &[u8]) -> Result<sign::Signature, CryptoError>;
-    fn verify(&self, vk: &sign::PublicKey, doc: &[u8], signature: &sign::Signature) -> Result<bool, CryptoError>;
-    fn encrypt_sealed(&self, vk: &sign::PublicKey, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
-    fn decrypt_sealed(&self, vk: &sign::PublicKey, sk: &sign::SecretKey, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
+    fn encrypt(&self, sk: &ed25519_sign::SecretKey, vk: &ed25519_sign::PublicKey, doc: &[u8], nonce: &ed25519_box::Nonce) -> Result<Vec<u8>, CryptoError>;
+    fn decrypt(&self, sk: &ed25519_sign::SecretKey, vk: &ed25519_sign::PublicKey, doc: &[u8], nonce: &ed25519_box::Nonce) -> Result<Vec<u8>, CryptoError>;
+    fn gen_nonce(&self) -> ed25519_box::Nonce;
+    fn create_key(&self, seed: Option<&ed25519_sign::Seed>) -> Result<(ed25519_sign::PublicKey, ed25519_sign::SecretKey), CryptoError>;
+    fn validate_key(&self, _vk: &ed25519_sign::PublicKey) -> Result<(), CryptoError>;
+    fn sign(&self, sk: &ed25519_sign::SecretKey, doc: &[u8]) -> Result<ed25519_sign::Signature, CryptoError>;
+    fn verify(&self, vk: &ed25519_sign::PublicKey, doc: &[u8], signature: &ed25519_sign::Signature) -> Result<bool, CryptoError>;
+    fn encrypt_sealed(&self, vk: &ed25519_sign::PublicKey, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
+    fn decrypt_sealed(&self, vk: &ed25519_sign::PublicKey, sk: &ed25519_sign::SecretKey, doc: &[u8]) -> Result<Vec<u8>, CryptoError>;
 }
 
 pub struct CryptoService {
@@ -156,7 +156,7 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let my_sk = sign::SecretKey::from_slice(&base58::decode(my_key.signkey.as_str())?)?;
+        let my_sk = ed25519_sign::SecretKey::from_slice(&base58::decode(my_key.signkey.as_str())?)?;
         let signature = crypto_type.sign(&my_sk, doc)?[..].to_vec();
 
         trace!("sign <<< signature: {:?}", signature);
@@ -181,8 +181,8 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let their_vk = sign::PublicKey::from_slice(&base58::decode(&their_vk)?)?;
-        let signature = sign::Signature::from_slice(&signature)?;
+        let their_vk = ed25519_sign::PublicKey::from_slice(&base58::decode(&their_vk)?)?;
+        let signature = ed25519_sign::Signature::from_slice(&signature)?;
 
         let valid = crypto_type.verify(&their_vk, msg, &signature)?;
 
@@ -238,8 +238,8 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(&crypto_type_name).unwrap();
 
-        let my_sk = sign::SecretKey::from_slice(&base58::decode(my_key.signkey.as_str())?)?;
-        let their_vk = sign::PublicKey::from_slice(&base58::decode(their_vk)?)?;
+        let my_sk = ed25519_sign::SecretKey::from_slice(&base58::decode(my_key.signkey.as_str())?)?;
+        let their_vk = ed25519_sign::PublicKey::from_slice(&base58::decode(their_vk)?)?;
         let nonce = crypto_type.gen_nonce();
 
         let encrypted_doc = crypto_type.encrypt(&my_sk, &their_vk, doc, &nonce)?;
@@ -282,9 +282,9 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let my_sk = sign::SecretKey::from_slice(&base58::decode(&my_key.signkey)?)?;
-        let their_vk = sign::PublicKey::from_slice(&base58::decode(their_vk)?)?;
-        let nonce = box_::Nonce::from_slice(&nonce)?;
+        let my_sk = ed25519_sign::SecretKey::from_slice(&base58::decode(&my_key.signkey)?)?;
+        let their_vk = ed25519_sign::PublicKey::from_slice(&base58::decode(their_vk)?)?;
+        let nonce = ed25519_box::Nonce::from_slice(&nonce)?;
 
         let decrypted_doc = crypto_type.decrypt(&my_sk, &their_vk, &doc, &nonce)?;
 
@@ -309,7 +309,7 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let their_vk = sign::PublicKey::from_slice(&base58::decode(their_vk)?)?;
+        let their_vk = ed25519_sign::PublicKey::from_slice(&base58::decode(their_vk)?)?;
 
         let encrypted_doc = crypto_type.encrypt_sealed(&their_vk, doc)?;
 
@@ -335,8 +335,8 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let my_vk = sign::PublicKey::from_slice(&base58::decode(my_vk)?)?;
-        let my_sk = sign::SecretKey::from_slice(&base58::decode(my_key.signkey.as_str())?)?;
+        let my_vk = ed25519_sign::PublicKey::from_slice(&base58::decode(my_vk)?)?;
+        let my_sk = ed25519_sign::SecretKey::from_slice(&base58::decode(my_key.signkey.as_str())?)?;
 
         let decrypted_doc = crypto_type.decrypt_sealed(&my_vk, &my_sk, doc)?;
 
@@ -345,7 +345,7 @@ impl CryptoService {
         Ok(decrypted_doc)
     }
 
-    pub fn convert_seed(&self, seed: Option<&str>) -> Result<Option<sign::Seed>, CryptoError> {
+    pub fn convert_seed(&self, seed: Option<&str>) -> Result<Option<ed25519_sign::Seed>, CryptoError> {
         trace!("convert_seed >>> seed: {:?}", seed);
 
         let res = match seed {
@@ -356,7 +356,7 @@ impl CryptoService {
                 } else {
                     seed.as_bytes().to_vec()
                 };
-                Some(sign::Seed::from_slice(&seed)?)
+                Some(ed25519_sign::Seed::from_slice(&seed)?)
             }
             None => None
         };
@@ -383,7 +383,7 @@ impl CryptoService {
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
         let vk = if vk.starts_with('~') { &vk[1..] } else { vk };
-        let vk = sign::PublicKey::from_slice(&base58::decode(vk)?)?;
+        let vk = ed25519_sign::PublicKey::from_slice(&base58::decode(vk)?)?;
 
         let res = crypto_type.validate_key(&vk)?;
 

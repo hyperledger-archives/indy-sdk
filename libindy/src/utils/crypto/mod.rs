@@ -1,13 +1,13 @@
 #[macro_use]
 pub mod sodium_type;
 
-#[cfg(feature = "sign_sodium")]
-#[path = "sign/sodium.rs"]
-pub mod sign;
+#[cfg(feature = "ed25519_sign_sodium")]
+#[path = "ed25519_sign/sodium.rs"]
+pub mod ed25519_sign;
 
-#[cfg(feature = "box_sodium")]
-#[path = "box_/sodium.rs"]
-pub mod box_;
+#[cfg(feature = "ed25519_box_sodium")]
+#[path = "ed25519_box/sodium.rs"]
+pub mod ed25519_box;
 
 #[cfg(feature = "base58_rust_base58")]
 #[path = "base58/rust_base58.rs"]
@@ -49,3 +49,7 @@ pub mod pwhash_argon2i13;
 #[cfg(feature = "hmacsha256_sodium")]
 #[path = "hmacsha256/sodium.rs"]
 pub mod hmacsha256;
+
+#[cfg(feature = "randombytes_sodium")]
+#[path = "randombytes/sodium.rs"]
+pub mod randombytes;

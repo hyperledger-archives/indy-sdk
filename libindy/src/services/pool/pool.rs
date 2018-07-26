@@ -23,7 +23,7 @@ use std::thread;
 use std::thread::JoinHandle;
 use super::indy_crypto::bls::VerKey;
 use super::zmq;
-use utils::crypto::sign::{CryptoSign, PublicKey};
+use utils::crypto::ed25519_sign;
 
 
 struct PoolSM<T: Networker, R: RequestHandler<T>> {
@@ -613,8 +613,8 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> Result<(HashMap<String, Option
         let node_verkey = txn.txn.data.dest.as_str().from_base58()
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid field dest in genesis transaction: {:?}", err)))?;
 
-        let node_verkey = PublicKey::from_slice(&node_verkey)
-            .and_then(|vk| CryptoSign::vk_to_curve25519(&vk))
+        let node_verkey = ed25519_sign::PublicKey::from_slice(&node_verkey)
+            .and_then(|vk| ed25519_sign::vk_to_curve25519(&vk))
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid field dest in genesis transaction: {:?}", err)))?;
 
         if txn.txn.data.data.services.is_none() || !txn.txn.data.data.services.as_ref().unwrap().contains(&"VALIDATOR".to_string()) {

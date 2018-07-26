@@ -510,8 +510,7 @@ mod tests {
         extern crate sodiumoxide;
 
         use services::pool::rust_base58::{FromBase58, ToBase58};
-        use utils::crypto::sign;
-        use utils::crypto::sign::CryptoSign;
+        use utils::crypto::ed25519_sign;
         use std::thread;
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
@@ -586,9 +585,9 @@ mod tests {
 
         pub fn start(gt: &mut NodeTransactionV1) -> thread::JoinHandle<Vec<String>> {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let (vk, sk) = (sign::PublicKey::from_slice(&vk[..]).unwrap(), sign::SecretKey::from_slice(&sk[..]).unwrap());
-            let pkc = CryptoSign::vk_to_curve25519(&vk).expect("Invalid pkc");
-            let skc = CryptoSign::sk_to_curve25519(&sk).expect("Invalid skc");
+            let (vk, sk) = (ed25519_sign::PublicKey::from_slice(&vk[..]).unwrap(), ed25519_sign::SecretKey::from_slice(&sk[..]).unwrap());
+            let pkc = ed25519_sign::vk_to_curve25519(&vk).expect("Invalid pkc");
+            let skc = ed25519_sign::sk_to_curve25519(&sk).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
 
