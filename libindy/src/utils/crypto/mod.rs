@@ -1,6 +1,10 @@
 #[macro_use]
 pub mod sodium_type;
 
+#[cfg(feature = "sign_sodium")]
+#[path = "sign/sodium.rs"]
+pub mod sign;
+
 #[cfg(feature = "box_sodium")]
 #[path = "box_/sodium.rs"]
 pub mod box_;

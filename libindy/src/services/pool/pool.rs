@@ -23,7 +23,7 @@ use std::thread;
 use std::thread::JoinHandle;
 use super::indy_crypto::bls::VerKey;
 use super::zmq;
-use utils::crypto::box_::CryptoBox;
+use utils::crypto::sign::{CryptoSign, PublicKey};
 
 
 struct PoolSM<T: Networker, R: RequestHandler<T>> {
@@ -361,7 +361,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                         let re: Option<RequestEvent> = pe.into();
                         match re.as_ref().map(|r| r.get_req_id()) {
                             Some(req_id) => {
-                                let mut request_handler = R::new(state.networker.clone(), _get_f(state.nodes.len()), &vec![cmd_id], &state.nodes, None, &pool_name,timeout, extended_timeout);
+                                let mut request_handler = R::new(state.networker.clone(), _get_f(state.nodes.len()), &vec![cmd_id], &state.nodes, None, &pool_name, timeout, extended_timeout);
                                 request_handler.process_event(re);
                                 state.request_handlers.insert(req_id.to_string(), request_handler); //FIXME check already exists
                             }
@@ -611,7 +611,11 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> Result<(HashMap<String, Option
     Ok(nodes.iter().map(|(_, txn)| {
         let node_alias = txn.txn.data.data.alias.clone();
         let node_verkey = txn.txn.data.dest.as_str().from_base58()
-            .map_err(|err| { CommonError::InvalidStructure(format!("Invalid field dest in genesis transaction: {:?}", err)) })?;
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid field dest in genesis transaction: {:?}", err)))?;
+
+        let node_verkey = PublicKey::from_slice(&node_verkey)
+            .and_then(|vk| CryptoSign::vk_to_curve25519(&vk))
+            .map_err(|err| CommonError::InvalidStructure(format!("Invalid field dest in genesis transaction: {:?}", err)))?;
 
         if txn.txn.data.data.services.is_none() || !txn.txn.data.data.services.as_ref().unwrap().contains(&"VALIDATOR".to_string()) {
             return Err(PoolError::CommonError(CommonError::InvalidState("Node is not a Validator".to_string())));
@@ -624,7 +628,8 @@ fn _get_nodes_and_remotes(merkle: &MerkleTree) -> Result<(HashMap<String, Option
 
         let remote = RemoteNode {
             name: node_alias.clone(),
-            public_key: CryptoBox::vk_to_curve25519(&node_verkey)?,
+            public_key: node_verkey[..].to_vec(),
+            // TODO:FIXME
             zaddr: address,
             is_blacklisted: false,
         };
