@@ -158,6 +158,7 @@ describe('Schema:', () => {
     it('exists', async () => {
       const schema = await schemaCreate()
       assert.instanceOf(schema.paymentManager, SchemaPaymentManager)
+      assert.equal(schema.paymentManager.handle, schema.handle)
     })
 
     describe('getPaymentTxn:', () => {

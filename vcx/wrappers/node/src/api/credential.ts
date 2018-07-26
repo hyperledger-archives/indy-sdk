@@ -186,18 +186,13 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
     }
   }
 
-  public readonly paymentManager: CredentialPaymentManager
+  public paymentManager!: CredentialPaymentManager
   protected _releaseFn = rustAPI().vcx_credential_release
   protected _updateStFn = rustAPI().vcx_credential_update_state
   protected _getStFn = rustAPI().vcx_credential_get_state
   protected _serializeFn = rustAPI().vcx_credential_serialize
   protected _deserializeFn = rustAPI().vcx_credential_deserialize
   protected _credOffer: string = ''
-
-  constructor (sourceId: string) {
-    super(sourceId)
-    this.paymentManager = new CredentialPaymentManager({ handle: this.handle })
-  }
 
   /**
    * Approves the credential offer and submits a credential request.
@@ -267,5 +262,10 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
     } catch (err) {
       throw new VCXInternalError(err)
     }
+  }
+
+  protected _setHandle (handle: string) {
+    super._setHandle(handle)
+    this.paymentManager = new CredentialPaymentManager({ handle })
   }
 }

@@ -223,6 +223,7 @@ describe('IssuerCredential:', () => {
     it('exists', async () => {
       const issuerCredential = await issuerCredentialCreate()
       assert.instanceOf(issuerCredential.paymentManager, IssuerCredentialPaymentManager)
+      assert.equal(issuerCredential.paymentManager.handle, issuerCredential.handle)
     })
 
     describe('getPaymentTxn:', () => {

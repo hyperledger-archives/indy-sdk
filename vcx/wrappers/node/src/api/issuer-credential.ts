@@ -121,7 +121,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
     }
   }
 
-  public readonly paymentManager: IssuerCredentialPaymentManager
+  public paymentManager!: IssuerCredentialPaymentManager
   protected _releaseFn = rustAPI().vcx_issuer_credential_release
   protected _updateStFn = rustAPI().vcx_issuer_credential_update_state
   protected _getStFn = rustAPI().vcx_issuer_credential_get_state
@@ -138,7 +138,6 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
     this._credentialName = credentialName
     this._attr = attr
     this._price = price
-    this.paymentManager = new IssuerCredentialPaymentManager({ handle: this.handle })
   }
 
   /**
@@ -233,5 +232,10 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
 
   get price () {
     return this._price
+  }
+
+  protected _setHandle (handle: string) {
+    super._setHandle(handle)
+    this.paymentManager = new IssuerCredentialPaymentManager({ handle })
   }
 }

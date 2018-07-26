@@ -3,7 +3,8 @@ import { VCXInternalError } from '../errors'
 
 export abstract class GCWatcher {
   protected abstract _releaseFn: any
-  private _handleRef: string | null = null
+  // LibVCX handles invalid handles
+  private _handleRef!: string
 
   public async release (): Promise<number> {
     try {
@@ -42,7 +43,6 @@ export abstract class GCWatcher {
   }
 
   get handle () {
-    // LibVCX handles invalid handles
-    return this._handleRef as string
+    return this._handleRef
   }
 }
