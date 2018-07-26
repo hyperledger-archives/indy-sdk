@@ -179,10 +179,15 @@ def fail() {
 
 def buildAndroid(envn) {
     envn.inside {
+        LIBINDY_BRANCH="master"
+        LIBINDY_VERSION="1.5.0-619"
+        LIBNULLPAY_BRANCH="master"
+        LIBNULLPAY_VERSION="1.5.0-619"
+
         ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
-        sh "./${ANDROID_SCRIPT_PATH} arm"
-        sh "./${ANDROID_SCRIPT_PATH} x86"
-        //sh "./${ANDROID_SCRIPT_PATH} arm64"
+        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBNULLPAY_BRANCH=${LIBNULLPAY_BRANCH} LIBNULLPAY_VERSION=${LIBNULLPAY_VERSION} ./${ANDROID_SCRIPT_PATH} arm"
+        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBNULLPAY_BRANCH=${LIBNULLPAY_BRANCH} LIBNULLPAY_VERSION=${LIBNULLPAY_VERSION} ./${ANDROID_SCRIPT_PATH} x86"
+//        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBNULLPAY_BRANCH=${LIBNULLPAY_BRANCH} LIBNULLPAY_VERSION=${LIBNULLPAY_VERSION} ./${ANDROID_SCRIPT_PATH} arm64"
         //Todo: get parallel processing to work. Currently it fails on Jenkins. It must share files or something
         // parallel([
         //     'arm': { sh "./${ANDROID_SCRIPT_PATH} arm"},

@@ -110,38 +110,24 @@ clone_indy_sdk() {
     fi
 }
 
-build_libindy() {
-    set -xv
+get_libindy() {
 
-    LIBINDY_PATH=indy-sdk/libindy/build_scripts/android
-    PREBUILT_BIN=../../../..
-    pushd ${LIBINDY_PATH}
-    mkdir -p toolchains/
-    ./build.withoutdocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${PREBUILT_BIN}/openssl_${ARCH} ${PREBUILT_BIN}/libsodium_${ARCH} ${PREBUILT_BIN}/libzmq_${ARCH}
-    popd
-    mv ${LIBINDY_PATH}/libindy_${ARCH} .
-    mv ${LIBINDY_PATH}/toolchains indy-sdk/libnullpay/build_scripts/android
+    set -xv
+    [ -z ${LIBINDY_BRANCH} ] && exit 1
+    [ -z ${LIBINDY_VERSION} ] && exit 1
+
+    wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+    unzip libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+
 }
 
-build_libnullpay() {
-    LIBNULLPAY_PATH=indy-sdk/libnullpay/build_scripts/android
-    LIBINDY_BIN="$(realpath libindy_${ARCH})"
-    if [ ! -d libindy_${ARCH} ]; then
-        echo "missing libindy_${ARCH}. Cannot proceed without it."
-        exit 1
-    fi
+get_libnullpay() {
+    set -xv
+    [ -z ${LIBNULLPAY_BRANCH} ] && exit 1
+    [ -z ${LIBNULLPAY_VERSION} ] && exit 1
+    wget https://repo.sovrin.org/android/libnullpay/${LIBNULLPAY_BRANCH}/${LIBNULLPAY_VERSION}/libnullpay_android_${ARCH}.${LIBNULLPAY_VERSION}.zip
+    unzip libnullpay_android_${ARCH}.${LIBNULLPAY_VERSION}.zip
 
-    pushd ${LIBNULLPAY_PATH}
-    if [ ! -d toolchains ]; then
-        mkdir toolchains/linux
-    fi
-    ./build.withoutdocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${LIBINDY_BIN}
-    popd
-
-    mv ${LIBNULLPAY_PATH}/libnullpay_${ARCH} .
-
-    # This is to prevent side effect in other builds
-    rm -rf ${LIBNULLPAY_PATH}/toolchains/linux
 }
 
 build_vcx() {
@@ -171,6 +157,6 @@ build_vcx() {
 }
 
 setup $1
-build_libindy $1
-build_libnullpay $1
+get_libindy $1
+get_libnullpay $1
 build_vcx $1
