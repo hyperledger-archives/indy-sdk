@@ -14,7 +14,6 @@ setup() {
     fi
     cd runtime_android_build
 	retrieve_prebuilt_binaries
-	clone_indy_sdk
 	generate_flags $1
     if [ ! -d "toolchains" ]; then
         mkdir toolchains
@@ -29,18 +28,6 @@ setup() {
     mkdir -p ${ANDROID_JNI_LIB}/arm
     mkdir -p ${ANDROID_JNI_LIB}/x86
     mkdir -p ${ANDROID_JNI_LIB}/arm64
-     if [ $1 == "arm64" ]; then
-        echo "overwriting .cargo files for arm64"
-        overwrite_cargo_files
-    fi
-
-}
-
-overwrite_cargo_files() {
-    SOCKET=/home/vcx/.cargo/registry/src/github.com-1ecc6299db9ec823/net2-0.2.32/src/socket.rs
-    UDS=/home/vcx/.cargo/registry/src/github.com-1ecc6299db9ec823/mio-0.6.14/src/sys/unix/uds.rs
-    sed -i 's/len as len_t/len as u32/g' ${SOCKET}
-    sed -i 's/let len_i32 = len as i32;/let len_i32 = len as u32;/g' ${UDS}
 }
 
 copy_dependencies() {
@@ -102,21 +89,18 @@ generate_flags(){
     fi
 }
 
-clone_indy_sdk() {
-    if [ ! -d "indy-sdk" ]; then
-        echo "cloning indy-sdk"
-        #git clone https://github.com/evernym/indy-sdk.git
-        git clone https://github.com/hyperledger/indy-sdk.git
-    fi
-}
-
 get_libindy() {
 
     set -xv
     [ -z ${LIBINDY_BRANCH} ] && exit 1
     [ -z ${LIBINDY_VERSION} ] && exit 1
 
-    wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+    if [ "$LIBINDY_BRANCH" = "stable" ]; then
+        wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+    else 
+        wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}-${LIBINDY_TAG}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+    fi
+
     unzip libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
 
 }
@@ -125,8 +109,14 @@ get_libnullpay() {
     set -xv
     [ -z ${LIBNULLPAY_BRANCH} ] && exit 1
     [ -z ${LIBNULLPAY_VERSION} ] && exit 1
-    wget https://repo.sovrin.org/android/libnullpay/${LIBNULLPAY_BRANCH}/${LIBNULLPAY_VERSION}/libnullpay_android_${ARCH}.${LIBNULLPAY_VERSION}.zip
-    unzip libnullpay_android_${ARCH}.${LIBNULLPAY_VERSION}.zip
+
+    if [ "$LIBINDY_BRANCH" = "stable" ]; then
+        wget https://repo.sovrin.org/android/libnullpay/${LIBNULLPAY_BRANCH}/${LIBNULLPAY_VERSION}/libnullpay_android_${ARCH}_${LIBNULLPAY_VERSION}.zip
+    else 
+        wget https://repo.sovrin.org/android/libnullpay/${LIBNULLPAY_BRANCH}/${LIBNULLPAY_VERSION}-${LIBNULLPAY_TAG}/libnullpay_android_${ARCH}_${LIBNULLPAY_VERSION}.zip
+    fi
+
+    unzip libnullpay_android_${ARCH}_${LIBNULLPAY_VERSION}.zip
 
 }
 
