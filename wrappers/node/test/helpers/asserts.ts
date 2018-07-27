@@ -28,8 +28,14 @@ export const validatePaymentTxn = (paymentTxn: IPaymentTxn) => {
   }
   assert.property(paymentTxn, 'outputs')
   assert.ok(Array.isArray(paymentTxn.outputs))
-  for (const utxo of paymentTxn.outputs) {
-    validateUTXO(utxo)
+  for (const paymentOutput of paymentTxn.outputs) {
+    assert.property(paymentOutput, 'recipient')
+    assert.equal(typeof paymentOutput.recipient, 'string')
+    assert.property(paymentOutput, 'amount')
+    assert.equal(typeof paymentOutput.amount, 'number')
+    if (paymentOutput.source) {
+      assert.equal(typeof paymentOutput.source, 'string')
+    }
   }
   return paymentTxn
 }

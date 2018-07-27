@@ -104,6 +104,13 @@ export interface IUTXO {
   txo?: string
 }
 
+export interface IPaymentOutput {
+  recipient: string,
+  amount: number,
+  extra?: string,
+  source?: string
+}
+
 export interface ISerializedData<T> {
   version: string,
   data: T

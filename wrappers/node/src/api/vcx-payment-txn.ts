@@ -1,12 +1,12 @@
 import * as ffi from 'ffi'
 import { VCXInternalError } from '../errors'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
-import { IUTXO } from './common'
+import { IPaymentOutput } from './common'
 
 export interface IPaymentTxn {
   amount: number,
   inputs: string[],
-  outputs: IUTXO[]
+  outputs: IPaymentOutput[]
 }
 export interface IPamentManagerConstructorData {
   handle: string
