@@ -1,17 +1,12 @@
-extern crate indy_crypto;
-extern crate serde;
-extern crate serde_json;
-
 use super::DELIMITER;
+use super::super::ledger::request::ProtocolVersion;
 
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-use self::indy_crypto::cl::{
+use indy_crypto::cl::{
     CredentialPrimaryPublicKey,
     CredentialRevocationPublicKey,
     CredentialPrivateKey,
     CredentialKeyCorrectnessProof
 };
-use super::super::ledger::request::ProtocolVersion;
 
 use std::collections::HashMap;
 use named_type::NamedType;
@@ -23,8 +18,6 @@ pub const CRED_DEF_MARKER: &'static str = "3";
 pub enum SignatureType {
     CL
 }
-
-impl<'a> JsonDecodable<'a> for SignatureType {}
 
 impl SignatureType {
     pub fn to_str(&self) -> &'static str {
@@ -41,8 +34,6 @@ pub struct CredentialDefinitionConfig {
     #[serde(default = "default_false")]
     pub support_revocation: bool
 }
-
-impl<'a> JsonDecodable<'a> for CredentialDefinitionConfig {}
 
 impl Default for CredentialDefinitionConfig {
     fn default() -> Self {
@@ -70,8 +61,6 @@ pub struct CredentialDefinitionV1 {
     pub value: CredentialDefinitionData
 }
 
-impl<'a> JsonDecodable<'a> for CredentialDefinitionV1 {}
-
 #[derive(Debug, Serialize, Deserialize, NamedType)]
 #[serde(tag = "ver")]
 pub enum CredentialDefinition {
@@ -88,10 +77,6 @@ impl CredentialDefinition {
         }
     }
 }
-
-impl JsonEncodable for CredentialDefinition {}
-
-impl<'a> JsonDecodable<'a> for CredentialDefinition {}
 
 impl From<CredentialDefinition> for CredentialDefinitionV1 {
     fn from(cred_def: CredentialDefinition) -> Self {
@@ -116,15 +101,7 @@ pub struct CredentialDefinitionPrivateKey {
     pub value: CredentialPrivateKey
 }
 
-impl JsonEncodable for CredentialDefinitionPrivateKey {}
-
-impl<'a> JsonDecodable<'a> for CredentialDefinitionPrivateKey {}
-
 #[derive(Debug, Serialize, Deserialize, NamedType)]
 pub struct CredentialDefinitionCorrectnessProof {
     pub value: CredentialKeyCorrectnessProof
 }
-
-impl JsonEncodable for CredentialDefinitionCorrectnessProof {}
-
-impl<'a> JsonDecodable<'a> for CredentialDefinitionCorrectnessProof {}
