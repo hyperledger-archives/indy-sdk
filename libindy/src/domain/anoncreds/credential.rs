@@ -67,7 +67,7 @@ pub struct CredentialInfo {
 
 impl JsonEncodable for CredentialInfo {}
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct AttributeValues {
     pub raw: String,
     pub encoded: String
