@@ -241,5 +241,8 @@ to simplify their transition to API of Libindy 1.4.0.
 
 ## How to Contribute
 
-Our [Maintainers](MAINTAINERS.md) article contains links to [contributor guidelines](http://bit.ly/2ugd0bq),
-our communication plan and contacts of maintainers.
+* We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
+* You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
+* We use developer certificate of origin (DCO) in all hyperledger repositories,
+  so to get your pull requests accepted, you must certify your commits by signing off on each commit.
+  More information can be found in [Signing Commits](doc/signing-commits.md) article.
