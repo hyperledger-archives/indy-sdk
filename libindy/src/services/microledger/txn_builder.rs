@@ -39,12 +39,12 @@ impl MLTxnVersion {
     }
 }
 
-#[derive(Serialize, PartialEq, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
-struct Txn<T: serde::Serialize> {
+pub struct Txn<T: serde::Serialize> {
     protocol_version: usize,
     txn_version: usize,
-    operation: T
+    pub operation: T
 }
 
 impl<T: serde::Serialize> Txn<T> {
@@ -84,11 +84,12 @@ impl TxnBuilder {
             CommonError::InvalidState(format!("ENDPOINT_REM txn operation is invalid {:?}.", err)))
     }
 
-    pub fn add_signature_to_txn(txn: &str, signature: &str) -> Result<String, CommonError> {
+    pub fn add_signature_to_txn(txn: &str, identifier: &str, signature: &str) -> Result<String, CommonError> {
         let mut j_txn: JValue = serde_json::from_str(txn).map_err(|err|
             CommonError::InvalidState(format!("txn is not json {:?}.", err)))?;
         let m = j_txn.as_object_mut().unwrap();
         m.insert(SIGNATURE.to_string(), JValue::from(signature.to_string()));
+        m.insert(IDENTIFIER.to_string(), JValue::from(identifier.to_string()));
         let signed_jval: JValue = JValue::from(m.to_owned());
         serde_json::to_string(&signed_jval).map_err(|err|
             CommonError::InvalidState(format!("Cannot jsonify signed txn {:?}.", err)))
@@ -305,21 +306,21 @@ mod tests {
         let authorisations: Vec<&str> = vec![AUTHZ_ALL];
         let key_txn = TxnBuilder::build_key_txn(verkey, &authorisations).unwrap();
         let signature = "4Be93xNcmaoHzUVK89Qz4aeQg9zMiC2PooegFWEY5aQEfzZo9uNgdjJJDQPj3K5Jj4gE5mERBetqLUBUu6G5cyX2";
-        let signed_txn1 = TxnBuilder::add_signature_to_txn(&key_txn, signature).unwrap();
-        let expected_key_txn = r#"{"operation":{"authorizations":["all"],"type":"2","verkey":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"},"protocolVersion":1,"signature":"4Be93xNcmaoHzUVK89Qz4aeQg9zMiC2PooegFWEY5aQEfzZo9uNgdjJJDQPj3K5Jj4gE5mERBetqLUBUu6G5cyX2","txnVersion":1}"#;
+        let signed_txn1 = TxnBuilder::add_signature_to_txn(&key_txn, verkey, signature).unwrap();
+        let expected_key_txn = r#"{"identifier":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC","operation":{"authorizations":["all"],"type":"2","verkey":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"},"protocolVersion":1,"signature":"4Be93xNcmaoHzUVK89Qz4aeQg9zMiC2PooegFWEY5aQEfzZo9uNgdjJJDQPj3K5Jj4gE5mERBetqLUBUu6G5cyX2","txnVersion":1}"#;
         assert_eq!(signed_txn1, expected_key_txn);
 
         let address = "https://agent.example.com";
         let ep_txn_1 = TxnBuilder::build_endpoint_txn(verkey, address).unwrap();
         let signature = "5PKvi7TNTaWDiGL1piHQpnnaFbQfRUArBGSKJ6GRBgYV1djWmv3Eff4vhtqJ5Lx3BRqWtgvnWAyNiSHQwcESTuKY";
-        let signed_txn2 = TxnBuilder::add_signature_to_txn(&ep_txn_1, signature).unwrap();
-        let expected_endpoint_txn = r#"{"operation":{"address":"https://agent.example.com","type":"3","verkey":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"},"protocolVersion":1,"signature":"5PKvi7TNTaWDiGL1piHQpnnaFbQfRUArBGSKJ6GRBgYV1djWmv3Eff4vhtqJ5Lx3BRqWtgvnWAyNiSHQwcESTuKY","txnVersion":1}"#;
+        let signed_txn2 = TxnBuilder::add_signature_to_txn(&ep_txn_1, verkey, signature).unwrap();
+        let expected_endpoint_txn = r#"{"identifier":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC","operation":{"address":"https://agent.example.com","type":"3","verkey":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"},"protocolVersion":1,"signature":"5PKvi7TNTaWDiGL1piHQpnnaFbQfRUArBGSKJ6GRBgYV1djWmv3Eff4vhtqJ5Lx3BRqWtgvnWAyNiSHQwcESTuKY","txnVersion":1}"#;
         assert_eq!(signed_txn2, expected_endpoint_txn);
 
         let ep_txn_2 = TxnBuilder::build_endpoint_rem_txn(verkey, address).unwrap();
         let signature = "2VGxYYGZKEfTfg6s6JAYatQVyrpmHiHTrB8UcxQkQPAt89ffhTgU3PDqpWrsFd9pAedMoQwB5jZc5mj88tuLZ8mY";
-        let signed_txn3 = TxnBuilder::add_signature_to_txn(&ep_txn_2, signature).unwrap();
-        let expected_endpoint_rem_txn = r#"{"operation":{"address":"https://agent.example.com","type":"4","verkey":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"},"protocolVersion":1,"signature":"2VGxYYGZKEfTfg6s6JAYatQVyrpmHiHTrB8UcxQkQPAt89ffhTgU3PDqpWrsFd9pAedMoQwB5jZc5mj88tuLZ8mY","txnVersion":1}"#;
+        let signed_txn3 = TxnBuilder::add_signature_to_txn(&ep_txn_2, verkey, signature).unwrap();
+        let expected_endpoint_rem_txn = r#"{"identifier":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC","operation":{"address":"https://agent.example.com","type":"4","verkey":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"},"protocolVersion":1,"signature":"2VGxYYGZKEfTfg6s6JAYatQVyrpmHiHTrB8UcxQkQPAt89ffhTgU3PDqpWrsFd9pAedMoQwB5jZc5mj88tuLZ8mY","txnVersion":1}"#;
         assert_eq!(signed_txn3, expected_endpoint_rem_txn);
     }
 }

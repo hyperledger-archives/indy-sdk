@@ -21,6 +21,8 @@ use services::microledger::did_doc::DidDoc;
 use services::microledger::helpers::register_inmem_wallet;
 use services::microledger::helpers::sign_msg;
 use services::microledger::helpers::verify_msg;
+use services::microledger::constants::{SIGNATURE, IDENTIFIER, KEY_TXN};
+use services::microledger::txn_builder::Txn;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum MsgTypes {
@@ -99,7 +101,7 @@ impl Message {
 
 struct Agent<'a> {
     pub crypto_service: CryptoService,
-    pub wallet_service: WalletService,
+    pub wallet_service: Rc<WalletService>,
     pub wallet_handle: i32,
     pub verkey: String,
     pub managing_did: String,
@@ -139,7 +141,7 @@ impl<'a> Agent<'a> {
 
         Ok(Agent {
             crypto_service,
-            wallet_service,
+            wallet_service: Rc::new(wallet_service),
             wallet_handle,
             verkey: key.verkey,
             managing_did: did.to_string(),
@@ -225,7 +227,9 @@ impl<'a> Agent<'a> {
                             match jpm {
                                 ValidProtocolMessages::LedgerUpdate(l) => {
                                     println!("{} Parsing inner connection response message", &self.managing_did);
-                                    self.process_ledger_update_from_connection(l)?;
+                                    if l.events.len() > 0 {
+                                        self.process_ledger_update_from_connection(l)?;
+                                    }
                                 },
                                 _ => return Err(CommonError::InvalidStructure(String::from(
                                     "Cannot parse inner message")))
@@ -243,7 +247,29 @@ impl<'a> Agent<'a> {
                             }
                             let payload_json: JValue = serde_json::from_str(&m.payload).map_err(|err|
                                 CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
-
+                            match payload_json.get("type") {
+                                Some(val) => {
+                                    match val.as_str() {
+                                        Some("greetings") => {
+                                            println!("Greetings received {:?}", &payload_json);
+                                        }
+                                        Some(LEDGER_UPDATE) => {
+                                            println!("{} Parsing inner connection response message", &self.managing_did);
+                                            let l: LedgerUpdate = serde_json::from_value(payload_json.clone()).map_err(|err|
+                                                CommonError::InvalidState(format!("Unable to convert to ledger update {:?}.", err)))?;
+                                            if l.events.len() > 0 {
+                                                self.process_ledger_update(l)?;
+                                            }
+                                        }
+                                        None => {
+                                            println!("Bad message payload, type should be string: {:?}", &payload_json);
+                                        }
+                                    }
+                                }
+                                None => {
+                                    println!("Bad message payload, without type: {:?}", &payload_json);
+                                }
+                            }
 
                         }
                         _ => return Err(CommonError::InvalidStructure(String::from("Cannot find required type")))
@@ -296,41 +322,119 @@ impl<'a> Agent<'a> {
         Ok(())
     }
 
+    fn process_ledger_update_for_new_did(&mut self, did: &str, l: LedgerUpdate) -> Result<bool, CommonError> {
+        println!("Don't have ledger for {}", &did);
+        let len = l.events.len() as u64;
+        let txns = Agent::get_validated_ledger_update_events(l.events, 1,
+                                                             len)?;
+        let s_opts = DidMicroledger::create_options(None);
+        let mut ml = DidMicroledger::new(&did, s_opts)?;
+        let s_opts = DidDoc::create_options(None);
+        let mut doc = Rc::new(RefCell::new(DidDoc::new(&did, s_opts)?));
+        ml.register_did_doc(Rc::clone(&doc));
+        println!("Existing size {}", &ml.get_size());
+        let txns: Vec<&str> = txns.iter().map(|t|t.as_ref()).collect();
+        println!("Inserting in ledger {} txns", &txns.len());
+        ml.add_multiple(txns)?;
+        // TODO: Check final root hash by cloning merkle tree
+        self.m_ledgers.insert(did.to_string(), ml);
+        self.did_docs.insert(did.to_string(), Rc::clone(&doc));
+        self.remote_did = Some(did.to_string());
+        Ok(true)
+    }
+
+    fn process_ledger_update_for_existing_did(&mut self, did: &str, l: LedgerUpdate) -> Result<bool, CommonError> {
+        let ml = self.m_ledgers.get_mut(did).unwrap();
+        let doc = self.did_docs.get(did).unwrap();
+        let existing_size = ml.get_size() as u64;
+        let events = Agent::get_unseen_events(existing_size, l.events);
+        let len = events.len() as u64;
+        let txns = Agent::get_validated_ledger_update_events(events, existing_size+1,
+                                                             existing_size+len)?;
+        for txn in txns {
+            if !Agent::validate_txn(&txn, &doc.borrow(), &self.crypto_service)? {
+                return Ok(false);
+            }
+        }
+        ml.add_multiple(txns.iter().map(|t|t.as_ref()).collect())?;
+
+        Ok(true)
+    }
+
+    pub fn validate_txn(txn: &str, did_doc: &DidDoc, crypto_service: &CryptoService) -> Result<bool, CommonError> {
+        let mut j_txn: JValue = serde_json::from_str(txn).map_err(|err|
+            CommonError::InvalidState(format!("Unable to parse json txn {:?}.", err)))?;
+        match j_txn.as_object_mut() {
+            Some(m_txn) => {
+                let idr = m_txn.remove(IDENTIFIER);
+                let sig = m_txn.remove(SIGNATURE);
+                let j_txn = JValue::from(m_txn.clone());
+                let txn: Txn<JValue> = serde_json::from_value(j_txn).map_err(|err|
+                    CommonError::InvalidState(format!("Unable to create txn {:?}.", err)))?;
+                let type_ = txn.operation.get("type");
+                match type_ {
+                    Some(t) => {
+                        match t.as_str() {
+                            Some(KEY_TXN) => {
+                                // TODO
+                                Ok(());
+                            }
+                            _ => Err(CommonError::InvalidStructure(format!("Unknown txn type {:?}", t)))
+                        }
+                    },
+                    None => Err(CommonError::InvalidStructure(String::from("Unable to find type in txn")))
+                }
+                Ok(true)
+            }
+            None => Err(CommonError::InvalidStructure(String::from("Unable to convert to json object")))
+        }
+    }
+
     fn process_ledger_update_from_connection(&mut self, l: LedgerUpdate) -> Result<bool, CommonError> {
         // TODO: Move part of this in microledger since processing LedgerUpdate is a core function
         let did = l.get_state_id();
         if self.m_ledgers.get(&did).is_none() {
-            println!("Don't have ledger for {}", &did);
-            let txns = Agent::get_validate_ledger_update_events(l.events)?;
-            let s_opts = DidMicroledger::create_options(None);
-            let mut ml = DidMicroledger::new(&did, s_opts)?;
-            let s_opts = DidDoc::create_options(None);
-            let mut doc = Rc::new(RefCell::new(DidDoc::new(&did, s_opts)?));
-            ml.register_did_doc(Rc::clone(&doc));
-            println!("Existing size {}", &ml.get_size());
-            let txns: Vec<&str> = txns.iter().map(|t|t.as_ref()).collect();
-            println!("Inserting in ledger {} txns", &txns.len());
-            ml.add_multiple(txns)?;
-            self.m_ledgers.insert(did.to_string(), ml);
-            self.did_docs.insert(did.to_string(), Rc::clone(&doc));
-            self.remote_did = Some(did.to_string());
-            Ok(true)
+            self.process_ledger_update_for_new_did(&did, l)
         } else {
             println!("Already have ledger for {}", &did);
             Ok(false)
         }
     }
 
-    fn get_validate_ledger_update_events(events: Vec<(u64, String)>) -> Result<Vec<String>, CommonError> {
+    fn process_ledger_update(&mut self, l: LedgerUpdate) -> Result<bool, CommonError> {
+        let did = l.get_state_id();
+        if self.m_ledgers.get(&did).is_none() {
+            self.process_ledger_update_for_new_did(&did, l)
+        } else {
+            println!("Already have ledger for {}", &did);
+            self.process_ledger_update_for_existing_did(&did, l)
+        }
+    }
+
+    pub fn get_unseen_events(seen_till: u64, events: Vec<(u64, String)>) -> Vec<(u64, String)> {
+        let len = events.len();
+        for i in 0..len {
+            if events[i].0 > seen_till {
+                return events[i..].to_vec()
+            }
+        }
+        vec![]
+    }
+
+    pub fn get_validated_ledger_update_events(events: Vec<(u64, String)>, start_from: u64,
+                                              end_at: u64) -> Result<Vec<String>, CommonError> {
         // TODO: Move this to microledger
         let mut txns: Vec<String> = vec![];
-        let mut i = 0u64;
+        let mut i = start_from - 1;
         for (j, txn) in events {
-            if j - i != 1 {
+            if (j < i) || (j - i != 1) {
                 return Err(CommonError::InvalidStructure(format!("seq no should be {} but was {}", i+1, j)))
             }
             txns.push(txn);
             i += 1;
+        }
+        if i != end_at {
+            return Err(CommonError::InvalidStructure(format!("seq no should be {} but was {}", end_at, i)))
         }
         Ok(txns)
     }
@@ -364,6 +468,8 @@ mod tests {
     use utils::environment::EnvironmentUtils;
     use services::microledger::testing_utils::Network;
     use services::microledger::constants::AUTHZ_ADD_KEY;
+    use services::microledger::txn_builder::TxnBuilder;
+    use services::microledger::constants::AUTHZ_ALL;
 
     pub fn gen_storage_options(extra_path: Option<&str>) -> HashMap<String, String>{
         let mut path = EnvironmentUtils::tmp_path();
@@ -379,19 +485,27 @@ mod tests {
     }
 
     fn get_agent1_genesis_txns() -> Vec<String> {
-        vec![
-            String::from(r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1"}}"#),
-            String::from(r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"}}"#),
-            String::from(r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent.example.com","type":"3","verkey":"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC"}}"#)
-        ]
+        let mut txns: Vec<String> = vec![];
+        txns.push(TxnBuilder::build_nym_txn("75KUW8tPUQNBS4W7ibFeY8", None).unwrap());
+        txns.push(TxnBuilder::build_key_txn("5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC", &vec![AUTHZ_ALL]).unwrap());
+
+        let t3 = TxnBuilder::build_endpoint_txn("5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC", "https://agent.example.com").unwrap();
+        let st3 = TxnBuilder::add_signature_to_txn(&t3, "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC", "3NhdyVztm92qYVfQn34n9uRYuHFe7HZwcgg8jaFVVhB7CY3HBE8hocPUX4jifUCNRbkKdJP5VdLER4pQ5fiK67rE").unwrap();
+        txns.push(st3);
+
+        txns
     }
 
     fn get_agent2_genesis_txns() -> Vec<String> {
-        vec![
-            String::from(r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"84qiTnsJrdefBDMrF49kfa","type":"1"}}"#),
-            String::from(r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ"}}"#),
-            String::from(r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent2.example.com","type":"3","verkey":"4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ"}}"#)
-        ]
+        let mut txns: Vec<String> = vec![];
+        txns.push(TxnBuilder::build_nym_txn("84qiTnsJrdefBDMrF49kfa", None).unwrap());
+        txns.push(TxnBuilder::build_key_txn("4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ", &vec![AUTHZ_ALL]).unwrap());
+
+        let t3 = TxnBuilder::build_endpoint_txn("4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ", "https://agent2.example.com").unwrap();
+        let st3 = TxnBuilder::add_signature_to_txn(&t3, "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ", "3PrU8GxZPVAcTEJdmPFpd4w9b4oMEoRv3guWeuXwgrKLHqfSkHkx7VSKJNRokj836Q6gzubqu6SCfybKi9NVAXJr").unwrap();
+        txns.push(st3);
+
+        txns
     }
 
     fn bootstrap_agent1(did: &str, seed: String) -> (Agent, String) {
@@ -458,6 +572,18 @@ mod tests {
     }
 
     #[test]
+    fn test_unseen_events() {
+        let events_1: Vec<(u64, String)> = vec![(1, "t1".into()), (2, "t2".into()), (3, "t3".into())];
+        assert_eq!(Agent::get_unseen_events(0, events_1.clone()),
+                   vec![(1, "t1".into()), (2, "t2".into()), (3, "t3".into())]);
+        assert_eq!(Agent::get_unseen_events(1, events_1.clone()),
+                   vec![(2, "t2".into()), (3, "t3".into())]);
+        assert_eq!(Agent::get_unseen_events(2, events_1.clone()),
+                   vec![(3, "t3".into())]);
+        assert_eq!(Agent::get_unseen_events(3, events_1.clone()), vec![]);
+    }
+
+    #[test]
     fn test_parse_ledger_events() {
         let events_1: Vec<(u64, String)> = vec![(0, "t1".into()), (1, "t2".into()), (2, "t3".into())];
         let events_2: Vec<(u64, String)> = vec![(1, "t1".into()), (3, "t2".into()), (4, "t3".into())];
@@ -465,12 +591,26 @@ mod tests {
         let events_4: Vec<(u64, String)> = vec![(1, "t1".into()), (2, "t2".into()), (4, "t3".into())];
         let events_5: Vec<(u64, String)> = vec![(1, "t1".into()), (2, "t2".into()), (3, "t3".into())];
 
-        assert!(Agent::get_validate_ledger_update_events(events_1).is_err());
-        assert!(Agent::get_validate_ledger_update_events(events_2).is_err());
-        assert!(Agent::get_validate_ledger_update_events(events_3).is_err());
-        assert!(Agent::get_validate_ledger_update_events(events_4).is_err());
+        assert!(Agent::get_validated_ledger_update_events(events_1, 1, 3).is_err());
+        assert!(Agent::get_validated_ledger_update_events(events_2, 1, 3).is_err());
+        assert!(Agent::get_validated_ledger_update_events(events_3, 1, 3).is_err());
+        assert!(Agent::get_validated_ledger_update_events(events_4, 1, 3).is_err());
         let e: Vec<String> = vec!["t1".into(), "t2".into(), "t3".into()];
-        assert_eq!(Agent::get_validate_ledger_update_events(events_5).unwrap(), e);
+        assert_eq!(Agent::get_validated_ledger_update_events(events_5.clone(), 1, 3).unwrap(), e);
+        assert!(Agent::get_validated_ledger_update_events(events_5.clone(), 1, 2).is_err());
+        assert!(Agent::get_validated_ledger_update_events(events_5.clone(), 1, 4).is_err());
+
+        let events_6: Vec<(u64, String)> = vec![(5, "t1".into()), (6, "t2".into()), (7, "t3".into())];
+        assert!(Agent::get_validated_ledger_update_events(events_6.clone(), 4, 7).is_err());
+        assert!(Agent::get_validated_ledger_update_events(events_6.clone(), 6, 7).is_err());
+        assert!(Agent::get_validated_ledger_update_events(events_6.clone(), 5, 8).is_err());
+        assert_eq!(Agent::get_validated_ledger_update_events(events_6.clone(), 5, 7).unwrap(), e);
+
+        let events_7: Vec<(u64, String)> = vec![(5, "t1".into()), (9, "t2".into()), (7, "t3".into())];
+        assert!(Agent::get_validated_ledger_update_events(events_7.clone(), 5, 7).is_err());
+
+        let events_8: Vec<(u64, String)> = vec![(5, "t1".into()), (6, "t2".into()), (8, "t3".into())];
+        assert!(Agent::get_validated_ledger_update_events(events_7.clone(), 5, 7).is_err());
     }
 
 
@@ -548,16 +688,19 @@ mod tests {
             "msg": "hey there"
         }).to_string();
 
-        // Correct sig
+        // Correct sig, correct key
         let sig = agent1.sign_msg(payload.as_bytes()).unwrap();
         let msg = Message::new(&payload, did1, &agent1.verkey, &sig);
         network.borrow().send_message(&serde_json::to_string(&msg).unwrap(), &agent2.get_peer_id()).unwrap();
         assert!(agent2.process_inbox().is_ok());
 
-        // Incorrect sig
+        // Incorrect sig, correct key
         let msg = Message::new(&payload, did1, &agent1.verkey, "4Be93xNcmaoHzUVK89Qz4aeQg9zMiC2PooegFWEY5aQEfzZo9uNgdjJJDQPj3K5Jj4gE5mERBetqLUBUu6G5cyX2");
         network.borrow().send_message(&serde_json::to_string(&msg).unwrap(), &agent2.get_peer_id()).unwrap();
         assert!(agent2.process_inbox().is_err());
+
+        // Correct sig, incorrect key
+
     }
 
     #[test]
@@ -566,10 +709,25 @@ mod tests {
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
         let (mut network, mut agent1, mut agent2) = connected_agents();
-        /*{
+        let (new_verkey, new_seq_no) = {
+            let ws1 = Rc::clone(&agent1.wallet_service);
+            let wh1 = (&agent1).wallet_handle.clone();
             let ml = agent1.get_self_microledger_mut().unwrap();
+            let signing_verkey = "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC";
             let new_verkey = "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ";
-            let key_txn = ml.add_key_txn(new_verkey, &vec![AUTHZ_ADD_KEY]).unwrap();
-        }*/
+            let s = ml.get_size();
+            let new_seq_no = ml.add_key_txn(new_verkey, &vec![AUTHZ_ADD_KEY],
+                                         Some(&ws1),
+                                         Some(wh1),
+                                         Some(signing_verkey)).unwrap();
+            assert_eq!((ml.get_size() - s), 1);
+            (new_verkey, new_seq_no as u64)
+        };
+        let ml1 = agent1.get_self_microledger().unwrap();
+        let payload = LedgerUpdate::new_as_json(did1, &ml1, new_seq_no).unwrap();
+        let sig = agent1.sign_msg(payload.as_bytes()).unwrap();
+        let msg = Message::new(&payload, did1, &agent1.verkey, &sig);
+        network.borrow().send_message(&serde_json::to_string(&msg).unwrap(), &agent2.get_peer_id()).unwrap();
+        assert!(agent2.process_inbox().is_ok());
     }
 }

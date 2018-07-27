@@ -5,6 +5,7 @@ pub const VERKEY: &'static str = "verkey";
 pub const ADDRESS: &'static str = "address";
 pub const ENDPOINTS: &'static str = "endpoints";
 pub const SIGNATURE: &'static str = "signature";
+pub const IDENTIFIER: &'static str = "identifier";
 
 pub const AUTHZ_ALL: &'static str = "all";
 pub const AUTHZ_ADD_KEY: &'static str = "add_key";

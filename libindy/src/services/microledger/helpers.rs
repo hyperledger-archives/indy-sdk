@@ -15,6 +15,7 @@ use utils::inmem_wallet::InmemWallet;
 use services::wallet::RecordOptions;
 use services::crypto::CryptoService;
 use utils::crypto::base58::encode;
+use domain::crypto::key::KeyInfo;
 
 pub fn usize_to_byte_array(n: usize) -> Vec<u8> {
     let mut wtr: Vec<u8> = Vec::new();
@@ -135,6 +136,25 @@ pub fn verify_msg(crypto_service: &CryptoService, verkey: &str, msg: &[u8], sig:
     let res = crypto_service.verify(verkey, &msg, &sig).map_err(|err|
         CommonError::InvalidState(format!("Cannot verify {:?}.", err)))?;
     Ok(res)
+}
+
+pub fn in_memory_wallet_with_key(wallet_service: &WalletService, seed: Option<String>) -> i32 {
+    let crypto_service = CryptoService::new();
+    let key_info = KeyInfo {
+        seed: seed,
+        crypto_type: None
+    };
+    let key = crypto_service.create_key(&key_info).map_err(|err|
+        CommonError::InvalidState(format!("Cannot create a key {:?}.", err))).unwrap();
+
+    register_inmem_wallet(wallet_service);
+    let config = json!({"id": &key.verkey, "storage_type": "inmem"}).to_string();
+    let credentials = json!({"key": &key.verkey}).to_string();
+    wallet_service.create_wallet(&config, &credentials).unwrap();
+    let wallet_handle = wallet_service.open_wallet(&config, &credentials).unwrap();
+    wallet_service.add_indy_object(wallet_handle, &key.verkey, &key,
+                                   &HashMap::new()).unwrap();
+    wallet_handle
 }
 
 pub mod tests {
