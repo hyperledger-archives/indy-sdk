@@ -117,6 +117,9 @@ impl<'a> Microledger for DidMicroledger<'a> where Self: Sized {
                 if t > ledger_size {
                     return Err(CommonError::InvalidStructure(format!("`to` greater than ledger size: to={}, ledger size={}", t, ledger_size)))
                 }
+                if t < from {
+                    return Err(CommonError::InvalidStructure(format!("`to` lesser than from: to={}, from={}", t, from)))
+                }
             },
             None => ()
         }
@@ -213,27 +216,35 @@ impl<'a> DidMicroledger<'a> {
         self.add(&nym_txn)
     }
 
-    pub fn add_key_txn(&mut self, verkey: &str, authorisations: &Vec<&str>,
-                       wallet_handle: Option<i32>,
-                       signing_verkey: Option<&str>) -> Result<usize, CommonError> {
-        let mut key_txn = TxnBuilder::build_key_txn(verkey, authorisations)?;
+    // Return the signed txn (with signature) if wallet_handle and signing_verkey are not None
+    fn get_signed_txn(&self, txn: &str, wallet_handle: Option<i32>, signing_verkey: Option<&str>) -> Result<String, CommonError> {
         match (wallet_handle, signing_verkey) {
             (Some(wh), Some(sv)) => {
-                let sig = sign_msg(&self.wallet_service, &self.crypto_service, wh, &sv, key_txn.as_bytes())?;
-                key_txn = TxnBuilder::add_signature_to_txn(&key_txn, &sig)?;
+                let sig = sign_msg(&self.wallet_service, &self.crypto_service, wh, &sv, txn.as_bytes())?;
+                TxnBuilder::add_signature_to_txn(&txn, &sig)
             }
-            _ => ()
+            _ => Ok(txn.to_string())
         }
+    }
+
+    pub fn add_key_txn(&mut self, verkey: &str, authorisations: &Vec<&str>,
+                       wallet_handle: Option<i32>, signing_verkey: Option<&str>) -> Result<usize, CommonError> {
+        let mut key_txn = TxnBuilder::build_key_txn(verkey, authorisations)?;
+        key_txn = self.get_signed_txn(&key_txn, wallet_handle, signing_verkey)?;
         self.add(&key_txn)
     }
 
-    pub fn add_endpoint_txn(&mut self, verkey: &str, address: &str) -> Result<usize, CommonError> {
-        let ep_txn = TxnBuilder::build_endpoint_txn(verkey, address)?;
+    pub fn add_endpoint_txn(&mut self, verkey: &str, address: &str,
+                            wallet_handle: Option<i32>, signing_verkey: Option<&str>) -> Result<usize, CommonError> {
+        let mut ep_txn = TxnBuilder::build_endpoint_txn(verkey, address)?;
+        ep_txn = self.get_signed_txn(&ep_txn, wallet_handle, signing_verkey)?;
         self.add(&ep_txn)
     }
 
-    pub fn add_endpoint_rem_txn(&mut self, verkey: &str, address: &str) -> Result<usize, CommonError> {
-        let ep_txn = TxnBuilder::build_endpoint_rem_txn(verkey, address)?;
+    pub fn add_endpoint_rem_txn(&mut self, verkey: &str, address: &str,
+                                wallet_handle: Option<i32>, signing_verkey: Option<&str>) -> Result<usize, CommonError> {
+        let mut ep_txn = TxnBuilder::build_endpoint_rem_txn(verkey, address)?;
+        ep_txn = self.get_signed_txn(&ep_txn, wallet_handle, signing_verkey)?;
         self.add(&ep_txn)
     }
 
@@ -247,20 +258,9 @@ impl<'a> DidMicroledger<'a> {
     }
 
     fn update_views_with_txn(&mut self, txn: &str) -> Result<(), CommonError> {
-        match self.views.get_mut(&self.did) {
-            Some(mut v) => {
-                println!("Updating view with txn {}", txn);
-                {
-                    v.borrow_mut().apply_txn(txn)?;
-                }
-                println!("{}", v.borrow().as_json().unwrap());
-            }
-            None => ()
+        for (_, view) in &self.views {
+           view.borrow_mut().apply_txn(txn)?;
         }
-        // TODO: Use the next block of code instead
-        /*for (_, view) in self.views {
-           view.apply_txn(txn)?;
-        }*/
        Ok(())
     }
 }
@@ -295,7 +295,7 @@ pub mod tests {
 
         register_inmem_wallet(wallet_service);
         let config = json!({"id": &key.verkey, "storage_type": "inmem"}).to_string();
-        let credentials = json!({"key": &id}).to_string();
+        let credentials = json!({"key": &key.verkey}).to_string();
         wallet_service.create_wallet(&config, &credentials).unwrap();
         let wallet_handle = wallet_service.open_wallet(&config, &credentials).unwrap();
         wallet_service.add_indy_object(wallet_handle, &key.verkey, &key,
@@ -393,38 +393,70 @@ pub mod tests {
         let mut ml = get_new_microledger(did);
         let s = ml.add_key_txn(verkey, &authorisations, None, None).unwrap();
         assert_eq!(s, 1);
+        let t1 = &ml.get(1, Some(1)).unwrap()[0];
+        assert_eq!(t1.contains("signature"), false);
 
         let wallet_handle = in_memory_wallet_with_key(&ml.wallet_service,
                                                       Some("ffffffffffffffffffffffffffffffff".to_string()));
-        let signing_verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
-        let s = ml.add_key_txn(verkey, &vec![AUTHZ_MPROX], Some(wallet_handle),
-                               Some(signing_verkey)).unwrap();
+        let new_verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
+        let s = ml.add_key_txn(new_verkey, &vec![AUTHZ_MPROX], Some(wallet_handle),
+                               Some(verkey)).unwrap();
         assert_eq!(s, 2);
-
+        let t2 = &ml.get(2, Some(2)).unwrap()[0];
+        assert_eq!(t2.contains("signature"), true);
     }
 
     #[test]
     fn test_add_endpoint_txn() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
+        let verkey = "4Yk9HoDSfJv9QcmJbLcXdWVgS7nfvdUqiVcvbSu8VBru";
         let address = "https://agent.example.com";
         let mut ml = get_new_microledger(did);
-        let s = ml.add_endpoint_txn(verkey, address).unwrap();
+        let s = ml.add_endpoint_txn(verkey, address, None, None).unwrap();
         assert_eq!(s, 1);
+        let t1 = &ml.get(1, Some(1)).unwrap()[0];
+        assert_eq!(t1.contains("signature"), false);
+
+        let wallet_handle = in_memory_wallet_with_key(&ml.wallet_service,
+                                                      Some("ffffffffffffffffffffffffffffffff".to_string()));
+        let address1 = "https://agent.example.com";
+        let s = ml.add_endpoint_txn(verkey, address1, Some(wallet_handle),
+                               Some(verkey)).unwrap();
+        assert_eq!(s, 2);
+        let t2 = &ml.get(2, Some(2)).unwrap()[0];
+        assert_eq!(t2.contains("signature"), true);
     }
 
     #[test]
     fn test_add_endpoint_rem_txn() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
+        let verkey = "4Yk9HoDSfJv9QcmJbLcXdWVgS7nfvdUqiVcvbSu8VBru";
         let address = "https://agent.example.com";
         let mut ml = get_new_microledger(did);
-        let s = ml.add_endpoint_txn(verkey, address).unwrap();
+        let s = ml.add_endpoint_txn(verkey, address, None, None).unwrap();
         assert_eq!(s, 1);
-        let t = ml.add_endpoint_rem_txn(verkey, address).unwrap();
+        let t = ml.add_endpoint_rem_txn(verkey, address, None, None).unwrap();
         assert_eq!(t, 2);
+
+        let t1 = &ml.get(1, Some(1)).unwrap()[0];
+        assert_eq!(t1.contains("signature"), false);
+
+        let t2 = &ml.get(2, Some(2)).unwrap()[0];
+        assert_eq!(t2.contains("signature"), false);
+
+        let wallet_handle = in_memory_wallet_with_key(&ml.wallet_service,
+                                                      Some("ffffffffffffffffffffffffffffffff".to_string()));
+        let address1 = "https://agent90.example.com";
+        ml.add_endpoint_txn(verkey, address1, Some(wallet_handle),
+                                    Some(verkey)).unwrap();
+        let s = ml.add_endpoint_rem_txn(verkey, address1, Some(wallet_handle),
+                            Some(verkey)).unwrap();
+        assert_eq!(s, 4);
+        let t3 = &ml.get(4, Some(4)).unwrap()[0];
+        assert_eq!(t3.contains("signature"), true);
+
     }
 
     #[test]
@@ -464,6 +496,9 @@ pub mod tests {
         assert_eq!(t, txns[1..2].to_vec());
 
         let t = ml.get(1, Some(5));
+        assert!(t.is_err());
+
+        let t = ml.get(2, Some(1));
         assert!(t.is_err());
     }
 
@@ -519,9 +554,9 @@ pub mod tests {
             ml.add_key_txn(verkey, &authorisations, None, None).unwrap();
             let e1 = "https://agent.example.com";
             let e2 = "https://agent2.example.com";
-            ml.add_endpoint_txn(verkey, e1).unwrap();
-            ml.add_endpoint_txn(verkey, e2).unwrap();
-            ml.add_endpoint_rem_txn(verkey, e2).unwrap();
+            ml.add_endpoint_txn(verkey, e1, None, None).unwrap();
+            ml.add_endpoint_txn(verkey, e2, None, None).unwrap();
+            ml.add_endpoint_rem_txn(verkey, e2, None, None).unwrap();
         }
         let expected_did_doc_1 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{}}}}"#;;
         assert_eq!(doc.borrow().as_json().unwrap(), expected_did_doc_1);
