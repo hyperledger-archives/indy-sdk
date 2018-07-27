@@ -238,3 +238,8 @@ to simplify their transition to API of Libindy 1.4.0.
 * [v1.3.0 → v1.4.0](doc/migration-guide-1.3.0-1.4.0.md)
 * [v1.4.0 → v1.5.0](doc/migration-guide-1.4.0-1.5.0.md)
 * [v1.5.0 → v1.6.0](doc/migration-guide-1.5.0-1.6.0.md)
+
+## How to Contribute
+
+Our [Maintainers](MAINTAINERS.md) article contains links to [contributor guidelines](http://bit.ly/2ugd0bq),
+our communication plan and contacts of maintainers.
