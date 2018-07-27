@@ -49,6 +49,10 @@ By default, this file creates in current folder and has the following name:
 2. [Install Indy-Cli](#binaries)
 3. Import generated file into libindy wallet by using Indy CLI
     * Run Indy CLI
+    * Recreate pool in Indy CLI
+    ```
+    pool create <poolname> gen_txn_file=<path to the pool_transactions_genesis file>
+    ```
     * Open new target wallet (create if needed) in CLI
     * Run
     ```
