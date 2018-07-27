@@ -12,8 +12,6 @@ use domain::crypto::did::{Did, TheirDid};
 use std::rc::Rc;
 use std::str;
 
-use self::indy_crypto::utils::json::JsonEncodable;
-
 use std::result;
 
 type Result<T> = result::Result<T, IndyError>;
@@ -149,7 +147,7 @@ impl PairwiseCommandExecutor {
             PairwiseInfo::from(
                 self.wallet_service.get_indy_object::<Pairwise>(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())?);
 
-        let res = pairwise_info.to_json()
+        let res = serde_json::to_string(&pairwise_info)
             .map_err(|e|
                 CommonError::InvalidState(format!("Can't serialize PairwiseInfo: {:?}", e)))?;
 

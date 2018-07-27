@@ -4,8 +4,6 @@ extern crate indy_crypto;
 
 use super::constants::{POOL_CONFIG, POOL_UPGRADE, POOL_RESTART};
 
-use self::indy_crypto::utils::json::JsonEncodable;
-
 use std::collections::HashMap;
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -26,8 +24,6 @@ impl PoolConfigOperation {
     }
 }
 
-impl JsonEncodable for PoolConfigOperation {}
-
 #[derive(Serialize, PartialEq, Debug)]
 pub struct PoolRestartOperation {
     #[serde(rename = "type")]
@@ -47,8 +43,6 @@ impl PoolRestartOperation {
         }
     }
 }
-
-impl JsonEncodable for PoolRestartOperation {}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct PoolUpgradeOperation {
@@ -86,5 +80,3 @@ impl PoolUpgradeOperation {
         }
     }
 }
-
-impl JsonEncodable for PoolUpgradeOperation {}
