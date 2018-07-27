@@ -418,7 +418,7 @@ pub mod tests {
             "retrieveValue": true,
             "retrieveTags": false
         }).to_string();
-        let expected_retrieved_record = format!(r#"{{"id":"{}","type":"{}","value":"{}","tags":null}}"#, id, record_type, record);
+        let expected_retrieved_record = format!(r#"{{"type":"{}","id":"{}","value":"{}","tags":null}}"#, record_type, id, record);
 
         init_wallet(wallet_n).unwrap();
         add_record(record_type, id, record, "{}").unwrap();
@@ -497,8 +497,8 @@ pub mod tests {
             "retrieveValue": true,
             "retrieveTags": false
         }).to_string();
-        let expected_initial_record = format!(r#"{{"id":"{}","type":"{}","value":"{}","tags":null}}"#, id, record_type, initial_record);
-        let expected_updated_record = format!(r#"{{"id":"{}","type":"{}","value":"{}","tags":null}}"#, id, record_type, changed_record);
+        let expected_initial_record = format!(r#"{{"type":"{}","id":"{}","value":"{}","tags":null}}"#, record_type, id, initial_record);
+        let expected_updated_record = format!(r#"{{"type":"{}","id":"{}","value":"{}","tags":null}}"#, record_type, id, changed_record);
 
         init_wallet(wallet_n).unwrap();
         add_record(record_type, id, initial_record, "{}").unwrap();

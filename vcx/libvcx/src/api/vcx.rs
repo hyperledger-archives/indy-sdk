@@ -226,7 +226,7 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
 pub extern fn vcx_mint_tokens(number_of_addresses: u32, tokens_per_address: u32) {
     let ledger_fees = r#"{"101":2, "102":3}"#;
     info!("vcx_mint_tokens(number_of_addresses: {}, tokens_per_address: {})", number_of_addresses, tokens_per_address);
-    ::utils::libindy::payments::mint_tokens_and_set_fees(Some(number_of_addresses), Some(tokens_per_address), Some(ledger_fees), true).unwrap_or_default();
+    ::utils::libindy::payments::mint_tokens_and_set_fees(Some(number_of_addresses), Some(tokens_per_address), Some(ledger_fees), false).unwrap_or_default();
 }
 
 #[cfg(test)]

@@ -511,8 +511,8 @@ pub extern fn vcx_credential_release(handle: u32) -> u32 {
 ///             "pay:null:1_lWVGKc07Pyc40m6"
 ///         ],
 ///         "outputs":[
-///             {"paymentAddress":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null},
-///             {"paymentAddress":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j","amount":25,"extra":null}
+///             {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null},
+///             {"recipient":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j","amount":25,"extra":null}
 ///         ]
 ///     }
 #[no_mangle]

@@ -231,8 +231,8 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32, cred_def_ha
 ///             "pay:null:1_lWVGKc07Pyc40m6"
 ///         ],
 ///         "outputs":[
-///             {"paymentAddress":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null},
-///             {"paymentAddress":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j","amount":25,"extra":null}
+///             {"recipient":"pay:null:FrSVC3IrirScyRh","amount":5,"extra":null},
+///             {"recipient":"pov:null:OsdjtGKavZDBuG2xFw2QunVwwGs5IB3j","amount":25,"extra":null}
 ///         ]
 ///     }
 #[no_mangle]

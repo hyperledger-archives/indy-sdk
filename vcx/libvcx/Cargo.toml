@@ -42,7 +42,7 @@ rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
 num-traits = "0.2.0"
-rust-indy-sdk = {git = "https://github.com/mikelodder7/rust-indy-sdk.git", rev = "e1f26fb5e2b320b3accb1832442b04b89edc7dfe"}
+rust-indy-sdk = {git = "https://github.com/mikelodder7/rust-indy-sdk.git", rev = "8c87350591758a36a33f2dca452fd718d00cde9e"}
 log-panics = "2.0.0"
 
 [target.'cfg(target_os = "android")'.dependencies]
@@ -61,7 +61,7 @@ tempfile = "2.2"
 [package.metadata.deb]
 maintainer = "Evernym, Inc."
 copyright = "2018, Evernym Inc."
-depends = "$auto, libindy (=1.5.0~619), libsovtoken (=0.7.0+23.49)"
+depends = "$auto, libindy (=1.6.0), libsovtoken (=0.8.0+2.54)"
 extended-description = """\
 This is Evernym's SDK for managing Verifiable Credential eXchange against an Indy network. For specific instructions on building see the README in the corresponding github repo https://github.com/evernym/sdk"""
 section = "admin"

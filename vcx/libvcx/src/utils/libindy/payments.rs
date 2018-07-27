@@ -43,9 +43,17 @@ pub struct AddressInfo {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct UTXO {
-    txo: Option<String>,
+    source: Option<String>,
     #[serde(rename = "paymentAddress")]
-    payment_address: String,
+    recipient: String,
+    amount: u64,
+    extra: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct Output {
+    source: Option<String>,
+    recipient: String,
     amount: u64,
     extra: Option<String>,
 }
@@ -97,7 +105,7 @@ pub fn init_payments() -> Result<(), u32> {
 pub struct PaymentTxn {
     pub amount: u64,
     pub inputs: Vec<String>,
-    pub outputs: Vec<UTXO>,
+    pub outputs: Vec<Output>,
 }
 
 impl PaymentTxn {
@@ -105,7 +113,7 @@ impl PaymentTxn {
         let inputs: Vec<String> = serde_json::from_str(&inputs)
             .map_err(|err| {error::INVALID_JSON.code_num})?;
 
-        let outputs: Vec<UTXO> = serde_json::from_str(&outputs)
+        let outputs: Vec<Output> = serde_json::from_str(&outputs)
             .map_err(|err| {error::INVALID_JSON.code_num})?;
 
         Ok(PaymentTxn {
@@ -130,18 +138,18 @@ pub fn create_address(seed: Option<String>) -> Result<String, u32> {
 
 pub fn get_address_info(address: &str) -> Result<AddressInfo, u32> {
     if settings::test_indy_mode_enabled() {
-        let utxo: Vec<UTXO> = serde_json::from_str(r#"[{"txo":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"txo":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]"#).unwrap();
+        let utxo: Vec<UTXO> = serde_json::from_str(r#"[{"source":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"source":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]"#).unwrap();
         return Ok(AddressInfo { address: address.to_string(), balance: _address_balance(&utxo), utxo})
     }
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-    let (txn, _) = Payment::build_get_utxo_request(get_wallet_handle() as i32, &did, address)
+    let (txn, _) = Payment::build_get_payment_sources_request(get_wallet_handle() as i32, &did, address)
         .map_err(map_rust_indy_sdk_error_code)?;
 
     let response = libindy_sign_and_submit_request(&did, &txn)?;
 
-    let response = Payment::parse_get_utxo_response(PAYMENT_METHOD_NAME, &response)
+    let response = Payment::parse_get_payment_sources_response(PAYMENT_METHOD_NAME, &response)
         .map_err(map_rust_indy_sdk_error_code)?;
 
     trace!("indy_parse_get_utxo_response() --> {}", response);
@@ -207,7 +215,7 @@ pub fn get_ledger_fees() -> Result<String, u32> {
 
 pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(PaymentTxn, String), u32> {
     debug!("pay_for_txn(req: {}, txn_type: {})", req, txn_type);
-    if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"paymentAddress":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
+    if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
 
     let txn_price = get_txn_price(txn_type)?;
 
@@ -221,26 +229,6 @@ pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(PaymentTxn, String), u3
     Ok((payment, txn_response))
 }
 
-#[cfg(feature = "nullpay")]
-fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(String, String), u32> {
-    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-
-    let (response, payment_method) = match Payment::add_request_fees(get_wallet_handle(),
-                                                                     &did,
-                                                                     req,
-                                                                     &inputs,
-                                                                     &outputs) {
-        Ok((req, payment_method)) => (libindy_sign_and_submit_request(&did, &req)?, payment_method),
-        Err(x) => return Err(map_rust_indy_sdk_error_code(x)),
-    };
-
-    let parsed_response = Payment::parse_response_with_fees(&payment_method, &response)
-        .map_err(map_rust_indy_sdk_error_code)?;
-
-    Ok((parsed_response, response))
-}
-
-#[cfg(feature = "sovtoken")]
 fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(String, String), u32> {
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
@@ -250,7 +238,8 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
                                                                      &did,
                                                                      &req,
                                                                      &inputs,
-                                                                     &outputs) {
+                                                                     &outputs,
+                                                                     None) {
         Ok((req, payment_method)) => {
             (libindy_submit_request(&req)?, payment_method)
         },
@@ -263,7 +252,6 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
     Ok((parsed_response, response))
 }
 
-#[cfg(feature = "nullpay")]
 pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), PaymentError> {
     info!("sending {} tokens to address {}", price, address);
 
@@ -273,33 +261,9 @@ pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), Pa
     let payment = PaymentTxn::from_parts(&input, &output, price).map_err(|e|PaymentError::CommonError(e))?;
     let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-    if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"paymentAddress":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
+    if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
 
-    match Payment::build_payment_req(get_wallet_handle(), &my_did, &input, &output) {
-        Ok((request, payment_method)) => {
-            let result = libindy_sign_and_submit_request(&my_did, &request).map_err(|ec| PaymentError::CommonError(ec))?;
-            Ok((payment, result))
-        },
-        Err(ec) => {
-            error!("error: {:?}", ec);
-            Err(PaymentError::CommonError(ec as u32))
-        },
-    }
-}
-
-#[cfg(feature = "sovtoken")]
-pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), PaymentError> {
-    info!("sending {} tokens to address {}", price, address);
-
-    let (remainder, input) = inputs(price)?;
-    let output = outputs(remainder, Some(address.to_string()), Some(price))?;
-
-    let payment = PaymentTxn::from_parts(&input, &output, price).map_err(|e|PaymentError::CommonError(e))?;
-    let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-
-    if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"paymentAddress":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
-
-    match Payment::build_payment_req(get_wallet_handle(), &my_did, &input, &output) {
+    match Payment::build_payment_req(get_wallet_handle(), &my_did, &input, &output, None) {
         Ok((request, payment_method)) => {
             let result = libindy_submit_request( &request).map_err(|ec| PaymentError::CommonError(ec))?;
             Ok((payment, result))
@@ -337,7 +301,7 @@ pub fn inputs(cost: u64) -> Result<(u64, String), PaymentError> {
     'outer: for address in wallet_info.addresses.iter() {
         'inner: for utxo in address.utxo.iter() {
             if balance < cost {
-                inputs.push(utxo.txo.clone().unwrap().to_string());
+                inputs.push(utxo.source.clone().unwrap().to_string());
                 balance += utxo.amount;
             } else { break 'outer }
         }
@@ -354,14 +318,13 @@ pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Opti
 
     let mut outputs = Vec::new();
     if remainder > 0 {
-        outputs.push(json!({ "paymentAddress": create_address(None).map_err(|ec| PaymentError::CommonError(ec))?, "amount": remainder, "extra": null }));
+        outputs.push(json!({ "recipient": create_address(None).map_err(|ec| PaymentError::CommonError(ec))?, "amount": remainder }));
     }
 
     if let Some(address) = payee_address {
         outputs.push(json!({
-            "paymentAddress": address,
+            "recipient": address,
             "amount": payee_amount,
-            "extra": null
         }));
     }
 
@@ -382,11 +345,11 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
     }
 
     let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(i, payment_address)|
-        json!( { "paymentAddress": payment_address, "amount": tokens_per_address, "extra": null } )
+        json!( { "recipient": payment_address, "amount": tokens_per_address } )
     ).collect();
     let outputs = serde_json::to_string(&mint).unwrap();
 
-    let (req, _) = Payment::build_mint_req(get_wallet_handle() as i32, &did_1, &outputs).unwrap();
+    let (req, _) = Payment::build_mint_req(get_wallet_handle() as i32, &did_1, &outputs, None).unwrap();
 
     let (did_2, _) = add_new_trustee_did()?;
     let (did_3, _) = add_new_trustee_did()?;
@@ -475,13 +438,12 @@ pub mod tests {
         init_payments().unwrap();
         create_address(None).unwrap();
         let balance = get_wallet_token_info().unwrap().to_string();
-        assert_eq!(balance, r#"{"balance":6,"addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"txo":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"txo":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]},{"address":"pay:null:zR3GN9lfbCVtHjp","balance":3,"utxo":[{"txo":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"txo":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]}]}"#);
+        assert_eq!(balance, r#"{"balance":6,"addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"source":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"source":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]},{"address":"pay:null:zR3GN9lfbCVtHjp","balance":3,"utxo":[{"source":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"source":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]}]}"#);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_wallet_token_info_real() {
-        ::utils::logger::LoggerUtils::init_test_logging("trace");
         let name = "test_get_wallet_info_real";
         ::utils::devsetup::tests::setup_ledger_env(name);
         let wallet_info = get_wallet_token_info().unwrap();
@@ -513,8 +475,8 @@ pub mod tests {
     #[test]
     fn test_address_balance() {
         let addresses = vec![
-            UTXO { txo: Some("pov::null:2".to_string()), payment_address: "pay:null:J81AxU9hVHYFtJc".to_string(), amount: 2, extra: Some("abcde".to_string()) },
-            UTXO { txo: Some("pov::null:3".to_string()), payment_address: "pay:null:J81AxU9hVHYFtJc".to_string(), amount: 3, extra: Some("bcdef".to_string()) }
+            UTXO { source: Some("pov::null:2".to_string()), recipient: "pay:null:J81AxU9hVHYFtJc".to_string(), amount: 2, extra: Some("abcde".to_string()) },
+            UTXO { source: Some("pov::null:3".to_string()), recipient: "pay:null:J81AxU9hVHYFtJc".to_string(), amount: 3, extra: Some("bcdef".to_string()) }
         ];
 
         assert_eq!(_address_balance(&addresses), 5);
@@ -544,7 +506,7 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         let mut cost = 5;
-        let mut expected_output = r#"[{"amount":1,"extra":null,"paymentAddress":"pay:null:J81AxU9hVHYFtJc"}]"#;
+        let mut expected_output = r#"[{"amount":1,"recipient":"pay:null:J81AxU9hVHYFtJc"}]"#;
         let (remainder, _) = inputs(cost).unwrap();
         assert_eq!(&outputs(remainder, None, None).unwrap(), expected_output);
 
@@ -561,7 +523,7 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let expected_output = r#"[{"amount":4,"extra":null,"paymentAddress":"pay:null:J81AxU9hVHYFtJc"},{"amount":11,"extra":null,"paymentAddress":"pay:null:payee_address"}]"#;
+        let expected_output = r#"[{"amount":4,"recipient":"pay:null:J81AxU9hVHYFtJc"},{"amount":11,"recipient":"pay:null:payee_address"}]"#;
         let payee_amount = 11;
         let payee_address = r#"pay:null:payee_address"#.to_string();
         assert_eq!(&outputs(4, Some(payee_address), Some(payee_amount)).unwrap(), expected_output);
@@ -662,7 +624,6 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_submit_fees_with_insufficient_tokens_on_ledger() {
-        ::utils::logger::LoggerUtils::init_test_logging("trace");
         let name = "test_submit_fees_with_insufficient_tokens_on_ledger";
 
         ::utils::devsetup::tests::setup_ledger_env(name);
@@ -688,7 +649,6 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_pay_for_txn_with_empty_outputs_success() {
-        ::utils::logger::LoggerUtils::init_test_logging("debug");
         let name = "test_pay_for_txn_with_empty_outputs_success";
         ::utils::devsetup::tests::setup_ledger_env(name);
 
