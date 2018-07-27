@@ -104,6 +104,7 @@ pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
         ErrorCode::PaymentSourceDoesNotExistError => println_err!("Payment source not found"),
         ErrorCode::PaymentOperationNotSupportedError => println_err!("Payment operation not supported"),
         ErrorCode::CommonInvalidStructure => println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc..."),
+        ErrorCode::WalletItemAlreadyExists => println_err!("Payment address already exists"),
         err => println_err!("Indy SDK error occurred {:?}", err)
     }
 }

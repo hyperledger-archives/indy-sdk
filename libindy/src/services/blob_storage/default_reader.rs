@@ -1,16 +1,15 @@
 extern crate digest;
-extern crate indy_crypto;
 extern crate sha2;
 extern crate rust_base58;
 
-use errors::common::CommonError;
-
-use super::{ReadableBlob, Reader, ReaderType};
-use self::indy_crypto::utils::json::JsonDecodable;
 use self::digest::{FixedOutput, Input};
 use self::sha2::Sha256;
 use self::rust_base58::ToBase58;
 
+use super::{ReadableBlob, Reader, ReaderType};
+use errors::common::CommonError;
+
+use serde_json;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::PathBuf;
@@ -25,12 +24,13 @@ struct DefaultReaderConfig {
     base_dir: String,
 }
 
-impl<'a> JsonDecodable<'a> for DefaultReaderConfig {}
-
 impl ReaderType for DefaultReaderType {
     fn open(&self, config: &str) -> Result<Box<Reader>, CommonError> {
-        let cfg = DefaultReaderConfig::from_json(config)?;
-        Ok(Box::new(cfg))
+        let config: DefaultReaderConfig = serde_json::from_str(config)
+            .map_err(map_err_trace!())
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize DefaultReaderConfig: {}", err)))?;
+
+        Ok(Box::new(config))
     }
 }
 
@@ -54,9 +54,11 @@ impl ReadableBlob for DefaultReader {
 
         loop {
             let sz = self.file.read(&mut buf)?;
+
             if sz == 0 {
                 return Ok(hasher.fixed_result().as_slice().eq(self.hash.as_slice()));
             }
+
             hasher.process(&buf[0..sz])
         }
     }

@@ -1,6 +1,6 @@
-extern crate indy_crypto;
 extern crate rust_base58;
 
+use serde_json;
 use std::path::PathBuf;
 use std::fs;
 use std::fs::File;
@@ -11,8 +11,6 @@ use self::rust_base58::ToBase58;
 use super::{WritableBlob, Writer, WriterType};
 use errors::common::CommonError;
 use utils::environment::EnvironmentUtils;
-
-use self::indy_crypto::utils::json::JsonDecodable;
 
 #[allow(dead_code)]
 pub struct DefaultWriter {
@@ -28,12 +26,12 @@ struct DefaultWriterConfig {
     uri_pattern: String,
 }
 
-impl<'a> JsonDecodable<'a> for DefaultWriterConfig {}
-
 impl WriterType for DefaultWriterType {
     fn open(&self, config: &str) -> Result<Box<Writer>, CommonError> {
-        let config: DefaultWriterConfig = DefaultWriterConfig::from_json(config)
-            .map_err(map_err_trace!())?;
+        let config: DefaultWriterConfig = serde_json::from_str(config)
+            .map_err(map_err_trace!())
+            .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize DefaultWriterConfig: {}", err)))?;
+
         Ok(Box::new(config))
     }
 }

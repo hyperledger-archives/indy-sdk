@@ -1,9 +1,6 @@
-extern crate indy_crypto;
-
 use std::collections::HashMap;
 
-use self::indy_crypto::cl::Proof as CryptoProof;
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
+use indy_crypto::cl::Proof as CryptoProof;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Proof {
@@ -11,10 +8,6 @@ pub struct Proof {
     pub requested_proof: RequestedProof,
     pub identifiers: Vec<Identifier>
 }
-
-impl JsonEncodable for Proof {}
-
-impl<'a> JsonDecodable<'a> for Proof {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RequestedProof {
