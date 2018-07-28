@@ -22,14 +22,13 @@ is_stable="$7"
 [ -z $is_stable ] && exit 7
 
 if [ "${is_stable}" == "1" ]; then
-    ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 mkdir -p /var/repository/repos/android/${artifact}/stable/${version}
+    src="/var/repository/repos/android/${artifact}/rc/${version}-${buildNumber}/${artifact}_android_${arch}_${version}.zip"
+    target="/var/repository/repos/android/${artifact}/stable/$version"
 
-cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
-cd /var/repository/repos/android/${artifact}/stable/$version
-cp -vr /var/repository/repos/android/${artifact}/rc/${version}-${buildNumber}/${artifact}_android_${arch}_${version}.zip .
-ls -l /var/repository/repos/android/${artifact}/stable/$version
-EOF
-    else
+    ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 mkdir -p $target
+    ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 cp -r $src $target
+
+else
     ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 mkdir -p /var/repository/repos/android/${artifact}/${branchName}/${version}-${buildNumber}
 
 cat <<EOF | sftp -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115
