@@ -22,11 +22,11 @@ is_stable="$7"
 [ -z $is_stable ] && exit 7
 
 if [ "${is_stable}" == "1" ]; then
-    src = "/var/repository/repos/android/${artifact}/rc/${version}-${buildNumber}/${artifact}_android_${arch}_${version}.zip"
-    target = "/var/repository/repos/android/${artifact}/stable/$version"
+    src="/var/repository/repos/android/${artifact}/rc/${version}-${buildNumber}/${artifact}_android_${arch}_${version}.zip"
+    target="/var/repository/repos/android/${artifact}/stable/$version"
 
     ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 mkdir -p $target
-    ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target
+    ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 cp -r $src $target
 
 else
     ssh -v -oStrictHostKeyChecking=no -i $key repo@192.168.11.115 mkdir -p /var/repository/repos/android/${artifact}/${branchName}/${version}-${buildNumber}
