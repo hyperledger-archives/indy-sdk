@@ -5,9 +5,9 @@
         <key>Label</key>
         <string>local.build_libvcx</string>
         <key>Program</key>
-        <string>/Users/iosbuild1/forge/work/code/evernym/sdk/vcx/libvcx/build_scripts/ios/mac/launchd.daemon.build.libvxc.sh</string>
+        <string>/Users/norm/forge/work/code/evernym/sdk-ios/vcx/libvcx/build_scripts/ios/mac/launchd.daemon.build.libvxc.sh</string>
         <key>UserName</key>
-        <string>iosbuild1</string>
+        <string>norm</string>
         <key>StartCalendarInterval</key> 
         <dict> 
             <key>Hour</key> 
@@ -26,15 +26,15 @@
             <key>RUST_TEST_THREADS</key>
             <string>1</string>
             <key>PYTHONPATH</key>
-            <string>/Users/iosbuild1/forge/work/code/evernym/sdk-evernym/vcx/libvcx/vcx-indy-sdk/wrappers/python:/Users/iosbuild1/forge/work/code/evernym/sdk-evernym/vcx/wrappers/python3</string>
+            <string>/Users/norm/forge/work/code/evernym/sdk-ios/.macosbuild/vcx-indy-sdk/wrappers/python:/Users/norm/forge/work/code/evernym/sdk-ios/vcx/wrappers/python3</string>
             <key>ANDROID_HOME</key>
-            <string>/Users/iosbuild1/Library/Android/sdk</string>
+            <string>/Users/norm/Library/Android/sdk</string>
             <key>ANDROID_NDK</key>
-            <string>/Users/iosbuild1/Library/Android/sdk/ndk-bundle</string>
+            <string>/Users/norm/Library/Android/sdk/ndk-bundle</string>
             <key>ANDROID_NDK_HOME</key>
-            <string>/Users/iosbuild1/Library/Android/sdk/ndk-bundle</string>
+            <string>/Users/norm/Library/Android/sdk/ndk-bundle</string>
             <key>PATH</key>
-            <string>/Users/iosbuild1/.cargo/bin:/Users/iosbuild1/Library/Android/sdk/tools/bin:/Users/iosbuild1/Library/Android/sdk/tools:/Users/iosbuild1/Library/Android/sdk/platform-tools:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+            <string>/Users/norm/.cargo/bin:/Users/norm/Library/Android/sdk/tools/bin:/Users/norm/Library/Android/sdk/tools:/Users/norm/Library/Android/sdk/platform-tools:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
         </dict>
     </dict>
 </plist>
