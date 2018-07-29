@@ -38,5 +38,7 @@ pub struct NodeOperationData {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub services: Option<Vec<Services>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub blskey: Option<String>
+    pub blskey: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blskey_pop: Option<String>
 }

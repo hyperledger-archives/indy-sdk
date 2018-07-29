@@ -8,7 +8,7 @@ use self::zmq::Socket as ZSocket;
 use services::pool::events::*;
 use services::pool::types::*;
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use super::time::Duration;
 use time::Tm;
 use utils::sequence::SequenceUtils;
@@ -28,7 +28,7 @@ pub struct ZMQNetworker {
     nodes: Vec<RemoteNode>,
     active_timeout: i64,
     conn_limit: usize,
-    preordered_nodes: Vec<String>
+    preordered_nodes: Vec<String>,
 }
 
 impl Networker for ZMQNetworker {
@@ -56,10 +56,15 @@ impl Networker for ZMQNetworker {
         match pe.clone() {
             Some(NetworkerEvent::SendAllRequest(_, req_id, _)) | Some(NetworkerEvent::SendOneRequest(_, req_id, _)) | Some(NetworkerEvent::Resend(req_id, _)) => {
                 let num = self.req_id_mappings.get(&req_id).map(|i| i.clone()).or_else(|| {
+                    trace!("sending new request");
                     self.pool_connections.iter().next_back().and_then(|(pc_idx, pc)| {
-                        if pc.is_active() && pc.req_cnt < self.conn_limit && pc.nodes.eq(&self.nodes) {
+                        if pc.is_active() && pc.req_cnt < self.conn_limit
+                            && pc.nodes.iter().collect::<HashSet<&RemoteNode>>().eq(
+                            &self.nodes.iter().collect::<HashSet<&RemoteNode>>()) {
+                            trace!("existing connection available");
                             Some(*pc_idx)
                         } else {
+                            trace!("existing connection unavailable");
                             None
                         }
                     })
@@ -176,7 +181,7 @@ impl PoolConnection {
 
         thread_rng().shuffle(nodes.as_mut());
 
-        if !preordered_nodes.is_empty(){
+        if !preordered_nodes.is_empty() {
             nodes.sort_by_key(|node: &RemoteNode| -> usize {
                 preordered_nodes.iter()
                     .position(|&ref name| node.name.eq(name))
@@ -240,8 +245,10 @@ impl PoolConnection {
     }
 
     fn is_active(&self) -> bool {
-        trace!("time worked: {:?}", time::now() - self.time_created);
-        time::now() - self.time_created < Duration::seconds(self.active_timeout)
+        trace!("is_active >> time worked: {:?}", time::now() - self.time_created);
+        let res = time::now() - self.time_created < Duration::seconds(self.active_timeout);
+        trace!("is_active << {}", res);
+        res
     }
 
     fn send_request(&mut self, pe: Option<NetworkerEvent>) -> Result<(), PoolError> {
@@ -465,6 +472,34 @@ pub mod networker_tests {
 
             let messages = handle_2.join().unwrap();
             assert_eq!(vec![MESSAGE.to_string()], messages);
+        }
+
+        #[test]
+        fn networker_process_send_all_request_event_works_for_2_requests_and_different_nodes_order() {
+            let mut txn_1 = nodes_emulator::node();
+            let handle_1 = nodes_emulator::start(&mut txn_1);
+            let rn_1 = _remote_node(&txn_1);
+
+            let mut txn_2 = nodes_emulator::node_2();
+            let handle_2 = nodes_emulator::start(&mut txn_2);
+            let rn_2 = _remote_node(&txn_2);
+
+            let send_cnt = 2;
+
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec!["n2".to_string(), "n1".to_string()]);
+
+            networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn_1, rn_2])));
+
+            for i in 0..send_cnt {
+                networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), i.to_string(), POOL_ACK_TIMEOUT)));
+                assert_eq!(1, networker.pool_connections.len());
+            }
+
+            let messages = handle_1.join().unwrap();
+            assert_eq!(vec![MESSAGE.to_string(); send_cnt], messages);
+
+            let messages = handle_2.join().unwrap();
+            assert_eq!(vec![MESSAGE.to_string(); send_cnt], messages);
         }
 
         #[test]
