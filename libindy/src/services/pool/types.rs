@@ -24,6 +24,7 @@ pub struct NodeData {
     pub node_port: Option<u64>,
     pub services: Option<Vec<String>>,
     pub blskey: Option<String>,
+    pub blskey_pop: Option<String>,
 }
 
 fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
@@ -179,6 +180,9 @@ impl NodeTransactionV1 {
         }
         if let Some(ref mut blskey) = other.txn.data.data.blskey {
             self.txn.data.data.blskey = Some(blskey.to_owned());
+        }
+        if let Some(ref mut blskey_pop) = other.txn.data.data.blskey_pop {
+            self.txn.data.data.blskey_pop = Some(blskey_pop.to_owned());
         }
         if let Some(ref mut services) = other.txn.data.data.services {
             self.txn.data.data.services = Some(services.to_owned());
