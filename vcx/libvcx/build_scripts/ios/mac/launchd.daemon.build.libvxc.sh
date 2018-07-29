@@ -6,15 +6,19 @@ echo "START_DIR: ${START_DIR}"
 cd $START_DIR
 cd ../../../../..
 echo "VCX_DIR: $(pwd)"
-git pull > ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+git checkout . > ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+git checkout master >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+git clean -f >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+git clean -fd >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+git pull >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
 # git checkout libindy_refactor
 # git pull
 # git checkout mobile_vcx
 # git merge libindy_refactor
-#IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
-#IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
-IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,x86_64-apple-ios"
-IOS_ARCHS="arm64,armv7,armv7s,x86_64"
+IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
+IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
+#IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,x86_64-apple-ios"
+#IOS_ARCHS="arm64,armv7,armv7s,x86_64"
 #IOS_TARGETS="i386-apple-ios,x86_64-apple-ios"
 #IOS_ARCHS="i386,x86_64"
 cd vcx/libvcx/build_scripts/ios/mac

@@ -117,7 +117,8 @@ def recursive_walk(folder):
                 ):
                     traceNumber += 1
                     copy.write("println!(\"TRACE[" + str(traceNumber) + "]: ABOVE LINE[" + str(fileLineNumber) + "]: " + trimmedLine.replace("\\","\\\\").replace("\"","\\\"").replace("{","{{").replace("}","}}") + " -- FILE: " + folderName + "/" + filename + "\");\n")
-                
+                    #copy.write("match std::env::var(\"MOBILE_TRACE\") {Ok(val) => {println!(\"TRACE[" + str(traceNumber) + "]: ABOVE LINE[" + str(fileLineNumber) + "]: " + trimmedLine.replace("\\","\\\\").replace("\"","\\\"").replace("{","{{").replace("}","}}") + " -- FILE: " + folderName + "/" + filename + "\")}, Err(e) => {},}\n")
+
                 copy.write(line)
 
                 if (
@@ -160,6 +161,7 @@ def recursive_walk(folder):
                 ):
                     traceNumber += 1
                     copy.write("println!(\"TRACE[" + str(traceNumber) + "]: BELOW LINE[" + str(fileLineNumber) + "]: " + trimmedLine.replace("\\","\\\\").replace("\"","\\\"").replace("{","{{").replace("}","}}") + " -- FILE: " + folderName + "/" + filename + "\");\n")
+                    #copy.write("match std::env::var(\"MOBILE_TRACE\") {Ok(val) => {println!(\"TRACE[" + str(traceNumber) + "]: BELOW LINE[" + str(fileLineNumber) + "]: " + trimmedLine.replace("\\","\\\\").replace("\"","\\\"").replace("{","{{").replace("}","}}") + " -- FILE: " + folderName + "/" + filename + "\")}, Err(e) => {},}\n")
                 
                 if ( insideExternCurly == 1 and trimmedLine == "}" ):
                     insideExternCurly = 0

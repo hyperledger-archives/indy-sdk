@@ -48,15 +48,14 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     rustup target remove aarch64-linux-android armv7-linux-androideabi arm-linux-androideabi i686-linux-android x86_64-linux-android
     rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios x86_64-apple-ios i386-apple-ios
 
-    # DON'T do this
-    #xcode-select --install # Install Command Line Tools if you haven't already.
-    #sudo xcode-select --switch /Library/Developer/CommandLineTools
-    # INSTEAD do this
-    #sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-    
     RUST_TARGETS=$(rustc --print target-list|grep -i ios)
     if [ "RUST_TARGETS" = "" ]; then
         sudo xcodebuild -license
+        # DON'T do this
+        #xcode-select --install # Install Command Line Tools if you haven't already.
+        #sudo xcode-select --switch /Library/Developer/CommandLineTools
+        # INSTEAD do this
+        sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
         echo "If you have successfully accepted the xcode build license then just re-run this script."
         echo "If you were not able to successfully accept the xcode build license then run this command in a terminal 'sudo xcodebuild -license' until it is successful before you attempt to re-run this script"
         exit 1

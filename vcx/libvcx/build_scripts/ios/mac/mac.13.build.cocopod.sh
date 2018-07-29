@@ -42,20 +42,10 @@ fi
 mkdir -p $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/
 cp -rvp vcx.framework $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/
 cd $VCX_SDK/vcx/wrappers/ios/vcx/tmp
+cp $WORK_DIR/evernym.vcx-sdk.git.commit.log $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/
+cp $WORK_DIR/hyperledger.indy-sdk.git.commit.log $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/
+
 zip -r vcx.${COMBINED_LIB}_${DATETIME}_universal.zip vcx
-# |---vcx.framework_20180522.1635_universal.zip
-# |---vcx
-#      |---vcx.framework
-#            |----lib
-#            |       |---libvcx.a
-#            |----headers
-#            |       |---vcx.h
-#            |       |---ConnectMeVcx.h
-#            |       |---libvcx.h
-#            |----vcx
-#            |----Modules
-#            |       |---module.modulemap
-#            |----Info.plist
 
 cp $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx.${COMBINED_LIB}_${DATETIME}_universal.zip ~/IOSBuilds/${COMBINED_LIB}
 

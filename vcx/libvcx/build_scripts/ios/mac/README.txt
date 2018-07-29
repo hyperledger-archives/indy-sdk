@@ -17,7 +17,10 @@ is installed at /Users/[username]/Library/Android/sdk (YES, this is for iOS but 
 11) Run the script ./mac.03.libindy.build.sh
 12) Run the script ./mac.04.libvcx.setup.sh
 13) Run the script 'source ./mac.05.libvcx.env.sh'
-14) Run the script ./mac.06.libvcx.build.sh (Test failures do not prevent the .a files from being correctly built)
+14) Run the script ./mac.08.libssl.libcrypto.build.sh
+15) Run the script ./mac.09.libzmq.libsodium.build.sh
+16) Run the script ./mac.10.libminiz.libsqlite3.combine.sh
+17) Run the script ./mac.06.libvcx.build.sh (Test failures do not prevent the .a files from being correctly built)
 If you get the error
 error: failed to add native library /usr/local/lib/libindy.a: File too small to be an archive
 then that means the build.rs file in the sdk/vcx/libvcx folder is setup incorrectly.
@@ -40,13 +43,10 @@ You must comment out the lines 68 to 85 that look like this, then rerun the scri
         println!("cargo:rustc-link-search=native={}", openssl);
         println!("cargo:rustc-link-lib=static=crypto");
         println!("cargo:rustc-link-lib=static=ssl");
-15) Run the script ./mac.08.libssl.libcrypto.build.sh
-16) Run the script ./mac.09.libzmq.libsodium.build.sh
-17) Run the script ./mac.10.libminiz.libsqlite3.combine.sh
 18) Run the script ./mac.11.copy.static.libs.to.app.sh
-19) Run the script ./mac.12.combine.static.libs.sh libvcxall
-20) Now you should be able to open up the file sdk/vcx/wrappers/ios/vcx/vcx.xcodeproj
-in Xcode and build and run the iphone app in the simulator
+19) Run the script ./mac.12.combine.static.libs.sh libvcxall delete nodebug
+20) Run the script ./mac.upload.ios.build.files.sh
+21) Now you finally have a cocoapod located at sdk/vcx/wrappers/ios/vcx/tmp
 
 
 

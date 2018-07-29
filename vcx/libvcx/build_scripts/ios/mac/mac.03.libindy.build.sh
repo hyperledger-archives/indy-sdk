@@ -38,6 +38,8 @@ else
     git checkout -- libnullpay/Cargo.toml
 fi
 
+git log -1 > $WORK_DIR/hyperledger.indy-sdk.git.commit.log
+
 DEBUG_SYMBOLS="debuginfo"
 if [ ! -z "$1" ]; then
     DEBUG_SYMBOLS=$1
