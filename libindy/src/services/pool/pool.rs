@@ -744,13 +744,13 @@ mod tests {
     }
 
     mod pool_sm {
-        use indy_crypto::utils::json::JsonEncodable;
+        use super::*;
+
+        use serde_json;
         use std::fs;
         use std::io::Write;
-        use super::*;
-        use utils::environment::EnvironmentUtils;
 
-        extern crate indy_crypto;
+        use utils::environment::EnvironmentUtils;
 
         const POOL: &'static str = "pool";
 
@@ -1040,7 +1040,9 @@ mod tests {
                         }
                     }
                 }
-            )).to_json().unwrap();
+            ));
+
+            let rep = serde_json::to_string(&rep).unwrap();
 
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
@@ -1082,7 +1084,9 @@ mod tests {
                         }
                     }
                 }
-            )).to_json().unwrap();
+            ));
+
+            let rep = serde_json::to_string(&rep).unwrap();
 
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));

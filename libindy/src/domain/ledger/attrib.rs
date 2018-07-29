@@ -1,11 +1,6 @@
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-
 use super::constants::{ATTRIB, GET_ATTR};
 use super::response::GetReplyResultV1;
 
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use named_type::NamedType;
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -34,9 +29,6 @@ impl AttribOperation {
     }
 }
 
-impl JsonEncodable for AttribOperation {}
-
-
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetAttribOperation {
     #[serde(rename = "type")]
@@ -62,16 +54,12 @@ impl GetAttribOperation {
     }
 }
 
-impl JsonEncodable for GetAttribOperation {}
-
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum GetAttrReplyResult {
     GetAttrReplyResultV0(GetAttResultV0),
     GetAttrReplyResultV1(GetReplyResultV1<GetAttResultDataV1>)
 }
-
-impl<'a> JsonDecodable<'a> for GetAttrReplyResult {}
 
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -82,8 +70,6 @@ pub struct GetAttResultV0 {
     pub  raw: String
 }
 
-impl<'a> JsonDecodable<'a> for GetAttResultV0 {}
-
 #[derive(Deserialize, Eq, PartialEq, Debug)]
 pub struct GetAttResultDataV1 {
     pub ver: String,
@@ -92,14 +78,10 @@ pub struct GetAttResultDataV1 {
     pub raw: String,
 }
 
-impl<'a> JsonDecodable<'a> for GetAttResultDataV1 {}
-
 #[derive(Deserialize, Debug)]
 pub struct AttribData {
     pub endpoint: Endpoint
 }
-
-impl<'a> JsonDecodable<'a> for AttribData {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, NamedType)]
 pub struct Endpoint {
@@ -115,7 +97,3 @@ impl Endpoint {
         }
     }
 }
-
-impl JsonEncodable for Endpoint {}
-
-impl<'a> JsonDecodable<'a> for Endpoint {}

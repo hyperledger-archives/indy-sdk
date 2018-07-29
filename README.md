@@ -237,4 +237,12 @@ The documents that provide necessary information for Libindy migration. This doc
 to simplify their transition to API of Libindy 1.4.0.
 * [v1.3.0 → v1.4.0](doc/migration-guide-1.3.0-1.4.0.md)
 * [v1.4.0 → v1.5.0](doc/migration-guide-1.4.0-1.5.0.md)
-* [v1.5.0 → v1.6.0](doc/migration-guide-1.5.0-1.6.0.md)
+* [v1.5.0 → v1.6.x](doc/migration-guide-1.5.0-1.6.0.md)
+
+## How to Contribute
+
+* We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
+* You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
+* We use developer certificate of origin (DCO) in all hyperledger repositories,
+  so to get your pull requests accepted, you must certify your commits by signing off on each commit.
+  More information can be found in [Signing Commits](doc/signing-commits.md) article.

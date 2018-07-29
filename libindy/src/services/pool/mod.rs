@@ -36,7 +36,6 @@ use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 use std::sync::Mutex;
 
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use services::pool::pool::{Pool, ZMQPool};
 use self::zmq::Socket;
 
@@ -64,7 +63,7 @@ impl PoolService {
 
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config: PoolConfig = match config {
-            Some(config) => PoolConfig::from_json(config)
+            Some(config) => serde_json::from_str(config)
                 .map_err(|err|
                     CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
             None => PoolConfig::default_for_name(name)
@@ -93,8 +92,7 @@ impl PoolService {
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path()).map_err(map_err_trace!())?;
 
-        f.write(pool_config
-            .to_json()
+        f.write(serde_json::to_string(&pool_config)
             .map_err(|err|
                 CommonError::InvalidState(format!("Can't serialize pool config: {}", err.description()))).map_err(map_err_trace!())?
             .as_bytes()).map_err(map_err_trace!())?;
@@ -125,7 +123,8 @@ impl PoolService {
         }
 
         let config: PoolOpenConfig = if let Some(config) = config {
-            JsonDecodable::from_json(config)?
+            serde_json::from_str(config)
+                .map_err(|err| CommonError::InvalidStructure(format!("Invalid Pool config: {}", err)))?
         } else {
             PoolOpenConfig::default()
         };
@@ -534,6 +533,7 @@ mod tests {
                             node_port: Some(0),
                             services: Some(vec!["VALIDATOR".to_string()]),
                             blskey: Some(blskey.to_string()),
+                            blskey_pop: None,
                         },
                         dest: "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv".to_string(),
                         verkey: None,
@@ -567,6 +567,7 @@ mod tests {
                             node_port: Some(0),
                             services: Some(vec!["VALIDATOR".to_string()]),
                             blskey: Some(blskey.to_string()),
+                            blskey_pop: None,
                         },
                         dest: "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv".to_string(),
                         verkey: None,

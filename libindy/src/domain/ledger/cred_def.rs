@@ -1,11 +1,4 @@
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-
 use super::constants::{CRED_DEF, GET_CRED_DEF};
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
-
 use super::response::GetReplyResultV1;
 use super::super::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
 use super::super::ledger::request::ProtocolVersion;
@@ -34,8 +27,6 @@ impl CredDefOperation {
     }
 }
 
-impl JsonEncodable for CredDefOperation {}
-
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetCredDefOperation {
     #[serde(rename = "type")]
@@ -60,16 +51,12 @@ impl GetCredDefOperation {
     }
 }
 
-impl JsonEncodable for GetCredDefOperation {}
-
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum GetCredDefReplyResult {
     GetCredDefReplyResultV0(GetCredDefResultV0),
     GetCredDefReplyResultV1(GetReplyResultV1<GetCredDefResultDataV1>)
 }
-
-impl<'a> JsonDecodable<'a> for GetCredDefReplyResult {}
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct GetCredDefResultV0 {
@@ -83,8 +70,6 @@ pub struct GetCredDefResultV0 {
     pub tag: Option<String>,
     pub data: CredentialDefinitionData
 }
-
-impl<'a> JsonDecodable<'a> for GetCredDefResultV0 {}
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]

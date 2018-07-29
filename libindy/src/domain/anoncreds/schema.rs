@@ -1,11 +1,4 @@
-extern crate indy_crypto;
-extern crate serde;
-extern crate serde_json;
-
-
 use super::DELIMITER;
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use std::collections::{HashMap, HashSet};
 
@@ -34,10 +27,6 @@ impl Schema {
         format!("{}{}{}{}{}{}{}", did, DELIMITER, SCHEMA_MARKER, DELIMITER, name, DELIMITER, version)
     }
 }
-
-impl JsonEncodable for Schema {}
-
-impl<'a> JsonDecodable<'a> for Schema {}
 
 impl From<Schema> for SchemaV1 {
     fn from(schema: Schema) -> Self {
