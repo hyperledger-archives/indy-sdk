@@ -450,7 +450,7 @@ impl PoolConfig {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RemoteNode {
     pub name: String,
     pub public_key: Vec<u8>,

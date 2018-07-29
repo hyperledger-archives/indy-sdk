@@ -388,15 +388,7 @@ impl LedgerCommandExecutor {
                 CommonError::InvalidStructure(format!("Message is invalid json: {}", request)))));
         }
 
-        let mut message_without_signatures = request.clone();
-        message_without_signatures.as_object_mut()
-            .map(|request| {
-                request.remove("signature");
-                request.remove("signatures");
-                request
-            }).ok_or(CommonError::InvalidState("Cannot deserialize request".to_string()))?;
-
-        let serialized_request = serialize_signature(message_without_signatures)?;
+        let serialized_request = serialize_signature(request.clone())?;
         let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
 
         match signature_type {
