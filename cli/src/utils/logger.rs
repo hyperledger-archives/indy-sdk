@@ -53,13 +53,13 @@ macro_rules! trace_err {
     ($($arg:tt)*) => ( _log_err!(::log::Level::Trace, $($arg)*) )
 }
 
-#[cfg(test)]
+#[cfg(debug_assertions)]
 #[macro_export]
 macro_rules! secret {
     ($val:expr) => {{ $val }};
 }
 
-#[cfg(not(test))]
+#[cfg(not(debug_assertions))]
 #[macro_export]
 macro_rules! secret {
     ($val:expr) => {{ "_" }};
