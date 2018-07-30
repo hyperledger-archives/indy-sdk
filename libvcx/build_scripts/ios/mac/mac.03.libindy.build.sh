@@ -71,8 +71,8 @@ fi
 #cargo build
 # To build for iOS
 #echo "cargo lipo --release --verbose --targets=${IOS_TARGETS}"
-cargo lipo --release --verbose --targets="${IOS_TARGETS}"
-# cargo lipo --release --targets="${IOS_TARGETS}"
+# cargo lipo --release --verbose --targets="${IOS_TARGETS}"
+cargo lipo --release --targets="${IOS_TARGETS}"
 #cargo lipo
 
 #########################################################################################################################
@@ -99,6 +99,6 @@ fi
 #cargo build
 # To build for iOS
 #echo "cargo lipo --release --verbose --targets=${IOS_TARGETS}"
-cargo lipo --release --verbose --targets="${IOS_TARGETS}"
-# cargo lipo --release --targets="${IOS_TARGETS}"
+# cargo lipo --release --verbose --targets="${IOS_TARGETS}"
+cargo lipo --release --targets="${IOS_TARGETS}"
 #cargo lipo
