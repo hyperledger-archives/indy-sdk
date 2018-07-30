@@ -5814,4 +5814,325 @@ mod demos {
 
         TestUtils::cleanup_storage();
     }
+
+    // IS-845: Error generating proof is observed when 30-40 attributes are fulfilled and sent from connect.me
+    #[test]
+    fn anoncreds_works_for_40_requested_attributes_same_credentials() {
+        use std::time::SystemTime;
+
+        TestUtils::cleanup_storage();
+
+        //1. Create Issuer wallet, gets wallet handle
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+        //2. Create Prover wallet, gets wallet handle
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+        //3. Issuer creates Schema and Credential Definition
+        let attr_names = r#"["attribute1", "attribute2", "attribute3",
+                                   "attribute4", "attribute5", "attribute6",
+                                   "attribute7", "attribute8", "attribute9",
+                                   "attribute10", "attribute11", "attribute12",
+                                   "attribute13", "attribute14", "attribute15",
+                                   "attribute16", "attribute17", "attribute18",
+                                   "attribute19", "attribute20", "attribute21",
+                                   "attribute22", "attribute23", "attribute24",
+                                   "attribute25", "attribute26", "attribute27",
+                                   "attribute28", "attribute29", "attribute30",
+                                   "attribute31", "attribute32", "attribute33",
+                                   "attribute34", "attribute35", "attribute36",
+                                   "attribute37", "attribute38", "attribute39",
+                                   "attribute40"]"#;
+        let (schema_id, schema_json, cred_def_id, cred_def_json) =
+            AnoncredsUtils::multi_steps_issuer_preparation(issuer_wallet_handle,
+                                                           ISSUER_DID,
+                                                           "40_attributes",
+                                                           attr_names);
+
+        //4. Prover creates Master Secret
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+        //5. Issuance credential for Prover
+        let cred_values = r#"{
+            "attribute1": {"raw":"Alex", "encoded": "123456789"}, "attribute2": {"raw":"Alex", "encoded": "123456789"}, "attribute3": {"raw":"Alex", "encoded": "123456789"},
+            "attribute4": {"raw":"Alex", "encoded": "123456789"}, "attribute5": {"raw":"Alex", "encoded": "123456789"}, "attribute6": {"raw":"Alex", "encoded": "123456789"},
+            "attribute7": {"raw":"Alex", "encoded": "123456789"}, "attribute8": {"raw":"Alex", "encoded": "123456789"}, "attribute9": {"raw":"Alex", "encoded": "123456789"},
+            "attribute10": {"raw":"Alex", "encoded": "123456789"}, "attribute11": {"raw":"Alex", "encoded": "123456789"}, "attribute12": {"raw":"Alex", "encoded": "123456789"},
+            "attribute13": {"raw":"Alex", "encoded": "123456789"}, "attribute14": {"raw":"Alex", "encoded": "123456789"}, "attribute15": {"raw":"Alex", "encoded": "123456789"},
+            "attribute16": {"raw":"Alex", "encoded": "123456789"}, "attribute17": {"raw":"Alex", "encoded": "123456789"}, "attribute18": {"raw":"Alex", "encoded": "123456789"},
+            "attribute19": {"raw":"Alex", "encoded": "123456789"}, "attribute20": {"raw":"Alex", "encoded": "123456789"}, "attribute21": {"raw":"Alex", "encoded": "123456789"},
+            "attribute22": {"raw":"Alex", "encoded": "123456789"}, "attribute23": {"raw":"Alex", "encoded": "123456789"}, "attribute24": {"raw":"Alex", "encoded": "123456789"},
+            "attribute25": {"raw":"Alex", "encoded": "123456789"}, "attribute26": {"raw":"Alex", "encoded": "123456789"}, "attribute27": {"raw":"Alex", "encoded": "123456789"},
+            "attribute28": {"raw":"Alex", "encoded": "123456789"}, "attribute29": {"raw":"Alex", "encoded": "123456789"}, "attribute30": {"raw":"Alex", "encoded": "123456789"},
+            "attribute31": {"raw":"Alex", "encoded": "123456789"}, "attribute32": {"raw":"Alex", "encoded": "123456789"}, "attribute33": {"raw":"Alex", "encoded": "123456789"},
+            "attribute34": {"raw":"Alex", "encoded": "123456789"}, "attribute35": {"raw":"Alex", "encoded": "123456789"}, "attribute36": {"raw":"Alex", "encoded": "123456789"},
+            "attribute37": {"raw":"Alex", "encoded": "123456789"}, "attribute38": {"raw":"Alex", "encoded": "123456789"}, "attribute39": {"raw":"Alex", "encoded": "123456789"},
+            "attribute40": {"raw":"Alex", "encoded": "123456789"}
+        }"#;
+
+        AnoncredsUtils::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                      prover_wallet_handle,
+                                                      issuer_wallet_handle,
+                                                      CREDENTIAL1_ID,
+                                                      cred_values,
+                                                      &cred_def_id,
+                                                      &cred_def_json);
+
+        //6. Proof request
+        let proof_req_json = r#"{
+                                       "nonce":"123432421212",
+                                       "name":"proof_req_1",
+                                       "version":"0.1",
+                                       "requested_attributes":{
+                                           "attr1_referent":{"name":"attribute1"}, "attr2_referent":{"name":"attribute2"}, "attr3_referent":{"name":"attribute3"},
+                                           "attr4_referent":{"name":"attribute4"}, "attr5_referent":{"name":"attribute5"}, "attr6_referent":{"name":"attribute6"},
+                                           "attr7_referent":{"name":"attribute7"}, "attr8_referent":{"name":"attribute8"}, "attr9_referent":{"name":"attribute9"},
+                                           "attr10_referent":{"name":"attribute10"}, "attr11_referent":{"name":"attribute11"}, "attr12_referent":{"name":"attribute12"},
+                                           "attr13_referent":{"name":"attribute13"}, "attr14_referent":{"name":"attribute14"}, "attr15_referent":{"name":"attribute15"},
+                                           "attr16_referent":{"name":"attribute16"}, "attr17_referent":{"name":"attribute17"}, "attr18_referent":{"name":"attribute18"},
+                                           "attr19_referent":{"name":"attribute19"}, "attr20_referent":{"name":"attribute20"}, "attr21_referent":{"name":"attribute21"},
+                                           "attr22_referent":{"name":"attribute22"}, "attr23_referent":{"name":"attribute23"}, "attr24_referent":{"name":"attribute24"},
+                                           "attr25_referent":{"name":"attribute25"}, "attr26_referent":{"name":"attribute26"}, "attr27_referent":{"name":"attribute27"},
+                                           "attr28_referent":{"name":"attribute28"}, "attr29_referent":{"name":"attribute29"}, "attr30_referent":{"name":"attribute30"},
+                                           "attr31_referent":{"name":"attribute31"}, "attr32_referent":{"name":"attribute32"}, "attr33_referent":{"name":"attribute33"},
+                                           "attr34_referent":{"name":"attribute34"}, "attr35_referent":{"name":"attribute35"}, "attr36_referent":{"name":"attribute36"},
+                                           "attr37_referent":{"name":"attribute37"}, "attr38_referent":{"name":"attribute38"}, "attr39_referent":{"name":"attribute39"},
+                                           "attr40_referent":{"name":"attribute40"}
+                                       },
+                                       "requested_predicates":{}
+                                    }"#;
+
+        //7. Prover gets Credentials for Proof Request
+        let start_time = SystemTime::now();
+
+        let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+
+        println!("Time prover_get_credentials_for_proof_req {:?}", SystemTime::now().duration_since(start_time).unwrap());
+
+        let credential = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+
+        //8. Prover creates Proof
+        let requested_credentials_json = format!(r#"{{
+                                                  "self_attested_attributes":{{
+                                                        "attr1_referent": "val1","attr2_referent": "val2","attr3_referent": "val3"
+                                                  }},
+                                                  "requested_attributes":{{
+                                                        "attr4_referent":{{ "cred_id":"{0}", "revealed": true }},"attr5_referent":{{ "cred_id":"{0}", "revealed": true }},"attr6_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr7_referent":{{ "cred_id":"{0}", "revealed": true }},"attr8_referent":{{ "cred_id":"{0}", "revealed": true }},"attr9_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr10_referent":{{ "cred_id":"{0}", "revealed": true }},"attr11_referent":{{ "cred_id":"{0}", "revealed": true }},"attr12_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr13_referent":{{ "cred_id":"{0}", "revealed": true }},"attr14_referent":{{ "cred_id":"{0}", "revealed": true }},"attr15_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr16_referent":{{ "cred_id":"{0}", "revealed": true }},"attr17_referent":{{ "cred_id":"{0}", "revealed": true }},"attr18_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr19_referent":{{ "cred_id":"{0}", "revealed": true }},"attr20_referent":{{ "cred_id":"{0}", "revealed": true }},"attr21_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr22_referent":{{ "cred_id":"{0}", "revealed": true }},"attr23_referent":{{ "cred_id":"{0}", "revealed": true }},"attr24_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr25_referent":{{ "cred_id":"{0}", "revealed": true }},"attr26_referent":{{ "cred_id":"{0}", "revealed": true }},"attr27_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr28_referent":{{ "cred_id":"{0}", "revealed": true }},"attr29_referent":{{ "cred_id":"{0}", "revealed": true }},"attr30_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr31_referent":{{ "cred_id":"{0}", "revealed": true }},"attr32_referent":{{ "cred_id":"{0}", "revealed": true }},"attr33_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr34_referent":{{ "cred_id":"{0}", "revealed": true }},"attr35_referent":{{ "cred_id":"{0}", "revealed": true }},"attr36_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr37_referent":{{ "cred_id":"{0}", "revealed": true }},"attr38_referent":{{ "cred_id":"{0}", "revealed": true }},"attr39_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr40_referent":{{ "cred_id":"{0}", "revealed": true }}
+                                                  }},
+                                                  "requested_predicates":{{}}
+                                                }}"#, credential.referent);
+
+        let schemas_json = json!({schema_id: serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
+        let cred_defs_json = json!({cred_def_id: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
+        let rev_states_json = json!({}).to_string();
+
+        let start_time = SystemTime::now();
+
+        let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                             &proof_req_json,
+                                                             &requested_credentials_json,
+                                                             COMMON_MASTER_SECRET,
+                                                             &schemas_json,
+                                                             &cred_defs_json,
+                                                             &rev_states_json).unwrap();
+
+        println!("Time prover_create_proof {:?}", SystemTime::now().duration_since(start_time).unwrap());
+
+        let _proof: Proof = serde_json::from_str(&proof_json).unwrap();
+
+        //9. Verifier verifies proof
+        let rev_reg_defs_json = json!({}).to_string();
+        let rev_regs_json = json!({}).to_string();
+
+        let start_time = SystemTime::now();
+
+        let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+                                                          &proof_json,
+                                                          &schemas_json,
+                                                          &cred_defs_json,
+                                                          &rev_reg_defs_json,
+                                                          &rev_regs_json).unwrap();
+        println!("Time verifier_verify_proof {:?}", SystemTime::now().duration_since(start_time).unwrap());
+
+        assert!(valid);
+
+        WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
+
+        TestUtils::cleanup_storage();
+    }
+
+    // IS-845: Error generating proof is observed when 30-40 attributes are fulfilled and sent from connect.me
+    #[test]
+    fn anoncreds_works_for_40_requested_attributes_5_different_credentials() {
+        use std::time::SystemTime;
+
+        TestUtils::cleanup_storage();
+
+        //1. Create Issuer wallet, gets wallet handle
+        let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+        //2. Create Prover wallet, gets wallet handle
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+        //3. Issuer creates Schema and Credential Definition
+        let attr_names = r#"["attribute1", "attribute2", "attribute3",
+                                   "attribute4", "attribute5", "attribute6",
+                                   "attribute7", "attribute8", "attribute9",
+                                   "attribute10", "attribute11", "attribute12",
+                                   "attribute13", "attribute14", "attribute15",
+                                   "attribute16", "attribute17", "attribute18",
+                                   "attribute19", "attribute20", "attribute21",
+                                   "attribute22", "attribute23", "attribute24",
+                                   "attribute25", "attribute26", "attribute27",
+                                   "attribute28", "attribute29", "attribute30",
+                                   "attribute31", "attribute32", "attribute33",
+                                   "attribute34", "attribute35", "attribute36",
+                                   "attribute37", "attribute38", "attribute39",
+                                   "attribute40"]"#;
+        let (schema_id, schema_json, cred_def_id, cred_def_json) =
+            AnoncredsUtils::multi_steps_issuer_preparation(issuer_wallet_handle,
+                                                           ISSUER_DID,
+                                                           "40_attributes",
+                                                           attr_names);
+
+        //4. Prover creates Master Secret
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+        //5. Issuance credential for Prover
+        let cred_values = r#"{
+            "attribute1": {"raw":"Alex", "encoded": "123456789"}, "attribute2": {"raw":"Alex", "encoded": "123456789"}, "attribute3": {"raw":"Alex", "encoded": "123456789"},
+            "attribute4": {"raw":"Alex", "encoded": "123456789"}, "attribute5": {"raw":"Alex", "encoded": "123456789"}, "attribute6": {"raw":"Alex", "encoded": "123456789"},
+            "attribute7": {"raw":"Alex", "encoded": "123456789"}, "attribute8": {"raw":"Alex", "encoded": "123456789"}, "attribute9": {"raw":"Alex", "encoded": "123456789"},
+            "attribute10": {"raw":"Alex", "encoded": "123456789"}, "attribute11": {"raw":"Alex", "encoded": "123456789"}, "attribute12": {"raw":"Alex", "encoded": "123456789"},
+            "attribute13": {"raw":"Alex", "encoded": "123456789"}, "attribute14": {"raw":"Alex", "encoded": "123456789"}, "attribute15": {"raw":"Alex", "encoded": "123456789"},
+            "attribute16": {"raw":"Alex", "encoded": "123456789"}, "attribute17": {"raw":"Alex", "encoded": "123456789"}, "attribute18": {"raw":"Alex", "encoded": "123456789"},
+            "attribute19": {"raw":"Alex", "encoded": "123456789"}, "attribute20": {"raw":"Alex", "encoded": "123456789"}, "attribute21": {"raw":"Alex", "encoded": "123456789"},
+            "attribute22": {"raw":"Alex", "encoded": "123456789"}, "attribute23": {"raw":"Alex", "encoded": "123456789"}, "attribute24": {"raw":"Alex", "encoded": "123456789"},
+            "attribute25": {"raw":"Alex", "encoded": "123456789"}, "attribute26": {"raw":"Alex", "encoded": "123456789"}, "attribute27": {"raw":"Alex", "encoded": "123456789"},
+            "attribute28": {"raw":"Alex", "encoded": "123456789"}, "attribute29": {"raw":"Alex", "encoded": "123456789"}, "attribute30": {"raw":"Alex", "encoded": "123456789"},
+            "attribute31": {"raw":"Alex", "encoded": "123456789"}, "attribute32": {"raw":"Alex", "encoded": "123456789"}, "attribute33": {"raw":"Alex", "encoded": "123456789"},
+            "attribute34": {"raw":"Alex", "encoded": "123456789"}, "attribute35": {"raw":"Alex", "encoded": "123456789"}, "attribute36": {"raw":"Alex", "encoded": "123456789"},
+            "attribute37": {"raw":"Alex", "encoded": "123456789"}, "attribute38": {"raw":"Alex", "encoded": "123456789"}, "attribute39": {"raw":"Alex", "encoded": "123456789"},
+            "attribute40": {"raw":"Alex", "encoded": "123456789"}
+        }"#;
+
+        // Issue 5 the same credentials for single Prover
+        let cred_ids = vec!["credential1_id", "credential2_id", "credential3_id", "credential4_id", "credential5_id"];
+
+        for cred_id in cred_ids.iter(){
+            AnoncredsUtils::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                          prover_wallet_handle,
+                                                          issuer_wallet_handle,
+                                                          cred_id,
+                                                          cred_values,
+                                                          &cred_def_id,
+                                                          &cred_def_json);
+        }
+
+        //6. Proof request
+        let proof_req_json = r#"{
+                                       "nonce":"123432421212",
+                                       "name":"proof_req_1",
+                                       "version":"0.1",
+                                       "requested_attributes":{
+                                           "attr1_referent":{"name":"attribute1"}, "attr2_referent":{"name":"attribute2"}, "attr3_referent":{"name":"attribute3"},
+                                           "attr4_referent":{"name":"attribute4"}, "attr5_referent":{"name":"attribute5"}, "attr6_referent":{"name":"attribute6"},
+                                           "attr7_referent":{"name":"attribute7"}, "attr8_referent":{"name":"attribute8"}, "attr9_referent":{"name":"attribute9"},
+                                           "attr10_referent":{"name":"attribute10"}, "attr11_referent":{"name":"attribute11"}, "attr12_referent":{"name":"attribute12"},
+                                           "attr13_referent":{"name":"attribute13"}, "attr14_referent":{"name":"attribute14"}, "attr15_referent":{"name":"attribute15"},
+                                           "attr16_referent":{"name":"attribute16"}, "attr17_referent":{"name":"attribute17"}, "attr18_referent":{"name":"attribute18"},
+                                           "attr19_referent":{"name":"attribute19"}, "attr20_referent":{"name":"attribute20"}, "attr21_referent":{"name":"attribute21"},
+                                           "attr22_referent":{"name":"attribute22"}, "attr23_referent":{"name":"attribute23"}, "attr24_referent":{"name":"attribute24"},
+                                           "attr25_referent":{"name":"attribute25"}, "attr26_referent":{"name":"attribute26"}, "attr27_referent":{"name":"attribute27"},
+                                           "attr28_referent":{"name":"attribute28"}, "attr29_referent":{"name":"attribute29"}, "attr30_referent":{"name":"attribute30"},
+                                           "attr31_referent":{"name":"attribute31"}, "attr32_referent":{"name":"attribute32"}, "attr33_referent":{"name":"attribute33"},
+                                           "attr34_referent":{"name":"attribute34"}, "attr35_referent":{"name":"attribute35"}, "attr36_referent":{"name":"attribute36"},
+                                           "attr37_referent":{"name":"attribute37"}, "attr38_referent":{"name":"attribute38"}, "attr39_referent":{"name":"attribute39"},
+                                           "attr40_referent":{"name":"attribute40"}
+                                       },
+                                       "requested_predicates":{}
+                                    }"#;
+
+        //7. Prover gets Credentials for Proof Request
+        let start_time = SystemTime::now();
+
+        let _credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+
+        println!("Time prover_get_credentials_for_proof_req {:?}", SystemTime::now().duration_since(start_time).unwrap());
+
+        //8. Prover creates Proof use different credentials
+        let requested_credentials_json = format!(r#"{{
+                                                  "self_attested_attributes":{{
+                                                        "attr1_referent": "val1","attr2_referent": "val2","attr3_referent": "val3"
+                                                  }},
+                                                  "requested_attributes":{{
+                                                        "attr4_referent":{{ "cred_id":"{0}", "revealed": true }},"attr5_referent":{{ "cred_id":"{0}", "revealed": true }},"attr6_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr7_referent":{{ "cred_id":"{0}", "revealed": true }},"attr8_referent":{{ "cred_id":"{0}", "revealed": true }},"attr9_referent":{{ "cred_id":"{0}", "revealed": true }},
+                                                        "attr10_referent":{{ "cred_id":"{1}", "revealed": true }},"attr11_referent":{{ "cred_id":"{1}", "revealed": true }},"attr12_referent":{{ "cred_id":"{1}", "revealed": true }},
+                                                        "attr13_referent":{{ "cred_id":"{1}", "revealed": true }},"attr14_referent":{{ "cred_id":"{1}", "revealed": true }},"attr15_referent":{{ "cred_id":"{1}", "revealed": true }},
+                                                        "attr16_referent":{{ "cred_id":"{1}", "revealed": true }},"attr17_referent":{{ "cred_id":"{1}", "revealed": true }},"attr18_referent":{{ "cred_id":"{1}", "revealed": true }},
+                                                        "attr19_referent":{{ "cred_id":"{2}", "revealed": true }},"attr20_referent":{{ "cred_id":"{2}", "revealed": true }},"attr21_referent":{{ "cred_id":"{2}", "revealed": true }},
+                                                        "attr22_referent":{{ "cred_id":"{2}", "revealed": true }},"attr23_referent":{{ "cred_id":"{2}", "revealed": true }},"attr24_referent":{{ "cred_id":"{2}", "revealed": true }},
+                                                        "attr25_referent":{{ "cred_id":"{3}", "revealed": true }},"attr26_referent":{{ "cred_id":"{3}", "revealed": true }},"attr27_referent":{{ "cred_id":"{3}", "revealed": true }},
+                                                        "attr28_referent":{{ "cred_id":"{3}", "revealed": true }},"attr29_referent":{{ "cred_id":"{3}", "revealed": true }},"attr30_referent":{{ "cred_id":"{3}", "revealed": true }},
+                                                        "attr31_referent":{{ "cred_id":"{3}", "revealed": true }},"attr32_referent":{{ "cred_id":"{3}", "revealed": true }},"attr33_referent":{{ "cred_id":"{3}", "revealed": true }},
+                                                        "attr34_referent":{{ "cred_id":"{4}", "revealed": true }},"attr35_referent":{{ "cred_id":"{4}", "revealed": true }},"attr36_referent":{{ "cred_id":"{4}", "revealed": true }},
+                                                        "attr37_referent":{{ "cred_id":"{4}", "revealed": true }},"attr38_referent":{{ "cred_id":"{4}", "revealed": true }},"attr39_referent":{{ "cred_id":"{4}", "revealed": true }},
+                                                        "attr40_referent":{{ "cred_id":"{4}", "revealed": true }}
+                                                  }},
+                                                  "requested_predicates":{{}}
+                                                }}"#, cred_ids[0].clone(), cred_ids[1].clone(), cred_ids[2].clone(), cred_ids[3].clone(), cred_ids[4].clone() );
+
+        let schemas_json = json!({schema_id: serde_json::from_str::<Schema>(&schema_json).unwrap()}).to_string();
+        let cred_defs_json = json!({cred_def_id: serde_json::from_str::<CredentialDefinition>(&cred_def_json).unwrap()}).to_string();
+        let rev_states_json = json!({}).to_string();
+
+        let start_time = SystemTime::now();
+
+        let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                             &proof_req_json,
+                                                             &requested_credentials_json,
+                                                             COMMON_MASTER_SECRET,
+                                                             &schemas_json,
+                                                             &cred_defs_json,
+                                                             &rev_states_json).unwrap();
+
+        println!("Time prover_create_proof {:?}", SystemTime::now().duration_since(start_time).unwrap());
+
+        let _proof: Proof = serde_json::from_str(&proof_json).unwrap();
+
+        //9. Verifier verifies proof
+        let rev_reg_defs_json = json!({}).to_string();
+        let rev_regs_json = json!({}).to_string();
+
+        let start_time = SystemTime::now();
+
+        let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+                                                          &proof_json,
+                                                          &schemas_json,
+                                                          &cred_defs_json,
+                                                          &rev_reg_defs_json,
+                                                          &rev_regs_json).unwrap();
+        println!("Time verifier_verify_proof {:?}", SystemTime::now().duration_since(start_time).unwrap());
+
+        assert!(valid);
+
+        WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
+
+        TestUtils::cleanup_storage();
+    }
 }
