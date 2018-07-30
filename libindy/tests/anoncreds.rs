@@ -1,20 +1,27 @@
-extern crate indy;
-extern crate uuid;
-extern crate time;
+#[macro_use]
+extern crate lazy_static;
 
-// Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use indy::api as api;
+#[macro_use]
+extern crate named_type_derive;
 
 #[macro_use]
 extern crate serde_derive;
+
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate lazy_static;
+
+extern crate byteorder;
+extern crate indy;
 extern crate indy_crypto;
+extern crate uuid;
 extern crate named_type;
-#[macro_use]
-extern crate named_type_derive;
+extern crate rmp_serde;
+extern crate rust_base58;
+extern crate time;
+extern crate serde;
+
+// Workaround to share some utils code based on indy sdk types between tests and indy sdk
+use indy::api as api;
 
 #[macro_use]
 mod utils;
@@ -1982,6 +1989,33 @@ mod high_cases {
 
                 let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
                 assert_eq!(credentials_for_predicate_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_uppercase() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"AGe", "p_type":">=", "p_value":18 })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
 
                 WalletUtils::close_wallet(wallet_handle).unwrap();
             }

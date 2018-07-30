@@ -7,9 +7,6 @@ use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::types::*;
 use std::error::Error;
 
-extern crate indy_crypto;
-
-
 pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_NYM,
     constants::GET_SCHEMA,
