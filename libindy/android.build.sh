@@ -92,7 +92,7 @@ statically_link_dependencies_with_libindy(){
         ${OPENSSL_DIR}/lib/libcrypto.a \
         ${SODIUM_LIB_DIR}/libsodium.a \
         ${LIBZMQ_LIB_DIR}/libzmq.a \
-        ${TOOLCHAIN_DIR}/${TRIPLET}/lib/libgnustl_shared.so \
+        ${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/lib/libgnustl_shared.so \
         -Wl,--no-whole-archive -z muldefs
 }
 
@@ -129,7 +129,7 @@ build(){
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
         cargo clean &&
-        RUSTFLAGS="-L${TOOLCHAIN_DIR}/${TRIPLET}/lib -lgnustl_shared" \
+        RUSTFLAGS="-L${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/lib -lgnustl_shared" \
             cargo build --release --target=${TRIPLET} &&
     popd
 }

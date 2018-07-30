@@ -85,6 +85,7 @@ generate_arch_flags(){
         export TARGET_ARCH="arm"
         export TARGET_API="16"
         export TRIPLET="arm-linux-androideabi"
+        export ANDROID_TRIPLET=${TRIPLET}
         export ABI="armeabi-v7a"
     fi
 
@@ -92,6 +93,7 @@ generate_arch_flags(){
         export TARGET_ARCH="arm"
         export TARGET_API="16"
         export TRIPLET="armv7-linux-androideabi"
+        export ANDROID_TRIPLET="arm-linux-androideabi"
         export ABI="armeabi-v7a"
     fi
 
@@ -99,6 +101,7 @@ generate_arch_flags(){
         export TARGET_ARCH="arm64"
         export TARGET_API="21"
         export TRIPLET="aarch64-linux-android"
+        export ANDROID_TRIPLET=${TRIPLET}
         export ABI="arm64-v8a"
     fi
 
@@ -106,6 +109,7 @@ generate_arch_flags(){
         export TARGET_ARCH="x86"
         export TARGET_API="16"
         export TRIPLET="i686-linux-android"
+        export ANDROID_TRIPLET=${TRIPLET}
         export ABI="x86"
     fi
 
@@ -191,11 +195,11 @@ set_env_vars(){
     export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH}
     export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
     export PKG_CONFIG_ALLOW_CROSS=1
-    export CC=${TOOLCHAIN_DIR}/bin/${TRIPLET}-clang
-    export AR=${TOOLCHAIN_DIR}/bin/${TRIPLET}-ar
-    export CXX=${TOOLCHAIN_DIR}/bin/${TRIPLET}-clang++
-    export CXXLD=${TOOLCHAIN_DIR}/bin/${TRIPLET}-ld
-    export RANLIB=${TOOLCHAIN_DIR}/bin/${TRIPLET}-ranlib
+    export CC=${TOOLCHAIN_DIR}/bin/${ANDROID_TRIPLET}-clang
+    export AR=${TOOLCHAIN_DIR}/bin/${ANDROID_TRIPLET}-ar
+    export CXX=${TOOLCHAIN_DIR}/bin/${ANDROID_TRIPLET}-clang++
+    export CXXLD=${TOOLCHAIN_DIR}/bin/${ANDROID_TRIPLET}-ld
+    export RANLIB=${TOOLCHAIN_DIR}/bin/${ANDROID_TRIPLET}-ranlib
     export TARGET=android
     export OPENSSL_STATIC=1
 }
