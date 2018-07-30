@@ -78,7 +78,7 @@ download_sdk(){
 
 generate_arch_flags(){
     if [ -z $1 ]; then
-        echo "please provide the arch e.g arm, x86 or arm64"
+        echo "please provide the arch e.g arm,armv7, x86 or arm64"
         exit 1
     fi
     if [ $1 == "arm" ]; then
@@ -88,15 +88,22 @@ generate_arch_flags(){
         export ABI="armeabi-v7a"
     fi
 
+    if [ $1 == "armv7" ]; then
+        export TARGET_ARCH="arm"
+        export TARGET_API="16"
+        export TRIPLET="armv7-linux-androideabi"
+        export ABI="armeabi-v7a"
+    fi
+
     if [ $1 == "arm64" ]; then
-        export ARCH="arm64"
+        export TARGET_ARCH="arm64"
         export TARGET_API="21"
         export TRIPLET="aarch64-linux-android"
         export ABI="arm64-v8a"
     fi
 
     if [ $1 == "x86" ]; then
-        export ARCH="x86"
+        export TARGET_ARCH="x86"
         export TARGET_API="16"
         export TRIPLET="i686-linux-android"
         export ABI="x86"
