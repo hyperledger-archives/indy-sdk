@@ -178,10 +178,10 @@ def fail() {
 def buildAndroid(envn) {
     envn.inside {
         LIBINDY_BRANCH="stable"
-        LIBINDY_VERSION="1.6.0"
+        LIBINDY_VERSION="1.6.1"
         LIBINDY_TAG=""
         LIBNULLPAY_BRANCH="stable"
-        LIBNULLPAY_VERSION="1.6.0"
+        LIBNULLPAY_VERSION="1.6.1"
         LIBNULLPAY_TAG=""
 
         ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'

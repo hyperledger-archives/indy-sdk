@@ -180,7 +180,7 @@ mod tests {
         let proof_handle = disclosed_proof::create_proof(::utils::constants::DEFAULT_PROOF_NAME.to_string(), requests).unwrap();
         let selected_credentials : Value = json!({
                "attrs":{
-                  "address1_1":{
+                  "address1":{
                     "cred_info":{
                        "referent": cred_id,
                        "attrs":{
@@ -197,7 +197,7 @@ mod tests {
                     },
                     "interval":null
                  },
-                  "address2_2":{
+                  "address2":{
                     "cred_info":{
                        "referent": cred_id,
                        "attrs":{
@@ -214,7 +214,7 @@ mod tests {
                     },
                     "interval":null
                  },
-                  "city_3":{
+                  "city":{
                     "cred_info":{
                        "referent": cred_id,
                        "attrs":{
@@ -231,7 +231,7 @@ mod tests {
                     },
                     "interval":null
                  },
-                  "state_4":{
+                  "state":{
                     "cred_info":{
                        "referent": cred_id,
                        "attrs":{
@@ -248,7 +248,7 @@ mod tests {
                     },
                     "interval":null
                  },
-                  "zip_5":{
+                  "zip":{
                     "cred_info":{
                        "referent": cred_id,
                        "attrs":{
