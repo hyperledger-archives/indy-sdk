@@ -3,9 +3,16 @@ extern crate indy_crypto;
 use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use named_type::NamedType;
 
-#[derive(Serialize, Deserialize, Clone, Debug, NamedType)]
+
+#[derive(Derivative)]
+#[derivative(Debug)]
+#[derive(Serialize, Deserialize, Clone, NamedType)]
 pub struct Key {
     pub verkey: String,
+    #[cfg(not(test))]
+    #[derivative(Debug="ignore")]
+    pub signkey: String,
+    #[cfg(test)]
     pub signkey: String
 }
 

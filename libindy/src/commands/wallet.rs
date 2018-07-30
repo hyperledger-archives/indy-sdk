@@ -156,7 +156,7 @@ impl WalletCommandExecutor {
     fn _create(&self,
                config: &str,
                credentials: &str) -> Result<()> {
-        trace!("_create >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
+        trace!("_create >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let res = self.wallet_service.create_wallet(config, credentials)?;
 
@@ -167,7 +167,7 @@ impl WalletCommandExecutor {
     fn _open(&self,
              config: &str,
              credentials: &str) -> Result<i32> {
-        trace!("_open >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
+        trace!("_open >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let res = self.wallet_service.open_wallet(config, credentials)?;
 
@@ -188,7 +188,7 @@ impl WalletCommandExecutor {
     fn _delete(&self,
                config: &str,
                credentials: &str) -> Result<()> {
-        trace!("_delete >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
+        trace!("_delete >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let res = self.wallet_service.delete_wallet(config, credentials)?;
 
@@ -213,7 +213,7 @@ impl WalletCommandExecutor {
                credentials: &str,
                import_config: &str) -> Result<()> {
         trace!("_import >>> config: {:?}, credentials: {:?}, import_config: {:?}",
-               config, "_", import_config); // TODO: FIXME: Log credentials in debug
+               config, secret!(credentials), import_config);
 
         let res = self.wallet_service.import_wallet(config, credentials, import_config)?;
 
