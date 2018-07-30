@@ -113,6 +113,14 @@ generate_arch_flags(){
         export ABI="x86"
     fi
 
+    if [ $1 == "x86_64" ]; then
+        export TARGET_ARCH="x86_64"
+        export TARGET_API="21"
+        export TRIPLET="x86_64-linux-android"
+        export ANDROID_TRIPLET=${TRIPLET}
+        export ABI="x86_64"
+    fi
+
 }
 
 download_and_unzip_dependencies_for_all_architectures(){
