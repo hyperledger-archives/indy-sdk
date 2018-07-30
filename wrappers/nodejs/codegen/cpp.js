@@ -66,6 +66,9 @@ apiFunctions.forEach(function (fn) {
     case 'IndyHandle':
       cpp += '    icb->cbHandle(xerr, arg0);\n'
       break
+    case 'IndyHandle+indy_u32_t':
+      cpp += '    icb->cbHandleU32(xerr, arg0, arg1);\n'
+      break
     case 'indy_i32_t':
       cpp += '    icb->cbI32(xerr, arg0);\n'
       break
