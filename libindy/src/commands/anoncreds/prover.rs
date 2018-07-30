@@ -18,7 +18,7 @@ use self::indy_crypto::cl::{Witness, RevocationRegistry, new_nonce};
 use super::tails::SDKTailsAccessor;
 
 use domain::anoncreds::schema::{Schema, schemas_map_to_schemas_v1_map};
-use domain::anoncreds::credential::{Credential, CredentialInfo, AttributeValues};
+use domain::anoncreds::credential::{Credential, CredentialInfo};
 use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1, cred_defs_map_to_cred_defs_v1_map};
 use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequestMetadata};
@@ -29,7 +29,6 @@ use domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQuery, Pre
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_state::RevocationState;
 use domain::anoncreds::master_secret::MasterSecret;
-use services::anoncreds::helpers::attr_common_view;
 use utils::sequence::SequenceUtils;
 
 pub enum ProverCommand {
@@ -798,15 +797,10 @@ impl ProverCommandExecutor {
             let (referent, credential) = self._get_credential(&credential_record)?;
 
             if let Some(predicate) = predicate_info {
+                let values = self.anoncreds_service.prover.get_credential_values_for_attribute(&credential.values, &predicate.name)
+                    .ok_or(CommonError::InvalidState("Credential values not found".to_string()))?;
 
-                let cred_values_common_view: HashMap<String, AttributeValues> =
-                    credential.values
-                        .iter()
-                        .map(|(key, value)| (attr_common_view(&key), value.clone()))
-                        .collect();
-
-                let satisfy = self.anoncreds_service.prover.attribute_satisfy_predicate(predicate,
-                                                                                        &cred_values_common_view[&attr_common_view(&predicate.name)].encoded)?;
+                let satisfy = self.anoncreds_service.prover.attribute_satisfy_predicate(predicate, &values.encoded)?;
                 if !satisfy { continue; }
             }
 
