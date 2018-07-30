@@ -167,11 +167,11 @@ impl Prover {
                 timestamp: cred_key.timestamp.clone()
             });
 
-            Prover::_update_requested_proof(req_attrs_for_cred,
-                                            req_predicates_for_cred,
-                                            proof_req, credential,
-                                            sub_proof_index,
-                                            &mut requested_proof)?;
+            self._update_requested_proof(req_attrs_for_cred,
+                                         req_predicates_for_cred,
+                                         proof_req, credential,
+                                         sub_proof_index,
+                                         &mut requested_proof)?;
 
             sub_proof_index += 1;
         }
@@ -249,15 +249,15 @@ impl Prover {
         Ok(credentials_for_proving)
     }
 
-    fn _get_credential_values_for_attribute(credential_attrs: &HashMap<String, AttributeValues>,
-                                            requested_attr: &str) -> Option<AttributeValues> {
-        trace!("_get_credential_values_for_attribute >>> credential_attrs: {:?}, requested_attr: {:?}", credential_attrs, requested_attr);
+    pub fn get_credential_values_for_attribute(&self, credential_attrs: &HashMap<String, AttributeValues>,
+                                               requested_attr: &str) -> Option<AttributeValues> {
+        trace!("get_credential_values_for_attribute >>> credential_attrs: {:?}, requested_attr: {:?}", credential_attrs, requested_attr);
 
         let res = credential_attrs.iter()
             .find(|&(ref key, _)| attr_common_view(key) == attr_common_view(&requested_attr))
             .map(|(_, values)| values.clone());
 
-        trace!("_get_credential_values_for_attribute <<< res: {:?}", res);
+        trace!("get_credential_values_for_attribute <<< res: {:?}", res);
 
         res
     }
@@ -352,7 +352,7 @@ impl Prover {
         res
     }
 
-    fn _update_requested_proof(req_attrs_for_credential: Vec<RequestedAttributeInfo>,
+    fn _update_requested_proof(&self, req_attrs_for_credential: Vec<RequestedAttributeInfo>,
                                req_predicates_for_credential: Vec<RequestedPredicateInfo>,
                                proof_req: &ProofRequest,
                                credential: &Credential,
@@ -366,7 +366,7 @@ impl Prover {
             if attr_info.revealed {
                 let attribute = &proof_req.requested_attributes[&attr_info.attr_referent];
                 let attribute_values =
-                    Prover::_get_credential_values_for_attribute(&credential.values, &attribute.name)
+                    self.get_credential_values_for_attribute(&credential.values, &attribute.name)
                         .ok_or(CommonError::InvalidStructure(format!("Credential value not found for attribute {:?}", attribute.name)))?;
 
                 requested_proof.revealed_attrs.insert(attr_info.attr_referent,
@@ -668,7 +668,6 @@ mod tests {
         }
     }
 
-
     mod prepare_credentials_for_proving {
         use super::*;
         use domain::anoncreds::requested_credential::RequestedAttribute;
@@ -678,7 +677,7 @@ mod tests {
         const ATTRIBUTE_REFERENT: &'static str = "attribute_referent";
         const PREDICATE_REFERENT: &'static str = "predicate_referent";
 
-        fn _attr_info() -> AttributeInfo{
+        fn _attr_info() -> AttributeInfo {
             AttributeInfo {
                 name: "name".to_string(),
                 restrictions: None,
@@ -686,7 +685,7 @@ mod tests {
             }
         }
 
-        fn _predicate_info() -> PredicateInfo{
+        fn _predicate_info() -> PredicateInfo {
             PredicateInfo {
                 name: "age".to_string(),
                 p_type: PredicateTypes::GE,
@@ -736,9 +735,9 @@ mod tests {
 
 
             assert_eq!(1, res.len());
-            assert!(res.contains_key(&ProvingCredentialKey{ cred_id: CRED_ID.to_string(), timestamp: None }));
+            assert!(res.contains_key(&ProvingCredentialKey { cred_id: CRED_ID.to_string(), timestamp: None }));
 
-            let (req_attr_info, req_pred_info) = res.get(&ProvingCredentialKey{ cred_id: CRED_ID.to_string(), timestamp: None }).unwrap();
+            let (req_attr_info, req_pred_info) = res.get(&ProvingCredentialKey { cred_id: CRED_ID.to_string(), timestamp: None }).unwrap();
             assert_eq!(1, req_attr_info.len());
             assert_eq!(1, req_pred_info.len());
         }
@@ -748,7 +747,7 @@ mod tests {
             let mut req_cred = _req_cred();
             let mut proof_req = _proof_req();
 
-            req_cred.requested_attributes.insert("attribute_referent_2".to_string(), RequestedAttribute{
+            req_cred.requested_attributes.insert("attribute_referent_2".to_string(), RequestedAttribute {
                 cred_id: CRED_ID.to_string(),
                 timestamp: None,
                 revealed: false,
@@ -763,9 +762,9 @@ mod tests {
             let res = Prover::_prepare_credentials_for_proving(&req_cred, &proof_req).unwrap();
 
             assert_eq!(1, res.len());
-            assert!(res.contains_key(&ProvingCredentialKey{ cred_id: CRED_ID.to_string(), timestamp: None }));
+            assert!(res.contains_key(&ProvingCredentialKey { cred_id: CRED_ID.to_string(), timestamp: None }));
 
-            let (req_attr_info, req_pred_info) = res.get(&ProvingCredentialKey{ cred_id: CRED_ID.to_string(), timestamp: None }).unwrap();
+            let (req_attr_info, req_pred_info) = res.get(&ProvingCredentialKey { cred_id: CRED_ID.to_string(), timestamp: None }).unwrap();
             assert_eq!(2, req_attr_info.len());
             assert_eq!(1, req_pred_info.len());
         }
@@ -790,6 +789,72 @@ mod tests {
 
             let res = Prover::_prepare_credentials_for_proving(&req_cred, &proof_req);
             assert_match!(Err(AnoncredsError::CommonError(CommonError::InvalidStructure(_))), res);
+        }
+    }
+
+    mod get_credential_values_for_attribute {
+        use super::*;
+
+        fn _attr_values() -> AttributeValues {
+            AttributeValues { raw: "Alex".to_string(), encoded: "123".to_string() }
+        }
+
+        fn _cred_values() -> HashMap<String, AttributeValues> {
+            hashmap!("name".to_string() => _attr_values())
+        }
+
+        #[test]
+        fn get_credential_values_for_attribute_works() {
+            let ps = Prover::new();
+
+            let res = ps.get_credential_values_for_attribute(&_cred_values(), "name").unwrap();
+            assert_eq!(_attr_values(), res);
+        }
+
+        #[test]
+        fn get_credential_values_for_attribute_works_for_requested_attr_different_case() {
+            let ps = Prover::new();
+
+            let res = ps.get_credential_values_for_attribute(&_cred_values(), "NAme").unwrap();
+            assert_eq!(_attr_values(), res);
+        }
+
+        #[test]
+        fn get_credential_values_for_attribute_works_for_requested_attr_contains_spaces() {
+            let ps = Prover::new();
+
+            let res = ps.get_credential_values_for_attribute(&_cred_values(), "   na me  ").unwrap();
+            assert_eq!(_attr_values(), res);
+        }
+
+        #[test]
+        fn get_credential_values_for_attribute_works_for_cred_values_different_case() {
+            let ps = Prover::new();
+
+            let cred_values = hashmap!("NAME".to_string() => _attr_values());
+
+            let res = ps.get_credential_values_for_attribute(&cred_values, "name").unwrap();
+            assert_eq!(_attr_values(), res);
+        }
+
+        #[test]
+        fn get_credential_values_for_attribute_works_for_cred_values_contains_spaces() {
+            let ps = Prover::new();
+
+            let cred_values = hashmap!("    name    ".to_string() => _attr_values());
+
+            let res = ps.get_credential_values_for_attribute(&cred_values, "name").unwrap();
+            assert_eq!(_attr_values(), res);
+        }
+
+        #[test]
+        fn get_credential_values_for_attribute_works_for_cred_values_and_requested_attr_contains_spaces() {
+            let ps = Prover::new();
+
+            let cred_values = hashmap!("    name    ".to_string() => _attr_values());
+
+            let res = ps.get_credential_values_for_attribute(&cred_values, "            name            ").unwrap();
+            assert_eq!(_attr_values(), res);
         }
     }
 }
