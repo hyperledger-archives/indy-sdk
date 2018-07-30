@@ -58,7 +58,7 @@ pub struct CredentialInfo {
     pub cred_rev_id: Option<String>
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct AttributeValues {
     pub raw: String,
     pub encoded: String

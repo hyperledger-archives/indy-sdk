@@ -45,7 +45,7 @@ pub  extern fn indy_create_key(command_handle: i32,
     check_useful_c_str!(key_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_create_key: entities >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, key_json);
+    trace!("indy_create_key: entities >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, secret!(key_json.as_str()));
 
     let result = CommandExecutor::instance()
         .send(Command::Crypto(CryptoCommand::CreateKey(
@@ -179,7 +179,7 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
-/// signer_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+/// signer_vk: id (verkey) of message signer. The key must be created by calling indy_create_key or indy_create_and_store_my_did
 /// message_raw: a pointer to first byte of message to be signed
 /// message_len: a message length
 /// cb: Callback that takes command result as parameter.
@@ -238,7 +238,7 @@ pub  extern fn indy_crypto_sign(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
-/// signer_vk: verkey of signer of the message
+/// signer_vk: verkey of the message signer
 /// message_raw: a pointer to first byte of message that has been signed
 /// message_len: a message length
 /// signature_raw: a pointer to first byte of signature to be verified
@@ -307,8 +307,8 @@ pub  extern fn indy_crypto_verify(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handle (created by open_wallet).
-/// sender_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
-/// recipient_vk: id (verkey) of their key
+/// sender_vk: id (verkey) of message sender. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+/// recipient_vk: id (verkey) of message recipient
 /// message_raw: a pointer to first byte of message that to be encrypted
 /// message_len: a message length
 /// cb: Callback that takes command result as parameter.
@@ -378,7 +378,7 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to user context.
 /// wallet_handle: wallet handler (created by open_wallet).
-/// recipient_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did
+/// recipient_vk: id (verkey) of message recipient. The key must be created by calling indy_create_key or indy_create_and_store_my_did
 /// encrypted_msg_raw: a pointer to first byte of message that to be decrypted
 /// encrypted_msg_len: a message length
 /// cb: Callback that takes command result as parameter.
