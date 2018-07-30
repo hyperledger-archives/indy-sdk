@@ -89,3 +89,15 @@ macro_rules! map_err_info {
     () => ( _map_err!(::log::Level::Info) );
     ($($arg:tt)*) => ( _map_err!(::log::Level::Info, $($arg)*) )
 }
+
+#[cfg(debug_assertions)]
+#[macro_export]
+macro_rules! secret {
+    ($val:expr) => {{ $val }};
+}
+
+#[cfg(not(debug_assertions))]
+#[macro_export]
+macro_rules! secret {
+    ($val:expr) => {{ "_" }};
+}

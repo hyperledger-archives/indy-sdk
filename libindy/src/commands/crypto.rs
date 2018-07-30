@@ -122,7 +122,7 @@ impl CryptoCommandExecutor {
     }
 
     fn create_key(&self, wallet_handle: i32, key_info_json: &str) -> Result<String> {
-        debug!("create_key >>> wallet_handle: {:?}, key_info_json: {:?}", wallet_handle, key_info_json);
+        debug!("create_key >>> wallet_handle: {:?}, key_info_json: {:?}", wallet_handle, secret!(key_info_json));
 
         let key_info: KeyInfo =  serde_json::from_str(key_info_json)
             .map_err(map_err_trace!())

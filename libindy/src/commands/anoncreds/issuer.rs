@@ -411,7 +411,7 @@ impl IssuerCommandExecutor {
                       rev_reg_id: Option<&str>,
                       blob_storage_reader_handle: Option<i32>) -> Result<(String, Option<String>, Option<String>), IndyError> {
         debug!("new_credential >>> wallet_handle: {:?}, cred_offer_json: {:?}, cred_req_json: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, blob_storage_reader_handle: {:?}",
-               wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle);
+               wallet_handle, secret!(cred_offer_json), secret!(cred_req_json), secret!(cred_values_json), rev_reg_id, blob_storage_reader_handle);
 
         let cred_offer: CredentialOffer = serde_json::from_str(cred_offer_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialOffer: {:?}", err)))?;
@@ -529,7 +529,7 @@ impl IssuerCommandExecutor {
 
         let cred_rev_id = rev_reg_info.map(|r_reg_info| r_reg_info.curr_id.to_string());
 
-        debug!("new_credential <<< cred_json: {:?}, cred_rev_id: {:?}, rev_reg_delta_json: {:?}", cred_json, cred_rev_id, rev_reg_delta_json);
+        debug!("new_credential <<< cred_json: {:?}, cred_rev_id: {:?}, rev_reg_delta_json: {:?}", secret!(&cred_json), secret!(&cred_rev_id), rev_reg_delta_json);
 
         Ok((cred_json, cred_rev_id, rev_reg_delta_json))
     }
@@ -540,7 +540,7 @@ impl IssuerCommandExecutor {
                          rev_reg_id: &str,
                          cred_revoc_id: &str) -> Result<String, IndyError> {
         debug!("revoke_credential >>> wallet_handle: {:?}, blob_storage_reader_handle:  {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
-               wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id);
+               wallet_handle, blob_storage_reader_handle, rev_reg_id, secret!(cred_revoc_id));
 
         let cred_revoc_id = parse_cred_rev_id(cred_revoc_id)?;
 
@@ -599,7 +599,7 @@ impl IssuerCommandExecutor {
                             rev_reg_id: &str,
                             cred_revoc_id: &str) -> Result<String, IndyError> {
         debug!("recovery_credential >>> wallet_handle: {:?}, blob_storage_reader_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
-               wallet_handle, blob_storage_reader_handle, rev_reg_id, cred_revoc_id);
+               wallet_handle, blob_storage_reader_handle, rev_reg_id, secret!(cred_revoc_id));
 
         let cred_revoc_id = parse_cred_rev_id(cred_revoc_id)?;
 

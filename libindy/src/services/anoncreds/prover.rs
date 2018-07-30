@@ -47,7 +47,7 @@ impl Prover {
 
         let master_secret = CryptoProver::new_master_secret()?;
 
-        trace!("new_master_secret <<< master_secret: {:?} ", master_secret);
+        trace!("new_master_secret <<< master_secret: {:?} ", secret!(&master_secret));
 
         Ok(master_secret)
     }
@@ -59,7 +59,7 @@ impl Prover {
                                                                                  CredentialSecretsBlindingFactors,
                                                                                  BlindedCredentialSecretsCorrectnessProof), CommonError> {
         trace!("new_credential_request >>> cred_def: {:?}, master_secret: {:?}, credential_offer: {:?}",
-               cred_def, master_secret, credential_offer);
+               cred_def, secret!(&master_secret), credential_offer);
 
         let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
         let mut credential_values_builder = CryptoIssuer::new_credential_values_builder()?;
@@ -85,7 +85,7 @@ impl Prover {
                               cred_def: &CredentialDefinition,
                               rev_reg_def: Option<&RevocationRegistryDefinitionV1>) -> Result<(), CommonError> {
         trace!("process_credential >>> credential: {:?}, cred_request_metadata: {:?}, master_secret: {:?}, cred_def: {:?}, rev_reg_def: {:?}",
-               credential, cred_request_metadata, master_secret, cred_def, rev_reg_def);
+               credential, cred_request_metadata, secret!(&master_secret), cred_def, rev_reg_def);
 
         let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
         let credential_values = build_credential_values(&credential.values, Some(master_secret))?;
@@ -114,7 +114,7 @@ impl Prover {
                         cred_defs: &HashMap<String, CredentialDefinition>,
                         rev_states: &HashMap<String, HashMap<u64, RevocationState>>) -> Result<Proof, AnoncredsError> {
         trace!("create_proof >>> credentials: {:?}, proof_req: {:?}, requested_credentials: {:?}, master_secret: {:?}, schemas: {:?}, cred_defs: {:?}, rev_states: {:?}",
-               credentials, proof_req, requested_credentials, master_secret, schemas, cred_defs, rev_states);
+               credentials, proof_req, requested_credentials, secret!(&master_secret), schemas, cred_defs, rev_states);
 
         let mut proof_builder = CryptoProver::new_proof_builder()?;
         proof_builder.add_common_attribute("master_secret")?;

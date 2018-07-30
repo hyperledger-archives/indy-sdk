@@ -5,6 +5,9 @@ extern crate lazy_static;
 extern crate named_type_derive;
 
 #[macro_use]
+extern crate derivative;
+
+#[macro_use]
 extern crate serde_derive;
 
 #[macro_use]
