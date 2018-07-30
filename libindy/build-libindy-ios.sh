@@ -29,8 +29,18 @@ fi
 
 echo "Packing..."
 
+PACKAGE="libindy.a"
+
 cp include/*.h $WORK_DIR
-cp target/universal/$TYPE/libindy.a $WORK_DIR
+cp target/universal/$TYPE/$PACKAGE $WORK_DIR
+
+if [[ $# -eq 1 ]]; then
+    mkdir $WORK_DIR/aarch64-apple-ios
+    cp -r target/aarch64-apple-ios/$TYPE/$PACKAGE $WORK_DIR/aarch64-apple-ios/$PACKAGE
+    mkdir $WORK_DIR/armv7-apple-ios
+    cp -r target/armv7-apple-ios/$TYPE/$PACKAGE $WORK_DIR/armv7-apple-ios/$PACKAGE
+fi
+
 cd $WORK_DIR
 tar -cvzf $POD_FILE_NAME *
 cd -

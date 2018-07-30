@@ -15,22 +15,23 @@ properties([
 try {
     testing()
     publishing()
-    if (acceptanceTesting()) {
-        releasing()
-    }
-    notifyingSuccess()
+//    if (acceptanceTesting()) {
+//        releasing()
+//    }
+//    notifyingSuccess()
 } catch (err) {
-    notifyingFailure()
+//    notifyingFailure()
     throw err
 }
 
 def testing() {
     stage('Testing') {
         parallel([
-                'ubuntu-test' : { ubuntuTesting() },
-                'redhat-test' : { rhelTesting() },
-                'android-test': { androidTesting() },
-                'windows-test': { windowsTesting() }
+//                'ubuntu-test' : { ubuntuTesting() },
+//                'redhat-test' : { rhelTesting() },
+//                'android-test': { androidTesting() },
+//                'windows-test': { windowsTesting() },
+                'ios-test': { iosTesting() }
         ])
     }
 }
@@ -40,14 +41,15 @@ def publishing() {
         echo "${env.BRANCH_NAME}: start publishing"
         publishedVersions = parallel([
                 //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
-                'ubuntu-files' : { ubuntuPublishing() },
-                'windows-files': { windowsPublishing() },
-                'android-files': { androidPublishing("0") },
+//                'ubuntu-files' : { ubuntuPublishing() },
+//                'windows-files': { windowsPublishing() },
+//                'android-files': { androidPublishing("0") },
+                'ios-files'    : { iosPublishing() },
         ])
 
-        if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
-            error "platforms artifacts have different versions"
-        }
+//        if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
+//            error "platforms artifacts have different versions"
+//        }
     }
 }
 
@@ -396,6 +398,63 @@ def androidEmulatorTest(buildEnv) {
     }
 }
 
+def iosTesting() {
+    node('macos') {
+        stage('iOS Test') {
+            try {
+                echo "iOS Test: Checkout scm"
+                checkout scm
+
+                echo "iOS Test: Running pool"
+                sh "docker rm -f indy_pool || true"
+                sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
+                sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+
+                setupRust()
+                setupRustIOS()
+                setupBrewPackages()
+
+                dir('libindy') {
+                    echo 'iOS Test: build libindy pod'
+                    sh "./build-libindy-ios.sh"
+                }
+
+                stash includes: 'libindy/out_libindy_pod/libindy.tar.gz', name: "LibindyIOSPod"
+
+//                dir('wrappers/ios/libindy-pod') {
+//                    echo "iOS Test: Installing dependencies (pods)"
+//
+//                    withEnv([
+//                            "GEM_PATH=$HOME/.gem.indy_sdk",
+//                            "GEM_HOME=$HOME/.gem.indy_sdk"
+//                    ]) {
+//                        sh "pod install --repo-update"
+//                    }
+//                }
+//
+//                // FIXME replace this hack (manually rewrite installed pod)
+//                sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
+//                sh "cp libindy/out_libindy_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
+//
+//                dir('wrappers/ios/libindy-pod') {
+//                    echo "iOS Test: Testing"
+//                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
+//                }
+            } finally {
+                try {
+                    sh "docker stop indy_pool"
+                } catch (ignore) {
+                }
+                try {
+                    sh "docker rm indy_pool"
+                } catch (ignore) {
+                }
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+}
+
 def rhelTesting() {
     node('ubuntu') {
         stage('RedHat Test') {
@@ -512,6 +571,47 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
         }
     }
 }
+
+def iosPublishing() {
+    def libindyVersion
+    node('ubuntu') {
+        stage('Publish Libindy Windows Files') {
+            try {
+                echo 'Publish Windows files: Checkout scm'
+                checkout scm
+
+                libindyVersion = getSrcVersion("libindy")
+
+                echo 'Publish iOS files: Build docker image'
+                testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
+
+                echo 'Publish Libindy iOS files'
+                publishIOSAtrifacts(testEnv, "LibindyIOSPod", libindyVersion)
+            }
+            finally {
+                echo 'Publish Windows files: Cleanup'
+                step([$class: 'WsCleanup'])
+            }
+        }
+    }
+    return libindyVersion
+}
+
+publishIOSAtrifacts(testEnv, stashName, libindyVersion){
+    version = "$libindyVersion-$env.BUILD_NUMBER"
+
+    testEnv.inside {
+        unstash name: stashName
+
+        withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
+            target = "https://repo.sovrin.org/ios/libindy/test/libindy-core"
+
+            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 mkdir -p $target/$version"
+            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r libindy/out_libindy_pod/libindy.tar.gz $target/$version/"
+        }
+    }
+}
+
 
 def getSuffix(isRelease, target) {
     def suffix
@@ -653,6 +753,8 @@ def publishingRCtoStable() {
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 androidPublishing("1")
 
+                echo 'Moving iOS RC artifacts to Stable: libindy'
+                publishLibindyIOSFilesRCtoStable(libindyVersion)
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'
                 step([$class: 'WsCleanup'])
@@ -676,10 +778,25 @@ def publishLibnullpayWindowsFilesRCtoStable() {
 
 def publishWindowsFilesRCtoStable(packageName, version) {
     rcFullVersion = "${version}-${env.BUILD_NUMBER}"
-    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-        src = "/var/repository/repos/windows/$packageName/rc/$rcFullVersion/"
-        target = "/var/repository/repos/windows/$packageName/stable/$version"
 
+    src = "/var/repository/repos/windows/$packageName/rc/$rcFullVersion/"
+    target = "/var/repository/repos/windows/$packageName/stable/$version"
+
+    copyFilesFromRcToStable(src, target)
+
+}
+
+def publishLibindyIOSFilesRCtoStable(version) {
+    rcFullVersion = "${version}-${env.BUILD_NUMBER}"
+
+    src = "https://repo.sovrin.org/ios/libindy/rc/libindy-core/$rcFullVersion/"
+    target = "https://repo.sovrin.org/ios/libindy/stable/libindy-core/$version/"
+
+    copyFilesFromRcToStable(src, target)
+}
+
+def copyFilesFromRcToStable(src, target) {
+    withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
         sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 '! ls $target'"
         sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r $src $target"
     }
@@ -843,4 +960,14 @@ def androidTesting() {
             }
         }
     }
+}
+
+def setupRustIOS() {
+    sh "rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios i386-apple-ios x86_64-apple-ios"
+}
+
+def setupBrewPackages() {
+    sh "brew switch libsodium 1.0.12"
+    sh "brew switch openssl 1.0.2l"
+    sh "brew switch zeromq 4.2.3"
 }
