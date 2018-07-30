@@ -180,7 +180,7 @@ pub extern fn indy_create_wallet(command_handle: i32,
                                  cb: Option<extern fn(xcommand_handle: i32,
                                                       err: ErrorCode)>) -> ErrorCode {
     trace!("indy_create_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
-           command_handle, config, secret!(credentials), cb);
+           command_handle, config, credentials, cb);
 
     check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
@@ -253,7 +253,7 @@ pub extern fn indy_open_wallet(command_handle: i32,
                                                     err: ErrorCode,
                                                     handle: i32)>) -> ErrorCode {
     trace!("indy_open_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
-           command_handle, config, secret!(credentials), cb);
+           command_handle, config, credentials, cb);
 
     check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
@@ -306,7 +306,7 @@ pub extern fn indy_export_wallet(command_handle: i32,
     check_useful_c_str!(export_config, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_export_wallet: params wallet_handle: {:?}, export_config: {:?}", wallet_handle, export_config);
+    trace!("indy_export_wallet: params wallet_handle: {:?}, export_config: {:?}", wallet_handle, secret!(export_config.as_str()));
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Export(
@@ -374,7 +374,7 @@ pub extern fn indy_import_wallet(command_handle: i32,
                                  cb: Option<extern fn(xcommand_handle: i32,
                                                       err: ErrorCode)>) -> ErrorCode {
     trace!("indy_import_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, import_config: {:?}, cb: {:?}",
-           command_handle, config, secret!(credentials), import_config, cb);
+           command_handle, config, credentials, import_config, cb);
 
     check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
@@ -382,7 +382,7 @@ pub extern fn indy_import_wallet(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_import_wallet: params config: {:?}, credentials: {:?}, import_config: {:?}",
-           config, secret!(credentials.as_str()), import_config);
+           config, secret!(credentials.as_str()), secret!(import_config.as_str()));
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Import(
@@ -481,7 +481,7 @@ pub extern fn indy_delete_wallet(command_handle: i32,
                                  cb: Option<extern fn(xcommand_handle: i32,
                                                       err: ErrorCode)>) -> ErrorCode {
     trace!("indy_delete_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
-           command_handle, config,secret!(credentials), cb);
+           command_handle, config, credentials, cb);
 
     check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);

@@ -45,7 +45,7 @@ pub  extern fn indy_create_key(command_handle: i32,
     check_useful_c_str!(key_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_create_key: entities >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, key_json);
+    trace!("indy_create_key: entities >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, secret!(key_json.as_str()));
 
     let result = CommandExecutor::instance()
         .send(Command::Crypto(CryptoCommand::CreateKey(

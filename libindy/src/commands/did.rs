@@ -193,7 +193,7 @@ impl DidCommandExecutor {
     fn create_and_store_my_did(&self,
                                wallet_handle: i32,
                                my_did_info_json: &str) -> Result<(String, String), IndyError> {
-        debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, my_did_info_json);
+        debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, secret!(my_did_info_json));
 
         let my_did_info: MyDidInfo = serde_json::from_str(&my_did_info_json)
             .map_err(map_err_trace!())
@@ -221,7 +221,7 @@ impl DidCommandExecutor {
                           wallet_handle: i32,
                           key_info_json: &str,
                           my_did: &str) -> Result<String, IndyError> {
-        debug!("replace_keys_start >>> wallet_handle: {:?}, key_info_json: {:?}, my_did: {:?}", wallet_handle, key_info_json, my_did);
+        debug!("replace_keys_start >>> wallet_handle: {:?}, key_info_json: {:?}, my_did: {:?}", wallet_handle, secret!(key_info_json), my_did);
 
         self.crypto_service.validate_did(my_did)?;
 

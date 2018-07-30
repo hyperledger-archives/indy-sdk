@@ -385,7 +385,7 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
     let blob_storage_reader_handle = if blob_storage_reader_handle != -1 { Some(blob_storage_reader_handle) } else { None };
 
     trace!("indy_issuer_create_credential: entities >>> wallet_handle: {:?}, cred_offer_json: {:?}, cred_req_json: {:?}, cred_values_json: {:?}, rev_reg_id: {:?}, \
-    blob_storage_reader_handle: {:?}", wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle);
+    blob_storage_reader_handle: {:?}", wallet_handle, cred_offer_json, secret!(cred_req_json.as_str()), secret!(cred_values_json.as_str()), secret!(&rev_reg_id), blob_storage_reader_handle);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
@@ -399,7 +399,8 @@ pub extern fn indy_issuer_create_credential(command_handle: i32,
                     blob_storage_reader_handle,
                     Box::new(move |result| {
                         let (err, cred_json, revoc_id, revoc_reg_delta_json) = result_to_err_code_3!(result, String::new(), None, None);
-                        trace!("indy_issuer_create_credential: cred_json: {:?}, revoc_id: {:?}, revoc_reg_delta_json: {:?}", cred_json, revoc_id, revoc_reg_delta_json);
+                        trace!("indy_issuer_create_credential: cred_json: {:?}, revoc_id: {:?}, revoc_reg_delta_json: {:?}",
+                               secret!(cred_json.as_str()), secret!(&revoc_id), revoc_reg_delta_json);
                         let cred_json = CStringUtils::string_to_cstring(cred_json);
                         let revoc_id = revoc_id.map(CStringUtils::string_to_cstring);
                         let revoc_reg_delta_json = revoc_reg_delta_json.map(CStringUtils::string_to_cstring);
@@ -455,7 +456,7 @@ pub extern fn indy_issuer_revoke_credential(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_issuer_revoke_credential: entities >>> wallet_handle: {:?}, blob_storage_reader_cfg_handle: {:?}, rev_reg_id: {:?}, cred_revoc_id: {:?}",
-           wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id, cred_revoc_id);
+           wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id, secret!(cred_revoc_id.as_str()));
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(

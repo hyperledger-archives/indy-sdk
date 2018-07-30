@@ -475,7 +475,7 @@ impl WalletService {
     }
 
     pub fn export_wallet(&self, wallet_handle: i32, export_config: &str, version: u32) -> Result<(), WalletError> {
-        trace!("export_wallet >>> wallet_handle: {:?}, export_config: {:?}, version: {:?}", wallet_handle,  export_config,  version);
+        trace!("export_wallet >>> wallet_handle: {:?}, export_config: {:?}, version: {:?}", wallet_handle,  secret!(export_config),  version);
 
         let wallets = self.wallets.borrow();
         let wallet = wallets
@@ -510,7 +510,7 @@ impl WalletService {
                          config: &str,
                          credentials: &str,
                          export_config: &str) -> Result<(), WalletError> {
-        trace!("import_wallet >>> config: {:?}, credentials: {:?}, export_config: {:?}", config,  secret!(export_config),  export_config);
+        trace!("import_wallet >>> config: {:?}, credentials: {:?}, export_config: {:?}", config,  secret!(export_config),  secret!(export_config));
 
         let export_config: ExportConfig = serde_json::from_str(export_config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize export config: {:?}", err)))?;
