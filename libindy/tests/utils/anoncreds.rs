@@ -548,7 +548,7 @@ impl AnoncredsUtils {
             "sex".to_string() => AttributeValues {raw: "male".to_string(), encoded: "2142657394558967239210949258394838228692050081607692519917028371144233115103".to_string()},
             "name".to_string() => AttributeValues {raw: "Alexander".to_string(), encoded: "21332817548165488690172217217278169335".to_string()},
             "height".to_string() => AttributeValues {raw: "170".to_string(), encoded: "170".to_string()},
-            "age".to_string() => AttributeValues {raw: "28".to_string(), encoded: "28".to_string()}
+            "Age".to_string() => AttributeValues {raw: "28".to_string(), encoded: "28".to_string()}
           }
     }
 
@@ -610,7 +610,7 @@ impl AnoncredsUtils {
                        "sex".to_string() => "male".to_string(),
                        "name".to_string() => "Alexander".to_string(),
                        "height".to_string() => "170".to_string(),
-                       "age".to_string() => "28".to_string()
+                       "Age".to_string() => "28".to_string()
                    }
         }
     }
