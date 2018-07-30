@@ -223,7 +223,7 @@ pub mod get_attrib_command {
                 .add_optional_param("raw", "Name of attribute")
                 .add_optional_param("hash", "Hash of attribute data")
                 .add_optional_param("enc", "Encrypted value of attribute data")
-                .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX attr=endpoint")
+                .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX raw=endpoint")
                 .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX hash=83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3")
                 .add_example("ledger get-attrib did=VsKV7grR1BUE29mG2Fm2kX enc=aa3f41f619aa7e5e6b6d0d")
                 .finalize()
@@ -566,6 +566,7 @@ pub mod node_command {
                 .add_optional_param("client_ip", "Client Ip. Note that it is mandatory for adding node case")
                 .add_optional_param("client_port","Client port. Note that it is mandatory for adding node case")
                 .add_optional_param("blskey",  "Node BLS key")
+                .add_optional_param("blskey_pop",  "Node BLS key proof of possession")
                 .add_optional_param("services", "Node type. One of: VALIDATOR, OBSERVER or empty in case of blacklisting node")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR blskey=2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw")
                 .add_example("ledger node target=A5iWQVT3k8Zo9nXj4otmeqaUziPQPCiDqcydXkAJBk1Y node_ip=127.0.0.1 node_port=9710 client_ip=127.0.0.1 client_port=9711 alias=Node5 services=VALIDATOR")
@@ -588,6 +589,7 @@ pub mod node_command {
         let client_port = get_opt_number_param::<i32>("client_port", params).map_err(error_err!())?;
         let alias = get_opt_str_param("alias", params).map_err(error_err!())?;
         let blskey = get_opt_str_param("blskey", params).map_err(error_err!())?;
+        let blskey_pop = get_opt_str_param("blskey_pop", params).map_err(error_err!())?;
         let services = get_opt_str_array_param("services", params).map_err(error_err!())?;
 
         let node_data = {
@@ -598,6 +600,7 @@ pub mod node_command {
             update_json_map_opt_key!(json, "client_port", client_port);
             update_json_map_opt_key!(json, "alias", alias);
             update_json_map_opt_key!(json, "blskey", blskey);
+            update_json_map_opt_key!(json, "blskey_pop", blskey_pop);
             update_json_map_opt_key!(json, "services", services);
             JSONValue::from(json).to_string()
         };
@@ -619,7 +622,8 @@ pub mod node_command {
                                                          ("client_ip", "Client Ip"),
                                                          ("client_port", "Client Port"),
                                                          ("services", "Services"),
-                                                         ("blskey", "Blskey")]));
+                                                         ("blskey", "Blskey"),
+                                                         ("blskey_pop", "Blskey Proof of Possession")]));
         trace!("execute << {:?}", res);
         res
     }

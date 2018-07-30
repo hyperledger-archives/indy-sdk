@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.6.0
+## 1.6.0, 1.6.1
 
 * Integrated tags based search in Anoncreds workflow:
     * Updated `indy_prover_store_credential` API function to create tags for a stored credential object.
@@ -29,6 +29,10 @@ Performed the following changes related to Libindy Payments API:
     * Removed EXPERIMENTAL notice from endpoints.
 * Added `ledger verify-payment-receipt` command in Indy CLI.
 * Bugfixes       
+
+### 1.6.1 bugfixes
+* Fix connection performance issue
+* Fix Android publishing
 
 Notes:
 

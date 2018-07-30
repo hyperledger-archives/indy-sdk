@@ -1,12 +1,10 @@
 extern crate rust_base58;
-extern crate rmp_serde;
 
 use commands::Command;
 use commands::CommandExecutor;
 use commands::ledger::LedgerCommand;
 use errors::common::CommonError;
 use errors::pool::PoolError;
-use indy_crypto::utils::json::JsonEncodable;
 use self::rust_base58::FromBase58;
 use serde_json;
 use serde_json::Value as SJsonValue;
@@ -20,6 +18,8 @@ use services::pool::networker::Networker;
 use services::pool::state_proof;
 use services::pool::types::CatchupRep;
 use services::pool::types::HashableValue;
+
+use rmp_serde;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -206,7 +206,7 @@ impl<T: Networker> RequestSM<T> {
                 match re {
                     RequestEvent::LedgerStatus(ls, _, Some(merkle)) => {
                         let req_id = ls.merkleRoot.clone();
-                        let ne = Some(NetworkerEvent::SendAllRequest(super::types::Message::LedgerStatus(ls).to_json().expect("FIXME"),
+                        let ne = Some(NetworkerEvent::SendAllRequest(serde_json::to_string(&super::types::Message::LedgerStatus(ls)).expect("FIXME"),
                                                                      req_id, extended_timeout));
                         trace!("start catchup, ne: {:?}", ne);
                         state.networker.borrow_mut().process_event(ne);

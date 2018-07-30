@@ -15,7 +15,6 @@ use std::cell::RefCell;
 use services::blob_storage::BlobStorageService;
 use std::collections::{HashMap, HashSet};
 use self::indy_crypto::cl::{Witness, RevocationRegistry, new_nonce};
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use super::tails::SDKTailsAccessor;
 
 use domain::anoncreds::schema::{Schema, schemas_map_to_schemas_v1_map};
@@ -26,7 +25,6 @@ use domain::anoncreds::credential_request::{CredentialRequest, CredentialRequest
 use domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
-use domain::anoncreds::proof::Proof;
 use domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQuery, PredicateInfo, NonRevocedInterval};
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_state::RevocationState;
@@ -266,10 +264,10 @@ impl ProverCommandExecutor {
 
         let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &master_secret_id)?;
 
-        let cred_def: CredentialDefinition = CredentialDefinition::from_json(cred_def_json)
+        let cred_def: CredentialDefinition = serde_json::from_str(cred_def_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?;
 
-        let cred_offer: CredentialOffer = CredentialOffer::from_json(&cred_offer_json)
+        let cred_offer: CredentialOffer = serde_json::from_str(&cred_offer_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialOffer: {:?}", err)))?;
 
         let (blinded_ms, ms_blinding_data, blinded_ms_correctness_proof) =
@@ -293,10 +291,10 @@ impl ProverCommandExecutor {
             master_secret_name: master_secret_id.to_string()
         };
 
-        let cred_req_json = credential_request.to_json()
+        let cred_req_json = serde_json::to_string(&credential_request)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialRequest: {:?}", err)))?;
 
-        let cred_req_metadata_json = credential_request_metadata.to_json()
+        let cred_req_metadata_json = serde_json::to_string(&credential_request_metadata)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialRequestMetadata: {:?}", err)))?;
 
         debug!("create_credential_request <<< cred_req_json: {:?}, cred_req_metadata_json: {:?}", cred_req_json, cred_req_metadata_json);
@@ -314,22 +312,20 @@ impl ProverCommandExecutor {
         debug!("store_credential >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
         rev_reg_def_json: {:?}", wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
 
-        let cred_request_metadata: CredentialRequestMetadata = CredentialRequestMetadata::from_json(&cred_req_metadata_json)
+        let cred_request_metadata: CredentialRequestMetadata = serde_json::from_str(&cred_req_metadata_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialRequestMetadata: {:?}", err)))?;
 
-        let mut credential: Credential = Credential::from_json(&cred_json)
+        let mut credential: Credential = serde_json::from_str(&cred_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Credential: {:?}", err)))?;
 
-        let cred_def: CredentialDefinition = CredentialDefinition::from_json(cred_def_json)
+        let cred_def: CredentialDefinition = serde_json::from_str(cred_def_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?;
 
-        let rev_reg_def = match rev_reg_def_json {
-            Some(r_reg_def_json) =>
-                Some(RevocationRegistryDefinitionV1::from(
-                    RevocationRegistryDefinition::from_json(&r_reg_def_json)
-                        .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?)),
-            None => None
-        };
+        let rev_reg_def = rev_reg_def_json
+            .map(serde_json::from_str::<RevocationRegistryDefinition>)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?
+            .map(RevocationRegistryDefinitionV1::from);
 
         let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &cred_request_metadata.master_secret_name)?;
 
@@ -385,7 +381,7 @@ impl ProverCommandExecutor {
 
         let credential_info = self._get_credential_info(&cred_id, credential);
 
-        let credential_info_json = credential_info.to_json()
+        let credential_info_json = serde_json::to_string(&credential_info)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialInfo: {:?}", err)))?;
 
         debug!("get_credential <<< credential_info_json: {:?}", credential_info_json);
@@ -461,7 +457,7 @@ impl ProverCommandExecutor {
                                      proof_req_json: &str) -> Result<String, IndyError> {
         debug!("get_credentials_for_proof_req >>> wallet_handle: {:?}, proof_req_json: {:?}", wallet_handle, proof_req_json);
 
-        let proof_request: ProofRequest = ProofRequest::from_json(proof_req_json)
+        let proof_request: ProofRequest = serde_json::from_str(proof_req_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ProofRequest: {:?}", err)))?;
 
         let mut credentials_for_proof_request = CredentialsForProofRequest::default();
@@ -493,7 +489,7 @@ impl ProverCommandExecutor {
             credentials_for_proof_request.predicates.insert(predicate_id.to_string(), credentials_for_predicate);
         }
 
-        let credentials_for_proof_request_json = credentials_for_proof_request.to_json()
+        let credentials_for_proof_request_json = serde_json::to_string(&credentials_for_proof_request)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CredentialsForProofRequest: {:?}", err)))?;
 
         debug!("get_credentials_for_proof_req <<< credentials_for_proof_request_json: {:?}", credentials_for_proof_request_json);
@@ -507,15 +503,13 @@ impl ProverCommandExecutor {
                                         extra_query_json: Option<&str>) -> Result<i32, IndyError> {
         debug!("search_credentials_for_proof_req >>> wallet_handle: {:?}, proof_req_json: {:?}, extra_query_json: {:?}", wallet_handle, proof_req_json, extra_query_json);
 
-        let proof_request: ProofRequest = ProofRequest::from_json(proof_req_json)
+        let proof_request: ProofRequest = serde_json::from_str(proof_req_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ProofRequest: {:?}", err)))?;
 
-        let extra_query: Option<ProofRequestExtraQuery> = match extra_query_json {
-            Some(query) =>
-                serde_json::from_str(query)
-                    .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ExtraQuery: {:?}", err)))?,
-            None => None
-        };
+        let extra_query = extra_query_json
+            .map(serde_json::from_str::<ProofRequestExtraQuery>)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Proof Request Extra Query: {:?}", err)))?;
 
         let mut credentials_for_proof_request_search = HashMap::<String, SearchForProofRequest>::new();
 
@@ -602,19 +596,19 @@ impl ProverCommandExecutor {
         cred_defs_json: {:?}, rev_states_json: {:?}",
                wallet_handle, proof_req_json, requested_credentials_json, master_secret_id, schemas_json, cred_defs_json, rev_states_json);
 
-        let proof_req: ProofRequest = ProofRequest::from_json(proof_req_json)
+        let proof_req: ProofRequest = serde_json::from_str(proof_req_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ProofRequest: {:?}", err)))?;
 
         let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of Schema: {:?}", err)))?;
 
-        let cred_defs: HashMap<String, CredentialDefinition> = serde_json::from_str::<HashMap<String, CredentialDefinition>>(cred_defs_json)
+        let cred_defs: HashMap<String, CredentialDefinition> = serde_json::from_str(cred_defs_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of CredentialDefinition: {:?}", err)))?;
 
         let rev_states: HashMap<String, HashMap<u64, RevocationState>> = serde_json::from_str(rev_states_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationState: {:?}", err)))?;
 
-        let requested_credentials: RequestedCredentials = RequestedCredentials::from_json(requested_credentials_json)
+        let requested_credentials: RequestedCredentials = serde_json::from_str(requested_credentials_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RequestedCredentials: {:?}", err)))?;
 
         let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &master_secret_id)?;
@@ -648,7 +642,7 @@ impl ProverCommandExecutor {
                                                                &cred_defs_map_to_cred_defs_v1_map(cred_defs),
                                                                &rev_states)?;
 
-        let proof_json = Proof::to_json(&proof)
+        let proof_json = serde_json::to_string(&proof)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize FullProof: {:?}", err)))?;
 
         debug!("create_proof <<< proof_json: {:?}", proof_json);
@@ -665,11 +659,11 @@ impl ProverCommandExecutor {
         debug!("create_revocation_state >>> , blob_storage_reader_handle: {:?}, rev_reg_def: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, cred_rev_id: {:?}",
                blob_storage_reader_handle, rev_reg_def, rev_reg_delta_json, timestamp, cred_rev_id);
 
-        let revoc_reg_def: RevocationRegistryDefinitionV1 =
-            RevocationRegistryDefinitionV1::from(RevocationRegistryDefinition::from_json(rev_reg_def)
-                .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?);
+        let revoc_reg_def = serde_json::from_str::<RevocationRegistryDefinition>(rev_reg_def)
+            .map(RevocationRegistryDefinitionV1::from)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Revocation Registry Definition: {:?}", err)))?;
 
-        let rev_reg_delta: RevocationRegistryDelta = RevocationRegistryDelta::from_json(rev_reg_delta_json)
+        let rev_reg_delta: RevocationRegistryDelta = serde_json::from_str(rev_reg_delta_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
 
         let rev_idx = parse_cred_rev_id(cred_rev_id)?;
@@ -689,7 +683,7 @@ impl ProverCommandExecutor {
             timestamp,
         };
 
-        let revocation_state_json = revocation_state.to_json()
+        let revocation_state_json = serde_json::to_string(&revocation_state)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationState: {:?}", err)))?;
 
         debug!("create_revocation_state <<< revocation_state_json: {:?}", revocation_state_json);
@@ -707,14 +701,15 @@ impl ProverCommandExecutor {
         debug!("update_revocation_state >>> blob_storage_reader_handle: {:?}, rev_state_json: {:?}, rev_reg_def_json: {:?}, rev_reg_delta_json: {:?}, timestamp: {:?}, cred_rev_id: {:?}",
                blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id);
 
-        let mut rev_state: RevocationState = RevocationState::from_json(rev_state_json)
+        let mut rev_state: RevocationState = serde_json::from_str(rev_state_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationState: {:?}", err)))?;
 
-        let revocation_registry_definition: RevocationRegistryDefinitionV1 =
-            RevocationRegistryDefinitionV1::from(RevocationRegistryDefinition::from_json(rev_reg_def_json)
-                .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?);
+        let revocation_registry_definition = serde_json::from_str::<RevocationRegistryDefinition>(rev_reg_def_json)
+            .map(RevocationRegistryDefinitionV1::from)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?;
 
-        let rev_reg_delta: RevocationRegistryDelta = RevocationRegistryDelta::from_json(rev_reg_delta_json)
+        let rev_reg_delta = serde_json::from_str::<RevocationRegistryDelta>(&rev_reg_delta_json)
+            .map(RevocationRegistryDeltaV1::from)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
 
         let rev_idx = parse_cred_rev_id(cred_rev_id)?;
@@ -723,15 +718,13 @@ impl ProverCommandExecutor {
                                                        blob_storage_reader_handle,
                                                        &revocation_registry_definition)?;
 
-        let rev_reg_delta = RevocationRegistryDeltaV1::from(rev_reg_delta);
-
         rev_state.witness.update(rev_idx, revocation_registry_definition.value.max_cred_num, &rev_reg_delta.value, &sdk_tails_accessor)
             .map_err(|err| IndyError::CommonError(CommonError::from(err)))?;
 
         rev_state.rev_reg = RevocationRegistry::from(rev_reg_delta.value);
         rev_state.timestamp = timestamp;
 
-        let rev_state_json = rev_state.to_json()
+        let rev_state_json = serde_json::to_string(&rev_state)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize RevocationState: {:?}", err)))?;
 
         debug!("update_revocation_state <<< rev_state_json: {:?}", rev_state_json);
@@ -761,10 +754,11 @@ impl ProverCommandExecutor {
     fn _get_credential(&self,
                        record: &WalletRecord) -> Result<(String, Credential), IndyError> {
         let referent = record.get_id();
-        let value = record.get_value()
-            .ok_or(CommonError::InvalidStructure(format!("Credential not found for id: {}", referent)))?;
 
-        let credential: Credential = Credential::from_json(value)
+        let value = record.get_value()
+            .ok_or(CommonError::InvalidState(format!("Credential not found for id: {}", referent)))?;
+
+        let credential: Credential = serde_json::from_str(value)
             .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize Credential: {:?}", err)))?;
 
         Ok((referent.to_string(), credential))
