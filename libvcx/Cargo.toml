@@ -61,7 +61,7 @@ tempfile = "2.2"
 [package.metadata.deb]
 maintainer = "Evernym, Inc."
 copyright = "2018, Evernym Inc."
-depends = "$auto, libindy (=1.6.0), libsovtoken (=0.8.0+2.54)"
+depends = "$auto, libindy (=1.6.1), libsovtoken (=0.8.0+2.54)"
 extended-description = """\
 This is Evernym's SDK for managing Verifiable Credential eXchange against an Indy network. For specific instructions on building see the README in the corresponding github repo https://github.com/evernym/sdk"""
 section = "admin"
