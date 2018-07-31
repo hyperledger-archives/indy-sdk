@@ -8,7 +8,7 @@
 
 ## Dependencies
 - The build scripts downloads the prebuilt dependencies while building. The prebuilt dependencies are available [here](https://github.com/evernym/indy-android-dependencies/tree/master/prebuilt)
-- If you want build the dependencies by yourself the instructions for that can be found [here](https://github.com/evernym/indy-android-dependencies)
+- If you want build the dependencies by yourself the instructions for that can be found [here](https://github.com/evernym/indy-android-dependencies) 
 
 ## How to build.
 - Run `indy-sdk/libindy/build-libindy-android.sh` to build libindy for arm, arm64 and x86
