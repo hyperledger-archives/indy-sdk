@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+export BLACK=`tput setaf 0`
+export RED=`tput setaf 1`
+export GREEN=`tput setaf 2`
+export YELLOW=`tput setaf 3`
+export BLUE=`tput setaf 4`
+export MAGENTA=`tput setaf 5`
+export CYAN=`tput setaf 6`
+export WHITE=`tput setaf 7`
+
+export BOLD=`tput bold`
+export RESET=`tput sgr0`
 
 set -e
 set -o pipefail
@@ -19,8 +30,8 @@ shift $((OPTIND -1))
 TARGET_ARCH=$1
 
 if [ -z "${TARGET_ARCH}" ]; then
-    echo STDERR "Missing TARGET_ARCH argument"
-    echo STDERR "e.g. x86 or arm"
+    echo STDERR "${RED}Missing TARGET_ARCH argument${RESET}"
+    echo STDERR "${BLUE}e.g. x86 or arm${RESET}"
     exit 1
 fi
 
@@ -38,43 +49,43 @@ setup_dependencies(){
     if [ "${DOWNLOAD_PREBUILTS}" == "1" ]; then
         download_and_unzip_dependencies_for_all_architectures
         else
-            echo "not downloading prebuilt dependencies. Dependencies locations have to be passed"
+            echo "${BLUE}Not downloading prebuilt dependencies. Dependencies locations have to be passed${RESET}"
             if [ -z "${OPENSSL_DIR}" ]; then
                 OPENSSL_DIR="openssl_${TARGET_ARCH}"
                 if [ -d "${OPENSSL_DIR}" ] ; then
-                    echo "Found ${OPENSSL_DIR}"
-                elif [ -z "$4" ]; then
-                    echo STDERR "Missing OPENSSL_DIR argument and environment variable"
-                    echo STDERR "e.g. set OPENSSL_DIR=<path> for environment or openssl_${TARGET_ARCH}"
+                    echo "${GREEN}Found ${OPENSSL_DIR}${RESET}"
+                elif [ -z "$2" ]; then
+                    echo STDERR "${RED}Missing OPENSSL_DIR argument and environment variable${RESET}"
+                    echo STDERR "${BLUE}e.g. set OPENSSL_DIR=<path> for environment or openssl_${TARGET_ARCH}${RESET}"
                     exit 1
                 else
-                    OPENSSL_DIR=$4
+                    OPENSSL_DIR=$2
                 fi
             fi
 
             if [ -z "${SODIUM_DIR}" ]; then
                 SODIUM_DIR="libsodium_${TARGET_ARCH}"
                 if [ -d "${SODIUM_DIR}" ] ; then
-                    echo "Found ${SODIUM_DIR}"
-                elif [ -z "$5" ]; then
-                    echo STDERR "Missing SODIUM_DIR argument and environment variable"
-                    echo STDERR "e.g. set SODIUM_DIR=<path> for environment or libsodium_${TARGET_ARCH}"
+                    echo "${GREEN}Found ${SODIUM_DIR}${RESET}"
+                elif [ -z "$3" ]; then
+                    echo STDERR "${RED}Missing SODIUM_DIR argument and environment variable${RESET}"
+                    echo STDERR "${BLUE}e.g. set SODIUM_DIR=<path> for environment or libsodium_${TARGET_ARCH}${RESET}"
                     exit 1
                 else
-                    SODIUM_DIR=$5
+                    SODIUM_DIR=$3
                 fi
             fi
 
             if [ -z "${LIBZMQ_DIR}" ] ; then
                 LIBZMQ_DIR="libzmq_${TARGET_ARCH}"
                 if [ -d "${LIBZMQ_DIR}" ] ; then
-                    echo "Found ${LIBZMQ_DIR}"
-                elif [ -z "$6" ] ; then
-                    echo STDERR "Missing LIBZMQ_DIR argument and environment variable"
-                    echo STDERR "e.g. set LIBZMQ_DIR=<path> for environment or libzmq_${TARGET_ARCH}"
+                    echo "${GREEN}Found ${LIBZMQ_DIR}${RESET}"
+                elif [ -z "$4" ] ; then
+                    echo STDERR "${RED}Missing LIBZMQ_DIR argument and environment variable${RESET}"
+                    echo STDERR "${BLUE}e.g. set LIBZMQ_DIR=<path> for environment or libzmq_${TARGET_ARCH}${RESET}"
                     exit 1
                 else
-                    LIBZMQ_DIR=$6
+                    LIBZMQ_DIR=$4
                 fi
             fi
 
@@ -83,20 +94,23 @@ setup_dependencies(){
 }
 
 statically_link_dependencies_with_libindy(){
+    echo "${GREEN}Statically linking libraries togather${RESET}"
+    echo "${BLUE}Output will be available at ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so${RESET}"
     $CC -v -shared -o${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so -Wl,--whole-archive \
         ${WORKDIR}/target/${TRIPLET}/release/libindy.a \
-        ${TOOLCHAIN_DIR}/${TOOLCHAIN_SYSROOT}/libz.so \
-        ${TOOLCHAIN_DIR}/${TOOLCHAIN_SYSROOT}/libm.a \
-        ${TOOLCHAIN_DIR}/${TOOLCHAIN_SYSROOT}/liblog.so \
+        ${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}/libz.so \
+        ${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}/libm.a \
+        ${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}/liblog.so \
         ${OPENSSL_DIR}/lib/libssl.a \
         ${OPENSSL_DIR}/lib/libcrypto.a \
         ${SODIUM_LIB_DIR}/libsodium.a \
         ${LIBZMQ_LIB_DIR}/libzmq.a \
-        ${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/lib/libgnustl_shared.so \
+        ${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/${TOOLCHAIN_SYSROOT_LIB}/libgnustl_shared.so \
         -Wl,--no-whole-archive -z muldefs
 }
 
 package_library(){
+    echo "${GREEN}Packaging in zip file${RESET}"
 
     mkdir -p ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
 
@@ -109,9 +123,11 @@ package_library(){
         rm -f libindy_android_${TARGET_ARCH}.zip
         cp -rf ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH} .
         if [ -z "${LIBINDY_VERSION}" ]; then
-            zip -r libindy_android_${TARGET_ARCH}.zip libindy_${TARGET_ARCH}
+            zip -r libindy_android_${TARGET_ARCH}.zip libindy_${TARGET_ARCH} &&
+            echo "${BLUE}Zip file available at ${PWD}/libindy_android_${TARGET_ARCH}.zip ${RESET}"
         else
-            zip -r libindy_android_${TARGET_ARCH}_${LIBINDY_VERSION}.zip libindy_${TARGET_ARCH}
+            zip -r libindy_android_${TARGET_ARCH}_${LIBINDY_VERSION}.zip libindy_${TARGET_ARCH} &&
+            echo "${BLUE}Zip file available at ${PWD}/libindy_android_${TARGET_ARCH}_${LIBINDY_VERSION}.zip ${RESET}"
         fi
 
     popd
@@ -119,19 +135,19 @@ package_library(){
 
 build(){
     echo "**************************************************"
-    echo "Building for architecture ${TARGET_ARCH}"
-    echo "Toolchain path ${TOOLCHAIN_DIR}"
-    echo "ZMQ path ${LIBZMQ_DIR}"
-    echo "Sodium path ${SODIUM_DIR}"
-    echo "Openssl path ${OPENSSL_DIR}"
-    echo "Artifacts will be in ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}"
+    echo "Building for architecture ${BLUE}${TARGET_ARCH}${RESET}"
+    echo "Toolchain path ${BLUE}${TOOLCHAIN_DIR}${RESET}"
+    echo "ZMQ path ${BLUE}${LIBZMQ_DIR}${RESET}"
+    echo "Sodium path ${BLUE}${SODIUM_DIR}${RESET}"
+    echo "Openssl path ${BLUE}${OPENSSL_DIR}${RESET}"
+    echo "Artifacts will be in ${BLUE}${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}${RESET}"
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
         cargo clean &&
-        LD_LIBRARY_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_SYSROOT} \
-        RUSTFLAGS="-C link-args=-Wl,-rpath,${TOOLCHAIN_DIR}/${TOOLCHAIN_SYSROOT} -L${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/lib -lgnustl_shared" \
-        cargo build --release --verbose --target=${TRIPLET} &&
+        LD_LIBRARY_PATH=${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} \
+        RUSTFLAGS="-C link-args=-Wl,-rpath,${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -L${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/${TOOLCHAIN_SYSROOT_LIB} -lgnustl_shared" \
+        cargo build --release --target=${TRIPLET} &&
     popd
 }
 

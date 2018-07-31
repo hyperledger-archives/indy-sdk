@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
+export BLACK=`tput setaf 0`
+export RED=`tput setaf 1`
+export GREEN=`tput setaf 2`
+export YELLOW=`tput setaf 3`
+export BLUE=`tput setaf 4`
+export MAGENTA=`tput setaf 5`
+export CYAN=`tput setaf 6`
+export WHITE=`tput setaf 7`
 
+export BOLD=`tput bold`
+export RESET=`tput sgr0`
 
 WORKDIR="$( cd "$(dirname "$0")" ; pwd -P )"
 CI_DIR="${WORKDIR}/../libindy/ci"
@@ -17,8 +27,8 @@ shift $((OPTIND -1))
 TARGET_ARCH=$1
 
 if [ -z "${TARGET_ARCH}" ]; then
-    echo STDERR "Missing TARGET_ARCH argument"
-    echo STDERR "e.g. x86 or arm"
+    echo STDERR "${RED}Missing TARGET_ARCH argument${RESET}"
+    echo STDERR "${BLUE}e.g. x86 or arm${RESET}"
     exit 1
 fi
 
@@ -33,17 +43,17 @@ linker = "$(realpath ${CC})"
 EOF
 }
 setup_dependencies(){
-    if [ "${DOWNLOAD_PREBUILTS}" == "1" ]; then
+   if [ "${DOWNLOAD_PREBUILTS}" == "1" ]; then
         download_and_unzip_dependencies_for_all_architectures
         else
-            echo "not downloading prebuilt dependencies. Dependencies locations have to be passed"
+            echo "${BLUE}Not downloading prebuilt dependencies. Dependencies locations have to be passed${RESET}"
             if [ -z "${OPENSSL_DIR}" ]; then
                 OPENSSL_DIR="openssl_${TARGET_ARCH}"
                 if [ -d "${OPENSSL_DIR}" ] ; then
-                    echo "Found ${OPENSSL_DIR}"
+                    echo "${GREEN}Found ${OPENSSL_DIR}${RESET}"
                 elif [ -z "$3" ]; then
-                    echo STDERR "Missing OPENSSL_DIR argument and environment variable"
-                    echo STDERR "e.g. set OPENSSL_DIR=<path> for environment or openssl_${TARGET_ARCH}"
+                    echo STDERR "${RED}Missing OPENSSL_DIR argument and environment variable${RESET}"
+                    echo STDERR "${BLUE}e.g. set OPENSSL_DIR=<path> for environment or openssl_${TARGET_ARCH}${RESET}"
                     exit 1
                 else
                     OPENSSL_DIR=$3
@@ -53,39 +63,25 @@ setup_dependencies(){
             if [ -z "${SODIUM_DIR}" ]; then
                 SODIUM_DIR="libsodium_${TARGET_ARCH}"
                 if [ -d "${SODIUM_DIR}" ] ; then
-                    echo "Found ${SODIUM_DIR}"
+                    echo "${GREEN}Found ${SODIUM_DIR}${RESET}"
                 elif [ -z "$4" ]; then
-                    echo STDERR "Missing SODIUM_DIR argument and environment variable"
-                    echo STDERR "e.g. set SODIUM_DIR=<path> for environment or libsodium_${TARGET_ARCH}"
+                    echo STDERR "${RED}Missing SODIUM_DIR argument and environment variable${RESET}"
+                    echo STDERR "${BLUE}e.g. set SODIUM_DIR=<path> for environment or libsodium_${TARGET_ARCH}${RESET}"
                     exit 1
                 else
                     SODIUM_DIR=$4
                 fi
             fi
 
-            if [ -z "${LIBZMQ_DIR}" ] ; then
-                LIBZMQ_DIR="libzmq_${TARGET_ARCH}"
-                if [ -d "${LIBZMQ_DIR}" ] ; then
-                    echo "Found ${LIBZMQ_DIR}"
-                elif [ -z "$5" ] ; then
-                    echo STDERR "Missing LIBZMQ_DIR argument and environment variable"
-                    echo STDERR "e.g. set LIBZMQ_DIR=<path> for environment or libzmq_${TARGET_ARCH}"
-                    exit 1
-                else
-                    LIBZMQ_DIR=$5
-                fi
-            fi
-
-
     fi
 
     if [ -z "${INDY_DIR}" ] ; then
             INDY_DIR="libindy_${TARGET_ARCH}"
             if [ -d "${INDY_DIR}" ] ; then
-                echo "Found ${INDY_DIR}"
+                echo "${GREEN}Found ${INDY_DIR}${RESET}"
             elif [ -z "$2" ] ; then
-                echo STDERR "Missing INDY_DIR argument and environment variable"
-                echo STDERR "e.g. set INDY_DIR=<path> for environment or libindy_${TARGET_ARCH}"
+                echo STDERR "${RED}Missing INDY_DIR argument and environment variable${RESET}"
+                echo STDERR "${BLUE}e.g. set INDY_DIR=<path> for environment or libindy_${TARGET_ARCH}${RESET}"
                 exit 1
             else
                 INDY_DIR=$2
@@ -101,6 +97,7 @@ setup_dependencies(){
 
 
 package_library(){
+    echo "${GREEN}Packaging in zip file${RESET}"
     mkdir -p ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/include
     mkdir -p ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
 
@@ -121,12 +118,11 @@ package_library(){
 
 build(){
     echo "**************************************************"
-    echo "Building for architecture ${TARGET_ARCH}"
-    echo "Toolchain path ${TOOLCHAIN_DIR}"
-    echo "ZMQ path ${LIBZMQ_DIR}"
-    echo "Sodium path ${SODIUM_DIR}"
-    echo "Indy path ${INDY_DIR}"
-    echo "Artifacts will be in ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}"
+    echo "Building for architecture ${BLUE}${TARGET_ARCH}${RESET}"
+    echo "Toolchain path ${BLUE}${TOOLCHAIN_DIR}${RESET}"
+    echo "Sodium path ${BLUE}${SODIUM_DIR}${RESET}"
+    echo "Indy path ${BLUE}${INDY_DIR}${RESET}"
+    echo "Artifacts will be in ${BLUE}${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}${RESET}"
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
