@@ -274,6 +274,52 @@ class IndyCallback : public Nan::AsyncResource {
 std::map<indy_handle_t, IndyCallback*> IndyCallback::icbmap;
 indy_handle_t IndyCallback::next_handle = 0;
 
+#define INDY_ASSERT_NARGS(FNAME, N) \
+  if(info.Length() != N){ \
+    return Nan::ThrowError(Nan::New(""#FNAME" expects "#N" arguments").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_STRING(FNAME, I, ARGNAME) \
+  if(!info[I]->IsString() && !info[I]->IsNull() && !info[I]->IsUndefined()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects String or null for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_NUMBER(FNAME, I, ARGNAME) \
+  if(!info[I]->IsNumber()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Number for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_BOOLEAN(FNAME, I, ARGNAME) \
+  if(!info[I]->IsBoolean()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Boolean for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_UINT8ARRAY(FNAME, I, ARGNAME) \
+  if(!info[I]->IsUint8Array()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Uint8Array for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_FUNCTION(FNAME, I) \
+  if(!info[I]->IsFunction()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Function for arg "#I"").ToLocalChecked()); \
+  }
+
+
+char* argToCString(v8::Local<v8::Value> arg){
+    char* arg1 = nullptr;
+    if(arg->IsString()){
+        Nan::Utf8String* arg1UTF = new Nan::Utf8String(arg);
+        arg1 = copyCStr((const char*)(**arg1UTF));
+        delete arg1UTF;
+    }
+    return arg1;
+}
+
+IndyCallback* argToIndyCb(v8::Local<v8::Value> arg){
+    IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(arg).ToLocalChecked());
+    return icb;
+}
+
 void indyCalled(IndyCallback* icb, indy_error_t res) {
     if(res == 0) {
         return;
