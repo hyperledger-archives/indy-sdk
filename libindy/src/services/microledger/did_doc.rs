@@ -21,6 +21,7 @@ use services::wallet::storage::Tag;
 use services::microledger::auth::Auth;
 use services::wallet::wallet::EncryptedValue;
 use services::wallet::storage::StorageRecord;
+use services::microledger::constants::AUTHZ_ALL;
 
 const TYP: [u8; 3] = [1, 2, 3];
 
@@ -319,6 +320,34 @@ impl<'a> DidDoc<'a> {
             CommonError::InvalidState(format!("Unable to jsonify ledger udpdate message {:?}.", err)))
     }
 
+    pub fn has_key(&self, verkey: &str) -> Result<bool, CommonError> {
+        let key_entry = self.get_key_entry(&verkey)?;
+        Ok(key_entry.is_some())
+    }
+
+    pub fn get_key_authorisations(&self, verkey: &str) -> Result<Vec<String>, CommonError> {
+        let key_entry = self.get_key_entry(&verkey)?;
+        match key_entry {
+            Some(r) => {
+                match r.value {
+                    Some(ev) => {
+                        let val: JValue = serde_json::from_str(&str::from_utf8(&ev.data).unwrap().to_string()).unwrap();
+                        let auths: Vec<String> = serde_json::from_value(val[AUTHORIZATIONS].clone()).map_err(|err|
+                            CommonError::InvalidStructure(format!("Cannot convert authorisations to vector of strings : {:?}.", err)))?;;
+                        let authz_all = AUTHZ_ALL.to_string();
+                        if auths.contains(&authz_all) {
+                            Ok(vec![authz_all])
+                        } else {
+                            Ok(auths)
+                        }
+                    },
+                    None => Err(CommonError::InvalidStructure(format!("No value found in record")))
+                }
+            }
+            None => Err(CommonError::InvalidStructure(format!("Key not found: {}", verkey)))
+        }
+    }
+
     fn extract_endpoints(key_entry: &mut JValue) -> Map<String, JValue> {
         match key_entry.get(ENDPOINTS) {
             Some(v) => {
@@ -461,5 +490,53 @@ pub mod tests {
 
         let expected_did_doc_4 = r#"{"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB":{"authorizations":["all"],"endpoints":{"https://agent3.example.com":{}}},"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{}}}}"#;
         assert_eq!(doc.as_json().unwrap(), expected_did_doc_4);
+    }
+
+    #[test]
+    fn test_has_keys() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let mut doc = get_new_did_doc(did);
+        let txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
+        doc.apply_txn(txn_1).unwrap();
+        let txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(txn_2).unwrap();
+        let txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key","rem_key"],"type":"2","verkey":"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB"}}"#;
+        doc.apply_txn(txn_3).unwrap();
+
+        assert!(doc.has_key("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW").unwrap());
+        assert!(doc.has_key("6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1").unwrap());
+        assert!(doc.has_key("46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB").unwrap());
+        assert!(!doc.has_key("4Yk9HoDSfJv9QcmJbLcXdWVgS7nfvdUqiVcvbSu8VBru").unwrap());
+    }
+
+    #[test]
+    fn test_get_key_authorisations() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let mut doc = get_new_did_doc(did);
+        let txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
+        doc.apply_txn(txn_1).unwrap();
+        let txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(txn_2).unwrap();
+        let txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key","rem_key"],"type":"2","verkey":"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB"}}"#;
+        doc.apply_txn(txn_3).unwrap();
+        let txn_4 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["rem_key"],"type":"2","verkey":"4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ"}}"#;
+        doc.apply_txn(txn_4).unwrap();
+        let txn_5 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["mprox"],"type":"2","verkey":"3znAGhp6Tk4kmebhXnk9K3jaTMffu82PJfEG91AeRkq2"}}"#;
+        doc.apply_txn(txn_5).unwrap();
+        let txn_6 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all","add_key","rem_key"],"type":"2","verkey":"84hpoYb2cgCo4d5D2b5s7khE7SoHAJCLQNbfu1NsQNWy"}}"#;
+        doc.apply_txn(txn_6).unwrap();
+
+        assert_eq!(doc.get_key_authorisations("CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW").unwrap(), vec!["add_key"]);
+        assert_eq!(doc.get_key_authorisations("6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1").unwrap(), vec!["all"]);
+        assert_eq!(doc.get_key_authorisations("46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB").unwrap(), vec!["add_key","rem_key"]);
+        assert_eq!(doc.get_key_authorisations("4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ").unwrap(), vec!["rem_key"]);
+        assert_eq!(doc.get_key_authorisations("3znAGhp6Tk4kmebhXnk9K3jaTMffu82PJfEG91AeRkq2").unwrap(), vec!["mprox"]);
+        assert_eq!(doc.get_key_authorisations("84hpoYb2cgCo4d5D2b5s7khE7SoHAJCLQNbfu1NsQNWy").unwrap(), vec!["all"]);
+
+        let txn_7 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key","mprox"],"type":"2","verkey":"3znAGhp6Tk4kmebhXnk9K3jaTMffu82PJfEG91AeRkq2"}}"#;
+        doc.apply_txn(txn_7).unwrap();
+        assert_eq!(doc.get_key_authorisations("3znAGhp6Tk4kmebhXnk9K3jaTMffu82PJfEG91AeRkq2").unwrap(), vec!["add_key","mprox"]);
     }
 }

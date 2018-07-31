@@ -39,7 +39,7 @@ impl MLTxnVersion {
     }
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Debug)]
+#[derive(Deserialize, Serialize, PartialEq, Debug, Copy, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Txn<T: serde::Serialize> {
     protocol_version: usize,

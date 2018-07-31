@@ -23,6 +23,8 @@ use services::microledger::helpers::sign_msg;
 use services::microledger::helpers::verify_msg;
 use services::microledger::constants::{SIGNATURE, IDENTIFIER, KEY_TXN};
 use services::microledger::txn_builder::Txn;
+use services::microledger::constants::AUTHZ_ALL;
+use services::microledger::constants::AUTHZ_ADD_KEY;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum MsgTypes {
@@ -351,13 +353,13 @@ impl<'a> Agent<'a> {
         let len = events.len() as u64;
         let txns = Agent::get_validated_ledger_update_events(events, existing_size+1,
                                                              existing_size+len)?;
-        for txn in txns {
-            if !Agent::validate_txn(&txn, &doc.borrow(), &self.crypto_service)? {
+        for txn in &txns {
+            if !Agent::validate_txn(txn, &doc.borrow(), &self.crypto_service)? {
                 return Ok(false);
             }
         }
-        ml.add_multiple(txns.iter().map(|t|t.as_ref()).collect())?;
-
+        let txns = txns.iter().map(|t|t.as_ref()).collect();
+        ml.add_multiple(txns)?;
         Ok(true)
     }
 
@@ -376,17 +378,53 @@ impl<'a> Agent<'a> {
                     Some(t) => {
                         match t.as_str() {
                             Some(KEY_TXN) => {
-                                // TODO
-                                Ok(());
+                                let mut r: bool = false;
+                                let j_vk = idr.unwrap();
+                                r = Agent::validate_txn_sig(crypto_service, txn.clone(), j_vk.clone(), sig.unwrap())?;
+                                if r {
+                                    let vk = j_vk.as_str().unwrap();
+                                    match did_doc.get_key_authorisations(vk) {
+                                        Ok(auths) => {
+                                            if auths.contains(&AUTHZ_ALL.to_string()) || auths.contains(&AUTHZ_ADD_KEY.to_string()) {
+                                                r = true
+                                            }
+                                        }
+                                        Err(_) => {
+                                            println!();
+                                            r = false
+                                        }
+                                    }
+                                }
+                                Ok(r)
                             }
                             _ => Err(CommonError::InvalidStructure(format!("Unknown txn type {:?}", t)))
                         }
                     },
                     None => Err(CommonError::InvalidStructure(String::from("Unable to find type in txn")))
                 }
-                Ok(true)
             }
             None => Err(CommonError::InvalidStructure(String::from("Unable to convert to json object")))
+        }
+    }
+
+    pub fn validate_txn_sig(crypto_service: &CryptoService, txn: Txn<JValue>,
+                        signer_vk: JValue, signature: JValue) -> Result<bool, CommonError> {
+        /*match decode(sig) {
+            Ok(sig) => {
+                verify_msg(crypto_service, signer_vk, txn.as_bytes(), sig.as_slice())
+            }
+            _ => Err(CommonError::InvalidStructure(format!("Unable to parse base58 signature {}", &sig)))
+        }*/
+        match (serde_json::to_string(&txn), signer_vk.as_str(), signature.as_str()) {
+            (Ok(msg), Some(vk), Some(sig)) => {
+                match decode(sig) {
+                    Ok(sig) => {
+                        verify_msg(crypto_service, vk, msg.as_bytes(), sig.as_slice())
+                    }
+                    _ => Err(CommonError::InvalidStructure(format!("Unable to parse base58 signature {}", &sig)))
+                }
+            },
+            _ => Err(CommonError::InvalidStructure(format!("Unparsable txn, verkey or signature: {:?} {:?} {:?}", &txn, &signer_vk, &signature)))
         }
     }
 
@@ -396,7 +434,7 @@ impl<'a> Agent<'a> {
         if self.m_ledgers.get(&did).is_none() {
             self.process_ledger_update_for_new_did(&did, l)
         } else {
-            println!("Already have ledger for {}", &did);
+            println!("Already have ledger for {}. Ignoring!", &did);
             Ok(false)
         }
     }
@@ -729,5 +767,9 @@ mod tests {
         let msg = Message::new(&payload, did1, &agent1.verkey, &sig);
         network.borrow().send_message(&serde_json::to_string(&msg).unwrap(), &agent2.get_peer_id()).unwrap();
         assert!(agent2.process_inbox().is_ok());
+
+        let ml2 = agent2.m_ledgers.get(did1).unwrap();
+        assert_eq!(ml1.get_root_hash(), ml2.get_root_hash());
+        assert_eq!(ml1.get_size(), ml2.get_size());
     }
 }
