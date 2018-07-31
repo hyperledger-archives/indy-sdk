@@ -109,7 +109,7 @@ export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_armv7/lib; echo "ANDR
 #export LIBZMQ_INCLUDE_DIR=$WORK_DIR/libzmq-android/zmq/libzmq_armv7/include; echo "LIBZMQ_INCLUDE_DIR: $LIBZMQ_INCLUDE_DIR"
 export ANDROID_SQLITE_LIB=$WORK_DIR/libsqlite3-android/sqlite3-android/obj/local/armeabi-v7a; echo "ANDROID_SQLITE_LIB: $ANDROID_SQLITE_LIB"
 sed -i .bak 's/\"\"\.as_ptr() as \*const i8/\"\"\.as_ptr() as \*const u8/' src/services/wallet/storage/plugged/mod.rs
-cargo build --target armv7-linux-androideabi --release --verbose
+cargo build --target armv7-linux-androideabi --release
 echo "-----------------------------------------------------------------------------------------------"
 
 # export PATH=$WORK_DIR/NDK/arm64/bin:$ORIGINAL_PATH; echo "PATH: $PATH"
@@ -133,7 +133,7 @@ export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_x86/lib; echo "ANDROI
 #export LIBZMQ_INCLUDE_DIR=$WORK_DIR/libzmq-android/zmq/libzmq_x86/include; echo "LIBZMQ_INCLUDE_DIR: $LIBZMQ_INCLUDE_DIR"
 export ANDROID_SQLITE_LIB=$WORK_DIR/libsqlite3-android/sqlite3-android/obj/local/x86; echo "ANDROID_SQLITE_LIB: $ANDROID_SQLITE_LIB"
 sed -i .bak 's/\"\"\.as_ptr() as \*const u8/\"\"\.as_ptr() as \*const i8/' src/services/wallet/storage/plugged/mod.rs
-cargo build --target i686-linux-android --release --verbose
+cargo build --target i686-linux-android --release
 echo "-----------------------------------------------------------------------------------------------"
 
 # export PATH=$WORK_DIR/NDK/x86_64/bin:$ORIGINAL_PATH; echo "PATH: $PATH"
@@ -194,7 +194,7 @@ export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_armv7/lib; echo "ANDR
 #export LIBZMQ_INCLUDE_DIR=$WORK_DIR/libzmq-android/zmq/libzmq_armv7/include; echo "LIBZMQ_INCLUDE_DIR: $LIBZMQ_INCLUDE_DIR"
 export ANDROID_SQLITE_LIB=$WORK_DIR/libsqlite3-android/armeabi-v7a; echo "ANDROID_SQLITE_LIB: $ANDROID_SQLITE_LIB"
 export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/armv7-linux-androideabi/release; echo "LIBINDY_DIR: $LIBINDY_DIR"
-cargo build --target armv7-linux-androideabi --release --verbose
+cargo build --target armv7-linux-androideabi --release
 echo "-----------------------------------------------------------------------------------------------"
 
 # export PATH=$WORK_DIR/NDK/arm64/bin:$ORIGINAL_PATH; echo "PATH: $PATH"
@@ -218,7 +218,7 @@ export ANDROID_ZMQ_LIB=$WORK_DIR/libzmq-android/zmq/libzmq_x86/lib; echo "ANDROI
 #export LIBZMQ_INCLUDE_DIR=$WORK_DIR/libzmq-android/zmq/libzmq_x86/include; echo "LIBZMQ_INCLUDE_DIR: $LIBZMQ_INCLUDE_DIR"
 export ANDROID_SQLITE_LIB=$WORK_DIR/libsqlite3-android/x86; echo "ANDROID_SQLITE_LIB: $ANDROID_SQLITE_LIB"
 export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/i686-linux-android/release; echo "LIBINDY_DIR: $LIBINDY_DIR"
-cargo build --target i686-linux-android --release --verbose
+cargo build --target i686-linux-android --release
 echo "-----------------------------------------------------------------------------------------------"
 
 # export PATH=$WORK_DIR/NDK/x86_64/bin:$ORIGINAL_PATH; echo "PATH: $PATH"

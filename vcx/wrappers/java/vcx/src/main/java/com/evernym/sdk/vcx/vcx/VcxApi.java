@@ -81,28 +81,4 @@ public class VcxApi extends VcxJava.API {
 
     }
 
-//    public static CompletableFuture<Integer> vcxGenerateProof(
-//            String proofRequestId,
-//            String requestedAttrs,
-//            String requestedPredicates,
-//            String proofName
-//    ) throws VcxException {
-//        ParamGuard.notNull(proofRequestId, "proofRequestId");
-//        ParamGuard.notNullOrWhiteSpace(requestedAttrs, "requestedAttrs");
-//        ParamGuard.notNullOrWhiteSpace(requestedPredicates, "requestedPredicates");
-//        ParamGuard.notNullOrWhiteSpace(proofName, "proofName");
-//        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
-//        int commandHandle = addFuture(future);
-//
-//        int result = LibVcx.api.vcx_proof_create(
-//                proofRequestId,
-//                requestedAttrs,
-//                requestedPredicates,
-//                proofName,
-//                vcxGenerateProofCB
-//        );
-//        checkResult(result);
-//        return future;
-//    }
-
 }

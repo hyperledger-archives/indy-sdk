@@ -1,5 +1,7 @@
 package com.evernym.sdk.vcx.wallet;
 
+import android.util.Log;
+
 import com.evernym.sdk.vcx.LibVcx;
 import com.evernym.sdk.vcx.ParamGuard;
 import com.evernym.sdk.vcx.VcxException;
@@ -9,6 +11,7 @@ import com.sun.jna.Callback;
 import java9.util.concurrent.CompletableFuture;
 
 public class WalletApi extends VcxJava.API {
+    private static String TAG = "JAVA_WRAPPER::API_VCX::WALLET";
 
     private WalletApi(){}
 
