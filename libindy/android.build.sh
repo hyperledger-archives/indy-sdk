@@ -117,8 +117,10 @@ package_library(){
     cp -rf "${WORKDIR}/include" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}
     cp "${WORKDIR}/target/${TRIPLET}/release/libindy.a" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
     cp "${WORKDIR}/target/${TRIPLET}/release/libindy.so" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
-    mv "${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so" "${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy_shared.so" &&
-    statically_link_dependencies_with_libindy &&
+    if [ $1 -ne "x86_64" ]; then
+        mv "${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so" "${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy_shared.so" &&
+        statically_link_dependencies_with_libindy
+    fi
     pushd ${LIBINDY_WORKDIR}
         rm -f libindy_android_${TARGET_ARCH}.zip
         cp -rf ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH} .
