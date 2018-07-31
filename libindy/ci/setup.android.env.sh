@@ -87,6 +87,7 @@ generate_arch_flags(){
         export TRIPLET="arm-linux-androideabi"
         export ANDROID_TRIPLET=${TRIPLET}
         export ABI="armeabi-v7a"
+        export TOOLCHAIN_SYSROOT="sysroot/usr/lib"
     fi
 
     if [ $1 == "armv7" ]; then
@@ -95,6 +96,7 @@ generate_arch_flags(){
         export TRIPLET="armv7-linux-androideabi"
         export ANDROID_TRIPLET="arm-linux-androideabi"
         export ABI="armeabi-v7a"
+        export TOOLCHAIN_SYSROOT="sysroot/usr/lib"
     fi
 
     if [ $1 == "arm64" ]; then
@@ -103,6 +105,7 @@ generate_arch_flags(){
         export TRIPLET="aarch64-linux-android"
         export ANDROID_TRIPLET=${TRIPLET}
         export ABI="arm64-v8a"
+        export TOOLCHAIN_SYSROOT="sysroot/usr/lib"
     fi
 
     if [ $1 == "x86" ]; then
@@ -111,6 +114,7 @@ generate_arch_flags(){
         export TRIPLET="i686-linux-android"
         export ANDROID_TRIPLET=${TRIPLET}
         export ABI="x86"
+        export TOOLCHAIN_SYSROOT="sysroot/usr/lib"
     fi
 
     if [ $1 == "x86_64" ]; then
@@ -119,6 +123,7 @@ generate_arch_flags(){
         export TRIPLET="x86_64-linux-android"
         export ANDROID_TRIPLET=${TRIPLET}
         export ABI="x86_64"
+        export TOOLCHAIN_SYSROOT="sysroot/usr/lib64"
     fi
 
 }

@@ -85,9 +85,9 @@ setup_dependencies(){
 statically_link_dependencies_with_libindy(){
     $CC -v -shared -o${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so -Wl,--whole-archive \
         ${WORKDIR}/target/${TRIPLET}/release/libindy.a \
-        ${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so \
-        ${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a \
-        ${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so \
+        ${TOOLCHAIN_DIR}/${TOOLCHAIN_SYSROOT}/libz.so \
+        ${TOOLCHAIN_DIR}/${TOOLCHAIN_SYSROOT}/libm.a \
+        ${TOOLCHAIN_DIR}/${TOOLCHAIN_SYSROOT}/liblog.so \
         ${OPENSSL_DIR}/lib/libssl.a \
         ${OPENSSL_DIR}/lib/libcrypto.a \
         ${SODIUM_LIB_DIR}/libsodium.a \
@@ -129,8 +129,9 @@ build(){
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
         cargo clean &&
-        RUSTFLAGS="-L${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/lib -lgnustl_shared" \
-            cargo build --release --target=${TRIPLET} &&
+        LD_LIBRARY_PATH=${TOOLCHAIN_DIR}/${TOOLCHAIN_SYSROOT} \
+        RUSTFLAGS="-C link-args=-Wl,-rpath,${TOOLCHAIN_DIR}/${TOOLCHAIN_SYSROOT} -L${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/lib -lgnustl_shared" \
+        cargo build --release --verbose --target=${TRIPLET} &&
     popd
 }
 
