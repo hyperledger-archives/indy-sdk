@@ -6135,4 +6135,300 @@ mod demos {
 
         TestUtils::cleanup_storage();
     }
+
+    #[test]
+    fn anoncreds_works_for_5_credentials_from_different_issuers_single_prover() {
+        use std::time::SystemTime;
+
+        TestUtils::cleanup_storage();
+
+        // Issuer1 creates wallet, gets wallet handles
+        let issuer_1_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+        // Issuer2 creates wallet, gets wallet handles
+        let issuer_2_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+        // Issuer3 creates wallet, gets wallet handles
+        let issuer_3_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+        // Issuer4 creates wallet, gets wallet handles
+        let issuer_4_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+        // Issuer5 creates wallet, gets wallet handles
+        let issuer_5_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+        // Prover creates wallet, gets wallet handles
+        let prover_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+        // Issuer1 creates Schema and Credential Definition
+        let schema_attributes_1 = r#"["name", "second_name"]"#;
+        let (schema_id_1, schema_1,
+            cred_def_id_1, cred_def_json_1) = AnoncredsUtils::multi_steps_issuer_preparation(issuer_1_wallet_handle,
+                                                                                                 "NcYxiDXkpYi6ov5FcYDi1e",
+                                                                                                 "schema_1",
+                                                                                             schema_attributes_1);
+
+        // Issuer2 creates Schema and Credential Definition
+        let schema_attributes_2 = r#"["name", "age"]"#;
+        let (schema_id_2, schema_2,
+            cred_def_id_2, cred_def_json_2) = AnoncredsUtils::multi_steps_issuer_preparation(issuer_2_wallet_handle,
+                                                                                                 "AcYxiDXkpYi6ov5FcYDi1e",
+                                                                                                 "schema_2",
+                                                                                             schema_attributes_2);
+
+        // Issuer3 creates Schema and Credential Definition
+        let schema_attributes_3 = r#"["name", "height"]"#;
+        let (schema_id_3, schema_3,
+            cred_def_id_3, cred_def_json_3) = AnoncredsUtils::multi_steps_issuer_preparation(issuer_3_wallet_handle,
+                                                                                                 "BcYxiDXkpYi6ov5FcYDi1e",
+                                                                                                 "schema_3",
+                                                                                             schema_attributes_3);
+
+        // Issuer4 creates Schema and Credential Definition
+        let schema_attributes_4 = r#"["name", "weight"]"#;
+        let (schema_id_4, schema_4,
+            cred_def_id_4, cred_def_json_4) = AnoncredsUtils::multi_steps_issuer_preparation(issuer_4_wallet_handle,
+                                                                                                 "CcYxiDXkpYi6ov5FcYDi1e",
+                                                                                                 "schema_4",
+                                                                                             schema_attributes_4);
+
+        // Issuer5 creates Schema and Credential Definition
+        let schema_attributes_5 = r#"["name", "mark"]"#;
+        let (schema_id_5, schema_5,
+            cred_def_id_5, cred_def_json_5) = AnoncredsUtils::multi_steps_issuer_preparation(issuer_5_wallet_handle,
+                                                                                                 "DcYxiDXkpYi6ov5FcYDi1e",
+                                                                                                 "schema_5",
+                                                                                             schema_attributes_5);
+
+        // Prover creates Master Secret
+        AnoncredsUtils::prover_create_master_secret(prover_wallet_handle, COMMON_MASTER_SECRET).unwrap();
+
+        // Issuer1 issue Credential for Prover
+        let cred_values_1 = r#"{
+            "name": {"raw":"Alex", "encoded": "3243254653754"},
+            "second_name": {"raw":"Park", "encoded": "21431543265436"}
+        }"#;
+        AnoncredsUtils::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                      prover_wallet_handle,
+                                                      issuer_1_wallet_handle,
+                                                      "credential_id_1",
+                                                      cred_values_1,
+                                                      &cred_def_id_1,
+                                                      &cred_def_json_1);
+
+        // Issuer2 issue Credential for Prover
+        let cred_values_2 = r#"{
+            "name": {"raw":"Sasha", "encoded": "54354365213424"},
+            "age": {"raw":"25", "encoded": "25"}
+        }"#;
+        AnoncredsUtils::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                      prover_wallet_handle,
+                                                      issuer_2_wallet_handle,
+                                                      "credential_id_2",
+                                                      cred_values_2,
+                                                      &cred_def_id_2,
+                                                      &cred_def_json_2);
+
+        // Issuer3 issue Credential for Prover
+        let cred_values_3 = r#"{
+            "name": {"raw":"Alexander", "encoded": "121432542543213121"},
+            "height": {"raw":"180", "encoded": "180"}
+        }"#;
+        AnoncredsUtils::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                      prover_wallet_handle,
+                                                      issuer_3_wallet_handle,
+                                                      "credential_id_3",
+                                                      cred_values_3,
+                                                      &cred_def_id_3,
+                                                      &cred_def_json_3);
+
+        // Issuer4 issue Credential for Prover
+        let cred_values_4 = r#"{
+            "name": {"raw":"Alex", "encoded": "12132131213214325264363432121"},
+            "weight": {"raw":"75", "encoded": "75"}
+        }"#;
+        AnoncredsUtils::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                      prover_wallet_handle,
+                                                      issuer_4_wallet_handle,
+                                                      "credential_id_4",
+                                                      cred_values_4,
+                                                      &cred_def_id_4,
+                                                      &cred_def_json_4);
+
+        // Issuer5 issue Credential for Prover
+        let cred_values_5 = r#"{
+            "name": {"raw":"Alexander", "encoded": "15434654765867532543"},
+            "mark": {"raw":"5", "encoded": "5"}
+        }"#;
+        AnoncredsUtils::multi_steps_create_credential(COMMON_MASTER_SECRET,
+                                                      prover_wallet_handle,
+                                                      issuer_5_wallet_handle,
+                                                      "credential_id_5",
+                                                      cred_values_5,
+                                                      &cred_def_id_5,
+                                                      &cred_def_json_5);
+
+        // Proof request
+        let proof_req_json = json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": json!({
+               "attr1_referent": json!({
+                   "name":"name",
+                   "restrictions": json!({ "cred_def_id": cred_def_id_1 }) // get name by credential issued by Issuer1
+               }),
+               "attr2_referent": json!({
+                   "name":"name",
+                   "restrictions": json!({ "cred_def_id": cred_def_id_2 }) // get name by credential issued by Issuer2
+               }),
+               "attr3_referent": json!({
+                   "name":"name",
+                   "restrictions": json!({ "cred_def_id": cred_def_id_3 }) // get name by credential issued by Issuer3
+               }),
+               "attr4_referent": json!({
+                   "name":"name",
+                   "restrictions": json!({ "cred_def_id": cred_def_id_4 }) // get name by credential issued by Issuer4
+               }),
+               "attr5_referent": json!({
+                   "name":"name",
+                   "restrictions": json!({ "cred_def_id": cred_def_id_5 }) // get name by credential issued by Issuer5
+               }),
+               "attr6_referent": json!({
+                   "name":"movie" // self attested attribute
+               }),
+               "attr7_referent": json!({
+                   "name":"second_name" //  get second_name by credential issued by Issuer1
+               }),
+               "attr8_referent": json!({
+                   "name":"age" //  get age by credential issued by Issuer2
+               }),
+               "attr9_referent": json!({
+                   "name":"height"//  get height by credential issued by Issuer3
+               }),
+               "attr10_referent": json!({
+                   "name":"weight"//  get weight by credential issued by Issuer4
+               }),
+               "attr11_referent": json!({
+                   "name":"mark"//  get weight by credential issued by Issuer5
+               }),
+               "attr12_referent": json!({
+                   "name":"song" // self attested attribute
+               })
+           }),
+           "requested_predicates": json!({}),
+        }).to_string();
+
+        //10. Prover gets Credentials for Proof Request
+
+        let start_time = SystemTime::now();
+
+        let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(prover_wallet_handle, &proof_req_json).unwrap();
+
+        println!("Time prover_get_credentials_for_proof_req {:?}", SystemTime::now().duration_since(start_time).unwrap());
+
+        let credential_for_attr_1 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr1_referent");
+        let credential_for_attr_2 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr2_referent");
+        let credential_for_attr_3 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr3_referent");
+        let credential_for_attr_4 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr4_referent");
+        let credential_for_attr_5 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr5_referent");
+        let credential_for_attr_7 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr7_referent");
+        let credential_for_attr_8 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr8_referent");
+        let credential_for_attr_9 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr9_referent");
+        let credential_for_attr_10 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr10_referent");
+        let credential_for_attr_11 = AnoncredsUtils::get_credential_for_attr_referent(&credentials_json, "attr11_referent");
+
+        //11. Prover creates Proof
+        let requested_credentials_json = json!({
+             "self_attested_attributes": json!({
+                "attr6_referent": "some self movie",
+                "attr12_referent": "some self song",
+             }),
+             "requested_attributes": json!({
+                "attr1_referent": json!({ "cred_id": credential_for_attr_1.referent, "revealed":true }),
+                "attr2_referent": json!({ "cred_id": credential_for_attr_2.referent, "revealed":true }),
+                "attr3_referent": json!({ "cred_id": credential_for_attr_3.referent, "revealed":true }),
+                "attr4_referent": json!({ "cred_id": credential_for_attr_4.referent, "revealed":true }),
+                "attr5_referent": json!({ "cred_id": credential_for_attr_5.referent, "revealed":true }),
+                "attr7_referent": json!({ "cred_id": credential_for_attr_7.referent, "revealed":true }),
+                "attr8_referent": json!({ "cred_id": credential_for_attr_8.referent, "revealed":true }),
+                "attr9_referent": json!({ "cred_id": credential_for_attr_9.referent, "revealed":true }),
+                "attr10_referent": json!({ "cred_id": credential_for_attr_10.referent, "revealed":true }),
+                "attr11_referent": json!({ "cred_id": credential_for_attr_11.referent, "revealed":true })
+             }),
+             "requested_predicates": json!({})
+        }).to_string();
+
+        let schemas_json = json!({
+            schema_id_1: serde_json::from_str::<Schema>(&schema_1).unwrap(),
+            schema_id_2: serde_json::from_str::<Schema>(&schema_2).unwrap(),
+            schema_id_3: serde_json::from_str::<Schema>(&schema_3).unwrap(),
+            schema_id_4: serde_json::from_str::<Schema>(&schema_4).unwrap(),
+            schema_id_5: serde_json::from_str::<Schema>(&schema_5).unwrap()
+        }).to_string();
+
+        let credential_defs_json = json!({
+            cred_def_id_1: serde_json::from_str::<CredentialDefinition>(&cred_def_json_1).unwrap(),
+            cred_def_id_2: serde_json::from_str::<CredentialDefinition>(&cred_def_json_2).unwrap(),
+            cred_def_id_3: serde_json::from_str::<CredentialDefinition>(&cred_def_json_3).unwrap(),
+            cred_def_id_4: serde_json::from_str::<CredentialDefinition>(&cred_def_json_4).unwrap(),
+            cred_def_id_5: serde_json::from_str::<CredentialDefinition>(&cred_def_json_5).unwrap()
+        }).to_string();
+        let rev_states_json = json!({}).to_string();
+
+        let start_time = SystemTime::now();
+
+        let proof_json = AnoncredsUtils::prover_create_proof(prover_wallet_handle,
+                                                             &proof_req_json,
+                                                             &requested_credentials_json,
+                                                             COMMON_MASTER_SECRET,
+                                                             &schemas_json,
+                                                             &credential_defs_json,
+                                                             &rev_states_json).unwrap();
+
+        println!("Time prover_create_proof {:?}", SystemTime::now().duration_since(start_time).unwrap());
+
+        let proof: Proof = serde_json::from_str(&proof_json).unwrap();
+
+        //12. Verifier verifies proof
+        assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr1_referent").unwrap().raw);
+        assert_eq!("Sasha", proof.requested_proof.revealed_attrs.get("attr2_referent").unwrap().raw);
+        assert_eq!("Alexander", proof.requested_proof.revealed_attrs.get("attr3_referent").unwrap().raw);
+        assert_eq!("Alex", proof.requested_proof.revealed_attrs.get("attr4_referent").unwrap().raw);
+        assert_eq!("Alexander", proof.requested_proof.revealed_attrs.get("attr5_referent").unwrap().raw);
+
+        assert_eq!("some self movie", proof.requested_proof.self_attested_attrs.get("attr6_referent").unwrap());
+        assert_eq!("some self song", proof.requested_proof.self_attested_attrs.get("attr12_referent").unwrap());
+
+        assert_eq!("Park", proof.requested_proof.revealed_attrs.get("attr7_referent").unwrap().raw);
+        assert_eq!("25", proof.requested_proof.revealed_attrs.get("attr8_referent").unwrap().raw);
+        assert_eq!("180", proof.requested_proof.revealed_attrs.get("attr9_referent").unwrap().raw);
+        assert_eq!("75", proof.requested_proof.revealed_attrs.get("attr10_referent").unwrap().raw);
+        assert_eq!("5", proof.requested_proof.revealed_attrs.get("attr11_referent").unwrap().raw);
+
+        let rev_reg_defs_json = json!({}).to_string();
+        let rev_regs_json = json!({}).to_string();
+
+        let start_time = SystemTime::now();
+
+        let valid = AnoncredsUtils::verifier_verify_proof(&proof_req_json,
+                                                          &proof_json,
+                                                          &schemas_json,
+                                                          &credential_defs_json,
+                                                          &rev_reg_defs_json,
+                                                          &rev_regs_json).unwrap();
+
+        println!("Time verifier_verify_proof {:?}", SystemTime::now().duration_since(start_time).unwrap());
+
+        assert!(valid);
+
+        WalletUtils::close_wallet(prover_wallet_handle).unwrap();
+        WalletUtils::close_wallet(issuer_1_wallet_handle).unwrap();
+        WalletUtils::close_wallet(issuer_2_wallet_handle).unwrap();
+        WalletUtils::close_wallet(issuer_3_wallet_handle).unwrap();
+        WalletUtils::close_wallet(issuer_4_wallet_handle).unwrap();
+        WalletUtils::close_wallet(issuer_5_wallet_handle).unwrap();
+
+        TestUtils::cleanup_storage();
+    }
 }
