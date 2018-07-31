@@ -15,23 +15,23 @@ properties([
 try {
     testing()
     publishing()
-//    if (acceptanceTesting()) {
-//        releasing()
-//    }
-//    notifyingSuccess()
+    if (acceptanceTesting()) {
+        releasing()
+    }
+    notifyingSuccess()
 } catch (err) {
-//    notifyingFailure()
+    notifyingFailure()
     throw err
 }
 
 def testing() {
     stage('Testing') {
         parallel([
-//                'ubuntu-test' : { ubuntuTesting() },
-//                'redhat-test' : { rhelTesting() },
-//                'android-test': { androidTesting() },
-//                'windows-test': { windowsTesting() },
-                'ios-test': { iosTesting() }
+                'ubuntu-test' : { ubuntuTesting() },
+                'redhat-test' : { rhelTesting() },
+                'android-test': { androidTesting() },
+                'windows-test': { windowsTesting() },
+                'ios-test'    : { iosTesting() }
         ])
     }
 }
@@ -41,15 +41,15 @@ def publishing() {
         echo "${env.BRANCH_NAME}: start publishing"
         publishedVersions = parallel([
                 //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
-//                'ubuntu-files' : { ubuntuPublishing() },
-//                'windows-files': { windowsPublishing() },
-//                'android-files': { androidPublishing("0") },
+                'ubuntu-files' : { ubuntuPublishing() },
+                'windows-files': { windowsPublishing() },
+                'android-files': { androidPublishing("0") },
                 'ios-files'    : { iosPublishing() },
         ])
 
-//        if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
-//            error "platforms artifacts have different versions"
-//        }
+        if (publishedVersions['windows-files'] != publishedVersions['ubuntu-files']) { // FIXME check rhel too, IS-307
+            error "platforms artifacts have different versions"
+        }
     }
 }
 
@@ -414,32 +414,36 @@ def iosTesting() {
                 setupRustIOS()
                 setupBrewPackages()
 
-                dir('libindy') {
-                    echo 'iOS Test: build libindy pod'
-                    sh "./build-libindy-ios.sh"
+                echo "iOS Test: Building Libindy Universal iOS Pod"
+                buildIOSPod("")
+
+                dir('wrappers/ios/libindy-pod') {
+                    echo "iOS Test: Installing dependencies (pods)"
+
+                    withEnv([
+                            "GEM_PATH=$HOME/.gem.indy_sdk",
+                            "GEM_HOME=$HOME/.gem.indy_sdk"
+                    ]) {
+                        sh "pod install --repo-update"
+                    }
                 }
 
-                stash includes: 'libindy/out_libindy_pod/libindy.tar.gz', name: "LibindyIOSPod"
+                // FIXME replace this hack (manually rewrite installed pod)
+                sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
+                sh "cp libindy/out_libindy_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
 
-//                dir('wrappers/ios/libindy-pod') {
-//                    echo "iOS Test: Installing dependencies (pods)"
-//
-//                    withEnv([
-//                            "GEM_PATH=$HOME/.gem.indy_sdk",
-//                            "GEM_HOME=$HOME/.gem.indy_sdk"
-//                    ]) {
-//                        sh "pod install --repo-update"
-//                    }
-//                }
-//
-//                // FIXME replace this hack (manually rewrite installed pod)
-//                sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
-//                sh "cp libindy/out_libindy_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
-//
-//                dir('wrappers/ios/libindy-pod') {
-//                    echo "iOS Test: Testing"
-//                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
-//                }
+                dir('wrappers/ios/libindy-pod') {
+                    echo "iOS Test: Testing"
+                    sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
+                }
+
+                stash includes: 'libindy/out_libindy_pod/libindy.tar.gz', name: "LibindyUniversalIOSPod"
+
+                echo "iOS Test: Building Libindy iOS Pod for aarch64-apple-ios and armv7-apple-ios"
+                buildIOSPod("aarch64-apple-ios armv7-apple-ios")
+
+                stash includes: 'libindy/out_libindy_pod/libindy.tar.gz', name: "LibindyMiniIOSPod"
+
             } finally {
                 try {
                     sh "docker stop indy_pool"
@@ -452,6 +456,14 @@ def iosTesting() {
                 step([$class: 'WsCleanup'])
             }
         }
+    }
+}
+
+def buildIOSPod(targets) {
+    dir('libindy') {
+        sh "rm -rf out_libindy_pod"
+        echo 'iOS Test: build libindy pod'
+        sh "./build-libindy-ios.sh $targets"
     }
 }
 
@@ -575,21 +587,24 @@ def windowsPublishArtifact(testEnv, folder, packageName, packageType, packageVer
 def iosPublishing() {
     def libindyVersion
     node('ubuntu') {
-        stage('Publish Libindy Windows Files') {
+        stage('Publish Libindy iOS Files') {
             try {
-                echo 'Publish Windows files: Checkout scm'
+                echo 'Publish iOS files: Checkout scm'
                 checkout scm
 
-                libindyVersion = getSrcVersion("libindy")
+                version = getSrcVersion("libindy")
 
                 echo 'Publish iOS files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
-                echo 'Publish Libindy iOS files'
-                publishIOSAtrifacts(testEnv, "LibindyIOSPod", libindyVersion)
+                echo 'Publish Libindy iOS Pod for aarch64-apple-ios and armv7-apple-ios'
+                publishIOSAtrifacts(testEnv, "LibindyMiniIOSPod", version, "libindy-aarch64-armv7.tar.gz")
+
+                echo 'Publish Libindy iOS Universal Pod'
+                publishIOSAtrifacts(testEnv, "LibindyUniversalIOSPod", version, "libindy.tar.gz")
             }
             finally {
-                echo 'Publish Windows files: Cleanup'
+                echo 'Publish iOS files: Cleanup'
                 step([$class: 'WsCleanup'])
             }
         }
@@ -597,21 +612,21 @@ def iosPublishing() {
     return libindyVersion
 }
 
-publishIOSAtrifacts(testEnv, stashName, libindyVersion){
+def publishIOSAtrifacts(testEnv, stashName, libindyVersion, targetName) {
     version = "$libindyVersion-$env.BUILD_NUMBER"
 
     testEnv.inside {
         unstash name: stashName
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-            target = "https://repo.sovrin.org/ios/libindy/test/libindy-core"
+            target = "/var/repository/repos/ios/libindy/$env.BRANCH_NAME/libindy-core"
 
             sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 mkdir -p $target/$version"
-            sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 cp -r libindy/out_libindy_pod/libindy.tar.gz $target/$version/"
+            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key libindy/out_libindy_pod/libindy.tar.gz repo@192.168.11.115:$target/$version/"
+            sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@192.168.11.115 mv $target/$version/libindy.tar.gz $target/$version/$targetName"
         }
     }
 }
-
 
 def getSuffix(isRelease, target) {
     def suffix

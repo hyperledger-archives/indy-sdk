@@ -11,6 +11,10 @@ TYPE="debug"
 if [[ $# -eq 1 ]]; then
   echo "... for target $1 ..."
   cargo lipo --targets $1
+elif [[ $# -eq 2 ]]; then
+  echo "... for targets $1,$2 ..."
+  TYPE="release"
+  cargo lipo --$TYPE --targets $1,$2
 else
   echo "... for all default targets ..."
   TYPE="release"
@@ -33,14 +37,6 @@ PACKAGE="libindy.a"
 
 cp include/*.h $WORK_DIR
 cp target/universal/$TYPE/$PACKAGE $WORK_DIR
-
-if [[ $# -eq 1 ]]; then
-    mkdir $WORK_DIR/aarch64-apple-ios
-    cp -r target/aarch64-apple-ios/$TYPE/$PACKAGE $WORK_DIR/aarch64-apple-ios/$PACKAGE
-    mkdir $WORK_DIR/armv7-apple-ios
-    cp -r target/armv7-apple-ios/$TYPE/$PACKAGE $WORK_DIR/armv7-apple-ios/$PACKAGE
-fi
-
 cd $WORK_DIR
 tar -cvzf $POD_FILE_NAME *
 cd -
