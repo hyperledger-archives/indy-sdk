@@ -28,6 +28,8 @@
 
 
 ## Notes:
+The shared binary (libindy.so) of only **x86_64** architecture is **not** statically linked with its dependencies.
+
 Make sure the Android app which is going to use libindy has permissions to write to external storage. 
 
 Add following line to AndroidManifest.xml
