@@ -117,7 +117,7 @@ package_library(){
     cp -rf "${WORKDIR}/include" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}
     cp "${WORKDIR}/target/${TRIPLET}/release/libindy.a" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
     cp "${WORKDIR}/target/${TRIPLET}/release/libindy.so" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
-    if [ $1 != "x86_64" ]; then
+    if [ "${TARGET_ARCH}" != "x86_64" ]; then
         mv "${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so" "${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy_shared.so" &&
         statically_link_dependencies_with_libindy
     fi
