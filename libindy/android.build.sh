@@ -94,7 +94,7 @@ setup_dependencies(){
 }
 
 statically_link_dependencies_with_libindy(){
-    echo "${GREEN}Statically linking libraries togather${RESET}"
+    echo "${BLUE}Statically linking libraries togather${RESET}"
     echo "${BLUE}Output will be available at ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so${RESET}"
     $CC -v -shared -o${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so -Wl,--whole-archive \
         ${WORKDIR}/target/${TRIPLET}/release/libindy.a \
@@ -110,7 +110,7 @@ statically_link_dependencies_with_libindy(){
 }
 
 package_library(){
-    echo "${GREEN}Packaging in zip file${RESET}"
+    echo "${GREEN}Linking and packaging in zip file ${RESET}"
 
     mkdir -p ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
 
@@ -135,12 +135,12 @@ package_library(){
 
 build(){
     echo "**************************************************"
-    echo "Building for architecture ${BLUE}${TARGET_ARCH}${RESET}"
-    echo "Toolchain path ${BLUE}${TOOLCHAIN_DIR}${RESET}"
-    echo "ZMQ path ${BLUE}${LIBZMQ_DIR}${RESET}"
-    echo "Sodium path ${BLUE}${SODIUM_DIR}${RESET}"
-    echo "Openssl path ${BLUE}${OPENSSL_DIR}${RESET}"
-    echo "Artifacts will be in ${BLUE}${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}${RESET}"
+    echo "Building for architecture ${BOLD}${YELLOW}${TARGET_ARCH}${RESET}"
+    echo "Toolchain path ${BOLD}${YELLOW}${TOOLCHAIN_DIR}${RESET}"
+    echo "ZMQ path ${BOLD}${YELLOW}${LIBZMQ_DIR}${RESET}"
+    echo "Sodium path ${BOLD}${YELLOW}${SODIUM_DIR}${RESET}"
+    echo "Openssl path ${BOLD}${YELLOW}${OPENSSL_DIR}${RESET}"
+    echo "Artifacts will be in ${YELLOW}${GREEN}${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}${RESET}"
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}

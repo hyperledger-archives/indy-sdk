@@ -166,28 +166,30 @@ create_standalone_toolchain_and_rust_target(){
 
 download_and_setup_toolchain(){
     if [ "$(uname)" == "Darwin" ]; then
-        echo "${GREEN}Downloading NDK for OSX${RESET}"
         export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains/darwin
         mkdir -p ${TOOLCHAIN_PREFIX}
         pushd $TOOLCHAIN_PREFIX
         if [ ! -d "android-ndk-r16b" ] ; then
-            echo "Downloading android-ndk-r16b-darwin-x86_64.zip"
+            echo "${GREEN}Downloading NDK for OSX${RESET}"
+            echo "${BLUE}Downloading... android-ndk-r16b-darwin-x86_64.zip${RESET}"
             wget -q https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip
             unzip -qq android-ndk-r16b-darwin-x86_64.zip
+            echo "${GREEN}Done!${RESET}"
         else
             echo "${BLUE}Skipping download android-ndk-r16b-darwin-x86_64.zip${RESET}"
         fi
         export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
         popd
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-        echo "${GREEN}Downloading NDK for Linux${RESET}"
         export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains/linux
         mkdir -p ${TOOLCHAIN_PREFIX}
         pushd $TOOLCHAIN_PREFIX
         if [ ! -d "android-ndk-r16b" ] ; then
-            echo "Downloading android-ndk-r16b-linux-x86_64.zip"
+            echo "${GREEN}Downloading NDK for Linux${RESET}"
+            echo "${BLUE}Downloading... android-ndk-r16b-linux-x86_64.zip${RESET}"
             wget -q https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip
             unzip -qq android-ndk-r16b-linux-x86_64.zip
+            echo "${GREEN}Done!${RESET}"
         else
             echo "${BLUE}Skipping download android-ndk-r16b-linux-x86_64.zip${RESET}"
         fi
