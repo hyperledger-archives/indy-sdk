@@ -385,7 +385,7 @@ pub mod networker_tests {
     use std;
     use std::thread;
     use super::*;
-    use utils::crypto::box_::CryptoBox;
+    use utils::crypto::ed25519_sign;
 
     const REQ_ID: &'static str = "1";
     const MESSAGE: &'static str = "msg";
@@ -393,7 +393,7 @@ pub mod networker_tests {
 
     pub fn _remote_node(txn: &NodeTransactionV1) -> RemoteNode {
         RemoteNode {
-            public_key: CryptoBox::vk_to_curve25519(&txn.txn.data.dest.as_str().from_base58().unwrap()).unwrap(),
+            public_key: ed25519_sign::vk_to_curve25519(&ed25519_sign::PublicKey::from_slice(&txn.txn.data.dest.as_str().from_base58().unwrap()).unwrap()).unwrap()[..].to_vec(),
             zaddr: format!("tcp://{}:{}", txn.txn.data.data.client_ip.clone().unwrap(), txn.txn.data.data.client_port.clone().unwrap()),
             name: txn.txn.data.data.alias.clone(),
             is_blacklisted: false,
