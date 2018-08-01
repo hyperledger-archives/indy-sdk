@@ -43,7 +43,7 @@ def publishing() {
                 //FIXME fix and restore 'rhel-files'     : { rhelPublishing() }, IS-307
                 'ubuntu-files' : { ubuntuPublishing() },
                 'windows-files': { windowsPublishing() },
-                'android-files': { androidPublishing("0") },
+                'android-files': { androidPublishing() },
                 'ios-files'    : { iosPublishing() },
         ])
 
@@ -768,7 +768,10 @@ def publishingRCtoStable() {
                 publishLibnullpayDebRCtoStable(testEnv)
 
                 echo 'Moving Android RC artifacts to Stable: libindy'
-                androidPublishing("1")
+                publishLibindAndroidFilesRCtoStable(libindyVersion)
+
+                echo 'Moving Android RC artifacts to Stable: libnullpay'
+                publishLibnullpayAndroidFilesRCtoStable()
 
                 echo 'Moving iOS RC artifacts to Stable: libindy'
                 publishLibindyIOSFilesRCtoStable(libindyVersion)
@@ -793,7 +796,24 @@ def publishLibnullpayWindowsFilesRCtoStable() {
     publishWindowsFilesRCtoStable("libnullpay", libnullpayVersion)
 }
 
+def publishLibindAndroidFilesRCtoStable(version) {
+    publishAndroidFilesRCtoStable("libindy", version)
+}
+
+def publishLibnullpayAndroidFilesRCtoStable() {
+    def libnullpayVersion = getSrcVersion("libnullpay")
+    publishAndroidFilesRCtoStable("libnullpay", libnullpayVersion)
+}
+
+def publishAndroidFilesRCtoStable(packageName, version) {
+    copyRcFilesToStable("android", packageName, version)
+}
+
 def publishWindowsFilesRCtoStable(packageName, version) {
+    copyRcFilesToStable("windows", packageName, version)
+}
+
+def copyRcFilesToStable(platform, packageName, version) {
     rcFullVersion = "${version}-${env.BUILD_NUMBER}"
 
     src = "/var/repository/repos/windows/$packageName/rc/$rcFullVersion/"
@@ -860,7 +880,7 @@ def setupRust() {
     sh "rustup default 1.26.0"
 }
 
-def androidPublishing(isStable) {
+def androidPublishing() {
     def libindyVersion
     def libnullpayVersion
 
@@ -875,7 +895,7 @@ def androidPublishing(isStable) {
 
                 echo 'Publish Android binaries: Building docker image'
                 buildEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
-                buildAndroid(buildEnv, libindyVersion, libnullpayVersion, true, isStable)
+                publishAndroid(buildEnv, libindyVersion, libnullpayVersion)
 
             }
             finally {
@@ -886,67 +906,57 @@ def androidPublishing(isStable) {
     }
 }
 
-def buildAndroid(buildEnv, libIndyVersion, libnullpayVersion, shouldPublish, isStable) {
+def buildAndroid(buildEnv, libIndyVersion, libnullpayVersion) {
 
-    //ARM
-    def arch = "arm"
-    androidBuildAndPublish(buildEnv, arch, libIndyVersion, 'libindy', shouldPublish, isStable)
-    androidBuildAndPublish(buildEnv, arch, libnullpayVersion, 'libnullpay', shouldPublish, isStable)
-
-    //x86
-    arch = "x86"
-    androidBuildAndPublish(buildEnv, arch, libIndyVersion, 'libindy', shouldPublish, isStable)
-    androidBuildAndPublish(buildEnv, arch, libnullpayVersion, 'libnullpay', shouldPublish, isStable)
-
-    //arm64
-    arch = "arm64"
-    androidBuildAndPublish(buildEnv, arch, libIndyVersion, 'libindy', shouldPublish, isStable)
-    androidBuildAndPublish(buildEnv, arch, libnullpayVersion, 'libnullpay', shouldPublish, isStable)
+    for (arch in ["arm", "x86", "arm64"]) {
+        androidBuildArtifact(buildEnv, arch, libIndyVersion, 'libindy')
+        androidBuildArtifact(buildEnv, arch, libnullpayVersion, 'libnullpay')
+    }
 }
 
-def androidBuildAndPublish(buildEnv, arch, libVersion, artifact, shouldPublish, isStable) {
+def publishAndroid(buildEnv, libIndyVersion, libnullpayVersion) {
+
+    for (arch in ["arm", "x86", "arm64"]) {
+        androidPublishArtifact(buildEnv, arch, libIndyVersion, 'libindy')
+        androidPublishArtifact(buildEnv, arch, libnullpayVersion, 'libnullpay')
+    }
+}
+
+def androidBuildArtifact(buildEnv, arch, libVersion, artifact) {
 
     def ANDROID_SCRIPT_PATH = 'android.build.sh'
     echo "Building Libindy android files for $arch"
     def artifactName = artifact.toString().toUpperCase()
-    if (isStable.toString() == "0") {
 
-        if (artifactName == "LIBINDY") {
-            dir(artifact) {
-                buildEnv.inside {
-                    sh "${artifactName}_VERSION=${libVersion} ./${ANDROID_SCRIPT_PATH} -d $arch"
-                    stash includes: "libindy_android_${arch}_${libVersion}.zip", name: "libindy_${arch}_zip"
-                }
-            }
-        } else if (artifactName == "LIBNULLPAY") {
+    if (artifactName == "LIBINDY") {
+        dir(artifact) {
             buildEnv.inside {
-                unstash name: "libindy_${arch}_zip"
-                sh "cp libindy_android_${arch}_${libVersion}.zip libnullpay && unzip libnullpay/libindy_android_${arch}_${libVersion}.zip "
-                sh "${artifactName}_VERSION=${libVersion} INDY_DIR=../libindy_${arch}/lib ./libnullpay/${ANDROID_SCRIPT_PATH} -d $arch"
+                sh "${artifactName}_VERSION=${libVersion} ./${ANDROID_SCRIPT_PATH} -d $arch"
+                stash includes: "libindy_android_${arch}_${libVersion}.zip", name: "libindy_${arch}_zip"
             }
         }
-    }
-
-
-    if (shouldPublish) {
-        if (artifactName == "LIBINDY") {
-            echo 'Publish Libindy android files for arm'
-            androidPublishArtifacts(buildEnv, libVersion, arch, "libindy", isStable)
-        } else {
-            echo 'Publish libnullpay android files for arm'
-            androidPublishArtifacts(buildEnv, libVersion, arch, "libnullpay", isStable)
+    } else if (artifactName == "LIBNULLPAY") {
+        buildEnv.inside {
+            unstash name: "libindy_${arch}_zip"
+            sh "cp libindy_android_${arch}_${libVersion}.zip libnullpay && unzip libnullpay/libindy_android_${arch}_${libVersion}.zip "
+            stash includes: "libindy_android_${arch}_${libVersion}.zip", name: "libindy_${arch}_zip"
+            sh "${artifactName}_VERSION=${libVersion} INDY_DIR=../libindy_${arch}/lib ./libnullpay/${ANDROID_SCRIPT_PATH} -d $arch"
+            def libnullpay_zip_name = "libnullpay_android_${arch}_${libVersion}.zip"
+            sh "cp libnullpay/${libnullpay_zip_name} ./"
+            stash includes: "${libnullpay_zip_name}", name: "libnullpay_${arch}_zip"
         }
-
-
     }
 }
 
-def androidPublishArtifacts(buildEnv, packageVersion, arch, artifact, isStable) {
+def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
     buildEnv.inside {
         sh 'chmod -R 777 ci'
 
+        echo "Publish ${artifact} android files for ${arch}"
+        unstash name: "${artifact}_${arch}_zip"
+
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'repo_key')]) {
-            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact $isStable"
+            sh "ci/android-zip-and-upload.sh $arch $packageVersion '${repo_key}' $env.BRANCH_NAME $env.BUILD_NUMBER $artifact"
         }
     }
 }
@@ -969,7 +979,7 @@ def androidTesting() {
 
                 //TODO: IS-835 Enable emulator test when the unit test start passing on android device
                 //androidEmulatorTest(buildEnv)
-                buildAndroid(buildEnv, libindyVersion, libnullpayVersion, false, "0")
+                buildAndroid(buildEnv, libindyVersion, libnullpayVersion)
             }
             finally {
                 echo 'Building Android binaries: Cleanup'

@@ -509,7 +509,7 @@ mod tests {
         extern crate sodiumoxide;
 
         use services::pool::rust_base58::{FromBase58, ToBase58};
-        use utils::crypto::box_::CryptoBox;
+        use utils::crypto::ed25519_sign;
         use std::thread;
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
@@ -586,15 +586,16 @@ mod tests {
 
         pub fn start(gt: &mut NodeTransactionV1) -> thread::JoinHandle<Vec<String>> {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = CryptoBox::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
-            let skc = CryptoBox::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
+            let (vk, sk) = (ed25519_sign::PublicKey::from_slice(&vk[..]).unwrap(), ed25519_sign::SecretKey::from_slice(&sk[..]).unwrap());
+            let pkc = ed25519_sign::vk_to_curve25519(&vk).expect("Invalid pkc");
+            let skc = ed25519_sign::sk_to_curve25519(&sk).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
 
-            gt.txn.data.dest = (&vk.0 as &[u8]).to_base58();
+            gt.txn.data.dest = (&vk[..]).to_base58();
 
-            s.set_curve_publickey(&zmq::z85_encode(pkc.as_slice()).unwrap()).expect("set public key");
-            s.set_curve_secretkey(&zmq::z85_encode(skc.as_slice()).unwrap()).expect("set secret key");
+            s.set_curve_publickey(&zmq::z85_encode(&pkc[..]).unwrap()).expect("set public key");
+            s.set_curve_secretkey(&zmq::z85_encode(&skc[..]).unwrap()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");
 
             s.bind("tcp://127.0.0.1:*").expect("bind");
