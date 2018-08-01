@@ -181,6 +181,10 @@ pub struct SendMessageResponse {
 fn parse_send_message_response(response: Vec<u8>) -> Result<String, u32> {
     let data = unbundle_from_agency(response)?;
 
+    if data.len() <= 1 {
+        return Err(error::INVALID_HTTP_RESPONSE.code_num);
+    }
+
     let mut de = Deserializer::new(&data[1][..]);
     let response: SendMessageResponse = match Deserialize::deserialize(&mut de) {
         Ok(x) => x,
@@ -257,6 +261,14 @@ mod tests {
         let result = parse_send_message_response(SEND_MESSAGE_RESPONSE.to_vec()).unwrap();
 
         assert_eq!("{\"@type\":{\"name\":\"MSG_SENT\",\"ver\":\"1.0\"},\"uids\":[\"ntc2ytb\"]}", result);
+    }
+
+    #[test]
+    fn test_parse_send_message_bad_response() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        let result = parse_send_message_response(::utils::constants::UPDATE_PROFILE_RESPONSE.to_vec());
+        assert!(result.is_err());
     }
 
     #[test]

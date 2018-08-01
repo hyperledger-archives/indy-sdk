@@ -213,20 +213,26 @@ pub fn get_ledger_fees() -> Result<String, u32> {
     res
 }
 
-pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(PaymentTxn, String), u32> {
+pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(Option<PaymentTxn>, String), u32> {
     debug!("pay_for_txn(req: {}, txn_type: {})", req, txn_type);
-    if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
+    if settings::test_indy_mode_enabled() { return Ok((Some(PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap()), SUBMIT_SCHEMA_RESPONSE.to_string())); }
 
     let txn_price = get_txn_price(txn_type)?;
 
-    let (refund, inputs) = inputs(txn_price).map_err(|e| e.to_error_code())?;
+    if txn_price == 0 {
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let txn_response = libindy_sign_and_submit_request(&did, req)?;
+        Ok((None, txn_response))
+    } else {
+        let (refund, inputs) = inputs(txn_price).map_err(|e| e.to_error_code())?;
 
-    let output = outputs(refund, None, None).map_err(|e| e.to_error_code())?;
+        let output = outputs(refund, None, None).map_err(|e| e.to_error_code())?;
 
-    let (fee_response, txn_response) = _submit_fees_request(req, &inputs, &output)?;
+        let (fee_response, txn_response) = _submit_fees_request(req, &inputs, &output)?;
 
-    let payment = PaymentTxn::from_parts(&inputs, &output, txn_price)?;
-    Ok((payment, txn_response))
+        let payment = PaymentTxn::from_parts(&inputs, &output, txn_price)?;
+        Ok((Some(payment), txn_response))
+    }
 }
 
 fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(String, String), u32> {
@@ -335,35 +341,38 @@ pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Opti
 pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>, fees: Option<&str>, use_seed: bool) -> Result<(), u32> {
     let did_1 = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-    let number_of_addresses = number_of_addresses.unwrap_or(3);
-    let tokens_per_address = tokens_per_address.unwrap_or(15);
-    let mut addresses = Vec::new();
-
-    for n in 0..number_of_addresses {
-        //let seed = format!("000000000000000000000000Issuer{:02}", n);
-        addresses.push(create_address(None).unwrap())
-    }
-
-    let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(i, payment_address)|
-        json!( { "recipient": payment_address, "amount": tokens_per_address } )
-    ).collect();
-    let outputs = serde_json::to_string(&mint).unwrap();
-
-    let (req, _) = Payment::build_mint_req(get_wallet_handle() as i32, &did_1, &outputs, None).unwrap();
-
     let (did_2, _) = add_new_trustee_did()?;
     let (did_3, _) = add_new_trustee_did()?;
     let (did_4, _) = add_new_trustee_did()?;
- 
-    let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &req).unwrap();
-    let sign2 = ::utils::libindy::ledger::multisign_request(&did_2, &sign1).unwrap();
-    let sign3 = ::utils::libindy::ledger::multisign_request(&did_3, &sign2).unwrap();
-    let sign4 = ::utils::libindy::ledger::multisign_request(&did_4, &sign3).unwrap();
 
-    match ::utils::libindy::ledger::libindy_submit_request(&sign4) {
-        Ok(x) => (),
-        Err(x) => println!("failure minting tokens: {}", x),
-    };
+    let number_of_addresses = number_of_addresses.unwrap_or(3);
+
+    if number_of_addresses > 0 {
+        let tokens_per_address = tokens_per_address.unwrap_or(15);
+        let mut addresses = Vec::new();
+
+        for n in 0..number_of_addresses {
+            //let seed = format!("000000000000000000000000Issuer{:02}", n);
+            addresses.push(create_address(None).unwrap())
+        }
+
+        let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(i, payment_address)|
+            json!( { "recipient": payment_address, "amount": tokens_per_address } )
+        ).collect();
+        let outputs = serde_json::to_string(&mint).unwrap();
+
+        let (req, _) = Payment::build_mint_req(get_wallet_handle() as i32, &did_1, &outputs, None).unwrap();
+
+        let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &req).unwrap();
+        let sign2 = ::utils::libindy::ledger::multisign_request(&did_2, &sign1).unwrap();
+        let sign3 = ::utils::libindy::ledger::multisign_request(&did_3, &sign2).unwrap();
+        let sign4 = ::utils::libindy::ledger::multisign_request(&did_4, &sign3).unwrap();
+
+        match ::utils::libindy::ledger::libindy_submit_request(&sign4) {
+            Ok(x) => (),
+            Err(x) => println!("failure minting tokens: {}", x),
+        };
+    }
  
     let txn = Payment::build_set_txn_fees_req(get_wallet_handle() as i32, &did_1, PAYMENT_METHOD_NAME, fees.unwrap_or(DEFAULT_FEES))
         .map_err(map_rust_indy_sdk_error_code)?;
@@ -566,6 +575,7 @@ pub mod tests {
         let end_wallet = get_wallet_token_info().unwrap();
 
         ::utils::devsetup::tests::cleanup_dev_env(name);
+        let payment = payment.unwrap();
         assert_eq!(payment.amount, 2);
         assert_eq!(payment.outputs.len(), 1);
         assert_eq!(start_wallet.balance - 2, end_wallet.balance);
@@ -576,12 +586,12 @@ pub mod tests {
     fn test_pay_for_txn_fails_with_insufficient_tokens_in_wallet() {
         let name = "test_pay_for_txn_real";
         ::utils::devsetup::tests::setup_ledger_env(name);
+        mint_tokens_and_set_fees(Some(0), Some(0), Some(r#"{"101":100000000}"#), false).unwrap();
 
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
-        let start_wallet = get_wallet_token_info().unwrap();
 
-        let rc= pay_for_txn(&create_schema_req, "103");
+        let rc= pay_for_txn(&create_schema_req, "101");
 
         ::utils::devsetup::tests::cleanup_dev_env(name);
         assert!(rc.is_err());
