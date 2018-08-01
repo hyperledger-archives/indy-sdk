@@ -100,7 +100,7 @@ pub trait Schema: ToString {
 
         Self::check_submit_schema_response(&response)?;
 
-        Ok((id, Some(payment)))
+        Ok((id, payment))
     }
 
     fn check_submit_schema_response(txn: &str) -> Result<(), SchemaError> {
@@ -433,6 +433,26 @@ pub mod tests {
         let handle = create_new_schema("id", did, schema_name, schema_version, data).unwrap();
         let payment = serde_json::to_string(&get_payment_txn(handle).unwrap()).unwrap();
         assert!(payment.len() > 50);
+
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
+        assert!(handle > 0);
+        let schema_id = get_schema_id(handle).unwrap();
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_create_schema_no_fees_with_pool(){
+        let wallet_name = "test_create_schema";
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        ::utils::libindy::payments::mint_tokens_and_set_fees(Some(0),Some(0),Some(r#"{"101":0, "102":0}"#), false).unwrap();
+
+        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
+        let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
+        let schema_version: String = format!("{}.{}",rand::thread_rng().gen::<u32>().to_string(),
+                                             rand::thread_rng().gen::<u32>().to_string());
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+
+        let handle = create_new_schema("id", did, schema_name, schema_version, data).unwrap();
 
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert!(handle > 0);
