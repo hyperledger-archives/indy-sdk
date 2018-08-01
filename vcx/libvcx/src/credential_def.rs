@@ -149,7 +149,7 @@ fn _create_and_store_credential_def(issuer_did: &str,
     let (payment, response) = pay_for_txn(&cred_def_req, CRED_DEF_TXN_TYPE)
         .map_err(|err| CredDefError::CommonError(err))?;
 
-    Ok((id, Some(payment)))
+    Ok((id, payment))
 }
 
 pub fn retrieve_credential_def(cred_def_id: &str) -> Result<(String, String), CredDefError> {
@@ -283,6 +283,28 @@ pub mod tests {
 
         let payment = serde_json::to_string(&get_payment_txn(rc).unwrap()).unwrap();
         assert!(payment.len() > 0);
+
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_create_credential_def_no_fees_real() {
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        let wallet_name = "test_create_credential_def_real";
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        ::utils::libindy::payments::mint_tokens_and_set_fees(Some(0),Some(0),Some(r#"{"101":0, "102":0}"#), false).unwrap();
+
+        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
+        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+
+        let rc = create_new_credentialdef("1".to_string(),
+                                          wallet_name.to_string(),
+                                          did,
+                                          schema_id,
+                                          "tag_1".to_string(),
+                                          r#"{"support_revocation":false}"#.to_string()).unwrap();
 
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
