@@ -592,7 +592,8 @@ def iosPublishing() {
                 echo 'Publish iOS files: Checkout scm'
                 checkout scm
 
-                version = getSrcVersion("libindy")
+                libindyVersion = getSrcVersion("libindy")
+                version = "$libindyVersion-$env.BUILD_NUMBER"
 
                 echo 'Publish iOS files: Build docker image'
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
@@ -601,7 +602,7 @@ def iosPublishing() {
                 publishIOSAtrifacts(testEnv, "LibindyMiniIOSPod", version, "libindy-aarch64-armv7.tar.gz")
 
                 echo 'Publish Libindy iOS Universal Pod'
-                publishIOSAtrifacts(testEnv, "LibindyUniversalIOSPod", version, "libindy.tar.gz")
+                publishIOSAtrifacts(testEnv, "LibindyUniversalIOSPod", version, null)
             }
             finally {
                 echo 'Publish iOS files: Cleanup'
@@ -613,8 +614,6 @@ def iosPublishing() {
 }
 
 def publishIOSAtrifacts(testEnv, stashName, libindyVersion, targetName) {
-    version = "$libindyVersion-$env.BUILD_NUMBER"
-
     testEnv.inside {
         unstash name: stashName
 
@@ -623,7 +622,10 @@ def publishIOSAtrifacts(testEnv, stashName, libindyVersion, targetName) {
 
             sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 mkdir -p $target/$version"
             sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key libindy/out_libindy_pod/libindy.tar.gz repo@192.168.11.115:$target/$version/"
-            sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@192.168.11.115 mv $target/$version/libindy.tar.gz $target/$version/$targetName"
+
+            if (targetName != null) {
+                sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@192.168.11.115 mv $target/$version/libindy.tar.gz $target/$version/$targetName"
+            }
         }
     }
 }
@@ -804,8 +806,8 @@ def publishWindowsFilesRCtoStable(packageName, version) {
 def publishLibindyIOSFilesRCtoStable(version) {
     rcFullVersion = "${version}-${env.BUILD_NUMBER}"
 
-    src = "https://repo.sovrin.org/ios/libindy/rc/libindy-core/$rcFullVersion/"
-    target = "https://repo.sovrin.org/ios/libindy/stable/libindy-core/$version/"
+    src = "/var/repository/repos/ios/libindy/rc/libindy-core/$rcFullVersion/"
+    target = "/var/repository/repos/ios/libindy/stable/libindy-core/$version/"
 
     copyFilesFromRcToStable(src, target)
 }
