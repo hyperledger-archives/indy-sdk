@@ -147,8 +147,42 @@ extern "C" {
                                                                          indy_error_t  err,
                                                                          const char*   credentials_json)
                                                     );
-    
-    
+
+    extern indy_error_t indy_prover_get_credential(indy_handle_t command_handle,
+                                                   indy_handle_t wallet_handle,
+                                                   const char *  cred_id,
+
+                                                   void           (*cb)(indy_handle_t xcommand_handle,
+                                                                        indy_error_t  err,
+                                                                        const char*   credential_json)
+                                                   );
+
+    extern indy_error_t indy_prover_search_credentials(indy_handle_t command_handle,
+                                                       indy_handle_t wallet_handle,
+                                                       const char *  query_json,
+
+                                                       void           (*cb)(indy_handle_t xcommand_handle,
+                                                                            indy_error_t  err,
+                                                                            indy_handle_t search_handle,
+                                                                            indy_u32_t    total_count)
+                                                       );
+
+    extern indy_error_t indy_prover_fetch_credentials(indy_handle_t command_handle,
+                                                      indy_handle_t search_handle,
+                                                      indy_u32_t    count,
+
+                                                      void           (*cb)(indy_handle_t xcommand_handle,
+                                                                           indy_error_t  err,
+                                                                           const char*   credentials_json)
+                                                      );
+
+    extern indy_error_t indy_prover_close_credentials_search(indy_handle_t command_handle,
+                                                             indy_handle_t search_handle,
+
+                                                             void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                  indy_error_t  err)
+                                                             );
+
     extern indy_error_t indy_prover_get_credentials_for_proof_req(indy_handle_t command_handle,
                                                                   indy_handle_t wallet_handle,
                                                                   const char *  proof_request_json,
@@ -158,7 +192,34 @@ extern "C" {
                                                                                        const char*   credentials_json)
                                                                   );
     
-    
+
+    extern indy_error_t indy_prover_search_credentials_for_proof_req(indy_handle_t command_handle,
+                                                                     indy_handle_t wallet_handle,
+                                                                     const char *  proof_request_json,
+                                                                     const char *  extra_query_json,
+
+                                                                     void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                          indy_error_t  err,
+                                                                                          indy_handle_t search_handle)
+                                                                     );
+
+    extern indy_error_t indy_prover_fetch_credentials_for_proof_req(indy_handle_t command_handle,
+                                                                    indy_handle_t search_handle,
+                                                                    const char*   item_referent,
+                                                                    indy_u32_t    count,
+
+                                                                    void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                         indy_error_t  err,
+                                                                                         const char*   credentials_json)
+                                                                    );
+
+    extern indy_error_t indy_prover_close_credentials_search_for_proof_req(indy_handle_t command_handle,
+                                                                           indy_handle_t search_handle,
+
+                                                                           void           (*cb)(indy_handle_t xcommand_handle,
+                                                                                                indy_error_t  err)
+                                                                           );
+
     extern indy_error_t indy_prover_create_proof(indy_handle_t command_handle,
                                                  indy_handle_t wallet_handle,
                                                  const char *  proof_req_json,

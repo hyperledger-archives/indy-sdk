@@ -1,13 +1,14 @@
 async def init():
     me = input('Who are you? ').strip()
-    wallet_name = '%s-wallet' % me
+    wallet_config = '{"id": "%s-wallet"}' % me
+    wallet_credentials = '{"key": "%s-wallet-key"}' % me
 
     # 1. Create Wallet and Get Wallet Handle
     try:
-        await wallet.create_wallet('pool1', wallet_name, None, None, None)
+        await wallet.create_wallet(wallet_config, wallet_credentials)
     except:
         pass
-    wallet_handle = await wallet.open_wallet(wallet_name, None, None)
+    wallet_handle = await wallet.open_wallet(wallet_config, wallet_credentials)
     print('wallet = %s' % wallet_handle)
 
     (my_did, my_vk) = await did.create_and_store_my_did(wallet_handle, "{}")

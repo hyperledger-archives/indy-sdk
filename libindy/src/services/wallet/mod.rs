@@ -98,7 +98,7 @@ impl WalletService {
     pub fn create_wallet(&self,
                          config: &str,
                          credentials: &str) -> Result<(), WalletError> {
-        trace!("create_wallet >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: Log credentials in debug
+        trace!("create_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let config: Config = serde_json::from_str(config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
@@ -151,7 +151,7 @@ impl WalletService {
     }
 
     pub fn delete_wallet(&self, config: &str, credentials: &str) -> Result<(), WalletError> {
-        trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: Log credentials in debug
+        trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config,  secret!(credentials));
 
         let config: Config = serde_json::from_str(config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
@@ -217,7 +217,7 @@ impl WalletService {
     }
 
     pub fn open_wallet(&self, config: &str, credentials: &str) -> Result<i32, WalletError> {
-        trace!("open_wallet >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
+        trace!("open_wallet >>> config: {:?}, credentials: {:?}", config,  secret!(credentials));
 
         let config: Config = serde_json::from_str(config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
@@ -475,6 +475,8 @@ impl WalletService {
     }
 
     pub fn export_wallet(&self, wallet_handle: i32, export_config: &str, version: u32) -> Result<(), WalletError> {
+        trace!("export_wallet >>> wallet_handle: {:?}, export_config: {:?}, version: {:?}", wallet_handle,  secret!(export_config),  version);
+
         let wallets = self.wallets.borrow();
         let wallet = wallets
             .get(&wallet_handle)
@@ -497,13 +499,19 @@ impl WalletService {
                 .create_new(true)
                 .open(export_config.path)?;
 
-        export(wallet, &mut export_file, &export_config.key, version)
+        let res = export(wallet, &mut export_file, &export_config.key, version);
+
+        trace!("export_wallet <<<");
+
+        res
     }
 
     pub fn import_wallet(&self,
                          config: &str,
                          credentials: &str,
                          export_config: &str) -> Result<(), WalletError> {
+        trace!("import_wallet >>> config: {:?}, credentials: {:?}, export_config: {:?}", config,  secret!(export_config),  secret!(export_config));
+
         let export_config: ExportConfig = serde_json::from_str(export_config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize export config: {:?}", err)))?;
 
@@ -534,6 +542,8 @@ impl WalletService {
             self.delete_wallet(config, credentials)?;
         }
 
+        trace!("import_wallet <<<");
+
         res
     }
 
@@ -546,30 +556,29 @@ impl WalletService {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WalletRecord {
-    #[serde(rename = "id")]
-    name: String,
     #[serde(rename = "type")]
     type_: Option<String>,
+    id: String,
     value: Option<String>,
     tags: Option<HashMap<String, String>>
 }
 
 impl Ord for WalletRecord {
     fn cmp(&self, other: &Self) -> ::std::cmp::Ordering {
-        (&self.type_, &self.name).cmp(&(&other.type_, &other.name))
+        (&self.type_, &self.id).cmp(&(&other.type_, &other.id))
     }
 }
 
 impl PartialOrd for WalletRecord {
     fn partial_cmp(&self, other: &Self) -> Option<::std::cmp::Ordering> {
-        (&self.type_, &self.name).partial_cmp(&(&other.type_, &other.name))
+        (&self.type_, &self.id).partial_cmp(&(&other.type_, &other.id))
     }
 }
 
 impl WalletRecord {
     pub fn new(name: String, type_: Option<String>, value: Option<String>, tags: Option<HashMap<String, String>>) -> WalletRecord {
         WalletRecord {
-            name,
+            id: name,
             type_,
             value,
             tags,
@@ -577,17 +586,11 @@ impl WalletRecord {
     }
 
     pub fn get_id(&self) -> &str {
-        self.name.as_str()
+        self.id.as_str()
     }
 
     pub fn get_type(&self) -> Option<&str> {
-        self.type_.as_ref().map(|t|
-            if t.starts_with(WalletService::PREFIX) {
-                t[WalletService::PREFIX.len()..].as_ref()
-            } else {
-                t.as_str()
-            }
-        )
+        self.type_.as_ref().map(String::as_str)
     }
 
     pub fn get_value(&self) -> Option<&str> {

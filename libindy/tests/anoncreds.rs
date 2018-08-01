@@ -1,20 +1,30 @@
-extern crate indy;
-extern crate uuid;
-extern crate time;
+#[macro_use]
+extern crate lazy_static;
 
-// Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use indy::api as api;
+#[macro_use]
+extern crate named_type_derive;
+
+#[macro_use]
+extern crate derivative;
 
 #[macro_use]
 extern crate serde_derive;
+
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate lazy_static;
+
+extern crate byteorder;
+extern crate indy;
 extern crate indy_crypto;
+extern crate uuid;
 extern crate named_type;
-#[macro_use]
-extern crate named_type_derive;
+extern crate rmp_serde;
+extern crate rust_base58;
+extern crate time;
+extern crate serde;
+
+// Workaround to share some utils code based on indy sdk types between tests and indy sdk
+use indy::api as api;
 
 #[macro_use]
 mod utils;
@@ -33,7 +43,7 @@ use utils::domain::anoncreds::schema::Schema;
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
 use utils::domain::anoncreds::credential::CredentialInfo;
-use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
+use utils::domain::anoncreds::credential_for_proof_request::{CredentialsForProofRequest, RequestedCredential};
 use utils::domain::anoncreds::proof::Proof;
 use utils::domain::anoncreds::revocation_state::RevocationState;
 use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
@@ -273,6 +283,7 @@ mod high_cases {
             let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
             let credentials = AnoncredsUtils::prover_get_credentials(wallet_handle, r#"{}"#).unwrap();
+            println!("!!!!\n{}", credentials);
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
             assert_eq!(credentials.len(), 3);
@@ -290,7 +301,8 @@ mod high_cases {
 
             let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let credentials = AnoncredsUtils::prover_get_credentials(wallet_handle, &format!(r#"{{"issuer_did":"{}"}}"#, ISSUER_DID)).unwrap();
+            let filter_json = json!({"issuer_did": ISSUER_DID}).to_string();
+            let credentials = AnoncredsUtils::prover_get_credentials(wallet_handle, &filter_json).unwrap();
             let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
 
             assert_eq!(credentials.len(), 2);
@@ -413,6 +425,200 @@ mod high_cases {
         }
     }
 
+    mod prover_get_credential {
+        use super::*;
+
+        #[test]
+        fn prover_get_credential_works() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let credential = AnoncredsUtils::prover_get_credential(wallet_handle, CREDENTIAL1_ID).unwrap();
+            let credential: CredentialInfo = serde_json::from_str(&credential).unwrap();
+            assert_eq!(credential, AnoncredsUtils::issuer_1_gvt_credential());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn prover_get_credential_works_for_not_found() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let res = AnoncredsUtils::prover_get_credential(wallet_handle, "other_cred_id");
+            assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+    }
+
+    mod prover_credentials_search {
+        use super::*;
+
+        #[test]
+        fn credentials_search_works() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, "{}").unwrap();
+            assert_eq!(count, 3);
+
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
+            let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
+
+            assert_eq!(credentials.len(), 3);
+            assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
+            assert!(credentials.contains(&AnoncredsUtils::issuer_1_xyz_credential()));
+            assert!(credentials.contains(&AnoncredsUtils::issuer_2_gvt_credential()));
+
+            AnoncredsUtils::prover_close_credentials_search(search_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn credentials_search_works_for_filter_by_issuer_did() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let filter_json = json!({"issuer_did": ISSUER_DID}).to_string();
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
+            assert_eq!(count, 2);
+
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
+            let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
+
+            assert_eq!(credentials.len(), 2);
+            assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
+            assert!(credentials.contains(&AnoncredsUtils::issuer_1_xyz_credential()));
+
+            AnoncredsUtils::prover_close_credentials_search(search_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn credentials_search_works_for_filter_by_schema_id() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let filter_json = json!({"schema_id": AnoncredsUtils::gvt_schema_id()}).to_string();
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
+            assert_eq!(count, 2);
+
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
+            let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
+
+            assert_eq!(credentials.len(), 2);
+            assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
+            assert!(credentials.contains(&AnoncredsUtils::issuer_2_gvt_credential()));
+
+            AnoncredsUtils::prover_close_credentials_search(search_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn credentials_search_works_for_filter_by_schema_id_and_cred_def_id() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let filter_json = json!({
+                "schema_id": AnoncredsUtils::gvt_schema_id(),
+                "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id()
+            }).to_string();
+
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
+            assert_eq!(count, 1);
+
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
+            let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
+
+            assert_eq!(credentials.len(), 1);
+            assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
+
+            AnoncredsUtils::prover_close_credentials_search(search_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn credentials_search_works_for_filter_by_multiple_schema_ids() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let filter_json = json!({
+                "schema_id": json!({
+                    "$in": vec![AnoncredsUtils::gvt_schema_id(), AnoncredsUtils::xyz_schema_id()]
+                })
+            }).to_string();
+
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
+            assert_eq!(count, 3);
+
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
+            let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
+
+            assert_eq!(credentials.len(), 3);
+            assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
+            assert!(credentials.contains(&AnoncredsUtils::issuer_1_xyz_credential()));
+            assert!(credentials.contains(&AnoncredsUtils::issuer_2_gvt_credential()));
+
+            AnoncredsUtils::prover_close_credentials_search(search_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn credentials_search_works_for_filter_by_schema_id_or_cred_def_id() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let filter_json = json!({
+                "$or": vec![
+                    json!({"schema_id": AnoncredsUtils::gvt_schema_id()}),
+                    json!({"cred_def_id": AnoncredsUtils::issuer_1_xyz_cred_def_id()}),
+                ]
+            }).to_string();
+
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
+            assert_eq!(count, 3);
+
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, count).unwrap();
+            let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
+
+            assert_eq!(credentials.len(), 3);
+            assert!(credentials.contains(&AnoncredsUtils::issuer_1_gvt_credential()));
+            assert!(credentials.contains(&AnoncredsUtils::issuer_1_xyz_credential()));
+            assert!(credentials.contains(&AnoncredsUtils::issuer_2_gvt_credential()));
+
+            AnoncredsUtils::prover_close_credentials_search(search_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn credentials_search_works_for_no_results() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let filter_json = json!({"other_field": "other_value"}).to_string();
+
+            let (search_handle, count) = AnoncredsUtils::prover_search_credentials(wallet_handle, &filter_json).unwrap();
+            assert_eq!(count, 0);
+
+            let credentials = AnoncredsUtils::prover_fetch_credentials(search_handle, 100).unwrap();
+            let credentials: Vec<CredentialInfo> = serde_json::from_str(&credentials).unwrap();
+            assert_eq!(credentials.len(), 0);
+
+            AnoncredsUtils::prover_close_credentials_search(search_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+    }
+
     //NOTE: There are following credential stored in wallet:
     // {"issuer_did": ISSUER_DID, "schema_id": gvt_schema_id}
     // {"issuer_did": ISSUER_DID, "schema_id": xyz_schema_id}
@@ -462,6 +668,7 @@ mod high_cases {
             }).to_string();
 
             let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+            println!("credentials_json:\n{}", credentials_json);
 
             let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
             assert_eq!(credentials.attrs.len(), 1);
@@ -530,335 +737,955 @@ mod high_cases {
             WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_issuer() {
-            AnoncredsUtils::init_common_wallet();
+        mod attribute_restrictions_libindy_1_5_format {
+            use super::*;
 
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_issuer() {
+                AnoncredsUtils::init_common_wallet();
 
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "issuer_did": ISSUER_DID })]
-                   })
-               }),
-               "requested_predicates": json!({
-               }),
-            }).to_string();
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "issuer_did": ISSUER_DID })]
+                       })
+                   }),
+                   "requested_predicates": json!({
+                   }),
+                }).to_string();
 
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 1);
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_issuers() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "issuer_did": ISSUER_DID }), json!({ "issuer_did": ISSUER_DID_2 })]
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_schema() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "schema_id": AnoncredsUtils::gvt_schema_id() })]
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_name() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "schema_name": GVT_SCHEMA_NAME })]
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_version() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "schema_version": SCHEMA_VERSION })]
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_issuer_did() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "schema_issuer_did": ISSUER_DID })]
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_schema_id_or_specific_cred_def_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "schema_id": AnoncredsUtils::gvt_schema_id() }), json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })]
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_schemas() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "schema_id":  AnoncredsUtils::gvt_schema_id() }), json!({ "schema_id": AnoncredsUtils::xyz_schema_id() })]
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_cred_def_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })]
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_cred_def_ids() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() }), json!({ "cred_def_id": AnoncredsUtils::issuer_2_gvt_cred_def_id() })]
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_cred_def_id_or_issuer_did() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() }), json!({ "issuer_did": ISSUER_DID_2 })]
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_issuer() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "issuer_did": DID_TRUSTEE })]
+                       })
+                   }),
+                   "requested_predicates": json!({
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_schema_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
+                       })
+                   }),
+                   "requested_predicates": json!({
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_cred_def_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": [json!({ "cred_def_id": CredentialDefinition::cred_def_id(DID_TRUSTEE, &AnoncredsUtils::gvt_schema_id(), "CL", TAG_1) })]
+                       })
+                   }),
+                   "requested_predicates": json!({
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_null_restrictions() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = r#"{
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes":{
+                      "attr1_referent":{
+                         "name":"name",
+                         "restrictions":[
+                            {
+                               "schema_id":null,
+                               "schema_issuer_did":null,
+                               "schema_name":null,
+                               "schema_version":null,
+                               "issuer_did":"NcYxiDXkpYi6ov5FcYDi1e",
+                               "cred_def_id":null
+                            }
+                         ]
+                      }
+                   },
+                   "requested_predicates":{
+                   }
+                }"#;
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
         }
 
-        #[test]
-        fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_issuers() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "issuer_did": ISSUER_DID }), json!({ "issuer_did": ISSUER_DID_2 })]
-                   })
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 2);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_schema() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "schema_id": AnoncredsUtils::gvt_schema_id() })]
-                   })
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 2);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_name() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "schema_name": GVT_SCHEMA_NAME })]
-                   })
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 2);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_version() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "schema_version": SCHEMA_VERSION })]
-                   })
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 2);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_issuer_did() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "schema_issuer_did": ISSUER_DID })]
-                   })
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 2);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_schema_id_or_specific_cred_def_id() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "schema_id": AnoncredsUtils::gvt_schema_id() }), json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })]
-                   })
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 2);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_schemas() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "schema_id":  AnoncredsUtils::gvt_schema_id() }), json!({ "schema_id": AnoncredsUtils::xyz_schema_id() })]
-                   })
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 2);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_cred_def_id() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })]
-                   })
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 1);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_cred_def_ids() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() }), json!({ "cred_def_id": AnoncredsUtils::issuer_2_gvt_cred_def_id() })]
-                   })
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 2);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_cred_def_id_or_issuer_did() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() }), json!({ "issuer_did": ISSUER_DID_2 })]
-                   })
-               }),
-               "requested_predicates": json!({}),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 2);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+        mod attribute_restrictions_wql_format {
+            use super::*;
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_issuer() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({ "issuer_did": ISSUER_DID })
+                       })
+                   }),
+                   "requested_predicates": json!({
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_issuers() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({
+                               "issuer_did": json!({
+                                    "$in": vec![ISSUER_DID, ISSUER_DID_2]
+                               })
+                           })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_schema() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({ "schema_id": AnoncredsUtils::gvt_schema_id() })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_name() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({ "schema_name": GVT_SCHEMA_NAME })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_version() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({ "schema_version": SCHEMA_VERSION })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_schema_issuer_did() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({ "schema_issuer_did": ISSUER_DID })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_schema_id_or_specific_cred_def_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({
+                                "$or": vec![
+                                    json!({ "schema_id": AnoncredsUtils::gvt_schema_id() }),
+                                    json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })
+                                ]
+                           })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_schemas() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({
+                               "schema_id": json!({
+                                    "$in": vec![AnoncredsUtils::gvt_schema_id(), AnoncredsUtils::xyz_schema_id()]
+                               })
+                           })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_specific_cred_def_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_multiple_cred_def_ids() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({
+                               "cred_def_id": json!({
+                                    "$in": vec![AnoncredsUtils::issuer_1_gvt_cred_def_id(), AnoncredsUtils::issuer_2_gvt_cred_def_id()]
+                               })
+                           })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_rea_works_for_revealed_attr_for_specific_schema_id_and_cred_def_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({
+                                "schema_id":  AnoncredsUtils::gvt_schema_id(),
+                                "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id()
+                           })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_cred_def_id_or_issuer_did() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({
+                                "$or": vec![
+                                    json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() }),
+                                    json!({ "issuer_did": ISSUER_DID_2 })
+                                ]
+                           })
+                       })
+                   }),
+                   "requested_predicates": json!({}),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_issuer() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({ "issuer_did": DID_TRUSTEE })
+                       })
+                   }),
+                   "requested_predicates": json!({
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_schema_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })
+                       })
+                   }),
+                   "requested_predicates": json!({
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_cred_def_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name",
+                           "restrictions": json!({ "cred_def_id": CredentialDefinition::cred_def_id(DID_TRUSTEE, &AnoncredsUtils::gvt_schema_id(), "CL", TAG_1) })
+                       })
+                   }),
+                   "requested_predicates": json!({
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.attrs.len(), 1);
+
+                let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
+                assert_eq!(credentials_for_attr_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
         }
 
         #[test]
@@ -878,6 +1705,7 @@ mod high_cases {
             }).to_string();
 
             let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+            println!("!!!\n{}", credentials_json);
 
             let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
             assert_eq!(credentials.predicates.len(), 1);
@@ -942,171 +1770,565 @@ mod high_cases {
             WalletUtils::close_wallet(wallet_handle).unwrap();
         }
 
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_predicate_for_issuer_did() {
-            AnoncredsUtils::init_common_wallet();
+        mod predicate_restrictions_libindy_1_5_format {
+            use super::*;
 
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_issuer_did() {
+                AnoncredsUtils::init_common_wallet();
 
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({}),
-               "requested_predicates": json!({
-                   "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18, "restrictions": [json!({ "issuer_did": ISSUER_DID })] })
-               }),
-            }).to_string();
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18, "restrictions": [json!({ "issuer_did": ISSUER_DID })] })
+                   }),
+                }).to_string();
 
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.predicates.len(), 1);
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
-            assert_eq!(credentials_for_predicate_1.len(), 1);
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_issuers() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
+                       "restrictions": [json!({ "issuer_did": ISSUER_DID }), json!({ "issuer_did": ISSUER_DID_2 })] })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_schema_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
+                       "restrictions": [json!({ "schema_id": AnoncredsUtils::gvt_schema_id() })] })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_schema_ids() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
+                       "restrictions": [json!({ "schema_id": AnoncredsUtils::gvt_schema_id() }), json!({ "schema_id": AnoncredsUtils::xyz_schema_id() })] })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_cred_def_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
+                       "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })] })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_cred_def_ids() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
+                       "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() }), json!({ "cred_def_id": AnoncredsUtils::issuer_2_gvt_cred_def_id() })] })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_other_issuer() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
+                       "restrictions": [ json!({ "issuer_did":DID_MY2 })] })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_other_schema_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
+                       "restrictions": [ json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })] })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_uppercase() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"AGe", "p_type":">=", "p_value":18 })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
         }
 
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_issuers() {
-            AnoncredsUtils::init_common_wallet();
+        mod predicate_restrictions_wql_format {
+            use super::*;
 
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_issuer_did() {
+                AnoncredsUtils::init_common_wallet();
 
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({}),
-               "requested_predicates": json!({
-                   "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                   "restrictions": [json!({ "issuer_did": ISSUER_DID }), json!({ "issuer_did": ISSUER_DID_2 })] })
-               }),
-            }).to_string();
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                            "p_type":">=",
+                            "p_value":18,
+                            "restrictions": json!({ "issuer_did": ISSUER_DID })
+                         })
+                   }),
+                }).to_string();
 
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.predicates.len(), 1);
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
-            assert_eq!(credentials_for_predicate_1.len(), 2);
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 1);
 
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_predicate_for_schema_id() {
-            AnoncredsUtils::init_common_wallet();
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
 
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_issuers() {
+                AnoncredsUtils::init_common_wallet();
 
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({}),
-               "requested_predicates": json!({
-                   "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                   "restrictions": [json!({ "schema_id": AnoncredsUtils::gvt_schema_id() })] })
-               }),
-            }).to_string();
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                            "p_type":">=",
+                            "p_value":18,
+                            "restrictions": json!({
+                               "issuer_did": json!({
+                                    "$in": vec![ISSUER_DID, ISSUER_DID_2]
+                               })
+                            })
+                        })
+                   }),
+                }).to_string();
 
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.predicates.len(), 1);
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
-            assert_eq!(credentials_for_predicate_1.len(), 2);
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
 
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_schema_ids() {
-            AnoncredsUtils::init_common_wallet();
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
 
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_schema_id() {
+                AnoncredsUtils::init_common_wallet();
 
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({}),
-               "requested_predicates": json!({
-                   "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                   "restrictions": [json!({ "schema_id": AnoncredsUtils::gvt_schema_id() }), json!({ "schema_id": AnoncredsUtils::xyz_schema_id() })] })
-               }),
-            }).to_string();
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                            "p_type":">=",
+                            "p_value":18,
+                            "restrictions": json!({ "schema_id": AnoncredsUtils::gvt_schema_id() })
+                         })
+                   }),
+                }).to_string();
 
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.predicates.len(), 1);
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
-            assert_eq!(credentials_for_predicate_1.len(), 2);
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
 
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_predicate_for_cred_def_id() {
-            AnoncredsUtils::init_common_wallet();
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
 
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_schema_ids() {
+                AnoncredsUtils::init_common_wallet();
 
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({}),
-               "requested_predicates": json!({
-                   "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                   "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })] })
-               }),
-            }).to_string();
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                             "p_type":">=",
+                             "p_value":18,
+                             "restrictions": json!({
+                               "schema_id": json!({
+                                    "$in": vec![AnoncredsUtils::gvt_schema_id(), AnoncredsUtils::xyz_schema_id()]
+                               })
+                             })
+                         })
+                   }),
+                }).to_string();
 
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.predicates.len(), 1);
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
-            assert_eq!(credentials_for_predicate_1.len(), 1);
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
 
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_cred_def_ids() {
-            AnoncredsUtils::init_common_wallet();
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
 
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_cred_def_id() {
+                AnoncredsUtils::init_common_wallet();
 
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({}),
-               "requested_predicates": json!({
-                   "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                   "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() }), json!({ "cred_def_id": AnoncredsUtils::issuer_2_gvt_cred_def_id() })] })
-               }),
-            }).to_string();
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                            "p_type":">=",
+                            "p_value":18,
+                            "restrictions": json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })
+                         })
+                   }),
+                }).to_string();
 
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.predicates.len(), 1);
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
 
-            let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
-            assert_eq!(credentials_for_predicate_1.len(), 2);
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_multiple_cred_def_ids() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                            "p_type":">=",
+                             "p_value":18,
+                            "restrictions": json!({
+                               "cred_def_id": json!({
+                                    "$in": vec![AnoncredsUtils::issuer_1_gvt_cred_def_id(), AnoncredsUtils::issuer_2_gvt_cred_def_id()]
+                               })
+                            })
+                        })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 2);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_specific_schema_id_and_cred_def_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                            "p_type":">=",
+                            "p_value":18,
+                            "restrictions": json!({
+                                "schema_id": AnoncredsUtils::gvt_schema_id(),
+                                "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id()
+                            })
+                        })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 1);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_other_issuer() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                            "p_type":">=",
+                            "p_value":18,
+                            "restrictions": json!({ "issuer_did":DID_MY2 })
+                         })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_predicate_for_other_schema_id() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                            "p_type":">=",
+                            "p_value":18,
+                            "restrictions": json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })
+                         })
+                   }),
+                }).to_string();
+
+                let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
+
+                let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.predicates.len(), 1);
+
+                let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
+                assert_eq!(credentials_for_predicate_1.len(), 0);
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
         }
 
         #[test]
@@ -1243,156 +2465,6 @@ mod high_cases {
         }
 
         #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_issuer() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "issuer_did": DID_TRUSTEE })]
-                   })
-               }),
-               "requested_predicates": json!({
-               }),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 0);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_schema_id() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, GVT_SCHEMA_NAME, SCHEMA_VERSION) })]
-                   })
-               }),
-               "requested_predicates": json!({
-               }),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 0);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_revealed_attr_for_other_cred_def_id() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({
-                   "attr1_referent": json!({
-                       "name":"name",
-                       "restrictions": [json!({ "cred_def_id": CredentialDefinition::cred_def_id(DID_TRUSTEE, &AnoncredsUtils::gvt_schema_id(), "CL", TAG_1) })]
-                   })
-               }),
-               "requested_predicates": json!({
-               }),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.attrs.len(), 1);
-
-            let credentials_for_attr_1 = credentials.attrs.get("attr1_referent").unwrap();
-            assert_eq!(credentials_for_attr_1.len(), 0);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_predicate_for_other_issuer() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({}),
-               "requested_predicates": json!({
-                   "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                   "restrictions": [ json!({ "issuer_did":DID_MY2 })] })
-               }),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.predicates.len(), 1);
-
-            let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
-            assert_eq!(credentials_for_predicate_1.len(), 0);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-
-        #[test]
-        fn prover_get_credentials_for_proof_req_works_for_predicate_for_other_schema_id() {
-            AnoncredsUtils::init_common_wallet();
-
-            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-
-            let proof_req = json!({
-               "nonce":"123432421212",
-               "name":"proof_req_1",
-               "version":"0.1",
-               "requested_attributes": json!({}),
-               "requested_predicates": json!({
-                   "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18,
-                   "restrictions": [ json!({ "schema_id": Schema::schema_id(DID_TRUSTEE, "other_schema_name", SCHEMA_VERSION) })] })
-               }),
-            }).to_string();
-
-            let credentials_json = AnoncredsUtils::prover_get_credentials_for_proof_req(wallet_handle, &proof_req).unwrap();
-
-            let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
-            assert_eq!(credentials.predicates.len(), 1);
-
-            let credentials_for_predicate_1 = credentials.predicates.get("predicate1_referent").unwrap();
-            assert_eq!(credentials_for_predicate_1.len(), 0);
-
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        }
-
-        #[test]
         fn prover_get_credentials_for_proof_req_works_for_invalid_wallet_handle() {
             AnoncredsUtils::init_common_wallet();
 
@@ -1403,6 +2475,412 @@ mod high_cases {
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+    }
+
+    mod prover_search_credentials_for_proof_req {
+        use super::*;
+
+        #[test]
+        fn prover_search_credentials_for_proof_req_works_for_revealed_attr_only() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let proof_req = json!({
+               "nonce":"123432421212",
+               "name":"proof_req_1",
+               "version":"0.1",
+               "requested_attributes": json!({
+                   "attr1_referent": json!({
+                       "name":"name"
+                   })
+               }),
+               "requested_predicates": json!({ }),
+            }).to_string();
+
+            let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, None).unwrap();
+            println!("search_handle:\n{}", search_handle);
+
+            let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(
+                search_handle, "attr1_referent", 100).unwrap();
+
+            let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
+            assert_eq!(credentials.len(), 2);
+
+            AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn prover_search_credentials_for_proof_req_works_for_non_significant_predicate() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let proof_req = json!({
+               "nonce":"123432421212",
+               "name":"proof_req_1",
+               "version":"0.1",
+               "requested_attributes": {},
+               "requested_predicates": {
+                   "predicate1_referent": { "name":"height", "p_type":">=", "p_value":170 }
+               },
+            }).to_string();
+
+            let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, None).unwrap();
+            println!("search_handle:\n{}", search_handle);
+
+            let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(
+                search_handle, "predicate1_referent", 1).unwrap();
+
+            let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
+            assert_eq!(credentials.len(), 1);
+
+            let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(
+                search_handle, "predicate1_referent", 100).unwrap();
+
+            let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
+            assert_eq!(credentials.len(), 1);
+
+            AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+
+        #[test]
+        fn prover_search_credentials_for_proof_req_works_for_predicate() {
+            AnoncredsUtils::init_common_wallet();
+
+            let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let proof_req = json!({
+               "nonce":"123432421212",
+               "name":"proof_req_1",
+               "version":"0.1",
+               "requested_attributes": {},
+               "requested_predicates": {
+                   "predicate1_referent": { "name":"height", "p_type":">=", "p_value":171 }
+               },
+            }).to_string();
+
+            let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, None).unwrap();
+            println!("search_handle:\n{}", search_handle);
+
+            let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(
+                search_handle, "predicate1_referent", 1).unwrap();
+
+            let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
+            assert_eq!(credentials.len(), 1);
+
+            let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(
+                search_handle, "predicate1_referent", 100).unwrap();
+
+            let credentials: Vec<RequestedCredential> = serde_json::from_str(&credentials_json).unwrap();
+            assert_eq!(credentials.len(), 0);
+
+            AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+        }
+
+        mod extra_query {
+            use super::*;
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_requested_attribute_and_extra_query() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                       "nonce":"123432421212",
+                       "name":"proof_req_1",
+                       "version":"0.1",
+                       "requested_attributes": json!({
+                           "attr1_referent": json!({
+                               "name":"name",
+                               "restrictions": json!({ "issuer_did": ISSUER_DID })
+                           })
+                       }),
+                       "requested_predicates": json!({
+                       }),
+                    }).to_string();
+
+                let extra_query = json!({
+                        "attr1_referent": json!({
+                            "attr::name::value": "Alex"
+                        })
+                    }).to_string();
+
+                let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, Some(&extra_query)).unwrap();
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "attr1_referent", 100).unwrap();
+
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 1);
+
+                AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_requested_attribute_and_multiple_extra_queries() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                       "nonce":"123432421212",
+                       "name":"proof_req_1",
+                       "version":"0.1",
+                       "requested_attributes": json!({
+                           "attr1_referent": json!({
+                               "name":"name",
+                               "restrictions": json!({ "issuer_did": ISSUER_DID })
+                           })
+                       }),
+                       "requested_predicates": json!({
+                       }),
+                    }).to_string();
+
+                let extra_query = json!({
+                        "attr1_referent": json!({
+                            "attr::name::value": "Alex",
+                            "schema_id": AnoncredsUtils::gvt_schema_id(),
+                            "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id()
+                        })
+                    }).to_string();
+
+                let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, Some(&extra_query)).unwrap();
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "attr1_referent", 100).unwrap();
+
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 1);
+
+                AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_requested_attribute_and_extra_query_no_results() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                       "nonce":"123432421212",
+                       "name":"proof_req_1",
+                       "version":"0.1",
+                       "requested_attributes": json!({
+                           "attr1_referent": json!({
+                               "name":"name",
+                               "restrictions": json!({ "issuer_did": ISSUER_DID })
+                           })
+                       }),
+                       "requested_predicates": json!({
+                       }),
+                    }).to_string();
+
+                let extra_query = json!({
+                        "attr1_referent": json!({
+                            "attr::name::value": "AlexOther"
+                        })
+                    }).to_string();
+
+                let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, Some(&extra_query)).unwrap();
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "attr1_referent", 100).unwrap();
+
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 0);
+
+                AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_requested_attribute_and_extra_query_with_other_attribute_referent() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                       "nonce":"123432421212",
+                       "name":"proof_req_1",
+                       "version":"0.1",
+                       "requested_attributes": json!({
+                           "attr1_referent": json!({
+                               "name":"name",
+                               "restrictions": json!({ "issuer_did": ISSUER_DID })
+                           })
+                       }),
+                       "requested_predicates": json!({
+                       }),
+                    }).to_string();
+
+                let extra_query = json!({
+                        "other_attribute_referent": json!({
+                            "attr::name::value": "AlexOtherValue"
+                        })
+                    }).to_string();
+
+                let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, Some(&extra_query)).unwrap();
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "attr1_referent", 100).unwrap();
+
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 1);
+
+                AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_requested_predicate_and_extra_query() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                            "p_type":">=",
+                            "p_value":18,
+                            "restrictions": json!({ "issuer_did": ISSUER_DID })
+                         })
+                   }),
+                }).to_string();
+
+                let extra_query = json!({
+                    "attr1_referent": json!({
+                        "attr::age::value": "28"
+                    })
+                }).to_string();
+
+                let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, Some(&extra_query)).unwrap();
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "predicate1_referent", 100).unwrap();
+
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 1);
+
+                AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_requested_predicate_and_extra_query_no_results() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({}),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({
+                            "name":"age",
+                            "p_type":">=",
+                            "p_value":18,
+                            "restrictions": json!({ "issuer_did": ISSUER_DID })
+                         })
+                   }),
+                }).to_string();
+
+                let extra_query = json!({
+                    "predicate1_referent": json!({
+                        "attr::age::value": "0"
+                    })
+                }).to_string();
+
+                let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, Some(&extra_query)).unwrap();
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "predicate1_referent", 100).unwrap();
+
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 0);
+
+                AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_multiple_revealed_attrs_and_predicates_and_extra_queries() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                   "nonce":"123432421212",
+                   "name":"proof_req_1",
+                   "version":"0.1",
+                   "requested_attributes": json!({
+                       "attr1_referent": json!({
+                           "name":"name"
+                       }),
+                       "attr2_referent": json!({
+                           "name":"status"
+                       })
+                   }),
+                   "requested_predicates": json!({
+                       "predicate1_referent": json!({ "name":"age", "p_type":">=", "p_value":18 }),
+                       "predicate2_referent": json!({ "name":"height", "p_type":">=", "p_value":160 }),
+                   }),
+                }).to_string();
+
+                let extra_query = json!({
+                    "attr1_referent": json!({
+                        "attr::name::value": "Alex"
+                    }),
+                    "attr2_referent": json!({
+                        "attr::status::value": "partial"
+                    }),
+                    "predicate1_referent": json!({
+                        "attr::age::value": "28"
+                    }),
+                    "predicate2_referent": json!({
+                        "attr::height::value": "175"
+                    })
+                }).to_string();
+
+                let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, Some(&extra_query)).unwrap();
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "attr1_referent", 100).unwrap();
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 1);
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "attr2_referent", 100).unwrap();
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 1);
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "predicate1_referent", 100).unwrap();
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 2);
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "predicate2_referent", 100).unwrap();
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 1);
+
+                AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
         }
     }
 
@@ -1903,8 +3381,8 @@ mod medium_cases {
 
             let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let res = AnoncredsUtils::prover_get_credentials(wallet_handle, r#"{"issuer_did": 12345}"#);
-            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+            let res = AnoncredsUtils::prover_get_credentials(wallet_handle, r#""issuer_did": 12345"#);
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletQueryError);
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
         }
@@ -2390,11 +3868,11 @@ mod demos {
            "requested_attributes": json!({
                "attr1_referent": json!({
                    "name":"name",
-                   "restrictions": [json!({ "cred_def_id": gvt_cred_def_id })]
+                   "restrictions": json!({ "cred_def_id": gvt_cred_def_id })
                })   ,
                "attr2_referent": json!({
                    "name":"status",
-                   "restrictions": [json!({ "cred_def_id": xyz_cred_def_id })]
+                   "restrictions": json!({ "cred_def_id": xyz_cred_def_id })
                })
            }),
            "requested_predicates": json!({
@@ -2519,11 +3997,11 @@ mod demos {
             "requested_attributes": json!({
                 "attr1_referent": json!({
                     "name":"name",
-                    "restrictions": [json!({ "cred_def_id": gvt_cred_def_id })]
+                    "restrictions": json!({ "cred_def_id": gvt_cred_def_id })
                 })   ,
                 "attr2_referent": json!({
                     "name":"status",
-                    "restrictions": [json!({ "cred_def_id": xyz_cred_def_id })]
+                    "restrictions": json!({ "cred_def_id": xyz_cred_def_id })
                 })
             }),
             "requested_predicates": json!({
@@ -3403,11 +4881,11 @@ mod demos {
            "requested_attributes": json!({
                "attr1_referent": json!({
                    "name":"name",
-                   "restrictions": [json!({ "cred_def_id": gvt_cred_def_id })]
+                   "restrictions": json!({ "cred_def_id": gvt_cred_def_id })
                })   ,
                "attr2_referent": json!({
                    "name":"name",
-                   "restrictions": [json!({ "cred_def_id": abc_cred_def_id })]
+                   "restrictions": json!({ "cred_def_id": abc_cred_def_id })
                })
            }),
            "requested_predicates": json!({}),

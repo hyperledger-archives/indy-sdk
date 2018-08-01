@@ -36,7 +36,7 @@ pub mod create_command {
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
-        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
 
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
@@ -84,7 +84,7 @@ pub mod open_command {
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
-        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
 
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
@@ -126,7 +126,7 @@ pub mod open_command {
                         match err {
                             ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid wallet config")),
                             ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", id)),
-                            ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open wallet \"{}\". Invalid key \"{}\" has been provided", id, key)),
+                            ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open wallet \"{}\". Invalid key has been provided", id)),
                             ErrorCode::WalletNotFoundError => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
                             err => Err(println_err!("Indy SDK error occurred {:?}", err)),
                         }
@@ -229,7 +229,7 @@ pub mod delete_command {
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
-        trace!("execute >> ctx: {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx: {:?} params {:?}", ctx, secret!(params));
 
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
@@ -255,7 +255,7 @@ pub mod delete_command {
             }
             Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
-            Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key \"{}\" has been provided ", id, key)),
+            Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key has been provided ", id)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -320,7 +320,7 @@ pub mod import_command {
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
-        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
 
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
@@ -433,7 +433,6 @@ pub mod tests {
     use std::path::PathBuf;
 
     const WALLET: &'static str = "wallet";
-    const POOL: &'static str = "pool";
     const WALLET_KEY: &'static str = "wallet_key";
     const EXPORT_KEY: &'static str = "export_key";
 

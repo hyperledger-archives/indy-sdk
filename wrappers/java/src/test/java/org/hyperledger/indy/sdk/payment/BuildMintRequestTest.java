@@ -17,7 +17,7 @@ public class BuildMintRequestTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(UnknownPaymentMethodException.class));
 
-		Payments.buildMintRequest(wallet, DID_TRUSTEE, outputs).get();
+		Payments.buildMintRequest(wallet, DID_TRUSTEE, outputs, null).get();
 	}
 
 	@Test
@@ -25,7 +25,7 @@ public class BuildMintRequestTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStructureException.class));
 
-		Payments.buildMintRequest(wallet, DID_TRUSTEE, emptyArray).get();
+		Payments.buildMintRequest(wallet, DID_TRUSTEE, emptyArray, null).get();
 	}
 
 	@Test
@@ -33,6 +33,6 @@ public class BuildMintRequestTest extends PaymentIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(IncompatiblePaymentException.class));
 
-		Payments.buildMintRequest(wallet, DID_TRUSTEE, incompatibleOutputs).get();
+		Payments.buildMintRequest(wallet, DID_TRUSTEE, incompatibleOutputs, null).get();
 	}
 }

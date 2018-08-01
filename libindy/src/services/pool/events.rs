@@ -1,15 +1,11 @@
 use domain::ledger::constants;
 use errors::common::CommonError;
 use errors::pool::PoolError;
-use self::indy_crypto::utils::json::JsonEncodable;
 use serde_json;
 use serde_json::Value as SJsonValue;
 use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::types::*;
 use std::error::Error;
-
-extern crate indy_crypto;
-
 
 pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
     constants::GET_NYM,
@@ -31,16 +27,22 @@ pub enum NetworkerEvent {
     SendOneRequest(
         String, //msg
         String, //req_id
+        i64, //timeout
     ),
     SendAllRequest(
         String, //msg
         String, //req_id
+        i64, //timeout
     ),
-    Resend(String),
+    Resend(
+        String, //req_id
+        i64, //timeout
+    ),
     NodesStateUpdated(Vec<RemoteNode>),
     ExtendTimeout(
         String, //req_id
         String, //node_alias
+        i64, //timeout
     ),
     CleanTimeout(
         String, //req_id
@@ -209,19 +211,6 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                 }
             }
             PoolEvent::Timeout(req_id, node_alias) => Some(RequestEvent::Timeout(req_id, node_alias)),
-            _ => None
-        }
-    }
-}
-
-
-impl Into<Option<NetworkerEvent>> for RequestEvent {
-    fn into(self) -> Option<NetworkerEvent> {
-        match self {
-            RequestEvent::LedgerStatus(ls, _, _) => {
-                let req_id = ls.merkleRoot.clone();
-                Some(NetworkerEvent::SendAllRequest(Message::LedgerStatus(ls).to_json().expect("FIXME"), req_id))
-            }
             _ => None
         }
     }

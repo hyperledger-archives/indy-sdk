@@ -141,14 +141,14 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * {
 	 *   "id": string, Identifier of the wallet.
 	 *         Configured storage uses this identifier to lookup exact wallet data placement.
-	 *   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+	 *   "storage_type": optional["string"], Type of the wallet storage. Defaults to 'default'.
 	 *                  'Default' storage type allows to store wallet data in the local file.
 	 *                  Custom storage types can be registered with indy_register_wallet_storage call.
-	 *   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+	 *   "storage_config": optional[{config json}], Storage configuration json. Storage type defines set of supported keys.
 	 *                     Can be optional if storage supports default configuration.
 	 *                      For 'default' storage type configuration is:
 	 *   {
-	 *     "path": optional<string>, Path to the directory with wallet files.
+	 *     "path": optional["string"], Path to the directory with wallet files.
 	 *             Defaults to $HOME/.indy_client/wallets.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
@@ -156,7 +156,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * @param credentials Wallet credentials json
 	 * {
 	 *   "key": string, Passphrase used to derive wallet master key
-	 *   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+	 *   "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                          Can be optional if storage supports default configuration.
 	 *                           For 'default' storage type should be empty.
 	 *
@@ -189,14 +189,14 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * {
 	 *   "id": string, Identifier of the wallet.
 	 *         Configured storage uses this identifier to lookup exact wallet data placement.
-	 *   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+	 *   "storage_type": optional["string"], Type of the wallet storage. Defaults to 'default'.
 	 *                  'Default' storage type allows to store wallet data in the local file.
 	 *                  Custom storage types can be registered with indy_register_wallet_storage call.
-	 *   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+	 *   "storage_config": optional[{config json}], Storage configuration json. Storage type defines set of supported keys.
 	 *                     Can be optional if storage supports default configuration.
 	 *                      For 'default' storage type configuration is:
 	 *   {
-	 *     "path": optional<string>, Path to the directory with wallet files.
+	 *     "path": optional["string"], Path to the directory with wallet files.
 	 *             Defaults to $HOME/.indy_client/wallets.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
@@ -204,9 +204,9 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * @param credentials Wallet credentials json
 	 *   {
 	 *       "key": string, Passphrase used to derive current wallet master key
-	 *       "rekey": optional<string>, If present than wallet master key will be rotated to a new one
+	 *       "rekey": optional["string"], If present than wallet master key will be rotated to a new one
 	 *                                  derived from this passphrase.
-	 *       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+	 *       "storage_credentials": optional[{credentiails object}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                              Can be optional if storage supports default configuration.
 	 *                               For 'default' storage type should be empty.
 	 *
@@ -267,14 +267,14 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * {
 	 *   "id": string, Identifier of the wallet.
 	 *         Configured storage uses this identifier to lookup exact wallet data placement.
-	 *   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+	 *   "storage_type": optional["string"], Type of the wallet storage. Defaults to 'default'.
 	 *                  'Default' storage type allows to store wallet data in the local file.
 	 *                  Custom storage types can be registered with indy_register_wallet_storage call.
-	 *   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+	 *   "storage_config": optional[{config json}], Storage configuration json. Storage type defines set of supported keys.
 	 *                     Can be optional if storage supports default configuration.
 	 *                      For 'default' storage type configuration is:
 	 *   {
-	 *     "path": optional<string>, Path to the directory with wallet files.
+	 *     "path": optional["string"], Path to the directory with wallet files.
 	 *             Defaults to $HOME/.indy_client/wallets.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
@@ -282,9 +282,9 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * @param credentials Wallet credentials json
 	 *   {
 	 *       "key": string, Passphrase used to derive current wallet master key
-	 *       "rekey": optional<string>, If present than wallet master key will be rotated to a new one
+	 *       "rekey": optional["string"], If present than wallet master key will be rotated to a new one
 	 *                                  derived from this passphrase.
-	 *       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+	 *       "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                              Can be optional if storage supports default configuration.
 	 *                               For 'default' storage type should be empty.
 	 *
@@ -314,13 +314,11 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	/**
 	 * Exports opened wallet to the file.
 	 *
-	 * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * the future releases.
 	 * @param wallet The wallet to export.
 	 * @param exportConfigJson: JSON containing settings for input operation.
 	 *   {
-	 *     "path": <string>, Path of the file that contains exported wallet content
-	 *     "key": <string>, Passphrase used to derive export key
+	 *     "path": "string", Path of the file that contains exported wallet content
+	 *     "key": "string", Passphrase used to derive export key
 	 *   }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -353,22 +351,19 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * according to fields provided in import_config
 	 * This can be seen as an indy_create_wallet call with additional content import
 	 *
-	 * Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
-     * the future releases.
-	 *
 	 * @param config Wallet configuration json. List of supported keys are defined by wallet type.
 	 * @param credentials Wallet configuration json.
 	 * {
 	 *   "id": string, Identifier of the wallet.
 	 *         Configured storage uses this identifier to lookup exact wallet data placement.
-	 *   "storage_type": optional<string>, Type of the wallet storage. Defaults to 'default'.
+	 *   "storage_type": optional["string"], Type of the wallet storage. Defaults to 'default'.
 	 *                  'Default' storage type allows to store wallet data in the local file.
 	 *                  Custom storage types can be registered with indy_register_wallet_storage call.
-	 *   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
+	 *   "storage_config": optional[{config json}], Storage configuration json. Storage type defines set of supported keys.
 	 *                     Can be optional if storage supports default configuration.
 	 *                      For 'default' storage type configuration is:
 	 *   {
-	 *     "path": optional<string>, Path to the directory with wallet files.
+	 *     "path": optional["string"], Path to the directory with wallet files.
 	 *             Defaults to $HOME/.indy_client/wallets.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
@@ -376,7 +371,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * @param importConfigJson Wallet credentials json
 	 * {
 	 *   "key": string, Passphrase used to derive wallet master key
-	 *   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+	 *   "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                          Can be optional if storage supports default configuration.
 	 *                          For 'default' storage type should be empty.
 	 *

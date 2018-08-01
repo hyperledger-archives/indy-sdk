@@ -1,10 +1,4 @@
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-
 use super::constants::NODE;
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct NodeOperation {
@@ -23,8 +17,6 @@ impl NodeOperation {
         }
     }
 }
-
-impl JsonEncodable for NodeOperation {}
 
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub enum Services {
@@ -46,9 +38,7 @@ pub struct NodeOperationData {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub services: Option<Vec<Services>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub blskey: Option<String>
+    pub blskey: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blskey_pop: Option<String>
 }
-
-impl JsonEncodable for NodeOperationData {}
-
-impl<'a> JsonDecodable<'a> for NodeOperationData {}

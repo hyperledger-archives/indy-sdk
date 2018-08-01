@@ -32,6 +32,12 @@
    cd ./indy-sdk/libindy
    cargo build
    ```
+6. To compile the CLI, libnullpay, or other items that depend on libindy:
+   ```
+   export LIBRARY_PATH=/path/to/sdk/libindy/target/<config>
+   cd ../cli
+   cargo build
+   ```
 
 # Note on running local nodes
 

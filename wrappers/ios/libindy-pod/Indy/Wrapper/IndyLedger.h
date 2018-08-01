@@ -285,6 +285,7 @@
  {
      alias: string - Node's alias
      blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+     blskey_pop: string - (Optional) BLS key proof of possession as base58-encoded string.
      client_ip: string - (Optional) Node's client listener IP address.
      client_port: string - (Optional) Node's client listener port.
      node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
@@ -304,6 +305,11 @@
  Builds a GET_TXN request. Request to get any transaction by its seq_no.
 
  @param submitterDid DID of the request submitter.
+ @param ledgerType (Optional) type of the ledger the requested transaction belongs to:
+          DOMAIN - used default,
+          POOL,
+          CONFIG
+          any number
  @param data seq_no of transaction in ledger.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */

@@ -1,23 +1,33 @@
-extern crate indy;
-extern crate time;
-extern crate openssl;
+#[macro_use]
+extern crate lazy_static;
+
+#[macro_use]
+extern crate named_type_derive;
+
+#[macro_use]
+extern crate derivative;
+
+#[macro_use]
+extern crate serde_derive;
+
+#[macro_use]
+extern crate serde_json;
+
+extern crate byteorder;
 extern crate hex;
+extern crate indy;
+extern crate indy_crypto;
+extern crate uuid;
+extern crate named_type;
+extern crate openssl;
+extern crate rmp_serde;
+extern crate rust_base58;
+extern crate time;
+extern crate serde;
 extern crate sodiumoxide;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;
-
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
-#[macro_use]
-extern crate lazy_static;
-extern crate log;
-extern crate named_type;
-#[macro_use]
-extern crate named_type_derive;
-extern crate byteorder;
 
 #[macro_use]
 mod utils;
@@ -38,8 +48,8 @@ use utils::anoncreds::AnoncredsUtils;
 use utils::types::*;
 use utils::constants::*;
 
-use self::openssl::hash::{MessageDigest, Hasher};
-use self::sodiumoxide::crypto::secretbox;
+use openssl::hash::{MessageDigest, Hasher};
+use sodiumoxide::crypto::secretbox;
 
 use utils::domain::anoncreds::schema::{Schema, SchemaV1};
 use utils::domain::anoncreds::credential_definition::CredentialDefinitionV1;
@@ -926,6 +936,22 @@ mod high_cases {
             let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{},"ledgerId":1}}"#, IDENTIFIER, SEQ_NO);
 
             let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO, None).unwrap();
+            assert!(get_txn_request.contains(&expected_result));
+        }
+
+        #[test]
+        fn indy_build_get_txn_request_for_ledger_type_as_predefined_string_constan() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{},"ledgerId":0}}"#, IDENTIFIER, SEQ_NO);
+
+            let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO, Some("POOL")).unwrap();
+            assert!(get_txn_request.contains(&expected_result));
+        }
+
+        #[test]
+        fn indy_build_get_txn_request_for_ledger_type_as_number() {
+            let expected_result = format!(r#""identifier":"{}","operation":{{"type":"3","data":{},"ledgerId":10}}"#, IDENTIFIER, SEQ_NO);
+
+            let get_txn_request = LedgerUtils::build_get_txn_request(IDENTIFIER, SEQ_NO, Some("10")).unwrap();
             assert!(get_txn_request.contains(&expected_result));
         }
 

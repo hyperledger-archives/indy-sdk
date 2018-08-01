@@ -295,7 +295,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(issuerDid, "issuerDid");
             ParamGuard.NotNullOrWhiteSpace(schemaJson, "schemaJson");
-            
+
             var taskCompletionSource = new TaskCompletionSource<IssuerCreateAndStoreCredentialDefResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -632,15 +632,13 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <returns>out_cred_id: identifier by which credential is stored in the wallet.</returns>
         /// <param name="wallet">Wallet.</param>
         /// <param name="credId">(optional, default is a random one) identifier by which credential will be stored in the wallet</param>
-        /// <param name="credReqJson">a credential request created by indy_prover_create_credential_req.</param>
         /// <param name="credReqMetadataJson">a credential request metadata created by indy_prover_create_credential_req</param>
         /// <param name="credJson">credential json received from issuer.</param>
         /// <param name="credDefJson">redential definition json.</param>
         /// <param name="revRegDefJson">revocation registry definition json.</param>
-        public static Task<string> ProverStoreCredentialAsync(Wallet wallet, string credId, string credReqJson, string credReqMetadataJson, string credJson, string credDefJson, string revRegDefJson)
+        public static Task<string> ProverStoreCredentialAsync(Wallet wallet, string credId, string credReqMetadataJson, string credJson, string credDefJson, string revRegDefJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
-            ParamGuard.NotNullOrWhiteSpace(credReqJson, "credReqJson");
             ParamGuard.NotNullOrWhiteSpace(credReqMetadataJson, "credReqMetadataJson");
             ParamGuard.NotNullOrWhiteSpace(credJson, "credJson");
             ParamGuard.NotNullOrWhiteSpace(credDefJson, "credDefJson");
@@ -652,7 +650,6 @@ namespace Hyperledger.Indy.AnonCredsApi
                 commandHandle,
                 wallet.Handle,
                 credId,
-                credReqJson,
                 credReqMetadataJson,
                 credJson,
                 credDefJson,

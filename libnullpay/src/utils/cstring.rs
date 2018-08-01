@@ -39,3 +39,12 @@ macro_rules! check_useful_c_str {
         }
     }
 }
+
+macro_rules! check_useful_opt_c_str {
+    ($x:ident, $e:expr) => {
+        let $x = match CStringUtils::c_str_to_string($x) {
+            Ok(opt_val) => opt_val,
+            Err(_) => return $e
+        };
+    }
+}

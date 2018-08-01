@@ -18,3 +18,7 @@ To get Jupyter click on the link in output (it must have following format: http:
 
 `docker-compose down`
 The command above will stop and delete created network and containers.
+
+### Trouble Shooting
+
+If demo gives an error when executing in Jupyter check [Trouble Shooting Guide](Trouble_shoot_GSG.md).

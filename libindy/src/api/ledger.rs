@@ -839,6 +839,7 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: i32,
 /// data: Data associated with the Node: {
 ///     alias: string - Node's alias
 ///     blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+///     blskey_pop: string - (Optional) BLS key proof of possession as base58-encoded string.
 ///     client_ip: string - (Optional) Node's client listener IP address.
 ///     client_port: string - (Optional) Node's client listener port.
 ///     node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
@@ -931,6 +932,7 @@ pub extern fn indy_build_get_validator_info_request(command_handle: i32,
 ///     DOMAIN - used default,
 ///     POOL,
 ///     CONFIG
+///     any number
 /// seq_no: requested transaction sequence number as it's stored on Ledger.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1031,8 +1033,8 @@ pub extern fn indy_build_pool_config_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// submitter_did: Id of Identity stored in secured Wallet.
-/// action:
-/// datetime:
+/// action:        Action that pool has to do after received transaction.
+/// datetime:      <Optional> Restart time in datetime format. Skip to restart as early as possible.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns

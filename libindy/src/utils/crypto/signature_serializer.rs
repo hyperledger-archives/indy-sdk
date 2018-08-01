@@ -8,6 +8,10 @@ use errors::common::CommonError;
 use utils::crypto::hash::Hash;
 
 pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
+    _serialize_signature(v, true)
+}
+
+fn _serialize_signature(v: Value, is_top_level: bool) -> Result<String, CommonError> {
     match v {
         Value::Bool(value) => Ok(if value { "True".to_string() } else { "False".to_string() }),
         Value::Number(value) => Ok(value.to_string()),
@@ -16,7 +20,7 @@ pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
             let mut result = "".to_string();
             let length = array.len();
             for (index, element) in array.iter().enumerate() {
-                result += &serialize_signature(element.clone())?;
+                result += &_serialize_signature(element.clone(), false)?;
                 if index < length - 1 {
                     result += ",";
                 }
@@ -25,9 +29,14 @@ pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
         }
         Value::Object(map) => {
             let mut result = "".to_string();
-            let length = map.len();
-            for (index, key) in map.keys().enumerate() {
-                if key == "signature" { continue; } // Skip signature field as in python code
+            let mut in_middle = false;
+            for key in map.keys() {
+                // Skip signature field at top level as in python code
+                if is_top_level && (key == "signature" || key == "fees" || key == "signatures") { continue; }
+
+                if in_middle {
+                    result += "|";
+                }
 
                 let mut value = map[key].clone();
                 if key == "raw" || key == "hash" || key == "enc" {
@@ -35,10 +44,8 @@ pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
                     ctx.update(&value.as_str().ok_or(CommonError::InvalidState("Cannot update hash context".to_string()))?.as_bytes())?;
                     value = Value::String(ctx.finish2()?.as_ref().to_hex());
                 }
-                result = result + key + ":" + &serialize_signature(value)?;
-                if index < length - 1 {
-                    result += "|";
-                }
+                result = result + key + ":" + &_serialize_signature(value, false)?;
+                in_middle = true;
             }
             Ok(result)
         }
@@ -72,6 +79,34 @@ mod tests {
 
         assert_eq!(serialize_signature(msg).unwrap(), result)
     }
+
+
+    #[test]
+    fn signature_serialize_works_for_skipped_fields() {
+        let data = r#"{
+                        "name": "John Doe",
+                        "age": 43,
+                        "operation": {
+                            "hash": "cool hash",
+                            "dest": 54
+                        },
+			"fees": "fees1",
+			"signature": "sign1",
+			"signatures": "sign-m",
+                        "phones": [
+                          "1234567",
+                          "2345678",
+                          {"rust": 5, "age": 1},
+                          3
+                        ]
+                    }"#;
+        let msg: Value = serde_json::from_str(data).unwrap();
+
+        let result = "age:43|name:John Doe|operation:dest:54|hash:46aa0c92129b33ee72ee1478d2ae62fa6e756869dedc6c858af3214a6fcf1904|phones:1234567,2345678,age:1|rust:5,3";
+
+        assert_eq!(serialize_signature(msg).unwrap(), result)
+    }
+
 
     #[test]
     fn signature_serialize_works_with_raw() {

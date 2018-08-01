@@ -1,18 +1,30 @@
-extern crate indy;
+#[macro_use]
+extern crate lazy_static;
 
-// Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use indy::api as api;
+#[macro_use]
+extern crate named_type_derive;
+
+#[macro_use]
+extern crate derivative;
 
 #[macro_use]
 extern crate serde_derive;
+
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate lazy_static;
-extern crate log;
+
+extern crate byteorder;
+extern crate indy;
+extern crate indy_crypto;
+extern crate uuid;
 extern crate named_type;
-#[macro_use]
-extern crate named_type_derive;
+extern crate rmp_serde;
+extern crate rust_base58;
+extern crate time;
+extern crate serde;
+
+// Workaround to share some utils code based on indy sdk types between tests and indy sdk
+use indy::api as api;
 
 #[macro_use]
 mod utils;
@@ -118,14 +130,14 @@ mod high_cases {
         }
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")] //TODO Not implemented yet
+        #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_config() {
             TestUtils::cleanup_storage();
 
             PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             let pool_name = "open_pool_ledger_works_for_config";
-            let config = r#"{"refresh_on_open": true}"#;
+            let config = r#"{"timeout": 20}"#;
 
             let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
             let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
@@ -481,12 +493,11 @@ mod medium_cases {
         }
 
         #[test]
-        #[ignore]
-        #[cfg(feature = "local_nodes_pool")] //TODO Not implemented yet
+        #[cfg(feature = "local_nodes_pool")]
         fn open_pool_ledger_works_for_invalid_config() {
             TestUtils::cleanup_storage();
-            let name = "pool_open";
-            let config = r#"{"refresh_on_open": "true"}"#;
+            let name = "pool_open_invalid_confi";
+            let config = r#"{"timeout": "true"}"#;
 
             PoolUtils::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
