@@ -37,11 +37,6 @@ var normalizeType = function (param) {
 var cpp = ''
 
 apiFunctions.forEach(function (fn) {
-  var cppReturnThrow = function (msg) {
-    var errmsg = JSON.stringify(msg + ': ' + fn.humanSignature)
-    return '    return Nan::ThrowError(Nan::New(' + errmsg + ').ToLocalChecked());\n'
-  }
-
   cpp += 'void ' + fn.jsName + '_cb(indy_handle_t handle, indy_error_t xerr'
   cpp += fn.jsCbParams.map(function (arg, i) {
     if (arg.type === 'Buffer') {
@@ -65,6 +60,9 @@ apiFunctions.forEach(function (fn) {
       break
     case 'IndyHandle':
       cpp += '    icb->cbHandle(xerr, arg0);\n'
+      break
+    case 'IndyHandle+indy_u32_t':
+      cpp += '    icb->cbHandleU32(xerr, arg0, arg1);\n'
       break
     case 'indy_i32_t':
       cpp += '    icb->cbI32(xerr, arg0);\n'
@@ -90,55 +88,58 @@ apiFunctions.forEach(function (fn) {
   cpp += '  }\n'
   cpp += '}\n'
   cpp += 'NAN_METHOD(' + fn.jsName + ') {\n'
-  cpp += '  if(info.Length() != ' + (fn.jsParams.length + 1) + '){\n'
-  cpp += cppReturnThrow('Expected ' + (fn.jsParams.length + 1) + ' arguments')
-  cpp += '  }\n'
+  cpp += '  INDY_ASSERT_NARGS(' + fn.jsName + ', ' + (fn.jsParams.length + 1) + ')\n'
   fn.jsParams.forEach(function (arg, i) {
     var type = normalizeType(arg)
 
-    var chkType = function (isfn) {
-      cpp += '  if(!info[' + i + ']->' + isfn + '()){\n'
-      cpp += cppReturnThrow('Expected ' + type + ' for ' + arg.name)
-      cpp += '  }\n'
+    switch (type) {
+      case 'String':
+        cpp += '  INDY_ASSERT_STRING(' + fn.jsName + ', ' + i + ', ' + arg.jsName + ')\n'
+        break
+      case 'IndyHandle':
+      case 'indy_u32_t':
+      case 'indy_i32_t':
+      case 'indy_u64_t':
+      case 'Timestamp':
+        cpp += '  INDY_ASSERT_NUMBER(' + fn.jsName + ', ' + i + ', ' + arg.jsName + ')\n'
+        break
+      case 'Boolean':
+        cpp += '  INDY_ASSERT_BOOLEAN(' + fn.jsName + ', ' + i + ', ' + arg.jsName + ')\n'
+        break
+      case 'Buffer':
+        cpp += '  INDY_ASSERT_UINT8ARRAY(' + fn.jsName + ', ' + i + ', ' + arg.jsName + ')\n'
+        break
+      default:
+        throw new Error('Unhandled argument reading type: ' + type)
     }
+  })
+  cpp += '  INDY_ASSERT_FUNCTION(' + fn.jsName + ', ' + fn.jsParams.length + ')\n'
+  fn.jsParams.forEach(function (arg, i) {
+    var type = normalizeType(arg)
 
     switch (type) {
       case 'String':
-        cpp += '  Nan::Utf8String* arg' + i + 'UTF = nullptr;\n'
-        cpp += '  const char* arg' + i + ' = nullptr;\n'
-        cpp += '  if(info[' + i + ']->IsString()){\n'
-        cpp += '    arg' + i + 'UTF = new Nan::Utf8String(info[' + i + ']);\n'
-        cpp += '    arg' + i + ' = (const char*)(**arg' + i + 'UTF);\n'
-        cpp += '  } else if(!info[' + i + ']->IsNull() && !info[' + i + ']->IsUndefined()){\n'
-        cpp += cppReturnThrow('Expected String or null for ' + arg.name)
-        cpp += '  }\n'
+        cpp += '  const char* arg' + i + ' = argToCString(info[' + i + ']);\n'
         break
       case 'IndyHandle':
-        chkType('IsNumber')
         cpp += '  indy_handle_t arg' + i + ' = info[' + i + ']->Int32Value();\n'
         break
       case 'indy_u32_t':
-        chkType('IsUint32')
         cpp += '  indy_u32_t arg' + i + ' = info[' + i + ']->Uint32Value();\n'
         break
       case 'indy_i32_t':
-        chkType('IsInt32')
         cpp += '  indy_i32_t arg' + i + ' = info[' + i + ']->Int32Value();\n'
         break
       case 'indy_u64_t':
-        chkType('IsUint32')
         cpp += '  indy_u64_t arg' + i + ' = (indy_u64_t)info[' + i + ']->Uint32Value();\n'
         break
       case 'Timestamp':
-        chkType('IsUint32')
         cpp += '  long long arg' + i + ' = info[' + i + ']->Uint32Value();\n'
         break
       case 'Boolean':
-        chkType('IsBoolean')
         cpp += '  indy_bool_t arg' + i + ' = info[' + i + ']->IsTrue();\n'
         break
       case 'Buffer':
-        chkType('IsUint8Array')
         cpp += '  const indy_u8_t* arg' + i + 'data = (indy_u8_t*)node::Buffer::Data(info[' + i + ']->ToObject());\n'
         cpp += '  indy_u32_t arg' + i + 'len = node::Buffer::Length(info[' + i + ']);\n'
         break
@@ -146,10 +147,7 @@ apiFunctions.forEach(function (fn) {
         throw new Error('Unhandled argument reading type: ' + type)
     }
   })
-  cpp += '  if(!info[' + fn.jsParams.length + ']->IsFunction()) {\n'
-  cpp += '    return Nan::ThrowError(Nan::New("' + fn.jsName + ' arg ' + fn.jsParams.length + ' expected callback Function").ToLocalChecked());\n'
-  cpp += '  }\n'
-  cpp += '  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[' + fn.jsParams.length + ']).ToLocalChecked());\n'
+  cpp += '  IndyCallback* icb = argToIndyCb(info[' + fn.jsParams.length + ']);\n'
   cpp += '  indyCalled(icb, ' + fn.name + '(icb->handle'
   cpp += fn.jsParams.map(function (arg, i) {
     if (arg.type === 'Buffer') {
@@ -163,7 +161,7 @@ apiFunctions.forEach(function (fn) {
     var type = normalizeType(arg)
     switch (type) {
       case 'String':
-        cpp += '  delete arg' + i + 'UTF;\n'
+        cpp += '  delete arg' + i + ';\n'
         break
       case 'Buffer':
       case 'IndyHandle':
