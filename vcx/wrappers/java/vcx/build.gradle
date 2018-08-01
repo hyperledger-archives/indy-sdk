@@ -37,7 +37,7 @@ description = """vcx"""
 
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
-    test.enabled = false
+//    test.enabled = true
 }
 
 android {
@@ -111,7 +111,16 @@ task uploadToKraken(type:Exec) {
     args "-c", "curl --insecure -u $krakenUser:$krakenPass -X POST -F file=@$buildDir/outputs/aar/${archivesBaseName}-release.aar https://kraken.corp.evernym.com/repo/android/upload"
 }
 
+tasks.withType(Test) {
+    testLogging {
+        exceptionFormat "full"
+        events "skipped", "passed", "failed"
+        showStandardStreams true
+    }
+}
+
 uploadToKraken.dependsOn(assemble)
+
 
 dependencies {
 

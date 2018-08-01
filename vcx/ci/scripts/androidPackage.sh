@@ -17,5 +17,6 @@ ndk.dir=/home/vcx/android-sdk-linux/ndk-bundle
 sdk.dir=/home/vcx/android-sdk-linux
 EOT
 
+    ./gradlew test
     ./gradlew clean assemble
 popd
