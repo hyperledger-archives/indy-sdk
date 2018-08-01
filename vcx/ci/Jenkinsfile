@@ -36,33 +36,37 @@ def build(name, file, context='.', customParams = '') {
 def mainUbuntu() {
     node('ubuntu') {
         stage('Main Build - Ubuntu') {
-            def volumeName = "vcx-volume"
+            // def volumeName = "vcx-volume"
+            sh "mkdir -p vcx/output"
             def volumeInternalDir = "/sdk/vcx/output"
+            def libindyDockerfile = "vcx/ci/libindy.dockerfile"
+            def libvcxDockerfile = "vcx/ci/libvcx.dockerfile"
+            def pythonDockerfile = "vcx/wrappers/python3/ci/python.dockerfile"
+            def nodeDockerfile = "vcx/wrappers/node/ci/node.dockerfile"
+            def publishDockerfile = "vcx/ci/publish.dockerfile"
             try {
                 checkout scm
-                sh "docker volume rm -f $volumeName"
-
+                
                 // ******** Build the libindy base image (pulls down dependent debians from sovrin repo, and installs a majority of the dependencies)
-                def libindy = docker.build("libindy", "-f vcx/ci/Dockerfile-libindy .")
+                def libindy = docker.build("libindy", "-f ${libindyDockerfile} .")
 
                 // ******** Build the libvcx base image (runs tests and creates debian automatically) ********
-                def libvcx = docker.build("libvcx", "-f vcx/ci/Dockerfile-libvcx .")
-                sh "docker run --rm -v $volumeName:$volumeInternalDir libvcx"
+                def libvcx = docker.build("libvcx", "-f ${libvcxDockerfile} .")
+                sh "docker run --rm libvcx"
                
                 // ******** Builds and tests the Node JS Wrapper *******
-                def node = docker.build("node", "-f vcx/wrappers/node/ci/Dockerfile-nodejs-wrapper .")
-                sh "docker run --rm -v $volumeName:$volumeInternalDir node"
+                def node = docker.build("node", "-f ${nodeDockerfile} .")
+                sh "docker run --rm node"
                 
                 // ******** Builds and tests the Python Wrapper *******
-                def python = docker.build("python", "-f vcx/wrappers/python3/ci/Dockerfile-python-wrapper .")    
-                sh "docker run --rm -v $volumeName:$volumeInternalDir python"
+                def python = docker.build("python", "-f ${pythonDockerfile} .")    
+                sh "docker run --rm python"
                 
                 if (env.BRANCH_NAME == "master") {
                     // ******** PUBLISHING (artifacts are in a Docker Volume) ********
-                    sh "docker build -t publish -f vcx/ci/Dockerfile-publish ."
                     withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
-                        def publish = docker.build('publish', "-f vcx/ci/Dockerfile-publish .")
-                        publish.inside("--network=host -v $volumeName:$volumeInternalDir") {
+                        def publish = docker.build('publish', "-f ${publishDockerfile} .")
+                        publish.inside("--network=host") {
                             // ******** Publish Libvcx Debian to repo ********
                             sh "/sdk/vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"libvcx*.deb\" https://kraken.corp.evernym.com/repo/portal_dev/upload"
                             sh "/sdk/vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"libvcx*.deb\" https://kraken.corp.evernym.com/repo/agency_dev/upload"
@@ -92,7 +96,6 @@ def mainUbuntu() {
                 echo "$ex error"
             } finally {
 				sh 'docker system df'
-                sh "docker volume rm -f $volumeName"
                 step([$class: 'WsCleanup'])
             }
         }

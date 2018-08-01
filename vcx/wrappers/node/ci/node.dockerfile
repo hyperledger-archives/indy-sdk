@@ -14,10 +14,6 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
 # Assumes we are in the ./vcx directory
 RUN npm i -g npm@6.1.0
 
-# Redundant, but helps break up testing, can remove from production
-COPY vcx/wrappers/node/ci/test-and-package.sh /sdk/vcx/wrappers/node/ci
-COPY vcx/ci/scripts/create_npm_deb.py /sdk/vcx/ci/scripts
-
 WORKDIR /sdk/vcx/wrappers/node
 
 CMD [ "/sdk/vcx/wrappers/node/ci/test-and-package.sh" ]
