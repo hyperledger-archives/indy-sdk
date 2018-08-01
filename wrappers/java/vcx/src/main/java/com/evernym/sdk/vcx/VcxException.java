@@ -221,9 +221,12 @@ public class VcxException extends Exception {
                 return new CreateCredentialRequestErrorException();
             case CREATE_PROOF_ERROR:
                 return new CreateProofErrorException();
-            default:
+            case UNIDENTIFIED_ERROR_CODE:
                 String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
                 return new VcxException(message, sdkErrorCode);
+            default:
+                String err_message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
+                return new VcxException(err_message, sdkErrorCode);
         }
     }
 }
