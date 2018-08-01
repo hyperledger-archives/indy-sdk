@@ -130,6 +130,9 @@ function readmeFn (fn) {
 }
 
 function parseDocString (docs) {
+  apiFunctions.forEach(function (fn) {
+    docs = docs.split(new RegExp('(?=^|[^_])' + fn.name + '(?=[^_]|$)', 'g')).join(fn.jsName)
+  })
   var lines = docs.split('\n')
   var grouped = []
   var section = ''
