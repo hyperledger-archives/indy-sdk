@@ -415,7 +415,7 @@ def iosTesting() {
                 setupBrewPackages()
 
                 echo "iOS Test: Building Libindy Universal iOS Pod"
-                buildIOSPod("")
+                buildIOSPod("libindy", "")
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Installing dependencies (pods)"
@@ -430,19 +430,26 @@ def iosTesting() {
 
                 // FIXME replace this hack (manually rewrite installed pod)
                 sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
-                sh "cp libindy/out_libindy_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
+                sh "cp libindy/out_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Testing"
                     sh "xcodebuild test -workspace Indy.xcworkspace -scheme Indy-demo -destination 'platform=iOS Simulator,name=iPhone X IndySDK,OS=11.2'"
                 }
 
-                stash includes: 'libindy/out_libindy_pod/libindy.tar.gz', name: "LibindyUniversalIOSPod"
+                stash includes: 'libindy/out_pod/libindy.tar.gz', name: "LibindyUniversalIOSPod"
 
                 echo "iOS Test: Building Libindy iOS Pod for aarch64-apple-ios and armv7-apple-ios"
-                buildIOSPod("aarch64-apple-ios armv7-apple-ios")
+                buildIOSPod("libindy", "aarch64-apple-ios armv7-apple-ios")
+                stash includes: 'libindy/out_pod/libindy.tar.gz', name: "LibindyMiniIOSPod"
 
-                stash includes: 'libindy/out_libindy_pod/libindy.tar.gz', name: "LibindyMiniIOSPod"
+                echo "iOS Test: Building Libnullpay Universal iOS Pod"
+                buildIOSPod("libnullpay", "")
+                stash includes: 'libnullpay/out_pod/libnullpay.tar.gz', name: "LibnullpayUniversalIOSPod"
+
+                echo "iOS Test: Building Libnullpay iOS Pod for aarch64-apple-ios and armv7-apple-ios"
+                buildIOSPod("libnullpay", "aarch64-apple-ios armv7-apple-ios")
+                stash includes: 'libnullpay/out_pod/libnullpay.tar.gz', name: "LibnullpayMiniIOSPod"
 
             } finally {
                 try {
@@ -459,12 +466,11 @@ def iosTesting() {
     }
 }
 
-def buildIOSPod(targets) {
-    dir('libindy') {
-        sh "rm -rf out_libindy_pod"
-        echo 'iOS Test: build libindy pod'
-        sh "./build-libindy-ios.sh $targets"
-    }
+def buildIOSPod(packageName, targets) {
+    sh 'chmod -R 777 ci'
+    sh "rm -rf ${packageName}/out_pod"
+    echo "iOS Test: build ${packageName} pod"
+    sh "ci/ios-build.sh $packageName $targets"
 }
 
 def rhelTesting() {
@@ -599,10 +605,16 @@ def iosPublishing() {
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 echo 'Publish Libindy iOS Pod for aarch64-apple-ios and armv7-apple-ios'
-                publishIOSAtrifacts(testEnv, "LibindyMiniIOSPod", version, "libindy-aarch64-armv7.tar.gz")
+                publishIOSAtrifacts(testEnv, "libindy", "LibindyMiniIOSPod", version, "libindy-aarch64-armv7.tar.gz")
 
                 echo 'Publish Libindy iOS Universal Pod'
-                publishIOSAtrifacts(testEnv, "LibindyUniversalIOSPod", version, null)
+                publishIOSAtrifacts(testEnv, "libindy", "LibindyUniversalIOSPod", version, null)
+
+                echo 'Publish Libnullpay iOS Pod for aarch64-apple-ios and armv7-apple-ios'
+                publishIOSAtrifacts(testEnv, "libnullpay", "LibnullpayMiniIOSPod", version, "libnullpay-aarch64-armv7.tar.gz")
+
+                echo 'Publish Libnullpay iOS Universal Pod'
+                publishIOSAtrifacts(testEnv, "libnullpay", "LibnullpayUniversalIOSPod", version, null)
             }
             finally {
                 echo 'Publish iOS files: Cleanup'
@@ -613,18 +625,18 @@ def iosPublishing() {
     return libindyVersion
 }
 
-def publishIOSAtrifacts(testEnv, stashName, libindyVersion, targetName) {
+def publishIOSAtrifacts(testEnv, packageName, stashName, version, targetName) {
     testEnv.inside {
         unstash name: stashName
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_repo_key')]) {
-            target = "/var/repository/repos/ios/libindy/$env.BRANCH_NAME/libindy-core"
+            target = "/var/repository/repos/ios/$packageName/$env.BRANCH_NAME/$packageName-core"
 
             sh "ssh -v -oStrictHostKeyChecking=no -i '$sovrin_repo_key' repo@192.168.11.115 mkdir -p $target/$version"
-            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key libindy/out_libindy_pod/libindy.tar.gz repo@192.168.11.115:$target/$version/"
+            sh "scp -r -oStrictHostKeyChecking=no -i $sovrin_repo_key $packageName/out_pod/${packageName}.tar.gz repo@192.168.11.115:$target/$version/"
 
             if (targetName != null) {
-                sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@192.168.11.115 mv $target/$version/libindy.tar.gz $target/$version/$targetName"
+                sh "ssh -v -oStrictHostKeyChecking=no -i $sovrin_repo_key repo@192.168.11.115 mv $target/$version/${packageName}.tar.gz $target/$version/$targetName"
             }
         }
     }

@@ -1,28 +1,39 @@
 #!/bin/sh -e
 
+if [ "$1" = "--help" ] ; then
+  echo "Usage: <package> <targets>"
+  return
+fi
+
+package="$1"
+
+[ -z ${package} ] && exit 1
+
 export PKG_CONFIG_ALLOW_CROSS=1
 export OPENSSL_DIR=/usr/local/Cellar/openssl/1.0.2l
-export POD_FILE_NAME=libindy.tar.gz
+export POD_FILE_NAME=${package}.tar.gz
 
 echo "Build IOS POD started..."
 
 TYPE="debug"
 
-if [[ $# -eq 1 ]]; then
-  echo "... for target $1 ..."
-  cargo lipo --targets $1
-elif [[ $# -eq 2 ]]; then
-  echo "... for targets $1,$2 ..."
+cd ${package}
+
+if [[ $# -eq 2 ]]; then # build for single platform
+  echo "... for target $2 ..."
+  cargo lipo --targets $2
+elif [[ $# -eq 3 ]]; then # build for two platforms
+  echo "... for targets $2,$3 ..."
   TYPE="release"
-  cargo lipo --$TYPE --targets $1,$2
-else
+  cargo lipo --$TYPE --targets $2,$3
+else  # build for all platforms
   echo "... for all default targets ..."
   TYPE="release"
   cargo lipo --$TYPE
 fi
 echo 'Build completed successfully.'
 
-WORK_DIR="out_libindy_pod"
+WORK_DIR="out_pod"
 echo "Try to create out directory: $WORK_DIR"
 mkdir $WORK_DIR
 
@@ -33,7 +44,7 @@ fi
 
 echo "Packing..."
 
-PACKAGE="libindy.a"
+PACKAGE="${package}.a"
 
 cp include/*.h $WORK_DIR
 cp target/universal/$TYPE/$PACKAGE $WORK_DIR
