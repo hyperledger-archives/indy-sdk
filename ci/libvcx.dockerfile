@@ -6,7 +6,7 @@ RUN cargo install cargo-deb --color=never
 COPY . /sdk
 
 # where debian will be copied to
-RUN mkdir /sdk/vcx/output
+RUN mkdir -p /sdk/vcx/output
 
 ARG test_flag
 ENV VCX_TEST_FLAG $test_flag
