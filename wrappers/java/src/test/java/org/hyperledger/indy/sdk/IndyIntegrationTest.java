@@ -65,7 +65,7 @@ public class IndyIntegrationTest {
 			"        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
 			"        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
 			"    }";
-	protected static final String WALLET_CONFIG = "{ \"id\":" + WALLET + ", \"storage_type\":" + TYPE + '}';
+	protected static final String WALLET_CONFIG = "{ \"id\":\"" + WALLET + "\", \"storage_type\":\"" + TYPE + "\"}";
 
 	protected static final String WALLET_CREDENTIALS = "{ \"key\":\"key\"}";
 
