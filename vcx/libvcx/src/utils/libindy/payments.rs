@@ -286,7 +286,10 @@ fn get_txn_price(txn_type: &str) -> Result<u64, u32> {
 
     let fees: HashMap<String, u64> = serde_json::from_str(&ledger_fees) .or(Err(error::INVALID_JSON.code_num))?;
 
-    Ok(fees.get(txn_type).ok_or(error::UNKNOWN_TXN_TYPE.code_num)?.clone())
+    match fees.get(txn_type) {
+        Some(x) => Ok(*x),
+        None => Ok(0),
+    }
 }
 
 fn _address_balance(address: &Vec<UTXO>) -> u64 {
@@ -373,7 +376,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
             Err(x) => println!("failure minting tokens: {}", x),
         };
     }
- 
+
     let txn = Payment::build_set_txn_fees_req(get_wallet_handle() as i32, &did_1, PAYMENT_METHOD_NAME, fees.unwrap_or(DEFAULT_FEES))
         .map_err(map_rust_indy_sdk_error_code)?;
 
@@ -545,7 +548,7 @@ pub mod tests {
 
         assert_eq!(get_txn_price("101").unwrap(), 2);
         assert_eq!(get_txn_price("102").unwrap(), 42);
-        assert_eq!(get_txn_price("Unknown txn type"), Err(error::UNKNOWN_TXN_TYPE.code_num));
+        assert_eq!(get_txn_price("Unknown txn type").unwrap(), 0);
     }
 
     #[test]
@@ -701,4 +704,18 @@ pub mod tests {
         assert_eq!(start_wallet.balance, 5720045);
     }
 
+    #[ignore] // Test only works when fees are null
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_empty_fees() {
+        let wallet_name = "test_empty_fees";
+        init_payments().unwrap();
+        ::utils::libindy::wallet::init_wallet(wallet_name).unwrap();
+        ::utils::devsetup::tests::set_trustee_did();
+        ::utils::libindy::pool::tests::open_sandbox_pool();
+        let fees = get_ledger_fees().unwrap();
+        println!("fees: {}", fees);
+        ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
+        ::utils::libindy::wallet::delete_wallet(wallet_name).unwrap();
+    }
 }
