@@ -1,4 +1,4 @@
-# Getting Started with Libindy
+﻿# Getting Started with Libindy
 
 ## A Developer Guide for Building Indy Clients Using Libindy
 
@@ -44,7 +44,7 @@ Ready?
 
 As a graduate of Faber College, Alice receives an alumni newsletter where she learns that her alma mater is offering digital transcripts. She logs in to the college alumni website and requests her transcript by clicking **Get Transcript**.  (Other ways to initiate this request might include scanning a QR code, downloading a transcript package from a published URL, etc.)
 
-Alice doesn’t realize it yet, but in order to use this digital transcript she will need a new type of identity — not the traditional identity that Faber College has built for her in its on-campus database, but a new and portable one that belongs to her, independent of all past and future relationships, that nobody can revoke or co-opt or correlate without her permission. This is a **_self-sovereign identity_** and it is the core feature of Indy.
+Alice doesn’t realize it yet, but to use this digital transcript she will need a new type of identity — not the traditional identity that Faber College has built for her in its on-campus database, but a new and portable one that belongs to her, independent of all past and future relationships, that nobody can revoke or co-opt or correlate without her permission. This is a **_self-sovereign identity_** and it is the core feature of Indy.
 
 In normal contexts, managing a self-sovereign identity will require a tool such as a desktop or mobile application. It might be a standalone app or it might leverage a third party service provider that the ledger calls an **agency**. The Sovrin Foundation publishes reference versions of such tools. Faber College will have studied these requirements and will recommend an **_Indy app_** to Alice if she doesn’t already have one. This app will install as part of the workflow from the **Get Transcript** button.
 
@@ -349,7 +349,7 @@ A Credential Definition can be created and saved in the Ledger by any **Trust An
     ```python
     # Faber Agent
     get_schema_request = await ledger.build_get_schema_request(faber_did, transcript_schema_id)
-    get_schema_response = await ledger.submit_request(pool_handle, get_schema_request)
+    get_schema_response = await ledger.submit_request(pool_handle, get_schema_request) 
     (transcript_schema_id, transcript_schema) = await ledger.parse_get_schema_response(get_schema_response)
     ```
 
@@ -428,7 +428,7 @@ These attributes are known because a Credential Schema for **Transcript** has be
 However, the **Transcript** Credential has not been delivered to Alice yet in a usable form. Alice wants to use that Credential.
 To get it, Alice needs to request it, but first she must create a **Master Secret**.
 
-**Note:** A Master Secret is an item of Private Data used by a Prover to guarantee that a credential uniquely applies to them. The Master Secret is an input that combines data from multiple Credentials in order to prove that the Credentials have a common subject (the Prover). A Master Secret should be known only to the Prover.
+**Note:** A Master Secret is an item of Private Data used by a Prover to guarantee that a credential uniquely applies to them. The Master Secret is an input that combines data from multiple Credentials to prove that the Credentials have a common subject (the Prover). A Master Secret should be known only to the Prover.
 
 Alice creates Master Secret in her wallet.
 ```python
