@@ -1220,7 +1220,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_pool_upgrade_request": {
-      "docs": "Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).\nIt upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\nname: Human-readable name for the upgrade.\nversion: The version of indy-node package we perform upgrade to.\n         Must be greater than existing one (or equal if reinstall flag is True).\naction: Either start or cancel.\nsha256: sha256 hash of the package.\ntimeout: (Optional) Limits upgrade time on each Node.\nschedule: (Optional) Schedule of when to perform upgrade on each node. Map Node DIDs to upgrade time.\njustification: (Optional) justification string for this particular Upgrade.\nreinstall: Whether it's allowed to re-install the same version. False by default.\nforce: Whether we should apply transaction (schedule Upgrade) without waiting\n       for consensus of this transaction.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).\nIt upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\nname: Human-readable name for the upgrade.\nversion: The version of indy-node package we perform upgrade to.\n         Must be greater than existing one (or equal if reinstall flag is True).\naction: Either start or cancel.\nsha256: sha256 hash of the package.\ntimeout: (Optional) Limits upgrade time on each Node.\nschedule: (Optional) Schedule of when to perform upgrade on each node. Map Node DIDs to upgrade time.\njustification: (Optional) justification string for this particular Upgrade.\nreinstall: Whether it's allowed to re-install the same version. False by default.\nforce: Whether we should apply transaction (schedule Upgrade) without waiting\n       for consensus of this transaction.\npackage: (Optional) Package to be upgraded.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1234,6 +1234,7 @@
         {"name": "justification", "type": "const char*"},
         {"name": "reinstall", "type": "indy_bool_t"},
         {"name": "force", "type": "indy_bool_t"},
+        {"name": "package", "type": "const char*"},
         {
           "name": "cb",
           "params": [

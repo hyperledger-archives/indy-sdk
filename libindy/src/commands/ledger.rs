@@ -131,6 +131,7 @@ pub enum LedgerCommand {
         Option<String>, // justification
         bool, // reinstall
         bool, // force
+        Option<String>, // package
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildRevocRegDefRequest(
         String, // submitter did
@@ -301,12 +302,12 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "BuildPoolRestartRequest command received");
                 cb(self.build_pool_restart_request(&submitter_did, &action, datetime.as_ref().map(String::as_str)));
             }
-            LedgerCommand::BuildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb) => {
+            LedgerCommand::BuildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package, cb) => {
                 info!(target: "ledger_command_executor", "BuildPoolUpgradeRequest command received");
                 cb(self.build_pool_upgrade_request(&submitter_did, &name, &version, &action, &sha256, timeout,
                                                    schedule.as_ref().map(String::as_str),
                                                    justification.as_ref().map(String::as_str),
-                                                   reinstall, force));
+                                                   reinstall, force, package.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildRevocRegDefRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildRevocRegDefRequest command received");
@@ -718,15 +719,16 @@ impl LedgerCommandExecutor {
                                   schedule: Option<&str>,
                                   justification: Option<&str>,
                                   reinstall: bool,
-                                  force: bool) -> Result<String, IndyError> {
+                                  force: bool,
+                                  package: Option<&str>) -> Result<String, IndyError> {
         debug!("build_pool_upgrade_request >>> submitter_did: {:?}, name: {:?}, version: {:?}, action: {:?}, sha256: {:?},\
-         timeout: {:?}, schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}",
-               submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force);
+         timeout: {:?}, schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}, package: {:?}",
+               submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
 
         self.crypto_service.validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_pool_upgrade(submitter_did, name, version, action, sha256,
-                                                         timeout, schedule, justification, reinstall, force)?;
+                                                         timeout, schedule, justification, reinstall, force, package)?;
 
         debug!("build_pool_upgrade_request  <<< res: {:?}", res);
 

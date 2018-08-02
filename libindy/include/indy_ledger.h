@@ -594,6 +594,7 @@ extern "C" {
     /// reinstall: Whether it's allowed to re-install the same version. False by default.
     /// force: Whether we should apply transaction (schedule Upgrade) without waiting
     ///        for consensus of this transaction.
+    /// package: (Optional) Package to be upgraded.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -613,6 +614,7 @@ extern "C" {
                                                         const char *  justification,
                                                         indy_bool_t   reinstall,
                                                         indy_bool_t   force,
+                                                        const char *  package,
 
                                                         void           (*cb)(indy_handle_t xcommand_handle,
                                                                              indy_error_t  err,

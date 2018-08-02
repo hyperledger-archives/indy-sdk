@@ -1173,7 +1173,8 @@ mod high_cases {
                                                                   Some("{}"),
                                                                   None,
                                                                   false,
-                                                                  false).unwrap();
+                                                                  false,
+                                                                  None).unwrap();
             assert!(request.contains(expected_result));
 
             TestUtils::cleanup_storage();
@@ -1194,7 +1195,30 @@ mod high_cases {
                                                                   None,
                                                                   None,
                                                                   false,
-                                                                  false).unwrap();
+                                                                  false,
+                                                                  None).unwrap();
+            assert!(request.contains(expected_result));
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_build_pool_upgrade_request_works_for_package() {
+            TestUtils::cleanup_storage();
+
+            let expected_result = r#""operation":{"type":"109","name":"upgrade-libindy","version":"2.0.0","action":"start","sha256":"f284b","schedule":{},"reinstall":false,"force":false,"package":"some_package"}"#;
+            let request = LedgerUtils::build_pool_upgrade_request(DID_TRUSTEE,
+                                                                  "upgrade-libindy",
+                                                                  "2.0.0",
+                                                                  "start",
+                                                                  "f284b",
+                                                                  None,
+                                                                  Some("{}"),
+                                                                  None,
+                                                                  false,
+                                                                  false,
+                                                                  Some("some_package")).unwrap();
             assert!(request.contains(expected_result));
 
             TestUtils::cleanup_storage();
@@ -1231,7 +1255,8 @@ mod high_cases {
                                                                   Some(&SCHEDULE),
                                                                   None,
                                                                   false,
-                                                                  false).unwrap();
+                                                                  false,
+                                                                  None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
             //cancel
@@ -1244,7 +1269,8 @@ mod high_cases {
                                                                   None,
                                                                   Some("Upgrade is not required"),
                                                                   false,
-                                                                  false).unwrap();
+                                                                  false,
+                                                                  None).unwrap();
             LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &request).unwrap();
 
             PoolUtils::close(pool_handle).unwrap();

@@ -739,7 +739,9 @@ pub mod pool_upgrade_command {
                 .add_optional_param("justification", "Justification string for this particular Upgrade.")
                 .add_optional_param("reinstall", "Whether it's allowed to re-install the same version. False by default.")
                 .add_optional_param("force", "Whether we should apply transaction without waiting for consensus of this transaction. False by default.")
+                .add_optional_param("package", "Package to be upgraded.")
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"}"#)
+                .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=start sha256=f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398 schedule={"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv":"2020-01-25T12:49:05.258870+00:00"} package=some_package"#)
                 .add_example(r#"ledger pool-upgrade name=upgrade-1 version=2.0 action=cancel sha256=ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398"#)
                 .finalize()
     );
@@ -760,9 +762,10 @@ pub mod pool_upgrade_command {
         let justification = get_opt_str_param("justification", params).map_err(error_err!())?;
         let reinstall = get_opt_bool_param("reinstall", params).map_err(error_err!())?.unwrap_or(false);
         let force = get_opt_bool_param("force", params).map_err(error_err!())?.unwrap_or(false);
+        let package = get_opt_str_param("package", params).map_err(error_err!())?;
 
         let response = Ledger::indy_build_pool_upgrade_request(&submitter_did, name, version, action, sha256,
-                                                               timeout, schedule, justification, reinstall, force)
+                                                               timeout, schedule, justification, reinstall, force, package)
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
@@ -792,7 +795,8 @@ pub mod pool_upgrade_command {
                                                          ("timeout", "Timeout"),
                                                          ("justification", "Justification"),
                                                          ("reinstall", "Reinstall"),
-                                                         ("force", "Force Apply")]));
+                                                         ("force", "Force Apply"),
+                                                         ("package", "Package Name")]));
         if let Some(h) = hash {
             println_succ!("Hash:");
             println!("{}", h);

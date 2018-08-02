@@ -2641,8 +2641,8 @@ void buildPoolUpgradeRequest_cb(indy_handle_t handle, indy_error_t xerr, const c
   }
 }
 NAN_METHOD(buildPoolUpgradeRequest) {
-  if(info.Length() != 11){
-    return Nan::ThrowError(Nan::New("Expected 11 arguments: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+  if(info.Length() != 12){
+    return Nan::ThrowError(Nan::New("Expected 12 arguments: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   Nan::Utf8String* arg0UTF = nullptr;
   const char* arg0 = nullptr;
@@ -2650,7 +2650,7 @@ NAN_METHOD(buildPoolUpgradeRequest) {
     arg0UTF = new Nan::Utf8String(info[0]);
     arg0 = (const char*)(**arg0UTF);
   } else if(!info[0]->IsNull() && !info[0]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for submitter_did: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   Nan::Utf8String* arg1UTF = nullptr;
   const char* arg1 = nullptr;
@@ -2658,7 +2658,7 @@ NAN_METHOD(buildPoolUpgradeRequest) {
     arg1UTF = new Nan::Utf8String(info[1]);
     arg1 = (const char*)(**arg1UTF);
   } else if(!info[1]->IsNull() && !info[1]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for name: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for name: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   Nan::Utf8String* arg2UTF = nullptr;
   const char* arg2 = nullptr;
@@ -2666,7 +2666,7 @@ NAN_METHOD(buildPoolUpgradeRequest) {
     arg2UTF = new Nan::Utf8String(info[2]);
     arg2 = (const char*)(**arg2UTF);
   } else if(!info[2]->IsNull() && !info[2]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for version: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for version: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   Nan::Utf8String* arg3UTF = nullptr;
   const char* arg3 = nullptr;
@@ -2674,7 +2674,7 @@ NAN_METHOD(buildPoolUpgradeRequest) {
     arg3UTF = new Nan::Utf8String(info[3]);
     arg3 = (const char*)(**arg3UTF);
   } else if(!info[3]->IsNull() && !info[3]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for action: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for action: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   Nan::Utf8String* arg4UTF = nullptr;
   const char* arg4 = nullptr;
@@ -2682,10 +2682,10 @@ NAN_METHOD(buildPoolUpgradeRequest) {
     arg4UTF = new Nan::Utf8String(info[4]);
     arg4 = (const char*)(**arg4UTF);
   } else if(!info[4]->IsNull() && !info[4]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for sha256: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for sha256: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   if(!info[5]->IsInt32()){
-    return Nan::ThrowError(Nan::New("Expected indy_i32_t for timeout: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected indy_i32_t for timeout: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   indy_i32_t arg5 = info[5]->Int32Value();
   Nan::Utf8String* arg6UTF = nullptr;
@@ -2694,7 +2694,7 @@ NAN_METHOD(buildPoolUpgradeRequest) {
     arg6UTF = new Nan::Utf8String(info[6]);
     arg6 = (const char*)(**arg6UTF);
   } else if(!info[6]->IsNull() && !info[6]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for schedule: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for schedule: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   Nan::Utf8String* arg7UTF = nullptr;
   const char* arg7 = nullptr;
@@ -2702,21 +2702,29 @@ NAN_METHOD(buildPoolUpgradeRequest) {
     arg7UTF = new Nan::Utf8String(info[7]);
     arg7 = (const char*)(**arg7UTF);
   } else if(!info[7]->IsNull() && !info[7]->IsUndefined()){
-    return Nan::ThrowError(Nan::New("Expected String or null for justification: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected String or null for justification: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   if(!info[8]->IsBoolean()){
-    return Nan::ThrowError(Nan::New("Expected Boolean for reinstall: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected Boolean for reinstall: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   indy_bool_t arg8 = info[8]->IsTrue();
   if(!info[9]->IsBoolean()){
-    return Nan::ThrowError(Nan::New("Expected Boolean for force: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb(err, request))").ToLocalChecked());
+    return Nan::ThrowError(Nan::New("Expected Boolean for force: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
   indy_bool_t arg9 = info[9]->IsTrue();
-  if(!info[10]->IsFunction()) {
-    return Nan::ThrowError(Nan::New("buildPoolUpgradeRequest arg 10 expected callback Function").ToLocalChecked());
+  Nan::Utf8String* arg10UTF = nullptr;
+  const char* arg10 = nullptr;
+  if(info[10]->IsString()){
+    arg10UTF = new Nan::Utf8String(info[10]);
+    arg10 = (const char*)(**arg10UTF);
+  } else if(!info[10]->IsNull() && !info[10]->IsUndefined()){
+    return Nan::ThrowError(Nan::New("Expected String or null for package_: buildPoolUpgradeRequest(submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb(err, request))").ToLocalChecked());
   }
-  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[10]).ToLocalChecked());
-  indyCalled(icb, indy_build_pool_upgrade_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, buildPoolUpgradeRequest_cb));
+  if(!info[11]->IsFunction()) {
+    return Nan::ThrowError(Nan::New("buildPoolUpgradeRequest arg 11 expected callback Function").ToLocalChecked());
+  }
+  IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(info[11]).ToLocalChecked());
+  indyCalled(icb, indy_build_pool_upgrade_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, buildPoolUpgradeRequest_cb));
   delete arg0UTF;
   delete arg1UTF;
   delete arg2UTF;
@@ -2724,6 +2732,7 @@ NAN_METHOD(buildPoolUpgradeRequest) {
   delete arg4UTF;
   delete arg6UTF;
   delete arg7UTF;
+  delete arg10UTF;
 }
 
 void buildRevocRegDefRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {

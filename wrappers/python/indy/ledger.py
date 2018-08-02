@@ -785,7 +785,8 @@ async def build_pool_upgrade_request(submitter_did: str,
                                      schedule: Optional[str],
                                      justification: Optional[str],
                                      reinstall: bool,
-                                     force: bool) -> str:
+                                     force: bool,
+                                     package: Optional[str]) -> str:
     """
     Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
     It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
@@ -802,13 +803,15 @@ async def build_pool_upgrade_request(submitter_did: str,
     :param reinstall: Whether it's allowed to re-install the same version. False by default.
     :param force: Whether we should apply transaction (schedule Upgrade) without waiting
                   for consensus of this transaction.
+    :param package: (Optional) Package to be upgraded.
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
     logger.debug("build_pool_upgrade_request: >>> submitter_did: %r, name: %r, version: %r, action: %r, _sha256: %r, "
-                 "timeout: %r, schedule: %r, justification: %r, reinstall: %r, force: %r",
-                 submitter_did, name, version, action, _sha256, _timeout, schedule, justification, reinstall, force)
+                 "timeout: %r, schedule: %r, justification: %r, reinstall: %r, force: %r, package: %r",
+                 submitter_did, name, version, action, _sha256, _timeout, schedule, justification, reinstall, force,
+                 package)
 
     if not hasattr(build_pool_upgrade_request, "cb"):
         logger.debug("build_pool_upgrade_request: Creating callback")
@@ -824,6 +827,7 @@ async def build_pool_upgrade_request(submitter_did: str,
     c_justification = c_char_p(justification.encode('utf-8')) if justification is not None else None
     c_reinstall = c_bool(reinstall)
     c_force = c_bool(force)
+    c_package = c_char_p(package.encode('utf-8')) if package is not None else None
 
     request_json = await do_call('indy_build_pool_upgrade_request',
                                  c_submitter_did,
@@ -836,6 +840,7 @@ async def build_pool_upgrade_request(submitter_did: str,
                                  c_justification,
                                  c_reinstall,
                                  c_force,
+                                 c_package,
                                  build_pool_upgrade_request.cb)
 
     res = request_json.decode()
