@@ -751,6 +751,7 @@ def publishingRCtoStable() {
                 }
 
                 def libindyVersion = getSrcVersion("libindy")
+                def libnullpayVersion = getSrcVersion("libnullpay")
 
                 echo 'Moving Windows RC artifacts to Stable: libindy'
                 publishLibindyWindowsFilesRCtoStable(libindyVersion)
@@ -774,7 +775,7 @@ def publishingRCtoStable() {
                 publishLibindyCliWindowsFilesRCtoStable(libindyVersion)
 
                 echo 'Moving Windows RC artifacts to Stable: libnullpay'
-                publishLibnullpayWindowsFilesRCtoStable()
+                publishLibnullpayWindowsFilesRCtoStable(libnullpayVersion)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: libnullpay'
                 publishLibnullpayDebRCtoStable(testEnv)
@@ -787,6 +788,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving iOS RC artifacts to Stable: libindy'
                 publishLibindyIOSFilesRCtoStable(libindyVersion)
+
+                echo 'Moving iOS RC artifacts to Stable: libnullpay'
+                publishLibnullpayIOSFilesRCtoStable(libnullpayVersion)
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'
                 step([$class: 'WsCleanup'])
@@ -803,8 +807,7 @@ def publishLibindyCliWindowsFilesRCtoStable(version) {
     publishWindowsFilesRCtoStable("indy-cli", version)
 }
 
-def publishLibnullpayWindowsFilesRCtoStable() {
-    def libnullpayVersion = getSrcVersion("libnullpay")
+def publishLibnullpayWindowsFilesRCtoStable(libnullpayVersion) {
     publishWindowsFilesRCtoStable("libnullpay", libnullpayVersion)
 }
 
@@ -826,22 +829,34 @@ def publishWindowsFilesRCtoStable(packageName, version) {
 }
 
 def copyRcFilesToStable(platform, packageName, version) {
-    rcFullVersion = "${version}-${env.BUILD_NUMBER}"
+    rcFullVersion = fullVersion(version)
 
-    src = "/var/repository/repos/windows/$packageName/rc/$rcFullVersion/"
-    target = "/var/repository/repos/windows/$packageName/stable/$version"
+    src = "/var/repository/repos/$platform/$packageName/rc/$rcFullVersion/"
+    target = "/var/repository/repos/$platform/$packageName/stable/$version"
 
     copyFilesFromRcToStable(src, target)
-
 }
 
 def publishLibindyIOSFilesRCtoStable(version) {
-    rcFullVersion = "${version}-${env.BUILD_NUMBER}"
+    rcFullVersion = fullVersion(version)
 
     src = "/var/repository/repos/ios/libindy/rc/libindy-core/$rcFullVersion/"
     target = "/var/repository/repos/ios/libindy/stable/libindy-core/$version/"
 
     copyFilesFromRcToStable(src, target)
+}
+
+def publishLibnullpayIOSFilesRCtoStable(version) {
+    rcFullVersion = fullVersion(version)
+
+    src = "/var/repository/repos/ios/libnullpay/rc/libnullpay-core/$rcFullVersion/"
+    target = "/var/repository/repos/ios/libnullpay/stable/libnullpay-core/$version/"
+
+    copyFilesFromRcToStable(src, target)
+}
+
+def fullVersion(version){
+    return "${version}-${env.BUILD_NUMBER}"
 }
 
 def copyFilesFromRcToStable(src, target) {
