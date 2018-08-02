@@ -79,9 +79,6 @@ def mainUbuntu() {
                             sh "/sdk/vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"vcx_*.deb\" https://kraken.corp.evernym.com/repo/portal_dev/upload"
 
                             // ******** Archive with Jenkins ********
-                            sh "mkdir -p vcx/output"
-                            sh "cp $volumeInternalDir/* vcx/output"
-                            sh "ls $volumeInternalDir"
                             archiveArtifacts allowEmptyArchive: true, artifacts: 'vcx/output/*'
 
                         }
