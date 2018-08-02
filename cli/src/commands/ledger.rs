@@ -362,16 +362,29 @@ pub mod get_validator_info_command {
             }
         };
 
+        println_succ!("Validator Info:");
+        println!("{{");
+
         for (node, response) in responses {
             if response.eq("timeout") {
-                println_err!("Restart pool node {} timeout.", node);
+                println!("\t{}: {}", node, "Timeout");
                 continue
             }
-            let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
-                .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
-            println_succ!("Get validator info response for node {}:", node);
-            let _res = handle_transaction_response(response).map(|result| println!("{}", result));
+            let response = match serde_json::from_str::<Response<serde_json::Value>>(&response) {
+                Ok(resp) => resp,
+                Err(err) => {
+                    println!("\t{}: Invalid data has been received: {:?}", node, err);
+                    continue
+                }
+            };
+
+            match handle_transaction_response(response) {
+                Ok(result) => println!("\t{}: {}", node, result),
+                Err(_) => {}
+            };
         }
+        println!("}}");
+
         let res = Ok(());
 
         trace!("execute << {:?}", res);
