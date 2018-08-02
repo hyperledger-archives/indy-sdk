@@ -40,6 +40,9 @@ fi
 
 git log -1 > $WORK_DIR/evernym.vcx-sdk.git.commit.log
 
+# change libvcx to use libsovtoken feature
+sed -i .bak 's/"nullpay"/"sovtoken"/' Cargo.toml
+
 export OPENSSL_LIB_DIR_DARWIN=$OPENSSL_LIB_DIR
 
 bkpIFS="$IFS"
@@ -66,11 +69,8 @@ do
     export IOS_SODIUM_LIB=$WORK_DIR/libzmq-ios/libsodium-ios/dist/ios/lib/${target_arch}
     export IOS_ZMQ_LIB=$WORK_DIR/libzmq-ios/dist/ios/lib/${target_arch}
     export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/${target}/release
-    export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/${target}/release
-    # export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/${target}/debug
-    # export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/${target}/debug
-    #export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/universal/release
-    #export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/universal/release
+    #export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/${target}/release
+    export LIBSOVTOKEN_DIR=$WORK_DIR/libsovtoken-ios/libsovtoken/${target}
 
     # To build for macos
     #cargo build
@@ -86,7 +86,7 @@ do
 
     #rm ./target/universal/release/libvcx.a
     #cargo lipo --release --verbose --targets="${target}"
-    cargo build --target "${target}" --release --verbose
+    cargo build --target "${target}" --release
     # cargo build --release --target "${target}"
 
     # if [ -f "./libvcx.previous.a" ]; then

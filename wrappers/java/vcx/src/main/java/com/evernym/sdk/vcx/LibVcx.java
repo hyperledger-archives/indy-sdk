@@ -175,6 +175,11 @@ public abstract class LibVcx {
          */
         public int vcx_connection_create_with_invite(int command_handle, String source_id, String invite_details, Callback cb);
 
+        /**
+         * Deletes a connection and send a delete API request to backend to delete connection
+         */
+        public int vcx_connection_delete_connection(int command_handle, int connection_handle, Callback cb);
+
 
 /**
  * claim issuer object
@@ -469,6 +474,20 @@ public abstract class LibVcx {
         /** Update a record in wallet */
         public int vcx_wallet_update_record_value(int command_handle, String recordType, String recordId, String recordValue, Callback cb);
 
+        /**
+         * token object
+         *
+         * Used for sending tokens and getting token related info
+         */
+
+        /** Gets token Balance and payment addresses info */
+        public int vcx_wallet_get_token_info(int command_handle, int payment_handle, Callback cb);
+
+        /** Sends token to recipient */
+        public int vcx_wallet_send_tokens(int command_handle, int payment_handle, long tokens, String recipient, Callback cb);
+
+        /** Create a payment address and returns it */
+        public int vcx_wallet_create_payment_address(int command_handle, String seed, Callback cb);
 
     }
 

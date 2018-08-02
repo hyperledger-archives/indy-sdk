@@ -276,7 +276,7 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 @implementation ConnectMeVcx
 
 - (void)initWithConfig:(NSString *)config
-completion:(void (^)(NSError *error))completion
+            completion:(void (^)(NSError *error))completion
 {
     const char *config_char = [config cString];
     vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
@@ -381,6 +381,23 @@ completion:(void (^)(NSError *error))completion
        });
    }
 }
+
+- (void)deleteConnection:(VcxHandle)connectionHandle
+          withCompletion:(void (^)(NSError *error))completion
+{
+    vcx_command_handle_t handle= [[VcxCallbacks sharedInstance] createCommandHandleFor:completion] ;
+    vcx_error_t ret = vcx_connection_delete_connection(handle, connectionHandle, VcxWrapperCommonCallback);
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSLog(@"deleteConnection: calling completion");
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
 - (void)agentUpdateInfo: (NSString *) config
             completion: (void (^)(NSError *error)) completion
 {
@@ -775,6 +792,66 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 
         dispatch_async(dispatch_get_main_queue(), ^{
             completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
+
+- (void)createPaymentAddress:(NSString *)seed
+              withCompletion:(void (^)(NSError *error, NSString *address))completion {
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    
+    const char *c_seed = [seed cStringUsingEncoding:NSUTF8StringEncoding];
+    
+    ret = vcx_wallet_create_payment_address(handle, c_seed, VcxWrapperCommonStringCallback);
+    
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
+- (void)getTokenInfo:(vcx_payment_handle_t)payment_handle
+      withCompletion:(void (^)(NSError *error, NSString *tokenInfo))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    
+    ret = vcx_wallet_get_token_info(handle, payment_handle, VcxWrapperCommonStringCallback);
+    
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
+- (void)sendTokens:(vcx_payment_handle_t)payment_handle
+        withTokens:(NSInteger)tokens
+     withRecipient:(NSString*)recipient
+    withCompletion:(void (^)(NSError *error, NSString *recipient))completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    
+    const char* c_recipient = [recipient cStringUsingEncoding:NSUTF8StringEncoding];
+    
+    ret = vcx_wallet_send_tokens(handle, payment_handle, tokens, c_recipient, VcxWrapperCommonStringCallback);
+    
+    if ( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
         });
     }
 }

@@ -209,4 +209,22 @@ public class ConnectionApi extends VcxJava.API{
         checkResult(result);
         return future;
     }
+
+
+    private static Callback vcxConnectionDeleteCB = new Callback() {
+        public void callback(int command_handle, int err){
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(command_handle);
+            if (!checkCallback(future,err)) return;
+            future.complete(0);
+        }
+    };
+
+    public static CompletableFuture<Integer> deleteConnection(int connectionHandle) throws VcxException {
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_connection_delete_connection(commandHandle, connectionHandle, vcxConnectionDeleteCB);
+        checkResult(result);
+        return future;
+    }
 }
