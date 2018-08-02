@@ -14,10 +14,10 @@ cd ${SCRIPTS_PATH}
 ./mac.03.libindy.build.sh nodebug "${IOS_TARGETS}" cleanbuild
 ./mac.04.libvcx.setup.sh
 source ./mac.05.libvcx.env.sh
-./mac.06.libvcx.build.sh nodebug "${IOS_TARGETS}" cleanbuild
 cp -rf ~/OpenSSL-for-iPhone ${BASE_DIR}/.macosbuild
 cp -rf ~/libzmq-ios ${BASE_DIR}/.macosbuild
 cp -rf ~/combine-libs ${BASE_DIR}/.macosbuild
+./mac.06.libvcx.build.sh nodebug "${IOS_TARGETS}" cleanbuild
 # Package for all architectures (simulator architectures included)
 ./mac.11.copy.static.libs.to.app.sh
 ./mac.12.combine.static.libs.sh libvcxall delete nodebug "${IOS_ARCHS}"
@@ -37,5 +37,5 @@ if [ ! -z "$(ls -A /Users/jenkins/IOSBuilds/libvcxall/)" ]; then
    rm /Users/jenkins/IOSBuilds/libvcxall/*
 fi
 
-./mac.13.build.cocopod.sh libvcxpartial
+./mac.13.build.cocopod.sh libvcxpartial IOS_ARCHS
 ./mac.13.build.cocopod.sh libvcxall

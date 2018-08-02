@@ -14,24 +14,49 @@ COMBINED_LIB=$1
 
 DATETIME=$(date +"%Y%m%d.%H%M")
 
+IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
+if [ ! -z "$2" ]; then
+    IOS_ARCHS=$2
+fi
+
+bkpIFS="$IFS"
+bkpIFS="$IFS"
+IFS=',()][' read -r -a archs <<<"${IOS_ARCHS}"
+echo "Building vcx.framework wrapper for architectures: ${archs[@]}"    ##Or printf "%s\n" ${array[@]}
+IFS="$bkpIFS"
 cd $VCX_SDK/vcx/wrappers/ios/vcx
 mv lib/libvcx.a lib/libvcx.a.original
 cp -v lib/${COMBINED_LIB}.a lib/libvcx.a
-xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Release CONFIGURATION_BUILD_DIR=. clean > $START_DIR/xcodebuild.vcx.framework.build.out 2>&1
-if [ ${COMBINED_LIB} = "libvcxall" ]; then
-    xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Release -sdk iphonesimulator CONFIGURATION_BUILD_DIR=. build >> $START_DIR/xcodebuild.vcx.framework.build.out 2>&1
-    mv vcx.framework vcx.framework.iphonesimulator
-fi 
-xcodebuild -project vcx.xcodeproj -scheme vcx -configuration -sdk iphoneos CONFIGURATION_BUILD_DIR=. build >> $START_DIR/xcodebuild.vcx.framework.build.out 2>&1
+xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug CONFIGURATION_BUILD_DIR=. clean 
+
+IPHONE_SDK=iphoneos
+for arch in ${archs[*]}
+do
+    rm -rf vcx.framework
+    if [ "${arch}" = "i386" ] || [ "${arch}" = "x86_64" ]; then
+        # This sdk supports i386 and x86_64
+        IPHONE_SDK=iphonesimulator
+    elif [ "${arch}" = "armv7" ] || [ "${arch}" = "armv7s" ] || [ "${arch}" = "arm64" ]; then
+        # This sdk supports armv7, armv7s, and arm64
+        IPHONE_SDK=iphoneos
+    fi
+    xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug -arch ${arch} -sdk ${IPHONE_SDK} CONFIGURATION_BUILD_DIR=. build 
+
+    if [ -d "./vcx.framework.previousbuild" ]; then
+        lipo -create -output combined.ios.vcx vcx.framework/vcx vcx.framework.previousbuild/vcx
+        mv combined.ios.vcx vcx.framework/vcx
+        rm -rf vcx.framework.previousbuild
+    fi
+    cp -rp vcx.framework vcx.framework.previousbuild
+done
+
 
 mv lib/libvcx.a.original lib/libvcx.a
-if [ ${COMBINED_LIB} = "libvcxall" ]; then
-    lipo -create -output combined.ios.vcx vcx.framework/vcx vcx.framework.iphonesimulator/vcx
-    rm -rf vcx.framework.iphonesimulator
-fi 
+rm -rf vcx.framework.previousbuild
 
 mkdir -p vcx.framework/lib
 cp -v lib/${COMBINED_LIB}.a vcx.framework/lib/libvcx.a
+
 mkdir -p vcx.framework/Headers
 cp -v ConnectMeVcx.h vcx.framework/Headers
 cp -v include/libvcx.h vcx.framework/Headers
@@ -46,6 +71,18 @@ cp $WORK_DIR/evernym.vcx-sdk.git.commit.log $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vc
 cp $WORK_DIR/hyperledger.indy-sdk.git.commit.log $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/
 
 zip -r vcx.${COMBINED_LIB}_${DATETIME}_universal.zip vcx
-
 cp $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx.${COMBINED_LIB}_${DATETIME}_universal.zip ~/IOSBuilds/${COMBINED_LIB}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
