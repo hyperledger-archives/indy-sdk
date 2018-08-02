@@ -8,6 +8,7 @@ mkdir -p $WORK_DIR
 WORK_DIR=$(abspath "$WORK_DIR")
 SHA_HASH_DIR=$START_DIR/../..
 SHA_HASH_DIR=$(abspath "$SHA_HASH_DIR")
+LIBSOVTOKEN_IOS_BUILD_URL="https://repo.corp.evernym.com/filely/ios/libsovtoken_0.8.1-201807262135-cbb1520_all.zip"
 
 source ./mac.02.libindy.env.sh
 
@@ -76,29 +77,17 @@ cargo lipo --release --targets="${IOS_TARGETS}"
 #cargo lipo
 
 #########################################################################################################################
-# Now build libnullpay
+# Now setup libsovtoken
 #########################################################################################################################
-cd $WORK_DIR/vcx-indy-sdk/libnullpay
 
-# if [ "$DEBUG_SYMBOLS" = "debuginfo" ]; then
-#     cat $START_DIR/cargo.toml.add.debug.txt >> Cargo.toml
-# fi
-if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
-    sed -i .bak 's/debug = true/debug = false/' Cargo.toml
+if [ -d $WORK_DIR/libsovtoken-ios ]; then
+    echo "libsovtoken build for ios already exist"
+else
+    mkdir -p $WORK_DIR/libsovtoken-ios
+    cd $WORK_DIR/libsovtoken-ios
+    curl -o libsovtoken-ios.zip $LIBSOVTOKEN_IOS_BUILD_URL
+    unzip libsovtoken-ios.zip
+    # Deletes extra folders that we don't need
+    rm -rf __MACOSX
+    rm libsovtoken-ios.zip
 fi
-
-if [ "$CLEAN_BUILD" = "cleanbuild" ]; then
-    cargo clean
-    # cargo update
-fi
-
-# Replace '\"cdylib\"' with '\"staticlib\", \"cdylib\"' in Cargo.toml
-#sed -i .bak 's/\"cdylib\"/\"staticlib\", \"cdylib\"/' Cargo.toml
-
-# To build for macos
-#cargo build
-# To build for iOS
-#echo "cargo lipo --release --verbose --targets=${IOS_TARGETS}"
-# cargo lipo --release --verbose --targets="${IOS_TARGETS}"
-cargo lipo --release --targets="${IOS_TARGETS}"
-#cargo lipo

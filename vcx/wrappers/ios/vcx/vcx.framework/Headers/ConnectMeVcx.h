@@ -95,6 +95,9 @@ extern void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_h
 - (void)connectionDeserialize:(NSString *)serializedConnection
                    completion:(void (^)(NSError *error, NSInteger connectionHandle))completion;
 
+- (void)deleteConnection:(VcxHandle)connectionHandle
+          withCompletion:(void (^)(NSError *error))completion;
+
 - (void)agentUpdateInfo:(NSString *)config
              completion:(void (^)(NSError *error))completion;
 
@@ -173,6 +176,17 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     withCompletion:(void (^)(NSError *error))completion;
 
 - (int)vcxShutdown:(BOOL *)deleteWallet;
+
+- (void)createPaymentAddress:(NSString *)seed
+              withCompletion:(void (^)(NSError *error, NSString *address))completion;
+
+- (void)getTokenInfo:(vcx_payment_handle_t)payment_handle
+      withCompletion:(void (^)(NSError *error, NSString *tokenInfo))completion;
+
+- (void)sendTokens:(vcx_payment_handle_t)payment_handle
+        withTokens:(NSInteger)tokens
+     withRecipient:(NSString*)recipient
+    withCompletion:(void (^)(NSError *error, NSString *recipient))completion;
 
 @end
 

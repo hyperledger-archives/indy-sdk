@@ -20,3 +20,5 @@ AAR_VER=$(echo ${AAR_FILE} | cut -c 17-38)
 mvn install:install-file -Dfile=${AAR_FILE} -DgroupId=com.connectme \
 -DartifactId=vcx -Dversion=${AAR_VER} -Dpackaging=aar
 echo $AAR_VER | pbcopy
+
+# mvn install:install-file -Dfile=${AAR_FILE} -DgroupId=com.connectme -DartifactId=vcx -Dversion=${AAR_VER} -Dpackaging=aar

@@ -145,6 +145,9 @@ vcx_error_t vcx_connection_invite_details(vcx_command_handle_t command_handle, v
 /** Creates a connection from the invite details. */
 vcx_error_t vcx_connection_create_with_invite(vcx_command_handle_t command_handle, const char *source_id, const char *invite_details, void (*cb)(vcx_command_handle_t xcommand_handle, vcx_error_t err, vcx_connection_handle_t connection_handle));
 
+/** Deletes a connection, send an API call to agency to stop sending messages from this connection */
+vcx_error_t vcx_connection_delete_connection(vcx_command_handle_t command_handle, vcx_connection_handle_t connection_handle, void (*cb)(vcx_command_handle_t, vcx_error_t err));
+    
 /**
  * credential issuer object
  *
@@ -315,6 +318,19 @@ vcx_error_t vcx_wallet_delete_record(vcx_command_handle_t chandle, const char * 
 
 /** Update a record in wallet if it is already added */
 vcx_error_t vcx_wallet_update_record_value(vcx_command_handle_t chandle, const char *type_, const char *record_id, const char *record_value, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
+    
+/**
+ * token object
+ */
+
+/** Create payment address for using tokens */
+vcx_error_t vcx_wallet_create_payment_address(vcx_command_handle_t chandle, const char *seed, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *address));
+    
+/** Get wallet token info which contains balance and addresses */
+vcx_error_t vcx_wallet_get_token_info(vcx_command_handle_t chandle, vcx_payment_handle_t payment_handle, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *token_info));
+
+/** Send tokens from wallet to a recipient address */
+vcx_error_t vcx_wallet_send_tokens(vcx_command_handle_t chandle, vcx_payment_handle_t payment_handle, long tokens, const char* recipient, void (*cb)(vcx_command_handle_t xhandle, vcx_error_t err, const char *recipient));
 
 /** Shutdown vcx wallet */
 vcx_error_t vcx_shutdown(vcx_bool_t deleteWallet);
