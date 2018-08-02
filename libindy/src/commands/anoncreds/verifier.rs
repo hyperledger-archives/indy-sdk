@@ -1,13 +1,6 @@
-extern crate serde_json;
-extern crate indy_crypto;
-
-use errors::common::CommonError;
-use errors::indy::IndyError;
-
-use services::anoncreds::AnoncredsService;
+use serde_json;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
-use self::indy_crypto::utils::json::JsonDecodable;
 
 use domain::anoncreds::schema::{Schema, schemas_map_to_schemas_v1_map};
 use domain::anoncreds::credential_definition::{CredentialDefinition, cred_defs_map_to_cred_defs_v1_map};
@@ -15,6 +8,9 @@ use domain::anoncreds::proof::Proof;
 use domain::anoncreds::proof_request::ProofRequest;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, rev_reg_defs_map_to_rev_reg_defs_v1_map};
 use domain::anoncreds::revocation_registry::{RevocationRegistry, rev_regs_map_to_rev_regs_local_map};
+use errors::common::CommonError;
+use errors::indy::IndyError;
+use services::anoncreds::AnoncredsService;
 
 pub enum VerifierCommand {
     VerifyProof(
@@ -58,7 +54,7 @@ impl VerifierCommandExecutor {
                rev_reg_defs_json: {:?}, rev_reg_json: {:?}",
                proof_request_json, proof_json, schemas_json, cred_defs_json, rev_reg_defs_json, rev_reg_json);
 
-        let proof_req: ProofRequest = ProofRequest::from_json(proof_request_json)
+        let proof_req: ProofRequest = serde_json::from_str(proof_request_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize ProofRequest: {:?}", err)))?;
 
         let schemas: HashMap<String, Schema> = serde_json::from_str(schemas_json)
@@ -73,7 +69,7 @@ impl VerifierCommandExecutor {
         let rev_regs: HashMap<String, HashMap<u64, RevocationRegistry>> = serde_json::from_str(rev_reg_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize list of RevocationRegistry: {:?}", err)))?;
 
-        let proof: Proof = Proof::from_json(&proof_json)
+        let proof: Proof = serde_json::from_str(&proof_json)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Proof: {:?}", err)))?;
 
         let requested_attrs: HashSet<String> =

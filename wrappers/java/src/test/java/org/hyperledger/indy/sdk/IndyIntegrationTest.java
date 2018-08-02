@@ -30,7 +30,7 @@ public class IndyIntegrationTest {
 	protected static final String VERKEY_MY2 = "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn";
 	protected static final String VERKEY_TRUSTEE = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL";
 	protected static final String INVALID_VERKEY = "CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW";
-	protected static final String DID = "8wZcEriaNLNKtteJvx7f8i";
+	protected static final String DID = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 	protected static final String DID_MY1 = "VsKV7grR1BUE29mG2Fm2kX";
 	protected static final String DID_MY2 = "2PRyVHmkXQnQzJQKxHxnXC";
 	protected static final String DID_TRUSTEE = "V4SGRU86Z58d6TV7PBUe6f";

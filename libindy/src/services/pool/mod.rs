@@ -36,7 +36,6 @@ use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 use std::sync::Mutex;
 
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use services::pool::pool::{Pool, ZMQPool};
 use self::zmq::Socket;
 
@@ -64,7 +63,7 @@ impl PoolService {
 
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config: PoolConfig = match config {
-            Some(config) => PoolConfig::from_json(config)
+            Some(config) => serde_json::from_str(config)
                 .map_err(|err|
                     CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
             None => PoolConfig::default_for_name(name)
@@ -93,8 +92,7 @@ impl PoolService {
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path()).map_err(map_err_trace!())?;
 
-        f.write(pool_config
-            .to_json()
+        f.write(serde_json::to_string(&pool_config)
             .map_err(|err|
                 CommonError::InvalidState(format!("Can't serialize pool config: {}", err.description()))).map_err(map_err_trace!())?
             .as_bytes()).map_err(map_err_trace!())?;
@@ -125,7 +123,8 @@ impl PoolService {
         }
 
         let config: PoolOpenConfig = if let Some(config) = config {
-            JsonDecodable::from_json(config)?
+            serde_json::from_str(config)
+                .map_err(|err| CommonError::InvalidStructure(format!("Invalid Pool config: {}", err)))?
         } else {
             PoolOpenConfig::default()
         };
@@ -510,7 +509,7 @@ mod tests {
         extern crate sodiumoxide;
 
         use services::pool::rust_base58::{FromBase58, ToBase58};
-        use utils::crypto::box_::CryptoBox;
+        use utils::crypto::ed25519_sign;
         use std::thread;
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
@@ -534,6 +533,7 @@ mod tests {
                             node_port: Some(0),
                             services: Some(vec!["VALIDATOR".to_string()]),
                             blskey: Some(blskey.to_string()),
+                            blskey_pop: None,
                         },
                         dest: "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv".to_string(),
                         verkey: None,
@@ -567,6 +567,7 @@ mod tests {
                             node_port: Some(0),
                             services: Some(vec!["VALIDATOR".to_string()]),
                             blskey: Some(blskey.to_string()),
+                            blskey_pop: None,
                         },
                         dest: "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv".to_string(),
                         verkey: None,
@@ -585,15 +586,16 @@ mod tests {
 
         pub fn start(gt: &mut NodeTransactionV1) -> thread::JoinHandle<Vec<String>> {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = CryptoBox::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
-            let skc = CryptoBox::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
+            let (vk, sk) = (ed25519_sign::PublicKey::from_slice(&vk[..]).unwrap(), ed25519_sign::SecretKey::from_slice(&sk[..]).unwrap());
+            let pkc = ed25519_sign::vk_to_curve25519(&vk).expect("Invalid pkc");
+            let skc = ed25519_sign::sk_to_curve25519(&sk).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
 
-            gt.txn.data.dest = (&vk.0 as &[u8]).to_base58();
+            gt.txn.data.dest = (&vk[..]).to_base58();
 
-            s.set_curve_publickey(&zmq::z85_encode(pkc.as_slice()).unwrap()).expect("set public key");
-            s.set_curve_secretkey(&zmq::z85_encode(skc.as_slice()).unwrap()).expect("set secret key");
+            s.set_curve_publickey(&zmq::z85_encode(&pkc[..]).unwrap()).expect("set public key");
+            s.set_curve_secretkey(&zmq::z85_encode(&skc[..]).unwrap()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");
 
             s.bind("tcp://127.0.0.1:*").expect("bind");

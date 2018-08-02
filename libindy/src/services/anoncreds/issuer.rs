@@ -53,7 +53,7 @@ impl Issuer {
         };
 
         trace!("new_credential_definition <<< credential_definition_value: {:?}, credential_private_key: {:?}, credential_key_correctness_proof: {:?}",
-               credential_definition_value, credential_private_key, credential_key_correctness_proof);
+               credential_definition_value, secret!(&credential_private_key), credential_key_correctness_proof);
 
         Ok((credential_definition_value, credential_private_key, credential_key_correctness_proof))
     }
@@ -80,7 +80,7 @@ impl Issuer {
         };
 
         trace!("new_revocation_registry <<< rev_keys_pub: {:?}, rev_key_priv: {:?}, rev_reg_entry: {:?}, rev_tails_generator: {:?}",
-               rev_keys_pub, rev_key_priv, rev_reg_entry, rev_tails_generator);
+               rev_keys_pub, secret!(&rev_key_priv), rev_reg_entry, rev_tails_generator);
 
         Ok((rev_keys_pub, rev_key_priv, rev_reg_entry, rev_tails_generator))
     }
@@ -100,7 +100,8 @@ impl Issuer {
                                                                             Option<RevocationRegistryDelta>), AnoncredsError> where RTA: RevocationTailsAccessor {
         trace!("new_credential >>> cred_def: {:?}, cred_priv_key: {:?}, cred_issuance_blinding_nonce: {:?}, cred_request: {:?},\
                cred_values: {:?}, rev_idx: {:?}, rev_reg_def: {:?}, rev_reg: {:?}, rev_key_priv: {:?}",
-               cred_def, cred_priv_key, cred_issuance_blinding_nonce, cred_request, cred_values, rev_idx, rev_reg_def, rev_reg, rev_key_priv);
+               cred_def, secret!(&cred_priv_key), secret!(&cred_issuance_blinding_nonce), secret!(&cred_request), secret!(&cred_values), secret!(&rev_idx),
+               rev_reg_def, rev_reg, secret!(&rev_key_priv));
 
         let credential_values = build_credential_values(&cred_values, None)?;
         let credential_pub_key = CredentialPublicKey::build_from_parts(&cred_def.value.primary, cred_def.value.revocation.as_ref())?;
@@ -145,7 +146,7 @@ impl Issuer {
             };
 
         trace!("new_credential <<< credential_signature {:?}, signature_correctness_proof {:?}, rev_reg_delta {:?}",
-               credential_signature, signature_correctness_proof, rev_reg_delta);
+               secret!(&credential_signature), secret!(&signature_correctness_proof), rev_reg_delta);
 
         Ok((credential_signature, signature_correctness_proof, rev_reg_delta))
     }
@@ -155,7 +156,7 @@ impl Issuer {
                        max_cred_num: u32,
                        rev_idx: u32,
                        rev_tails_accessor: &RTA) -> Result<RevocationRegistryDelta, AnoncredsError> where RTA: RevocationTailsAccessor {
-        trace!("revoke >>> rev_reg: {:?}, max_cred_num: {:?}, rev_idx: {:?}", rev_reg, max_cred_num, rev_idx);
+        trace!("revoke >>> rev_reg: {:?}, max_cred_num: {:?}, rev_idx: {:?}", rev_reg, max_cred_num, secret!(&rev_idx));
 
         let rev_reg_delta = CryptoIssuer::revoke_credential(rev_reg, max_cred_num, rev_idx, rev_tails_accessor)?;
 
@@ -170,7 +171,7 @@ impl Issuer {
                          max_cred_num: u32,
                          rev_idx: u32,
                          rev_tails_accessor: &RTA) -> Result<RevocationRegistryDelta, AnoncredsError> where RTA: RevocationTailsAccessor {
-        trace!("revoke >>> rev_reg: {:?}, max_cred_num: {:?}, rev_idx: {:?}", rev_reg, max_cred_num, rev_idx);
+        trace!("revoke >>> rev_reg: {:?}, max_cred_num: {:?}, rev_idx: {:?}", rev_reg, max_cred_num, secret!(&rev_idx));
 
         let rev_reg_delta = CryptoIssuer::recovery_credential(rev_reg, max_cred_num, rev_idx, rev_tails_accessor)?;
 

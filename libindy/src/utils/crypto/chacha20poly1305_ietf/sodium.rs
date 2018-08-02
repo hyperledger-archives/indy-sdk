@@ -211,7 +211,7 @@ mod tests {
     extern crate rmp_serde;
 
     use super::*;
-    use self::sodiumoxide::randombytes::randombytes;
+    use utils::crypto::randombytes::randombytes;
 
     #[test]
     fn encrypt_decrypt_works() {

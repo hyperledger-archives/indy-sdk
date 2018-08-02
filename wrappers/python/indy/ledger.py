@@ -605,6 +605,7 @@ async def build_node_request(submitter_did: str,
       {
           alias: string - Node's alias
           blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+          blskey_pop: string - (Optional) BLS key proof of possession as base58-encoded string.
           client_ip: string - (Optional) Node's client listener IP address.
           client_port: string - (Optional) Node's client listener port.
           node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.

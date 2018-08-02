@@ -1,10 +1,7 @@
-extern crate indy_crypto;
-extern crate serde_json;
-
+use serde_json;
 use std::collections::HashMap;
 
-use self::indy_crypto::cl::Nonce;
-use self::indy_crypto::utils::json::{JsonDecodable};
+use indy_crypto::cl::Nonce;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ProofRequest {
@@ -15,8 +12,6 @@ pub struct ProofRequest {
     pub requested_predicates: HashMap<String, PredicateInfo>,
     pub non_revoked: Option<NonRevocedInterval>
 }
-
-impl<'a> JsonDecodable<'a> for ProofRequest {}
 
 pub type ProofRequestExtraQuery = HashMap<String, HashMap<String, serde_json::Value>>;
 

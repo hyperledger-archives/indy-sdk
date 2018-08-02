@@ -29,6 +29,7 @@ var toJsName = function (name) {
     })
     .replace(/^type_$/, 'type')
     .replace(/^walletHandle$/, 'wh')
+    .replace(/^searchHandle$/, 'sh')
 }
 
 var toJsParams = function (params) {
