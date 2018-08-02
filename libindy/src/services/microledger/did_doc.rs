@@ -242,7 +242,7 @@ impl<'a> DidDoc<'a> {
 
     pub fn add_endpoint_from_txn(&mut self, operation: &JValue) -> Result<(), CommonError> {
         let (verkey, endpoint) = DidDoc::get_key_and_endpoint_from_operation(operation)?;
-        let mut key_entry = self.get_key_entry(&verkey)?;
+        let key_entry = self.get_key_entry(&verkey)?;
         match key_entry {
             Some(r) => {
                 match r.value {
@@ -268,7 +268,7 @@ impl<'a> DidDoc<'a> {
     pub fn remove_endpoint_from_txn(&mut self, operation: &JValue) -> Result<(), CommonError> {
         // TODO: Fix duplicate code from `add_endpoint_from_txn`
         let (verkey, endpoint) = DidDoc::get_key_and_endpoint_from_operation(operation)?;
-        let mut key_entry = self.get_key_entry(&verkey)?;
+        let key_entry = self.get_key_entry(&verkey)?;
         match key_entry {
             Some(r) => {
                 match r.value {
@@ -333,13 +333,35 @@ impl<'a> DidDoc<'a> {
                     Some(ev) => {
                         let val: JValue = serde_json::from_str(&str::from_utf8(&ev.data).unwrap().to_string()).unwrap();
                         let auths: Vec<String> = serde_json::from_value(val[AUTHORIZATIONS].clone()).map_err(|err|
-                            CommonError::InvalidStructure(format!("Cannot convert authorisations to vector of strings : {:?}.", err)))?;;
+                            CommonError::InvalidStructure(format!("Cannot convert authorisations to vector of strings : {:?}.", err)))?;
                         let authz_all = AUTHZ_ALL.to_string();
                         if auths.contains(&authz_all) {
                             Ok(vec![authz_all])
                         } else {
                             Ok(auths)
                         }
+                    },
+                    None => Err(CommonError::InvalidStructure(format!("No value found in record")))
+                }
+            }
+            None => Err(CommonError::InvalidStructure(format!("Key not found: {}", verkey)))
+        }
+    }
+
+    pub fn get_key_endpoints(&self, verkey: &str) -> Result<Vec<String>, CommonError> {
+        let key_entry = self.get_key_entry(&verkey)?;
+        match key_entry {
+            Some(r) => {
+                match r.value {
+                    Some(ev) => {
+                        let val: JValue = serde_json::from_str(&str::from_utf8(&ev.data).unwrap().to_string()).unwrap();
+                        let endpoints: Map<String, JValue> = serde_json::from_value(val[ENDPOINTS].clone()).map_err(|err|
+                            CommonError::InvalidStructure(format!("Cannot convert authorisations to vector of strings : {:?}.", err)))?;
+                        let mut addresses: Vec<String> = vec![];
+                        for k in endpoints.keys() {
+                            addresses.push(k.to_string())
+                        }
+                        Ok(addresses)
                     },
                     None => Err(CommonError::InvalidStructure(format!("No value found in record")))
                 }
@@ -538,5 +560,45 @@ pub mod tests {
         let txn_7 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key","mprox"],"type":"2","verkey":"3znAGhp6Tk4kmebhXnk9K3jaTMffu82PJfEG91AeRkq2"}}"#;
         doc.apply_txn(txn_7).unwrap();
         assert_eq!(doc.get_key_authorisations("3znAGhp6Tk4kmebhXnk9K3jaTMffu82PJfEG91AeRkq2").unwrap(), vec!["add_key","mprox"]);
+    }
+
+    #[test]
+    fn test_get_key_endpoints() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let mut doc = get_new_did_doc(did);
+        let key_txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(key_txn_1).unwrap();
+        let key_txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB"}}"#;
+        doc.apply_txn(key_txn_2).unwrap();
+
+        let end_point_txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent.example.com","type":"3","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(end_point_txn_1).unwrap();
+        // Getting endpoint for existent key passes
+        assert_eq!(doc.get_key_endpoints("6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1").unwrap(), vec!["https://agent.example.com"]);
+
+        // Getting endpoint for non-existent key fails
+        assert!(doc.get_key_endpoints("46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB").is_err());
+
+        // Getting endpoints for more than 1 endpoint
+        let end_point_txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent2.example.com","type":"3","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(end_point_txn_2).unwrap();
+        assert_eq!(doc.get_key_endpoints("6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1").unwrap(), vec!["https://agent.example.com",
+                                                                                                        "https://agent2.example.com"]);
+
+        // Getting endpoints after 1 endpoint removed
+        let end_point_txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent2.example.com","type":"4","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(end_point_txn_3).unwrap();
+        assert_eq!(doc.get_key_endpoints("6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1").unwrap(), vec!["https://agent.example.com"]);
+
+        let end_point_txn_4 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent3.example.com","type":"3","verkey":"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB"}}"#;
+        doc.apply_txn(end_point_txn_4).unwrap();
+        assert_eq!(doc.get_key_endpoints("46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB").unwrap(), vec!["https://agent3.example.com"]);
+
+        // Getting endpoints when no endpoints
+        let end_point_txn_5 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent3.example.com","type":"4","verkey":"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB"}}"#;
+        doc.apply_txn(end_point_txn_5).unwrap();
+        let empty_str_vec: Vec<String> = vec![];
+        assert_eq!(doc.get_key_endpoints("46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB").unwrap(), empty_str_vec);
     }
 }

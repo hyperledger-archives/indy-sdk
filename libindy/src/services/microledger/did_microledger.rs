@@ -525,7 +525,7 @@ pub mod tests {
     fn test_did_doc_registered_with_ledger() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let mut doc = Rc::new(RefCell::new(get_new_did_doc(did)));
+        let doc = Rc::new(RefCell::new(get_new_did_doc(did)));
         let mut ml = get_new_microledger(did);
         assert!(ml.views.is_empty());
         ml.register_did_doc(Rc::clone(&doc));
@@ -538,7 +538,7 @@ pub mod tests {
     fn test_did_doc_updated_with_ledger_txns() {
         TestUtils::cleanup_temp();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
-        let mut doc = Rc::new(RefCell::new(get_new_did_doc(did)));
+        let doc = Rc::new(RefCell::new(get_new_did_doc(did)));
         // TODO: Use Rc here
         {
             let mut ml = get_new_microledger(did);
