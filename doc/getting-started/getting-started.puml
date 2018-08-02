@@ -157,7 +157,7 @@ A->L: Send GetCredDef for "Acme Job-Certificate" Credential Definition
 A->AW: Create "Alice Acme Job-Certificate" Credential Request
 A->AC: Send authcrypted "Alice Acme Job-Certificate" Credential Request
 AC->AC: Create "Alice Acme Job-Certificate" Credential
-F->A: Send authcrypted "Alice Acme Job-Certificate" Credential
+AC->A: Send authcrypted "Alice Acme Job-Certificate" Credential
 A->AW: Store "Alice Acme Job-Certificate" Credential
 
 === Apply for the loan with Thrift ==
