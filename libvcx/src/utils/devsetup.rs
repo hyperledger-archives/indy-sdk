@@ -27,6 +27,11 @@ pub mod tests {
     pub const C_AGENCY_DID: &'static str = "dTLdJqRZLwMuWSogcKfBT";
     pub const C_AGENCY_VERKEY: &'static str = "LsPQTDHi294TexkFmZK9Q9vW4YGtQRuLV8wuyZi94yH";
 
+    pub fn set_trustee_did() {
+        let (my_did, _) = ::utils::libindy::signus::create_and_store_my_did(wallet::get_wallet_handle(), Some(TRUSTEE)).unwrap();
+        let did = settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
+    }
+
     pub fn setup_ledger_env(wallet_name: &str) {
         match pool::get_pool_handle() {
             Ok(x) => pool::close().unwrap(),
@@ -42,8 +47,7 @@ pub mod tests {
 
         wallet::init_wallet(wallet_name).unwrap();
         ::utils::libindy::anoncreds::libindy_prover_create_master_secret(settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
-        let (my_did, _) = ::utils::libindy::signus::create_and_store_my_did(wallet::get_wallet_handle(), Some(TRUSTEE)).unwrap();
-        let did = settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
+        set_trustee_did();
         ::utils::libindy::payments::tests::token_setup(None, None);
     }
 
