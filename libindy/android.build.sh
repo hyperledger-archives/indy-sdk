@@ -110,7 +110,6 @@ statically_link_dependencies_with_libindy(){
 }
 
 package_library(){
-    echo "${GREEN}Linking and packaging in zip file ${RESET}"
 
     mkdir -p ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
 

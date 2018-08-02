@@ -120,7 +120,6 @@ build(){
     echo "**************************************************"
     echo "Building for architecture ${BOLD}${YELLOW}${TARGET_ARCH}${RESET}"
     echo "Toolchain path ${BOLD}${YELLOW}${TOOLCHAIN_DIR}${RESET}"
-    echo "ZMQ path ${BOLD}${YELLOW}${LIBZMQ_DIR}${RESET}"
     echo "Sodium path ${BOLD}${YELLOW}${SODIUM_DIR}${RESET}"
     echo "Indy path ${BOLD}${YELLOW}${INDY_DIR}${RESET}"
     echo "Artifacts will be in ${BOLD}${YELLOW}${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}${RESET}"
