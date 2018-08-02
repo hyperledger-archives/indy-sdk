@@ -113,7 +113,7 @@
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "RUST_LOG"
-            value = "trace"
+            value = "debug"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
