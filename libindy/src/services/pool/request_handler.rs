@@ -767,7 +767,7 @@ pub mod tests {
         let mut default_nodes: HashMap<String, Option<VerKey>> = HashMap::new();
         default_nodes.insert(NODE.to_string(), None);
 
-        let node_names = vec![NODE, NODE_2, "n3"];
+        let node_names = vec![NODE, NODE_2, "n3", "n4"];
         let mut nodes: HashMap<String, Option<VerKey>> = HashMap::new();
 
         for i in 0..nodes_cnt {
@@ -1198,6 +1198,23 @@ pub mod tests {
             request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
             request_handler.process_event(Some(RequestEvent::Pong));
             assert_match!(RequestState::CatchupConsensus(_), request_handler.request_wrapper.unwrap().state);
+        }
+
+        #[test]
+        fn request_handler_process_ledger_status_event_from_catchup_consensus_state_works_for_splitted_pool() {
+            let mut request_handler = _request_handler(1, 4);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some(NODE.to_string()), Some(MerkleTree::default()))));
+            assert_match!(&RequestState::CatchupConsensus(_), &request_handler.request_wrapper.as_ref().unwrap().state);
+
+            request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), "n1".to_string())));
+            assert_match!(&RequestState::CatchupConsensus(_), &request_handler.request_wrapper.as_ref().unwrap().state);
+            request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), "n2".to_string())));
+            assert_match!(&RequestState::CatchupConsensus(_), &request_handler.request_wrapper.as_ref().unwrap().state);
+
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some("n3".to_string()), Some(MerkleTree::default()))));
+            assert_match!(&RequestState::CatchupConsensus(_), &request_handler.request_wrapper.as_ref().unwrap().state);
+            request_handler.process_event(Some(RequestEvent::LedgerStatus(LedgerStatus::default(), Some("n4".to_string()), Some(MerkleTree::default()))));
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
     }
 
