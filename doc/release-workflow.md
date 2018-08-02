@@ -53,7 +53,7 @@ Thus, the SDK's master branch may depend on either the latest stable build of in
 or on a recent (latest or close-to-latest) master build of indy-node. This means it is a bad idea for
 consumers of indy-sdk to use the latest master build, because that build might not be compatible with
 the version of indy-node that's currently in stable production. Use indy-sdk master branch at your own risk.  
-  
+
 ## Versioning
 * All components are always released together and for simplicity have the same version. It can be changed in the future.
 * Version has format {major}.{minor}.{patch}. We plan to follow Semver rules, but there are exceptions for few first releases to avoid major version increasing too much.
@@ -70,7 +70,7 @@ Builds creation is automated with deterministic CI/CD pipeline.
 * The team uses GitHub flow process with 2 main branches:
   * master - development branch
   * rc - branch for release candidates. Some of release candidates will become stable.
-* The development is performed in GitHub forks with rising of PRs to the master branch. 
+* The development is performed in GitHub forks with raising of PRs to the master branch.
 * For each PR to the master branch the team performs code review and CI pipeline executes unit and integration tests for all components. Merging is only available if all tests passed on the same commit that will be merged to the master branch.
 * After merge PR to master CD pipeline executes on merged commit. It executes the tests and build new package with increased build number suffix for master channel.
 * When we decide to perform release we:
@@ -78,10 +78,10 @@ Builds creation is automated with deterministic CI/CD pipeline.
   * Analyse changes
   * Increment versions for all components. Note that version (at least patch) will be always incremented even if there were no changes in this component.
   * Update release notes
-  * Rise the PR (master + versions changes) to rc branch
+  * Raise the PR (master + versions changes) to rc branch
 * For each PR to rc team performs code review and CI pipeline executes unit and integration tests for all components. Merging is only available if all tests passed on the same commit that will be merged to rc.
 * After merge PR to rc CD pipeline executes on merged commit. It executes the tests and build new package with increased rc number suffix for rc channel. After this CD pipeline is paused and wait for approve to complete.
-* Team executes acceptance testing use created artifacts in release channel. 
+* Team executes acceptance testing use created artifacts in release channel.
 * If there is no problems found team approves the release. CD pipeline resumes, moves artifacts to stable release channel and creates Git release tag on corresponded commit.
 * If some problems were found team declines the release and starts creation of hot-fix PR to rc branch. After PR is created release process resumes from rc PR stage.
 * After release performed the team back merges the rc branch to the master branch.
