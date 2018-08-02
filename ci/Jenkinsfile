@@ -56,11 +56,11 @@ def mainUbuntu() {
                
                 // ******** Builds and tests the Node JS Wrapper *******
                 def node = docker.build("node", "-f ${nodeDockerfile} .")
-                sh "docker run --name libvcx --rm node"
+                sh "docker run --name node --rm node"
                 
                 // ******** Builds and tests the Python Wrapper *******
                 def python = docker.build("python", "-f ${pythonDockerfile} .")    
-                sh "docker run --name libvcx --rm python"
+                sh "docker run --name python --rm python"
                 
                 if (env.BRANCH_NAME == "master") {
                     // ******** PUBLISHING (artifacts are in a Docker Volume) ********
@@ -92,6 +92,9 @@ def mainUbuntu() {
                 }
                 echo "$ex error"
             } finally {
+                sh "docker rm -f libvcx || true"
+                sh "docker rm -f node || true"
+                sh "docker rm -f python || true"
 				sh 'docker system df'
                 step([$class: 'WsCleanup'])
             }
