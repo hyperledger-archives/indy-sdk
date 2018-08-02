@@ -689,7 +689,10 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
         def suffix = "~$env.BUILD_NUMBER"
 
         unstash name: inStashName
+
         sh "mkdir --parent $directory/target/release/ && mv target/release/* $directory/target/release/"
+
+        sh "cp LICENSE $directory/debian/copyright"
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
             sh "cd $directory && ./deb-build-and-upload.sh $packageName $version $env.BRANCH_NAME $suffix $SOVRIN_SDK_REPO_NAME $SOVRIN_REPO_HOST $sovrin_key"
