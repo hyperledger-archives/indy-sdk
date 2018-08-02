@@ -935,7 +935,7 @@ def androidPublishing() {
 
 def buildAndroid(buildEnv, libIndyVersion, libnullpayVersion) {
 
-    for (arch in ["arm", "x86", "arm64"]) {
+    for (arch in ["arm", "armv7", "x86", "arm64", "x86_64"]) {
         androidBuildArtifact(buildEnv, arch, libIndyVersion, 'libindy')
         androidBuildArtifact(buildEnv, arch, libnullpayVersion, 'libnullpay')
     }
@@ -943,7 +943,7 @@ def buildAndroid(buildEnv, libIndyVersion, libnullpayVersion) {
 
 def publishAndroid(buildEnv, libIndyVersion, libnullpayVersion) {
 
-    for (arch in ["arm", "x86", "arm64"]) {
+    for (arch in ["arm", "armv7", "x86", "arm64", "x86_64"]) {
         androidPublishArtifact(buildEnv, arch, libIndyVersion, 'libindy')
         androidPublishArtifact(buildEnv, arch, libnullpayVersion, 'libnullpay')
     }

@@ -2,6 +2,8 @@
 
 **Not ready for production use! Not fully tested.**
 
+Supported architectures are arm, armv7, arm64, x86 and x86_64
+
 ## Prerequisites
 
 - Docker
@@ -22,7 +24,7 @@
 - Unzip the generated library.
 - Copy `lib/libindy.so` to the jniLibs folder of your android project
     - `libindy.so` file is the dynamic library which is statically linked to its dependencies. This library can be loaded into apk without having dependencies along with it.
-    - `libindy_shared.so` file is the dynamic library which is dunamically linked to its dependencies. you need to pass the dependencies into apk.
+    - `libindy_shared.so` file is the dynamic library which is dynamically linked to its dependencies. you need to pass the dependencies into apk.
     
 - Load library using the JNA
 
