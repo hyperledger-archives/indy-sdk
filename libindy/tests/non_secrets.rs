@@ -5,6 +5,9 @@ extern crate lazy_static;
 extern crate named_type_derive;
 
 #[macro_use]
+extern crate derivative;
+
+#[macro_use]
 extern crate serde_derive;
 
 #[macro_use]
@@ -1236,19 +1239,24 @@ mod high_cases {
             }
 
             #[test]
-            #[ignore] //TODO: doesn't work
             fn indy_wallet_search_for_mix_and_or_query() {
                 NonSecretsUtils::populate_wallet_for_search();
                 let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
                 let query_json = r#"{
-                    "$or": [
-                        {"tagName1": "str1"},
-                        {"tagName2": "str1"}
-                    ],
-                    "$or": [
-                        {"tagName1": "str2"},
-                        {"tagName2": "str2"}
+                    "$and": [
+                        {
+                            "$or": [
+                                {"tagName1": "str1"},
+                                {"tagName2": "str1"}
+                            ]
+                        },
+                        {
+                            "$or": [
+                                {"tagName1": "str2"},
+                                {"tagName2": "str2"}
+                            ]
+                        }
                     ]
                 }"#;
 

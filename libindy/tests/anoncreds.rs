@@ -5,6 +5,9 @@ extern crate lazy_static;
 extern crate named_type_derive;
 
 #[macro_use]
+extern crate derivative;
+
+#[macro_use]
 extern crate serde_derive;
 
 #[macro_use]
@@ -2871,6 +2874,100 @@ mod high_cases {
                 assert_eq!(credentials.len(), 2);
 
                 let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "predicate2_referent", 100).unwrap();
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 1);
+
+                AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_requested_attribute_restriction_old_format_and_extra_query_contains_or_operator() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                       "nonce":"123432421212",
+                       "name":"proof_req_1",
+                       "version":"0.1",
+                       "requested_attributes": json!({
+                           "attr1_referent": json!({
+                               "name":"name",
+                               "restrictions": [json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })]
+                           })
+                       }),
+                       "requested_predicates": json!({
+                       }),
+                    }).to_string();
+
+                let extra_query = json!({
+                        "attr1_referent": json!({
+                            "$or": [
+                                {
+                                     "attr::name::value": "Alex",
+                                },
+                                {
+                                     "attr::name::value": "Alexander",
+                                }
+                            ]
+                        })
+                    }).to_string();
+
+                let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, Some(&extra_query)).unwrap();
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "attr1_referent", 100).unwrap();
+
+                let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
+                assert_eq!(credentials.len(), 1);
+
+                AnoncredsUtils::prover_close_credentials_search_for_proof_req(search_handle).unwrap();
+
+                WalletUtils::close_wallet(wallet_handle).unwrap();
+            }
+
+            #[test]
+            fn prover_get_credentials_for_proof_req_works_for_requested_attribute_restriction_and_extra_query_contain_the_same_operator() {
+                AnoncredsUtils::init_common_wallet();
+
+                let wallet_handle = WalletUtils::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+                let proof_req = json!({
+                       "nonce":"123432421212",
+                       "name":"proof_req_1",
+                       "version":"0.1",
+                       "requested_attributes": json!({
+                           "attr1_referent": json!({
+                               "name":"name",
+                               "restrictions": json!({
+                                    "$or": vec![
+                                        json!({ "cred_def_id": AnoncredsUtils::issuer_1_gvt_cred_def_id() })
+                                    ]
+                               })
+                           })
+                       }),
+                       "requested_predicates": json!({
+                       }),
+                    }).to_string();
+
+                let extra_query = json!({
+                        "attr1_referent": json!({
+                            "$or": [
+                                {
+                                     "attr::name::value": "Alex",
+                                },
+                                {
+                                     "attr::name::value": "Alexander",
+                                }
+                            ]
+                        })
+                    }).to_string();
+
+                let search_handle = AnoncredsUtils::prover_search_credentials_for_proof_req(wallet_handle, &proof_req, Some(&extra_query)).unwrap();
+
+                let credentials_json = AnoncredsUtils::prover_fetch_next_credentials_for_proof_req(search_handle, "attr1_referent", 100).unwrap();
+
                 let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials_json).unwrap();
                 assert_eq!(credentials.len(), 1);
 

@@ -183,7 +183,7 @@ indy> pool create [name=]<pool name> gen_txn_file=<gen txn file path>
 #### Connect
 Connect to Indy nodes pool and make it available for operation that require pool access. If there was pool connection it will be disconnected.
 ```
-indy> pool connect [name=]<pool name> [protocol-version=<version>]
+indy> pool connect [name=]<pool name> [protocol-version=<version>] [timeout=<timeout>] [extended-timeout=<timeout>] [pre-ordered-nodes=<node names>]
 ```
 
 #### Disconnect
