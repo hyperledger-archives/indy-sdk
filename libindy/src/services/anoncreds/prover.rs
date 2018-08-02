@@ -37,6 +37,18 @@ const ATTRIBUTE_EXISTENCE_MARKER: &'static str = "1";
 
 pub struct Prover {}
 
+macro_rules! serde_map {
+    ($( $key: expr => $val: expr ),*) => {
+        {
+            let mut map = serde_json::Map::new();
+            $(
+                map.insert($key, $val);
+            )*
+            map
+        }
+    }
+}
+
 impl Prover {
     pub fn new() -> Prover {
         Prover {}
@@ -292,9 +304,11 @@ impl Prover {
                        extra_query: &Option<ProofRequestExtraQuery>) -> Result<String, CommonError> {
         trace!("build_query >>> name: {:?}, referent: {:?}, restrictions: {:?}, extra_query: {:?}", name, referent, restrictions, extra_query);
 
-        let mut query: HashMap<String, serde_json::Value> = HashMap::new();
+        let mut sub_queries: Vec<serde_json::Value> = vec![];
 
-        query.insert(format!("attr::{}::marker", &attr_common_view(name)), serde_json::Value::String(ATTRIBUTE_EXISTENCE_MARKER.to_string()));
+        sub_queries.push(serde_json::Value::Object(serde_map!(
+            format!("attr::{}::marker", &attr_common_view(name)) => serde_json::Value::String(ATTRIBUTE_EXISTENCE_MARKER.to_string())
+        )));
 
         match restrictions.as_ref() {
             // Convert old restrictions format to valid wql
@@ -311,10 +325,12 @@ impl Prover {
                     res.push(serde_json::Value::Object(sub_query));
                 }
 
-                query.insert("$or".to_string(), serde_json::Value::Array(res));
+                sub_queries.push(serde_json::Value::Object(serde_map!(
+                    "$or".to_string() => serde_json::Value::Array(res)
+                )));
             }
             Some(&serde_json::Value::Object(ref object)) => {
-                query.extend(object.clone());
+                sub_queries.push(serde_json::Value::Object(object.clone()));
             }
             None => {}
             _ => {
@@ -323,8 +339,11 @@ impl Prover {
         };
 
         if let Some(q) = extra_query.as_ref().and_then(|ex_query| ex_query.get(referent)) {
-            query.extend(q.clone());
+            sub_queries.push(serde_json::Value::Object(q.clone()));
         }
+
+        let mut query: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
+        query.insert("$and".to_string(), sub_queries);
 
         let res = serde_json::to_string(&query)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot serialize Query: {:?}", err)))?;
@@ -495,7 +514,13 @@ mod tests {
         fn build_query_works() {
             let ps = Prover::new();
             let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &None).unwrap();
-            let expected_query = json!({"attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER});
+            let expected_query = json!({
+                "$and": vec![
+                    json!({
+                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
+                    })
+                ]
+            });
             assert_eq!(expected_query, _value(&query));
         }
 
@@ -507,9 +532,15 @@ mod tests {
             let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &None).unwrap();
 
             let expected_query = json!({
-                "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER,
-                "schema_id": SCHEMA_ID,
-                "cred_def_id": CRED_DEF_ID
+                "$and": vec![
+                    json!({
+                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
+                    }),
+                    json!({
+                        "schema_id": SCHEMA_ID,
+                        "cred_def_id": CRED_DEF_ID
+                    })
+                ]
             });
 
             assert_eq!(expected_query, _value(&query));
@@ -521,7 +552,7 @@ mod tests {
 
             let extra_query: ProofRequestExtraQuery = hashmap!(
                 ATTR_REFERENT.to_string() =>
-                    hashmap!(
+                    serde_map!(
                         "name".to_string() => serde_json::Value::String("Alex".to_string())
                     )
             );
@@ -529,8 +560,14 @@ mod tests {
             let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(extra_query)).unwrap();
 
             let expected_query = json!({
-                "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER,
-                "name": "Alex"
+                "$and": vec![
+                    json!({
+                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
+                    }),
+                    json!({
+                        "name": "Alex"
+                    })
+                ]
             });
 
             assert_eq!(expected_query, _value(&query));
@@ -544,7 +581,7 @@ mod tests {
 
             let extra_query: ProofRequestExtraQuery = hashmap!(
                 ATTR_REFERENT.to_string() =>
-                    hashmap!(
+                    serde_map!(
                         "name".to_string() => serde_json::Value::String("Alex".to_string())
                     )
             );
@@ -552,10 +589,18 @@ mod tests {
             let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(extra_query)).unwrap();
 
             let expected_query = json!({
-                "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER,
-                "schema_id": SCHEMA_ID,
-                "cred_def_id": CRED_DEF_ID,
-                "name": "Alex"
+                "$and": vec![
+                    json!({
+                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
+                    }),
+                    json!({
+                        "schema_id": SCHEMA_ID,
+                        "cred_def_id": CRED_DEF_ID
+                    }),
+                    json!({
+                        "name": "Alex"
+                    })
+                ]
             });
 
             assert_eq!(expected_query, _value(&query));
@@ -572,16 +617,22 @@ mod tests {
             let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), &None).unwrap();
 
             let expected_query = json!({
-                "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER,
-                "$or": vec![
+                "$and": vec![
                     json!({
-                        "schema_id": SCHEMA_ID,
-                        "cred_def_id": CRED_DEF_ID,
+                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER,
                     }),
                     json!({
-                        "cred_def_id": CRED_DEF_ID,
+                        "$or": vec![
+                            json!({
+                                "schema_id": SCHEMA_ID,
+                                "cred_def_id": CRED_DEF_ID,
+                            }),
+                            json!({
+                                "cred_def_id": CRED_DEF_ID,
+                            })
+                        ]
                     })
-                ],
+                ]
             });
 
             assert_eq!(expected_query, _value(&query));
@@ -598,15 +649,21 @@ mod tests {
             let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restirctions), &None).unwrap();
 
             let expected_query = json!({
-                "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER,
-                "$or": vec![
+                "$and": vec![
                     json!({
-                        "schema_id": SCHEMA_ID,
+                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER,
                     }),
                     json!({
-                        "cred_def_id": CRED_DEF_ID,
+                        "$or": vec![
+                            json!({
+                                "schema_id": SCHEMA_ID
+                            }),
+                            json!({
+                                "cred_def_id": CRED_DEF_ID,
+                            })
+                        ]
                     })
-                ],
+                ]
             });
 
             assert_eq!(expected_query, _value(&query));
@@ -618,7 +675,7 @@ mod tests {
 
             let extra_query: ProofRequestExtraQuery = hashmap!(
                 "other_attr_referent".to_string() =>
-                    hashmap!(
+                    serde_map!(
                         "age".to_string() => serde_json::Value::String("25".to_string())
                     )
             );
@@ -626,7 +683,58 @@ mod tests {
             let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(extra_query)).unwrap();
 
             let expected_query = json!({
-                "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
+                "$and": vec![
+                    json!({
+                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
+                    })
+                ]
+            });
+
+            assert_eq!(expected_query, _value(&query));
+        }
+
+        #[test]
+        fn build_query_works_for_restriction_and_extra_query_contain_or_operator() {
+            let ps = Prover::new();
+
+            let restriction = json!({
+                "$or": vec![
+                    json!({ "schema_id": SCHEMA_ID }),
+                    json!({ "schema_id": "schema_id_2" })
+                ]
+            });
+
+
+            let extra_query: ProofRequestExtraQuery = hashmap!(
+                ATTR_REFERENT.to_string() =>
+                    serde_map!(
+                        "$or".to_string() => serde_json::Value::Array(vec![
+                            json!({ "name": "Alex" }),
+                            json!({ "name": "Alexander" })
+                        ])
+                    )
+            );
+
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(extra_query)).unwrap();
+
+            let expected_query = json!({
+                "$and": [
+                    json!({
+                        "attr::name::marker": ATTRIBUTE_EXISTENCE_MARKER
+                    }),
+                    json!({
+                        "$or": vec![
+                            json!({ "schema_id": SCHEMA_ID }),
+                            json!({ "schema_id": "schema_id_2" })
+                        ]
+                    }),
+                    json!({
+                        "$or": vec![
+                            json!({ "name": "Alex" }),
+                            json!({ "name": "Alexander" })
+                        ]
+                    })
+                ]
             });
 
             assert_eq!(expected_query, _value(&query));
