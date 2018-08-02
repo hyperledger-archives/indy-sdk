@@ -52,20 +52,20 @@ def mainUbuntu() {
 
                 // ******** Build the libvcx base image (runs tests and creates debian automatically) ********
                 def libvcx = docker.build("libvcx", "-f ${libvcxDockerfile} .")
-                sh "docker run --rm libvcx"
+                sh "docker run --name libvcx --rm libvcx"
                
                 // ******** Builds and tests the Node JS Wrapper *******
                 def node = docker.build("node", "-f ${nodeDockerfile} .")
-                sh "docker run --rm node"
+                sh "docker run --name libvcx --rm node"
                 
                 // ******** Builds and tests the Python Wrapper *******
                 def python = docker.build("python", "-f ${pythonDockerfile} .")    
-                sh "docker run --rm python"
+                sh "docker run --name libvcx --rm python"
                 
                 if (env.BRANCH_NAME == "master") {
                     // ******** PUBLISHING (artifacts are in a Docker Volume) ********
                     withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
-                        def publish = docker.build('publish', "-f ${publishDockerfile} .")
+                        def publish = docker.build('publish', "-f ${libvcxDockerfile} .")
                         publish.inside("--network=host") {
                             // ******** Publish Libvcx Debian to repo ********
                             sh "/sdk/vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"libvcx*.deb\" https://kraken.corp.evernym.com/repo/portal_dev/upload"
