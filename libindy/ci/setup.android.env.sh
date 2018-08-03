@@ -137,7 +137,7 @@ download_and_unzip_dependencies_for_all_architectures(){
             echo "${GREEN}Downloading dependencies...${RESET}"
             git clone https://github.com/evernym/indy-android-dependencies.git
             pushd ${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/
-                git checkout tags/v1.0.2
+                git checkout tags/v1.1.1
                 find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -qq -d "$(dirname "FILENAME")" "FILENAME"'
             popd
              echo "${GREEN}Done!${RESET}"
