@@ -33,8 +33,8 @@ enum IndyCallbackType {
     CB_STRING,
     CB_BOOLEAN,
     CB_HANDLE,
+    CB_HANDLE_U32,
     CB_I32,
-    CB_I32_USIZE,
     CB_BUFFER,
     CB_STRING_BUFFER,
     CB_STRING_STRING,
@@ -123,19 +123,19 @@ class IndyCallback : public Nan::AsyncResource {
         send(xerr);
     }
 
-    void cbI32(indy_error_t xerr, indy_i32_t i){
+    void cbHandleU32(indy_error_t xerr, indy_handle_t h, indy_u32_t n){
         if(xerr == 0){
-          type = CB_I32;
-          i32int0 = i;
+          type = CB_HANDLE_U32;
+          handle0 = h;
+          u32int0 = n;
         }
         send(xerr);
     }
 
-    void cbI32Usize(indy_error_t xerr, indy_i32_t i, uint32_t u){
+    void cbI32(indy_error_t xerr, indy_i32_t i){
         if(xerr == 0){
-          type = CB_I32_USIZE;
+          type = CB_I32;
           i32int0 = i;
-          buffer0len = u;
         }
         send(xerr);
     }
@@ -185,6 +185,7 @@ class IndyCallback : public Nan::AsyncResource {
     bool bool0;
     indy_handle_t handle0;
     indy_i32_t i32int0;
+    indy_u32_t u32int0;
     unsigned long long timestamp0;
     char*    buffer0data;
     uint32_t buffer0len;
@@ -216,14 +217,14 @@ class IndyCallback : public Nan::AsyncResource {
             case CB_HANDLE:
                 argv[1] = Nan::New<v8::Number>(icb->handle0);
                 break;
+            case CB_HANDLE_U32:
+                tuple = Nan::New<v8::Array>();
+                tuple->Set(0, Nan::New<v8::Number>(icb->handle0));
+                tuple->Set(1, Nan::New<v8::Number>(icb->u32int0));
+                argv[1] = tuple;
+                break;
             case CB_I32:
                 argv[1] = Nan::New<v8::Number>(icb->i32int0);
-                break;
-            case CB_I32_USIZE:
-                tuple = Nan::New<v8::Array>();
-                tuple->Set(0, Nan::New<v8::Number>(icb->i32int0));
-                tuple->Set(1, Nan::New<v8::Number>(icb->buffer0len));
-                argv[1] = tuple;
                 break;
             case CB_BUFFER:
                 argv[1] = Nan::NewBuffer(icb->buffer0data, icb->buffer0len).ToLocalChecked();
@@ -272,6 +273,52 @@ class IndyCallback : public Nan::AsyncResource {
 
 std::map<indy_handle_t, IndyCallback*> IndyCallback::icbmap;
 indy_handle_t IndyCallback::next_handle = 0;
+
+#define INDY_ASSERT_NARGS(FNAME, N) \
+  if(info.Length() != N){ \
+    return Nan::ThrowError(Nan::New(""#FNAME" expects "#N" arguments").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_STRING(FNAME, I, ARGNAME) \
+  if(!info[I]->IsString() && !info[I]->IsNull() && !info[I]->IsUndefined()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects String or null for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_NUMBER(FNAME, I, ARGNAME) \
+  if(!info[I]->IsNumber()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Number for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_BOOLEAN(FNAME, I, ARGNAME) \
+  if(!info[I]->IsBoolean()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Boolean for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_UINT8ARRAY(FNAME, I, ARGNAME) \
+  if(!info[I]->IsUint8Array()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Uint8Array for "#ARGNAME"").ToLocalChecked()); \
+  }
+
+#define INDY_ASSERT_FUNCTION(FNAME, I) \
+  if(!info[I]->IsFunction()){ \
+    return Nan::ThrowTypeError(Nan::New(""#FNAME" expects Function for arg "#I"").ToLocalChecked()); \
+  }
+
+
+char* argToCString(v8::Local<v8::Value> arg){
+    char* arg1 = nullptr;
+    if(arg->IsString()){
+        Nan::Utf8String* arg1UTF = new Nan::Utf8String(arg);
+        arg1 = copyCStr((const char*)(**arg1UTF));
+        delete arg1UTF;
+    }
+    return arg1;
+}
+
+IndyCallback* argToIndyCb(v8::Local<v8::Value> arg){
+    IndyCallback* icb = new IndyCallback(Nan::To<v8::Function>(arg).ToLocalChecked());
+    return icb;
+}
 
 void indyCalled(IndyCallback* icb, indy_error_t res) {
     if(res == 0) {
