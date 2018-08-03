@@ -28,7 +28,7 @@
 }
 
 + (NSTimeInterval)defaultTimeout {
-    return 15;
+    return 25;
 }
 
 + (NSTimeInterval)shortTimeout {
