@@ -382,14 +382,16 @@ impl CryptoService {
 
         let crypto_type = self.crypto_types.get(crypto_type_name).unwrap();
 
-        let vk = if vk.starts_with('~') { &vk[1..] } else { vk };
-        let vk = ed25519_sign::PublicKey::from_slice(&base58::decode(vk)?)?;
+        if vk.starts_with('~') {
+            base58::decode(&vk[1..])?; // TODO: proper validate abbreviated verkey
+        } else {
+            let vk = ed25519_sign::PublicKey::from_slice(&base58::decode(vk)?)?;
+            crypto_type.validate_key(&vk)?;
+        };
 
-        let res = crypto_type.validate_key(&vk)?;
+        trace!("validate_key <<<");
 
-        trace!("validate_key <<< res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 
     pub fn validate_did(&self, did: &str) -> Result<(), CryptoError> {
