@@ -266,7 +266,7 @@ class Wallet:
             Wallet.send_tokens.cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
 
         c_payment_handle = c_uint32(payment_handle)
-        c_tokens = c_uint64(tokens)
+        c_tokens = c_char_p(str(tokens).encode('utf-8'))
         c_address = c_char_p(address.encode('utf-8'))
 
         result = await do_call('vcx_wallet_send_tokens',

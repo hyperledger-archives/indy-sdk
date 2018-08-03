@@ -195,7 +195,7 @@ export class Wallet {
     try {
       return await createFFICallbackPromise<string>(
         (resolve, reject, cb) => {
-          const rc = rustAPI().vcx_wallet_send_tokens(0, payment, tokens, recipient, cb)
+          const rc = rustAPI().vcx_wallet_send_tokens(0, payment, tokens.toString(), recipient, cb)
           if (rc) {
             reject(rc)
           }
