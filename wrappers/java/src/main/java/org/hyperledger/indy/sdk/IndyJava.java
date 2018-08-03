@@ -92,18 +92,6 @@ public class IndyJava {
 			return true;
 		}
 
-		/**
-		 * Throws an IndyException if the provided error code does not indicate success.
-		 * 
-		 * @param err The error code to check.
-		 * @throws IndyException Thrown if the error code does not indicate success.
-		 */
-		protected static void checkResult(int err) throws IndyException {
-
-			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromSdkError(err);
-		}
-
 		/*
 		 * OBJECT METHODS
 		 */
