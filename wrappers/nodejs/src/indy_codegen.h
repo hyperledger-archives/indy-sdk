@@ -1040,6 +1040,29 @@ NAN_METHOD(submitRequest) {
   delete arg1;
 }
 
+void submitAction_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(submitAction) {
+  INDY_ASSERT_NARGS(submitAction, 5)
+  INDY_ASSERT_NUMBER(submitAction, 0, poolHandle)
+  INDY_ASSERT_STRING(submitAction, 1, request)
+  INDY_ASSERT_STRING(submitAction, 2, nodes)
+  INDY_ASSERT_NUMBER(submitAction, 3, timeout)
+  INDY_ASSERT_FUNCTION(submitRequest, 4)
+  indy_handle_t arg0 = info[0]->Int32Value();
+  const char* arg1 = argToCString(info[1]);
+  const char* arg2 = argToCString(info[2]);
+  indy_i32_t arg3 = info[3]->Int32Value();
+  IndyCallback* icb = argToIndyCb(info[4]);
+  indyCalled(icb, indy_submit_action(icb->handle, arg0, arg1, arg2, arg3, submitRequest_cb));
+  delete arg1;
+  delete arg2;
+}
+
 void signRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
   IndyCallback* icb = IndyCallback::getCallback(handle);
   if(icb != nullptr){
@@ -2503,6 +2526,7 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "abbreviateVerkey", abbreviateVerkey);
   Nan::Export(target, "signAndSubmitRequest", signAndSubmitRequest);
   Nan::Export(target, "submitRequest", submitRequest);
+  Nan::Export(target, "submitAction", submitAction);
   Nan::Export(target, "signRequest", signRequest);
   Nan::Export(target, "multiSignRequest", multiSignRequest);
   Nan::Export(target, "buildGetDdoRequest", buildGetDdoRequest);

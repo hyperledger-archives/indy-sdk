@@ -1198,6 +1198,25 @@ The request is sent to the validator pool as is. It's assumed that it's already 
 
 Errors: `Common*`, `Ledger*`
 
+#### submitAction \( poolHandle, request, nodes, timeout \) -&gt; requestResult
+
+Send action to particular nodes of validator pool.
+
+The list of requests can be send:
+* POOL_RESTART
+* GET_VALIDATOR_INFO
+
+The request is sent to the nodes as is. It's assumed that it's already prepared.
+
+* `poolHandle`: Handle (Number) - pool handle \(created by open\_pool\_ledger\).
+* `request`: Json - Request data json.
+* `nodes`: Json - (Optional) List of node names to send the request. 
+["Node1", "Node2",...."NodeN"]
+* `timeout`: Number - (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+* __->__ `requestResult`: Json
+
+Errors: `Common*`, `Ledger*`
+
 #### signRequest \( wh, submitterDid, request \) -&gt; signedRequest
 
 Signs request message.

@@ -85,6 +85,56 @@ async def submit_request(pool_handle: int,
     return res
 
 
+async def submit_action(pool_handle: int,
+                        request_json: str,
+                        nodes: Optional[str],
+                        timeout: Optional[int]) -> str:
+    """
+    Send action to particular nodes of validator pool.
+    
+    The list of requests can be send:
+        POOL_RESTART
+        GET_VALIDATOR_INFO
+   
+    The request is sent to the nodes as is. It's assumed that it's already prepared.
+
+    :param pool_handle: pool handle (created by open_pool_ledger).
+    :param request_json: Request data json.
+    :param request_json: Request data json.
+    :param nodes: (Optional) List of node names to send the request.
+           ["Node1", "Node2",...."NodeN"]
+    :param timeout: (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("submit_action: >>> pool_handle: %r, request_json: %r, nodes: %r, timeout: %r",
+                 pool_handle,
+                 request_json,
+                 nodes,
+                 timeout)
+
+    if not hasattr(submit_action, "cb"):
+        logger.debug("submit_action: Creating callback")
+        submit_action.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_pool_handle = c_int32(pool_handle)
+    c_request_json = c_char_p(request_json.encode('utf-8'))
+    c_nodes = c_char_p(nodes.encode('utf-8')) if nodes is not None else None
+    c_timeout = c_int32(timeout) if timeout is not None else None
+
+    request_result = await do_call('indy_submit_action',
+                                   c_pool_handle,
+                                   c_request_json,
+                                   c_nodes,
+                                   c_timeout,
+                                   submit_action.cb)
+
+    res = request_result.decode()
+    logger.debug("submit_action: <<< res: %r", res)
+    return res
+
+
 async def sign_request(wallet_handle: int,
                        submitter_did: str,
                        request_json: str) -> str:

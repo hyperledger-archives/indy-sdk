@@ -331,6 +331,12 @@ indy.submitRequest = function submitRequest (poolHandle, request, cb) {
   return cb.promise
 }
 
+indy.submitAction = function submitAction (poolHandle, request, nodes, timeout, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.submitAction(poolHandle, toJson(request), toJson(nodes), nodes == null ? -1 : nodes, cb)
+  return cb.promise
+}
+
 indy.signRequest = function signRequest (wh, submitterDid, request, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.signRequest(wh, submitterDid, toJson(request), cb)

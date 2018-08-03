@@ -42,6 +42,30 @@ async def test_submit_request_works(pool_handle):
 
 
 @pytest.mark.asyncio
+async def test_submit_action_works(pool_handle, wallet_handle, identity_my1):
+    (my_did, _) = identity_my1
+
+    get_validator_info_request = await ledger.build_get_validator_info_request(my_did)
+    get_validator_info_request = await ledger.sign_request(wallet_handle, my_did, get_validator_info_request)
+    await ledger.submit_action(pool_handle, get_validator_info_request, None, None)
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip(reason="not implemented yet")
+async def test_submit_action_works_for_nodes(pool_handle, wallet_handle, identity_my1):
+    (my_did, _) = identity_my1
+    nodes = ['Node1', 'Node2']
+
+    get_validator_info_request = await ledger.build_get_validator_info_request(my_did)
+    get_validator_info_request = await ledger.sign_request(wallet_handle, my_did, get_validator_info_request)
+    response = json.loads(
+        await ledger.submit_action(pool_handle, get_validator_info_request, json.dumps(nodes), None))
+    assert 2 == len(response)
+    assert 'Node1' in response
+    assert 'Node2' in response
+
+
+@pytest.mark.asyncio
 async def test_submit_request_works_for_invalid_pool_handle(pool_handle, identity_my1):
     (my_did, _) = identity_my1
 
@@ -374,7 +398,8 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
     get_txn_request = await ledger.build_get_txn_request(my_did, None, seq_no)
     get_txn_response = json.loads(
         await ensure_previous_request_applied(pool_handle, get_txn_request,
-                                              lambda response: response['result']['data']['txnMetadata']['seqNo'] is not None))
+                                              lambda response: response['result']['data']['txnMetadata'][
+                                                                   'seqNo'] is not None))
 
     received_schema = get_txn_response['result']['data']['txn']['data']['data']
     assert schema['name'] == received_schema['name']
