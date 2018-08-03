@@ -735,6 +735,96 @@ mod tests {
         assert!(agent.process_inbox().is_err());
     }
 
+    fn add_new_cloud_agent<'a>(network: &'a Rc<RefCell<Network<'a>>>, agent1: Rc<RefCell<Agent<'a>>>,
+                               agent2: Rc<RefCell<Agent<'a>>>, edge_verkey: &'a str, cloud_agent_did: &'a str,
+                               cloud_verkey: &'a str, cloud_agent_seed: &'a str, cloud_agent_name: &'a str,
+                               cloud_agent_address: &'a str,
+                               cloud_agent_authz: Vec<&str>) -> Agent<'a> {
+        let mut old_seq_no = 0;
+        let new_seq_no = {
+            let ws1 = Rc::clone(&agent1.borrow().wallet_service);
+            let wh1 = (&agent1.borrow()).wallet_handle.clone();
+            let mut a = agent1.borrow_mut();
+            let ml = a.get_self_microledger_mut().unwrap();
+            old_seq_no = ml.get_size();
+            ml.add_key_txn(cloud_verkey, &cloud_agent_authz,
+                           Some(&ws1),
+                           Some(wh1),
+                           Some(edge_verkey)).unwrap();
+            let new_seq_no = ml.add_endpoint_txn(cloud_verkey, cloud_agent_address,
+                                                 Some(&ws1),
+                                                 Some(wh1),
+                                                 Some(edge_verkey)).unwrap();
+            assert_eq!((ml.get_size() - old_seq_no), 2);
+            new_seq_no as u64
+        };
+
+        // `did1`s cloud agent
+        let mut agent3 = bootstrap_agent(cloud_agent_did,
+                                         String::from("99999999999999999999999999999999"),
+                                         "agent3", get_did1_genesis_txns());
+        network.borrow_mut().register_peer(Rc::clone(&agent3.peer));
+
+        let msg = {
+            let a1 = agent1.borrow();
+            let ml1 = a1.get_self_microledger().unwrap();
+            new_ledger_update_msg(cloud_agent_did, &ml1, (old_seq_no+1) as u64, &agent1.borrow())
+        };
+
+        {
+            deliver_msg_successfully(&network, &msg, &mut agent2.borrow_mut());
+            deliver_msg_successfully(&network, &msg, &mut agent3);
+        }
+
+        agent3
+    }
+
+    fn check_same_microledger_for_agents(agents: Vec<&Rc<RefCell<Agent>>>, did: &str) {
+        let mut sizes: HashSet<usize> = HashSet::new();
+        let mut root_hashes: HashSet<String> = HashSet::new();
+        for agent in agents {
+            let a1 = agent.borrow();
+            let ml = a1.m_ledgers.get(did).unwrap();
+            sizes.insert(ml.get_size());
+            root_hashes.insert(ml.get_root_hash());
+        }
+        assert_eq!(sizes.len(), 1);
+        assert_eq!(root_hashes.len(), 1);
+    }
+
+    fn rotate_key(old_key: &str, new_key: &str, new_key_authz: Vec<&str>, author_key: &str, author_agent: Rc<RefCell<Agent>>) -> u64 {
+        let ws1 = Rc::clone(&author_agent.borrow().wallet_service);
+        let wh1 = (&author_agent.borrow()).wallet_handle.clone();
+        let mut a = author_agent.borrow_mut();
+        let ml = a.get_self_microledger_mut().unwrap();
+        let old_seq_no = ml.get_size();
+        ml.add_key_txn(old_key, &vec![],
+                       Some(&ws1),
+                       Some(wh1),
+                       Some(author_key)).unwrap();
+        let new_seq_no = ml.add_key_txn(new_key, &new_key_authz,
+                                        Some(&ws1),
+                                        Some(wh1),
+                                        Some(author_key)).unwrap();
+        assert_eq!((ml.get_size() - old_seq_no), 2);
+        new_seq_no as u64
+    }
+
+    fn gen_ledger_update_and_deliver_to_others(network: &Rc<RefCell<Network>>, generating_agent: Rc<RefCell<Agent>>, from_seq_no: u64,
+                                               receiving_agents: Vec<Rc<RefCell<Agent>>>) {
+        let msg = {
+            let a1 = generating_agent.borrow();
+            let ml1 = a1.get_self_microledger().unwrap();
+            new_ledger_update_msg(a1.managing_did.as_str(), &ml1, from_seq_no, &generating_agent.borrow())
+        };
+
+        {
+            for agent in receiving_agents {
+                deliver_msg_successfully(&network, &msg, &mut agent.borrow_mut());
+            }
+        }
+    }
+
     #[test]
     fn test_new_agent_create_new_microledger() {
         TestUtils::cleanup_temp();
@@ -931,61 +1021,6 @@ mod tests {
         assert_eq!(doc.borrow().get_key_authorisations(new_verkey).unwrap(), vec![AUTHZ_ADD_KEY]);
     }
 
-    /*fn add_new_cloud_agent<'a>(network: &'a Rc<RefCell<Network>>, agent1: &'a mut Agent,
-                               agent2: &'a mut Agent, edge_verkey: &'a str, cloud_verkey: &'a str,
-                               cloud_agent_seed: &'a str, cloud_agent_name: &'a str, cloud_agent_address: &'a str,
-                               cloud_agent_authz: Vec<&str>) -> Agent<'a> {
-        let mut old_seq_no = 0;
-        let new_seq_no = {
-            let ws1 = Rc::clone(&agent1.wallet_service);
-            let wh1 = (&agent1).wallet_handle.clone();
-            let ml = agent1.get_self_microledger_mut().unwrap();
-            old_seq_no = ml.get_size();
-            ml.add_key_txn(cloud_verkey, &vec![AUTHZ_MPROX],
-                           Some(&ws1),
-                           Some(wh1),
-                           Some(edge_verkey)).unwrap();
-            let new_seq_no = ml.add_endpoint_txn(cloud_verkey, cloud_agent_address,
-                                                 Some(&ws1),
-                                                 Some(wh1),
-                                                 Some(edge_verkey)).unwrap();
-            assert_eq!((ml.get_size() - old_seq_no), 2);
-            new_seq_no as u64
-        };
-
-        let msg = {
-            let ml1 = agent1.get_self_microledger().unwrap();
-            new_ledger_update_msg(did1, &ml1, (old_seq_no+1) as u64, &agent1)
-        };
-
-        // `did1`s cloud agent
-        let mut agent3 = bootstrap_agent(did1,
-                                         String::from("99999999999999999999999999999999"),
-                                         "agent3", get_did1_genesis_txns());
-        network.borrow_mut().register_peer(Rc::clone(&agent3.peer));
-
-        {
-            deliver_msg_successfully(&network, &msg, &mut agent2);
-            deliver_msg_successfully(&network, &msg, &mut agent3);
-        }
-
-        agent3
-    }*/
-
-    fn check_same_microledger_for_agents(agents: Vec<&Agent>, did: &str) {
-        let mut sizes: HashSet<usize> = HashSet::new();
-        let mut root_hashes: HashSet<String> = HashSet::new();
-        for agent in agents {
-            let ml = agent.m_ledgers.get(did).unwrap();
-            sizes.insert(ml.get_size());
-            root_hashes.insert(ml.get_root_hash());
-        }
-        println!("Sizes = {:?}", &sizes);
-        println!("Root hashes = {:?}", &root_hashes);
-        assert_eq!(sizes.len(), 1);
-        assert_eq!(root_hashes.len(), 1);
-    }
-
     #[test]
     fn test_new_cloud_agent() {
         TestUtils::cleanup_temp();
@@ -995,44 +1030,21 @@ mod tests {
         let edge_verkey = "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC";
         let cloud_verkey = "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ";
         let cloud_agent_address = "https://agent1.example.com:9080";
-        let mut old_seq_no = 0;
-        let new_seq_no = {
-            let ws1 = Rc::clone(&agent1.wallet_service);
-            let wh1 = (&agent1).wallet_handle.clone();
-            let ml = agent1.get_self_microledger_mut().unwrap();
-            old_seq_no = ml.get_size();
-            ml.add_key_txn(cloud_verkey, &vec![AUTHZ_MPROX],
-                                            Some(&ws1),
-                                            Some(wh1),
-                                            Some(edge_verkey)).unwrap();
-            let new_seq_no = ml.add_endpoint_txn(cloud_verkey, cloud_agent_address,
-                                            Some(&ws1),
-                                            Some(wh1),
-                                            Some(edge_verkey)).unwrap();
-            assert_eq!((ml.get_size() - old_seq_no), 2);
-            new_seq_no as u64
-        };
 
-        let ml1 = agent1.get_self_microledger().unwrap();
+        let mut agent1 = Rc::new(RefCell::new(agent1));
+        let mut agent2 = Rc::new(RefCell::new(agent2));
 
-        let msg = new_ledger_update_msg(did1, &ml1, (old_seq_no+1) as u64, &agent1);
-
-        // `did1`s cloud agent
-        let mut agent3 = bootstrap_agent(did1,
-                                         String::from("99999999999999999999999999999999"),
-                                         "agent3", get_did1_genesis_txns());
-        network.borrow_mut().register_peer(Rc::clone(&agent3.peer));
-
-        {
-            deliver_msg_successfully(&network, &msg, &mut agent2);
-            deliver_msg_successfully(&network, &msg, &mut agent3);
-        }
-
+        let mut agent3 =
+            add_new_cloud_agent(&network, Rc::clone(&agent1), Rc::clone(&agent2), edge_verkey,
+                                did1, cloud_verkey, "99999999999999999999999999999999",
+                                "agent3", cloud_agent_address, vec![AUTHZ_MPROX]);
+        let mut agent3 = Rc::new(RefCell::new(agent3));
         // Microledger matches on cloud agent and other party's agent
-        check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3], did1);
+        check_same_microledger_for_agents(vec![&Rc::clone(&agent1), &Rc::clone(&agent2), &Rc::clone(&agent3)], did1);
 
         // DID doc has correct key authorisations
-        let doc = agent2.get_did_doc(did1).unwrap();
+        let a2 = agent2.borrow();
+        let doc = a2.get_did_doc(did1).unwrap();
         assert_eq!(doc.borrow().get_key_authorisations(cloud_verkey).unwrap(), vec![AUTHZ_MPROX]);
     }
 
@@ -1043,87 +1055,42 @@ mod tests {
 
         TestUtils::cleanup_temp();
 
-        // TODO: Copy pasted code (from test above) begins, fix in `add_new_cloud_agent`
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
         let (mut network, mut agent1, mut agent2) = connected_agents();
         let edge_verkey = "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC";
         let cloud_verkey = "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ";
         let cloud_agent_address = "https://agent1.example.com:9080";
-        let mut old_seq_no = 0;
-        let new_seq_no = {
-            let ws1 = Rc::clone(&agent1.wallet_service);
-            let wh1 = (&agent1).wallet_handle.clone();
-            let ml = agent1.get_self_microledger_mut().unwrap();
-            old_seq_no = ml.get_size();
-            ml.add_key_txn(cloud_verkey, &vec![AUTHZ_MPROX],
-                           Some(&ws1),
-                           Some(wh1),
-                           Some(edge_verkey)).unwrap();
-            let new_seq_no = ml.add_endpoint_txn(cloud_verkey, cloud_agent_address,
-                                                 Some(&ws1),
-                                                 Some(wh1),
-                                                 Some(edge_verkey)).unwrap();
-            assert_eq!((ml.get_size() - old_seq_no), 2);
-            new_seq_no as u64
-        };
+        let mut agent1 = Rc::new(RefCell::new(agent1));
+        let mut agent2 = Rc::new(RefCell::new(agent2));
 
-        let msg = {
-            let ml1 = agent1.get_self_microledger().unwrap();
-            new_ledger_update_msg(did1, &ml1, (old_seq_no+1) as u64, &agent1)
-        };
-
-        // `did1`s cloud agent
-        let mut agent3 = bootstrap_agent(did1,
-                                         String::from("99999999999999999999999999999999"),
-                                         "agent3", get_did1_genesis_txns());
-        network.borrow_mut().register_peer(Rc::clone(&agent3.peer));
-
-        {
-            deliver_msg_successfully(&network, &msg, &mut agent2);
-            deliver_msg_successfully(&network, &msg, &mut agent3);
-        }
-        // TODO: Copy pasted code ends, fix in `add_new_cloud_agent`
+        let mut agent3 =
+            add_new_cloud_agent(&network, Rc::clone(&agent1), Rc::clone(&agent2), edge_verkey,
+                                did1, cloud_verkey, "99999999999999999999999999999999",
+                                "agent3", cloud_agent_address, vec![AUTHZ_MPROX]);
+        let mut agent3 = Rc::new(RefCell::new(agent3));
 
         let agent1_verkey = "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC";
         let cloud_new_verkey = "2btLJAAb1S3x6hZYdVyAePjqtQYi2ZBSRGy4569RZu8h";
 
-        // TODO: Copy pasted code (from test above)
-        let new_seq_no = {
-            let ws1 = Rc::clone(&agent1.wallet_service);
-            let wh1 = (&agent1).wallet_handle.clone();
-            let ml = agent1.get_self_microledger_mut().unwrap();
-            old_seq_no = ml.get_size();
-            ml.add_key_txn(cloud_verkey, &vec![],
-                           Some(&ws1),
-                           Some(wh1),
-                           Some(agent1_verkey)).unwrap();
-            let new_seq_no = ml.add_key_txn(cloud_new_verkey, &vec![AUTHZ_MPROX],
-                                            Some(&ws1),
-                                            Some(wh1),
-                                            Some(agent1_verkey)).unwrap();
-            assert_eq!((ml.get_size() - old_seq_no), 2);
-            new_seq_no as u64
-        };
+        let new_seq_no = rotate_key(cloud_verkey, cloud_new_verkey,
+                                    vec![AUTHZ_MPROX], agent1_verkey, Rc::clone(&agent1));
 
-        let msg = {
-            let ml1 = agent1.get_self_microledger().unwrap();
-            new_ledger_update_msg(did1, &ml1, (old_seq_no+1) as u64, &agent1)
-        };
+        gen_ledger_update_and_deliver_to_others(&network, Rc::clone(&agent1),
+                                                new_seq_no-1,
+                                                vec![Rc::clone(&agent2), Rc::clone(&agent3)]);
 
-        {
-            deliver_msg_successfully(&network, &msg, &mut agent2);
-            deliver_msg_successfully(&network, &msg, &mut agent3);
-        }
-
-        check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3], did1);
+        check_same_microledger_for_agents(vec![&Rc::clone(&agent1),
+                                               &Rc::clone(&agent2), &Rc::clone(&agent3)], did1);
 
         // DID doc has correct key authorisations
         let empty_str_vec: Vec<String> = vec![];
-        let doc = agent2.get_did_doc(did1).unwrap();
+        let a2 = agent2.borrow();
+        let doc = a2.get_did_doc(did1).unwrap();
         assert_eq!(doc.borrow().get_key_authorisations(cloud_new_verkey).unwrap(), vec![AUTHZ_MPROX]);
         assert_eq!(doc.borrow().get_key_authorisations(cloud_verkey).unwrap(), empty_str_vec);
-        let doc = agent3.get_did_doc(did1).unwrap();
+        let a3 = agent3.borrow();
+        let doc = a3.get_did_doc(did1).unwrap();
         assert_eq!(doc.borrow().get_key_authorisations(cloud_new_verkey).unwrap(), vec![AUTHZ_MPROX]);
         assert_eq!(doc.borrow().get_key_authorisations(cloud_verkey).unwrap(), empty_str_vec);
     }
@@ -1142,81 +1109,37 @@ mod tests {
         let edge_verkey = "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC";
         let cloud_verkey = "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ";
         let cloud_agent_address = "https://agent1.example.com:9080";
-        let mut old_seq_no = 0;
-        let new_seq_no = {
-            let ws1 = Rc::clone(&agent1.wallet_service);
-            let wh1 = (&agent1).wallet_handle.clone();
-            let ml = agent1.get_self_microledger_mut().unwrap();
-            old_seq_no = ml.get_size();
-            ml.add_key_txn(cloud_verkey, &vec![AUTHZ_ALL],
-                           Some(&ws1),
-                           Some(wh1),
-                           Some(edge_verkey)).unwrap();
-            let new_seq_no = ml.add_endpoint_txn(cloud_verkey, cloud_agent_address,
-                                                 Some(&ws1),
-                                                 Some(wh1),
-                                                 Some(edge_verkey)).unwrap();
-            assert_eq!((ml.get_size() - old_seq_no), 2);
-            new_seq_no as u64
-        };
 
-        let msg = {
-            let ml1 = agent1.get_self_microledger().unwrap();
-            new_ledger_update_msg(did1, &ml1, (old_seq_no+1) as u64, &agent1)
-        };
-
-        // `did1`s cloud agent
-        let mut agent3 = bootstrap_agent(did1,
-                                         String::from("99999999999999999999999999999999"),
-                                         "agent3", get_did1_genesis_txns());
-        network.borrow_mut().register_peer(Rc::clone(&agent3.peer));
-
-        {
-            deliver_msg_successfully(&network, &msg, &mut agent2);
-            deliver_msg_successfully(&network, &msg, &mut agent3);
-        }
-        // TODO: Copy pasted code ends, fix in `add_new_cloud_agent`
+        let mut agent1 = Rc::new(RefCell::new(agent1));
+        let mut agent2 = Rc::new(RefCell::new(agent2));
+        let mut agent3 =
+            add_new_cloud_agent(&network, Rc::clone(&agent1), Rc::clone(&agent2), edge_verkey,
+                                did1, cloud_verkey, "99999999999999999999999999999999",
+                                "agent3", cloud_agent_address, vec![AUTHZ_ALL]);
+        let mut agent3 = Rc::new(RefCell::new(agent3));
 
         check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3], did1);
 
         let edge_new_verkey = "2btLJAAb1S3x6hZYdVyAePjqtQYi2ZBSRGy4569RZu8h";
 
-        // TODO: Copy pasted code (from test above)
-        let new_seq_no = {
-            let ws = Rc::clone(&agent3.wallet_service);
-            let wh = (&agent3).wallet_handle.clone();
-            let ml = agent3.get_self_microledger_mut().unwrap();
-            old_seq_no = ml.get_size();
-            ml.add_key_txn(edge_verkey, &vec![],
-                           Some(&ws),
-                           Some(wh),
-                           Some(cloud_verkey)).unwrap();
-            let new_seq_no = ml.add_key_txn(edge_new_verkey, &vec![AUTHZ_ADD_KEY, AUTHZ_REM_KEY],
-                                            Some(&ws),
-                                            Some(wh),
-                                            Some(cloud_verkey)).unwrap();
-            assert_eq!((ml.get_size() - old_seq_no), 2);
-            new_seq_no as u64
-        };
+        let new_seq_no = rotate_key(edge_verkey, edge_new_verkey,
+                                    vec![AUTHZ_ADD_KEY, AUTHZ_REM_KEY], cloud_verkey,
+                                    Rc::clone(&agent3));
 
-        let msg = {
-            let ml3 = agent3.get_self_microledger().unwrap();
-            new_ledger_update_msg(did1, &ml3, (old_seq_no+1) as u64, &agent3)
-        };
-
-        {
-            deliver_msg_successfully(&network, &msg, &mut agent1);
-            deliver_msg_successfully(&network, &msg, &mut agent2);
-        }
+        gen_ledger_update_and_deliver_to_others(&network, Rc::clone(&agent3),
+                                                new_seq_no-1,
+                                                vec![Rc::clone(&agent1), Rc::clone(&agent2)]);
 
         check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3], did1);
 
         // DID doc has correct key authorisations
         let empty_str_vec: Vec<String> = vec![];
-        let doc = agent2.get_did_doc(did1).unwrap();
+        let a2 = agent2.borrow();
+        let doc = a2.get_did_doc(did1).unwrap();
         assert_eq!(doc.borrow().get_key_authorisations(edge_new_verkey).unwrap(), vec![AUTHZ_ADD_KEY, AUTHZ_REM_KEY]);
         assert_eq!(doc.borrow().get_key_authorisations(edge_verkey).unwrap(), empty_str_vec);
-        let doc = agent1.get_did_doc(did1).unwrap();
+        let a1 = agent1.borrow();
+        let doc = a1.get_did_doc(did1).unwrap();
         assert_eq!(doc.borrow().get_key_authorisations(edge_new_verkey).unwrap(), vec![AUTHZ_ADD_KEY, AUTHZ_REM_KEY]);
         assert_eq!(doc.borrow().get_key_authorisations(edge_verkey).unwrap(), empty_str_vec);
     }
