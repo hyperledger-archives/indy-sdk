@@ -1,7 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-
 use serde_json;
 use serde_json::Value as JValue;
 
@@ -25,6 +24,7 @@ use services::microledger::txn_builder::Txn;
 use services::microledger::constants::{SIGNATURE, IDENTIFIER, KEY_TXN, AUTHZ_ALL, AUTHZ_ADD_KEY,
                                        AUTHZ_REM_KEY, AUTHZ_MPROX, VERKEY, AUTHORIZATIONS,
                                        ENDPOINT_TXN, ADDRESS};
+use services::microledger::helpers::gen_random_bytes;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum MsgTypes {
@@ -55,7 +55,7 @@ pub struct ConnectionResponse {
 pub struct Message {
     #[serde(rename = "type")]
     pub type_: MsgTypes,
-    pub did: String,
+    pub id: String,
     pub verkey: String,
     pub payload: String,
     pub signature: String
@@ -90,10 +90,10 @@ impl ConnectionResponse {
 }
 
 impl Message {
-    pub fn new(payload: &str, did:&str, verkey: &str, sig: &str) -> Self {
+    pub fn new(payload: &str, id:&str, verkey: &str, sig: &str) -> Self {
         Message {
             type_: MsgTypes::Message,
-            did: did.to_string(),
+            id: id.to_string(),
             verkey: verkey.to_string(),
             payload: payload.to_string(),
             signature: sig.to_string()
@@ -146,7 +146,8 @@ impl<'a> Agent<'a> {
 
         wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).unwrap();
 
-        let peer = Rc::new(RefCell::new(Peer::new(did)));
+//        let peer = Rc::new(RefCell::new(Peer::new(did)));
+        let peer = Rc::new(RefCell::new(Peer::new(&encode(&gen_random_bytes(6)))));
 
         Ok(Agent {
             crypto_service,
@@ -190,14 +191,15 @@ impl<'a> Agent<'a> {
         let ledger_update = LedgerUpdate::new_as_json(&self.managing_did,
                                                       self.get_self_microledger()?, 1)?;
         serde_json::to_string(&Connection::new(
-            &self.managing_did,
+            &self.get_peer_id(),
             &ledger_update
         )).map_err(|err|
             CommonError::InvalidState(format!("Unable to jsonify connection {:?}.", err)))
     }
 
     pub fn get_peer_id(&self) -> String {
-        self.managing_did.clone()
+//        self.managing_did.clone()
+        self.peer.borrow().name.clone()
     }
 
     pub fn process_inbox(&mut self) -> Result<(), CommonError> {
@@ -254,7 +256,7 @@ impl<'a> Agent<'a> {
                         Some("Message") => {
                             let m: Message = serde_json::from_value(j).map_err(|err|
                                 CommonError::InvalidState(format!("Unable to parse json message {:?}.", err)))?;
-                            let remote_did = &m.did;
+                            let remote_id = &m.id;
                             let remote_verkey = &m.verkey;
                             if !self.verify_msg(remote_verkey, m.payload.clone().as_bytes(),
                                                 &decode(&m.signature).unwrap()).unwrap() {
@@ -741,7 +743,6 @@ mod tests {
         let agent1 = get_new_agent(did, seed1, String::from(""));
         assert_eq!(agent1.managing_did, did);
         assert_eq!(agent1.verkey, "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC");
-        assert_eq!(agent1.get_peer_id(), did.to_string());
         assert!(agent1.m_ledgers.get(did).is_some());
         assert_eq!(agent1.get_self_microledger().unwrap().get_root_hash(), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
         let ml = agent1.m_ledgers.get(did).unwrap();
@@ -798,15 +799,18 @@ mod tests {
         TestUtils::cleanup_temp();
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let seed1 = String::from("11111111111111111111111111111111");
-        let expected_message1 = r#"{"type":"Connection","id":"75KUW8tPUQNBS4W7ibFeY8","message":"{\"type\":\"ledgerUpdate\",\"state\":\"DID:75KUW8tPUQNBS4W7ibFeY8\",\"root\":\"c59e216c9207c5736670a70688e0caace20c2085333ba079842f0d9e1c250db3\",\"events\":[[1,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"dest\\\":\\\"75KUW8tPUQNBS4W7ibFeY8\\\",\\\"type\\\":\\\"1\\\"}}\"],[2,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"authorizations\\\":[\\\"all\\\"],\\\"type\\\":\\\"2\\\",\\\"verkey\\\":\\\"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC\\\"}}\"],[3,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"address\\\":\\\"https://agent.example.com\\\",\\\"type\\\":\\\"3\\\",\\\"verkey\\\":\\\"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC\\\"}}\"]]}"}"#;
         let (agent1, conn1) = bootstrap_agent1(did1, seed1);
-        assert_eq!(expected_message1, conn1);
+        let expected_message1 = r#"{"message":"{\"type\":\"ledgerUpdate\",\"state\":\"DID:75KUW8tPUQNBS4W7ibFeY8\",\"root\":\"c59e216c9207c5736670a70688e0caace20c2085333ba079842f0d9e1c250db3\",\"events\":[[1,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"dest\\\":\\\"75KUW8tPUQNBS4W7ibFeY8\\\",\\\"type\\\":\\\"1\\\"}}\"],[2,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"authorizations\\\":[\\\"all\\\"],\\\"type\\\":\\\"2\\\",\\\"verkey\\\":\\\"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC\\\"}}\"],[3,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"address\\\":\\\"https://agent.example.com\\\",\\\"type\\\":\\\"3\\\",\\\"verkey\\\":\\\"5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC\\\"}}\"]]}"}"#;
+        println!("{}", &conn1);
+        assert!(conn1.contains(expected_message1));
+        assert!(conn1.contains(agent1.get_peer_id().as_str()));
 
         let did2 = "84qiTnsJrdefBDMrF49kfa";
         let seed2 = String::from("99999999999999999999999999999999");
-        let expected_message2 = r#"{"type":"Connection","id":"84qiTnsJrdefBDMrF49kfa","message":"{\"type\":\"ledgerUpdate\",\"state\":\"DID:84qiTnsJrdefBDMrF49kfa\",\"root\":\"63a09c731f706aeb38874e648da92f8194284d5f5d2aea5957f28573e51208f3\",\"events\":[[1,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"dest\\\":\\\"84qiTnsJrdefBDMrF49kfa\\\",\\\"type\\\":\\\"1\\\"}}\"],[2,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"authorizations\\\":[\\\"all\\\"],\\\"type\\\":\\\"2\\\",\\\"verkey\\\":\\\"4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ\\\"}}\"],[3,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"address\\\":\\\"https://agent2.example.com\\\",\\\"type\\\":\\\"3\\\",\\\"verkey\\\":\\\"4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ\\\"}}\"]]}"}"#;
         let (agent2, conn2) = bootstrap_agent2(did2, seed2);
-        assert_eq!(expected_message2, conn2);
+        let expected_message2 = r#"{"message":"{\"type\":\"ledgerUpdate\",\"state\":\"DID:84qiTnsJrdefBDMrF49kfa\",\"root\":\"63a09c731f706aeb38874e648da92f8194284d5f5d2aea5957f28573e51208f3\",\"events\":[[1,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"dest\\\":\\\"84qiTnsJrdefBDMrF49kfa\\\",\\\"type\\\":\\\"1\\\"}}\"],[2,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"authorizations\\\":[\\\"all\\\"],\\\"type\\\":\\\"2\\\",\\\"verkey\\\":\\\"4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ\\\"}}\"],[3,\"{\\\"protocolVersion\\\":1,\\\"txnVersion\\\":1,\\\"operation\\\":{\\\"address\\\":\\\"https://agent2.example.com\\\",\\\"type\\\":\\\"3\\\",\\\"verkey\\\":\\\"4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ\\\"}}\"]]}"}"#;
+        assert!(conn2.contains(expected_message2));
+        assert!(conn2.contains(agent2.get_peer_id().as_str()));
     }
 
     #[test]
@@ -1174,7 +1178,7 @@ mod tests {
         // TODO: Copy pasted code ends, fix in `add_new_cloud_agent`
 
         check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3], did1);
-        
+
         let edge_new_verkey = "2btLJAAb1S3x6hZYdVyAePjqtQYi2ZBSRGy4569RZu8h";
 
         // TODO: Copy pasted code (from test above)

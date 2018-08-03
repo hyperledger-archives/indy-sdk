@@ -86,6 +86,10 @@ pub fn get_ledger_storage(did: &str, storage_path: &str, metadata: &[u8])  -> Re
 }
 
 pub fn gen_enc_key(size: usize) -> Vec<u8> {
+    gen_random_bytes(size)
+}
+
+pub fn gen_random_bytes(size: usize) -> Vec<u8> {
     thread_rng().gen_iter().take(size).collect()
 }
 
