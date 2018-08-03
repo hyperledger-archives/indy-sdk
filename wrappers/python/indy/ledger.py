@@ -100,7 +100,6 @@ async def submit_action(pool_handle: int,
 
     :param pool_handle: pool handle (created by open_pool_ledger).
     :param request_json: Request data json.
-    :param request_json: Request data json.
     :param nodes: (Optional) List of node names to send the request.
            ["Node1", "Node2",...."NodeN"]
     :param timeout: (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
