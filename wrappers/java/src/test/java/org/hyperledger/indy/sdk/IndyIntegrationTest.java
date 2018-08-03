@@ -57,7 +57,7 @@ public class IndyIntegrationTest {
 	protected String REVOC_REG_TYPE = "CL_ACCUM";
 	protected String SIGNATURE_TYPE = "CL";
 	protected String TAILS_WRITER_CONFIG =
-			"{ \"base_dir\":" +  getIndyHomePath("tails").replace('\\', '/') + ", \"uri_pattern\":\"\"}";
+			"{ \"base_dir\":\"" +  getIndyHomePath("tails").replace('\\', '/') + "\", \"uri_pattern\":\"\"}";
 	protected String REV_CRED_DEF_CONFIG = "{\"support_revocation\":true}";
 	protected String GVT_CRED_VALUES = "{\n" +
 			"        \"sex\": {\"raw\": \"male\", \"encoded\": \"5944657099558967239210949258394887428692050081607692519917050\"},\n" +
@@ -69,7 +69,7 @@ public class IndyIntegrationTest {
 
 	protected static final String WALLET_CREDENTIALS = "{ \"key\":\"key\"}";
 
-	protected static final String PLUGGED_WALLET_CONFIG = "{ \"id\":" + WALLET + ", \"storage_type\":\"unknown_type\"}";
+	protected static final String PLUGGED_WALLET_CONFIG = "{ \"id\":\"" + WALLET + "\", \"storage_type\":\"unknown_type\"}";
 
 	protected int PROTOCOL_VERSION = 2;
 
@@ -85,7 +85,7 @@ public class IndyIntegrationTest {
 
 	protected static final String EXPORT_KEY = "export_key";
 	protected static final String EXPORT_PATH = getTmpPath("export_wallet");
-	protected static final String EXPORT_CONFIG_JSON = "{ \"key\":" + EXPORT_KEY + ", \"path\":" + EXPORT_PATH + '}';
+	protected static final String EXPORT_CONFIG_JSON = "{ \"key\":\"" + EXPORT_KEY + "\", \"path\":\"" + EXPORT_PATH + "\"}";
 
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
