@@ -92,7 +92,11 @@ public enum ErrorCode {
      * @return The ErrorCode that corresponds to the specified integer.
      */
     public static ErrorCode valueOf(int value) {
-        return map.getOrDefault(value, UNIDENTIFIED_ERROR_CODE);
+        if(map.containsKey(value)){
+            return map.get(value);
+        }else{
+            return UNIDENTIFIED_ERROR_CODE;
+        }
 
     }
 
