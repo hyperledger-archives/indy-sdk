@@ -17,15 +17,25 @@ pub mod tests {
 
     pub const TRUSTEE: &str = "000000000000000000000000Trustee1";
 
-    /* INSTITUTION/ENTERPRISE settings */
+    /* dev */
     pub const AGENCY_ENDPOINT: &'static str = "https://enym-eagency.pdev.evernym.com";
     pub const AGENCY_DID: &'static str = "YRuVCckY6vfZfX9kcQZe3u";
     pub const AGENCY_VERKEY: &'static str = "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v";
 
-    /* CONSUMER/USER settings */
     pub const C_AGENCY_ENDPOINT: &'static str = "https://cagency.pdev.evernym.com";
     pub const C_AGENCY_DID: &'static str = "dTLdJqRZLwMuWSogcKfBT";
     pub const C_AGENCY_VERKEY: &'static str = "LsPQTDHi294TexkFmZK9Q9vW4YGtQRuLV8wuyZi94yH";
+
+    /* sandbox */
+    /*
+    pub const AGENCY_ENDPOINT: &'static str = "https://agency-ea-sandbox.evernym.com";
+    pub const AGENCY_DID: &'static str = "HB7qFQyFxx4ptjKqioEtd8";
+    pub const AGENCY_VERKEY: &'static str = "9pJkfHyfJMZjUjS7EZ2q2HX55CbFQPKpQ9eTjSAUMLU8";
+
+    pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-sandbox.evernym.com";
+    pub const C_AGENCY_DID: &'static str = "Nv9oqGX57gy15kPSJzo2i4";
+    pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";
+    */
 
     pub fn set_trustee_did() {
         let (my_did, _) = ::utils::libindy::signus::create_and_store_my_did(wallet::get_wallet_handle(), Some(TRUSTEE)).unwrap();

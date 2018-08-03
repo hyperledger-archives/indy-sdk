@@ -477,13 +477,18 @@ pub extern fn vcx_wallet_delete_record(command_handle: u32,
 #[no_mangle]
 pub extern fn vcx_wallet_send_tokens(command_handle: u32,
                                      payment_handle: u32,
-                                     tokens: u64,
+                                     tokens: *const c_char,
                                      recipient: *const c_char,
                                      cb: Option<extern fn(xcommand_handle: u32, err: u32, receipt: *const c_char)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(recipient, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(tokens, error::INVALID_OPTION.code_num);
 
+    let tokens: u64 = match tokens.parse::<u64>() {
+        Ok(x) => x,
+        Err(_) => return error::INVALID_OPTION.code_num,
+    };
     info!("vcx_wallet_send_tokens(command_handle: {}, payment_handle: {}, tokens: {}, recipient: {})",
           command_handle, payment_handle, tokens, recipient);
 
@@ -782,7 +787,7 @@ pub mod tests {
     fn test_send_tokens() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-        assert_eq!(vcx_wallet_send_tokens(0, 0, 1, CString::new("address").unwrap().into_raw(), Some(generic_cb)), error::SUCCESS.code_num);
+        assert_eq!(vcx_wallet_send_tokens(0, 0, CString::new("1").unwrap().into_raw(), CString::new("address").unwrap().into_raw(), Some(generic_cb)), error::SUCCESS.code_num);
         thread::sleep(Duration::from_millis(200));
     }
 
@@ -804,9 +809,9 @@ pub mod tests {
         let name = "test_send_payment";
         ::utils::devsetup::tests::setup_ledger_env(name);
         let balance = ::utils::libindy::payments::get_wallet_token_info().unwrap().get_balance();
-        let tokens = 5;
         let cb = generic_cb;
-        let err = vcx_wallet_send_tokens(0, 0, tokens, recipient.as_ptr(), Some(cb));
+        let tokens = 5;
+        let err = vcx_wallet_send_tokens(0, 0, CString::new(format!("{}", tokens)).unwrap().into_raw(), recipient.as_ptr(), Some(cb));
         assert_eq!(err, 0);
         thread::sleep(Duration::from_secs(5));
         let new_balance = ::utils::libindy::payments::get_wallet_token_info().unwrap().get_balance();

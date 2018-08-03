@@ -318,7 +318,7 @@ pub extern fn vcx_messages_download(command_handle: u32,
 ///
 /// message_status: updated status
 ///
-/// uids: messages to update
+/// msg_json: messages to update: [{"pairwiseDID":"QSrw8hebcvQxiwBETmAaRs","uids":["mgrmngq"]},...]
 ///
 /// cb: Callback that provides success or failure of request
 ///

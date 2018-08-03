@@ -26,6 +26,7 @@ static PAYMENT_INIT: Once = ONCE_INIT;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WalletInfo {
     balance: u64,
+    balance_str: String,
     addresses: Vec<AddressInfo>,
 }
 
@@ -195,7 +196,7 @@ pub fn get_wallet_token_info() -> Result<WalletInfo, u32> {
         wallet_info.push(info);
     }
 
-    Ok(WalletInfo { balance, addresses: wallet_info })
+    Ok(WalletInfo { balance, balance_str: format!("{}", balance), addresses: wallet_info })
 }
 
 pub fn get_ledger_fees() -> Result<String, u32> {
@@ -450,7 +451,7 @@ pub mod tests {
         init_payments().unwrap();
         create_address(None).unwrap();
         let balance = get_wallet_token_info().unwrap().to_string();
-        assert_eq!(balance, r#"{"balance":6,"addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"source":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"source":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]},{"address":"pay:null:zR3GN9lfbCVtHjp","balance":3,"utxo":[{"source":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"source":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]}]}"#);
+        assert_eq!(balance, r#"{"balance":6,"balance_str":"6","addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"source":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"source":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]},{"address":"pay:null:zR3GN9lfbCVtHjp","balance":3,"utxo":[{"source":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"source":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]}]}"#);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -688,8 +689,9 @@ pub mod tests {
         let wallet_info = WalletInfo {
             balance: 12345,
             addresses: Vec::new(),
+            balance_str: "12345".to_string(),
         };
-        assert_eq!(wallet_info.to_string(), r#"{"balance":12345,"addresses":[]}"#.to_string());
+        assert_eq!(wallet_info.to_string(), r#"{"balance":12345,"balance_str":"12345","addresses":[]}"#.to_string());
     }
 
     #[cfg(feature = "pool_tests")]
