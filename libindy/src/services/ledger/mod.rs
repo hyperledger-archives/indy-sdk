@@ -2,7 +2,7 @@ pub mod merkletree;
 
 use errors::common::CommonError;
 use errors::ledger::LedgerError;
-use domain::ledger::constants::{NYM, ROLE_REMOVE, STEWARD, TRUSTEE, TRUST_ANCHOR, TGB};
+use domain::ledger::constants::{NYM, ROLE_REMOVE, STEWARD, TRUSTEE, TRUST_ANCHOR, TGB, POOL_RESTART, GET_VALIDATOR_INFO};
 use domain::ledger::request::Request;
 use domain::ledger::nym::GetNymOperation;
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
@@ -575,12 +575,31 @@ impl LedgerService {
                 Ok(reply)
         }
     }
+
+    pub fn validate_action(&self, request: &str) -> Result<(), CommonError> {
+        trace!("validate_action >>> request {:?}", request);
+
+        let request: Request<serde_json::Value> = serde_json::from_str(request)
+            .map_err(|err| CommonError::InvalidStructure(format!("Request is invalid: {}", err)))?;
+
+        let res = match request.operation["type"].as_str() {
+            Some(POOL_RESTART) | Some(GET_VALIDATOR_INFO) => Ok(()),
+            Some(_) => Err(CommonError::InvalidStructure(format!("Request does not match any type of Actions: POOL_RESTART, GET_VALIDATOR_INFO"))),
+            None => Err(CommonError::InvalidStructure(format!("Request is invalid")))
+        };
+
+        trace!("validate_action <<< res {:?}", res);
+
+        res
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use domain::ledger::request::ProtocolVersion;
+
+    const IDENTIFIER: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
 
     #[test]
     fn build_nym_request_works_for_only_required_fields() {
@@ -845,5 +864,19 @@ mod tests {
 
         let res = ledger_service.build_get_txn_request(identifier, Some("type"), 1);
         assert_match!(Err(CommonError::InvalidStructure(_)), res);
+    }
+
+    #[test]
+    fn validate_action_works_for_pool_restart() {
+        let ledger_service = LedgerService::new();
+        let request = ledger_service.build_pool_restart(IDENTIFIER, "start", None).unwrap();
+        ledger_service.validate_action(&request).unwrap();
+    }
+
+    #[test]
+    fn validate_action_works_for_get_validator_info() {
+        let ledger_service = LedgerService::new();
+        let request = ledger_service.build_get_validator_info_request(IDENTIFIER).unwrap();
+        ledger_service.validate_action(&request).unwrap();
     }
 }

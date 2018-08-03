@@ -57,7 +57,6 @@ impl PoolService {
     }
 
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
-
         //TODO: initialize all state machines
         trace!("PoolService::create {} with config {:?}", name, config);
 
@@ -142,7 +141,7 @@ impl PoolService {
         send_cmd_sock.connect(inproc_sock_name.as_str())?;
 
         new_pool.work(recv_cmd_sock);
-        self._send_msg(pool_handle, "connect", &send_cmd_sock)?;
+        self._send_msg(pool_handle, "connect", &send_cmd_sock, None, None)?;
 
         self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
             .insert(new_pool.get_id(), ZMQPool::new(new_pool, send_cmd_sock));
@@ -164,7 +163,19 @@ impl PoolService {
 
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
         match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket)?,
+            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, None, None)?,
+            None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
+        }
+
+        Ok(cmd_id)
+    }
+
+    pub fn send_action(&self, handle: i32, msg: &str, _nodes: Option<&str>, _timeout: Option<i32>) -> Result<i32, PoolError> {
+        let cmd_id: i32 = SequenceUtils::get_next_id();
+
+        let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
+        match pools.get(&handle) {
+            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, _nodes, _timeout)?,
             None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         }
 
@@ -196,7 +207,7 @@ impl PoolService {
 
         let mut pools = self.open_pools.try_borrow_mut().map_err(CommonError::from)?;
         match pools.remove(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, "exit", &pool.cmd_socket)?,
+            Some(ref pool) => self._send_msg(cmd_id, "exit", &pool.cmd_socket, None, None)?,
             None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         }
 
@@ -208,14 +219,14 @@ impl PoolService {
 
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
         match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, "refresh", &pool.cmd_socket)?,
+            Some(ref pool) => self._send_msg(cmd_id, "refresh", &pool.cmd_socket, None, None)?,
             None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         };
 
         Ok(cmd_id)
     }
 
-    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket) -> Result<(), PoolError> {
+    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket, _nodes: Option<&str>, _timeout: Option<i32>) -> Result<(), PoolError> {
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         Ok(socket.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT)?)

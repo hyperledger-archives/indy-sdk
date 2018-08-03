@@ -36,6 +36,12 @@ pub enum LedgerCommand {
         i32, // cmd_id
         Result<String, PoolError>, // result json or error
     ),
+    SubmitAction(
+        i32, // pool handle
+        String, // request json
+        Option<String>, // nodes
+        Option<i32>, // timeout
+        Box<Fn(Result<String, IndyError>) + Send>),
     SignRequest(
         i32, // wallet handle
         String, // submitter did
@@ -215,6 +221,10 @@ impl LedgerCommandExecutor {
                                handle, result);
                     }
                 }
+            }
+            LedgerCommand::SubmitAction(handle, request_json, nodes, timeout, cb) => {
+                info!(target: "ledger_command_executor", "SubmitRequest command received");
+                self.submit_action(handle, &request_json, nodes.as_ref().map(String::as_str), timeout, cb);
             }
             LedgerCommand::RegisterSPParser(txn_type, parser, free, cb) => {
                 info!(target: "ledger_command_executor", "RegisterSPParser command received");
@@ -421,6 +431,25 @@ impl LedgerCommandExecutor {
         debug!("submit_request >>> handle: {:?}, request_json: {:?}", handle, request_json);
 
         let x: Result<i32, PoolError> = self.pool_service.send_tx(handle, request_json);
+        match x {
+            Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
+            Err(err) => { cb(Err(IndyError::PoolError(err))); }
+        };
+    }
+
+    fn submit_action(&self,
+                     handle: i32,
+                     request_json: &str,
+                     nodes: Option<&str>,
+                     timeout: Option<i32>,
+                     cb: Box<Fn(Result<String, IndyError>) + Send>) {
+        debug!("submit_action >>> handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", handle, request_json, nodes, timeout);
+
+        if let Err(err) = self.ledger_service.validate_action(request_json) {
+            return cb(Err(IndyError::PoolError(PoolError::CommonError(err))));
+        }
+
+        let x: Result<i32, PoolError> = self.pool_service.send_action(handle, request_json, nodes, timeout);
         match x {
             Ok(cmd_id) => { self.send_callbacks.borrow_mut().insert(cmd_id, cb); }
             Err(err) => { cb(Err(IndyError::PoolError(err))); }

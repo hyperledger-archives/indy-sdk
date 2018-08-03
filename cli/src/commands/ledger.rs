@@ -12,7 +12,7 @@ use libindy::payment::Payment;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use utils::table::{print_table, print_list_table};
 
 use self::regex::Regex;
@@ -353,7 +353,7 @@ pub mod get_validator_info_command {
             .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
             .map_err(|err| handle_transaction_error(err, None, None, None))?;
 
-        let responses = match serde_json::from_str::<HashMap<String, String>>(&response) {
+        let responses = match serde_json::from_str::<BTreeMap<String, String>>(&response) {
             Ok(responses) => responses,
             Err(_) => {
                 let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
