@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::str;
 
 use serde_json;
+use serde_json::Value as JValue;
 use rand::{thread_rng, Rng};
 
 use errors::common::CommonError;
@@ -12,7 +13,7 @@ use services::wallet::storage::WalletStorageType;
 use services::wallet::wallet::EncryptedValue;
 use errors::wallet::WalletStorageError;
 use services::microledger::microledger::Microledger;
-use services::microledger::txn_builder::TxnBuilder;
+use services::microledger::txn_builder::{TxnBuilder, Txn};
 use services::microledger::helpers::{byte_array_to_usize, usize_to_byte_array, parse_options,
                                      create_storage_options, gen_enc_key};
 use utils::environment::EnvironmentUtils;
@@ -25,7 +26,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use services::crypto::CryptoService;
 use services::wallet::WalletService;
-use services::microledger::helpers::sign_msg;
+use services::microledger::helpers::{sign_msg, verify_msg};
+use utils::crypto::base58::{encode, decode};
 
 const TYP: [u8; 3] = [0, 1, 2];
 
@@ -270,6 +272,48 @@ impl<'a> DidMicroledger<'a> {
            view.borrow_mut().apply_txn(txn)?;
         }
        Ok(())
+    }
+
+    pub fn get_validated_ledger_update_events(events: Vec<(u64, String)>, start_from: u64,
+                                              end_at: u64) -> Result<Vec<String>, CommonError> {
+        let mut txns: Vec<String> = vec![];
+        let mut i = start_from - 1;
+        for (j, txn) in events {
+            if (j < i) || (j - i != 1) {
+                return Err(CommonError::InvalidStructure(format!("seq no should be {} but was {}", i+1, j)))
+            }
+            txns.push(txn);
+            i += 1;
+        }
+        if i != end_at {
+            return Err(CommonError::InvalidStructure(format!("seq no should be {} but was {}", end_at, i)))
+        }
+        Ok(txns)
+    }
+
+    pub fn get_unseen_events(seen_till: u64, events: Vec<(u64, String)>) -> Vec<(u64, String)> {
+        let len = events.len();
+        for i in 0..len {
+            if events[i].0 > seen_till {
+                return events[i..].to_vec()
+            }
+        }
+        vec![]
+    }
+
+    pub fn is_valid_txn_sig(crypto_service: &CryptoService, txn: Txn<JValue>,
+                            signer_vk: JValue, signature: JValue) -> Result<bool, CommonError> {
+        match (serde_json::to_string(&txn), signer_vk.as_str(), signature.as_str()) {
+            (Ok(msg), Some(vk), Some(sig)) => {
+                match decode(sig) {
+                    Ok(sig) => {
+                        verify_msg(crypto_service, vk, msg.as_bytes(), sig.as_slice())
+                    }
+                    _ => Err(CommonError::InvalidStructure(format!("Unable to parse base58 signature {}", &sig)))
+                }
+            },
+            _ => Err(CommonError::InvalidStructure(format!("Unparsable txn, verkey or signature: {:?} {:?} {:?}", &txn, &signer_vk, &signature)))
+        }
     }
 }
 
@@ -557,4 +601,45 @@ pub mod tests {
         assert_eq!(doc.borrow().as_json().unwrap(), expected_did_doc_1);
     }
 
+    #[test]
+    fn test_parse_ledger_events() {
+        let events_1: Vec<(u64, String)> = vec![(0, "t1".into()), (1, "t2".into()), (2, "t3".into())];
+        let events_2: Vec<(u64, String)> = vec![(1, "t1".into()), (3, "t2".into()), (4, "t3".into())];
+        let events_3: Vec<(u64, String)> = vec![(2, "t1".into()), (3, "t2".into()), (4, "t3".into())];
+        let events_4: Vec<(u64, String)> = vec![(1, "t1".into()), (2, "t2".into()), (4, "t3".into())];
+        let events_5: Vec<(u64, String)> = vec![(1, "t1".into()), (2, "t2".into()), (3, "t3".into())];
+
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_1, 1, 3).is_err());
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_2, 1, 3).is_err());
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_3, 1, 3).is_err());
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_4, 1, 3).is_err());
+        let e: Vec<String> = vec!["t1".into(), "t2".into(), "t3".into()];
+        assert_eq!(DidMicroledger::get_validated_ledger_update_events(events_5.clone(), 1, 3).unwrap(), e);
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_5.clone(), 1, 2).is_err());
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_5.clone(), 1, 4).is_err());
+
+        let events_6: Vec<(u64, String)> = vec![(5, "t1".into()), (6, "t2".into()), (7, "t3".into())];
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_6.clone(), 4, 7).is_err());
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_6.clone(), 6, 7).is_err());
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_6.clone(), 5, 8).is_err());
+        assert_eq!(DidMicroledger::get_validated_ledger_update_events(events_6.clone(), 5, 7).unwrap(), e);
+
+        let events_7: Vec<(u64, String)> = vec![(5, "t1".into()), (9, "t2".into()), (7, "t3".into())];
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_7.clone(), 5, 7).is_err());
+
+        let events_8: Vec<(u64, String)> = vec![(5, "t1".into()), (6, "t2".into()), (8, "t3".into())];
+        assert!(DidMicroledger::get_validated_ledger_update_events(events_7.clone(), 5, 7).is_err());
+    }
+
+    #[test]
+    fn test_unseen_events() {
+        let events_1: Vec<(u64, String)> = vec![(1, "t1".into()), (2, "t2".into()), (3, "t3".into())];
+        assert_eq!(DidMicroledger::get_unseen_events(0, events_1.clone()),
+                   vec![(1, "t1".into()), (2, "t2".into()), (3, "t3".into())]);
+        assert_eq!(DidMicroledger::get_unseen_events(1, events_1.clone()),
+                   vec![(2, "t2".into()), (3, "t3".into())]);
+        assert_eq!(DidMicroledger::get_unseen_events(2, events_1.clone()),
+                   vec![(3, "t3".into())]);
+        assert_eq!(DidMicroledger::get_unseen_events(3, events_1.clone()), vec![]);
+    }
 }
