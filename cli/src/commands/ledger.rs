@@ -338,7 +338,11 @@ pub mod get_validator_info_command {
     use super::*;
 
     command!(CommandMetadata::build("get-validator-info", "Get validator info from all nodes.")
+                .add_optional_param("nodes","The list of node names to send the request")
+                .add_optional_param("timeout"," Time to wait respond from nodes")
                 .add_example(r#"ledger get-validator-info"#)
+                .add_example(r#"ledger get-validator-info nodes=Node1,Node2"#)
+                .add_example(r#"ledger get-validator-info nodes=Node1,Node2 timeout=150"#)
                 .finalize()
     );
 
@@ -349,9 +353,18 @@ pub mod get_validator_info_command {
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
-        let response = Ledger::build_get_validator_info_request(&submitter_did)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+        let nodes = get_opt_str_array_param("nodes", params).map_err(error_err!())?;
+        let timeout = get_opt_number_param::<i32>("timeout", params).map_err(error_err!())?;
+
+        let request = Ledger::build_get_validator_info_request(&submitter_did)
             .map_err(|err| handle_transaction_error(err, None, None, None))?;
+
+        let response = if nodes.is_some() || timeout.is_some() {
+            sign_and_submit_action(wallet_handle, pool_handle, &submitter_did, &request, nodes, timeout)?
+        } else {
+            Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+                .map_err(|err| handle_transaction_error(err, None, None, None))?
+        };
 
         let responses = match serde_json::from_str::<BTreeMap<String, String>>(&response) {
             Ok(responses) => responses,
@@ -688,8 +701,12 @@ pub mod pool_restart_command {
 
     command!(CommandMetadata::build("pool-restart", "Send instructions to nodes to restart themselves.")
                 .add_required_param("action", "Restart type. Either start or cancel.")
+                .add_optional_param("nodes","The list of node names to send the request")
+                .add_optional_param("timeout"," Time to wait respond from nodes")
                 .add_optional_param("datetime", "Node restart datetime (only for action=start).")
                 .add_example(r#"ledger pool-restart action=start datetime=2020-01-25T12:49:05.258870+00:00"#)
+                .add_example(r#"ledger pool-restart action=start datetime=2020-01-25T12:49:05.258870+00:00 nodes=Node1,Node2"#)
+                .add_example(r#"ledger pool-restart action=start datetime=2020-01-25T12:49:05.258870+00:00 nodes=Node1,Node2 timeout=100"#)
                 .add_example(r#"ledger pool-restart action=cancel"#)
                 .finalize()
     );
@@ -703,10 +720,18 @@ pub mod pool_restart_command {
 
         let action = get_str_param("action", params).map_err(error_err!())?;
         let datetime = get_opt_str_param("datetime", params).map_err(error_err!())?;
+        let nodes = get_opt_str_array_param("nodes", params).map_err(error_err!())?;
+        let timeout = get_opt_number_param::<i32>("timeout", params).map_err(error_err!())?;
 
-        let response = Ledger::indy_build_pool_restart_request(&submitter_did, action, datetime)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
-            .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
+        let request = Ledger::indy_build_pool_restart_request(&submitter_did, action, datetime)
+            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
+
+        let response = if nodes.is_some() || timeout.is_some() {
+            sign_and_submit_action(wallet_handle, pool_handle, &submitter_did, &request, nodes, timeout)?
+        } else {
+            Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+                .map_err(|err| handle_transaction_error(err, None, None, None))?
+        };
 
         let responses = match serde_json::from_str::<HashMap<String, String>>(&response) {
             Ok(responses) => responses,
@@ -739,6 +764,19 @@ pub mod pool_restart_command {
         trace!("execute << {:?}", res);
         res
     }
+}
+
+fn sign_and_submit_action(wallet_handle: i32, pool_handle: i32, submitter_did: &str, request: &str, nodes: Option<Vec<&str>>, timeout: Option<i32>) -> Result<String, ()> {
+    let nodes = match nodes {
+        Some(n) =>
+            Some(serde_json::to_string(&n)
+                .map_err(|_| println_err!("Wrong data has been received"))?),
+        None => None
+    };
+
+    Ledger::sign_request(wallet_handle, submitter_did, request)
+        .and_then(|request| Ledger::submit_action(pool_handle, &request, nodes.as_ref().map(String::as_ref), timeout))
+        .map_err(|err| handle_transaction_error(err, None, None, None))
 }
 
 pub mod pool_upgrade_command {
@@ -2304,6 +2342,49 @@ pub mod tests {
             disconnect_and_delete_pool(&ctx);
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        pub fn get_validator_info_works_for_nodes() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_validator_info_command::new();
+                let mut params = CommandParams::new();
+                params.insert("nodes", "Node1,Node2".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn get_validator_info_works_for_timeout() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_validator_info_command::new();
+                let mut params = CommandParams::new();
+                params.insert("nodes", "Node1,Node2".to_string());
+                params.insert("timeout", "10".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod get_schema {
@@ -2737,6 +2818,57 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("action", "start".to_string());
                 params.insert("datetime", datetime.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn pool_restart_works_for_nodes() {
+            TestUtils::cleanup_storage();
+            let datetime = r#"2020-01-25T12:49:05.258870+00:00"#;
+
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = pool_restart_command::new();
+                let mut params = CommandParams::new();
+                params.insert("action", "start".to_string());
+                params.insert("datetime", datetime.to_string());
+                params.insert("nodes", "Node1,Node2".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn pool_restart_works_for_timeout() {
+            TestUtils::cleanup_storage();
+            let datetime = r#"2020-01-25T12:49:05.258870+00:00"#;
+
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = pool_restart_command::new();
+                let mut params = CommandParams::new();
+                params.insert("action", "start".to_string());
+                params.insert("datetime", datetime.to_string());
+                params.insert("nodes", "Node1,Node2".to_string());
+                params.insert("timeout", "10".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);

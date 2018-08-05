@@ -288,7 +288,7 @@ ledger node target=<target-value> alias=<alias-value> [node_ip=<node_ip-value>] 
 #### GET_VALIDATOR_INFO transaction
 Send GET_VALIDATOR_INFO transaction to get info from all nodes
 ```
-ledger get-validator-info 
+ledger get-validator-info [nodes=<node names>] [timeout=<timeout>]
 ```
 
 #### POOL_UPGRADE transaction
@@ -306,7 +306,7 @@ ledger pool-config writes=<true or false (default false)> [force=<true or false 
 #### POOL_RESTART transaction
 Send POOL_RESTART transaction
 ```
-ledger pool-restart action=<start or cancel> [datetime=<datetime>]
+ledger pool-restart action=<start or cancel> [datetime=<datetime>] [nodes=<node names>] [timeout=<timeout>]
 ```
 
 #### Custom transaction
