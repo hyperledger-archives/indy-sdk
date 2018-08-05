@@ -98,19 +98,20 @@ setup_dependencies(){
 
 package_library(){
     echo "${GREEN}Packaging in zip file${RESET}"
-    mkdir -p ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/include
-    mkdir -p ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
+    PACKAGE_DIR=${ANDROID_BUILD_FOLDER}/libnullpay_${ABSOLUTE_ARCH}
+    mkdir -p ${PACKAGE_DIR}/include
+    mkdir -p ${PACKAGE_DIR}/lib
 
-    cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.a" ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
-    cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.so" ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH}/lib
+    cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.a" ${PACKAGE_DIR}/lib
+    cp "${WORKDIR}/target/${TRIPLET}/release/libnullpay.so" ${PACKAGE_DIR}/lib
 
      pushd ${WORKDIR}
-        rm -f libnullpay_android_${TARGET_ARCH}.zip
-        cp -rf ${ANDROID_BUILD_FOLDER}/libnullpay_${TARGET_ARCH} .
+        rm -f libnullpay_android_${ABSOLUTE_ARCH}.zip
+        cp -rf ${PACKAGE_DIR} .
         if [ -z "${LIBNULLPAY_VERSION}" ]; then
-            zip -r libnullpay_android_${TARGET_ARCH}.zip libnullpay_${TARGET_ARCH}
+            zip -r libnullpay_android_${ABSOLUTE_ARCH}.zip libnullpay_${ABSOLUTE_ARCH}
         else
-            zip -r libnullpay_android_${TARGET_ARCH}_${LIBNULLPAY_VERSION}.zip libnullpay_${TARGET_ARCH}
+            zip -r libnullpay_android_${ABSOLUTE_ARCH}_${LIBNULLPAY_VERSION}.zip libnullpay_${ABSOLUTE_ARCH}
         fi
 
     popd
@@ -118,11 +119,11 @@ package_library(){
 
 build(){
     echo "**************************************************"
-    echo "Building for architecture ${BOLD}${YELLOW}${TARGET_ARCH}${RESET}"
+    echo "Building for architecture ${BOLD}${YELLOW}${ABSOLUTE_ARCH}${RESET}"
     echo "Toolchain path ${BOLD}${YELLOW}${TOOLCHAIN_DIR}${RESET}"
     echo "Sodium path ${BOLD}${YELLOW}${SODIUM_DIR}${RESET}"
     echo "Indy path ${BOLD}${YELLOW}${INDY_DIR}${RESET}"
-    echo "Artifacts will be in ${BOLD}${YELLOW}${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}${RESET}"
+    echo "Artifacts will be in ${BOLD}${YELLOW}${ANDROID_BUILD_FOLDER}/libindy_${ABSOLUTE_ARCH}${RESET}"
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}

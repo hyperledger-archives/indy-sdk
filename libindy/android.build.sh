@@ -95,8 +95,8 @@ setup_dependencies(){
 
 statically_link_dependencies_with_libindy(){
     echo "${BLUE}Statically linking libraries togather${RESET}"
-    echo "${BLUE}Output will be available at ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so${RESET}"
-    $CC -v -shared -o${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so -Wl,--whole-archive \
+    echo "${BLUE}Output will be available at ${ANDROID_BUILD_FOLDER}/libindy_${ABSOLUTE_ARCH}/lib/libindy.so${RESET}"
+    $CC -v -shared -o${ANDROID_BUILD_FOLDER}/libindy_${ABSOLUTE_ARCH}/lib/libindy.so -Wl,--whole-archive \
         ${WORKDIR}/target/${TRIPLET}/release/libindy.a \
         ${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}/libz.so \
         ${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}/libm.a \
@@ -111,24 +111,26 @@ statically_link_dependencies_with_libindy(){
 
 package_library(){
 
-    mkdir -p ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
+   export PACKAGE_DIR=${ANDROID_BUILD_FOLDER}/libindy_${ABSOLUTE_ARCH}
 
-    cp -rf "${WORKDIR}/include" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}
-    cp "${WORKDIR}/target/${TRIPLET}/release/libindy.a" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
-    cp "${WORKDIR}/target/${TRIPLET}/release/libindy.so" ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib
+    mkdir -p ${PACKAGE_DIR}/lib
+
+    cp -rf "${WORKDIR}/include" ${PACKAGE_DIR}
+    cp "${WORKDIR}/target/${TRIPLET}/release/libindy.a" ${PACKAGE_DIR}/lib
+    cp "${WORKDIR}/target/${TRIPLET}/release/libindy.so" ${PACKAGE_DIR}/lib
     if [ "${TARGET_ARCH}" != "x86_64" ]; then
-        mv "${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy.so" "${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}/lib/libindy_shared.so" &&
+        mv "${PACKAGE_DIR}/lib/libindy.so" "${PACKAGE_DIR}/lib/libindy_shared.so" &&
         statically_link_dependencies_with_libindy
     fi
     pushd ${LIBINDY_WORKDIR}
-        rm -f libindy_android_${TARGET_ARCH}.zip
-        cp -rf ${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH} .
+        rm -f libindy_android_${ABSOLUTE_ARCH}.zip
+        cp -rf ${PACKAGE_DIR} .
         if [ -z "${LIBINDY_VERSION}" ]; then
-            zip -r libindy_android_${TARGET_ARCH}.zip libindy_${TARGET_ARCH} &&
-            echo "${BLUE}Zip file available at ${PWD}/libindy_android_${TARGET_ARCH}.zip ${RESET}"
+            zip -r libindy_android_${ABSOLUTE_ARCH}.zip libindy_${ABSOLUTE_ARCH} &&
+            echo "${BLUE}Zip file available at ${PWD}/libindy_android_${ABSOLUTE_ARCH}.zip ${RESET}"
         else
-            zip -r libindy_android_${TARGET_ARCH}_${LIBINDY_VERSION}.zip libindy_${TARGET_ARCH} &&
-            echo "${BLUE}Zip file available at ${PWD}/libindy_android_${TARGET_ARCH}_${LIBINDY_VERSION}.zip ${RESET}"
+            zip -r libindy_android_${ABSOLUTE_ARCH}_${LIBINDY_VERSION}.zip libindy_${TARGET_ARCH} &&
+            echo "${BLUE}Zip file available at ${PWD}/libindy_android_${ABSOLUTE_ARCH}_${LIBINDY_VERSION}.zip ${RESET}"
         fi
 
     popd
@@ -136,12 +138,12 @@ package_library(){
 
 build(){
     echo "**************************************************"
-    echo "Building for architecture ${BOLD}${YELLOW}${TARGET_ARCH}${RESET}"
+    echo "Building for architecture ${BOLD}${YELLOW}${ABSOLUTE_ARCH}${RESET}"
     echo "Toolchain path ${BOLD}${YELLOW}${TOOLCHAIN_DIR}${RESET}"
     echo "ZMQ path ${BOLD}${YELLOW}${LIBZMQ_DIR}${RESET}"
     echo "Sodium path ${BOLD}${YELLOW}${SODIUM_DIR}${RESET}"
     echo "Openssl path ${BOLD}${YELLOW}${OPENSSL_DIR}${RESET}"
-    echo "Artifacts will be in ${YELLOW}${GREEN}${ANDROID_BUILD_FOLDER}/libindy_${TARGET_ARCH}${RESET}"
+    echo "Artifacts will be in ${YELLOW}${GREEN}${ANDROID_BUILD_FOLDER}/libindy_${ABSOLUTE_ARCH}${RESET}"
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}

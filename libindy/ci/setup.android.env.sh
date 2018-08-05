@@ -83,8 +83,9 @@ generate_arch_flags(){
         echo STDERR "${RED}Please provide the arch e.g arm,armv7, x86 or arm64${RESET}"
         exit 1
     fi
+    export ABSOLUTE_ARCH=$1
+    export TARGET_ARCH=$1
     if [ $1 == "arm" ]; then
-        export TARGET_ARCH="arm"
         export TARGET_API="16"
         export TRIPLET="arm-linux-androideabi"
         export ANDROID_TRIPLET=${TRIPLET}
@@ -102,7 +103,6 @@ generate_arch_flags(){
     fi
 
     if [ $1 == "arm64" ]; then
-        export TARGET_ARCH="arm64"
         export TARGET_API="21"
         export TRIPLET="aarch64-linux-android"
         export ANDROID_TRIPLET=${TRIPLET}
@@ -111,7 +111,6 @@ generate_arch_flags(){
     fi
 
     if [ $1 == "x86" ]; then
-        export TARGET_ARCH="x86"
         export TARGET_API="16"
         export TRIPLET="i686-linux-android"
         export ANDROID_TRIPLET=${TRIPLET}
@@ -120,7 +119,6 @@ generate_arch_flags(){
     fi
 
     if [ $1 == "x86_64" ]; then
-        export TARGET_ARCH="x86_64"
         export TARGET_API="21"
         export TRIPLET="x86_64-linux-android"
         export ANDROID_TRIPLET=${TRIPLET}
