@@ -3782,6 +3782,44 @@ pub mod tests {
             close_and_delete_wallet(&ctx);
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        pub fn mint_prepare_works_for_negative_amount() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = mint_prepare_command::new();
+                let mut params = CommandParams::new();
+                params.insert("outputs", "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,-10)".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn mint_prepare_works_for_multiple_outputs_negative_amount_for_second() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = mint_prepare_command::new();
+                let mut params = CommandParams::new();
+                params.insert("outputs", "(pay:null:address1,10),(pay:null:address2,-10)".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
     }
 
     #[cfg(feature = "nullpay_plugin")]
