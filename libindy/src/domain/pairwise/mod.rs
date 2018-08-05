@@ -1,8 +1,4 @@
-extern crate indy_crypto;
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use named_type::NamedType;
-
 
 #[derive(Serialize, Deserialize, NamedType)]
 pub struct Pairwise {
@@ -11,10 +7,6 @@ pub struct Pairwise {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<String>,
 }
-
-impl JsonEncodable for Pairwise {}
-
-impl<'a> JsonDecodable<'a> for Pairwise {}
 
 #[derive(Serialize, Deserialize)]
 pub struct PairwiseInfo {
@@ -31,7 +23,3 @@ impl From<Pairwise> for PairwiseInfo {
         }
     }
 }
-
-impl JsonEncodable for PairwiseInfo {}
-
-impl<'a> JsonDecodable<'a> for PairwiseInfo {}

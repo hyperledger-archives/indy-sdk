@@ -1,8 +1,3 @@
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-
-use self::indy_crypto::utils::json::JsonEncodable;
 use super::constants::GET_VALIDATOR_INFO;
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -18,6 +13,4 @@ impl GetValidatorInfoOperation {
         }
     }
 }
-
-impl JsonEncodable for GetValidatorInfoOperation {}
 

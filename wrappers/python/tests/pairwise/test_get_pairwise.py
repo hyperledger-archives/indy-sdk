@@ -30,7 +30,6 @@ async def test_get_pairwise_works_with_metadata(wallet_handle, identity_my2, ide
 @pytest.mark.asyncio
 async def test_get_pairwise_works_for_not_created_pairwise(wallet_handle, identity_trustee1):
     (their_did, _) = identity_trustee1
-    await did.store_their_did(wallet_handle, json.dumps({'did': their_did}))
 
     with pytest.raises(IndyError) as e:
         await pairwise.get_pairwise(wallet_handle, their_did)

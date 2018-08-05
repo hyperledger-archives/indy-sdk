@@ -1,17 +1,30 @@
-extern crate indy;
+#[macro_use]
+extern crate lazy_static;
 
-// Workaround to share some utils code based on indy sdk types between tests and indy sdk
-use indy::api as api;
+#[macro_use]
+extern crate named_type_derive;
+
+#[macro_use]
+extern crate derivative;
 
 #[macro_use]
 extern crate serde_derive;
+
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate lazy_static;
+
+extern crate byteorder;
+extern crate indy;
+extern crate indy_crypto;
+extern crate uuid;
 extern crate named_type;
-#[macro_use]
-extern crate named_type_derive;
+extern crate rmp_serde;
+extern crate rust_base58;
+extern crate time;
+extern crate serde;
+
+// Workaround to share some utils code based on indy sdk types between tests and indy sdk
+use indy::api as api;
 
 #[macro_use]
 mod utils;
@@ -1226,19 +1239,24 @@ mod high_cases {
             }
 
             #[test]
-            #[ignore] //TODO: doesn't work
             fn indy_wallet_search_for_mix_and_or_query() {
                 NonSecretsUtils::populate_wallet_for_search();
                 let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
                 let query_json = r#"{
-                    "$or": [
-                        {"tagName1": "str1"},
-                        {"tagName2": "str1"}
-                    ],
-                    "$or": [
-                        {"tagName1": "str2"},
-                        {"tagName2": "str2"}
+                    "$and": [
+                        {
+                            "$or": [
+                                {"tagName1": "str1"},
+                                {"tagName2": "str1"}
+                            ]
+                        },
+                        {
+                            "$or": [
+                                {"tagName1": "str2"},
+                                {"tagName2": "str2"}
+                            ]
+                        }
                     ]
                 }"#;
 

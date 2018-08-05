@@ -4,9 +4,6 @@ extern crate indy_crypto;
 
 use super::constants::GET_TXN;
 
-use self::indy_crypto::utils::json::{JsonEncodable, JsonDecodable};
-
-
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetTxnOperation {
     #[serde(rename = "type")]
@@ -26,16 +23,12 @@ impl GetTxnOperation {
     }
 }
 
-impl JsonEncodable for GetTxnOperation {}
-
 #[derive(Deserialize, Debug)]
 pub enum LedgerType {
     POOL = 0,
     DOMAIN = 1,
     CONFIG = 2
 }
-
-impl<'a> JsonDecodable<'a> for LedgerType {}
 
 impl LedgerType {
     pub fn to_id(&self) -> i32 {
