@@ -123,7 +123,7 @@ build(){
     echo "Toolchain path ${BOLD}${YELLOW}${TOOLCHAIN_DIR}${RESET}"
     echo "Sodium path ${BOLD}${YELLOW}${SODIUM_DIR}${RESET}"
     echo "Indy path ${BOLD}${YELLOW}${INDY_DIR}${RESET}"
-    echo "Artifacts will be in ${BOLD}${YELLOW}${ANDROID_BUILD_FOLDER}/libindy_${ABSOLUTE_ARCH}${RESET}"
+    echo "Artifacts will be in ${BOLD}${YELLOW}${ANDROID_BUILD_FOLDER}/libnullpay_${ABSOLUTE_ARCH}${RESET}"
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
