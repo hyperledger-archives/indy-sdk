@@ -615,7 +615,7 @@ extern "C" {
                                                         const char *  justification,
                                                         indy_bool_t   reinstall,
                                                         indy_bool_t   force,
-                                                        const char *  package,
+                                                        const char *  package_,
 
                                                         void           (*cb)(indy_handle_t xcommand_handle,
                                                                              indy_error_t  err,
