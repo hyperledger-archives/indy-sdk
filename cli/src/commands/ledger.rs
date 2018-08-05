@@ -363,27 +363,29 @@ pub mod get_validator_info_command {
         };
 
         println_succ!("Validator Info:");
-        println!("{{");
+
+        let mut lines: Vec<String> = Vec::new();
 
         for (node, response) in responses {
             if response.eq("timeout") {
-                println!("\t{}: {}", node, "Timeout");
+                lines.push(format!("\t{:?}: {}", node, "Timeout"));
                 continue
             }
             let response = match serde_json::from_str::<Response<serde_json::Value>>(&response) {
                 Ok(resp) => resp,
                 Err(err) => {
-                    println!("\t{}: Invalid data has been received: {:?}", node, err);
+                    lines.push(format!("\t{:?}: Invalid data has been received: {:?}", node, err));
                     continue
                 }
             };
 
             match handle_transaction_response(response) {
-                Ok(result) => println!("\t{}: {}", node, result),
+                Ok(result) => lines.push(format!("\t{:?}: {}", node, result)),
                 Err(_) => {}
             };
         }
-        println!("}}");
+
+        println!("{{\n{}\n}}", lines.join(",\n"));
 
         let res = Ok(());
 
