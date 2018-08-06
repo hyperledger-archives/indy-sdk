@@ -37,14 +37,6 @@ ARG RUST_VER="1.27.0"
 ENV RUST_ARCHIVE=rust-${RUST_VER}-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
-RUN mkdir -p /rust
-WORKDIR /rust
-
-RUN curl -fOL $RUST_DOWNLOAD_URL \
-    && curl -s $RUST_DOWNLOAD_URL.sha256 | sha256sum -c - \
-    && tar -C /rust -xzf $RUST_ARCHIVE --strip-components=1 \
-    && rm $RUST_ARCHIVE \
-    && ./install.sh
 
 # fpm for deb packaging of npm
 RUN gem install fpm

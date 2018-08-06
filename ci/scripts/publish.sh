@@ -8,11 +8,16 @@ fi
 CREDENTIALS=$1
 FILENAME=$2
 URL=$3
-LOOKUP_DIR="/sdk/vcx/output"
+LOOKUP_DIR="output"
 
 echo "Filename: ${FILENAME}"
 echo "TYPE: ${TYPE}"
 echo "URL: $URL"
 
-find $LOOKUP_DIR -type f -name ${FILENAME} -exec curl -u $CREDENTIALS -X POST $URL -F 'file=@{}' \;
+echo 'info:'
+pwd
+ls -al
+echo 'end info'
+
+find "./output" -type f -name ${FILENAME} -exec curl -u $CREDENTIALS -X POST $URL -F 'file=@{}' \;
 
