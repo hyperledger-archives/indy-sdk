@@ -85,7 +85,7 @@ test('ledger', async function (t) {
   req = await indy.buildPoolRestartRequest(myDid, 'start', '0')
   t.is(req.operation.action, 'start')
 
-  req = await indy.buildPoolUpgradeRequest(myDid, 'some upgrade action', '2.0.0', 'cancel', 'abc12345', -1, null, null, false, false)
+  req = await indy.buildPoolUpgradeRequest(myDid, 'some upgrade action', '2.0.0', 'cancel', 'abc12345', -1, null, null, false, false, null)
   t.is(req.operation.name, 'some upgrade action')
 
   // DDO

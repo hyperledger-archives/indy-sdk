@@ -509,6 +509,7 @@
                                   justification:(NSString *)justification
                                       reinstall:(BOOL)reinstall
                                           force:(BOOL)force
+                                       package_:(NSString *)package_
                                      completion:(void (^)(NSError *error, NSString *requestJSON))completion {
     indy_error_t ret;
 
@@ -525,6 +526,7 @@
             [justification UTF8String],
             (indy_bool_t) reinstall,
             (indy_bool_t) force,
+            [package_ UTF8String],
             IndyWrapperCommonStringCallback);
     if (ret != Success) {
         [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];

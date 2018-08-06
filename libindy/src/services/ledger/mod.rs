@@ -326,9 +326,9 @@ impl LedgerService {
 
     pub fn build_pool_upgrade(&self, identifier: &str, name: &str, version: &str, action: &str,
                               sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
-                              justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, CommonError> {
+                              justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> Result<String, CommonError> {
         info!("build_pool_upgrade >>> identifier: {:?}, name {:?}, version {:?}, action {:?}, sha256 {:?}, timeout {:?}, schedule {:?}, justification {:?}, \
-        reinstall {:?}, reinstall {:?}", identifier, name, version, action, sha256, timeout, schedule, justification, reinstall, reinstall);
+        reinstall {:?}, reinstall {:?}, package {:?}", identifier, name, version, action, sha256, timeout, schedule, justification, reinstall, reinstall, package);
 
         let schedule = match schedule {
             Some(schedule) => Some(serde_json::from_str::<HashMap<String, String>>(schedule)
@@ -344,7 +344,7 @@ impl LedgerService {
             return Err(CommonError::InvalidStructure(format!("Schedule is required for `{}` action", action)));
         }
 
-        let operation = PoolUpgradeOperation::new(name, version, action, sha256, timeout, schedule, justification, reinstall, force);
+        let operation = PoolUpgradeOperation::new(name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
 
         let request = Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("POOL_UPGRADE request json is invalid {:?}.", err)))?;

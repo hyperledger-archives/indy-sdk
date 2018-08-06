@@ -449,9 +449,9 @@ indy.buildPoolRestartRequest = function buildPoolRestartRequest (submitterDid, a
   return cb.promise
 }
 
-indy.buildPoolUpgradeRequest = function buildPoolUpgradeRequest (submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb) {
+indy.buildPoolUpgradeRequest = function buildPoolUpgradeRequest (submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildPoolUpgradeRequest(submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb)
+  capi.buildPoolUpgradeRequest(submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb)
   return cb.promise
 }
 

@@ -390,6 +390,7 @@
  @param justification (Optional) justification string for this particular Upgrade.
  @param reinstall Whether it's allowed to re-install the same version. False by default.
  @param force Whether we should apply transaction (schedule Upgrade) without waiting for consensus of this transaction.
+ @param package_ (Optional) Package to be upgraded.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
@@ -402,6 +403,7 @@
                                   justification:(NSString *)justification
                                       reinstall:(BOOL)reinstall
                                           force:(BOOL)force
+                                       package_:(NSString *)package_
                                      completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 // MARK: - Revocation registry definition request
 

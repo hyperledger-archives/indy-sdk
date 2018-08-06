@@ -328,6 +328,7 @@ To support efficient and flexible search the following tags will be created for 
         "schema_version": <credential schema version>,
         "issuer_did": <credential issuer did>,
         "cred_def_id": <credential definition id>,
+        "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
         // for every attribute in <credential values>
         "attr::<attribute name>::marker": "1",
         "attr::<attribute name>::value": <attribute raw value>,
@@ -1485,7 +1486,7 @@ Builds a POOL\_RESTART request.
 
 Errors: `Common*`
 
-#### buildPoolUpgradeRequest \( submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force \) -&gt; request
+#### buildPoolUpgradeRequest \( submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package \) -&gt; request
 
 Builds a POOL\_UPGRADE request. Request to upgrade the Pool \(sent by Trustee\).
 It upgrades the specified Nodes \(either all nodes in the Pool, or some specific ones\).
@@ -1501,6 +1502,7 @@ Must be greater than existing one \(or equal if reinstall flag is True\).
 * `justification`: String - \(Optional\) justification string for this particular Upgrade.
 * `reinstall`: Boolean - Whether it's allowed to re-install the same version. False by default.
 * `force`: Boolean - Whether we should apply transaction \(schedule Upgrade\) without waiting
+* `package`: String - \(Optional\) Package to be upgraded.
 for consensus of this transaction.
 * __->__ `request`: Json
 
