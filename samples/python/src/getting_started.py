@@ -1,6 +1,7 @@
 import time
+from os.path import dirname
 
-from indy import anoncreds, crypto, did, ledger, pool, wallet
+from indy import anoncreds, blob_storage, crypto, did, ledger, pool, wallet
 
 import json
 import logging
@@ -478,8 +479,8 @@ async def run():
     logger.info("------------------------------")
 
     _, thrift_alice_key, alice_thrift_did, alice_thrift_key, \
-    thrift_alice_connection_response = await onboarding(pool_handle, "Thrift", thrift_wallet, thrift_did, "Alice",
-                                                        alice_wallet, alice_wallet_config, alice_wallet_credentials)
+        thrift_alice_connection_response = await onboarding(pool_handle, "Thrift", thrift_wallet, thrift_did, "Alice",
+                                                            alice_wallet, alice_wallet_config, alice_wallet_credentials)
 
     logger.info("==============================")
     logger.info("== Apply for the loan with Thrift - Job-Certificate proving  ==")
@@ -849,7 +850,29 @@ async def prover_get_entities_from_ledger(pool_handle, _did, identifiers, actor)
         cred_defs[received_cred_def_id] = json.loads(received_cred_def)
 
         if 'rev_reg_seq_no' in item:
-            pass  # TODO Create Revocation States
+            logger.info('"{}" -> Get Revocation Registry Definition from Ledger'.format(actor))
+            get_revoc_reg_def_request = await ledger.build_get_revoc_reg_def_request(_did, item['rev_reg_id'])
+            get_revoc_reg_def_response = await ledger.submit_request(pool_handle, get_revoc_reg_def_request)
+            (rev_reg_id, revoc_reg_def_json) = await ledger.parse_get_revoc_reg_def_response(get_revoc_reg_def_response)
+
+            logger.info('"{}" -> Get Revocation Registry Delta from Ledger'.format(actor))
+            get_revoc_reg_delta_request = \
+                await ledger.build_get_revoc_reg_delta_request(_did, item['rev_reg_id'], None, int(time.time()))
+            get_revoc_reg_delta_response = \
+                await ledger.submit_request(pool_handle, get_revoc_reg_delta_request)
+            (rev_reg_id, revoc_reg_delta_json, timestamp) = \
+                await ledger.parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response)
+
+            tails_writer_config = json.dumps(
+                {'base_dir': dirname(json.loads(revoc_reg_def_json)['value']['tailsLocation']),
+                 'uri_pattern': ''})
+            blob_storage_reader_cfg_handle = await blob_storage.open_reader('default', tails_writer_config)
+
+            logger.info('"{}" -> Create Revocation State'.format(actor))
+            rev_state_json = \
+                await anoncreds.create_revocation_state(blob_storage_reader_cfg_handle, revoc_reg_def_json,
+                                                        revoc_reg_delta_json, timestamp, item['cred_rev_id'])
+            rev_states[rev_reg_id] = {timestamp: json.loads(rev_state_json)}
 
     return json.dumps(schemas), json.dumps(cred_defs), json.dumps(rev_states)
 
@@ -869,7 +892,19 @@ async def verifier_get_entities_from_ledger(pool_handle, _did, identifiers, acto
         cred_defs[received_cred_def_id] = json.loads(received_cred_def)
 
         if 'rev_reg_seq_no' in item:
-            pass  # TODO Get Revocation Definitions and Revocation Registries
+            logger.info('"{}" -> Get Revocation Definition from Ledger'.format(actor))
+            get_revoc_reg_def_request = await ledger.build_get_revoc_reg_def_request(_did, item['rev_reg_id'])
+            get_revoc_reg_def_response = await ledger.submit_request(pool_handle, get_revoc_reg_def_request)
+            (rev_reg_id, revoc_reg_def_json) = await ledger.parse_get_revoc_reg_def_response(get_revoc_reg_def_response)
+
+            logger.info('"{}" -> Get Revocation Registry from Ledger'.format(actor))
+            get_revoc_reg_request = \
+                await ledger.build_get_revoc_reg_request(_did, item['rev_reg_id'], item['timestamp'])
+            get_revoc_reg_response = await ledger.submit_request(pool_handle, get_revoc_reg_request)
+            (rev_reg_id, rev_reg_json, timestamp) = await ledger.parse_get_revoc_reg_response(get_revoc_reg_response)
+
+            rev_regs[rev_reg_id] = {timestamp: json.loads(rev_reg_json)}
+            rev_reg_defs[rev_reg_id] = json.loads(revoc_reg_def_json)
 
     return json.dumps(schemas), json.dumps(cred_defs), json.dumps(rev_reg_defs), json.dumps(rev_regs)
 
