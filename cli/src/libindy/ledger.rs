@@ -273,7 +273,7 @@ impl Ledger {
     }
 
     pub fn indy_build_pool_upgrade_request(submitter_did: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
-                                           justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, ErrorCode> {
+                                           justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
@@ -285,6 +285,7 @@ impl Ledger {
 
         let schedule_str = schedule.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let justification_str = justification.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let package_str = package.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_build_pool_upgrade_request(command_handle,
@@ -298,6 +299,7 @@ impl Ledger {
                                             if justification.is_some() { justification_str.as_ptr() } else { null() },
                                             reinstall,
                                             force,
+                                            if package.is_some() { package_str.as_ptr() } else { null() },
                                             cb)
         };
 
@@ -424,5 +426,6 @@ extern {
                                        justification: *const c_char,
                                        reinstall: bool,
                                        force: bool,
+                                       package: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 }
