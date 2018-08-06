@@ -452,6 +452,7 @@
                                                                   justification:nil
                                                                       reinstall:false
                                                                           force:false
+                                                                       package_:nil
                                                                      resultJson:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildPoolConfigRequestWithSubmitterDid() failed");
 
@@ -485,6 +486,7 @@
                                                                   justification:nil
                                                                       reinstall:false
                                                                           force:false
+                                                                       package_:nil
                                                                      resultJson:&requestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildPoolConfigRequestWithSubmitterDid() failed");
 
