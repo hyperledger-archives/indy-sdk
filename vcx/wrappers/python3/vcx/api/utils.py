@@ -17,7 +17,7 @@ async def vcx_agent_provision(config: str) -> None:
                            vcx_agent_provision.cb)
 
     logger.debug("vcx_agent_provision completed")
-    return result
+    return result.decode()
 
 async def vcx_agent_update_info(config: str) -> None:
     logger = logging.getLogger(__name__)

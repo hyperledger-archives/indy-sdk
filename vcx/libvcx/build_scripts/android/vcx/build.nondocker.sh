@@ -83,21 +83,22 @@ if [ -z "${LIBINDY_DIR}" ] ; then
     fi
 fi
 
-if [ -z "${LIBNULLPAY_DIR}" ] ; then
-    LIBNULLPAY_DIR="libnullpay_${TARGET_ARCH}"
-    if [ -d "${LIBNULLPAY_DIR}" ] ; then
-        echo "Found ${LIBNULLPAY_DIR}"
+if [ -z "${LIBSOVTOKEN_DIR}" ] ; then
+    LIBSOVTOKEN_DIR="libsovtoken"
+    if [ -d "${LIBSOVTOKEN_DIR}" ] ; then
+        echo "Found ${LIBSOVTOKEN_DIR}"
     elif [ -z "$8" ] ; then
-        echo STDERR "Missing LIBNULLPAY_DIR argument and environment variable"
-        echo STDERR "e.g. set LIBNULLPAY_DIR=<path> for environment or libnullpay_${TARGET_ARCH}"
+        echo STDERR "Missing LIBSOVTOKEN_DIR argument and environment variable"
+        echo STDERR "e.g. set LIBSOVTOKEN_DIR=<path> for environment or libsovtoken"
         exit 1
     else
-        LIBNULLPAY_DIR=$8
+        LIBSOVTOKEN_DIR=$8
     fi
-    if [ -d "${LIBNULLPAY_DIR}/lib" ] ; then
-            LIBNULLPAY_DIR="${LIBNULLPAY_DIR}/lib"
+    if [ -d "${LIBSOVTOKEN_DIR}/${CROSS_COMPILE}" ] ; then
+        LIBSOVTOKEN_DIR=${LIBSOVTOKEN_DIR}/${CROSS_COMPILE}
     fi
 fi
+
 
 
 if [ "$(uname)" == "Darwin" ]; then
@@ -149,7 +150,7 @@ export SODIUM_INCLUDE_DIR=${WORKDIR}/${SODIUM_DIR}/include
 export LIBZMQ_LIB_DIR=${WORKDIR}/${LIBZMQ_DIR}/lib
 export LIBZMQ_INCLUDE_DIR=${WORKDIR}/${LIBZMQ_DIR}/include
 export LIBINDY_DIR=${WORKDIR}/${LIBINDY_DIR}
-export LIBNULLPAY_DIR=${WORKDIR}/${LIBNULLPAY_DIR}
+export LIBSOVTOKEN_DIR=${WORKDIR}/${LIBSOVTOKEN_DIR}
 export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH}
 export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
 export PKG_CONFIG_ALLOW_CROSS=1
@@ -185,7 +186,7 @@ ${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so \
 ${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a \
 ${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so \
 ${LIBINDY_DIR}/libindy.a \
-${LIBNULLPAY_DIR}/libnullpay.a \
+${LIBSOVTOKEN_DIR}/libsovtoken.a \
 ${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libgnustl_shared.so \
 ${OPENSSL_DIR}/lib/libssl.a \
 ${OPENSSL_DIR}/lib/libcrypto.a \
@@ -193,4 +194,3 @@ ${SODIUM_LIB_DIR}/libsodium.a \
 ${LIBZMQ_LIB_DIR}/libzmq.a \
 ${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libgnustl_shared.so -Wl,--no-whole-archive -z muldefs
 cp "${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a" ${LIBVCX_BUILDS}/
-
