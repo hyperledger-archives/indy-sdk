@@ -22,6 +22,7 @@ use services::microledger::auth::Auth;
 use services::wallet::wallet::EncryptedValue;
 use services::wallet::storage::StorageRecord;
 use services::microledger::constants::AUTHZ_ALL;
+use std::collections::HashSet;
 
 const TYP: [u8; 3] = [1, 2, 3];
 
@@ -333,11 +334,13 @@ impl<'a> DidDoc<'a> {
             CommonError::InvalidState(format!("Unable to jsonify ledger udpdate message {:?}.", err)))
     }
 
+    // Checks if DID doc has a particular verkey
     pub fn has_key(&self, verkey: &str) -> Result<bool, CommonError> {
         let key_entry = self.get_key_entry(&verkey)?;
         Ok(key_entry.is_some())
     }
 
+    // Get the list of authorizations of a particular verkey
     pub fn get_key_authorisations(&self, verkey: &str) -> Result<Vec<String>, CommonError> {
         let key_entry = self.get_key_entry(&verkey)?;
         match key_entry {
@@ -361,6 +364,7 @@ impl<'a> DidDoc<'a> {
         }
     }
 
+    // Get the list of endpoints (addresses) of a particular verkey
     pub fn get_key_endpoints(&self, verkey: &str) -> Result<Vec<String>, CommonError> {
         let key_entry = self.get_key_entry(&verkey)?;
         match key_entry {
@@ -389,6 +393,44 @@ impl<'a> DidDoc<'a> {
                 Err(CommonError::InvalidStructure(e_msg))
             }
         }
+    }
+
+    // Get the list of keys with a particular authorisation
+    pub fn get_keys_by_authorisation(&self, authz: &str) -> Result<Vec<String>, CommonError> {
+        if !Auth::is_valid_auth(authz) {
+            return Err(CommonError::InvalidStructure(format!("Invalid auth {}", authz)))
+        }
+        let mut res: Vec<String> = vec![];
+
+        let mut storage_iterator = self.storage.get_all().map_err(|err|
+            CommonError::InvalidStructure(format!("Error getting DID doc storage iterator: {:?}.", err)))?;
+        let all_possible_auths = Auth::get_all();
+        loop {
+            match storage_iterator.next() {
+                Ok(v) => {
+                    match v {
+                        Some(r) => {
+                            match r.value {
+                                Some(ev) => {
+                                    let vk = str::from_utf8(&r.id).unwrap().to_string();
+                                    let val: Map<String, JValue> = serde_json::from_str(&str::from_utf8(&ev.data).unwrap().to_string()).unwrap();
+                                    let auths: Vec<String> = serde_json::from_value(val[AUTHORIZATIONS].clone()).map_err(|err|
+                                        CommonError::InvalidStructure(format!("Cannot convert authorisations to vector of strings : {:?}.", err)))?;
+                                    let auths: HashSet<String> = auths.iter().cloned().collect();
+                                    if auths.contains(authz) || auths.contains(AUTHZ_ALL) || (auths == all_possible_auths) {
+                                        res.push(vk);
+                                    }
+                                },
+                                None => continue
+                            }
+                        }
+                        None => break
+                    }
+                },
+                Err(e) => return Err(CommonError::InvalidStructure(format!("Error getting DID doc storage iterator: {:?}.", e)))
+            }
+        }
+        Ok(res)
     }
 
     fn extract_endpoints(key_entry: &mut JValue) -> Map<String, JValue> {
@@ -423,6 +465,9 @@ pub mod tests {
     use super::*;
     use utils::test::TestUtils;
     use services::microledger::helpers::tests::{valid_did_doc_storage_options, check_empty_storage, get_new_did_doc};
+    use services::microledger::constants::AUTHZ_MPROX;
+    use services::microledger::constants::AUTHZ_ADD_KEY;
+    use services::microledger::constants::AUTHZ_REM_KEY;
 
     #[test]
     fn test_setup_did_doc() {
@@ -621,5 +666,43 @@ pub mod tests {
         doc.apply_txn(end_point_txn_5).unwrap();
         let empty_str_vec: Vec<String> = vec![];
         assert_eq!(doc.get_key_endpoints("46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB").unwrap(), empty_str_vec);
+    }
+
+    #[test]
+    fn test_get_keys_by_authorisation() {
+        TestUtils::cleanup_temp();
+        let did = "75KUW8tPUQNBS4W7ibFeY8";
+        let mut doc = get_new_did_doc(did);
+        let key_txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(key_txn_1).unwrap();
+        let key_txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key"],"type":"2","verkey":"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB"}}"#;
+        doc.apply_txn(key_txn_2).unwrap();
+        let key_txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key", "rem_key"],"type":"2","verkey":"41bgpk11WQ4NBHzbJH9YiRFFkkvzQrc25J4Y8839Dx74"}}"#;
+        doc.apply_txn(key_txn_3).unwrap();
+        let key_txn_4 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key", "rem_key", "mprox"],"type":"2","verkey":"4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ"}}"#;
+        doc.apply_txn(key_txn_4).unwrap();
+
+        assert!(doc.get_keys_by_authorisation("Some_incorrect_authz").is_err());
+        assert_eq!(doc.get_keys_by_authorisation(AUTHZ_ADD_KEY).unwrap(), vec!["6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1",
+                                                                               "46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB",
+                                                                               "41bgpk11WQ4NBHzbJH9YiRFFkkvzQrc25J4Y8839Dx74",
+                                                                               "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ"]);
+        assert_eq!(doc.get_keys_by_authorisation(AUTHZ_REM_KEY).unwrap(), vec!["6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1",
+                                                                               "41bgpk11WQ4NBHzbJH9YiRFFkkvzQrc25J4Y8839Dx74",
+                                                                               "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ"]);
+        assert_eq!(doc.get_keys_by_authorisation(AUTHZ_MPROX).unwrap(), vec!["6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1",
+                                                                             "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ"]);
+        assert_eq!(doc.get_keys_by_authorisation(AUTHZ_ALL).unwrap(), vec!["6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1",
+                                                                               "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ"]);
+
+        let key_txn_5 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key", "rem_key"],"type":"2","verkey":"4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ"}}"#;
+        doc.apply_txn(key_txn_5).unwrap();
+
+        assert_eq!(doc.get_keys_by_authorisation(AUTHZ_MPROX).unwrap(), vec!["6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"]);
+
+        let key_txn_6 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key", "rem_key"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
+        doc.apply_txn(key_txn_6).unwrap();
+        let empty_str_vec: Vec<String> = vec![];
+        assert_eq!(doc.get_keys_by_authorisation(AUTHZ_MPROX).unwrap(), empty_str_vec);
     }
 }
