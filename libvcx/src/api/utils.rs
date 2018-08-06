@@ -365,6 +365,7 @@ mod tests {
     use settings;
     use std::ffi::CString;
     use std::time::Duration;
+    use utils::libindy::return_types_u32;
 
     #[test]
     fn test_provision_agent() {
@@ -378,12 +379,6 @@ mod tests {
 
         check_useful_c_str!(result,());
         assert!(result.len() > 0);
-    }
-
-    extern "C" fn generic_cb(command_handle: u32, err: u32, config: *const c_char) {
-        if err != 0 {panic!("generic_cb failed")}
-        check_useful_c_str!(config, ());
-        println!("successfully called generic_cb: {}", config);
     }
 
     #[test]
@@ -410,13 +405,9 @@ mod tests {
         let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
 
-        let result = vcx_agent_provision_async(0, c_json, Some(generic_cb));
-        assert_eq!(result, error::INVALID_JSON.code_num);
-    }
-
-    extern "C" fn update_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("update_cb failed: {}", err)}
-        println!("successfully called update_cb")
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_agent_provision_async(cb.command_handle, c_json, Some(cb.get_callback())),
+                   error::INVALID_JSON.code_num);
     }
 
     #[test]
@@ -427,9 +418,9 @@ mod tests {
         let json_string = r#"{"id":"123","value":"value"}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
 
-        let result = vcx_agent_update_info(0, c_json, Some(update_cb));
-        assert_eq!(result,0);
-        thread::sleep(Duration::from_secs(1));
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        let result = vcx_agent_update_info(cb.command_handle, c_json, Some(cb.get_callback()));
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
@@ -441,8 +432,11 @@ mod tests {
         let json_string = r#"{"id":"123"}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
 
-        let result = vcx_agent_update_info(0, c_json, Some(update_cb));
-        assert_eq!(result,error::INVALID_OPTION.code_num);
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_agent_update_info(cb.command_handle,
+                                         c_json,
+                                         Some(cb.get_callback())),
+                   error::INVALID_OPTION.code_num);
     }
 
     #[test]
@@ -450,14 +444,10 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let result = vcx_ledger_get_fees(0, Some(generic_cb));
-        assert_eq!(result,0);
-        thread::sleep(Duration::from_secs(1));
-    }
-
-    extern "C" fn get_agency_messages_cb(command_handle: u32, err: u32, messages: *const c_char) {
-        if err != 0 {panic!("get_agency_messages failed")}
-        check_useful_c_str!(messages, ());
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_ledger_get_fees(cb.command_handle,
+                                       Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
     }
 
     #[test]
@@ -465,9 +455,9 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
-        let rc = vcx_messages_download(0, ptr::null_mut(), ptr::null_mut(), ptr::null_mut(), Some(get_agency_messages_cb));
-        assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_secs(1));
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_messages_download(cb.command_handle, ptr::null_mut(), ptr::null_mut(), ptr::null_mut(), Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
@@ -478,8 +468,12 @@ mod tests {
         let status = CString::new("MS-103").unwrap().into_raw();
         let json = CString::new(r#"[{"pairwiseDID":"QSrw8hebcvQxiwBETmAaRs","uids":["mgrmngq"]}]"#).unwrap().into_raw();
 
-        let rc = vcx_messages_update_status(0, status, json, Some(update_cb));
-        assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_secs(1));
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_messages_update_status(cb.command_handle,
+                                              status,
+                                              json,
+                                              Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 }

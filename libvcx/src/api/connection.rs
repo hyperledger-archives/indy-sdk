@@ -436,7 +436,6 @@ mod tests {
     use std::ffi::CString;
     use std::ptr;
     use utils::error;
-    use std::thread;
     use std::time::Duration;
     use api::VcxStateType;
     use utils::httpclient;
@@ -444,26 +443,16 @@ mod tests {
     use utils::libindy::return_types_u32;
     use utils::error::SUCCESS;
 
-    extern "C" fn create_cb(command_handle: u32, err: u32, connection_handle: u32) {
-        if err != 0 {panic!("create_cb failed")}
-        if connection_handle == 0 {panic!("invalid handle")}
-        println!("successfully called create_cb")
-    }
-
-    extern "C" fn delete_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("create_cb failed")}
-        println!("successfully called delete_cb")
-    }
-
     #[test]
     fn test_vcx_connection_create() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let rc = vcx_connection_create(0,
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_connection_create(cb.command_handle,
                                        CString::new("test_create").unwrap().into_raw(),
-                                       Some(create_cb));
+                                       Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_secs(1));
+        assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
     }
 
     #[test]
@@ -474,34 +463,27 @@ mod tests {
                                        CString::new("test_create_fails").unwrap().into_raw(),
                                        None);
         assert_eq!(rc, error::INVALID_OPTION.code_num);
-
-        let rc = vcx_connection_create(0,
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_connection_create(cb.command_handle,
                                        ptr::null(),
-                                       Some(create_cb));
+                                       Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_OPTION.code_num);
-    }
-
-    extern "C" fn connect_cb(command_handle: u32, err: u32, details: *const c_char) {        if err != 0 {panic!("connect failed: {}", err);}
-        println!("successfully called connect_cb");
     }
 
     #[test]
     fn test_vcx_connection_connect() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let rc = vcx_connection_connect(0,0, CString::new("{}").unwrap().into_raw(),Some(connect_cb));
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let rc = vcx_connection_connect(cb.command_handle, 0, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
         let handle = build_connection("test_vcx_connection_connect").unwrap();
         assert!(handle > 0);
-        let rc = vcx_connection_connect(0,handle, CString::new("{}").unwrap().into_raw(),Some(connect_cb));
-        thread::sleep(Duration::from_millis(500));
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let rc = vcx_connection_connect(cb.command_handle,handle, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-    }
-
-    extern "C" fn update_state_cb(command_handle: u32, err: u32, state: u32) {
-        assert_eq!(err, 0);
-        println!("successfully called update_state_cb");
-        assert_eq!(state,VcxStateType::VcxStateAccepted as u32);
+        let invite_details = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        assert!(invite_details.is_some());
     }
 
     #[test]
@@ -510,10 +492,11 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = build_connection("test_vcx_connection_update_state").unwrap();
         assert!(handle > 0);
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
-        let rc = vcx_connection_update_state(0,handle,Some(update_state_cb));
+        let rc = vcx_connection_update_state(cb.command_handle,handle,Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(300));
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
     }
 
     #[test]
@@ -524,26 +507,19 @@ mod tests {
         assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 
-    extern "C" fn serialize_cb(handle: u32, err: u32, credential_string: *const c_char) {
-        assert_eq!(err, 0);
-        if credential_string.is_null() {
-            panic!("credential_string is empty");
-        }
-        check_useful_c_str!(credential_string, ());
-        println!("successfully called serialize_cb: {}", credential_string);
-    }
-
     #[test]
-    #[allow(unused_assignments)]
     fn test_vcx_connection_serialize() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = build_connection("test_vcx_connection_get_data").unwrap();
         assert!(handle > 0);
 
-        let data = vcx_connection_serialize(0,handle, Some(serialize_cb));
-        thread::sleep(Duration::from_millis(200));
-        assert_eq!(data, 0);
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let rc = vcx_connection_serialize(cb.command_handle,handle, Some(cb.get_callback()));
+        assert_eq!(rc, 0);
+
+        // unwraps on the option, if none, then serializing failed and panic! ensues.
+        cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
     }
 
     #[test]
@@ -555,20 +531,9 @@ mod tests {
 
         let rc = vcx_connection_release(handle);
         assert_eq!(rc, error::SUCCESS.code_num);
-        let rc = vcx_connection_connect(0,handle, CString::new("{}").unwrap().into_raw(),Some(connect_cb));
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let rc = vcx_connection_connect(0,handle, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
-    }
-
-    extern "C" fn deserialize_cb(command_handle: u32, err: u32, connection_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(connection_handle > 0);
-        println!("successfully called deserialize_cb");
-        let string = r#"{"source_id":"test_vcx_connection_deserialialize_succeeds","pw_did":"8XFh8yBzrpJQmNyZzgoTqB","pw_verkey":"EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A","state":1,"uuid":"","endpoint":"","invite_detail":{"statusCode":"","connReqId":"","senderDetail":{"name":"","agentKeyDlgProof":{"agentDID":"","agentDelegatedKey":"","signature":""},"DID":"","logoUrl":"","verKey":""},"senderAgencyDetail":{"DID":"","verKey":"","endpoint":""},"targetName":"","statusMsg":""},"agent_did":"U5LXs4U7P9msh647kToezy","agent_vk":"FktSZg8idAVzyQZrdUppK6FTrfAzW3wWVzAjJAfdUvJq","their_pw_did":"","their_pw_verkey":""}"#;
-
-        let new = to_string(connection_handle).unwrap();
-        println!("original: {}",string);
-        println!("     new: {}",new);
-        assert_eq!(string,new);
     }
 
     #[test]
@@ -585,20 +550,20 @@ mod tests {
         assert!(handle>0);
     }
 
-    extern "C" fn get_state_cb(command_handle: u32, err: u32, state: u32) {
-        assert!(state > 0);
-        println!("successfully called get_state_cb");
-    }
-
     #[test]
     fn test_vcx_connection_get_state() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = build_connection("test_vcx_connection_update_state").unwrap();
+        let handle = build_connection("test_vcx_connection_get_state").unwrap();
         assert!(handle > 0);
-        let rc = vcx_connection_get_state(0,handle,Some(get_state_cb));
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
+        let rc = vcx_connection_update_state(cb.command_handle,handle,Some(cb.get_callback()));
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32);
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_connection_get_state(cb.command_handle,handle,Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(300));
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateAccepted as u32)
     }
 
     #[test]
@@ -608,7 +573,7 @@ mod tests {
         let test_name = "test_vcx_connection_delete_connection";
         let connection_handle = build_connection(test_name).unwrap();
         let command_handle = 0;
-        let cb = delete_cb;
-        assert_eq!(0, vcx_connection_delete_connection(command_handle, connection_handle, Some(cb)));
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(0, vcx_connection_delete_connection(command_handle, connection_handle, Some(cb.get_callback())));
     }
 }

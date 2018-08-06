@@ -500,91 +500,29 @@ mod tests {
 
     pub const BAD_PROOF_REQUEST: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","claim": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","claim_name": "Account Certificate","claim_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
 
-    extern "C" fn create_cb(command_handle: u32, err: u32, proof_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(proof_handle > 0);
-        println!("successfully called create_cb")
-    }
-
-    extern "C" fn create_with_id_cb(command_handle: u32, err: u32, proof_handle: u32, req: *const c_char) {
-        assert_eq!(err, 0);
-        assert!(proof_handle > 0);
-        check_useful_c_str!(req, ());
-        println!("successfully called create_cb")
-    }
-
-    extern "C" fn create_and_retrieve_cb(command_handle: u32, err: u32, proof_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(proof_handle > 0);
-        assert_eq!(vcx_disclosed_proof_retrieve_credentials(0, proof_handle, Some(retrieve_cb)),
-                   error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
-    }
-
-    extern "C" fn retrieve_cb(handle: u32, err: u32, credentials: *const c_char) {
-        assert_eq!(err, 0);
-        if credentials.is_null() {
-            panic!("credentials is null");
-        }
-        check_useful_c_str!(credentials, ());
-        println!("successfully called retrieve_cb: {}", credentials);
-    }
-
-    extern "C" fn create_and_generate_cb(command_handle: u32, err: u32, proof_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(proof_handle > 0);
-
-        assert_eq!(vcx_disclosed_proof_generate_proof(0,
-                                                      proof_handle,
-                                                      CString::new("{}").unwrap().into_raw(),
-                                                      CString::new("{}").unwrap().into_raw(),
-                                                      Some(generate_cb)),
-                   error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
-    }
-
-    extern "C" fn generate_cb(command_handle: u32, err: u32) {
-        assert_eq!(err, 0);
-        println!("successfully called generate_cb");
-
-    }
-
-    extern "C" fn bad_create_cb(command_handle: u32, err: u32, proof_handle: u32) {
-        assert!(err > 0);
-        assert_eq!(proof_handle, 0);
-        println!("successfully called bad_create_cb")
-    }
-
-    extern "C" fn serialize_cb(handle: u32, err: u32, proof_string: *const c_char) {
-        assert_eq!(err, 0);
-        if proof_string.is_null() {
-            panic!("proof_string is null");
-        }
-        check_useful_c_str!(proof_string, ());
-        println!("successfully called serialize_cb: {}", proof_string);
-    }
-
     #[test]
     fn test_vcx_proof_create_with_request_success() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        assert_eq!(vcx_disclosed_proof_create_with_request(0,
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
                                                CString::new("test_create").unwrap().into_raw(),
                                                CString::new(::utils::constants::PROOF_REQUEST_JSON).unwrap().into_raw(),
-                                               Some(create_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+                                               Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
     }
 
     #[test]
     fn test_vcx_proof_create_with_request() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_request(
-            0,
+            cb.command_handle,
             CString::new("test_create").unwrap().into_raw(),
             CString::new(BAD_PROOF_REQUEST).unwrap().into_raw(),
-            Some(bad_create_cb)),error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+            Some(cb.get_callback())),error::SUCCESS.code_num);
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::INVALID_JSON.code_num));
     }
 
     #[test]
@@ -593,12 +531,14 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let cxn = ::connection::build_connection("test_create_with_msgid").unwrap();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
-        assert_eq!(vcx_disclosed_proof_create_with_msgid(0,
+        let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_create_with_msgid(cb.command_handle,
                                                          CString::new("test_create_with_msgid").unwrap().into_raw(),
                                                          cxn,
                                                          CString::new("123").unwrap().into_raw(),
-                                                         Some(create_with_id_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+                                                         Some(cb.get_callback())), error::SUCCESS.code_num);
+        let (handle, disclosed_proof) = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        assert!(handle > 0 && disclosed_proof.is_some());
     }
 
     #[test]
@@ -624,10 +564,6 @@ mod tests {
         assert!(handle > 0);
     }
 
-    extern "C" fn send_proof_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("failed to send proof {}",err)}
-    }
-
     #[test]
     fn test_vcx_send_proof() {
         settings::set_defaults();
@@ -638,19 +574,9 @@ mod tests {
 
         let connection_handle = connection::build_connection("test_send_proof").unwrap();
 
-        assert_eq!(vcx_disclosed_proof_send_proof(0,handle,connection_handle,Some(send_proof_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(1000));
-    }
-
-    extern "C" fn init_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("create_cb failed: {}", err)}
-        println!("successfully called init_cb")
-    }
-
-    extern "C" fn get_requests_cb(command_handle: u32, err:u32, requests: *const c_char) {
-        assert_eq!(err,0);
-        check_useful_c_str!(requests, ());
-        assert!(requests.len() > 20);
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_send_proof(cb.command_handle,handle,connection_handle,Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
@@ -659,15 +585,9 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let cxn = ::connection::build_connection("test_get_new_requests").unwrap();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
-        assert_eq!(error::SUCCESS.code_num as u32, vcx_disclosed_proof_get_requests(0,
-                                           cxn,
-                                           Some(get_requests_cb)));
-        thread::sleep(Duration::from_millis(300));
-    }
-
-    extern "C" fn get_state_cb(command_handle: u32, err: u32, state: u32) {
-        assert!(state > 0);
-        println!("successfully called get_state_cb: {}", state);
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_get_requests(cb.command_handle, cxn, Some(cb.get_callback())),error::SUCCESS.code_num as u32);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
@@ -676,9 +596,10 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
         assert!(handle > 0);
-        let rc = vcx_disclosed_proof_get_state(0,handle,Some(get_state_cb));
-        assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(300));
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_get_state(cb.command_handle,handle,Some(cb.get_callback())),error::SUCCESS.code_num);
+        let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        assert_eq!(state, VcxStateType::VcxStateRequestReceived as u32);
     }
 
     #[test]
@@ -703,11 +624,18 @@ mod tests {
     fn test_vcx_disclosed_proof_generate_proof() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-
-        assert_eq!(vcx_disclosed_proof_create_with_request(0,
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
                                                            CString::new("test_create").unwrap().into_raw(),
                                                            CString::new(::utils::constants::PROOF_REQUEST_JSON).unwrap().into_raw(),
-                                                           Some(create_and_generate_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+                                                           Some(cb.get_callback())), error::SUCCESS.code_num);
+        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_disclosed_proof_generate_proof(cb.command_handle,
+                                                      proof_handle,
+                                                      CString::new("{}").unwrap().into_raw(),
+                                                      CString::new("{}").unwrap().into_raw(),
+                                                      Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 }
