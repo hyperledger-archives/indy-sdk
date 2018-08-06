@@ -170,12 +170,12 @@ impl PoolService {
         Ok(cmd_id)
     }
 
-    pub fn send_action(&self, handle: i32, msg: &str, _nodes: Option<&str>, _timeout: Option<i32>) -> Result<i32, PoolError> {
+    pub fn send_action(&self, handle: i32, msg: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<i32, PoolError> {
         let cmd_id: i32 = SequenceUtils::get_next_id();
 
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
         match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, _nodes, _timeout)?,
+            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, nodes, timeout)?,
             None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         }
 
@@ -226,10 +226,17 @@ impl PoolService {
         Ok(cmd_id)
     }
 
-    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket, _nodes: Option<&str>, _timeout: Option<i32>) -> Result<(), PoolError> {
+    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket, nodes: Option<&str>, timeout: Option<i32>) -> Result<(), PoolError> {
         let mut buf = [0u8; 4];
+        let mut buf_to = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
-        Ok(socket.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT)?)
+        let timeout = timeout.unwrap_or(-1);
+        LittleEndian::write_i32(&mut buf_to, timeout);
+        if let Some(nodes) = nodes {
+            Ok(socket.send_multipart(&[msg.as_bytes(), &buf, &buf_to, nodes.as_bytes()], zmq::DONTWAIT)?)
+        } else {
+            Ok(socket.send_multipart(&[msg.as_bytes(), &buf, &buf_to], zmq::DONTWAIT)?)
+        }
     }
 
     pub fn list(&self) -> Result<Vec<serde_json::Value>, PoolError> {
