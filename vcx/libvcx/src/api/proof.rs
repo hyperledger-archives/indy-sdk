@@ -357,10 +357,8 @@ mod tests {
     use std::ffi::CString;
     use std::ptr;
     use std::str;
-    use std::thread;
     use std::time::Duration;
     use settings;
-    use proof::{ create_proof };
     use proof;
     use api::VcxStateType;
     use connection;
@@ -370,115 +368,54 @@ mod tests {
 
     static DEFAULT_PROOF_NAME: &'static str = "PROOF_NAME";
 
-    extern "C" fn create_cb(command_handle: u32, err: u32, proof_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(proof_handle > 0);
-        println!("successfully called create_cb")
-    }
-
-    extern "C" fn serialize_cb(handle: u32, err: u32, proof_string: *const c_char) {
-        assert_eq!(err, 0);
-        if proof_string.is_null() {
-            panic!("proof_string is null");
-        }
-        check_useful_c_str!(proof_string, ());
-        println!("successfully called serialize_cb: {}", proof_string);
-    }
-
-    extern "C" fn get_proof_cb(handle: u32, err: u32, proof_state: u32, proof_string: *const c_char) {
-        assert_eq!(err, 0);
-        if proof_string.is_null() {
-            panic!("proof_string is null");
-        }
-        check_useful_c_str!(proof_string, ());
-        assert!(proof_state > 1);
-        println!("successfully called get_proof_cb: {}", proof_string);
-    }
-
-    extern "C" fn no_proof_cb(handle: u32, err: u32, proof_state: u32, proof_string: *const c_char) {
-        assert_eq!(err, error::INVALID_PROOF_HANDLE.code_num);
-        assert!(proof_string.is_null());
-        assert_eq!(proof_state, ProofStateType::ProofUndefined as u32);
-        println!("successfully called no_proof_cb: null");
-    }
-
-    extern "C" fn verify_invalid_proof_cb(handle: u32, err: u32, proof_state: u32, proof_string: *const c_char) {
-        if proof_string.is_null() {
-            panic!("proof_string is null");
-        }
-        check_useful_c_str!(proof_string, ());
-        assert_eq!(proof_state, ProofStateType::ProofInvalid as u32);
-        println!("successfully called verify_invalid_proof_cb");
-    }
-
-    extern "C" fn create_and_serialize_cb(command_handle: u32, err: u32, proof_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(proof_handle > 0);
-        println!("successfully called create_and_serialize_cb");
-        assert_eq!(vcx_proof_serialize(0, proof_handle, Some(serialize_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
-    }
-
-    extern "C" fn deserialize_cb(command_handle: u32, err: u32, proof_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(proof_handle > 0);
-        println!("successfully called deserialize_cb");
-        let expected = r#"{"source_id":"source id","requested_attrs":"{\"attrs\":[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"ISSUER_DID2\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]}","requested_predicates":"{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"DID1\"}","msg_uid":"","ref_msg_id":"","prover_did":"8XFh8yBzrpJQmNyZzgoTqB","prover_vk":"","state":2,"proof_state":0,"name":"Name Data","version":"1.0","nonce":"123456","proof":null,"proof_request":null,"remote_did":"","remote_vk":"","agent_did":"","agent_vk":""}"#;
-        let new = proof::to_string(proof_handle).unwrap();
-        assert_eq!(expected,new);
-    }
-
-    extern "C" fn update_state_cb(command_handle: u32, err: u32, state: u32) {
-        assert_eq!(err, 0);
-        println!("successfully called update_state_cb");
-        assert_eq!(state, VcxStateType::VcxStateInitialized as u32);
-    }
-
-
-    extern "C" fn send_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("failed to send proof) {}",err)}
-    }
-
     fn set_default_and_enable_test_mode(){
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+    }
+    fn create_proof_util() -> (return_types_u32::Return_U32_U32, u32) {
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_proof_create(cb.command_handle,
+                                    CString::new(DEFAULT_PROOF_NAME).unwrap().into_raw(),
+                                    CString::new(REQUESTED_ATTRS).unwrap().into_raw(),
+                                    CString::new(REQUESTED_PREDICATES).unwrap().into_raw(),
+                                    CString::new("optional").unwrap().into_raw(),
+                                    Some(cb.get_callback()));
+        (cb, rc)
     }
 
     #[test]
     fn test_vcx_create_proof_success() {
         set_default_and_enable_test_mode();
-        assert_eq!(vcx_proof_create(0,
-                                    CString::new(DEFAULT_PROOF_NAME).unwrap().into_raw(),
-                                    CString::new(REQUESTED_ATTRS).unwrap().into_raw(),
-                                    CString::new(REQUESTED_PREDICATES).unwrap().into_raw(),
-                                    CString::new("optional").unwrap().into_raw(),
-                                    Some(create_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+        let (cb, rc) = create_proof_util();
+        assert_eq!(rc, error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
     fn test_vcx_create_proof_fails() {
         set_default_and_enable_test_mode();
-        assert_eq!(vcx_proof_create(
-            0,
-            ptr::null(),
-            ptr::null(),
-            ptr::null(),
-            ptr::null(),
-            Some(create_cb)), error::INVALID_OPTION.code_num);
-        thread::sleep(Duration::from_millis(200));
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_proof_create(cb.command_handle,
+                                    ptr::null(),
+                                    ptr::null(),
+                                    ptr::null(),
+                                    ptr::null(),
+                                    None),
+                   error::INVALID_OPTION.code_num);
     }
 
     #[test]
     fn test_vcx_proof_serialize() {
         set_default_and_enable_test_mode();
-        assert_eq!(vcx_proof_create(0,
-                                    CString::new(DEFAULT_PROOF_NAME).unwrap().into_raw(),
-                                    CString::new(REQUESTED_ATTRS).unwrap().into_raw(),
-                                    CString::new(REQUESTED_PREDICATES).unwrap().into_raw(),
-                                    CString::new("optional data").unwrap().into_raw(),
-                                    Some(create_and_serialize_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+        let (cb, rc) = create_proof_util();
+        assert_eq!(rc, error::SUCCESS.code_num);
+        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_proof_serialize(cb.command_handle,
+                                       proof_handle,
+                                       Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
@@ -490,7 +427,7 @@ mod tests {
                                          CString::new(PROOF_OFFER_SENT).unwrap().into_raw(),
                                          Some(cb.get_callback())),
                    error::SUCCESS.code_num);
-        let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
+        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
         assert!(handle > 0);
     }
 
@@ -498,18 +435,18 @@ mod tests {
     fn test_proof_update_state() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = match create_proof("1".to_string(),
-                                        REQUESTED_ATTRS.to_owned(),
-                                        REQUESTED_PREDICATES.to_owned(),
-                                        "Name".to_owned()) {
-            Ok(x) => x,
-            Err(_) => panic!("Proof creation failed"),
-        };
-        assert!(handle > 0);
-        thread::sleep(Duration::from_millis(300));
-        let rc = vcx_proof_update_state(0, handle, Some(update_state_cb));
+
+        let (cb, rc) = create_proof_util();
         assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(300));
+        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_proof_update_state(cb.command_handle,
+                                          proof_handle,
+                                          Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        let state = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        assert_eq!(state, VcxStateType::VcxStateInitialized as u32);
     }
 
     #[test]
@@ -517,56 +454,59 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
-        let handle = match create_proof("1".to_string(),
-                                        REQUESTED_ATTRS.to_owned(),
-                                        REQUESTED_PREDICATES.to_owned(),
-                                        "Name".to_owned()) {
-            Ok(x) => x,
-            Err(_) => panic!("Proof creation failed"),
-        };
-        assert_eq!(proof::get_state(handle).unwrap(),VcxStateType::VcxStateInitialized as u32);
+        let (cb, rc) = create_proof_util();
+        assert_eq!(rc, error::SUCCESS.code_num);
+        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        assert_eq!(proof::get_state(proof_handle).unwrap(),VcxStateType::VcxStateInitialized as u32);
 
         let connection_handle = connection::build_connection("test_send_proof_request").unwrap();
-        assert_eq!(vcx_proof_send_request(0,handle,connection_handle,Some(send_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(1000));
-        assert_eq!(proof::get_state(handle).unwrap(),VcxStateType::VcxStateOfferSent as u32);
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_proof_send_request(cb.command_handle,
+                                          proof_handle,
+                                          connection_handle,
+                                          Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
+
+        assert_eq!(proof::get_state(proof_handle).unwrap(),VcxStateType::VcxStateOfferSent as u32);
     }
 
     #[test]
     fn test_get_proof_fails_when_not_ready_with_proof() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let handle = create_proof("1".to_string(),
-                                        REQUESTED_ATTRS.to_owned(),
-                                        REQUESTED_PREDICATES.to_owned(),
-                                        "Name".to_owned()).unwrap();
-        assert!(handle > 0);
-        let connection_handle = connection::build_connection("test_send_proof_request").unwrap();
+        let (cb, rc) = create_proof_util();
+        assert_eq!(rc, error::SUCCESS.code_num);
+        let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let connection_handle = connection::build_connection("test_get_proof_fails_when_not_ready_with_proof").unwrap();
         connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB").unwrap();
 
         thread::sleep(Duration::from_millis(300));
-        let rc = vcx_get_proof(0, handle, connection_handle, Some(no_proof_cb));
-        assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(300));
+        let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
+        assert_eq!(vcx_get_proof(cb.command_handle,
+                                 proof_handle,
+                                 connection_handle,
+                                 Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).is_err();
     }
 
     #[test]
     fn test_get_proof_returns_proof_with_proof_state_invalid() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        let connection_handle = connection::build_connection("test_send_proof_request").unwrap();
+        let connection_handle = connection::build_connection("test_get_proof_returns_proof_with_proof_state_invalid").unwrap();
         connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB").unwrap();
-        thread::sleep(Duration::from_millis(300));
         let proof_handle = proof::from_string(PROOF_WITH_INVALID_STATE).unwrap();
-        let rc = vcx_get_proof(0, proof_handle, connection_handle, Some(verify_invalid_proof_cb));
-        thread::sleep(Duration::from_millis(900));
-        assert_eq!(rc, 0);
+        let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
+        assert_eq!(vcx_get_proof(cb.command_handle,
+                                 proof_handle,
+                                 connection_handle,
+                                 Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        let (state, _) = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        assert_eq!(state, ProofStateType::ProofInvalid as u32);
         vcx_proof_release(proof_handle);
-    }
-
-    extern "C" fn get_state_cb(command_handle: u32, err: u32, state: u32) {
-        assert!(state > 0);
-        println!("successfully called get_state_cb");
     }
 
     #[test]

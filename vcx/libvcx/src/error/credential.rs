@@ -1,7 +1,7 @@
 
 use std::fmt;
 use error::ToErrorCode;
-use utils::error::{NO_PAYMENT_INFORMATION, INVALID_CREDENTIAL_HANDLE, NOT_READY, INVALID_JSON};
+use utils::error::{NO_PAYMENT_INFORMATION, INVALID_CREDENTIAL_HANDLE, INVALID_STATE, NOT_READY, INVALID_JSON};
 use error::payment;
 
 #[derive(Debug)]
@@ -18,7 +18,7 @@ pub enum CredentialError {
 impl fmt::Display for CredentialError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            CredentialError::InvalidState() => write!(f, "This Credential is not in proper state for this operation"),
+            CredentialError::InvalidState() => write!(f, "{}", INVALID_STATE.message),
             CredentialError::NotReady() => write!(f, "{}", NOT_READY.message),
             CredentialError::InvalidHandle() => write!(f, "{}", INVALID_CREDENTIAL_HANDLE.message),
             CredentialError::InvalidCredentialJson() => write!(f, "{}", INVALID_JSON.message),
@@ -38,7 +38,7 @@ impl PartialEq for CredentialError{
 impl ToErrorCode for CredentialError {
     fn to_error_code(&self) -> u32 {
         match *self {
-            CredentialError::InvalidState() => 3001,
+            CredentialError::InvalidState() => INVALID_STATE.code_num,
             CredentialError::NotReady() => NOT_READY.code_num,
             CredentialError::InvalidHandle() => INVALID_CREDENTIAL_HANDLE.code_num,
             CredentialError::InvalidCredentialJson() => INVALID_JSON.code_num,

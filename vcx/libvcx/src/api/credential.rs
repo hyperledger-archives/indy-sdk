@@ -568,65 +568,28 @@ mod tests {
 
     pub const BAD_CREDENTIAL_OFFER: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","credential": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","credential_name": "Account Certificate","credential_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
 
-    extern "C" fn create_cb(command_handle: u32, err: u32, credential_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(credential_handle > 0);
-        println!("successfully called create_cb")
-    }
-
-    extern "C" fn create_with_offer_cb(command_handle: u32, err: u32, credential_handle: u32, offer: *const c_char) {
-        assert_eq!(err, 0);
-        assert!(credential_handle > 0);
-        check_useful_c_str!(offer,());
-    }
-
-    extern "C" fn bad_create_cb(command_handle: u32, err: u32, credential_handle: u32) {
-        assert!(err > 0);
-        assert_eq!(credential_handle, 0);
-    }
-
-    extern "C" fn serialize_cb(handle: u32, err: u32, credential_string: *const c_char) {
-        assert_eq!(err, 0);
-        if credential_string.is_null() {
-            panic!("credential_string is null");
-        }
-        check_useful_c_str!(credential_string, ());
-    }
-
-    extern "C" fn get_credential_cb(handle: u32, err: u32, credential_string: *const c_char) {
-        assert_eq!(err, 0);
-        if credential_string.is_null() {
-            panic!("credential_string is null");
-        }
-        check_useful_c_str!(credential_string, ());
-        assert!(credential_string.len() > 100);
-    }
-
-    extern "C" fn get_invalid_state_credential_cb(handle: u32, err: u32, credential_string: *const c_char) {
-        assert_eq!(err, CredentialError::InvalidState().to_error_code());
-    }
-
     #[test]
     fn test_vcx_credential_create_with_offer_success() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        assert_eq!(vcx_credential_create_with_offer(0,
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credential_create_with_offer(cb.command_handle,
                                                CString::new("test_create").unwrap().into_raw(),
                                                CString::new(::utils::constants::CREDENTIAL_OFFER_JSON).unwrap().into_raw(),
-                                               Some(create_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+                                               Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert!(cb.receive(Some(Duration::from_secs(10))).unwrap() > 0);
     }
 
     #[test]
     fn test_vcx_credential_create_with_offer_fails() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        assert_eq!(vcx_credential_create_with_offer(
-            0,
-            CString::new("test_create").unwrap().into_raw(),
-            CString::new(BAD_CREDENTIAL_OFFER).unwrap().into_raw(),
-            Some(bad_create_cb)),error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credential_create_with_offer(cb.command_handle,
+                                                    CString::new("test_create").unwrap().into_raw(),
+                                                    CString::new(BAD_CREDENTIAL_OFFER).unwrap().into_raw(),
+                                                    Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(error::INVALID_JSON.code_num));
     }
 
     #[test]
@@ -649,10 +612,6 @@ mod tests {
         assert!(handle > 0);
     }
 
-    extern "C" fn send_offer_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("failed to send credential offer: {}",err)}
-    }
-
     #[test]
     fn test_vcx_credential_send_request() {
         settings::set_defaults();
@@ -661,33 +620,9 @@ mod tests {
         assert_eq!(credential::get_state(handle).unwrap(),VcxStateType::VcxStateRequestReceived as u32);
 
         let connection_handle = connection::build_connection("test_send_credential_offer").unwrap();
-
-        assert_eq!(vcx_credential_send_request(0,handle,connection_handle,0, Some(send_offer_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(1000));
-    }
-
-    extern "C" fn init_cb(command_handle: u32, err: u32) {
-        if err != 0 {panic!("create_cb failed: {}", err)}
-        println!("successfully called init_cb")
-    }
-
-    extern "C" fn deserialize_cb(command_handle: u32, err: u32, credential_handle: u32) {
-        fn formatter(original: &str) -> String {
-            let original_json: serde_json::Value = serde_json::from_str(&original).unwrap();
-            serde_json::to_string(&original_json).unwrap()
-        }
-        assert_eq!(err, 0);
-        assert!(credential_handle > 0);
-        println!("successfully called deserialize_cb");
-        let original = formatter(DEFAULT_SERIALIZED_CREDENTIAL);
-        let new = formatter(&credential::to_string(credential_handle).unwrap());
-        assert_eq!(original, new);
-    }
-
-    extern "C" fn get_offers_cb(command_handle: u32, err:u32, offers: *const c_char) {
-        assert_eq!(err,0);
-        check_useful_c_str!(offers, ());
-        println!("successfully called get_offers_cb: {:?}", offers);
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_credential_send_request(cb.command_handle,handle,connection_handle,0, Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
@@ -695,10 +630,12 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let cxn = ::connection::build_connection("test_get_new_offers").unwrap();
-        assert_eq!(error::SUCCESS.code_num as u32, vcx_credential_get_offers(0,
-                                           cxn,
-                                           Some(get_offers_cb)));
-        thread::sleep(Duration::from_millis(300));
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_credential_get_offers(cb.command_handle,
+                                             cxn,
+                                             Some(cb.get_callback())),
+                   error::SUCCESS.code_num as u32);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
@@ -706,17 +643,13 @@ mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let cxn = ::connection::build_connection("test_vcx_credential_create").unwrap();
-        assert_eq!(vcx_credential_create_with_msgid(0,
+        let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
+        assert_eq!(vcx_credential_create_with_msgid(cb.command_handle,
                                          CString::new("test_vcx_credential_create").unwrap().into_raw(),
                                          cxn,
                                          CString::new("123").unwrap().into_raw(),
-                                         Some(create_with_offer_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
-    }
-
-    extern "C" fn get_state_cb(command_handle: u32, err: u32, state: u32) {
-        assert!(state > 0);
-        println!("successfully called get_state_cb: {}", state);
+                                         Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
@@ -725,9 +658,10 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
         let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         assert!(handle > 0);
-        let rc = vcx_credential_get_state(0,handle,Some(get_state_cb));
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        let rc = vcx_credential_get_state(cb.command_handle,handle,Some(cb.get_callback()));
         assert_eq!(rc, error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(300));
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(), VcxStateType::VcxStateRequestReceived as u32);
     }
 
     #[test]
@@ -737,10 +671,12 @@ mod tests {
         let cxn = ::connection::build_connection("test_credential_update_state").unwrap();
         let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_CREDENTIAL_OFFER_RESPONSE.to_vec());
-        assert_eq!(vcx_credential_update_state(0, handle, Some(get_state_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(300));
-        assert_eq!(vcx_credential_send_request(0, handle, cxn,0, Some(send_offer_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credential_update_state(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).unwrap(),VcxStateType::VcxStateRequestReceived as u32);
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_credential_send_request(cb.command_handle, handle, cxn,0, Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
 
     }
 
@@ -750,13 +686,19 @@ mod tests {
         settings::set_defaults();
         let handle = credential::from_string(FULL_CREDENTIAL_SERIALIZED).unwrap();
         let bad_handle = 1123;
-        let command_handle = 0;
-        assert_eq!(vcx_get_credential(command_handle, handle, Some(get_credential_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(400));
-        assert_eq!(vcx_get_credential(command_handle, bad_handle, Some(get_credential_cb)), CredentialError::InvalidHandle().to_error_code());
+        let command_handle = 1111;
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_get_credential(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap();
+
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_get_credential(cb.command_handle, bad_handle, Some(cb.get_callback())), CredentialError::InvalidHandle().to_error_code());
 
         let handle = credential::from_string(DEFAULT_SERIALIZED_CREDENTIAL).unwrap();
-        assert_eq!(vcx_get_credential(command_handle, handle, Some(get_invalid_state_credential_cb)), error::SUCCESS.code_num);
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_get_credential(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        use utils::error::INVALID_STATE;
+        assert_eq!(cb.receive(Some(Duration::from_secs(10))).err(), Some(INVALID_STATE.code_num));
     }
 
     #[test]
@@ -765,7 +707,8 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 
         let handle = credential::from_string(::utils::constants::FULL_CREDENTIAL_SERIALIZED).unwrap();
-        vcx_credential_get_payment_txn(0, handle, Some(get_offers_cb));
-        thread::sleep(Duration::from_millis(200));
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        vcx_credential_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 }

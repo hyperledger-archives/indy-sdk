@@ -298,72 +298,10 @@ mod tests {
 
     use super::*;
     use std::ffi::CString;
-    use std::thread;
     use std::time::Duration;
     use settings;
     use utils::libindy::return_types_u32;
     use utils::constants::{SCHEMA_ID};
-
-    extern "C" fn create_cb(command_handle: u32, err: u32, credentialdef_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(credentialdef_handle > 0);
-        println!("successfully called create_cb")
-    }
-
-    extern "C" fn create_cb_err(command_handle: u32, err: u32, credentialdef_handle: u32) {
-        assert_ne!(err, 0);
-        println!("successfully called create_cb_err")
-    }
-
-    extern "C" fn create_cb_get_id(command_handle: u32, err: u32, cred_def_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(cred_def_handle > 0);
-        println!("successfully called create_cb_get_id");
-        assert_eq!(vcx_credentialdef_get_cred_def_id(0, cred_def_handle, Some(get_id_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
-    }
-
-    extern "C" fn get_id_cb(handle: u32, err: u32, id: *const c_char) {
-        assert_eq!(err, 0);
-        if id.is_null() {
-            panic!("id is null");
-        }
-        check_useful_c_str!(id, ());
-        println!("successfully called get_id_cb: {}", id);
-    }
-
-    extern "C" fn credential_def_on_ledger_err_cb(command_handle: u32, err: u32, credentialdef_handle: u32) {
-        assert_eq!(err, error::CREDENTIAL_DEF_ALREADY_CREATED.code_num);
-        println!("successfully called credential_def_on_ledger_err_cb")
-    }
-
-    extern "C" fn create_and_serialize_cb(command_handle: u32, err: u32, credentialdef_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(credentialdef_handle > 0);
-        println!("successfully called create_and_serialize_cb");
-        assert_eq!(vcx_credentialdef_serialize(0,credentialdef_handle,Some(serialize_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
-    }
-
-    extern "C" fn serialize_cb(handle: u32, err: u32, credentialdef_str: *const c_char) {
-        assert_eq!(err, 0);
-        if credentialdef_str.is_null() {
-            panic!("credentialdef is null");
-        }
-        check_useful_c_str!(credentialdef_str, ());
-        println!("successfully called serialize_cb: {}", credentialdef_str);
-    }
-
-    extern "C" fn deserialize_cb(command_handle: u32, err: u32, credentialdef_handle: u32) {
-        assert_eq!(err, 0);
-        assert!(credentialdef_handle > 0);
-        println!("successfully called deserialize_cb");
-        let expected = r#"{"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:1697","tag":"tag","name":"Test Credential Definition","source_id":"SourceId"}"#;
-        let new = credential_def::to_string(credentialdef_handle).unwrap();
-        let def1: credential_def::CredentialDef = serde_json::from_str(expected).unwrap();
-        let def2: credential_def::CredentialDef = serde_json::from_str(&new).unwrap();
-        assert_eq!(def1,def2);
-    }
 
     fn set_default_and_enable_test_mode(){
         settings::set_defaults();
@@ -373,7 +311,8 @@ mod tests {
     #[test]
     fn test_vcx_create_credentialdef_success() {
         set_default_and_enable_test_mode();
-        assert_eq!(vcx_credentialdef_create(0,
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
                                             CString::new("Test Credential Def").unwrap().into_raw(),
                                             CString::new(SCHEMA_ID).unwrap().into_raw(),
@@ -381,15 +320,16 @@ mod tests {
                                             CString::new("tag").unwrap().into_raw(),
                                             CString::new("{}").unwrap().into_raw(),
                                             0,
-                                            Some(create_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+                                            Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
     fn test_vcx_create_credentialdef_fails() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        assert_eq!(vcx_credentialdef_create(0,
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
                                             CString::new("Test Credential Def").unwrap().into_raw(),
                                             CString::new(SCHEMA_ID).unwrap().into_raw(),
@@ -397,14 +337,15 @@ mod tests {
                                             CString::new("tag").unwrap().into_raw(),
                                             CString::new("{}").unwrap().into_raw(),
                                             0,
-                                            Some(create_cb_err)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+                                            Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert!(cb.receive(Some(Duration::from_secs(10))).is_err());
     }
 
     #[test]
     fn test_vcx_credentialdef_serialize() {
         set_default_and_enable_test_mode();
-        assert_eq!(vcx_credentialdef_create(0,
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
                                             CString::new("Test Credential Def").unwrap().into_raw(),
                                             CString::new(SCHEMA_ID).unwrap().into_raw(),
@@ -412,8 +353,12 @@ mod tests {
                                             CString::new("tag").unwrap().into_raw(),
                                             CString::new("{}").unwrap().into_raw(),
                                             0,
-                                            Some(create_and_serialize_cb)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+                                            Some(cb.get_callback())), error::SUCCESS.code_num);
+
+        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_credentialdef_serialize(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        assert!(cb.receive(Some(Duration::from_secs(10))).is_ok());
     }
 
     #[test]
@@ -433,7 +378,8 @@ mod tests {
     #[test]
     fn test_vcx_creddef_get_id(){
         set_default_and_enable_test_mode();
-        assert_eq!(vcx_credentialdef_create(0,
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
                                             CString::new("Test Credential Def").unwrap().into_raw(),
                                             CString::new(SCHEMA_ID).unwrap().into_raw(),
@@ -441,16 +387,23 @@ mod tests {
                                             CString::new("tag").unwrap().into_raw(),
                                             CString::new("{}").unwrap().into_raw(),
                                             0,
-                                            Some(create_cb_get_id)), error::SUCCESS.code_num);
-        thread::sleep(Duration::from_millis(200));
+                                            Some(cb.get_callback())), error::SUCCESS.code_num);
+        let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        assert_eq!(vcx_credentialdef_get_cred_def_id(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
     #[test]
     fn test_get_payment_txn() {
         set_default_and_enable_test_mode();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let handle = credential_def::create_new_credentialdef("sid".to_string(),"name".to_string(),did,SCHEMA_ID.to_string(),"tag".to_string(),"{}".to_string()).unwrap();
-        let rc = vcx_credentialdef_get_payment_txn(0, handle, Some(get_id_cb));
-        thread::sleep(Duration::from_millis(200));
+        let handle = credential_def::create_new_credentialdef("sid".to_string(),
+                                                              "name".to_string(),
+                                                              did,SCHEMA_ID.to_string(),
+                                                              "tag".to_string(),"{}".to_string()).unwrap();
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let rc = vcx_credentialdef_get_payment_txn(cb.command_handle, handle, Some(cb.get_callback()));
+        cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 }
