@@ -887,7 +887,7 @@ pub mod get_payment_sources_command {
 
     command!(CommandMetadata::build("get-payment-sources", "Get sources list for payment address.")
                 .add_required_param("payment_address","Target payment address")
-                .add_example("ledger get-payment-sources payment_address=pay:sov:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
+                .add_example("ledger get-payment-sources payment_address=pay:null:GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa")
                 .finalize()
     );
 
@@ -934,9 +934,9 @@ pub mod payment_command {
                 .add_required_param("inputs","The list of payment sources")
                 .add_required_param("outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_required_param("extra","Optional information for payment operation")
-                .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
-                .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100) extra=some_extra")
-                .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg,pay:null:222_aEwACvA1sc9jrJg outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100),(pay:sov:ABABefwrhscbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
+                .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
+                .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100) extra=some_extra")
+                .add_example("ledger payment inputs=pay:null:111_rBuQo2A1sc9jrJg,pay:null:222_aEwACvA1sc9jrJg outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100),(pay:null:ABABefwrhscbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
                 .finalize()
     );
 
@@ -986,7 +986,7 @@ pub mod get_fees_command {
 
     command!(CommandMetadata::build("get-fees", "Get fees amount for transactions.")
                 .add_required_param("payment_method","Payment method")
-                .add_example("ledger get-fees payment_method=sov")
+                .add_example("ledger get-fees payment_method=null")
                 .finalize()
     );
 
@@ -1041,9 +1041,9 @@ pub mod mint_prepare_command {
     command!(CommandMetadata::build("mint-prepare", "Prepare MINT transaction.")
                 .add_required_param("outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_required_param("extra","Optional information for mint operation")
-                .add_example("ledger mint-prepare outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
-                .add_example("ledger mint-prepare outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100) extra=some_data")
-                .add_example("ledger mint-prepare outputs=(pay:sov:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100),(pay:sov:ABABaaVwSascbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
+                .add_example("ledger mint-prepare outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
+                .add_example("ledger mint-prepare outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100) extra=some_data")
+                .add_example("ledger mint-prepare outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100),(pay:null:ABABaaVwSascbaAShva7dkx1d2dZ3zUF8ckg7wmL7ofN4,5)")
                 .finalize()
     );
 
@@ -1077,7 +1077,7 @@ pub mod set_fees_prepare_command {
     command!(CommandMetadata::build("set-fees-prepare", " Prepare SET_FEES transaction.")
                 .add_required_param("payment_method","Payment method to use")
                 .add_required_param("fees","The list of transactions fees")
-                .add_example("ledger set-fees-prepare payment_method=sov fees=NYM:100,ATTRIB:200")
+                .add_example("ledger set-fees-prepare payment_method=null fees=1:100,100:200")
                 .finalize()
     );
 
@@ -1456,7 +1456,7 @@ pub mod tests {
     #[cfg(feature = "nullpay_plugin")]
     pub const INVALID_OUTPUT: &'static str = "pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,100";
     #[cfg(feature = "nullpay_plugin")]
-    pub const FEES: &'static str = "NYM:1,ATTRIB:1,SCHEMA:1";
+    pub const FEES: &'static str = "1:1,100:1,101:1";
     #[cfg(feature = "nullpay_plugin")]
     pub const EXTRA: &'static str = "extra";
     #[cfg(feature = "nullpay_plugin")]
@@ -1557,7 +1557,7 @@ pub mod tests {
             load_null_payment_plugin(&ctx);
             let payment_address_from = create_address_and_mint_sources(&ctx);
             let input = get_source_input(&ctx, &payment_address_from);
-            set_fees(&ctx, "NYM:101");
+            set_fees(&ctx, "1:101");
             {
                 let cmd = nym_command::new();
                 let mut params = CommandParams::new();
@@ -1586,7 +1586,7 @@ pub mod tests {
             load_null_payment_plugin(&ctx);
             let payment_address_from = create_address_and_mint_sources(&ctx);
             let input = get_source_input(&ctx, &payment_address_from);
-            set_fees(&ctx, "NYM:95");
+            set_fees(&ctx, "1:95");
             {
                 let cmd = nym_command::new();
                 let mut params = CommandParams::new();
@@ -3850,7 +3850,7 @@ pub mod tests {
                 let cmd = set_fees_prepare_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                params.insert("fees", "NYM,ATTRIB".to_string());
+                params.insert("fees", "1,100".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
