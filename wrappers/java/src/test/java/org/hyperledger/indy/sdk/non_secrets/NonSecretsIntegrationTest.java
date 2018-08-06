@@ -9,6 +9,8 @@ import org.junit.rules.ExpectedException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.hyperledger.indy.sdk.JsonObjectSimilar;
+
 public class NonSecretsIntegrationTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Rule
@@ -39,7 +41,7 @@ public class NonSecretsIntegrationTest extends IndyIntegrationTestWithSingleWall
 				break;
 			case "tags":
 				JSONObject expected = new JSONObject(expectedValue);
-				assertTrue(expected.similar(record.getJSONObject("tags")));
+				assertTrue(JsonObjectSimilar.similar(expected, record.getJSONObject("tags")));
 				break;
 			default:
 				assertTrue(false);

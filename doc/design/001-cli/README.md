@@ -183,7 +183,7 @@ indy> pool create [name=]<pool name> gen_txn_file=<gen txn file path>
 #### Connect
 Connect to Indy nodes pool and make it available for operation that require pool access. If there was pool connection it will be disconnected.
 ```
-indy> pool connect [name=]<pool name> [protocol-version=<version>]
+indy> pool connect [name=]<pool name> [protocol-version=<version>] [timeout=<timeout>] [extended-timeout=<timeout>] [pre-ordered-nodes=<node names>]
 ```
 
 #### Disconnect
@@ -294,7 +294,7 @@ ledger get-validator-info
 #### POOL_UPGRADE transaction
 Send POOL_UPGRADE transaction
 ```
-ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>]
+ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>] [package=<package>]
 ```
 
 #### POOL_CONFIG transaction

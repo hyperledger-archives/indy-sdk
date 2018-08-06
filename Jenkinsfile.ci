@@ -220,11 +220,10 @@ def iosTesting() {
                 setupRust()
                 setupRustIOS()
                 setupBrewPackages()
-
-                dir('libindy') {
-                    echo 'iOS Test: build libindy pod'
-                    sh './build-libindy-ios.sh x86_64-apple-ios'
-                }
+                
+                sh 'chmod -R 777 ci'
+                echo "iOS Test: build libindy pod"
+                sh "ci/ios-build.sh libindy x86_64-apple-ios"
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Installing dependencies (pods)"
@@ -239,7 +238,7 @@ def iosTesting() {
 
                 // FIXME replace this hack (manually rewrite installed pod)
                 sh "rm -f wrappers/ios/libindy-pod/Pods/libindy/*.[ah]"
-                sh "cp libindy/out_libindy_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
+                sh "cp libindy/out_pod/*.[ah] wrappers/ios/libindy-pod/Pods/libindy"
 
                 dir('wrappers/ios/libindy-pod') {
                     echo "iOS Test: Testing"

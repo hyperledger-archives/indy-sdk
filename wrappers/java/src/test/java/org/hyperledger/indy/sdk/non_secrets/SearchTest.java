@@ -7,6 +7,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.hyperledger.indy.sdk.JsonObjectSimilar;
 
 public class SearchTest extends NonSecretsIntegrationTest {
 
@@ -30,7 +31,7 @@ public class SearchTest extends NonSecretsIntegrationTest {
 				.put("value", value)
 				.put("tags", JSONObject.NULL);
 
-		assertTrue(expected.similar(records.get(0)));
+		assertTrue(JsonObjectSimilar.similar(expected, records.get(0)));
 
 		search.close();
 	}
@@ -62,7 +63,7 @@ public class SearchTest extends NonSecretsIntegrationTest {
 				.put("value", JSONObject.NULL)
 				.putOpt("tags", JSONObject.NULL);
 
-		assertTrue(expected.similar(records.get(0)));
+		assertTrue(JsonObjectSimilar.similar(expected, records.get(0)));
 
 		search.close();
 	}
@@ -90,7 +91,7 @@ public class SearchTest extends NonSecretsIntegrationTest {
 				.put("value", value2)
 				.put("tags", JSONObject.NULL);
 
-		assertTrue(expected.similar(records.get(0)));
+		assertTrue(JsonObjectSimilar.similar(expected, records.get(0)));
 
 		search.close();
 	}
