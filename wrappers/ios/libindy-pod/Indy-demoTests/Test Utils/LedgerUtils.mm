@@ -440,6 +440,7 @@
                                        justification:(NSString *)justification
                                            reinstall:(BOOL)reinstall
                                                force:(BOOL)force
+                                            package_:(NSString *)package_
                                           resultJson:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
@@ -455,6 +456,7 @@
                                           justification:justification
                                               reinstall:reinstall
                                                   force:force
+                                               package_:package_
                                              completion:^(NSError *error, NSString *request) {
                                                  err = error;
                                                  result = request;
