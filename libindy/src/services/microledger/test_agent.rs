@@ -119,11 +119,13 @@ impl<'a> Agent<'a> {
         let wallet_service = WalletService::new();
         register_inmem_wallet(&wallet_service);
 
-        let mut ml = DidMicroledger::new(did, options)?;
+        let peer_id = encode(&gen_random_bytes(6));
+        let s_opts = DidMicroledger::create_options(None, Some(&peer_id));
+        let mut ml = DidMicroledger::new(did, s_opts)?;
         let mut m_ledgers: HashMap<String, DidMicroledger> = HashMap::new();
 
         let mut did_docs: HashMap<String, Rc<RefCell<DidDoc<'a>>>> = HashMap::new();
-        let s_opts = DidDoc::create_options(None);
+        let s_opts = DidDoc::create_options(None, Some(&peer_id));
         let doc = Rc::new(RefCell::new(DidDoc::new(&did, s_opts)?));
         ml.register_did_doc(Rc::clone(&doc));
 
@@ -145,7 +147,7 @@ impl<'a> Agent<'a> {
 
         wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).unwrap();
 
-        let peer = Rc::new(RefCell::new(Peer::new(&encode(&gen_random_bytes(6)))));
+        let peer = Rc::new(RefCell::new(Peer::new(&peer_id)));
 
         Ok(Agent {
             crypto_service,
@@ -161,14 +163,39 @@ impl<'a> Agent<'a> {
     }
 
     pub fn get_self_microledger(&self) -> Result<&DidMicroledger<'a>, CommonError> {
-        match self.m_ledgers.get(&self.managing_did) {
-            Some(ml) => Ok(ml),
-            None => Err(CommonError::InvalidState(String::from("Microledger not present")))
-        }
+        let did = self.managing_did.clone();
+        self.get_microledger(&did)
     }
 
     pub fn get_self_microledger_mut(&mut self) -> Result<&mut DidMicroledger<'a>, CommonError> {
-        match self.m_ledgers.get_mut(&self.managing_did) {
+        let did = self.managing_did.clone();
+        self.get_microledger_mut(&did)
+    }
+
+    pub fn get_remote_microledger(&self) -> Result<Option<&DidMicroledger<'a>>, CommonError> {
+        let did = self.remote_did.clone();
+        match did {
+            Some(ref did) => {
+                let ml = self.get_microledger(&did)?;
+                Ok(Some(ml))
+            }
+            None => Ok(None)
+        }
+    }
+
+    pub fn get_remote_microledger_mut(&mut self) -> Result<Option<&mut DidMicroledger<'a>>, CommonError> {
+        let did = self.remote_did.clone();
+        match did {
+            Some(ref did) => {
+                let mut ml = self.get_microledger_mut(&did)?;
+                Ok(Some(ml))
+            }
+            None => Ok(None)
+        }
+    }
+
+    pub fn get_microledger(&self, did: &str) -> Result<&DidMicroledger<'a>, CommonError> {
+        match self.m_ledgers.get(did) {
             Some(ml) => Ok(ml),
             None => Err(CommonError::InvalidState(String::from("Microledger not present")))
         }
@@ -276,7 +303,7 @@ impl<'a> Agent<'a> {
                                             println!("Greetings received {:?}", &payload_json);
                                         }
                                         Some(LEDGER_UPDATE) => {
-                                            println!("{} Parsing inner connection response message", &self.managing_did);
+                                            println!("{} Parsing LEDGER_UPDATE in message payload", &self.managing_did);
                                             let l: LedgerUpdate = serde_json::from_value(payload_json.clone()).map_err(|err|
                                                 CommonError::InvalidState(format!("Unable to convert to ledger update {:?}.", err)))?;
                                             if l.events.len() > 0 {
@@ -345,9 +372,9 @@ impl<'a> Agent<'a> {
     }
 
     pub fn add_new_ledger_and_did_doc(agent: &mut Agent, did: &str, txns: Vec<String>) -> Result<(), CommonError> {
-        let s_opts = DidMicroledger::create_options(None);
+        let s_opts = DidMicroledger::create_options(None, Some(&agent.get_peer_id()));
         let mut ml = DidMicroledger::new(&did, s_opts)?;
-        let s_opts = DidDoc::create_options(None);
+        let s_opts = DidDoc::create_options(None,Some(&agent.get_peer_id()));
         let doc = Rc::new(RefCell::new(DidDoc::new(&did, s_opts)?));
         ml.register_did_doc(Rc::clone(&doc));
         agent.m_ledgers.insert(did.to_string(), ml);
@@ -381,7 +408,7 @@ impl<'a> Agent<'a> {
         let txns = DidMicroledger::get_validated_ledger_update_events(events, existing_size+1,
                                                              existing_size+len)?;
         for txn in &txns {
-            if !Agent::is_validate_txn(txn, &doc.borrow(), &self.crypto_service)? {
+            if !Agent::is_valid_txn(txn, &doc.borrow(), &self.crypto_service)? {
                 return Ok(false);
             } else {
                 ml.add(txn)?;
@@ -390,7 +417,7 @@ impl<'a> Agent<'a> {
         Ok(true)
     }
 
-    pub fn is_validate_txn(txn: &str, did_doc: &DidDoc, crypto_service: &CryptoService) -> Result<bool, CommonError> {
+    pub fn is_valid_txn(txn: &str, did_doc: &DidDoc, crypto_service: &CryptoService) -> Result<bool, CommonError> {
         // TODO: Move this to DID Doc
         let mut j_txn: JValue = serde_json::from_str(txn).map_err(|err|
             CommonError::InvalidState(format!("Unable to parse json txn {:?}.", err)))?;
@@ -538,7 +565,7 @@ impl<'a> Agent<'a> {
                 Ok(true)
             }
             _ => {
-                println!("Cannot add endpoint for non-existent key {}", txn_author_vk);
+                println!("Cannot add endpoint for non-existent key {}", subject_vk);
                 Ok(false)
             }
         }
@@ -599,17 +626,17 @@ mod tests {
     use services::microledger::constants::AUTHZ_MPROX;
     use std::collections::HashSet;
 
-    pub fn gen_storage_options(extra_path: Option<&str>) -> HashMap<String, String>{
+    /*pub fn gen_storage_options(extra_path: Option<&str>) -> HashMap<String, String>{
         let mut path = EnvironmentUtils::tmp_path();
         let mut extra_paths = vec!["did_ml_path"];
         if extra_path.is_some() {
             extra_paths.push(extra_path.unwrap());
         }
         create_storage_options(path.to_str(), extra_paths)
-    }
+    }*/
 
     fn get_new_agent(did: &str, seed: String, extra_path: String) -> Agent {
-        Agent::new(did, Some(seed), gen_storage_options(Some(&extra_path))).unwrap()
+        Agent::new(did, Some(seed), HashMap::new()).unwrap()
     }
 
     fn get_did1_genesis_txns() -> Vec<String> {
@@ -713,23 +740,22 @@ mod tests {
         assert!(agent.process_inbox().is_err());
     }
 
-    fn add_new_cloud_agent<'a>(network: &'a Rc<RefCell<Network<'a>>>, agent1: Rc<RefCell<Agent<'a>>>,
-                               agent2: Rc<RefCell<Agent<'a>>>, edge_verkey: &'a str, cloud_agent_did: &'a str,
-                               cloud_verkey: &'a str, cloud_agent_seed: &'a str, cloud_agent_name: &'a str,
-                               cloud_agent_address: &'a str,
-                               cloud_agent_authz: Vec<&str>) -> Agent<'a> {
+    fn add_new_agent<'a>(network: &'a Rc<RefCell<Network<'a>>>, acting_agent: Rc<RefCell<Agent<'a>>>,
+                         other_agents: Vec<Rc<RefCell<Agent<'a>>>>, edge_verkey: &'a str, cloud_agent_did: &'a str,
+                         new_agent_verkey: &'a str, new_agent_seed: &'a str, new_agent_name: &'a str,
+                         new_agent_address: &'a str, new_agent_authz: Vec<&str>) -> Agent<'a> {
         let mut old_seq_no = 0;
         let new_seq_no = {
-            let ws1 = Rc::clone(&agent1.borrow().wallet_service);
-            let wh1 = (&agent1.borrow()).wallet_handle.clone();
-            let mut a = agent1.borrow_mut();
+            let ws1 = Rc::clone(&acting_agent.borrow().wallet_service);
+            let wh1 = (&acting_agent.borrow()).wallet_handle.clone();
+            let mut a = acting_agent.borrow_mut();
             let ml = a.get_self_microledger_mut().unwrap();
             old_seq_no = ml.get_size();
-            ml.add_key_txn(cloud_verkey, &cloud_agent_authz,
+            ml.add_key_txn(new_agent_verkey, &new_agent_authz,
                            Some(&ws1),
                            Some(wh1),
                            Some(edge_verkey)).unwrap();
-            let new_seq_no = ml.add_endpoint_txn(cloud_verkey, cloud_agent_address,
+            let new_seq_no = ml.add_endpoint_txn(new_agent_verkey, new_agent_address,
                                                  Some(&ws1),
                                                  Some(wh1),
                                                  Some(edge_verkey)).unwrap();
@@ -737,32 +763,46 @@ mod tests {
             new_seq_no as u64
         };
 
-        let mut gen_txns_self = vec![];
-        let mut gen_txns_other = None;
+//        let mut gen_txns_self = vec![];
+//        let mut gen_txns_other = None;
         let mut other_did = None;
         if cloud_agent_did == "75KUW8tPUQNBS4W7ibFeY8" {
-            gen_txns_self = get_did1_genesis_txns();
-            gen_txns_other = Some(get_did2_genesis_txns());
+//            gen_txns_self = get_did1_genesis_txns();
+//            gen_txns_other = Some(get_did2_genesis_txns());
             other_did = Some("84qiTnsJrdefBDMrF49kfa");
         } else if cloud_agent_did == "84qiTnsJrdefBDMrF49kfa" {
-            gen_txns_self = get_did2_genesis_txns();
-            gen_txns_other = Some(get_did1_genesis_txns());
+//            gen_txns_self = get_did2_genesis_txns();
+//            gen_txns_other = Some(get_did1_genesis_txns());
             other_did = Some("75KUW8tPUQNBS4W7ibFeY8");
         } else { panic!("Unacceptable did {}", &cloud_agent_did) }
 
+        let gen_txns_self = {
+            let mut a = acting_agent.borrow_mut();
+            let ml = a.get_self_microledger().unwrap();
+            ml.get(1, None).unwrap()
+        };
+
+        let gen_txns_other = {
+            let mut a = acting_agent.borrow_mut();
+            let ml = a.get_remote_microledger().unwrap();
+            Some(ml.unwrap().get(1, None).unwrap())
+        };
+
         let mut agent3 = bootstrap_agent(cloud_agent_did,
-                                         String::from(cloud_agent_seed),
-                                         cloud_agent_name, gen_txns_self, other_did, gen_txns_other);
+                                         String::from(new_agent_seed),
+                                         new_agent_name, gen_txns_self, other_did, gen_txns_other);
         network.borrow_mut().register_peer(Rc::clone(&agent3.peer));
 
         let msg = {
-            let a1 = agent1.borrow();
+            let a1 = acting_agent.borrow();
             let ml1 = a1.get_self_microledger().unwrap();
-            new_ledger_update_msg(cloud_agent_did, &ml1, (old_seq_no+1) as u64, &agent1.borrow())
+            new_ledger_update_msg(cloud_agent_did, &ml1, (old_seq_no+1) as u64, &acting_agent.borrow())
         };
 
         {
-            deliver_msg_successfully(&network, &msg, &mut agent2.borrow_mut());
+            for agent in other_agents {
+                deliver_msg_successfully(&network, &msg, &mut agent.borrow_mut());
+            }
             deliver_msg_successfully(&network, &msg, &mut agent3);
         }
 
@@ -969,25 +1009,58 @@ mod tests {
         assert_eq!(doc.borrow().get_key_authorisations(new_verkey).unwrap(), vec![AUTHZ_ADD_KEY]);
     }
 
-    #[test]
-    fn test_new_cloud_agent() {
-        // Alice and Bob both have edge agents. Alice adds a new cloud agent
-        TestUtils::cleanup_temp();
+    fn alice_adds_cloud_agent<'a>(network: &'a Rc<RefCell<Network<'a>>>, acting_agent: Rc<RefCell<Agent<'a>>>,
+                              other_agents: Vec<Rc<RefCell<Agent<'a>>>>, cloud_agent_authz: Vec<&'a str>) -> Rc<RefCell<Agent<'a>>> {
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
-        let did2 = "84qiTnsJrdefBDMrF49kfa";
-        let (mut network, mut agent1, mut agent2) = connected_agents();
         let edge_verkey = "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC";
         let cloud_verkey = "2ru5PcgeQzxF7QZYwQgDkG2K13PRqyigVw99zMYg8eML";
         let cloud_agent_address = "https://agent1.example.com:9080";
 
+        let mut agent3 =
+            add_new_agent(network, acting_agent, other_agents, edge_verkey,
+                          did1, cloud_verkey, "00000000000000000000000000000000",
+                          "agent3", cloud_agent_address, cloud_agent_authz);
+        Rc::new(RefCell::new(agent3))
+    }
+
+    fn bob_adds_cloud_agent<'a>(network: &'a Rc<RefCell<Network<'a>>>, acting_agent: Rc<RefCell<Agent<'a>>>,
+                                other_agents: Vec<Rc<RefCell<Agent<'a>>>>, cloud_agent_authz: Vec<&'a str>) -> Rc<RefCell<Agent<'a>>> {
+        let did2 = "84qiTnsJrdefBDMrF49kfa";
+        let edge_verkey_2 = "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ";
+        let cloud_verkey_2 = "6X7FHuUPcfFm7HAqugAwpus6n9Pwk4RVjK5UtRsnGhxk";
+        let cloud_agent_address_2 = "https://agent2.example.com:9090";
+
+        let mut agent4 =
+            add_new_agent(&network, acting_agent, other_agents, edge_verkey_2,
+                          did2, cloud_verkey_2, "10101010101010101010101010101010",
+                          "agent4", cloud_agent_address_2, vec![AUTHZ_MPROX]);
+        Rc::new(RefCell::new(agent4))
+    }
+
+    fn both_alice_bob_add_cloud_agent<'a>(network: &'a Rc<RefCell<Network<'a>>>, alice_acting_agent: Rc<RefCell<Agent<'a>>>,
+                                          bob_acting_agent: Rc<RefCell<Agent<'a>>>, alice_notifies_agents: Vec<Rc<RefCell<Agent<'a>>>>,
+                                          bob_notifies_agents: Vec<Rc<RefCell<Agent<'a>>>>,
+                                          alice_cloud_agent_authz: Vec<&'a str>, bob_cloud_agent_authz: Vec<&'a str>) -> (Rc<RefCell<Agent<'a>>>, Rc<RefCell<Agent<'a>>>){
+        let mut agent3 = alice_adds_cloud_agent(network, alice_acting_agent, alice_notifies_agents, alice_cloud_agent_authz);
+        let mut bob_notifies_agents = bob_notifies_agents.clone();
+        bob_notifies_agents.push(Rc::clone(&agent3));
+        let mut agent4 = bob_adds_cloud_agent(network, bob_acting_agent, bob_notifies_agents, bob_cloud_agent_authz);
+        (agent3, agent4)
+    }
+
+    #[test]
+    fn test_new_cloud_agent() {
+        // Alice and Bob both have edge agents. Alice adds a new cloud agent
+        TestUtils::cleanup_temp();
+        let (mut network, mut agent1, mut agent2) = connected_agents();
         let mut agent1 = Rc::new(RefCell::new(agent1));
         let mut agent2 = Rc::new(RefCell::new(agent2));
 
-        let mut agent3 =
-            add_new_cloud_agent(&network, Rc::clone(&agent1), Rc::clone(&agent2), edge_verkey,
-                                did1, cloud_verkey, "00000000000000000000000000000000",
-                                "agent3", cloud_agent_address, vec![AUTHZ_MPROX]);
-        let mut agent3 = Rc::new(RefCell::new(agent3));
+        let did1 = "75KUW8tPUQNBS4W7ibFeY8";
+        let did2 = "84qiTnsJrdefBDMrF49kfa";
+        let a1 = Rc::clone(&agent1);
+        let a2 = vec![Rc::clone(&agent2)];
+        let mut agent3 = alice_adds_cloud_agent(&network, a1, a2, vec![AUTHZ_MPROX]);
 
         // Microledger matches on cloud agent and other party's agent
         check_same_microledger_for_agents(vec![&Rc::clone(&agent1), &Rc::clone(&agent2), &Rc::clone(&agent3)], did1);
@@ -996,7 +1069,7 @@ mod tests {
         // DID doc has correct key authorisations
         let a2 = agent2.borrow();
         let doc = a2.get_did_doc(did1).unwrap();
-        assert_eq!(doc.borrow().get_key_authorisations(cloud_verkey).unwrap(), vec![AUTHZ_MPROX]);
+        assert_eq!(doc.borrow().get_key_authorisations(&agent3.borrow().verkey).unwrap(), vec![AUTHZ_MPROX]);
     }
 
     #[test]
@@ -1009,22 +1082,18 @@ mod tests {
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
         let (mut network, mut agent1, mut agent2) = connected_agents();
-        let edge_verkey = "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC";
-        let cloud_verkey = "2ru5PcgeQzxF7QZYwQgDkG2K13PRqyigVw99zMYg8eML";
-        let cloud_agent_address = "https://agent1.example.com:9080";
         let mut agent1 = Rc::new(RefCell::new(agent1));
         let mut agent2 = Rc::new(RefCell::new(agent2));
 
-        let mut agent3 =
-            add_new_cloud_agent(&network, Rc::clone(&agent1), Rc::clone(&agent2), edge_verkey,
-                                did1, cloud_verkey, "00000000000000000000000000000000",
-                                "agent3", cloud_agent_address, vec![AUTHZ_MPROX]);
-        let mut agent3 = Rc::new(RefCell::new(agent3));
+        let a1 = Rc::clone(&agent1);
+        let a2 = vec![Rc::clone(&agent2)];
+        let mut agent3 = alice_adds_cloud_agent(&network, a1, a2, vec![AUTHZ_MPROX]);
 
         let agent1_verkey = "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC";
+        let cloud_old_verkey = "2ru5PcgeQzxF7QZYwQgDkG2K13PRqyigVw99zMYg8eML";
         let cloud_new_verkey = "2btLJAAb1S3x6hZYdVyAePjqtQYi2ZBSRGy4569RZu8h";
 
-        let new_seq_no = rotate_key(cloud_verkey, cloud_new_verkey,
+        let new_seq_no = rotate_key(cloud_old_verkey, cloud_new_verkey,
                                     vec![AUTHZ_MPROX], agent1_verkey, Rc::clone(&agent1));
 
         gen_ledger_update_and_deliver_to_others(&network, Rc::clone(&agent1),
@@ -1039,11 +1108,11 @@ mod tests {
         let a2 = agent2.borrow();
         let doc = a2.get_did_doc(did1).unwrap();
         assert_eq!(doc.borrow().get_key_authorisations(cloud_new_verkey).unwrap(), vec![AUTHZ_MPROX]);
-        assert_eq!(doc.borrow().get_key_authorisations(cloud_verkey).unwrap(), empty_str_vec);
+        assert_eq!(doc.borrow().get_key_authorisations(cloud_old_verkey).unwrap(), empty_str_vec);
         let a3 = agent3.borrow();
         let doc = a3.get_did_doc(did1).unwrap();
         assert_eq!(doc.borrow().get_key_authorisations(cloud_new_verkey).unwrap(), vec![AUTHZ_MPROX]);
-        assert_eq!(doc.borrow().get_key_authorisations(cloud_verkey).unwrap(), empty_str_vec);
+        assert_eq!(doc.borrow().get_key_authorisations(cloud_old_verkey).unwrap(), empty_str_vec);
     }
 
     #[test]
@@ -1063,12 +1132,13 @@ mod tests {
         let mut agent1 = Rc::new(RefCell::new(agent1));
         let mut agent2 = Rc::new(RefCell::new(agent2));
         let mut agent3 =
-            add_new_cloud_agent(&network, Rc::clone(&agent1), Rc::clone(&agent2), edge_verkey,
-                                did1, cloud_verkey, "00000000000000000000000000000000",
-                                "agent3", cloud_agent_address, vec![AUTHZ_ALL]);
+            add_new_agent(&network, Rc::clone(&agent1), vec![Rc::clone(&agent2)], edge_verkey,
+                          did1, cloud_verkey, "00000000000000000000000000000000",
+                          "agent3", cloud_agent_address, vec![AUTHZ_ALL]);
         let mut agent3 = Rc::new(RefCell::new(agent3));
 
         check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3], did1);
+        check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3], did2);
 
         let edge_new_verkey = "2btLJAAb1S3x6hZYdVyAePjqtQYi2ZBSRGy4569RZu8h";
 
@@ -1103,17 +1173,11 @@ mod tests {
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
         let (mut network, mut agent1, mut agent2) = connected_agents();
-        let edge_verkey = "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC";
-        let cloud_verkey = "2ru5PcgeQzxF7QZYwQgDkG2K13PRqyigVw99zMYg8eML";
-        let cloud_agent_address = "https://agent1.example.com:9080";
-
         let mut agent1 = Rc::new(RefCell::new(agent1));
         let mut agent2 = Rc::new(RefCell::new(agent2));
-        let mut agent3 =
-            add_new_cloud_agent(&network, Rc::clone(&agent1), Rc::clone(&agent2), edge_verkey,
-                                did1, cloud_verkey, "00000000000000000000000000000000",
-                                "agent3", cloud_agent_address, vec![AUTHZ_ALL]);
-        let mut agent3 = Rc::new(RefCell::new(agent3));
+        let a1 = Rc::clone(&agent1);
+        let a2 = vec![Rc::clone(&agent2)];
+        let mut agent3 = alice_adds_cloud_agent(&network, a1, a2, vec![AUTHZ_ALL]);
 
         let old_edge_key = "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ";
         let new_edge_key = "6X7FHuUPcfFm7HAqugAwpus6n9Pwk4RVjK5UtRsnGhxk";
@@ -1142,32 +1206,99 @@ mod tests {
 
     #[test]
     fn test_new_cloud_agent_1() {
-        // Alice and Bob both have edge agents. Both Alice and Bob add a new cloud agent each
-        // TODO:
+        // Alice and Bob both have edge agents. Both Alice and Bob add a new cloud agent each.
+        // Alice's cloud agent is `agent3`, Bob's cloud agent is `agent4`
+
         TestUtils::cleanup_temp();
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
         let (mut network, mut agent1, mut agent2) = connected_agents();
-        let edge_verkey = "5rArie7XKukPCaEwq5XGQJnM9Fc5aZE3M9HAPVfMU2xC";
-        let cloud_verkey = "2ru5PcgeQzxF7QZYwQgDkG2K13PRqyigVw99zMYg8eML";
-        let cloud_agent_address = "https://agent1.example.com:9080";
-
         let mut agent1 = Rc::new(RefCell::new(agent1));
         let mut agent2 = Rc::new(RefCell::new(agent2));
 
-        let mut agent3 =
-            add_new_cloud_agent(&network, Rc::clone(&agent1), Rc::clone(&agent2), edge_verkey,
-                                did1, cloud_verkey, "00000000000000000000000000000000",
-                                "agent3", cloud_agent_address, vec![AUTHZ_MPROX]);
-        let mut agent3 = Rc::new(RefCell::new(agent3));
+        let a1 = Rc::clone(&agent1);
+        let a2 = vec![Rc::clone(&agent2)];
+        let a3 = Rc::clone(&agent2);
+        let a4 = vec![Rc::clone(&agent1)];
+        let (mut agent3, mut agent4) = both_alice_bob_add_cloud_agent(&network,
+                                                                      a1, a3,
+                                                                      a2, a4,
+                                                                      vec![AUTHZ_MPROX], vec![AUTHZ_MPROX]);
 
-        // Microledger matches on cloud agent and other party's agent
-        check_same_microledger_for_agents(vec![&Rc::clone(&agent1), &Rc::clone(&agent2), &Rc::clone(&agent3)], did1);
-        check_same_microledger_for_agents(vec![&Rc::clone(&agent1), &Rc::clone(&agent2), &Rc::clone(&agent3)], did2);
+        {
+            check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3, &agent4], did1);
+            check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3, &agent4], did2);
+        }
+    }
 
-        // DID doc has correct key authorisations
-        let a2 = agent2.borrow();
-        let doc = a2.get_did_doc(did1).unwrap();
-        assert_eq!(doc.borrow().get_key_authorisations(cloud_verkey).unwrap(), vec![AUTHZ_MPROX]);
+    #[test]
+    fn test_key_rotation5() {
+        // 2 parties, Alice and Bob. Both Alice and Bob have 1 cloud agent and 1 edge agent each.
+        // Bob rotates it's cloud agent key (`agent4`)
+
+        TestUtils::cleanup_temp();
+        let did1 = "75KUW8tPUQNBS4W7ibFeY8";
+        let did2 = "84qiTnsJrdefBDMrF49kfa";
+        let (mut network, mut agent1, mut agent2) = connected_agents();
+        let mut agent1 = Rc::new(RefCell::new(agent1));
+        let mut agent2 = Rc::new(RefCell::new(agent2));
+
+        let a1 = Rc::clone(&agent1);
+        let a2 = vec![Rc::clone(&agent2)];
+        let a3 = Rc::clone(&agent2);
+        let a4 = vec![Rc::clone(&agent1)];
+        let (mut agent3, mut agent4) = both_alice_bob_add_cloud_agent(&network,
+                                                                      a1, a3,
+                                                                      a2, a4,
+                                                                      vec![AUTHZ_MPROX], vec![AUTHZ_MPROX]);
+
+        let bob_cloud_old_verkey = "6X7FHuUPcfFm7HAqugAwpus6n9Pwk4RVjK5UtRsnGhxk";
+        let bob_cloud_new_verkey = "41bgpk11WQ4NBHzbJH9YiRFFkkvzQrc25J4Y8839Dx74";
+        let agent_2_verkey = "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ";
+        let new_seq_no = rotate_key(bob_cloud_old_verkey, bob_cloud_new_verkey,
+                                    vec![AUTHZ_MPROX], agent_2_verkey, Rc::clone(&agent2));
+
+        gen_ledger_update_and_deliver_to_others(&network, Rc::clone(&agent2),
+                                                new_seq_no-1,
+                                                vec![Rc::clone(&agent1), Rc::clone(&agent3), Rc::clone(&agent4)]);
+
+        check_same_microledger_for_agents(vec![&Rc::clone(&agent1),
+                                               &Rc::clone(&agent2), &Rc::clone(&agent3), &Rc::clone(&agent4)], did2);
+    }
+
+    #[test]
+    fn test_new_edge_agent() {
+        // 2 parties, Alice and Bob. Both Alice and Bob have 1 cloud agent and 1 edge agent each.
+        // Bob adds new edge agent (`agent5`)
+        TestUtils::cleanup_temp();
+        let did1 = "75KUW8tPUQNBS4W7ibFeY8";
+        let did2 = "84qiTnsJrdefBDMrF49kfa";
+        let (mut network, mut agent1, mut agent2) = connected_agents();
+        let mut agent1 = Rc::new(RefCell::new(agent1));
+        let mut agent2 = Rc::new(RefCell::new(agent2));
+
+        let a1 = Rc::clone(&agent1);
+        let a2 = vec![Rc::clone(&agent2)];
+        let a3 = Rc::clone(&agent2);
+        let a4 = vec![Rc::clone(&agent1)];
+        let (mut agent3, mut agent4) = both_alice_bob_add_cloud_agent(&network,
+                                                                      a1, a3,
+                                                                      a2, a4,
+                                                                      vec![AUTHZ_MPROX], vec![AUTHZ_MPROX]);
+        let edge_verkey = "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ";
+        let new_edge_verkey = "41bgpk11WQ4NBHzbJH9YiRFFkkvzQrc25J4Y8839Dx74";
+        let new_edge_agent_address = "https://agent100.example.com:9090";
+        let other_agents = vec![Rc::clone(&agent1), Rc::clone(&agent3), Rc::clone(&agent4)];
+
+        let mut agent5 =
+            add_new_agent(&network, Rc::clone(&agent2), other_agents, edge_verkey,
+                          did2, new_edge_verkey, "01010101010101010101010101010101",
+                          "agent5", new_edge_agent_address, vec![AUTHZ_MPROX]);
+        let agent5 = Rc::new(RefCell::new(agent5));
+
+        {
+            check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3, &agent4, &agent5], did1);
+            check_same_microledger_for_agents(vec![&agent1, &agent2, &agent3, &agent4, &agent5], did2);
+        }
     }
 }

@@ -71,7 +71,7 @@ pub fn get_storage_path_from_options(parsed_options: &HashMap<String, String>) -
     parsed_options.get("storage_path").unwrap()
 }
 
-pub fn get_ledger_storage(did: &str, storage_path: &str, metadata: &[u8])  -> Result<Box<WalletStorage>, WalletStorageError> {
+pub fn get_rsm_storage(did: &str, storage_path: &str, metadata: &[u8]) -> Result<Box<WalletStorage>, WalletStorageError> {
     let config = json!({
             "path": storage_path
         }).to_string();
@@ -274,7 +274,7 @@ pub mod tests {
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8
         ];
-        let storage = get_ledger_storage(
+        let storage = get_rsm_storage(
             did, get_storage_path_from_options(&options),
             &metadata).unwrap();
         check_empty_storage(storage);

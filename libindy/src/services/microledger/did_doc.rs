@@ -9,7 +9,7 @@ use errors::common::CommonError;
 use services::wallet::storage::WalletStorage;
 use services::microledger::helpers::parse_options;
 use services::microledger::helpers::get_storage_path_from_options;
-use services::microledger::helpers::get_ledger_storage;
+use services::microledger::helpers::get_rsm_storage;
 use services::microledger::helpers::{create_storage_options, gen_enc_key};
 use services::microledger::view::View;
 use serde_json::Map;
@@ -37,8 +37,8 @@ impl<'a> View for DidDoc<'a> where Self: Sized {
         let parsed_options = parse_options(options)?;
         // Create a new storage or load an existing storage
         let storage_path = get_storage_path_from_options(&parsed_options);
-        let storage = get_ledger_storage(did, storage_path,
-                                         &DidDoc::get_metadata()).map_err(|err|
+        let storage = get_rsm_storage(did, storage_path,
+                                      &DidDoc::get_metadata()).map_err(|err|
             CommonError::InvalidStructure(format!("Error while getting storage for ledger: {:?}.", err)))?;
         Ok(DidDoc {
             did: did.to_string(),
@@ -61,16 +61,19 @@ impl<'a> View for DidDoc<'a> where Self: Sized {
                                 match t.as_str() {
                                     Some(typ) => match typ {
                                         NYM => {
-                                            println!("NYM txn {}", typ);
+                                            println!("Encountered NYM txn to apply. Doing nothing");
                                             Ok(())
                                         },
                                         KEY_TXN => {
+                                            println!("Encountered KEY_TXN txn to apply.");
                                             self.add_key_from_txn(&op)
                                         }
                                         ENDPOINT_TXN => {
+                                            println!("Encountered ENDPOINT_TXN txn to apply.");
                                             self.add_endpoint_from_txn(&op)
                                         }
                                         ENDPOINT_REM_TXN => {
+                                            println!("Encountered ENDPOINT_REM_TXN txn to apply.");
                                             self.remove_endpoint_from_txn(&op)
                                         }
                                         _ => Err(CommonError::InvalidState(format!("Unknown txn type {}", typ)))
@@ -90,8 +93,13 @@ impl<'a> View for DidDoc<'a> where Self: Sized {
 }
 
 impl<'a> DidDoc<'a> {
-    pub fn create_options(storage_path: Option<&str>) -> HashMap<String, String> {
-        create_storage_options(storage_path, vec!["did_doc_path"])
+    pub fn create_options(base_storage_path: Option<&str>, extra_path: Option<&str>) -> HashMap<String, String> {
+        let mut extra_paths: Vec<&str> = vec![];
+        if extra_path.is_some() {
+            extra_paths.push(extra_path.unwrap())
+        }
+        extra_paths.push("did_doc_path");
+        create_storage_options(base_storage_path, extra_paths)
     }
 
     // TODO: Temporary, fix it
@@ -160,15 +168,19 @@ impl<'a> DidDoc<'a> {
     fn new_key_entry(key: String, authorisations: Vec<String>, endpoint: Option<HashMap<String, JValue>>) -> Result<String, CommonError> {
         let mut m: Map<String, JValue> = Map::new();
         m.insert(AUTHORIZATIONS.to_string(), JValue::from(authorisations));
-        match endpoint {
+        let ep = match endpoint {
             Some(ref e) => {
-                m.insert(ENDPOINTS.to_string(), serde_json::to_value(&endpoint).map_err(|err|
-                    CommonError::InvalidStructure(format!("Failed to jsonify: {:?}.", err)))?);
+                serde_json::to_value(e).map_err(|err|
+                    CommonError::InvalidStructure(format!("Failed to jsonify: {:?}.", err)))?
             }
-            None => ()
-        }
+            None => {
+                let m: HashMap<String, JValue> = HashMap::new();
+                serde_json::to_value(m).map_err(|err|
+                    CommonError::InvalidStructure(format!("Failed to jsonify: {:?}.", err)))?
+            }
+        };
 
-        println!(">>>>>>>>2 {:?}", &m);
+        m.insert(ENDPOINTS.to_string(), ep);
         serde_json::to_string(&m).map_err(|err|
             CommonError::InvalidStructure(format!("Failed to jsonify: {:?}.", err)))
     }
@@ -220,6 +232,7 @@ impl<'a> DidDoc<'a> {
                         let data: String = serde_json::to_string(&val).map_err(|err|
                             CommonError::InvalidStructure(format!("Error jsonifying : {:?}.", err)))?;
                         let enc_data = EncryptedValue {data: data.as_bytes().to_vec(), key: ev.key.clone()};
+                        println!("Updating existing verkey {} due to key txn", &verkey);
                         self.storage.update(&TYP, &r.id, &enc_data).map_err(|err|
                             CommonError::InvalidStructure(format!("Error while updating to DID doc storage: {:?}.", err)))
                     },
@@ -230,10 +243,10 @@ impl<'a> DidDoc<'a> {
                 let id = verkey.as_bytes();
                 let tags: [Tag; 1] = [Tag::PlainText(id.to_vec(), verkey.clone()), ];
                 let key_entry = DidDoc::new_key_entry(verkey.clone(), auths, None)?;
-                println!(">>>>>>3 {}", &key_entry);
                 let key_entry_bytes = key_entry.as_bytes().to_vec();
                 let enc_key = gen_enc_key(key_entry_bytes.len());
                 let enc_data = EncryptedValue::new(key_entry_bytes, enc_key);
+                println!("Adding new verkey {} due to key txn", &verkey);
                 self.storage.add(&TYP, &id, &enc_data, &tags).map_err(|err|
                     CommonError::InvalidStructure(format!("Error while adding to DID doc storage: {:?}.", err)))
             }
@@ -356,17 +369,25 @@ impl<'a> DidDoc<'a> {
                     Some(ev) => {
                         let val: JValue = serde_json::from_str(&str::from_utf8(&ev.data).unwrap().to_string()).unwrap();
                         let endpoints: Map<String, JValue> = serde_json::from_value(val[ENDPOINTS].clone()).map_err(|err|
-                            CommonError::InvalidStructure(format!("Cannot convert authorisations to vector of strings : {:?}.", err)))?;
+                            CommonError::InvalidStructure(format!("Cannot convert endpoints to vector of strings : {:?}.", err)))?;
                         let mut addresses: Vec<String> = vec![];
                         for k in endpoints.keys() {
                             addresses.push(k.to_string())
                         }
                         Ok(addresses)
                     },
-                    None => Err(CommonError::InvalidStructure(format!("No value found in record")))
+                    None => {
+                        let e_msg = format!("No value found in record for key {}", verkey);
+                        println!("{}", &e_msg);
+                        Err(CommonError::InvalidStructure(e_msg))
+                    }
                 }
             }
-            None => Err(CommonError::InvalidStructure(format!("Key not found: {}", verkey)))
+            None => {
+                let e_msg = format!("Key not found: {}", verkey);
+                println!("{}", &e_msg);
+                Err(CommonError::InvalidStructure(e_msg))
+            }
         }
     }
 

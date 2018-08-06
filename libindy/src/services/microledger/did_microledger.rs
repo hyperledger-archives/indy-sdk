@@ -21,7 +21,7 @@ use std::path::PathBuf;
 use services::microledger::did_doc::DidDoc;
 use services::microledger::view::View;
 use services::microledger::helpers::get_storage_path_from_options;
-use services::microledger::helpers::get_ledger_storage;
+use services::microledger::helpers::get_rsm_storage;
 use std::cell::RefCell;
 use std::rc::Rc;
 use services::crypto::CryptoService;
@@ -50,8 +50,8 @@ impl<'a> Microledger for DidMicroledger<'a> where Self: Sized {
         let parsed_options = parse_options(options)?;
         // Create a new storage or load an existing storage
         let storage_path = get_storage_path_from_options(&parsed_options);
-        let storage = get_ledger_storage(did, storage_path,
-                                         &DidMicroledger::get_metadata()).map_err(|err|
+        let storage = get_rsm_storage(did, storage_path,
+                                      &DidMicroledger::get_metadata()).map_err(|err|
             CommonError::InvalidStructure(format!("Error while getting storage for ledger: {:?}.", err)))?;
         let crypto_service = CryptoService::new();
         let wallet_service = WalletService::new();
@@ -170,8 +170,13 @@ impl<'a> Microledger for DidMicroledger<'a> where Self: Sized {
 }
 
 impl<'a> DidMicroledger<'a> {
-    pub fn create_options(storage_path: Option<&str>) -> HashMap<String, String> {
-        create_storage_options(storage_path, vec!["did_ml_path"])
+    pub fn create_options(base_storage_path: Option<&str>, extra_path: Option<&str>) -> HashMap<String, String> {
+        let mut extra_paths: Vec<&str> = vec![];
+        if extra_path.is_some() {
+            extra_paths.push(extra_path.unwrap())
+        }
+        extra_paths.push("did_ml_path");
+        create_storage_options(base_storage_path, extra_paths)
     }
 
     // TODO: Temporary, fix it
