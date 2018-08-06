@@ -15,7 +15,8 @@ RUN apt-get update -y && apt-get install -y \
     libzmq3-dev \
     python3 \
     openjdk-8-jdk \
-    maven
+    maven \
+    apt-transport-https
 
 # Install Gradle
 RUN wget https://services.gradle.org/distributions/gradle-3.4.1-bin.zip
@@ -34,7 +35,8 @@ RUN ls -al /home/vcx/android-sdk-linux
 RUN yes | .//home/vcx/android-sdk-linux/tools/android update sdk --no-ui
 RUN yes | .//home/vcx/android-sdk-linux/tools/bin/sdkmanager "ndk-bundle"
 
+RUN echo "vcx ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers 
+
 USER vcx 
 # cargo deb for debian packaging of libvcx
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-

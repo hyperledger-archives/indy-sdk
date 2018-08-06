@@ -109,17 +109,18 @@ def android() {
                 checkout scm
 
                 //Build android docker image
-                rust = build('rust', 'vcx/ci/android.dockerfile', 'vcx')
+                sh 'ls'
+                android = build('android', 'vcx/ci/android.dockerfile', 'vcx')
                 
                 //Build .so files for arm64, x86, and arm
-                buildAndroid(rust)
+                buildAndroid(android)
 
                 //Package .so files into .aar 
-                packageAndroid(rust)
+                packageAndroid(android)
 
                 if (env.BRANCH_NAME == "master") {
                     //Publish package on aptly
-                    publishAndroid(rust)
+                    publishAndroid(android)
                 }
             } catch (Exception ex) {
                 // We currently do not fail the main build if the android and ios builds fai
@@ -180,6 +181,7 @@ def fail() {
 
 def buildAndroid(envn) {
     envn.inside {
+        ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
         LIBINDY_BRANCH="stable"
         LIBINDY_VERSION="1.6.1"
         LIBINDY_TAG=""
@@ -187,7 +189,7 @@ def buildAndroid(envn) {
         LIBNULLPAY_VERSION="1.6.1"
         LIBNULLPAY_TAG=""
 
-        ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
+        sh 'sudo ./vcx/ci/scripts/installCert.sh'
         sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBNULLPAY_BRANCH=${LIBNULLPAY_BRANCH} LIBNULLPAY_VERSION=${LIBNULLPAY_VERSION} ./${ANDROID_SCRIPT_PATH} arm64"
         sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBNULLPAY_BRANCH=${LIBNULLPAY_BRANCH} LIBNULLPAY_VERSION=${LIBNULLPAY_VERSION} ./${ANDROID_SCRIPT_PATH} arm"
         sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBNULLPAY_BRANCH=${LIBNULLPAY_BRANCH} LIBNULLPAY_VERSION=${LIBNULLPAY_VERSION} ./${ANDROID_SCRIPT_PATH} x86"
