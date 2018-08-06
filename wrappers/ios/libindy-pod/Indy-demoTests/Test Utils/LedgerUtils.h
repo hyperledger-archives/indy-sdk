@@ -118,6 +118,7 @@
                                        justification:(NSString *)justification
                                            reinstall:(BOOL)reinstall
                                                force:(BOOL)force
+                                            package_:(NSString *)package_
                                           resultJson:(NSString **)resultJson;
 
 // MARK: - Revocation registry definition request

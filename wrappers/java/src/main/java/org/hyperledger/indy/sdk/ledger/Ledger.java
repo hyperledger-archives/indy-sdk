@@ -847,6 +847,7 @@ public class Ledger extends IndyJava.API {
 	 * @param justification (Optional) justification string for this particular Upgrade.
 	 * @param reinstall     Whether it's allowed to re-install the same version. False by default.
 	 * @param force         Whether we should apply transaction (schedule Upgrade) without waiting for consensus of this transaction.
+	 * @param package_      (Optional) Package to be upgraded.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -860,7 +861,8 @@ public class Ledger extends IndyJava.API {
 			String schedule,
 			String justification,
 			boolean reinstall,
-			boolean force) throws IndyException {
+			boolean force,
+			String package_) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 
@@ -879,6 +881,7 @@ public class Ledger extends IndyJava.API {
 				justification,
 				reinstall,
 				force,
+				package_,
 				buildRequestCb);
 
 		checkResult(result);

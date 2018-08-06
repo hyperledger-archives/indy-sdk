@@ -1420,7 +1420,7 @@ void buildPoolUpgradeRequest_cb(indy_handle_t handle, indy_error_t xerr, const c
   }
 }
 NAN_METHOD(buildPoolUpgradeRequest) {
-  INDY_ASSERT_NARGS(buildPoolUpgradeRequest, 11)
+  INDY_ASSERT_NARGS(buildPoolUpgradeRequest, 12)
   INDY_ASSERT_STRING(buildPoolUpgradeRequest, 0, submitterDid)
   INDY_ASSERT_STRING(buildPoolUpgradeRequest, 1, name)
   INDY_ASSERT_STRING(buildPoolUpgradeRequest, 2, version)
@@ -1431,7 +1431,8 @@ NAN_METHOD(buildPoolUpgradeRequest) {
   INDY_ASSERT_STRING(buildPoolUpgradeRequest, 7, justification)
   INDY_ASSERT_BOOLEAN(buildPoolUpgradeRequest, 8, reinstall)
   INDY_ASSERT_BOOLEAN(buildPoolUpgradeRequest, 9, force)
-  INDY_ASSERT_FUNCTION(buildPoolUpgradeRequest, 10)
+  INDY_ASSERT_STRING(buildPoolUpgradeRequest, 10, package_)
+  INDY_ASSERT_FUNCTION(buildPoolUpgradeRequest, 11)
   const char* arg0 = argToCString(info[0]);
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
@@ -1442,8 +1443,9 @@ NAN_METHOD(buildPoolUpgradeRequest) {
   const char* arg7 = argToCString(info[7]);
   indy_bool_t arg8 = info[8]->IsTrue();
   indy_bool_t arg9 = info[9]->IsTrue();
-  IndyCallback* icb = argToIndyCb(info[10]);
-  indyCalled(icb, indy_build_pool_upgrade_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, buildPoolUpgradeRequest_cb));
+  const char* arg10 = argToCString(info[10]);
+  IndyCallback* icb = argToIndyCb(info[11]);
+  indyCalled(icb, indy_build_pool_upgrade_request(icb->handle, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, buildPoolUpgradeRequest_cb));
   delete arg0;
   delete arg1;
   delete arg2;
@@ -1451,6 +1453,7 @@ NAN_METHOD(buildPoolUpgradeRequest) {
   delete arg4;
   delete arg6;
   delete arg7;
+  delete arg10;
 }
 
 void buildRevocRegDefRequest_cb(indy_handle_t handle, indy_error_t xerr, const char* arg0) {
