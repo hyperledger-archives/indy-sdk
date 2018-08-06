@@ -186,6 +186,12 @@ Connect to Indy nodes pool and make it available for operation that require pool
 indy> pool connect [name=]<pool name> [protocol-version=<version>] [timeout=<timeout>] [extended-timeout=<timeout>] [pre-ordered-nodes=<node names>]
 ```
 
+#### Refresh
+Refresh a local copy of a pool ledger and updates pool nodes connections.
+```
+indy> pool refresh
+```
+
 #### Disconnect
 Disconnect from Indy nodes pool
 ```
