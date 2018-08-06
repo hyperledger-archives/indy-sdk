@@ -240,7 +240,6 @@ pub mod delete_command {
         let credentials: String = json!({ "key": key }).to_string();
 
         if let Some((_, opened_wallet_id)) = get_opened_wallet(&ctx) {
-            // TODO: Indy-Sdk allows delete opened wallet
             if id == opened_wallet_id {
                 return Err(println_err!("Wallet {:?} is opened", id));
             }
