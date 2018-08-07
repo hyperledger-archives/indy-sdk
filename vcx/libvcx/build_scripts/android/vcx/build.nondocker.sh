@@ -85,6 +85,7 @@ fi
 
 if [ -z "${LIBSOVTOKEN_DIR}" ] ; then
     LIBSOVTOKEN_DIR="libsovtoken"
+    PAYMENT_PLUGIN="sovtoken"
     if [ -d "${LIBSOVTOKEN_DIR}" ] ; then
         echo "Found ${LIBSOVTOKEN_DIR}"
     elif [ -z "$8" ] ; then
@@ -175,7 +176,7 @@ rustup target add ${CROSS_COMPILE}
 pushd $LIBVCX
 export OPENSSL_STATIC=1
 cargo clean
-cargo build --release --target=${CROSS_COMPILE}
+cargo build --release --no-default-features --features "ci ${PAYMENT_PLUGIN}" --target=${CROSS_COMPILE}
 popd
 
 LIBVCX_BUILDS=${WORKDIR}/libvcx_${TARGET_ARCH}
