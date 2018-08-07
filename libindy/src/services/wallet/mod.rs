@@ -425,7 +425,7 @@ impl WalletService {
         self.search_records(wallet_handle, &self.add_prefix(T::short_type_name()), query_json, options_json)
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code)] // TODO: Should we implement getting all records or delete everywhere?
     pub fn search_all_records(&self, _wallet_handle: i32) -> Result<WalletSearch, WalletError> {
         //        match self.wallets.borrow().get(&wallet_handle) {
         //            Some(wallet) => wallet.search_all_records(),

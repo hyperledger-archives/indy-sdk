@@ -239,12 +239,6 @@ pub mod delete_command {
 
         let credentials: String = json!({ "key": key }).to_string();
 
-        if let Some((_, opened_wallet_id)) = get_opened_wallet(&ctx) {
-            if id == opened_wallet_id {
-                return Err(println_err!("Wallet {:?} is opened", id));
-            }
-        }
-
         let res = match Wallet::delete_wallet(config.as_str(), credentials.as_str()) {
             Ok(()) => {
                 _delete_wallet_config(id)
@@ -255,6 +249,7 @@ pub mod delete_command {
             Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
             Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key has been provided ", id)),
+            Err(ErrorCode::CommonInvalidState) => Err(println_err!("Wallet {:?} is opened", id)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 

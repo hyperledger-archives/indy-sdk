@@ -2,7 +2,6 @@ extern crate owning_ref;
 extern crate sodiumoxide;
 
 mod query;
-#[allow(dead_code)] // TODO: FIXME
 mod transaction;
 
 use std;
