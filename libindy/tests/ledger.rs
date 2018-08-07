@@ -1716,7 +1716,30 @@ mod medium_cases {
 
             let nodes = r#"["Other Node"]"#;
             let res = LedgerUtils::submit_action(pool_handle, &get_validator_info_request, Some(nodes), None);
-            assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            PoolUtils::close(pool_handle).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_submit_action_works_for_pool_restart_for_invalid_nodes_format() {
+            TestUtils::cleanup_storage();
+
+            let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+
+            let get_validator_info_request = LedgerUtils::build_get_validator_info_request(&did).unwrap();
+            let get_validator_info_request = LedgerUtils::sign_request(wallet_handle, &did, &get_validator_info_request).unwrap();
+
+            let nodes = r#""Node1""#;
+            let res = LedgerUtils::submit_action(pool_handle, &get_validator_info_request, Some(nodes), None);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();

@@ -505,6 +505,28 @@ pub mod networker_tests {
         }
 
         #[test]
+        fn networker_process_send_all_request_event_works_for_list_nodes() {
+            let mut txn_1 = nodes_emulator::node();
+            let handle_1 = nodes_emulator::start(&mut txn_1);
+            let rn_1 = _remote_node(&txn_1);
+
+            let mut txn_2 = nodes_emulator::node_2();
+            let handle_2 = nodes_emulator::start(&mut txn_2);
+            let rn_2 = _remote_node(&txn_2);
+
+            let mut networker = ZMQNetworker::new(POOL_CON_ACTIVE_TO, MAX_REQ_PER_POOL_CON, vec![]);
+
+            networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn_1, rn_2])));
+            networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT, Some(vec![NODE_NAME.to_string()]))));
+
+            let messages = handle_1.join().unwrap();
+            assert_eq!(vec![MESSAGE.to_string()], messages);
+
+            let messages = handle_2.join().unwrap();
+            assert!(messages.is_empty());
+        }
+
+        #[test]
         fn networker_process_send_six_request_event_works() {
             let txn = nodes_emulator::node();
             let rn = _remote_node(&txn);

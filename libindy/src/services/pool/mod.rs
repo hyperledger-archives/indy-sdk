@@ -412,6 +412,25 @@ mod tests {
         }
 
         #[test]
+        fn pool_send_action_works() {
+            TestUtils::cleanup_storage();
+
+            let name = "test";
+            let zmq_ctx = zmq::Context::new();
+            let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let inproc_sock_name: String = format!("inproc://pool_{}", name);
+            recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
+            send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+            let pool = Pool::new(name, 0, PoolOpenConfig::default());
+            let ps = PoolService::new();
+            ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
+            let test_data = "str_instead_of_tx_json";
+            ps.send_action(-1, test_data, None, None).unwrap();
+            assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
+        }
+
+        #[test]
         fn pool_close_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
             let ps = PoolService::new();
