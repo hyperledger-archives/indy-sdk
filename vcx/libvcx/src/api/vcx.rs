@@ -266,7 +266,7 @@ mod tests {
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init(cb.command_handle,
                             CString::new(config_path).unwrap().into_raw(),
-                            Some(init_cb)),
+                            Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
         // Assert pool was initialized
@@ -416,11 +416,11 @@ mod tests {
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
 
-        let content = json!({"wallet_name": wallet_name});
+        let content = format!(r#"{{"wallet_name":"{}"}}"#, wallet_name);
 
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init_with_config(cb.command_handle,
-                                        CString::new(content).unwrap().into_raw(),
+                                        CString::new(content.clone()).unwrap().into_raw(),
                                         Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();

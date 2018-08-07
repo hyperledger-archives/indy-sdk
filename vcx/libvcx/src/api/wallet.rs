@@ -756,9 +756,10 @@ pub mod tests {
     fn test_send_tokens() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_wallet_send_tokens(cb.command_handle,
                                           0,
-                                          1,
+                                          CString::new("1").unwrap().into_raw(),
                                           CString::new("address").unwrap().into_raw(),
                                           Some(cb.get_callback())),
                    error::SUCCESS.code_num);
@@ -791,9 +792,9 @@ pub mod tests {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_wallet_send_tokens(cb.command_handle,
                                          0,
-                                         tokens,
+                                         CString::new(format!("{}", tokens)).unwrap().into_raw(),
                                          recipient.as_ptr(),
-                                         Some(cb)),
+                                         Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
         let new_balance = ::utils::libindy::payments::get_wallet_token_info().unwrap().get_balance();
