@@ -155,7 +155,6 @@ def android() {
                     publishAndroid(android)
                 }
             } catch (Exception ex) {
-                // We currently do not fail the main build if the android and ios builds fai
                 currentBuild.result = "FAILED"
                 if (env.BRANCH_NAME == "master") {
                     fail()
@@ -190,7 +189,6 @@ def ios() {
                     }
                 }
             } catch (Exception ex) {
-                // We currently do not fail the main build if the android and ios builds fail
                 currentBuild.result = "FAILED"
                 if (env.BRANCH_NAME == "master") {
                     fail()
@@ -217,22 +215,12 @@ def buildAndroid(envn) {
         LIBINDY_BRANCH="stable"
         LIBINDY_VERSION="1.6.1"
         LIBINDY_TAG=""
-        LIBNULLPAY_BRANCH="stable"
-        LIBNULLPAY_VERSION="1.6.1"
-        LIBNULLPAY_TAG=""
 
         sh 'sudo ./vcx/ci/scripts/installCert.sh'
-        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBNULLPAY_BRANCH=${LIBNULLPAY_BRANCH} LIBNULLPAY_VERSION=${LIBNULLPAY_VERSION} ./${ANDROID_SCRIPT_PATH} arm64"
-        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBNULLPAY_BRANCH=${LIBNULLPAY_BRANCH} LIBNULLPAY_VERSION=${LIBNULLPAY_VERSION} ./${ANDROID_SCRIPT_PATH} arm"
-        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBNULLPAY_BRANCH=${LIBNULLPAY_BRANCH} LIBNULLPAY_VERSION=${LIBNULLPAY_VERSION} ./${ANDROID_SCRIPT_PATH} x86"
-//        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBNULLPAY_BRANCH=${LIBNULLPAY_BRANCH} LIBNULLPAY_VERSION=${LIBNULLPAY_VERSION} ./${ANDROID_SCRIPT_PATH} arm64"
-        //Todo: get parallel processing to work. Currently it fails on Jenkins. It must share files or something
-        // parallel([
-        //     'arm': { sh "./${ANDROID_SCRIPT_PATH} arm"},
-        //     'x86': { sh "./${ANDROID_SCRIPT_PATH} x86"},
-        //     'arm64': { sh "./${ANDROID_SCRIPT_PATH} arm64"}
-        // ])
-    }
+        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBINDY_TAG=${LIBINDY_TAG} ./${ANDROID_SCRIPT_PATH} arm64"
+        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBINDY_TAG=${LIBINDY_TAG} ./${ANDROID_SCRIPT_PATH} arm"
+        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBINDY_TAG=${LIBINDY_TAG} ./${ANDROID_SCRIPT_PATH} x86"
+   }
 }
 
 def packageAndroid(envn) {
