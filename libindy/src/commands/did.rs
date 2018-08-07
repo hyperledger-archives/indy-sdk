@@ -463,12 +463,22 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(&did)?;
 
-        self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::id())?;
-
         let mut tags = HashMap::new();
         tags.insert(String::from("metadata"), metadata);
 
-        let res = self.wallet_service.add_indy_record_tags::<Did>(wallet_handle, &did, &tags)?;
+        //  try to set for MyDid
+        let res_my_did = self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::id())
+            .and_then(|_| self.wallet_service.add_indy_record_tags::<Did>(wallet_handle, &did, &tags));
+
+        let res = match res_my_did {
+            Ok(res) => Ok(res),
+            Err(WalletError::ItemNotFound) => {
+                //  try to set for TheirDid
+                self.wallet_service.get_indy_record::<TheirDid>(wallet_handle, &did, &RecordOptions::id())
+                    .and_then(|_| self.wallet_service.add_indy_record_tags::<TheirDid>(wallet_handle, &did, &tags))
+            }
+            Err(err) => Err(err)
+        }?;
 
         debug!("set_did_metadata >>> res: {:?}", res);
 
@@ -482,10 +492,18 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(&did)?;
 
-        let res = self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full())?
-            .get_tags()
-            .and_then(|tags| tags.get("metadata").cloned())
-            .ok_or(WalletError::ItemNotFound)?;
+        let record = match self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full()) {
+            // Try to get MyDId
+            Ok(record) => Ok(record),
+            Err(WalletError::ItemNotFound) => self.wallet_service.get_indy_record::<TheirDid>(wallet_handle, &did, &RecordOptions::full()), // Try to get TheirDid
+            Err(err) => Err(err)
+        }?;
+
+        let res =
+            record
+                .get_tags()
+                .and_then(|tags| tags.get("metadata").cloned())
+                .ok_or(WalletError::ItemNotFound)?;
 
         debug!("get_did_metadata <<< res: {:?}", res);
 

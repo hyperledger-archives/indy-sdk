@@ -456,6 +456,22 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_set_did_metadata_works_for_their_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
+            DidUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            DidUtils::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         fn indy_set_did_metadata_works_for_replace() {
             TestUtils::cleanup_storage();
 
@@ -558,6 +574,26 @@ mod high_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_get_did_metadata_works_for_their_did() {
+            TestUtils::cleanup_storage();
+
+            let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
+
+            let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
+            DidUtils::store_their_did(wallet_handle, &identity_json).unwrap();
+
+            DidUtils::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
+
+            let metadata = DidUtils::get_did_metadata(wallet_handle, DID).unwrap();
+            assert_eq!(METADATA.to_string(), metadata);
+
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
 
         #[test]
         fn indy_get_did_metadata_works_for_empty_string() {
