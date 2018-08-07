@@ -134,6 +134,7 @@ struct SingleState<T: Networker> {
 
 struct FullState<T: Networker> {
     accum_reply: Option<HashableValue>,
+    nodes_to_send: Option<Vec<String>>,
     networker: Rc<RefCell<T>>,
 }
 
@@ -187,6 +188,17 @@ impl<T: Networker> From<StartState<T>> for FullState<T> {
     fn from(state: StartState<T>) -> Self {
         FullState {
             accum_reply: None,
+            nodes_to_send: None,
+            networker: state.networker.clone(),
+        }
+    }
+}
+
+impl<T: Networker> From<(Option<Vec<String>>, StartState<T>)> for FullState<T> {
+    fn from((nodes_to_send, state): (Option<Vec<String>>, StartState<T>)) -> Self {
+        FullState {
+            accum_reply: None,
+            nodes_to_send,
             networker: state.networker.clone(),
         }
     }
@@ -233,14 +245,14 @@ impl<T: Networker> RequestSM<T> {
                         (RequestState::Single(state.into()), None)
                     }
                     RequestEvent::CustomFullRequest(msg, req_id, local_timeout, nodes_to_send) => {
-                        let timeout = local_timeout.map(|to| to as i64).unwrap_or(timeout);
+                        let timeout = local_timeout.map(|to| to as i64).unwrap_or(extended_timeout);
                         if let Some(nodes_to_send) = nodes_to_send {
                             match serde_json::from_str::<Vec<String>>(&nodes_to_send) {
                                 Ok(nodes_to_send) => {
                                     let is_nodes_to_send_known = nodes_to_send.iter().all(|node| nodes.contains_key(node));
                                     if is_nodes_to_send_known {
-                                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, Some(nodes_to_send))));
-                                        (RequestState::Full(state.into()), None)
+                                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, Some(nodes_to_send.clone()))));
+                                        (RequestState::Full((Some(nodes_to_send), state).into()), None)
                                     } else {
                                         _send_replies(&cmd_ids, Err(PoolError::CommonError(CommonError::InvalidStructure(
                                             format!("Unknown node present in list to send {:?}, known nodes are {:?}",
@@ -258,7 +270,7 @@ impl<T: Networker> RequestSM<T> {
                             }
                         } else {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, None)));
-                            (RequestState::Full(state.into()), None)
+                            (RequestState::Full((None, state).into()), None)
                         }
                     }
                     RequestEvent::CustomConsensusRequest(msg, req_id) => {
@@ -451,10 +463,6 @@ impl<T: Networker> RequestSM<T> {
                         (RequestSM::_full_request_handle_consensus_state(
                             state, req_id, node_alias, "timeout".to_string(), &cmd_ids, &nodes), None),
 
-                    RequestEvent::ReqACK(_, _, node_alias, req_id) => {
-                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias, extended_timeout)));
-                        (RequestState::Full(state), None)
-                    }
                     RequestEvent::Terminate => {
                         _finish_request(&cmd_ids);
                         (RequestState::finish(), None)
@@ -494,10 +502,12 @@ impl<T: Networker> RequestSM<T> {
                 .insert(node_alias.clone(), SJsonValue::from(node_result));
         }
 
+        let required_reply_cnt = state.nodes_to_send.as_ref().map(Vec::len).unwrap_or(nodes.len());
+
         let reply_cnt = state.accum_reply.as_ref().unwrap()
             .inner.as_object().unwrap().len();
 
-        if reply_cnt == nodes.len() {
+        if reply_cnt == required_reply_cnt {
             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
             let reply = state.accum_reply.as_ref().unwrap().inner.to_string();
             _send_ok_replies(&cmd_ids, &reply);

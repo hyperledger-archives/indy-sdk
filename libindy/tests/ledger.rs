@@ -277,7 +277,6 @@ mod high_cases {
         }
 
         #[test]
-        #[ignore] // TODO FIXME
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_list_nodes() {
             TestUtils::cleanup_storage();

@@ -51,7 +51,6 @@ async def test_submit_action_works(pool_handle, wallet_handle, identity_my1):
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="not implemented yet")
 async def test_submit_action_works_for_nodes(pool_handle, wallet_handle, identity_my1):
     (my_did, _) = identity_my1
     nodes = ['Node1', 'Node2']

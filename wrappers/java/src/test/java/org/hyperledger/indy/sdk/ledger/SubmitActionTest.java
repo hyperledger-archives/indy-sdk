@@ -36,7 +36,6 @@ public class SubmitActionTest extends IndyIntegrationTestWithPoolAndSingleWallet
 	}
 
 	@Test
-	@Ignore
 	public void testSubmitActionWorksForNodes() throws Exception {
 		String nodes = "[\"Node1\",\"Node2\"]";
 		String getValidatorInfoRequest = Ledger.buildGetValidatorInfoRequest(did).get();
