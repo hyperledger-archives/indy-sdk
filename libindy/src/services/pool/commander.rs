@@ -144,8 +144,10 @@ mod commander_tests {
         let cmd_id: i32 = SequenceUtils::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
+        let mut buf_to = [0u8; 4];
+        LittleEndian::write_i32(&mut buf_to, -1);
         let msg = "test";
-        send_cmd_sock.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
+        send_cmd_sock.send_multipart(&[msg.as_bytes(), &buf, &buf_to], zmq::DONTWAIT).expect("FIXME");
         assert_match!(Some(PoolEvent::SendRequest(cmd_id_, msg_, None, None)), cmd.fetch_events(),
                       cmd_id_, cmd_id,
                       msg_, msg);
