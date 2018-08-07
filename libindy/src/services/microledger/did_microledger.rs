@@ -27,6 +27,7 @@ use std::rc::Rc;
 use services::crypto::CryptoService;
 use services::wallet::WalletService;
 use services::microledger::helpers::{sign_msg, verify_msg};
+use services::microledger::constants::{VERKEY, ADDRESS, AUTHORIZATIONS};
 use utils::crypto::base58::{encode, decode};
 
 const TYP: [u8; 3] = [0, 1, 2];
@@ -224,14 +225,16 @@ impl<'a> DidMicroledger<'a> {
     }
 
     // Return the signed txn (with signature) if wallet_handle and signing_verkey are not None
-    fn get_signed_txn(&self, txn: &str, wallet_service: Option<&WalletService>, wallet_handle: Option<i32>, signing_verkey: Option<&str>) -> Result<String, CommonError> {
+    fn get_signed_txn(&self, txn: &str, wallet_service: Option<&WalletService>,
+                      wallet_handle: Option<i32>, signing_verkey: Option<&str>) -> Result<String, CommonError> {
         let wallet_service = match wallet_service {
             Some(w) => w,
             None => &self.wallet_service
         };
         match (wallet_handle, signing_verkey) {
             (Some(wh), Some(sv)) => {
-                let sig = sign_msg(wallet_service, &self.crypto_service, wh, &sv, txn.as_bytes())?;
+                let sig = sign_msg(wallet_service, &self.crypto_service,
+                                   wh, &sv, txn.as_bytes())?;
                 TxnBuilder::add_signature_to_txn(&txn, sv, &sig)
             }
             _ => Ok(txn.to_string())
@@ -319,6 +322,26 @@ impl<'a> DidMicroledger<'a> {
             },
             _ => Err(CommonError::InvalidStructure(format!("Unparsable txn, verkey or signature: {:?} {:?} {:?}", &txn, &signer_vk, &signature)))
         }
+    }
+
+    pub fn is_valid_key_txn_schema(operation: &JValue) -> bool {
+        let required_fields = vec!["type", VERKEY, AUTHORIZATIONS];
+        for f in required_fields {
+            if operation.get(f).is_none() {
+                return false
+            }
+        }
+        return true
+    }
+
+    pub fn is_valid_endpoint_txn_schema(operation: &JValue) -> bool {
+        let required_fields = vec!["type", VERKEY, ADDRESS];
+        for f in required_fields {
+            if operation.get(f).is_none() {
+                return false
+            }
+        }
+        return true
     }
 }
 

@@ -408,167 +408,13 @@ impl<'a> Agent<'a> {
         let txns = DidMicroledger::get_validated_ledger_update_events(events, existing_size+1,
                                                              existing_size+len)?;
         for txn in &txns {
-            if !Agent::is_valid_txn(txn, &doc.borrow(), &self.crypto_service)? {
+            if !DidDoc::is_valid_txn(txn, &doc.borrow(), &self.crypto_service)? {
                 return Ok(false);
             } else {
                 ml.add(txn)?;
             }
         }
         Ok(true)
-    }
-
-    pub fn is_valid_txn(txn: &str, did_doc: &DidDoc, crypto_service: &CryptoService) -> Result<bool, CommonError> {
-        // TODO: Move this to DID Doc
-        let mut j_txn: JValue = serde_json::from_str(txn).map_err(|err|
-            CommonError::InvalidState(format!("Unable to parse json txn {:?}.", err)))?;
-        match j_txn.as_object_mut() {
-            Some(m_txn) => {
-                let idr = m_txn.remove(IDENTIFIER);
-                let sig = m_txn.remove(SIGNATURE);
-                let j_txn = JValue::from(m_txn.clone());
-                let txn: Txn<JValue> = serde_json::from_value(j_txn).map_err(|err|
-                    CommonError::InvalidState(format!("Unable to create txn {:?}.", err)))?;
-                let type_ = txn.operation.get("type");
-                match type_ {
-                    Some(t) => {
-                        match t.as_str() {
-                            Some(KEY_TXN) => {
-                                if !Agent::is_valid_key_txn_schema(&txn.operation) {
-                                    return Ok(false)
-                                }
-                                let j_vk = idr.unwrap();
-                                if !DidMicroledger::is_valid_txn_sig(crypto_service, txn.clone(), j_vk.clone(), sig.unwrap())? {
-                                    return Ok(false)
-                                }
-                                let vk = j_vk.as_str().unwrap();
-                                if !Agent::is_valid_key_txn_auth(&txn.operation, vk, did_doc)? {
-                                    return Ok(false)
-                                }
-                                Ok(true)
-                            }
-                            Some(ENDPOINT_TXN) => {
-                                if !Agent::is_valid_endpoint_txn_schema(&txn.operation) {
-                                    return Ok(false)
-                                }
-                                let j_vk = idr.unwrap();
-                                if !DidMicroledger::is_valid_txn_sig(crypto_service, txn.clone(), j_vk.clone(), sig.unwrap())? {
-                                    return Ok(false)
-                                }
-                                let vk = j_vk.as_str().unwrap();
-                                if !Agent::is_valid_endpoint_txn_auth(&txn.operation, vk, did_doc)? {
-                                    return Ok(false)
-                                }
-                                Ok(true)
-                            }
-                            _ => Err(CommonError::InvalidStructure(format!("Unknown txn type {:?}", t)))
-                        }
-                    },
-                    None => Err(CommonError::InvalidStructure(String::from("Unable to find type in txn")))
-                }
-            }
-            None => Err(CommonError::InvalidStructure(String::from("Unable to convert to json object")))
-        }
-    }
-
-    pub fn is_valid_key_txn_schema(operation: &JValue) -> bool {
-        let required_fields = vec!["type", VERKEY, AUTHORIZATIONS];
-        for f in required_fields {
-            if operation.get(f).is_none() {
-                return false
-            }
-        }
-        return true
-    }
-
-    pub fn is_valid_endpoint_txn_schema(operation: &JValue) -> bool {
-        let required_fields = vec!["type", VERKEY, ADDRESS];
-        for f in required_fields {
-            if operation.get(f).is_none() {
-                return false
-            }
-        }
-        return true
-    }
-
-    pub fn is_valid_key_txn_auth(operation: &JValue, txn_author_vk: &str,
-                                 did_doc: &DidDoc) -> Result<bool, CommonError> {
-        // TODO: Move this to DID Doc
-        let subject_vk = operation.get(VERKEY).unwrap();
-        let subject_vk = subject_vk.as_str().unwrap();
-        match did_doc.has_key(subject_vk)? {
-            true => {
-                let proposed_auths = operation.get(AUTHORIZATIONS).unwrap();
-                let proposed_auths: Vec<String> = serde_json::from_value(proposed_auths.clone()).map_err(|err|
-                    CommonError::InvalidStructure(format!("Cannot convert authorisations to vector of strings : {:?}.", err)))?;
-                if proposed_auths.is_empty() {
-                    if subject_vk == txn_author_vk {
-                        return Ok(true)
-                    }
-                    match did_doc.get_key_authorisations(txn_author_vk) {
-                        Ok(auths) => {
-                            if !(auths.contains(&AUTHZ_ALL.to_string()) || auths.contains(&AUTHZ_REM_KEY.to_string())) {
-                                return Ok(false)
-                            }
-                        }
-                        Err(e) => {
-                            println!("Cannot get authorisations for key {}. Error: {:?}", txn_author_vk, e);
-                            return Ok(false)
-                        }
-                    }
-                } else {
-                    // TODO
-                }
-                Ok(true)
-            }
-            false => {
-                match did_doc.get_key_authorisations(txn_author_vk) {
-                    Ok(auths) => {
-                        if !(auths.contains(&AUTHZ_ALL.to_string()) || auths.contains(&AUTHZ_ADD_KEY.to_string())) {
-                            return Ok(false)
-                        }
-                    }
-                    Err(e) => {
-                        println!("Cannot get authorisations for key {}. Error: {:?}", txn_author_vk, e);
-                        return Ok(false)
-                    }
-                }
-                Ok(true)
-            }
-        }
-    }
-
-    pub fn is_valid_endpoint_txn_auth(operation: &JValue, txn_author_vk: &str,
-                                      did_doc: &DidDoc) -> Result<bool, CommonError> {
-        // TODO: Move this to DID Doc
-        let subject_vk = operation.get(VERKEY).unwrap();
-        let subject_vk = subject_vk.as_str().unwrap();
-        match did_doc.get_key_endpoints(subject_vk) {
-            Ok(endpoints) => {
-                if subject_vk == txn_author_vk {
-                    return Ok(true)
-                }
-                if endpoints.is_empty() {
-                    match did_doc.get_key_authorisations(txn_author_vk) {
-                        Ok(auths) => {
-                            if !(auths.contains(&AUTHZ_ALL.to_string()) || auths.contains(&AUTHZ_ADD_KEY.to_string())) {
-                                return Ok(false)
-                            }
-                        }
-                        Err(e) => {
-                            println!("Cannot get authorisations for key {}. Error: {:?}", txn_author_vk, e);
-                            return Ok(false)
-                        }
-                    }
-                } else {
-                    // TODO
-                }
-                Ok(true)
-            }
-            _ => {
-                println!("Cannot add endpoint for non-existent key {}", subject_vk);
-                Ok(false)
-            }
-        }
     }
 
     fn process_ledger_update_from_connection(&mut self, l: LedgerUpdate) -> Result<bool, CommonError> {
@@ -763,16 +609,10 @@ mod tests {
             new_seq_no as u64
         };
 
-//        let mut gen_txns_self = vec![];
-//        let mut gen_txns_other = None;
         let mut other_did = None;
         if cloud_agent_did == "75KUW8tPUQNBS4W7ibFeY8" {
-//            gen_txns_self = get_did1_genesis_txns();
-//            gen_txns_other = Some(get_did2_genesis_txns());
             other_did = Some("84qiTnsJrdefBDMrF49kfa");
         } else if cloud_agent_did == "84qiTnsJrdefBDMrF49kfa" {
-//            gen_txns_self = get_did2_genesis_txns();
-//            gen_txns_other = Some(get_did1_genesis_txns());
             other_did = Some("75KUW8tPUQNBS4W7ibFeY8");
         } else { panic!("Unacceptable did {}", &cloud_agent_did) }
 
