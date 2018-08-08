@@ -1,6 +1,5 @@
 #[cfg(test)]
 pub mod tests {
-    extern crate rand;
 
     use utils::constants;
     use utils::libindy::wallet;
