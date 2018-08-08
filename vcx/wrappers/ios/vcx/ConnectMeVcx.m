@@ -857,4 +857,44 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (void)downloadMessages:(NSString *)messageStatus
+                    uid_s:(NSString *)uid_s
+                  pwdids:(NSString *)pwdids
+              completion:(void (^)(NSError *error, NSString* messages))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * message_status = [messageStatus cString];
+    const char * uids = [uid_s cString];
+    const char * pw_dids = [pwdids cString];
+    ret = vcx_messages_download(handle, message_status, uids, pw_dids, VcxWrapperCommonStringCallback);
+    
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
+- (void)updateMessages:(NSString *)messageStatus
+                 pwdidsJson:(NSString *)pwdidsJson
+              completion:(void (^)(NSError *error))completion{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    const char * message_status = [messageStatus cString];
+    const char * msg_json = [pwdidsJson cString];
+    ret = vcx_messages_update_status(handle, message_status, msg_json, VcxWrapperCommonCallback);
+    
+    if( ret != 0 )
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret]);
+        });
+    }
+}
+
 @end
