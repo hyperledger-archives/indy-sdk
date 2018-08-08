@@ -63,7 +63,6 @@ create_avd(){
                 -c 1000M
 
         ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${TARGET_ARCH} -no-audio -no-window &
-        #ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd arm -no-audio -no-window &
 }
 
 download_sdk(){
