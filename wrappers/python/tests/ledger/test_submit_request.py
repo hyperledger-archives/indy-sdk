@@ -374,7 +374,8 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
     get_txn_request = await ledger.build_get_txn_request(my_did, None, seq_no)
     get_txn_response = json.loads(
         await ensure_previous_request_applied(pool_handle, get_txn_request,
-                                              lambda response: response['result']['data']['txnMetadata']['seqNo'] is not None))
+                                              lambda response: response['result']['data']['txnMetadata'][
+                                                                   'seqNo'] is not None))
 
     received_schema = get_txn_response['result']['data']['txn']['data']['data']
     assert schema['name'] == received_schema['name']
