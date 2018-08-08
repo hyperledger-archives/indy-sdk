@@ -22,7 +22,7 @@ sovtoken = []
 ci = []
 
 [dependencies]
-env_logger = "0.4.3"
+env_logger = "0.5.10"
 log = "0.4"
 log4rs = "0.8.0"
 chrono = "0.4"
