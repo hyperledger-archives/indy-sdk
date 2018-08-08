@@ -186,6 +186,12 @@ Connect to Indy nodes pool and make it available for operation that require pool
 indy> pool connect [name=]<pool name> [protocol-version=<version>] [timeout=<timeout>] [extended-timeout=<timeout>] [pre-ordered-nodes=<node names>]
 ```
 
+#### Refresh
+Refresh a local copy of a pool ledger and updates pool nodes connections.
+```
+indy> pool refresh
+```
+
 #### Disconnect
 Disconnect from Indy nodes pool
 ```
@@ -288,7 +294,7 @@ ledger node target=<target-value> alias=<alias-value> [node_ip=<node_ip-value>] 
 #### GET_VALIDATOR_INFO transaction
 Send GET_VALIDATOR_INFO transaction to get info from all nodes
 ```
-ledger get-validator-info 
+ledger get-validator-info [nodes=<node names>] [timeout=<timeout>]
 ```
 
 #### POOL_UPGRADE transaction
@@ -306,7 +312,7 @@ ledger pool-config writes=<true or false (default false)> [force=<true or false 
 #### POOL_RESTART transaction
 Send POOL_RESTART transaction
 ```
-ledger pool-restart action=<start or cancel> [datetime=<datetime>]
+ledger pool-restart action=<start or cancel> [datetime=<datetime>] [nodes=<node names>] [timeout=<timeout>]
 ```
 
 #### Custom transaction
