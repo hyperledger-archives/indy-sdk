@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.2
+
+* Performed the following changes related to Libindy Ledger API:
+    * Added `indy_submit_action` endpoint that provides the ability to send either GET_VALIDATOR_INFO or 
+      POOL_RESTART request to specific nodes and to specify custom timeout for a response from a node.
+    * Updated `indy_build_pool_upgrade_request` API function to accept the additional parameter `package` that allow specify package to be upgraded.* Bugfixes
+* Added `pool restart` command in Indy CLI.
+* Updated Libindy CD pipeline to run iOS tests and to publish artifacts for Libindy and Libnullpay.
+* Bugfixes       
+  
 ## 1.6.0, 1.6.1
 
 * Integrated tags based search in Anoncreds workflow:
