@@ -689,6 +689,7 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
         def suffix = "~$env.BUILD_NUMBER"
 
         unstash name: inStashName
+
         sh "mkdir --parent $directory/target/release/ && mv target/release/* $directory/target/release/"
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
