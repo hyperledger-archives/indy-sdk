@@ -184,8 +184,8 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
       withCompletion:(void (^)(NSError *error, NSString *tokenInfo))completion;
 
 - (void)sendTokens:(vcx_payment_handle_t)payment_handle
-        withTokens:(NSInteger)tokens
-     withRecipient:(NSString*)recipient
+        withTokens:(NSString *)tokens
+     withRecipient:(NSString *)recipient
     withCompletion:(void (^)(NSError *error, NSString *recipient))completion;
 
 @end

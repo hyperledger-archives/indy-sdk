@@ -47,7 +47,7 @@ public class TokenApi extends VcxJava.API {
 
     public static CompletableFuture<String> sendTokens(
             int paymentHandle,
-            long tokens,
+            String tokens,
             String recipient
     ) throws VcxException {
         Log.d(TAG, "sendTokens, called with paymentHandle=["+paymentHandle+"] tokens=["+tokens+"]");

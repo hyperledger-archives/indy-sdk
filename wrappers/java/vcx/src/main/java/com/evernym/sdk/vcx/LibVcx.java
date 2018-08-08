@@ -484,7 +484,7 @@ public abstract class LibVcx {
         public int vcx_wallet_get_token_info(int command_handle, int payment_handle, Callback cb);
 
         /** Sends token to recipient */
-        public int vcx_wallet_send_tokens(int command_handle, int payment_handle, long tokens, String recipient, Callback cb);
+        public int vcx_wallet_send_tokens(int command_handle, int payment_handle, String tokens, String recipient, Callback cb);
 
         /** Create a payment address and returns it */
         public int vcx_wallet_create_payment_address(int command_handle, String seed, Callback cb);
