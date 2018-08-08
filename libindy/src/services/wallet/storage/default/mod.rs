@@ -363,7 +363,7 @@ impl WalletStorage for SQLiteStorage {
             Err(err) => return Err(WalletStorageError::from(err))
         };
 
-        {
+        if !tags.is_empty() {
             let mut stmt_e = tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
             let mut stmt_p = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
 
@@ -404,7 +404,7 @@ impl WalletStorage for SQLiteStorage {
             Ok(id) => id
         };
 
-        {
+        if !tags.is_empty() {
             let mut enc_tag_insert_stmt = tx.prepare_cached("INSERT OR REPLACE INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
             let mut plain_tag_insert_stmt = tx.prepare_cached("INSERT OR REPLACE INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
 
@@ -435,7 +435,7 @@ impl WalletStorage for SQLiteStorage {
         tx.execute("DELETE FROM tags_encrypted WHERE item_id = ?1", &[&item_id])?;
         tx.execute("DELETE FROM tags_plaintext WHERE item_id = ?1", &[&item_id])?;
 
-        {
+        if !tags.is_empty() {
             let mut enc_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES (?1, ?2, ?3)")?;
             let mut plain_tag_insert_stmt = tx.prepare_cached("INSERT INTO tags_plaintext (item_id, name, value) VALUES (?1, ?2, ?3)")?;
 
@@ -757,6 +757,19 @@ impl WalletStorageType for SQLiteStorageType {
         }
 
         let conn = rusqlite::Connection::open(db_file_path.as_path())?;
+
+        // set journal mode to WAL, because it provides better performance.
+        let journal_mode: String = conn.query_row(
+            "PRAGMA journal_mode = WAL",
+            &[],
+            |row| { row.get(0) }
+        )?;
+
+        // if journal mode is set to WAL, set synchronous to FULL for safety reasons.
+        // (synchronous = NORMAL with journal_mode = WAL does not guaranties durability).
+        if journal_mode.to_lowercase() == "wal" {
+            conn.execute("PRAGMA synchronous = FULL", &[])?;
+        }
 
         Ok(Box::new(SQLiteStorage { conn: Rc::new(conn) }))
     }
