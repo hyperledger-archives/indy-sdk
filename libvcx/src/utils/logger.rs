@@ -4,6 +4,10 @@ extern crate log4rs;
 extern crate log_panics;
 #[cfg(target_os = "android")]
 extern crate android_logger;
+#[cfg(target_os = "ios")]
+use self::log::LevelFilter;
+#[cfg(target_os = "ios")]
+use std::io::Write;
 
 use settings;
 use std::sync::{Once, ONCE_INIT};
@@ -37,7 +41,7 @@ impl LoggerUtils {
         };
         env::set_var("RUST_LOG", &level);
         LOGGER_INIT.call_once(|| {
-            env_logger::init().unwrap();
+            env_logger::init();
         });
     }
 
@@ -69,14 +73,23 @@ impl LoggerUtils {
                         "info" => Filter::default().with_min_level(log::Level::Info),
                         "debug" => Filter::default().with_min_level(log::Level::Debug),
                         "trace" => Filter::default().with_min_level(log::Level::Trace),
-                        _ => Filter::default().with_min_level(log::Level::Error),
-                    },
+                        _ => Filter::default().with_min_level(log::Level::Error)
+                    }
                     Err(..) => Filter::default().with_min_level(log::Level::Error)
                 };
 
                 #[cfg(target_os = "android")]
                 android_logger::init_once(log_filter);
                 info!("Logging for Android");
+            } else if cfg!(target_os = "ios") {
+                #[cfg(target_os = "ios")]
+                env_logger::Builder::new()
+                    .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
+                    .filter(None, LevelFilter::Off)
+                    .parse(env::var("RUST_LOG").as_ref().map(String::as_str).unwrap_or(""))
+                    .try_init()
+                    .ok();
+                info!("Logging for iOS");
             } else {
                 match settings::get_config_value(settings::CONFIG_LOG_CONFIG) {
                     Err(_) => {/* NO-OP - no logging configured */},
