@@ -43,6 +43,7 @@ fi
 # rustup self uninstall
 
 if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
+    rustup update
     rustup component add rls-preview rust-analysis rust-src
     
     rustup target remove aarch64-linux-android armv7-linux-androideabi arm-linux-androideabi i686-linux-android x86_64-linux-android
