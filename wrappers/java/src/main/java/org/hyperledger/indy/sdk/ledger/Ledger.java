@@ -210,6 +210,51 @@ public class Ledger extends IndyJava.API {
 	}
 
 	/**
+	 * Send action to particular nodes of validator pool.
+	 *
+	 * The list of requests can be send:
+	 *     POOL_RESTART
+	 *     GET_VALIDATOR_INFO
+	 *
+	 * The request is sent to the nodes as is. It's assumed that it's already prepared.
+	 *
+	 * @param pool        The Pool to publish to.
+	 * @param requestJson Request data json.
+	 * @param nodes      (Optional) List of node names to send the request.
+	 *                   ["Node1", "Node2",...."NodeN"]
+	 * @param timeout    (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+	 *                   Pass -1 to use default timeout
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> submitAction(
+			Pool pool,
+			String requestJson,
+			String nodes,
+			int timeout) throws IndyException {
+
+		ParamGuard.notNull(pool, "pool");
+		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int poolHandle = pool.getPoolHandle();
+
+		int result = LibIndy.api.indy_submit_action(
+				commandHandle,
+				poolHandle,
+				requestJson,
+				nodes,
+				timeout,
+				submitRequestCb);
+
+		checkResult(result);
+
+		return future;
+	}
+
+	/**
 	 * Signs request message.
 	 * <p>
 	 * dds submitter information to passed request json, signs it with submitter
