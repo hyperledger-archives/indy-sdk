@@ -246,7 +246,6 @@ impl SQLiteStorageType {
 }
 
 
-#[warn(dead_code)]
 impl WalletStorage for SQLiteStorage {
     ///
     /// Tries to fetch values and/or tags from the storage.
@@ -638,7 +637,7 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `WalletStorageError::NotFound` - File with the provided id not found
     ///  * `IOError(..)` - Deletion of the file form the file-system failed
     ///
-    fn delete_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletStorageError> {
+    fn delete_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>) -> Result<(), WalletStorageError> {
         let config = config
             .map(serde_json::from_str::<Config>)
             .map_or(Ok(None), |v| v.map(Some))
@@ -682,7 +681,7 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `IOError("Error occurred while inserting the keys...")` - Insertion of keys failed
     ///  * `IOError(..)` - Deletion of the file form the file-system failed
     ///
-    fn create_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>, metadata: &[u8]) -> Result<(), WalletStorageError> {
+    fn create_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>, metadata: &[u8]) -> Result<(), WalletStorageError> {
 
         let config = config
             .map(serde_json::from_str::<Config>)
@@ -743,7 +742,7 @@ impl WalletStorageType for SQLiteStorageType {
     ///  * `WalletStorageError::NotFound` - File with the provided id not found
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
-    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletStorageError> {
+    fn open_storage(&self, id: &str, config: Option<&str>, _credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletStorageError> {
 
         let config = config
             .map(serde_json::from_str::<Config>)
@@ -1131,12 +1130,6 @@ mod tests {
 
         let storage = _storage();
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
-
-        let tags_with_existing = {
-            let mut tags = _tags();
-            tags.extend(_new_tags());
-            tags
-        };
 
         storage.update_tags(&_type1(), &_id1(), &_new_tags()).unwrap();
 

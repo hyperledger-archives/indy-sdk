@@ -353,19 +353,24 @@ impl RemoteNode {
 }
 
 #[cfg(test)]
-pub struct MockNetworker {}
+pub struct MockNetworker {
+    pub events: Vec<Option<NetworkerEvent>>,
+}
 
 #[cfg(test)]
 impl Networker for MockNetworker {
     fn new(_active_timeout: i64, _conn_limit: usize, _preordered_nodes: Vec<String>) -> Self {
-        MockNetworker {}
+        MockNetworker {
+            events: Vec::new(),
+        }
     }
 
     fn fetch_events(&self, _poll_items: &[zmq::PollItem]) -> Vec<PoolEvent> {
         unimplemented!()
     }
 
-    fn process_event(&mut self, _pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
+    fn process_event(&mut self, pe: Option<NetworkerEvent>) -> Option<RequestEvent> {
+        self.events.push(pe);
         None
     }
 
