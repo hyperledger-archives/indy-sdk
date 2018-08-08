@@ -14,9 +14,9 @@ public abstract class LibVcx {
 
     private static final String LIBRARY_NAME = "vcx";
     private static final String TAG ="VCX_ANDROID_WRAPPER::";
-	/*
+    /*
      * Native library interface
-	 */
+     */
 
     public enum vcx_state {
         none,
@@ -42,8 +42,8 @@ public abstract class LibVcx {
 
         // pool.rs
         public int vcx_init_with_config(int command_handle,
-                                           String config,
-                                           Callback cb);
+                                        String config,
+                                        Callback cb);
         public int vcx_init(int command_handle, String config_path, Callback cb);
 
         public String vcx_error_c_message(int error_code);
@@ -400,10 +400,10 @@ public abstract class LibVcx {
          */
         public int vcx_claim_release(int claim_handle);
 
-/**
- * UtilsApi object
- *
- */
+        /**
+         * UtilsApi object
+         *
+         */
         public String vcx_provision_agent(String json);
 
         public int vcx_agent_provision_async(int command_handle, String json,Callback cb);
@@ -451,10 +451,10 @@ public abstract class LibVcx {
         public int vcx_get_credential(int command_handle, int credential_handle, Callback cb);
 
         /**
-        * wallet object
-        *
-        * Used for exporting and importing and managing the wallet.
-        */
+         * wallet object
+         *
+         * Used for exporting and importing and managing the wallet.
+         */
 
         /** Export the wallet as an encrypted file */
         public int vcx_wallet_export(int command_handle, String path, String backup_key, Callback cb);
@@ -489,11 +489,23 @@ public abstract class LibVcx {
         /** Create a payment address and returns it */
         public int vcx_wallet_create_payment_address(int command_handle, String seed, Callback cb);
 
+        /**
+         * message object
+         *
+         * Used for getting and updating messages
+         */
+
+        /** Get messages for given uids or pairwise did from agency endpoint */
+        public int vcx_messages_download(int command_handle, String messageStatus, String uids, String pwdids, Callback cb);
+
+        /** Update message status for a object of uids */
+        public int vcx_messages_update_status(int command_handle, String messageStatus, String msgJson, Callback cb);
+
     }
 
-	/*
-	 * Initialization
-	 */
+    /*
+     * Initialization
+     */
 
     public static API api = null;
 
