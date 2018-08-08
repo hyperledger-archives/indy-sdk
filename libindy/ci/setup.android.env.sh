@@ -62,14 +62,13 @@ create_avd(){
                 -f \
                 -c 1000M
 
-        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${TARGET_ARCH}
         ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd arm -no-audio -no-window &
 }
 
 download_sdk(){
     echo "${GREEN}Downloading sdk....${RESET}"
      pushd ${ANDROID_SDK}
-        wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+        curl -sSLO https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
         echo "${GREEN}Done!${RESET}"
         unzip -qq sdk-tools-linux-4333796.zip
         delete_existing_avd
@@ -128,22 +127,31 @@ generate_arch_flags(){
 
 }
 
-download_and_unzip_dependencies_for_all_architectures(){
-    #TODO Get dependencies in more optimized way
+
+download_and_unzip_dependencies(){
     pushd ${ANDROID_BUILD_FOLDER}
-        if [ ! -d "indy-android-dependencies" ] ; then
-            echo "${GREEN}Downloading dependencies...${RESET}"
-            git clone https://github.com/evernym/indy-android-dependencies.git
-            pushd ${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/
-                git checkout tags/v1.1.1
-                find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -qq -d "$(dirname "FILENAME")" "FILENAME"'
-            popd
-             echo "${GREEN}Done!${RESET}"
-        fi
-        export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/openssl/openssl_${TARGET_ARCH}
-        export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/sodium/libsodium_${TARGET_ARCH}
-        export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/zmq/libzmq_${TARGET_ARCH}
-	popd
+        echo -e "${GREEN}Downloading openssl for $1 ${RESET}"
+        curl -sSLO https://repo.sovrin.org/android/libindy/deps/openssl/openssl_$1.zip
+        unzip -o -qq openssl_$1.zip
+        export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
+        echo -e "${GREEN}Done!${RESET}"
+
+        echo -e "${GREEN}Downloading sodium for $1 ${RESET}"
+        curl -sSLO https://repo.sovrin.org/android/libindy/deps/sodium/libsodium_$1.zip
+        unzip -o -qq libsodium_$1.zip
+        export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
+        echo -e "${GREEN}Done!${RESET}"
+
+        echo -e "${GREEN}Downloading zmq for $1 ${RESET}"
+        curl -sSLO https://repo.sovrin.org/android/libindy/deps/zmq/libzmq_$1.zip
+        unzip -o -qq libzmq_$1.zip
+        export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/libzmq_$1
+        echo -e "${GREEN}Done!${RESET}"
+
+        rm openssl_$1.zip
+        rm libsodium_$1.zip
+        rm libzmq_$1.zip
+    popd
 }
 
 
@@ -170,7 +178,7 @@ download_and_setup_toolchain(){
         if [ ! -d "android-ndk-r16b" ] ; then
             echo "${GREEN}Downloading NDK for OSX${RESET}"
             echo "${BLUE}Downloading... android-ndk-r16b-darwin-x86_64.zip${RESET}"
-            wget -q https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip
+            curl -sSLO https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip
             unzip -qq android-ndk-r16b-darwin-x86_64.zip
             echo "${GREEN}Done!${RESET}"
         else
@@ -185,7 +193,7 @@ download_and_setup_toolchain(){
         if [ ! -d "android-ndk-r16b" ] ; then
             echo "${GREEN}Downloading NDK for Linux${RESET}"
             echo "${BLUE}Downloading... android-ndk-r16b-linux-x86_64.zip${RESET}"
-            wget -q https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip
+            curl -sSLO https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip
             unzip -qq android-ndk-r16b-linux-x86_64.zip
             echo "${GREEN}Done!${RESET}"
         else
