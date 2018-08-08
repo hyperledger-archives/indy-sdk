@@ -79,6 +79,7 @@ fn build_executor() -> CommandExecutor {
         .add_group(pool::group::new())
         .add_command(pool::create_command::new())
         .add_command(pool::connect_command::new())
+        .add_command(pool::refresh_command::new())
         .add_command(pool::list_command::new())
         .add_command(pool::disconnect_command::new())
         .add_command(pool::delete_command::new())

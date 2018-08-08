@@ -47,6 +47,7 @@ echo "Packing..."
 PACKAGE="${package}.a"
 
 cp include/*.h $WORK_DIR
+cp ../LICENSE $WORK_DIR
 cp target/universal/$TYPE/$PACKAGE $WORK_DIR
 cd $WORK_DIR
 tar -cvzf $POD_FILE_NAME *
