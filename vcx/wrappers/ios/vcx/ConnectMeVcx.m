@@ -835,16 +835,17 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
 }
 
 - (void)sendTokens:(vcx_payment_handle_t)payment_handle
-        withTokens:(NSInteger)tokens
-     withRecipient:(NSString*)recipient
+        withTokens:(NSString *)tokens
+     withRecipient:(NSString *)recipient
     withCompletion:(void (^)(NSError *error, NSString *recipient))completion
 {
     vcx_error_t ret;
     vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
     
     const char* c_recipient = [recipient cStringUsingEncoding:NSUTF8StringEncoding];
+    const char* c_tokens = [tokens cStringUsingEncoding:NSUTF8StringEncoding];
     
-    ret = vcx_wallet_send_tokens(handle, payment_handle, tokens, c_recipient, VcxWrapperCommonStringCallback);
+    ret = vcx_wallet_send_tokens(handle, payment_handle, c_tokens, c_recipient, VcxWrapperCommonStringCallback);
     
     if ( ret != 0 )
     {
