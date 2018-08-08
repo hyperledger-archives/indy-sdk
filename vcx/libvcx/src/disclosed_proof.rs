@@ -20,7 +20,7 @@ use utils::libindy::crypto;
 
 use settings;
 use utils::httpclient;
-use utils::constants::{ DEFAULT_SERIALIZE_VERSION, SEND_MESSAGE_RESPONSE, CREDS_FROM_PROOF_REQ };
+use utils::constants::{ DEFAULT_SERIALIZE_VERSION, CREDS_FROM_PROOF_REQ };
 
 use serde_json::{Value};
 
@@ -279,8 +279,6 @@ impl DisclosedProof {
         let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &proof, "PROOF")
             .or(Err(ProofError::ProofConnectionError()))?;
 
-        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
-
         match messages::send_message().to(local_my_did)
             .to_vk(local_my_vk)
             .msg_type("proof")
@@ -415,7 +413,7 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
     let agent_did = connection::get_agent_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
     let agent_vk = connection::get_agent_verkey(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
 
-    if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
+    if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
 
     let message = messages::get_message::get_connection_messages(&my_did,
                                                                  &my_vk,
@@ -450,7 +448,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
     let agent_did = connection::get_agent_did(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
     let agent_vk = connection::get_agent_verkey(connection_handle).map_err(|e| ProofError::CommonError(e.to_error_code()))?;
 
-    if settings::test_agency_mode_enabled() { ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
+    if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec()); }
 
     let payload = messages::get_message::get_connection_messages(&my_did,
                                                                  &my_vk,

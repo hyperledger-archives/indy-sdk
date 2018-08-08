@@ -11,8 +11,7 @@ use credential_request::{ CredentialRequest };
 use utils::{error,
             error::INVALID_JSON,
             libindy::{ anoncreds::{ libindy_issuer_create_credential, libindy_issuer_create_credential_offer}, payments },
-            httpclient,
-            constants::{SEND_MESSAGE_RESPONSE, CRED_MSG},
+            constants::CRED_MSG,
             openssl::encode
 };
 use error::{ issuer_cred::IssuerCredError, ToErrorCode, payment::PaymentError};
@@ -135,8 +134,6 @@ impl IssuerCredential {
 
         debug!("credential offer data: {}", payload);
 
-        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
-
         let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &payload, "CRED_OFFER")
             .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
 
@@ -187,7 +184,6 @@ impl IssuerCredential {
 
         let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, "CRED")
             .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
-        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(SEND_MESSAGE_RESPONSE.to_vec()); }
 
         match messages::send_message().to(&self.issued_did)
             .to_vk(&self.issued_vk)
@@ -890,8 +886,8 @@ pub mod tests {
             agent_vk: VERKEY.to_string(),
         };
 
-        httpclient::set_next_u8_response(CREDENTIAL_REQ_RESPONSE.to_vec());
-        httpclient::set_next_u8_response(UPDATE_CREDENTIAL_RESPONSE.to_vec());
+        ::utils::httpclient::set_next_u8_response(CREDENTIAL_REQ_RESPONSE.to_vec());
+        ::utils::httpclient::set_next_u8_response(UPDATE_CREDENTIAL_RESPONSE.to_vec());
 
         credential.update_state().unwrap();
         assert_eq!(credential.get_state(), VcxStateType::VcxStateRequestReceived as u32);
