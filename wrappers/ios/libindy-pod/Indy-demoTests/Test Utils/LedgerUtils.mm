@@ -71,6 +71,32 @@
     return err;
 }
 
+- (NSError *)submitAction:(NSString *)request
+                    nodes:(NSString *)nodes
+                  timeout:(NSNumber *)timeout
+           withPoolHandle:(IndyHandle)poolHandle
+               resultJson:(NSString **)resultJson {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+    __block NSString *outJson = nil;
+
+    [IndyLedger submitAction:request
+                       nodes:nodes
+                     timeout:timeout
+                  poolHandle:poolHandle
+                  completion:^(NSError *error, NSString *resultJson) {
+                      err = error;
+                      outJson = resultJson;
+                      [completionExpectation fulfill];
+                  }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    if (resultJson) {*resultJson = outJson;}
+
+    return err;
+}
+
 // MARK: Build nym request
 
 - (NSError *)buildNymRequestWithSubmitterDid:(NSString *)submitterDid
@@ -440,6 +466,7 @@
                                        justification:(NSString *)justification
                                            reinstall:(BOOL)reinstall
                                                force:(BOOL)force
+                                            package_:(NSString *)package_
                                           resultJson:(NSString **)resultJson {
     XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
     __block NSError *err = nil;
@@ -455,6 +482,7 @@
                                           justification:justification
                                               reinstall:reinstall
                                                   force:force
+                                               package_:package_
                                              completion:^(NSError *error, NSString *request) {
                                                  err = error;
                                                  result = request;

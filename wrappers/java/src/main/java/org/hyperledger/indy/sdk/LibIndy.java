@@ -48,6 +48,7 @@ public abstract class LibIndy {
 
 		public int indy_sign_and_submit_request(int command_handle, int pool_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
 		public int indy_submit_request(int command_handle, int pool_handle, String request_json, Callback cb);
+		public int indy_submit_action(int command_handle, int pool_handle, String request_json, String nodes, int timeout, Callback cb);
 		public int indy_sign_request(int command_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
 		public int indy_multi_sign_request(int command_handle, int wallet_handle, String submitter_did, String request_json, Callback cb);
 		public int indy_build_get_ddo_request(int command_handle, String submitter_did, String target_did, Callback cb);
@@ -66,7 +67,7 @@ public abstract class LibIndy {
 		public int indy_build_get_txn_request(int command_handle, String submitter_did, String ledger_type, int data, Callback cb);
 		public int indy_build_pool_config_request(int command_handle, String submitter_did, boolean writes, boolean force, Callback cb);
 		public int indy_build_pool_restart_request(int command_handle, String submitter_did, String action, String datetime, Callback cb);
-		public int indy_build_pool_upgrade_request(int command_handle, String submitter_did, String name, String version, String action, String sha256, int timeout, String schedule, String justification, boolean reinstall, boolean force, Callback cb);
+		public int indy_build_pool_upgrade_request(int command_handle, String submitter_did, String name, String version, String action, String sha256, int timeout, String schedule, String justification, boolean reinstall, boolean force, String package_, Callback cb);
 		public int indy_build_revoc_reg_def_request(int command_handle, String submitter_did, String data, Callback cb);
 		public int indy_build_get_revoc_reg_def_request(int command_handle, String submitter_did, String id, Callback cb);
 		public int indy_parse_get_revoc_reg_def_response(int command_handle, String get_revoc_ref_def_response, Callback cb);

@@ -39,7 +39,6 @@ impl Pool {
         super::results::result_to_int(err, receiver)
     }
 
-    #[allow(dead_code)] //TODO add refresh pool command or remove this code
     pub fn refresh(pool_handle: i32) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec();
 
