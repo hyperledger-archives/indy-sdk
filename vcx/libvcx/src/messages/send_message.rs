@@ -109,16 +109,14 @@ impl SendMessage{
 
         let mut result = Vec::new();
         debug!("sending secure message to agency");
+        if settings::test_agency_mode_enabled() {
+            result.push(parse_send_message_response(::utils::constants::SEND_MESSAGE_RESPONSE.to_vec())?);
+            return Ok(result.to_owned());
+        }
+
         match httpclient::post_u8(&data) {
             Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
-            Ok(response) => {
-                let string: String = if settings::test_agency_mode_enabled() && response.len() == 0 {
-                    String::new()
-                } else {
-                    parse_send_message_response(response)?
-                };
-                result.push(string);
-            },
+            Ok(response) => result.push(parse_send_message_response(response)?),
         };
         debug!("sent message to agency");
         Ok(result.to_owned())

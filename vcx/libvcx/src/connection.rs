@@ -998,44 +998,6 @@ pub mod tests {
         }
     }
 
-    #[ignore]
-    #[test]
-    fn test_vcx_connection_create_real() {
-        settings::set_defaults();
-        let agency_did = "FhrSrYtQcw3p9xwf7NYemf";
-        let agency_vk = "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE";
-        let my_did = "5bJqPo8aCWyBwLQosZkJcB";
-        let my_vk = "3W9WGtRowAanh5q6giQrGncZVMvRwPedB9fJAJkAN5Gk";
-        let agent_did = "6nLzki22uwcg9n5VAJxhGN";
-        let agent_vk = "49mui8cB48JvLnnWzRmMGzWXuXDUKaVHsQi6N4Hyof8c";
-        let host = "https://enym-eagency.pdev.evernym.com";
-
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID,my_did);
-        settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY,my_vk);
-        settings::set_config_value(settings::CONFIG_AGENCY_ENDPOINT,host);
-        settings::set_config_value(settings::CONFIG_WALLET_NAME,"my_real_wallet");
-        settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY,agent_vk);
-        settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_DID,agent_did);
-        settings::set_config_value(settings::CONFIG_AGENCY_DID, agency_did);
-        settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, agency_vk);
-
-        let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
-        wallet::init_wallet("my_real_wallet").unwrap();
-
-        let handle = build_connection("test_real_connection_create").unwrap();
-        connect(handle,Some("{ \"phone\": \"3852500260\" }".to_string())).unwrap();
-
-        let string = to_string(handle).unwrap();
-        println!("my connection: {}", string);
-
-        while get_state(handle) != VcxStateType::VcxStateAccepted as u32{
-            thread::sleep(Duration::from_millis(1000));
-            update_state(handle).unwrap();
-        }
-
-        assert_eq!(update_state(12345).err(), Some(ConnectionError::CommonError(123)));
-    }
-
     #[test]
     fn test_invite_detail_abbr() {
         let invite_detail:Value = serde_json::from_str(INVITE_DETAIL_STRING).unwrap();

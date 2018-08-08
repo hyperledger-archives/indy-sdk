@@ -357,8 +357,6 @@ mod tests {
         assert!(handle>0)
     }
 
-    #[ignore]
-    // This test is ignored because The call-back can take more than 5 seconds which causes side-effects in future tests
     #[cfg(feature="pool_tests")]
     #[test]
     fn test_vcx_create_schema_with_pool() {
