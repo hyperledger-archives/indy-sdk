@@ -1,14 +1,12 @@
 package org.hyperledger.indy.sdk;
 
 import com.sun.istack.internal.NotNull;
-import org.omg.PortableInterceptor.INACTIVE;
 
 import java.math.BigInteger;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 public class AttributeEnDe {
+
+    private static BigInteger I32_BOUND = new BigInteger("2147483648");
 
     private static String STR_CODE = "1";
     private static String BOOL_CODE = "2";
@@ -16,8 +14,8 @@ public class AttributeEnDe {
     private static String FLOAT_CODE = "4";
     private static String NONE_CODE = "9";
 
-    private static final String ENCODED_TRUE = BOOL_CODE + String.valueOf(Integer.MAX_VALUE + 2);
-    private static final String ENCODED_FALSE = BOOL_CODE + String.valueOf(Integer.MAX_VALUE + 1);
+    private static final String ENCODED_TRUE = BOOL_CODE + "2147483650";
+    private static final String ENCODED_FALSE = BOOL_CODE + "2147483649";
 
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -68,8 +66,10 @@ public class AttributeEnDe {
      * @return
      */
     public static String encode(@NotNull String raw_value) {
-        BigInteger bi = new BigInteger(raw_value.getBytes());
-        bi = bi.add(BigInteger.valueOf(Integer.MAX_VALUE));
+        String hex = bytesToHex(raw_value.getBytes());
+        byte[] bytes = hex.getBytes();
+        BigInteger bi = new BigInteger(1, bytes);
+        bi = bi.add(I32_BOUND);
         return STR_CODE + bi.toString();
     }
 
@@ -87,35 +87,42 @@ public class AttributeEnDe {
     */
     public static Object decode(String encoded) {
         if (String.valueOf(Integer.MAX_VALUE).equals(encoded)) return null;
+        if ("22147483650".equals(encoded)) return Boolean.TRUE;
+        if ("22147483649".equals(encoded)) return Boolean.FALSE;
 
         BigInteger bi = new BigInteger(encoded);
         if ((BigInteger.valueOf(Integer.MIN_VALUE).compareTo(bi) <= 0)
-                && (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) < 0)) {
+                && (bi.compareTo(I32_BOUND) < 0)) {
             return new Integer(bi.intValue());
         }
 
         String prefix = encoded.substring(0, 1);
         String value = encoded.substring(1);
         BigInteger ival = new BigInteger(value, 16);
-        ival = ival.subtract(BigInteger.valueOf(Integer.MAX_VALUE));
+        ival = ival.subtract(I32_BOUND);
 
         if (ival.compareTo(BigInteger.ZERO) == 0) {
             return "";
         }
-        if (BOOL_CODE.equals(prefix) && ival.compareTo(BigInteger.ONE) == 0) {
-            return Boolean.valueOf(false);
-        }
-        if (BOOL_CODE.equals(prefix) && ival.compareTo(BigInteger.valueOf(2)) == 0) {
-            return Boolean.valueOf(true);
-        }
         if (STR_CODE.equals(prefix)) {
             bi = new BigInteger(value);
-            bi = bi.subtract(BigInteger.valueOf(Integer.MAX_VALUE));
-            return new String(bi.toByteArray());
+            bi = bi.subtract(I32_BOUND);
+            byte[] bytes = bi.toByteArray();
+            if (bytes.length % 2 != 0) {
+                throw new IllegalArgumentException("Encoded value does not decode to an even number of UTF-8 characters");
+            }
+            StringBuffer rv = new StringBuffer();
+            for (int j = 0; j < bytes.length / 2; j++) { // unhexlify
+                int top = Character.digit(bytes[2 * j], 16);
+                int bot = Character.digit(bytes[2 * j + 1], 16);
+                rv.append((char)((top << 4) + bot));
+            }
+            return rv.toString();
         }
         if (BIGINT_CODE.equals(prefix)) {
             return new BigInteger(value);
         }
         return null;
     }
+
 }
