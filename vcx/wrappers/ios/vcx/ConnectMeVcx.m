@@ -67,8 +67,11 @@ void VcxWrapperCommonStringCallback(vcx_command_handle_t xcommand_handle,
     [[VcxCallbacks sharedInstance] deleteCommandHandleFor:xcommand_handle];
 
     void (^completion)(NSError *, NSString *) = (void (^)(NSError *, NSString *arg1)) block;
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
-
+    NSString *sarg1 = nil;
+    if (arg1) {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    
     if (completion) {
         dispatch_async(dispatch_get_main_queue(), ^{
             NSError *error = [NSError errorFromVcxError:err];
@@ -102,8 +105,14 @@ void VcxWrapperCommonStringStringCallback(vcx_command_handle_t xcommand_handle,
 
     void (^completion)(NSError *, NSString *arg1, NSString *arg2) = (void (^)(NSError *, NSString *arg1, NSString *arg2)) block;
 
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
-    NSString *sarg2 = [NSString stringWithUTF8String:arg2];
+    NSString *sarg1 = nil;
+    if (arg1) {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    NSString *sarg2 = nil;
+    if (arg2) {
+        sarg2 = [NSString stringWithUTF8String:arg2];
+    }
 
     if (completion) {
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -122,9 +131,12 @@ void VcxWrapperCommonStringOptStringCallback(vcx_command_handle_t xcommand_handl
 
     void (^completion)(NSError *, NSString *arg1, NSString *arg2) = (void (^)(NSError *, NSString *arg1, NSString *arg2)) block;
 
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
-    NSString *sarg2 = nil;
+    NSString *sarg1 = nil;
     if (arg1) {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    NSString *sarg2 = nil;
+    if (arg2) {
         sarg2 = [NSString stringWithUTF8String:arg2];
     }
 
@@ -146,7 +158,10 @@ void VcxWrapperCommonStringOptStringOptStringCallback(vcx_command_handle_t xcomm
 
     void (^completion)(NSError *, NSString *arg1, NSString *arg2, NSString *arg3) = (void (^)(NSError *, NSString *arg1, NSString *arg2, NSString *arg3)) block;
 
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
+    NSString *sarg1 = nil;
+    if (arg1) {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
     NSString *sarg2 = nil;
     if (arg2) {
         sarg2 = [NSString stringWithUTF8String:arg2];
@@ -174,9 +189,18 @@ void VcxWrapperCommonStringStringStringCallback(vcx_command_handle_t xcommand_ha
 
     void (^completion)(NSError *, NSString *arg1, NSString *arg2, NSString *arg3) = (void (^)(NSError *, NSString *arg1, NSString *arg2, NSString *arg3)) block;
 
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
-    NSString *sarg2 = [NSString stringWithUTF8String:arg2];
-    NSString *sarg3 = [NSString stringWithUTF8String:arg3];
+    NSString *sarg1 = nil;
+    if (arg1) {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    NSString *sarg2 = nil;
+    if (arg2) {
+        sarg2 = [NSString stringWithUTF8String:arg2];
+    }
+    NSString *sarg3 = nil;
+    if (arg3) {
+        sarg3 = [NSString stringWithUTF8String:arg3];
+    }
 
     if (completion) {
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -220,7 +244,10 @@ void VcxWrapperCommonStringDataCallback(vcx_command_handle_t xcommand_handle,
     if (arg1) {
         sarg1 = [NSString stringWithUTF8String:arg1];
     }
-    NSData *sarg2 = [NSData dataWithBytes:arg2 length:arg3];
+    NSData *sarg2 = nil;
+    if (arg2) {
+        sarg2 = [NSData dataWithBytes:arg2 length:arg3];
+    }
 
     if (completion) {
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -239,8 +266,14 @@ void VcxWrapperCommonStringStringLongCallback(vcx_command_handle_t xcommand_hand
     [[VcxCallbacks sharedInstance] deleteCommandHandleFor:xcommand_handle];
 
     void (^completion)(NSError *, NSString *, NSString *, NSNumber *) = (void (^)(NSError *, NSString *arg1, NSString *arg2, NSNumber *arg3)) block;
-    NSString *sarg1 = [NSString stringWithUTF8String:arg1];
-    NSString *sarg2 = [NSString stringWithUTF8String:arg2];
+    NSString *sarg1 = nil;
+    if (arg1) {
+        sarg1 = [NSString stringWithUTF8String:arg1];
+    }
+    NSString *sarg2 = nil;
+    if (arg2) {
+        sarg2 = [NSString stringWithUTF8String:arg2];
+    }
     NSNumber *sarg3 = [NSNumber numberWithInt:arg3];
 
 
@@ -262,7 +295,10 @@ void VcxWrapperCommonNumberStringCallback(vcx_command_handle_t xcommand_handle,
 
     void (^completion)(NSError *, vcx_command_handle_t arg1, NSString *arg2) = (void (^)(NSError *, vcx_command_handle_t arg1, NSString *arg2)) block;
 
-    NSString *sarg2 = [NSString stringWithUTF8String:arg2];
+    NSString *sarg2 = nil;
+    if (arg2) {
+        sarg2 = [NSString stringWithUTF8String:arg2];
+    }
 
     if (completion) {
         dispatch_async(dispatch_get_main_queue(), ^{

@@ -16,7 +16,7 @@ cd $WORK_DIR/OpenSSL-for-iPhone
 
 # for i in `ls -t /usr/local/Cellar/openssl/`; do export OPENSSL_VER=$i; break; done
 # OPENSSL_VER=`echo $OPENSSL_VER|awk '{split($1,A,"_"); print A[1]}'`
-OPENSSL_VER="1.0.2k"
+OPENSSL_VER="1.0.2o"
 echo "Using version number: $OPENSSL_VER"
 ./build-libssl.sh --version=$OPENSSL_VER
 
