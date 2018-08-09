@@ -1264,7 +1264,7 @@ fn parse_payment_outputs(outputs: &Vec<String>) -> Result<String, ()> {
                         "amount": parts.get(1)
                                     .ok_or(())
                                     .map_err(|_| println_err!("Invalid format of Outputs: Amount not found"))
-                                    .and_then(|amount| amount.parse::<u32>()
+                                    .and_then(|amount| amount.parse::<u64>()
                                         .map_err(|_| println_err!("Invalid format of Outputs: Amount must be integer and greater then 0")))?
                     }));
     }
@@ -1301,7 +1301,7 @@ fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Result<(
 }
 
 fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
-    let mut fees_map: HashMap<String, i32> = HashMap::new();
+    let mut fees_map: HashMap<String, u64> = HashMap::new();
 
     for fee in fees {
         let parts = fee.split(":").collect::<Vec<&str>>();
@@ -1314,8 +1314,8 @@ fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
         let amount = parts.get(1)
             .ok_or(())
             .map_err(|_| println_err!("Invalid format of Fees: Amount not found"))
-            .and_then(|amount| amount.parse::<i32>()
-                .map_err(|_| println_err!("Invalid format of Fees: Amount must be integer")))?;
+            .and_then(|amount| amount.parse::<u64>()
+                .map_err(|_| println_err!("Invalid format of Fees: Amount must greater or equal zero")))?;
 
         fees_map.insert(type_, amount);
     }
@@ -3786,6 +3786,25 @@ pub mod tests {
         }
 
         #[test]
+        pub fn mint_prepare_works_for_big_amount() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = mint_prepare_command::new();
+                let mut params = CommandParams::new();
+                params.insert("outputs", "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,10000000000)".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         pub fn mint_prepare_works_for_extra() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -4064,6 +4083,28 @@ pub mod tests {
                 params.insert("fees", FEES.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn set_fees_prepare_works_for_negative_amount() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = set_fees_prepare_command::new();
+                let mut params = CommandParams::new();
+                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
+                params.insert("fees", "1:-1,101:-1".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
             TestUtils::cleanup_storage();
         }
