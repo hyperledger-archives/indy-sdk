@@ -13,6 +13,7 @@ use std::sync::mpsc::{channel, Receiver};
 
 use ffi::{ResponseEmptyCB,
           ResponseI32CB,
+          ResponseI32UsizeCB,
           ResponseStringCB,
           ResponseStringStringCB,
           ResponseStringStringStringCB,
@@ -87,6 +88,36 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
+    pub fn cb_ec_i32_usize() -> (Receiver<(ErrorCode, IndyHandle, usize)>, IndyHandle, Option<ResponseI32UsizeCB>) {
+        let (sender, receiver) = channel();
+
+        let closure = Box::new(move |err, val1, val2| {
+            sender.send((err, val1, val2)).unwrap_or_else(log_error);
+        });
+
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32_usize(closure);
+
+        (receiver, command_handle, cb)
+    }
+
+    pub fn convert_cb_ec_i32_usize(closure: Box<FnMut(ErrorCode, IndyHandle, usize) + Send>) -> (IndyHandle, Option<ResponseI32UsizeCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, IndyHandle, usize) + Send>>> = Default::default();
+        }
+
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, val1: i32, val2: usize) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(ErrorCode::from(err), val1, val2)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = SequenceUtils::get_next_id();
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(_callback))
+    }
+
     pub fn cb_ec_string() -> (Receiver<(ErrorCode, String)>, IndyHandle, Option<ResponseStringCB>) {
         let (sender, receiver) = channel();
 
@@ -150,6 +181,38 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
+    pub fn cb_ec_string_opt_string() -> (Receiver<(ErrorCode, String, Option<String>)>, IndyHandle, Option<ResponseStringStringCB>) {
+        let (sender, receiver) = channel();
+
+        let closure = Box::new(move |err, val1, val2| {
+            sender.send((err, val1, val2)).unwrap_or_else(log_error);
+        });
+
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_opt_string(closure);
+
+        (receiver, command_handle, cb)
+    }
+
+    pub fn convert_cb_ec_string_opt_string(closure: Box<FnMut(ErrorCode, String, Option<String>) + Send>) -> (IndyHandle, Option<ResponseStringStringCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, Option<String>) + Send>>> = Default::default();
+        }
+
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, str1: *const c_char, str2: *const c_char) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let str1 = rust_str!(str1);
+            let str2 = opt_rust_str!(str2);
+            cb(ErrorCode::from(err), str1, str2)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = SequenceUtils::get_next_id();
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(_callback))
+    }
+
     pub fn cb_ec_string_string_string() -> (Receiver<(ErrorCode, String, String, String)>, IndyHandle, Option<ResponseStringStringStringCB>) {
         let (sender, receiver) = channel();
 
@@ -172,6 +235,38 @@ impl ClosureHandler {
             let str1 = rust_str!(str1);
             let str2 = rust_str!(str2);
             let str3 = rust_str!(str3);
+            cb(ErrorCode::from(err), str1, str2, str3)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = SequenceUtils::get_next_id();
+        callbacks.insert(command_handle, closure);
+
+        (command_handle, Some(_callback))
+    }
+
+    pub fn cb_ec_string_opt_string_opt_string() -> (Receiver<(ErrorCode, String, Option<String>, Option<String>)>, IndyHandle, Option<ResponseStringStringStringCB>) {
+        let (sender, receiver) = channel();
+
+        let closure = Box::new(move |err, val1, val2, val3| {
+            sender.send((err, val1, val2, val3)).unwrap_or_else(log_error);
+        });
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_opt_string_opt_string(closure);
+
+        (receiver, command_handle, cb)
+    }
+
+    pub fn convert_cb_ec_string_opt_string_opt_string(closure: Box<FnMut(ErrorCode, String, Option<String>, Option<String>) + Send>) -> (IndyHandle, Option<ResponseStringStringStringCB>) {
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, Option<String>, Option<String>) + Send>>> = Default::default();
+        }
+
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, str1: *const c_char, str2: *const c_char, str3: *const c_char) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            let str1 = rust_str!(str1);
+            let str2 = opt_rust_str!(str2);
+            let str3 = opt_rust_str!(str3);
             cb(ErrorCode::from(err), str1, str2, str3)
         }
 
@@ -306,5 +401,52 @@ impl ClosureHandler {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(_callback))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use std::ffi::CString;
+    use std::ptr::null;
+
+    #[test]
+    fn cb_ec_slice() {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
+
+        let test_vec: Vec<u8> = vec![250, 251, 252, 253, 254, 255];
+        let callback = cb.unwrap();
+        callback(command_handle, 0, test_vec.as_ptr(), test_vec.len() as u32);
+
+        let (err, slice1) = receiver.recv().unwrap();
+        assert_eq!(err, ErrorCode::Success);
+        assert_eq!(test_vec, slice1);
+    }
+
+    #[test]
+    fn ec_string_opt_string_null() {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string();
+
+        let callback = cb.unwrap();
+        callback(command_handle, 0, CString::new("This is a test").unwrap().as_ptr(), null());
+
+        let (err, str1, str2) = receiver.recv().unwrap();
+        assert_eq!(err, ErrorCode::Success);
+        assert_eq!(str1, "This is a test".to_string());
+        assert_eq!(str2, None);
+    }
+
+    #[test]
+    fn ec_string_opt_string_some() {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string();
+
+        let callback = cb.unwrap();
+        callback(command_handle, 0, CString::new("This is a test").unwrap().as_ptr(), CString::new("The second string has something").unwrap().as_ptr());
+
+        let (err, str1, str2) = receiver.recv().unwrap();
+        assert_eq!(err, ErrorCode::Success);
+        assert_eq!(str1, "This is a test".to_string());
+        assert_eq!(str2, Some("The second string has something".to_string()));
     }
 }

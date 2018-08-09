@@ -1,6 +1,6 @@
 use super::*;
 
-use {Error, Handle, CString};
+use {CString, Error, Handle};
 
 extern {
     #[no_mangle]
@@ -78,15 +78,50 @@ extern {
                                         rev_reg_def_json: CString,
                                         cb: Option<ResponseStringCB>) -> Error;
     #[no_mangle]
+    pub fn indy_prover_get_credential(command_handle: Handle,
+                                      wallet_handle: Handle,
+                                      cred_id: CString,
+                                      cb: Option<ResponseStringCB>) -> Error;
+    #[no_mangle]
     pub fn indy_prover_get_credentials(command_handle: Handle,
                                        wallet_handle: Handle,
                                        filter_json: CString,
                                        cb: Option<ResponseStringCB>) -> Error;
     #[no_mangle]
+    pub fn indy_prover_search_credentials(command_handle: Handle,
+                                          wallet_handle: Handle,
+                                          query_json: CString,
+                                          cb: Option<ResponseI32UsizeCB>) -> Error;
+    #[no_mangle]
+    pub fn indy_prover_fetch_credentials(command_handle: Handle,
+                                         search_handle: Handle,
+                                         count: usize,
+                                         cb: Option<ResponseStringCB>) -> Error;
+    #[no_mangle]
+    pub fn indy_prover_close_credentials_search(command_handle: Handle,
+                                                search_handle: Handle,
+                                                cb: Option<ResponseEmptyCB>) -> Error;
+    #[no_mangle]
     pub fn indy_prover_get_credentials_for_proof_req(command_handle: Handle,
                                                      wallet_handle: Handle,
                                                      proof_request_json: CString,
                                                      cb: Option<ResponseStringCB>) -> Error;
+    #[no_mangle]
+    pub fn indy_prover_search_credentials_for_proof_req(command_handle: Handle,
+                                                        wallet_handle: Handle,
+                                                        proof_request_json: CString,
+                                                        extra_query_json: CString,
+                                                        cb: Option<ResponseI32CB>) -> Error;
+    #[no_mangle]
+    pub fn indy_prover_fetch_credentials_for_proof_req(command_handle: Handle,
+                                                       search_handle: Handle,
+                                                       item_referent: CString,
+                                                       count: usize,
+                                                       cb: Option<ResponseStringCB>) -> Error;
+    #[no_mangle]
+    pub fn indy_prover_close_credentials_search_for_proof_req(command_handle: Handle,
+                                                              search_handle: Handle,
+                                                              cb: Option<ResponseEmptyCB>) -> Error;
     #[no_mangle]
     pub fn indy_prover_create_proof(command_handle: Handle,
                                     wallet_handle: Handle,
@@ -124,3 +159,4 @@ extern {
                                         cred_rev_id: CString,
                                         cb: Option<ResponseStringCB>) -> Error;
 }
+

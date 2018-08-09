@@ -8,7 +8,13 @@ use utils::callbacks::ClosureHandler;
 use utils::results::ResultHandler;
 
 use ffi::anoncreds;
-use ffi::{ResponseStringStringCB, ResponseStringStringStringCB, ResponseStringCB, ResponseBoolCB};
+use ffi::{ResponseStringStringCB,
+          ResponseI32UsizeCB,
+          ResponseStringStringStringCB,
+          ResponseStringCB,
+          ResponseI32CB,
+          ResponseEmptyCB,
+          ResponseBoolCB};
 
 pub struct Issuer {}
 
@@ -164,8 +170,8 @@ impl Issuer {
         })
     }
 
-    pub fn create_credential(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle) -> Result<(String, String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_string();
+    pub fn create_credential(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string_opt_string();
 
         let err = Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb);
 
@@ -173,8 +179,8 @@ impl Issuer {
     }
 
     /// * `timeout` - the maximum time this function waits for a response
-    pub fn create_credential_timeout(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, timeout: Duration) -> Result<(String, String, String), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_string();
+    pub fn create_credential_timeout(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, timeout: Duration) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string_opt_string();
 
         let err = Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb);
 
@@ -185,8 +191,8 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn create_credential_async<F: 'static>(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String, String) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string_string(Box::new(closure));
+    pub fn create_credential_async<F: 'static>(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Option<String>, Option<String>) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_opt_string_opt_string(Box::new(closure));
 
         Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb)
     }
@@ -313,6 +319,41 @@ impl Prover {
         })
     }
 
+    pub fn get_credential(wallet_handle: IndyHandle, cred_id: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Prover::_get_credential(command_handle, wallet_handle, cred_id, cb);
+
+        ResultHandler::one(err, receiver)
+    }
+
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn get_credential_timeout(wallet_handle: IndyHandle, cred_id: &str, timeout: Duration) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Prover::_get_credential(command_handle, wallet_handle, cred_id, cb);
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn get_credential_async<F: 'static>(wallet_handle: IndyHandle, cred_id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+
+        Prover::_get_credential(command_handle, wallet_handle, cred_id, cb)
+    }
+
+    fn _get_credential(command_handle: IndyHandle, wallet_handle: IndyHandle, cred_id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+        let cred_id = c_str!(cred_id);
+
+        ErrorCode::from(unsafe {
+          anoncreds::indy_prover_get_credential(command_handle, wallet_handle, cred_id.as_ptr(), cb)
+        })
+    }
+
     pub fn create_credential_req(wallet_handle: IndyHandle, prover_did: &str, cred_offer_json: &str, cred_def_json: &str, master_secret_id: &str) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -425,6 +466,109 @@ impl Prover {
         })
     }
 
+    pub fn search_credentials(wallet_handle: IndyHandle, query_json: Option<&str>) -> Result<(i32, usize), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32_usize();
+
+        let err = Prover::_search_credentials(command_handle, wallet_handle, query_json, cb);
+
+        ResultHandler::two(err, receiver)
+    }
+
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn search_credentials_timeout(wallet_handle: IndyHandle, query_json: Option<&str>, timeout: Duration) -> Result<(i32, usize), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32_usize();
+
+        let err = Prover::_search_credentials(command_handle, wallet_handle, query_json, cb);
+
+        ResultHandler::two_timeout(err, receiver, timeout)
+    }
+
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn search_credentials_async<F: 'static>(wallet_handle: IndyHandle, query_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, i32, usize) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32_usize(Box::new(closure));
+
+        Prover::_search_credentials(command_handle, wallet_handle, query_json, cb)
+    }
+
+    fn _search_credentials(command_handle: IndyHandle, wallet_handle: IndyHandle, query_json: Option<&str>, cb: Option<ResponseI32UsizeCB>) -> ErrorCode {
+        let query_json_str = opt_c_str!(query_json);
+
+        ErrorCode::from(unsafe {
+          anoncreds::indy_prover_search_credentials(command_handle, wallet_handle, opt_c_ptr!(query_json, query_json_str), cb)
+        })
+    }
+
+    pub fn fetch_credentials(search_handle: IndyHandle, count: usize) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Prover::_fetch_credentials(command_handle, search_handle, count, cb);
+
+        ResultHandler::one(err, receiver)
+    }
+
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn fetch_credentials_timeout(search_handle: IndyHandle, count: usize, timeout: Duration) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Prover::_fetch_credentials(command_handle, search_handle, count, cb);
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn fetch_credentials_async<F: 'static>(search_handle: IndyHandle, count: usize, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+
+        Prover::_fetch_credentials(command_handle, search_handle, count, cb)
+    }
+
+    fn _fetch_credentials(command_handle: IndyHandle, search_handle: IndyHandle, count: usize, cb: Option<ResponseStringCB>) -> ErrorCode {
+
+        ErrorCode::from(unsafe {
+          anoncreds::indy_prover_fetch_credentials(command_handle, search_handle, count, cb)
+        })
+    }
+
+    pub fn close_credentials_search(search_handle: IndyHandle) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Prover::_close_credentials_search(command_handle, search_handle, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn close_credentials_search_timeout(search_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Prover::_close_credentials_search(command_handle, search_handle, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn close_credentials_search_async<F: 'static>(search_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Prover::_close_credentials_search(command_handle, search_handle, cb)
+    }
+
+    fn _close_credentials_search(command_handle: IndyHandle, search_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+
+        ErrorCode::from(unsafe {
+          anoncreds::indy_prover_close_credentials_search(command_handle, search_handle, cb)
+        })
+    }
+
     pub fn get_credentials_for_proof_req(wallet_handle: IndyHandle, proof_request_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -457,6 +601,111 @@ impl Prover {
 
         ErrorCode::from(unsafe {
           anoncreds::indy_prover_get_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json.as_ptr(), cb)
+        })
+    }
+
+    pub fn search_credentials_for_proof_req(wallet_handle: IndyHandle, proof_request_json: &str, extra_query_json: Option<&str>) -> Result<i32, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+
+        let err = Prover::_search_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json, extra_query_json, cb);
+
+        ResultHandler::one(err, receiver)
+    }
+
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn search_credentials_for_proof_req_timeout(wallet_handle: IndyHandle, proof_request_json: &str, extra_query_json: Option<&str>, timeout: Duration) -> Result<i32, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+
+        let err = Prover::_search_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json, extra_query_json, cb);
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn search_credentials_for_proof_req_async<F: 'static>(wallet_handle: IndyHandle, proof_request_json: &str, extra_query_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, i32) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
+
+        Prover::_search_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json, extra_query_json, cb)
+    }
+
+    fn _search_credentials_for_proof_req(command_handle: IndyHandle, wallet_handle: IndyHandle, proof_request_json: &str, extra_query_json: Option<&str>, cb: Option<ResponseI32CB>) -> ErrorCode {
+        let proof_request_json = c_str!(proof_request_json);
+        let extra_query_json_str = opt_c_str!(extra_query_json);
+
+        ErrorCode::from(unsafe {
+          anoncreds::indy_prover_search_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json.as_ptr(), opt_c_ptr!(extra_query_json, extra_query_json_str), cb)
+        })
+    }
+
+    pub fn _fetch_credentials_for_proof_req(search_handle: IndyHandle, item_referent: &str, count: usize) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Prover::__fetch_credentials_for_proof_req(command_handle, search_handle, item_referent, count, cb);
+
+        ResultHandler::one(err, receiver)
+    }
+
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn _fetch_credentials_for_proof_req_timeout(search_handle: IndyHandle, item_referent: &str, count: usize, timeout: Duration) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Prover::__fetch_credentials_for_proof_req(command_handle, search_handle, item_referent, count, cb);
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn _fetch_credentials_for_proof_req_async<F: 'static>(search_handle: IndyHandle, item_referent: &str, count: usize, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+
+        Prover::__fetch_credentials_for_proof_req(command_handle, search_handle, item_referent, count, cb)
+    }
+
+    fn __fetch_credentials_for_proof_req(command_handle: IndyHandle, search_handle: IndyHandle, item_referent: &str, count: usize, cb: Option<ResponseStringCB>) -> ErrorCode {
+        let item_referent = c_str!(item_referent);
+
+        ErrorCode::from(unsafe {
+          anoncreds::indy_prover_fetch_credentials_for_proof_req(command_handle, search_handle, item_referent.as_ptr(), count, cb)
+        })
+    }
+
+    pub fn _close_credentials_search_for_proof_req(search_handle: IndyHandle) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Prover::__close_credentials_search_for_proof_req(command_handle, search_handle, cb);
+
+        ResultHandler::empty(err, receiver)
+    }
+
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn _close_credentials_search_for_proof_req_timeout(search_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+
+        let err = Prover::__close_credentials_search_for_proof_req(command_handle, search_handle, cb);
+
+        ResultHandler::empty_timeout(err, receiver, timeout)
+    }
+
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn _close_credentials_search_for_proof_req_async<F: 'static>(search_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
+
+        Prover::__close_credentials_search_for_proof_req(command_handle, search_handle, cb)
+    }
+
+    fn __close_credentials_search_for_proof_req(command_handle: IndyHandle, search_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+
+        ErrorCode::from(unsafe {
+          anoncreds::indy_prover_close_credentials_search_for_proof_req(command_handle, search_handle, cb)
         })
     }
 

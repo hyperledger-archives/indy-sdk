@@ -11,6 +11,7 @@ use std::time::Duration;
 use std::sync::mpsc::channel;
 
 use utils::time_it_out;
+use utils::constants::DEFAULT_CREDENTIALS;
 
 mod high_cases {
     use super::*;
@@ -20,9 +21,9 @@ mod high_cases {
 
         #[test]
         fn all_async_works() {
-            let wallet_name = "all_async_works";
+            let wallet_name = r#"{"id":"all_async_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let (sender_a, receiver) = channel();
 
             Key::create_async(handle, None, move|_, vkey| {
@@ -54,9 +55,9 @@ mod high_cases {
 
         #[test]
         fn sign_verify_async_works() {
-            let wallet_name = "sign_verify_async_works";
+            let wallet_name = r#"{"id":"sign_verify_async_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let (sender_a, receiver_a) = channel();
             let (sender_1, receiver_1) = channel();
 
@@ -91,9 +92,9 @@ mod low_cases {
 
         #[test]
         fn create_key_works() {
-            let wallet_name = "create_key_works";
+            let wallet_name = r#"{"id":"create_key_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
 
             let res = Key::create(handle, None);
             assert!(res.is_ok());
@@ -103,11 +104,11 @@ mod low_cases {
 
         #[test]
         fn create_key_timeout_works() {
-            let wallet_name = "create_key_timeout_works";
+            let wallet_name = r#"{"id":"create_key_timeout_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
 
-            let res = Key::create_timeout(handle, None, Duration::from_millis(500));
+            let res = Key::create_timeout(handle, None, Duration::from_millis(1000));
             assert!(res.is_ok());
 
             let res = Key::create_timeout(handle, None, Duration::from_millis(1));
@@ -118,9 +119,9 @@ mod low_cases {
 
         #[test]
         fn create_key_async_works() {
-            let wallet_name = "create_key_async_works";
+            let wallet_name = r#"{"id":"create_key_async_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let (sender, receiver) = channel();
 
             let closure = move |error, result| {
@@ -135,9 +136,9 @@ mod low_cases {
 
         #[test]
         fn set_metadata_works() {
-            let wallet_name = "set_metadata_works";
+            let wallet_name = r#"{"id":"set_metadata_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let verkey = Key::create(handle, None).unwrap();
 
             assert!(Key::set_metadata(handle, &verkey, r#"{"name": "dummy key"}"#).is_ok());
@@ -146,9 +147,9 @@ mod low_cases {
 
         #[test]
         fn set_metadata_timeout_works() {
-            let wallet_name = "set_metadata_timeout_works";
+            let wallet_name = r#"{"id":"set_metadata_timeout_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let verkey = Key::create(handle, None).unwrap();
 
             assert!(Key::set_metadata_timeout(handle, &verkey, r#"{"name": "dummy key"}"#, Duration::from_millis(5000)).is_ok());
@@ -159,9 +160,9 @@ mod low_cases {
 
         #[test]
         fn set_metadata_async_works() {
-            let wallet_name = "set_metadata_async_works";
+            let wallet_name = r#"{"id":"set_metadata_async_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let (sender, receiver) = channel();
 
             let closure = move |error| {
@@ -176,9 +177,9 @@ mod low_cases {
 
         #[test]
         fn get_metadata_works() {
-            let wallet_name = "get_metadata_works";
+            let wallet_name = r#"{"id":"get_metadata_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let verkey = Key::create(handle, None).unwrap();
 
             assert!(Key::set_metadata(handle, &verkey, r#"{"name": "dummy key"}"#).is_ok());
@@ -188,9 +189,9 @@ mod low_cases {
 
         #[test]
         fn get_metadata_timeout_works() {
-            let wallet_name = "get_metadata_timeout_works";
+            let wallet_name = r#"{"id":"get_metadata_timeout_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let verkey = Key::create(handle, None).unwrap();
 
             assert!(Key::set_metadata_timeout(handle, &verkey, r#"{"name": "dummy key"}"#, Duration::from_millis(5000)).is_ok());
@@ -201,9 +202,9 @@ mod low_cases {
 
         #[test]
         fn get_metadata_async_works() {
-            let wallet_name = "get_metadata_async_works";
+            let wallet_name = r#"{"id":"get_metadata_async_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let (sender, receiver) = channel();
 
             let closure = move |error| {
@@ -233,9 +234,9 @@ mod low_cases {
 
         #[test]
         fn sign_works() {
-            let wallet_name = "sign_works";
+            let wallet_name = r#"{"id":"sign_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey = Key::create(handle, None).unwrap();
 
             let res = Crypto::sign(handle, &vkey, r#"Hello World"#.as_bytes());
@@ -248,9 +249,9 @@ mod low_cases {
 
         #[test]
         fn sign_timeout_works() {
-            let wallet_name = "sign_timeout_works";
+            let wallet_name = r#"{"id":"sign_timeout_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey = Key::create(handle, None).unwrap();
 
             let res = Crypto::sign_timeout(handle, &vkey, r#"Hello World"#.as_bytes(), Duration::from_millis(5000));
@@ -264,9 +265,9 @@ mod low_cases {
 
         #[test]
         fn sign_async_works() {
-            let wallet_name = "sign_async_works";
+            let wallet_name = r#"{"id":"sign_async_works"}"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey = Key::create(handle, None).unwrap();
 
             let (sender, receiver) = channel();
@@ -283,10 +284,10 @@ mod low_cases {
 
         #[test]
         fn verify_works() {
-            let wallet_name = "verify_works";
+            let wallet_name = r#"{"id":"verify_works"}"#;
             let message = r#"Hello World"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey = Key::create(handle, None).unwrap();
             let res = Crypto::sign(handle, &vkey, message.as_bytes());
             assert!(res.is_ok());
@@ -309,10 +310,10 @@ mod low_cases {
 
         #[test]
         fn verify_timeout_works() {
-            let wallet_name = "verify_timeout_works";
+            let wallet_name = r#"{"id":"verify_timeout_works"}"#;
             let message = r#"Hello World"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey = Key::create(handle, None).unwrap();
             let res = Crypto::sign(handle, &vkey, message.as_bytes());
             assert!(res.is_ok());
@@ -337,10 +338,10 @@ mod low_cases {
 
         #[test]
         fn verify_works_async() {
-            let wallet_name = "verify_works_async";
+            let wallet_name = r#"{"id":"verify_works_async"}"#;
             let message = r#"Hello World"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey = Key::create(handle, None).unwrap();
             let res = Crypto::sign(handle, &vkey, message.as_bytes());
             assert!(res.is_ok());
@@ -372,10 +373,10 @@ mod low_cases {
 
         #[test]
         fn auth_crypt_decrypt_works() {
-            let wallet_name = "auth_crypt_decrypt_works";
+            let wallet_name = r#"{"id":"auth_crypt_decrypt_works"}"#;
             let message = r#"Hello World"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey1 = Key::create(handle, None).unwrap();
             let vkey2 = Key::create(handle, None).unwrap();
 
@@ -403,10 +404,10 @@ mod low_cases {
 
         #[test]
         fn auth_crypt_decrypt_timeout_works() {
-            let wallet_name = "auth_crypt_decrypt_timeout_works";
+            let wallet_name = r#"{"id":"auth_crypt_decrypt_timeout_works"}"#;
             let message = r#"Hello World"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey1 = Key::create(handle, None).unwrap();
             let vkey2 = Key::create(handle, None).unwrap();
 
@@ -436,10 +437,10 @@ mod low_cases {
 
         #[test]
         fn auth_crypt_decrypt_async_works() {
-            let wallet_name = "auth_crypt_decrypt_async_works";
+            let wallet_name = r#"{"id":"auth_crypt_decrypt_async_works"}"#;
             let message = r#"Hello World"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey1 = Key::create(handle, None).unwrap();
             let vkey2 = Key::create(handle, None).unwrap();
             let (sender, receiver) = channel();
@@ -487,10 +488,10 @@ mod low_cases {
 
         #[test]
         fn anon_crypt_decrypt_works() {
-            let wallet_name = "anon_crypt_decrypt_works";
+            let wallet_name = r#"{"id":"anon_crypt_decrypt_works"}"#;
             let message = r#"Hello World"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey1 = Key::create(handle, None).unwrap();
 
             let res = Crypto::anon_crypt(&vkey1, message.as_bytes());
@@ -516,10 +517,10 @@ mod low_cases {
 
         #[test]
         fn anon_crypt_decrypt_timeout_works() {
-            let wallet_name = "anon_crypt_decrypt_timeout_works";
+            let wallet_name = r#"{"id":"anon_crypt_decrypt_timeout_works"}"#;
             let message = r#"Hello World"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey1 = Key::create(handle, None).unwrap();
 
             let res = Crypto::anon_crypt_timeout(&vkey1, message.as_bytes(), Duration::from_millis(5000));
@@ -547,10 +548,10 @@ mod low_cases {
 
         #[test]
         fn anon_crypt_decrypt_async_works() {
-            let wallet_name = "anon_crypt_decrypt_async_works";
+            let wallet_name = r#"{"id":"anon_crypt_decrypt_async_works"}"#;
             let message = r#"Hello World"#;
             safe_wallet_create!(wallet_name);
-            let handle = Wallet::open(wallet_name, None, None).unwrap();
+            let handle = Wallet::open(wallet_name, DEFAULT_CREDENTIALS).unwrap();
             let vkey1 = Key::create(handle, None).unwrap();
 
             let (sender, receiver) = channel();
