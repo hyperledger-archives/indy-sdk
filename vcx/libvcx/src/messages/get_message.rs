@@ -366,12 +366,8 @@ pub fn download_messages(pairwise_dids: Option<Vec<String>>, status_codes: Optio
             Err(error::POST_MSG_FAILURE.code_num)
         },
         Ok(response) => {
-            if response.len() == 0 {
-                Err(error::POST_MSG_FAILURE.code_num)
-            } else {
-                trace!("message returned: {:?}", response[0]);
-                Ok(response)
-            }
+            trace!("message returned: {:?}", response[0]);
+            Ok(response)
         },
     }
 }
@@ -482,8 +478,13 @@ mod tests {
         assert_eq!(accepted[0].msgs.len(), 2);
         let specific = download_messages(None, None, Some(vec![accepted[0].msgs[0].uid.clone()])).unwrap();
         assert_eq!(specific.len(), 1);
-        let none = download_messages(None, Some(vec!["MS-103".to_string()]), Some(vec![accepted[0].msgs[0].uid.clone()]));
-        assert!(none.is_err());
+        // No pending will return empty list
+        let empty = download_messages(None, Some(vec!["MS-103".to_string()]), Some(vec![accepted[0].msgs[0].uid.clone()])).unwrap();
+        assert_eq!(empty.len(), 0);
+        // Agency returns a bad request response for invalid dids
+        let invalid_did = "abc".to_string();
+        let bad_req = download_messages(Some(vec![invalid_did]), None, None);
+        assert_eq!(bad_req, Err(error::POST_MSG_FAILURE.code_num));
         ::utils::devsetup::tests::cleanup_dev_env("test_download_messages");
     }
 }
