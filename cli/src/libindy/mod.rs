@@ -176,7 +176,10 @@ pub enum ErrorCode
     PaymentSourceDoesNotExistError = 703,
 
     // Operation is not supported for payment method
-    PaymentOperationNotSupportedError = 704
+    PaymentOperationNotSupportedError = 704,
+
+    // Extra funds on inputs
+    PaymentExtraFundsError = 705
 }
 
 impl ErrorCode {
@@ -234,6 +237,7 @@ impl ErrorCode {
             PaymentUnknownMethodError => "Unknown payment method was given",
             PaymentIncompatibleMethodsError => "Multiple different payment methods were specified",
             PaymentInsufficientFundsError => "Insufficient funds on inputs",
+            PaymentExtraFundsError => "Extra funds on inputs",
             PaymentSourceDoesNotExistError => "No such source found",
             PaymentOperationNotSupportedError => "Operation is not supported for payment method",
         }
