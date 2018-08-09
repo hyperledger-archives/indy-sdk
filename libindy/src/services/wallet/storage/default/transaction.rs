@@ -31,6 +31,7 @@ impl<'conn> Transaction<'conn> {
     }
 
     /// Configure the transaction to perform the specified action when it is dropped.
+    #[allow(dead_code)]
     pub fn set_drop_behavior(&mut self, drop_behavior: DropBehavior) {
         self.drop_behavior = drop_behavior
     }
@@ -46,6 +47,7 @@ impl<'conn> Transaction<'conn> {
     }
 
     /// A convenience method which consumes and rolls back a transaction.
+    #[allow(dead_code)]
     pub fn rollback(mut self) -> Result<()> {
         self.rollback_()
     }
@@ -60,6 +62,7 @@ impl<'conn> Transaction<'conn> {
     ///
     /// Functionally equivalent to the `Drop` implementation, but allows callers to see any
     /// errors that occur.
+    #[allow(dead_code)]
     pub fn finish(mut self) -> Result<()> {
         self.finish_()
     }

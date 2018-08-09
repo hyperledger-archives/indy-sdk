@@ -338,6 +338,14 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                             PoolState::Terminated(state)
                         }
                     }
+                    PoolEvent::Timeout(req_id, node_alias) => {
+                        if "".eq(&req_id) {
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::Timeout));
+                        } else {
+                            warn!("Unexpected timeout: req_id {}, node_alias {}", req_id, node_alias)
+                        }
+                        PoolState::Terminated(state)
+                    }
                     _ => PoolState::Terminated(state)
                 }
             }
@@ -392,11 +400,13 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
 
                         PoolState::Active(state)
                     }
-                    PoolEvent::Timeout(req_id, _) => {
+                    PoolEvent::Timeout(req_id, node_alias) => {
                         if let Some(rh) = state.request_handlers.get_mut(&req_id) {
                             rh.process_event(pe.into());
                         } else if "".eq(&req_id) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::Timeout));
+                        } else {
+                            warn!("Unexpected timeout: req_id {}, node_alias {}", req_id, node_alias)
                         }
                         PoolState::Active(state)
                     }
@@ -798,6 +808,30 @@ mod tests {
 
             let p = p.handle_event(PoolEvent::Refresh(2));
             assert_match!(PoolState::GettingCatchupTarget(_), p.state);
+        }
+
+        #[test]
+        pub fn pool_wrapper_terminated_timeout_works() {
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM {
+                pool_name: POOL.to_string(),
+                id: 1,
+                state: PoolState::Terminated(TerminatedState {
+                    networker: Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))),
+                }),
+                timeout: 0,
+                extended_timeout: 0,
+            };
+
+            let p = p.handle_event(PoolEvent::Timeout("".to_string(), "".to_string()));
+            assert_match!(PoolState::Terminated(_), p.state);
+            match p.state {
+                PoolState::Terminated(state) => {
+                    assert_eq!(state.networker.borrow().events.len(), 1);
+                    let event = state.networker.borrow_mut().events.remove(0);
+                    assert_match!(Some(NetworkerEvent::Timeout), event);
+                }
+                _ => assert!(false)
+            }
         }
 
         #[test]
