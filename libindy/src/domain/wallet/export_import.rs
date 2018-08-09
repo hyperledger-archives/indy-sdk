@@ -2,22 +2,23 @@ use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum EncryptionMethod {
+    // **ChaCha20-Poly1305-IETF** cypher in blocks per chunk_size bytes
     ChaCha20Poly1305IETF {
-        // **ChaCha20-Poly1305-IETF** cypher in blocks per chunk_size bytes
-        salt: Vec<u8>,
         // pwhash_argon2i13::Salt as bytes. Random salt used for deriving of key from passphrase
-        nonce: Vec<u8>,
+        salt: Vec<u8>,
         // chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency
-        chunk_size: usize,
+        nonce: Vec<u8>,
         // size of encrypted chunk
+        chunk_size: usize,
     },
+    // **ChaCha20-Poly1305-IETF with simplified key derivation** cypher in blocks per chunk_size bytes
     ChaCha20Poly1305IETFWithSimplify {
-        // **ChaCha20-Poly1305-IETF** cypher in blocks per chunk_size bytes
-        salt: Vec<u8>,
         // pwhash_argon2i13::Salt as bytes. Random salt used for deriving of key from passphrase
-        nonce: Vec<u8>,
+        salt: Vec<u8>,
         // chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency
-        chunk_size: usize
+        nonce: Vec<u8>,
+        // size of encrypted chunk
+        chunk_size: usize,
     },
 }
 
@@ -32,10 +33,11 @@ impl EncryptionMethod {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Header {
-    pub encryption_method: EncryptionMethod,
     // Method of encryption for encrypted stream
-    pub time: u64,
+    pub encryption_method: EncryptionMethod,
     // Export time in seconds from UNIX Epoch
+    pub time: u64,
+    // Version of header
     pub version: u32
 }
 
