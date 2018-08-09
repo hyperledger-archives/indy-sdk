@@ -156,6 +156,42 @@ impl Ledger {
         ErrorCode::from(unsafe { ledger::indy_submit_request(command_handle, pool_handle, request_json.as_ptr(), cb) })
     }
 
+    pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb);
+
+        ResultHandler::one(err, receiver)
+    }
+
+    /// * `timeout` - the maximum time this function waits for a response
+    pub fn submit_action_timeout(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, timeout: Duration) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+
+        let err = Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb);
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
+
+    /// * `closure` - the closure that is called when finished
+    ///
+    /// # Returns
+    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    pub fn submit_action_async<F: 'static>(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+
+        Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb)
+    }
+
+    fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, cb: Option<ResponseStringCB>) -> ErrorCode {
+        let request_json = c_str!(request_json);
+        let nodes = c_str!(nodes);
+
+        ErrorCode::from(unsafe {
+          ledger::indy_submit_action(command_handle, pool_handle, request_json.as_ptr(), nodes.as_ptr(), wait_timeout, cb)
+        })
+    }
+
     /// Signs request message.
     ///
     /// Adds submitter information to passed request json, signs it with submitter
@@ -1426,10 +1462,11 @@ impl Ledger {
                                       schedule: Option<&str>,
                                       justification: Option<&str>,
                                       reinstall: bool,
-                                      force: bool) -> Result<String, ErrorCode> {
+                                      force: bool,
+                                      package: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let err = Ledger::_build_pool_upgrade_request(command_handle, submitter_did, name, version, action, sha256, upgrade_timeout, schedule, justification, reinstall, force, cb);
+        let err = Ledger::_build_pool_upgrade_request(command_handle, submitter_did, name, version, action, sha256, upgrade_timeout, schedule, justification, reinstall, force, package, cb);
 
         ResultHandler::one(err, receiver)
     }
@@ -1464,10 +1501,11 @@ impl Ledger {
                                               justification: Option<&str>,
                                               reinstall: bool,
                                               force: bool,
+                                              package: Option<&str>,
                                               timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let err = Ledger::_build_pool_upgrade_request(command_handle, submitter_did, name, version, action, sha256, upgrade_timeout, schedule, justification, reinstall, force, cb);
+        let err = Ledger::_build_pool_upgrade_request(command_handle, submitter_did, name, version, action, sha256, upgrade_timeout, schedule, justification, reinstall, force, package, cb);
 
         ResultHandler::one_timeout(err, receiver, timeout)
     }
@@ -1502,10 +1540,11 @@ impl Ledger {
                                                         justification: Option<&str>,
                                                         reinstall: bool,
                                                         force: bool,
+                                                        package: Option<&str>,
                                                         closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
-        Ledger::_build_pool_upgrade_request(command_handle, submitter_did, name, version, action, sha256, upgrade_timeout, schedule, justification, reinstall, force, cb)
+        Ledger::_build_pool_upgrade_request(command_handle, submitter_did, name, version, action, sha256, upgrade_timeout, schedule, justification, reinstall, force, package, cb)
     }
 
     fn _build_pool_upgrade_request(command_handle: IndyHandle,
@@ -1519,6 +1558,7 @@ impl Ledger {
                                    justification: Option<&str>,
                                    reinstall: bool,
                                    force: bool,
+                                   package: Option<&str>,
                                    cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let name = c_str!(name);
@@ -1529,6 +1569,7 @@ impl Ledger {
 
         let schedule_str = opt_c_str!(schedule);
         let justification_str = opt_c_str!(justification);
+        let package_str = opt_c_str!(package);
 
         ErrorCode::from(unsafe {
             ledger::indy_build_pool_upgrade_request(command_handle,
@@ -1542,6 +1583,7 @@ impl Ledger {
                                                     opt_c_ptr!(justification, justification_str),
                                                     reinstall,
                                                     force,
+                                                    opt_c_ptr!(package, package_str),
                                                     cb)
         })
     }
