@@ -134,6 +134,7 @@ struct SingleState<T: Networker> {
 
 struct FullState<T: Networker> {
     accum_reply: Option<HashableValue>,
+    nodes_to_send: Option<Vec<String>>,
     networker: Rc<RefCell<T>>,
 }
 
@@ -187,6 +188,17 @@ impl<T: Networker> From<StartState<T>> for FullState<T> {
     fn from(state: StartState<T>) -> Self {
         FullState {
             accum_reply: None,
+            nodes_to_send: None,
+            networker: state.networker.clone(),
+        }
+    }
+}
+
+impl<T: Networker> From<(Option<Vec<String>>, StartState<T>)> for FullState<T> {
+    fn from((nodes_to_send, state): (Option<Vec<String>>, StartState<T>)) -> Self {
+        FullState {
+            accum_reply: None,
+            nodes_to_send,
             networker: state.networker.clone(),
         }
     }
@@ -207,7 +219,7 @@ impl<T: Networker> RequestSM<T> {
                     RequestEvent::LedgerStatus(ls, _, Some(merkle)) => {
                         let req_id = ls.merkleRoot.clone();
                         let ne = Some(NetworkerEvent::SendAllRequest(serde_json::to_string(&super::types::Message::LedgerStatus(ls)).expect("FIXME"),
-                                                                     req_id, extended_timeout));
+                                                                     req_id, extended_timeout, None));
                         trace!("start catchup, ne: {:?}", ne);
                         state.networker.borrow_mut().process_event(ne);
                         (RequestState::CatchupConsensus((merkle, state).into()), None)
@@ -232,12 +244,37 @@ impl<T: Networker> RequestSM<T> {
                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendOneRequest(msg, req_id, timeout)));
                         (RequestState::Single(state.into()), None)
                     }
-                    RequestEvent::CustomFullRequest(msg, req_id) => {
-                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout)));
-                        (RequestState::Full(state.into()), None)
+                    RequestEvent::CustomFullRequest(msg, req_id, local_timeout, nodes_to_send) => {
+                        let timeout = local_timeout.map(|to| to as i64).unwrap_or(extended_timeout);
+                        if let Some(nodes_to_send) = nodes_to_send {
+                            match serde_json::from_str::<Vec<String>>(&nodes_to_send) {
+                                Ok(nodes_to_send) => {
+                                    let is_nodes_to_send_known = nodes_to_send.iter().all(|node| nodes.contains_key(node));
+                                    if is_nodes_to_send_known {
+                                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, Some(nodes_to_send.clone()))));
+                                        (RequestState::Full((Some(nodes_to_send), state).into()), None)
+                                    } else {
+                                        _send_replies(&cmd_ids, Err(PoolError::CommonError(CommonError::InvalidStructure(
+                                            format!("Unknown node present in list to send {:?}, known nodes are {:?}",
+                                                    nodes_to_send, nodes.keys())
+                                        ))));
+                                        (RequestState::finish(), None)
+                                    }
+                                }
+                                Err(err) => {
+                                    _send_replies(&cmd_ids, Err(PoolError::CommonError(CommonError::InvalidStructure(
+                                        format!("Invalid list of nodes to send {:?}", err)
+                                    ))));
+                                    (RequestState::finish(), None)
+                                }
+                            }
+                        } else {
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, None)));
+                            (RequestState::Full((None, state).into()), None)
+                        }
                     }
                     RequestEvent::CustomConsensusRequest(msg, req_id) => {
-                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout)));
+                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, None)));
                         (RequestState::Consensus(state.into()), None)
                     }
                     _ => {
@@ -426,10 +463,6 @@ impl<T: Networker> RequestSM<T> {
                         (RequestSM::_full_request_handle_consensus_state(
                             state, req_id, node_alias, "timeout".to_string(), &cmd_ids, &nodes), None),
 
-                    RequestEvent::ReqACK(_, _, node_alias, req_id) => {
-                        state.networker.borrow_mut().process_event(Some(NetworkerEvent::ExtendTimeout(req_id, node_alias, extended_timeout)));
-                        (RequestState::Full(state), None)
-                    }
                     RequestEvent::Terminate => {
                         _finish_request(&cmd_ids);
                         (RequestState::finish(), None)
@@ -469,10 +502,12 @@ impl<T: Networker> RequestSM<T> {
                 .insert(node_alias.clone(), SJsonValue::from(node_result));
         }
 
+        let required_reply_cnt = state.nodes_to_send.as_ref().map(Vec::len).unwrap_or(nodes.len());
+
         let reply_cnt = state.accum_reply.as_ref().unwrap()
             .inner.as_object().unwrap().len();
 
-        if reply_cnt == nodes.len() {
+        if reply_cnt == required_reply_cnt {
             state.networker.borrow_mut().process_event(Some(NetworkerEvent::CleanTimeout(req_id, None)));
             let reply = state.accum_reply.as_ref().unwrap().inner.to_string();
             _send_ok_replies(&cmd_ids, &reply);
@@ -848,8 +883,29 @@ pub mod tests {
         #[test]
         fn request_handler_process_consensus_full_req_event_from_start_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, None)));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
+        }
+
+        #[test]
+        fn request_handler_process_consensus_full_req_event_from_start_works_for_list_nodes() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, Some(format!(r#"["{}"]"#, NODE)))));
+            assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
+        }
+
+        #[test]
+        fn request_handler_process_consensus_full_req_event_from_start_works_for_list_nodes_contains_unknown_node() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, Some("[Unknown Node]".to_string()))));
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
+        }
+
+        #[test]
+        fn request_handler_process_consensus_full_req_event_from_start_works_for_invalid_list_nodes_format() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, Some(format!(r#""{}""#, NODE)))));
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1289,7 +1345,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reply_event_from_full_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1297,7 +1353,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reply_event_from_full_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1305,7 +1361,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reply_event_from_full_state_works_for_different_replies() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":"11"}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             request_handler.process_event(Some(RequestEvent::Reply(Reply::default(), r#"{"result":"22"}"#.to_string(), "n2".to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
@@ -1314,7 +1370,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reqnack_event_from_full_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1322,7 +1378,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reqnack_event_from_full_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::ReqNACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1330,7 +1386,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reject_event_from_full_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1338,7 +1394,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reject_event_from_full_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Reject(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1346,7 +1402,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_timeout_event_from_full_state_works_for_completed() {
             let mut request_handler = _request_handler(1, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1354,7 +1410,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_timeout_event_from_full_state_works_for_not_completed() {
             let mut request_handler = _request_handler(1, 2);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Timeout(REQ_ID.to_string(), NODE.to_string())));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1362,7 +1418,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_reqack_event_from_full_state_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::ReqACK(Response::default(), r#"{"result":""}"#.to_string(), NODE.to_string(), REQ_ID.to_string())));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1370,7 +1426,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_terminate_event_from_full_state_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Terminate));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
@@ -1378,7 +1434,7 @@ pub mod tests {
         #[test]
         fn request_handler_process_other_event_from_full_state_works() {
             let mut request_handler = _request_handler(0, 1);
-            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string())));
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(r#"{"result":""}"#.to_string(), REQ_ID.to_string(), None, None)));
             request_handler.process_event(Some(RequestEvent::Pong));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
         }

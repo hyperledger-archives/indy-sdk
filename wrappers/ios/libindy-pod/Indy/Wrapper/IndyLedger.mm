@@ -104,6 +104,31 @@
     }
 }
 
++ (void)submitAction:(NSString *)requestJson
+               nodes:(NSString *)nodes
+             timeout:(NSNumber *)timeout
+          poolHandle:(IndyHandle)poolHandle
+          completion:(void (^)(NSError *error, NSString *requestResultJSON))completion {
+    indy_error_t ret;
+
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+
+    ret = indy_submit_action(handle,
+            poolHandle,
+            [requestJson UTF8String],
+            [nodes UTF8String],
+            timeout ? [timeout intValue] : -1,
+            IndyWrapperCommonStringCallback);
+
+    if (ret != Success) {
+        [[IndyCallbacks sharedInstance] deleteCommandHandleFor:handle];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromIndyError:ret], nil);
+        });
+    }
+}
+
 // MARK: - Nym request
 
 + (void)buildNymRequestWithSubmitterDid:(NSString *)submitterDid

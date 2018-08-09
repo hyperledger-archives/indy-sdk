@@ -12,7 +12,7 @@ use libindy::payment::Payment;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use utils::table::{print_table, print_list_table};
 
 use self::regex::Regex;
@@ -338,7 +338,11 @@ pub mod get_validator_info_command {
     use super::*;
 
     command!(CommandMetadata::build("get-validator-info", "Get validator info from all nodes.")
+                .add_optional_param("nodes","The list of node names to send the request")
+                .add_optional_param("timeout"," Time to wait respond from nodes")
                 .add_example(r#"ledger get-validator-info"#)
+                .add_example(r#"ledger get-validator-info nodes=Node1,Node2"#)
+                .add_example(r#"ledger get-validator-info nodes=Node1,Node2 timeout=150"#)
                 .finalize()
     );
 
@@ -349,11 +353,26 @@ pub mod get_validator_info_command {
         let pool_handle = ensure_connected_pool_handle(&ctx)?;
         let wallet_handle = ensure_opened_wallet_handle(&ctx)?;
 
-        let response = Ledger::build_get_validator_info_request(&submitter_did)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
+        let nodes = get_opt_str_array_param("nodes", params).map_err(error_err!())?;
+        let timeout = get_opt_number_param::<i32>("timeout", params).map_err(error_err!())?;
+
+        let request = Ledger::build_get_validator_info_request(&submitter_did)
             .map_err(|err| handle_transaction_error(err, None, None, None))?;
 
-        let responses = match serde_json::from_str::<HashMap<String, String>>(&response) {
+        let response = if nodes.is_some() || timeout.is_some() {
+            sign_and_submit_action(wallet_handle, pool_handle, &submitter_did, &request, nodes, timeout)
+                .map_err(|err| {
+                    match err {
+                        ErrorCode::CommonInvalidStructure => println_err!("Unknown node present in list"),
+                        _ => handle_transaction_error(err, None, None, None)
+                    }
+                })?
+        } else {
+            Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+                .map_err(|err| handle_transaction_error(err, None, None, None))?
+        };
+
+        let responses = match serde_json::from_str::<BTreeMap<String, String>>(&response) {
             Ok(responses) => responses,
             Err(_) => {
                 let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
@@ -368,13 +387,13 @@ pub mod get_validator_info_command {
 
         for (node, response) in responses {
             if response.eq("timeout") {
-                lines.push(format!("\t{:?}: {}", node, "Timeout"));
+                lines.push(format!("\t{:?}: {:?}", node, "Timeout"));
                 continue
             }
             let response = match serde_json::from_str::<Response<serde_json::Value>>(&response) {
                 Ok(resp) => resp,
                 Err(err) => {
-                    lines.push(format!("\t{:?}: Invalid data has been received: {:?}", node, err));
+                    lines.push(format!("\t{:?}: \"Invalid data has been received: {:?}\"", node, err));
                     continue
                 }
             };
@@ -688,8 +707,12 @@ pub mod pool_restart_command {
 
     command!(CommandMetadata::build("pool-restart", "Send instructions to nodes to restart themselves.")
                 .add_required_param("action", "Restart type. Either start or cancel.")
+                .add_optional_param("nodes","The list of node names to send the request")
+                .add_optional_param("timeout"," Time to wait respond from nodes")
                 .add_optional_param("datetime", "Node restart datetime (only for action=start).")
                 .add_example(r#"ledger pool-restart action=start datetime=2020-01-25T12:49:05.258870+00:00"#)
+                .add_example(r#"ledger pool-restart action=start datetime=2020-01-25T12:49:05.258870+00:00 nodes=Node1,Node2"#)
+                .add_example(r#"ledger pool-restart action=start datetime=2020-01-25T12:49:05.258870+00:00 nodes=Node1,Node2 timeout=100"#)
                 .add_example(r#"ledger pool-restart action=cancel"#)
                 .finalize()
     );
@@ -703,10 +726,19 @@ pub mod pool_restart_command {
 
         let action = get_str_param("action", params).map_err(error_err!())?;
         let datetime = get_opt_str_param("datetime", params).map_err(error_err!())?;
+        let nodes = get_opt_str_array_param("nodes", params).map_err(error_err!())?;
+        let timeout = get_opt_number_param::<i32>("timeout", params).map_err(error_err!())?;
 
-        let response = Ledger::indy_build_pool_restart_request(&submitter_did, action, datetime)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request))
-            .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
+        let request = Ledger::indy_build_pool_restart_request(&submitter_did, action, datetime)
+            .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
+
+        let response = if nodes.is_some() || timeout.is_some() {
+            sign_and_submit_action(wallet_handle, pool_handle, &submitter_did, &request, nodes, timeout)
+                .map_err(|err| handle_transaction_error(err, None, None, None))?
+        } else {
+            Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+                .map_err(|err| handle_transaction_error(err, None, None, None))?
+        };
 
         let responses = match serde_json::from_str::<HashMap<String, String>>(&response) {
             Ok(responses) => responses,
@@ -739,6 +771,18 @@ pub mod pool_restart_command {
         trace!("execute << {:?}", res);
         res
     }
+}
+
+fn sign_and_submit_action(wallet_handle: i32, pool_handle: i32, submitter_did: &str, request: &str, nodes: Option<Vec<&str>>, timeout: Option<i32>) -> Result<String, ErrorCode> {
+    let nodes = match nodes {
+        Some(n) =>
+            Some(serde_json::to_string(&n)
+                .map_err(|_| ErrorCode::CommonInvalidState)?),
+        None => None
+    };
+
+    Ledger::sign_request(wallet_handle, submitter_did, request)
+        .and_then(|request| Ledger::submit_action(pool_handle, &request, nodes.as_ref().map(String::as_ref), timeout))
 }
 
 pub mod pool_upgrade_command {
@@ -1226,7 +1270,7 @@ fn parse_payment_outputs(outputs: &Vec<String>) -> Result<String, ()> {
                         "amount": parts.get(1)
                                     .ok_or(())
                                     .map_err(|_| println_err!("Invalid format of Outputs: Amount not found"))
-                                    .and_then(|amount| amount.parse::<u32>()
+                                    .and_then(|amount| amount.parse::<u64>()
                                         .map_err(|_| println_err!("Invalid format of Outputs: Amount must be integer and greater then 0")))?
                     }));
     }
@@ -1263,7 +1307,7 @@ fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Result<(
 }
 
 fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
-    let mut fees_map: HashMap<String, i32> = HashMap::new();
+    let mut fees_map: HashMap<String, u64> = HashMap::new();
 
     for fee in fees {
         let parts = fee.split(":").collect::<Vec<&str>>();
@@ -1276,8 +1320,8 @@ fn parse_payment_fees(fees: &Vec<&str>) -> Result<String, ()> {
         let amount = parts.get(1)
             .ok_or(())
             .map_err(|_| println_err!("Invalid format of Fees: Amount not found"))
-            .and_then(|amount| amount.parse::<i32>()
-                .map_err(|_| println_err!("Invalid format of Fees: Amount must be integer")))?;
+            .and_then(|amount| amount.parse::<u64>()
+                .map_err(|_| println_err!("Invalid format of Fees: Amount must greater or equal zero")))?;
 
         fees_map.insert(type_, amount);
     }
@@ -2308,6 +2352,70 @@ pub mod tests {
             disconnect_and_delete_pool(&ctx);
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        pub fn get_validator_info_works_for_nodes() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_validator_info_command::new();
+                let mut params = CommandParams::new();
+                params.insert("nodes", "Node1,Node2".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn get_validator_info_works_for_unknown_node() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_validator_info_command::new();
+                let mut params = CommandParams::new();
+                params.insert("nodes", "Unknown Node".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn get_validator_info_works_for_timeout() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_validator_info_command::new();
+                let mut params = CommandParams::new();
+                params.insert("nodes", "Node1,Node2".to_string());
+                params.insert("timeout", "10".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod get_schema {
@@ -2741,6 +2849,57 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("action", "start".to_string());
                 params.insert("datetime", datetime.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn pool_restart_works_for_nodes() {
+            TestUtils::cleanup_storage();
+            let datetime = r#"2020-01-25T12:49:05.258870+00:00"#;
+
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = pool_restart_command::new();
+                let mut params = CommandParams::new();
+                params.insert("action", "start".to_string());
+                params.insert("datetime", datetime.to_string());
+                params.insert("nodes", "Node1,Node2".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn pool_restart_works_for_timeout() {
+            TestUtils::cleanup_storage();
+            let datetime = r#"2020-01-25T12:49:05.258870+00:00"#;
+
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = pool_restart_command::new();
+                let mut params = CommandParams::new();
+                params.insert("action", "start".to_string());
+                params.insert("datetime", datetime.to_string());
+                params.insert("nodes", "Node1,Node2".to_string());
+                params.insert("timeout", "10".to_string());
                 cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
@@ -3654,6 +3813,25 @@ pub mod tests {
         }
 
         #[test]
+        pub fn mint_prepare_works_for_big_amount() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = mint_prepare_command::new();
+                let mut params = CommandParams::new();
+                params.insert("outputs", "(pay:null:CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW,10000000000)".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         pub fn mint_prepare_works_for_extra() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -3932,6 +4110,28 @@ pub mod tests {
                 params.insert("fees", FEES.to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn set_fees_prepare_works_for_negative_amount() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = set_fees_prepare_command::new();
+                let mut params = CommandParams::new();
+                params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
+                params.insert("fees", "1:-1,101:-1".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
             TestUtils::cleanup_storage();
         }
