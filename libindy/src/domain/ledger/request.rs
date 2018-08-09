@@ -25,7 +25,7 @@ impl ProtocolVersion {
 }
 
 
-#[derive(Serialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Request<T: serde::Serialize> {
     pub req_id: u64,

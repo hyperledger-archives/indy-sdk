@@ -13,6 +13,8 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.hyperledger.indy.sdk.JsonObjectSimilar;
+
 public class CredDefRequestsTest extends LedgerIntegrationTest {
 
 	@Rule
@@ -49,7 +51,7 @@ public class CredDefRequestsTest extends LedgerIntegrationTest {
 
 		String credDefRequest = Ledger.buildCredDefRequest(DID, data).get();
 
-		assertTrue(new JSONObject(credDefRequest).getJSONObject("operation").similar(new JSONObject(expectedResult)));
+		assertTrue(JsonObjectSimilar.similar(new JSONObject(credDefRequest).getJSONObject("operation"), new JSONObject(expectedResult)));
 	}
 
 	@Test

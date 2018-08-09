@@ -331,6 +331,12 @@ indy.submitRequest = function submitRequest (poolHandle, request, cb) {
   return cb.promise
 }
 
+indy.submitAction = function submitAction (poolHandle, request, nodes, timeout, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.submitAction(poolHandle, toJson(request), toJson(nodes), nodes == null ? -1 : nodes, cb)
+  return cb.promise
+}
+
 indy.signRequest = function signRequest (wh, submitterDid, request, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.signRequest(wh, submitterDid, toJson(request), cb)
@@ -443,9 +449,9 @@ indy.buildPoolRestartRequest = function buildPoolRestartRequest (submitterDid, a
   return cb.promise
 }
 
-indy.buildPoolUpgradeRequest = function buildPoolUpgradeRequest (submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb) {
+indy.buildPoolUpgradeRequest = function buildPoolUpgradeRequest (submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildPoolUpgradeRequest(submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb)
+  capi.buildPoolUpgradeRequest(submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb)
   return cb.promise
 }
 

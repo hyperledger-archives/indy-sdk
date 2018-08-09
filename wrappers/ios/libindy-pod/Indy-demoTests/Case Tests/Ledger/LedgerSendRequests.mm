@@ -760,6 +760,7 @@
                                                                   justification:nil
                                                                       reinstall:false
                                                                           force:false
+                                                                       package_:nil
                                                                      resultJson:&poolUpgradeRequestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildPoolUpgradeRequestWithSubmitterDid() failed");
 
@@ -785,6 +786,7 @@
                                                                   justification:nil
                                                                       reinstall:false
                                                                           force:false
+                                                                       package_:nil
                                                                      resultJson:&poolUpgradeCancelRequestJson];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::buildPoolUpgradeRequestWithSubmitterDid() failed");
 
@@ -861,7 +863,7 @@
                                                    resultJson:&getValidatorInfoRequest];
     XCTAssertNotNil(getValidatorInfoRequest, @"getValidatorInfoRequest is nil!");
 
-    // Sign and Submit nym request
+    // Sign and Submit request
     NSString *getValidatorInfoResponse = nil;
     ret = [[LedgerUtils sharedInstance] signAndSubmitRequestWithPoolHandle:poolHandle
                                                               walletHandle:walletHandle
@@ -869,6 +871,39 @@
                                                                requestJson:getValidatorInfoRequest
                                                            outResponseJson:&getValidatorInfoResponse];
     XCTAssertEqual(ret.code, Success, @"LedgerUtils::sendRequestWithPoolHandle() failed");
+    XCTAssertNotNil(getValidatorInfoResponse, @"getValidatorInfoResponse is nil!");
+}
+
+- (void)testSubmitActionWorks {
+    // Obtain trustee did
+    NSString *trusteeDid = nil;
+    ret = [[DidUtils sharedInstance] createAndStoreMyDidWithWalletHandle:walletHandle
+                                                                    seed:@"000000000000000000000000Trustee1"
+                                                                outMyDid:&trusteeDid
+                                                             outMyVerkey:nil];
+    XCTAssertEqual(ret.code, Success, @"DidUtils::createAndStoreMyDid() failed for trustee");
+    XCTAssertNotNil(trusteeDid, @"trusteeDid is nil!");
+
+    // Build get validator info request
+    NSString *getValidatorInfoRequest = nil;
+    ret = [[LedgerUtils sharedInstance] buildGetValidatorInfo:trusteeDid
+                                                   resultJson:&getValidatorInfoRequest];
+    XCTAssertNotNil(getValidatorInfoRequest, @"getValidatorInfoRequest is nil!");
+
+    // Sign request
+    ret = [[LedgerUtils sharedInstance] signRequestWithWalletHandle:walletHandle
+                                                       submitterdid:trusteeDid
+                                                        requestJson:getValidatorInfoRequest
+                                                         resultJson:&getValidatorInfoRequest];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::signRequestWithWalletHandle() failed");
+
+    NSString *getValidatorInfoResponse = nil;
+    ret = [[LedgerUtils sharedInstance] submitAction:getValidatorInfoRequest
+                                               nodes:nil
+                                             timeout:nil
+                                      withPoolHandle:poolHandle
+                                          resultJson:&getValidatorInfoResponse];
+    XCTAssertEqual(ret.code, Success, @"LedgerUtils::submitAction() failed");
     XCTAssertNotNil(getValidatorInfoResponse, @"getValidatorInfoResponse is nil!");
 }
 

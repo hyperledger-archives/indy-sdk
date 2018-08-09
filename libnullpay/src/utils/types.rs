@@ -1,7 +1,7 @@
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Output {
     pub recipient: String,
-    pub amount: i32
+    pub amount: u64
 }
 
 impl Clone for Output {
@@ -17,7 +17,7 @@ impl Clone for Output {
 pub struct ReceiptInfo {
     pub receipt: String,
     pub recipient: String,
-    pub amount: i32,
+    pub amount: u64,
     pub extra: Option<String>
 }
 
@@ -26,7 +26,7 @@ pub struct SourceInfo {
     pub source: String,
     #[serde(rename = "paymentAddress")]
     pub payment_address: String,
-    pub amount: i32,
+    pub amount: u64,
     pub extra: Option<String>
 }
 
@@ -42,5 +42,5 @@ pub struct ReceiptVerificationInfo {
 pub struct ShortReceiptInfo {
     pub receipt: String,
     pub recipient: String,
-    pub amount: i32
+    pub amount: u64
 }

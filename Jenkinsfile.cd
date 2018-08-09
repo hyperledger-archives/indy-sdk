@@ -689,6 +689,7 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
         def suffix = "~$env.BUILD_NUMBER"
 
         unstash name: inStashName
+
         sh "mkdir --parent $directory/target/release/ && mv target/release/* $directory/target/release/"
 
         withCredentials([file(credentialsId: 'SovrinRepoSSHKey', variable: 'sovrin_key')]) {
@@ -751,6 +752,7 @@ def publishingRCtoStable() {
                 }
 
                 def libindyVersion = getSrcVersion("libindy")
+                def libnullpayVersion = getSrcVersion("libnullpay")
 
                 echo 'Moving Windows RC artifacts to Stable: libindy'
                 publishLibindyWindowsFilesRCtoStable(libindyVersion)
@@ -774,7 +776,7 @@ def publishingRCtoStable() {
                 publishLibindyCliWindowsFilesRCtoStable(libindyVersion)
 
                 echo 'Moving Windows RC artifacts to Stable: libnullpay'
-                publishLibnullpayWindowsFilesRCtoStable()
+                publishLibnullpayWindowsFilesRCtoStable(libnullpayVersion)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: libnullpay'
                 publishLibnullpayDebRCtoStable(testEnv)
@@ -787,6 +789,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving iOS RC artifacts to Stable: libindy'
                 publishLibindyIOSFilesRCtoStable(libindyVersion)
+
+                echo 'Moving iOS RC artifacts to Stable: libnullpay'
+                publishLibnullpayIOSFilesRCtoStable(libnullpayVersion)
             } finally {
                 echo 'Moving RC artifacts to Stable: Cleanup'
                 step([$class: 'WsCleanup'])
@@ -803,8 +808,7 @@ def publishLibindyCliWindowsFilesRCtoStable(version) {
     publishWindowsFilesRCtoStable("indy-cli", version)
 }
 
-def publishLibnullpayWindowsFilesRCtoStable() {
-    def libnullpayVersion = getSrcVersion("libnullpay")
+def publishLibnullpayWindowsFilesRCtoStable(libnullpayVersion) {
     publishWindowsFilesRCtoStable("libnullpay", libnullpayVersion)
 }
 
@@ -826,22 +830,34 @@ def publishWindowsFilesRCtoStable(packageName, version) {
 }
 
 def copyRcFilesToStable(platform, packageName, version) {
-    rcFullVersion = "${version}-${env.BUILD_NUMBER}"
+    rcFullVersion = fullVersion(version)
 
-    src = "/var/repository/repos/windows/$packageName/rc/$rcFullVersion/"
-    target = "/var/repository/repos/windows/$packageName/stable/$version"
+    src = "/var/repository/repos/$platform/$packageName/rc/$rcFullVersion/"
+    target = "/var/repository/repos/$platform/$packageName/stable/$version"
 
     copyFilesFromRcToStable(src, target)
-
 }
 
 def publishLibindyIOSFilesRCtoStable(version) {
-    rcFullVersion = "${version}-${env.BUILD_NUMBER}"
+    rcFullVersion = fullVersion(version)
 
     src = "/var/repository/repos/ios/libindy/rc/libindy-core/$rcFullVersion/"
     target = "/var/repository/repos/ios/libindy/stable/libindy-core/$version/"
 
     copyFilesFromRcToStable(src, target)
+}
+
+def publishLibnullpayIOSFilesRCtoStable(version) {
+    rcFullVersion = fullVersion(version)
+
+    src = "/var/repository/repos/ios/libnullpay/rc/libnullpay-core/$rcFullVersion/"
+    target = "/var/repository/repos/ios/libnullpay/stable/libnullpay-core/$version/"
+
+    copyFilesFromRcToStable(src, target)
+}
+
+def fullVersion(version){
+    return "${version}-${env.BUILD_NUMBER}"
 }
 
 def copyFilesFromRcToStable(src, target) {
@@ -920,7 +936,7 @@ def androidPublishing() {
 
 def buildAndroid(buildEnv, libIndyVersion, libnullpayVersion) {
 
-    for (arch in ["arm", "x86", "arm64"]) {
+    for (arch in ["arm", "armv7", "x86", "arm64", "x86_64"]) {
         androidBuildArtifact(buildEnv, arch, libIndyVersion, 'libindy')
         androidBuildArtifact(buildEnv, arch, libnullpayVersion, 'libnullpay')
     }
@@ -928,7 +944,7 @@ def buildAndroid(buildEnv, libIndyVersion, libnullpayVersion) {
 
 def publishAndroid(buildEnv, libIndyVersion, libnullpayVersion) {
 
-    for (arch in ["arm", "x86", "arm64"]) {
+    for (arch in ["arm", "armv7", "x86", "arm64", "x86_64"]) {
         androidPublishArtifact(buildEnv, arch, libIndyVersion, 'libindy')
         androidPublishArtifact(buildEnv, arch, libnullpayVersion, 'libnullpay')
     }
@@ -937,7 +953,7 @@ def publishAndroid(buildEnv, libIndyVersion, libnullpayVersion) {
 def androidBuildArtifact(buildEnv, arch, libVersion, artifact) {
 
     def ANDROID_SCRIPT_PATH = 'android.build.sh'
-    echo "Building Libindy android files for $arch"
+    echo "Building $artifact android files for $arch"
     def artifactName = artifact.toString().toUpperCase()
 
     if (artifactName == "LIBINDY") {
@@ -950,7 +966,7 @@ def androidBuildArtifact(buildEnv, arch, libVersion, artifact) {
     } else if (artifactName == "LIBNULLPAY") {
         buildEnv.inside {
             unstash name: "libindy_${arch}_zip"
-            sh "cp libindy_android_${arch}_${libVersion}.zip libnullpay && unzip libnullpay/libindy_android_${arch}_${libVersion}.zip "
+            sh "cp libindy_android_${arch}_${libVersion}.zip libnullpay && unzip -o libnullpay/libindy_android_${arch}_${libVersion}.zip "
             stash includes: "libindy_android_${arch}_${libVersion}.zip", name: "libindy_${arch}_zip"
             sh "${artifactName}_VERSION=${libVersion} INDY_DIR=../libindy_${arch}/lib ./libnullpay/${ANDROID_SCRIPT_PATH} -d $arch"
             def libnullpay_zip_name = "libnullpay_android_${arch}_${libVersion}.zip"
