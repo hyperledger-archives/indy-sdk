@@ -5,7 +5,7 @@ use utils::source::from_source;
 
 lazy_static! {
     static ref SOURCES: Mutex<HashMap<String, Vec<String>>> = Default::default();
-    static ref BALANCES: Mutex<HashMap<String, i32>> = Default::default();
+    static ref BALANCES: Mutex<HashMap<String, u64>> = Default::default();
 }
 
 pub fn get_sources_by_payment_address(payment_address: &str) -> Vec<String> {
@@ -16,12 +16,12 @@ pub fn get_sources_by_payment_address(payment_address: &str) -> Vec<String> {
     }
 }
 
-pub fn get_balance_of_source(source: &String) -> Option<i32> {
+pub fn get_balance_of_source(source: &String) -> Option<u64> {
     let balances = BALANCES.lock().unwrap();
     balances.get(source).map(|a| a.clone())
 }
 
-pub fn add_source(payment_address: &str, seq_no: i32, balance: i32) -> Option<String> {
+pub fn add_source(payment_address: &str, seq_no: i32, balance: u64) -> Option<String> {
     to_source(payment_address, seq_no).map(|source| {
         let mut balances = BALANCES.lock().unwrap();
         let mut sources = SOURCES.lock().unwrap();
