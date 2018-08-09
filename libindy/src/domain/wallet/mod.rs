@@ -14,12 +14,18 @@ pub struct Credentials {
     pub key: String,
     pub rekey: Option<String>,
     pub storage_credentials: Option<Value>,
+    #[serde(default = "default_false")]
+    pub simplified_security: bool,
+    #[serde(default = "default_false")]
+    pub rekey_simplified_security: bool
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ExportConfig {
     pub key: String,
     pub path: String,
+    #[serde(default = "default_false")]
+    pub simplified_security: bool
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -27,3 +33,6 @@ pub struct Metadata {
     pub keys: Vec<u8>,
     pub master_key_salt: Vec<u8>,
 }
+
+fn default_false() -> bool { false }
+

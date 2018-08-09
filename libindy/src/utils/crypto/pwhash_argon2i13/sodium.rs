@@ -16,9 +16,15 @@ pub fn gen_salt() -> Salt {
     Salt(pwhash::gen_salt())
 }
 
-pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt) -> Result<&'a [u8], CommonError> {
-    let opslimit = unsafe { crypto_pwhash_opslimit_moderate() };
-    let memlimit = unsafe { crypto_pwhash_memlimit_moderate() };
+pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt, simplified_security: bool) -> Result<&'a [u8], CommonError> {
+    let (opslimit, memlimit) = unsafe {
+        if simplified_security {
+            (crypto_pwhash_opslimit_interactive(), crypto_pwhash_memlimit_interactive())
+        } else {
+            (crypto_pwhash_opslimit_moderate(), crypto_pwhash_memlimit_moderate())
+        }
+    };
+
     let alg = unsafe { crypto_pwhash_alg_argon2i13() };
 
     let res = unsafe {
@@ -43,6 +49,8 @@ extern {
     fn crypto_pwhash_alg_argon2i13() -> c_int;
     fn crypto_pwhash_opslimit_moderate() -> size_t;
     fn crypto_pwhash_memlimit_moderate() -> size_t;
+    fn crypto_pwhash_opslimit_interactive() -> size_t;
+    fn crypto_pwhash_memlimit_interactive() -> size_t;
 
     fn crypto_pwhash(out: *mut u8,
                      outlen: c_ulonglong,
@@ -82,6 +90,21 @@ mod tests {
         let mut key = [0u8; 64];
 
         let salt = gen_salt();
-        let _key = pwhash(&mut key, passwd, &salt).unwrap();
+        let _key = pwhash(&mut key, passwd, &salt, false).unwrap();
+    }
+
+    #[test]
+    fn pwhash_works_for_simplified_security() {
+        let passwd = b"Correct Horse Battery Staple";
+
+        let salt = gen_salt();
+
+        let mut key = [0u8; 64];
+        let key_moderate = pwhash(&mut key, passwd, &salt, false).unwrap();
+
+        let mut key = [0u8; 64];
+        let key_interactive = pwhash(&mut key, passwd, &salt, true).unwrap();
+
+        assert_ne!(key_moderate, key_interactive);
     }
 }

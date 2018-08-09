@@ -125,7 +125,7 @@ impl WalletService {
 
         let metadata = {
             let master_key_salt = encryption::gen_master_key_salt()?;
-            let master_key = encryption::derive_master_key(&credentials.key, &master_key_salt)?;
+            let master_key = encryption::derive_master_key(&credentials.key, &master_key_salt, credentials.simplified_security)?;
 
             let metadata = Metadata {
                 master_key_salt: master_key_salt[..].to_vec(),
@@ -151,7 +151,7 @@ impl WalletService {
     }
 
     pub fn delete_wallet(&self, config: &str, credentials: &str) -> Result<(), WalletError> {
-        trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config,  secret!(credentials));
+        trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let config: Config = serde_json::from_str(config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
@@ -197,7 +197,7 @@ impl WalletService {
 
             let master_key = {
                 let master_key_salt = encryption::master_key_salt_from_slice(&metadata.master_key_salt)?;
-                encryption::derive_master_key(&credentials.key, &master_key_salt)?
+                encryption::derive_master_key(&credentials.key, &master_key_salt, credentials.simplified_security)?
             };
 
             Keys::deserialize_encrypted(&metadata.keys, &master_key)
@@ -217,7 +217,7 @@ impl WalletService {
     }
 
     pub fn open_wallet(&self, config: &str, credentials: &str) -> Result<i32, WalletError> {
-        trace!("open_wallet >>> config: {:?}, credentials: {:?}", config,  secret!(credentials));
+        trace!("open_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let config: Config = serde_json::from_str(config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
@@ -264,17 +264,16 @@ impl WalletService {
 
         let master_key = {
             let master_key_salt = encryption::master_key_salt_from_slice(&metadata.master_key_salt)?;
-            encryption::derive_master_key(&credentials.key, &master_key_salt)?
+            encryption::derive_master_key(&credentials.key, &master_key_salt, credentials.simplified_security)?
         };
 
         let keys = Keys::deserialize_encrypted(&metadata.keys, &master_key)?;
 
         // Rotate master key
         if let Some(rekey) = credentials.rekey {
-
             let metadata = {
                 let master_key_salt = encryption::gen_master_key_salt()?;
-                let master_key = encryption::derive_master_key(&rekey, &master_key_salt)?;
+                let master_key = encryption::derive_master_key(&rekey, &master_key_salt, credentials.simplified_security)?;
 
                 let metadata = Metadata {
                     master_key_salt: master_key_salt[..].to_vec(),
@@ -463,7 +462,7 @@ impl WalletService {
     }
 
     pub fn export_wallet(&self, wallet_handle: i32, export_config: &str, version: u32) -> Result<(), WalletError> {
-        trace!("export_wallet >>> wallet_handle: {:?}, export_config: {:?}, version: {:?}", wallet_handle,  secret!(export_config),  version);
+        trace!("export_wallet >>> wallet_handle: {:?}, export_config: {:?}, version: {:?}", wallet_handle, secret!(export_config), version);
 
         let wallets = self.wallets.borrow();
         let wallet = wallets
@@ -487,7 +486,7 @@ impl WalletService {
                 .create_new(true)
                 .open(export_config.path)?;
 
-        let res = export(wallet, &mut export_file, &export_config.key, version);
+        let res = export(wallet, &mut export_file, &export_config.key, version, export_config.simplified_security);
 
         trace!("export_wallet <<<");
 
@@ -498,7 +497,7 @@ impl WalletService {
                          config: &str,
                          credentials: &str,
                          export_config: &str) -> Result<(), WalletError> {
-        trace!("import_wallet >>> config: {:?}, credentials: {:?}, export_config: {:?}", config,  secret!(export_config),  secret!(export_config));
+        trace!("import_wallet >>> config: {:?}, credentials: {:?}, export_config: {:?}", config, secret!(export_config), secret!(export_config));
 
         let export_config: ExportConfig = serde_json::from_str(export_config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize export config: {:?}", err)))?;
@@ -750,6 +749,36 @@ mod tests {
     }
 
     #[test]
+    fn wallet_service_create_wallet_works_simplified_security() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config_default(), &_credentials_simplified_security()).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_create_wallet_works_for_comparision_time_of_different_key_types() {
+        use std::time::SystemTime;
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+
+        let time = SystemTime::now();
+        wallet_service.create_wallet(&_config_default(), &_credentials()).unwrap();
+        let time_diff_strict_key = SystemTime::now().duration_since(time).unwrap();
+
+        _cleanup();
+
+        let time = SystemTime::now();
+        wallet_service.create_wallet(&_config_default(), &_credentials_simplified_security()).unwrap();
+        let time_diff_simplified_key = SystemTime::now().duration_since(time).unwrap();
+
+        assert!(time_diff_simplified_key < time_diff_strict_key);
+
+        _cleanup();
+    }
+
+    #[test]
     fn wallet_service_create_works_for_plugged() {
         _cleanup();
 
@@ -798,6 +827,16 @@ mod tests {
     }
 
     #[test]
+    fn wallet_service_delete_wallet_works_for_simplified_security() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials_simplified_security()).unwrap();
+        wallet_service.delete_wallet(&_config(), &_credentials_simplified_security()).unwrap();
+        wallet_service.create_wallet(&_config(), &_credentials_simplified_security()).unwrap();
+    }
+
+    #[test]
     fn wallet_service_delete_works_for_plugged() {
         _cleanup();
 
@@ -824,12 +863,35 @@ mod tests {
     }
 
     #[test]
+    fn wallet_service_delete_wallet_returns_error_if_passed_different_value_for_simplified_security() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+
+        let res = wallet_service.delete_wallet(&_config(), &_credentials_simplified_security());
+        assert_match!(Err(WalletError::AccessFailed(_)), res);
+    }
+
+    #[test]
     fn wallet_service_open_wallet_works() {
         _cleanup();
 
         let wallet_service = WalletService::new();
         wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
         let handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        // cleanup
+        wallet_service.close_wallet(handle).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_open_wallet_works_for_simplified_security() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials_simplified_security()).unwrap();
+        let handle = wallet_service.open_wallet(&_config(), &_credentials_simplified_security()).unwrap();
 
         // cleanup
         wallet_service.close_wallet(handle).unwrap();
@@ -863,6 +925,17 @@ mod tests {
         wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
         let res = wallet_service.open_wallet(&_config(), "{}");
         assert_match!(Err(WalletError::CommonError(_)), res);
+    }
+
+    #[test]
+    fn wallet_service_open_wallet_returns_error_if_passed_different_value_for_simplified_security() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+
+        let res = wallet_service.open_wallet(&_config(), &_credentials_simplified_security());
+        assert_match!(Err(WalletError::AccessFailed(_)), res);
     }
 
     #[test]
@@ -1407,6 +1480,38 @@ mod tests {
     }
 
     #[test]
+    fn wallet_service_key_rotation_for_rekey_simplified_security() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_rekey_credentials_simplified_security()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
+        wallet_service.close_wallet(wallet_handle).unwrap();
+
+        // Access failed for old key
+        let res = wallet_service.open_wallet(&_config(), &_credentials());
+        assert_match!(Err(WalletError::AccessFailed(_)), res);
+
+        // Works ok with new key when reopening
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_for_new_key_simplified_security()).unwrap();
+        let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
+        assert_eq!("type", record.get_type().unwrap());
+        assert_eq!("value1", record.get_value().unwrap());
+    }
+
+    #[test]
     fn wallet_service_export_wallet_when_empty() {
         _cleanup();
 
@@ -1432,6 +1537,22 @@ mod tests {
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
 
         let export_config = _export_config();
+        wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
+        assert!(Path::new(&_export_file_path()).exists());
+    }
+
+    #[test]
+    fn wallet_service_export_wallet_1_item_simplified_security() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        let export_config = _export_config_simplified_security();
         wallet_service.export_wallet(wallet_handle, &export_config, 0).unwrap();
         assert!(Path::new(&_export_file_path()).exists());
     }
@@ -1487,6 +1608,75 @@ mod tests {
 
         wallet_service.import_wallet(&_config(), &_credentials(), &_export_config()).unwrap();
         let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+    }
+
+    #[test]
+    fn wallet_service_export_import_wallet_1_item_for_simplified_security() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        wallet_service.export_wallet(wallet_handle, &_export_config_simplified_security(), 0).unwrap();
+        assert!(_export_file_path().exists());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+        wallet_service.delete_wallet(&_config(), &_credentials()).unwrap();
+
+        // Note: simplified_security flags adds to header of exported wallet. It's not mandatory to pass this flag on import
+        wallet_service.import_wallet(&_config(), &_credentials(), &_export_config()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+    }
+
+    #[test]
+    fn wallet_service_export_import_wallet_1_item_for_export_simplified_import_as_strict() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials_simplified_security()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_simplified_security()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        wallet_service.export_wallet(wallet_handle, &_export_config(), 0).unwrap();
+        assert!(_export_file_path().exists());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+        wallet_service.delete_wallet(&_config(), &_credentials_simplified_security()).unwrap();
+
+        // Note: simplified_security flags adds to header of exported wallet. It's not mandatory to pass this flag on import
+        wallet_service.import_wallet(&_config(), &_credentials(), &_export_config()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+    }
+
+    #[test]
+    fn wallet_service_export_import_wallet_1_item_for_export_strict_import_as_simplified() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+
+        wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
+        wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
+
+        wallet_service.export_wallet(wallet_handle, &_export_config(), 0).unwrap();
+        assert!(_export_file_path().exists());
+
+        wallet_service.close_wallet(wallet_handle).unwrap();
+        wallet_service.delete_wallet(&_config(), &_credentials()).unwrap();
+
+        // Note: simplified_security flags adds to header of exported wallet. It's not mandatory to pass this flag on import
+        wallet_service.import_wallet(&_config(), &_credentials_simplified_security(), &_export_config()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_simplified_security()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
     }
 
@@ -1549,11 +1739,23 @@ mod tests {
         json!({"key": "my_key"}).to_string()
     }
 
+    fn _credentials_simplified_security() -> String {
+        json!({"key": "my_key", "simplified_security": true}).to_string()
+    }
+
     fn _rekey_credentials() -> String {
         json!({"key": "my_key", "rekey": "my_new_key"}).to_string()
     }
 
+    fn _rekey_credentials_simplified_security() -> String {
+        json!({"key": "my_key", "rekey": "my_new_key", "rekey_simplified_security": true}).to_string()
+    }
+
     fn _credentials_for_new_key() -> String {
+        json!({"key": "my_new_key"}).to_string()
+    }
+
+    fn _credentials_for_new_key_simplified_security() -> String {
         json!({"key": "my_new_key"}).to_string()
     }
 
@@ -1567,6 +1769,14 @@ mod tests {
         json!({
             "path": _export_file_path().to_str().unwrap(),
             "key": "export_key",
+        }).to_string()
+    }
+
+    fn _export_config_simplified_security() -> String {
+        json!({
+            "path": _export_file_path().to_str().unwrap(),
+            "key": "export_key",
+            "simplified_security": true
         }).to_string()
     }
 

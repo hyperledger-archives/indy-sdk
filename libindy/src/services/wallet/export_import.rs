@@ -13,8 +13,7 @@ use super::{WalletError, Wallet, WalletRecord};
 
 const CHUNK_SIZE: usize = 1024;
 
-pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32) -> Result<(), WalletError> {
-
+pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32, simplified_security: bool) -> Result<(), WalletError> {
     if version != 0 {
         Err(CommonError::InvalidState("Unsupported version".to_string()))?;
     }
@@ -23,14 +22,24 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
     let nonce = chacha20poly1305_ietf::gen_nonce();
     let chunk_size = CHUNK_SIZE;
 
-    let header = Header {
-        encryption_method: EncryptionMethod::ChaCha20Poly1305IETF {
+    let encryption_method = if simplified_security {
+        EncryptionMethod::ChaCha20Poly1305IETFWithSimplify {
             salt: salt[..].to_vec(),
             nonce: nonce[..].to_vec(),
             chunk_size,
-        },
+        }
+    } else {
+        EncryptionMethod::ChaCha20Poly1305IETF {
+            salt: salt[..].to_vec(),
+            nonce: nonce[..].to_vec(),
+            chunk_size,
+        }
+    };
+
+    let header = Header {
+        encryption_method,
         time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
-        version,
+        version
     };
 
     let header = rmp_serde::to_vec(&header)
@@ -43,7 +52,7 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
 
     // Write ecnrypted
     let mut writer = chacha20poly1305_ietf::Writer::new(writer,
-                                                        chacha20poly1305_ietf::derive_key(passphrase, &salt)?,
+                                                        chacha20poly1305_ietf::derive_key(passphrase, &salt, simplified_security)?,
                                                         nonce,
                                                         chunk_size);
 
@@ -71,7 +80,7 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
     Ok(())
 }
 
-pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Result<(), WalletError> {
+pub(super) fn import(wallet: &Wallet, reader: &mut Read, passhrase: &str) -> Result<(), WalletError> {
     // Reads plain
     let mut reader = BufReader::new(reader);
 
@@ -91,16 +100,18 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
         Err(CommonError::InvalidStructure("Unsupported version".to_string()))?;
     }
 
+    let simplify_security = header.encryption_method.simplify_security();
+
     // Reads encrypted
     let mut reader = match header.encryption_method {
-        EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } => {
+        EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } | EncryptionMethod::ChaCha20Poly1305IETFWithSimplify { salt, nonce, chunk_size } => {
             let salt = pwhash_argon2i13::Salt::from_slice(&salt)
                 .map_err(|err| CommonError::InvalidStructure(format!("Invalid salt: {:?}", err)))?;
 
             let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
                 .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
 
-            let key = chacha20poly1305_ietf::derive_key(passphrase, &salt)?;
+            let key = chacha20poly1305_ietf::derive_key(passhrase, &salt, simplify_security)?;
 
             chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size)
         }
@@ -161,7 +172,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_wallet1(), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_wallet1(), &mut output, _passphrase(), _version1(), false).unwrap();
 
         let wallet = _wallet2();
         _assert_is_empty(&wallet);
@@ -175,7 +186,21 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), false).unwrap();
+
+        let wallet = _wallet2();
+        _assert_is_empty(&wallet);
+
+        import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
+        _assert_has_2_records(&wallet);
+    }
+
+    #[test]
+    fn export_import_works_for_2_items_and_simplified_security() {
+        _cleanup();
+
+        let mut output: Vec<u8> = Vec::new();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), true).unwrap();
 
         let wallet = _wallet2();
         _assert_is_empty(&wallet);
@@ -189,7 +214,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), false).unwrap();
 
         let wallet = _wallet2();
         _assert_is_empty(&wallet);
@@ -244,7 +269,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_wallet1(), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_wallet1(), &mut output, _passphrase(), _version1(), false).unwrap();
 
         // Modifying one of the bytes in the header hash
         let pos = (&mut output.as_slice()).read_u32::<LittleEndian>().unwrap() as usize + 2;
@@ -259,7 +284,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), false).unwrap();
 
         // Modifying one byte in the middle of encrypted part
         let pos = output.len() / 2;
@@ -274,7 +299,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), false).unwrap();
 
         output.pop().unwrap();
 
@@ -287,7 +312,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), false).unwrap();
 
         output.push(10);
 
