@@ -1,7 +1,6 @@
 # Changelog
 
 ## 1.6.2
-
 * Performed the following changes related to Libindy Ledger API:
     * Added `indy_submit_action` endpoint that provides the ability to send either GET_VALIDATOR_INFO or 
       POOL_RESTART request to specific nodes and to specify custom timeout for a response from a node.
@@ -10,8 +9,11 @@
 * Updated Libindy CD pipeline to run iOS tests and to publish artifacts for Libindy and Libnullpay.
 * Bugfixes       
   
-## 1.6.0, 1.6.1
-
+## 1.6.1 bugfixes
+* Fix connection performance issue
+* Fix Android publishing
+  
+## 1.6.0
 * Integrated tags based search in Anoncreds workflow:
     * Updated `indy_prover_store_credential` API function to create tags for a stored credential object.
     * API functions `indy_prover_get_credentials` and `indy_prover_get_credentials_for_proof_req` marked as `Deprecated`.
@@ -39,10 +41,6 @@ Performed the following changes related to Libindy Payments API:
     * Removed EXPERIMENTAL notice from endpoints.
 * Added `ledger verify-payment-receipt` command in Indy CLI.
 * Bugfixes       
-
-### 1.6.1 bugfixes
-* Fix connection performance issue
-* Fix Android publishing
 
 Notes:
 
