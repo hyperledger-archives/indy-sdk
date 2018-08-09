@@ -45,7 +45,8 @@ var errors = {
   701: 'PaymentIncompatibleMethodsError',
   702: 'PaymentInsufficientFundsError',
   703: 'PaymentSourceDoesNotExistError',
-  704: 'PaymentOperationNotSupportedError'
+  704: 'PaymentOperationNotSupportedError',
+  705: 'PaymentExtraFundsError'
 }
 
 function IndyError (err) {
