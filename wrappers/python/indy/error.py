@@ -161,7 +161,10 @@ class ErrorCode(IntEnum):
     PaymentSourceDoesNotExistError = 703,
 
     # Operation is not supported for payment method
-    PaymentOperationNotSupportedError = 704
+    PaymentOperationNotSupportedError = 704,
+    
+    # Extra funds on inputs
+    PaymentExtraFundsError = 705
 
 
 class IndyError(Exception):
