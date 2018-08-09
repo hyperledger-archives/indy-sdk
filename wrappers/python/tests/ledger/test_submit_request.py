@@ -374,7 +374,8 @@ async def test_get_txn_request_works(pool_handle, wallet_handle, identity_my):
     get_txn_request = await ledger.build_get_txn_request(my_did, None, seq_no)
     get_txn_response = json.loads(
         await ensure_previous_request_applied(pool_handle, get_txn_request,
-                                              lambda response: response['result']['data']['txnMetadata']['seqNo'] is not None))
+                                              lambda response: response['result']['data']['txnMetadata'][
+                                                                   'seqNo'] is not None))
 
     received_schema = get_txn_response['result']['data']['txn']['data']['data']
     assert schema['name'] == received_schema['name']
@@ -425,12 +426,12 @@ async def test_pool_upgrade_requests_works(pool_handle, wallet_handle, identity_
 
     request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'start',
                                                       'f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
-                                                      None, json.dumps(schedule), None, False, False)
+                                                      None, json.dumps(schedule), None, False, False, None)
     await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request)
 
     request = await ledger.build_pool_upgrade_request(did_trustee, 'upgrade-python', '2.0.0', 'cancel',
                                                       'ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398',
-                                                      None, None, None, False, False)
+                                                      None, None, None, False, False, None)
     json.loads(await ledger.sign_and_submit_request(pool_handle, wallet_handle, did_trustee, request))
 
 
