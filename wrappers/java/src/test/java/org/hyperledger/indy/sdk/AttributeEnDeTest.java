@@ -43,10 +43,19 @@ public class AttributeEnDeTest {
         assertEquals(Integer.valueOf(1), decoded);
 
         decoded = (Integer) AttributeEnDe.decode("2147483646");
-        assertNotNull("oops", decoded);
         assertTrue(decoded.compareTo(Integer.MAX_VALUE - 1) == 0);
+
         decoded = (Integer) AttributeEnDe.decode("-2147483648");
         assertTrue(decoded.compareTo(Integer.MIN_VALUE) == 0);
+
+        decoded = (Integer) AttributeEnDe.decode("-5");
+        assertTrue(decoded.compareTo(Integer.valueOf(-5)) == 0);
+
+        decoded = (Integer) AttributeEnDe.decode("1024");
+        assertTrue(decoded.compareTo(Integer.valueOf(1024)) == 0);
+
+        decoded = (Integer) AttributeEnDe.decode("-2147483647");
+        assertTrue(decoded.compareTo(-2147483647) == 0);
     }
 
     @Test
@@ -106,7 +115,7 @@ public class AttributeEnDeTest {
 
 
     @Test
-    public void testBool() throws Exception {
+    public void testBool() {
         String encoded = AttributeEnDe.encode(true);
         assertEquals("22147483650", encoded);
         Boolean t = (Boolean)AttributeEnDe.decode(encoded);
@@ -118,21 +127,31 @@ public class AttributeEnDeTest {
         assertFalse(f.booleanValue());
     }
 
+/*
+    @Test
+    public void testBigInteger() {
+*/
+/*
+        (int)(2147483648) -> 3292278026040422511789490897800973956589404042040 -> (int)(2147483648)
+        (int)(2147483649) -> 3292278026040422511789490897800973956589404042041 -> (int)(2147483649)
+        (int)(-2147483649) -> 318853663399594688067339323832937851927518119208432441 -> (int)(-2147483649)
+*//*
+
+        String encoded;
+
+        BigInteger bi = new BigInteger("2147483648");
+        assertEquals("2147483648", bi.toString());
+        encoded = AttributeEnDe.encode(bi);
+        assertEquals("3292278026040422511789490897800973956589404042040", encoded);
+
+
+    }
+*/
     /*
 
     test cases by sklump
 
     == Edge cases - (type) orig -> encoded -> (type) decoded:
-  (str)(Alice) -> 1246470866604555559450165 -> (str)(Alice)
-  (str)(Bob) -> 157392413161010 -> (str)(Bob)
-  (str)(J.R. "Bob" Dobbs) -> 123692000107487509633306574080617894598073199214594302365883455161101326628659 -> (str)(J.R. "Bob" Dobbs)
-  (NoneType)(None) -> 2147483648 -> (NoneType)(None)
-  (bool)(True) -> 22147483650 -> (bool)(True)
-  (bool)(False) -> 22147483649 -> (bool)(False)
-  (int)(-5) -> -5 -> (int)(-5)
-  (int)(0) -> 0 -> (int)(0)
-  (int)(1024) -> 1024 -> (int)(1024)
-  (int)(2147483647) -> 2147483647 -> (int)(2147483647)
   (int)(2147483648) -> 3292278026040422511789490897800973956589404042040 -> (int)(2147483648)
   (int)(2147483649) -> 3292278026040422511789490897800973956589404042041 -> (int)(2147483649)
   (int)(-2147483649) -> 318853663399594688067339323832937851927518119208432441 -> (int)(-2147483649)

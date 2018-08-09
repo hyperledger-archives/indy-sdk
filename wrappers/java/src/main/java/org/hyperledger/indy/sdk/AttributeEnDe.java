@@ -57,17 +57,21 @@ public class AttributeEnDe {
      * @param raw_value
      * @return
      */
+/*
     public static String encode(@NotNull BigInteger raw_value) {
-        if ((raw_value.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) &&
-                (raw_value.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0)) {
-            String stringified = raw_value.toString();
-            String hex = bytesToHex(stringified.getBytes());
-            BigInteger bi = new BigInteger(hex, 16);
-            bi.add(BigInteger.valueOf(Integer.MAX_VALUE));
-            return STR_CODE + bi.toString();
+        if ((raw_value.compareTo(I32_BOUND) < 0) &&
+                (raw_value.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) >= 0)) {
+            return encode(raw_value.intValue());
         }
-        return encode(raw_value.intValue());
+        String stringified = raw_value.toString();
+        byte[] bytes = stringified.getBytes();
+        String hex = hexlify(bytes);
+        BigInteger bi = new BigInteger( hex, 16);
+        bi = bi.add(BigInteger.valueOf(Integer.MAX_VALUE));
+        return BIGINT_CODE + bi.toString();
+
     }
+*/
 
     /**
      * @param raw_value
