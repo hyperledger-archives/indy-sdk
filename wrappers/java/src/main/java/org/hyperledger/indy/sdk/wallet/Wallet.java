@@ -159,7 +159,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *   "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                          Can be optional if storage supports default configuration.
 	 *                           For 'default' storage type should be empty.
-	 *
+	 *   "simplified_security": Optional[bool] Use less secured but faster crypto algorithm for master key derivation (false by default).
 	 * }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -209,6 +209,8 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *       "storage_credentials": optional[{credentiails object}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                              Can be optional if storage supports default configuration.
 	 *                               For 'default' storage type should be empty.
+	 *   "simplified_security": Optional[bool] Use less secured but faster crypto algorithm for master key derivation (false by default). 	
+	 *   "rekey_simplified_security": Optional[bool] Use less secured but faster crypto algorithm for master rekey derivation (false by default).
 	 *
 	 *   }
 	 * @return A future that resolves no value.
@@ -282,12 +284,10 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * @param credentials Wallet credentials json
 	 *   {
 	 *       "key": string, Passphrase used to derive current wallet master key
-	 *       "rekey": optional["string"], If present than wallet master key will be rotated to a new one
-	 *                                  derived from this passphrase.
 	 *       "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                              Can be optional if storage supports default configuration.
 	 *                               For 'default' storage type should be empty.
-	 *
+	 *       "simplified_security": Optional[bool] Use less secured but faster crypto algorithm for master key derivation (false by default). 	
 	 *   }
 	 *                       
 	 * @return A future that resolves no value.
@@ -319,6 +319,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *   {
 	 *     "path": "string", Path of the file that contains exported wallet content
 	 *     "key": "string", Passphrase used to derive export key
+	 *     "simplified_security": Optional[bool] Use less secured but faster crypto algorithm for export key derivation (false by default).
 	 *   }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -368,13 +369,18 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
 	 * }
-	 * @param importConfigJson Wallet credentials json
+	 * @param credentials Wallet credentials json
 	 * {
 	 *   "key": string, Passphrase used to derive wallet master key
 	 *   "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                          Can be optional if storage supports default configuration.
 	 *                          For 'default' storage type should be empty.
-	 *
+	 *   "simplified_security": Optional[bool] Use less secured but faster crypto algorithm for master key derivation (false by default).
+	 * }	
+	 * @param importConfigJson Import settings json.
+	 * {
+	 *   "path": "string", path of the file that contains exported wallet content
+	 *   "key": "string", passphrase used to derive export key
 	 * }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.

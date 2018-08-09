@@ -149,7 +149,7 @@ def credentials():
     logger = logging.getLogger(__name__)
     logger.debug("credentials: >>>")
 
-    res = '{"key":"key"}'
+    res = '{"key":"key", "simplified_security": true}'
 
     logger.debug("credentials: <<< res: %r", res)
     return res

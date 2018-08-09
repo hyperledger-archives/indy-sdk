@@ -32,7 +32,7 @@ async def create_wallet(config: str,
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                                For 'default' storage type should be empty.
-
+       "simplified_security": optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
      }
     :return: Error code
     """
@@ -90,7 +90,8 @@ async def open_wallet(config: str,
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                               For 'default' storage type should be empty.
-
+       "simplified_security": optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
+       "rekey_simplified_security": Optional<bool> Use less secured but faster crypto algorithm for master rekey derivation (false by default).
     }
     :return: Handle to opened wallet to use in methods that require wallet access.
     """
@@ -167,7 +168,7 @@ async def delete_wallet(config: str,
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                               For 'default' storage type should be empty.
-
+      "simplified_security": optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
      }
     :return:
     """
@@ -200,8 +201,9 @@ async def export_wallet(handle: int,
     :param handle: wallet handle returned by indy_open_wallet.
     :param export_config_json: JSON containing settings for input operation.
        {
-           "path": path of the file that contains exported wallet content
+          "path": path of the file that contains exported wallet content
           "key": passphrase used to export key
+          "simplified_security": optional<bool> Use less secured but faster crypto algorithm for export key derivation (false by default).
        }
     :return:
     """
@@ -255,7 +257,7 @@ async def import_wallet(config: str,
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                               For 'default' storage type should be empty.
-
+       "simplified_security": optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
      }
     :param import_config_json: JSON containing settings for input operationЖ {
      "path": path of the file that contains exported wallet content

@@ -2286,6 +2286,7 @@ Create a new secure wallet.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
+  "simplified_security": optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
 }
 ````
 * __->__ void
@@ -2324,7 +2325,8 @@ Wallet must be previously created with createWallet method.
                                  derived from this passphrase.
       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                              Can be optional if storage supports default configuration.
-                             For 'default' storage type should be empty.
+      "simplified_security": optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
+      "rekey_simplified_security": optional<bool> Use less secured but faster crypto algorithm for master rekey derivation (false by default).
   }
 ````
 * __->__ `handle`: Handle (Number) - err: Error code
@@ -2337,7 +2339,14 @@ Errors: `Common*`, `Wallet*`
 Exports opened wallet
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `exportConfig`: Json
+* `exportConfig`: JSON - settings for export operation
+```
+  {
+    "path": <string>, Path of the file that contains exported wallet content
+    "key": <string>, Passphrase used to derive export key
+    "simplified_security": optional<bool> Use less secured but faster crypto algorithm for export key derivation (false by default).
+  }
+```
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -2373,9 +2382,16 @@ This can be seen as an createWallet call with additional content import
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
+  "simplified_security": optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
 }
 ````
 * `importConfig`: Json
+```
+  {
+    "path": <string>, Path of the file that contains exported wallet content
+    "key": <string>, Passphrase used to derive export key
+  }
+```
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -2418,6 +2434,7 @@ Deletes created wallet.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
+  "simplified_security": optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
 }
 ````
 * __->__ void

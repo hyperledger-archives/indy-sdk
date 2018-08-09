@@ -5,7 +5,6 @@ import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
-import org.json.JSONObject;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -25,7 +24,6 @@ public class OpenWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	@Ignore // TODO: FIXME error has been changed
 	public void testOpenWalletWorksForInvalidCredentials() throws Exception {
 		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 
@@ -37,7 +35,7 @@ public class OpenWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testOpenWalletWorksForEncryptedWalletChangingCredentials() throws Exception {
-		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		Wallet.createWallet(WALLET_CONFIG, "{\"key\": \"key\"}").get();
 
 		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, "{\"key\": \"key\", \"rekey\": \"other_key\"}").get();
 		wallet.closeWallet().get();
@@ -65,18 +63,13 @@ public class OpenWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	@Ignore // TODO: FIXME checking has been lost
 	public void testOpenWalletWorksForTwice() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletAlreadyOpenedException.class));
 
-		String config = new JSONObject()
-				.put("id", "openWalletWorksForTwice")
-				.toString();
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 
-		Wallet.createWallet(config, WALLET_CREDENTIALS).get();
-
-		Wallet.openWallet(config, WALLET_CREDENTIALS).get();
-		Wallet.openWallet(config, WALLET_CREDENTIALS).get();
+		Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 	}
 }
