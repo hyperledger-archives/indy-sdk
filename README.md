@@ -164,7 +164,6 @@ It's good for development, but this build can be in 100+ times slower for some m
 If you would like to analyse CPU performance of libindy for your use case, you have to use release artifacts (`cargo build --release`). 
 
 ## How to start local nodes pool with docker
-THESE INSTRUCTIONS ARE NO LONGER VALID
 To test the SDK codebase with a virtual Indy node network, you can start a pool of local nodes using docker:
 
 Start the pool of local nodes on `127.0.0.1:9701-9708` with Docker by running:
