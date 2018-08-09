@@ -65,10 +65,21 @@ do
         target_arch="x86_64"
     fi
 
+    if [ -d $WORK_DIR/libindy/${target_arch} ]; then
+        echo "${target_arch} libindy architecture already extracted"
+    else
+        libtool="/usr/bin/libtool"
+        libindy_dir="${WORK_DIR}/libindy"
+        mkdir ${WORK_DIR}/libindy/${target_arch}
+        lipo -extract $target_arch ${libindy_dir}/libindy.a -o ${libindy_dir}/${target_arch}/libindy.a
+        ${libtool} -static ${libindy_dir}/${target_arch}/libindy.a -o ${libindy_dir}/${target_arch}/libindy_libtool.a
+        mv ${libindy_dir}/${target_arch}/libindy_libtool.a ${libindy_dir}/${target_arch}/libindy.a
+    fi 
+
     export OPENSSL_LIB_DIR=$WORK_DIR/OpenSSL-for-iPhone/lib/${target_arch}
     export IOS_SODIUM_LIB=$WORK_DIR/libzmq-ios/libsodium-ios/dist/ios/lib/${target_arch}
     export IOS_ZMQ_LIB=$WORK_DIR/libzmq-ios/dist/ios/lib/${target_arch}
-    export LIBINDY_DIR=$WORK_DIR/vcx-indy-sdk/libindy/target/${target}/release
+    export LIBINDY_DIR=$WORK_DIR/libindy/${target_arch}
     #export LIBNULLPAY_DIR=$WORK_DIR/vcx-indy-sdk/libnullpay/target/${target}/release
     export LIBSOVTOKEN_DIR=$WORK_DIR/libsovtoken-ios/libsovtoken/${target}
 
