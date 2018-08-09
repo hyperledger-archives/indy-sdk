@@ -192,6 +192,9 @@ pub enum ErrorCode
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
+
+    // Extra funds on inputs
+    PaymentExtraFundsError = 705
 }
 
 impl ErrorCode {
@@ -251,7 +254,8 @@ impl ErrorCode {
             DidAlreadyExistsError => "Did already exists",
             UnknownPaymentMethod => "Unknown payment method was given",
             IncompatiblePaymentError => "Multiple different payment methods were specified",
-            PaymentInsufficientFundsError => "Payment cannot be processed because there was insufficient funds"
+            PaymentInsufficientFundsError => "Payment cannot be processed because there was insufficient funds",
+            PaymentExtraFundsError => "Payment cannot be processed because there were more funds than required"
         }
     }
 
