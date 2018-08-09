@@ -1,6 +1,6 @@
 extern crate sodiumoxide;
 
-use self::sodiumoxide::utils::memzero;
+use utils::crypto::memzero::memzero;
 use std::collections::HashMap;
 use std::rc::Rc;
 

@@ -184,6 +184,28 @@ pub mod list_command {
     }
 }
 
+pub mod refresh_command {
+    use super::*;
+
+    command!(CommandMetadata::build("refresh", "Refresh a local copy of a pool ledger and updates pool nodes connections.")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+
+        let res = match Pool::refresh(pool_handle) {
+            Ok(_) => Ok(println_succ!("Pool \"{}\"  has been refreshed", pool_name)),
+            Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod disconnect_command {
     use super::*;
 
@@ -488,6 +510,40 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod refresh {
+        use super::*;
+
+        #[test]
+        pub fn refresh_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            {
+                let cmd = refresh_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn refresh_works_for_not_opened() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_pool(&ctx);
+            {
+                let cmd = refresh_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            delete_pool(&ctx);
             TestUtils::cleanup_storage();
         }
     }
