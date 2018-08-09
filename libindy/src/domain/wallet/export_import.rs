@@ -55,13 +55,13 @@ pub struct Header {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Record {
+    // Wallet record type
     #[serde(rename = "type")]
     pub type_: String,
-    // Wallet record type
-    pub id: String,
     // Wallet record id
-    pub value: String,
+    pub id: String,
     // Wallet record value
-    pub tags: HashMap<String, String>,
+    pub value: String,
     // Wallet record tags
+    pub tags: HashMap<String, String>,
 }

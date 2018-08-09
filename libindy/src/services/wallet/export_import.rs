@@ -80,7 +80,7 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
     Ok(())
 }
 
-pub(super) fn import(wallet: &Wallet, reader: &mut Read, passhrase: &str) -> Result<(), WalletError> {
+pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Result<(), WalletError> {
     // Reads plain
     let mut reader = BufReader::new(reader);
 
@@ -111,7 +111,7 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passhrase: &str) -> Res
             let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
                 .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
 
-            let key = chacha20poly1305_ietf::derive_key(passhrase, &salt, simplify_security)?;
+            let key = chacha20poly1305_ietf::derive_key(passphrase, &salt, simplify_security)?;
 
             chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size)
         }
