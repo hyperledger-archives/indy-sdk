@@ -6,11 +6,20 @@ echo "START_DIR: ${START_DIR}"
 cd $START_DIR
 cd ../../../../..
 echo "VCX_DIR: $(pwd)"
-git checkout . > ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
-git checkout master >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
-git clean -f >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
-git clean -fd >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
-git pull >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+
+GIT_BRANCH="none"
+if [ ! -z "$1" ]; then
+    GIT_BRANCH=$1
+fi
+
+if [ "${GIT_BRANCH}" != "none" ]; then
+    git checkout . > ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+    git checkout ${GIT_BRANCH} >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+    git clean -f >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+    git clean -fd >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+    git pull >> ./vcx/libvcx/build_scripts/ios/mac/git.pull.out 2>&1
+fi
+
 # git checkout libindy_refactor
 # git pull
 # git checkout mobile_vcx
@@ -27,4 +36,4 @@ cd vcx/libvcx/build_scripts/ios/mac
 ./mac.06.libvcx.build.sh nodebug "${IOS_TARGETS}" cleanbuild > ./mac.06.libvcx.build.sh.out 2>&1
 ./mac.11.copy.static.libs.to.app.sh > ./mac.11.copy.static.libs.to.app.sh.out 2>&1
 ./mac.12.combine.static.libs.sh libvcxall delete nodebug "${IOS_ARCHS}" > ./mac.12.combine.static.libs.sh.out 2>&1
-./mac.upload.ios.build.files.sh "${IOS_ARCHS}" > ./mac.upload.ios.build.files.sh.out 2>&1
+./mac.13.build.cocoapod.sh libvcxall "${IOS_ARCHS}" > ./mac.13.build.cocoapod.sh.out 2>&1

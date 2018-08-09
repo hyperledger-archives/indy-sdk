@@ -20,9 +20,8 @@ if [ ! -z "$2" ]; then
 fi
 
 bkpIFS="$IFS"
-bkpIFS="$IFS"
 IFS=',()][' read -r -a archs <<<"${IOS_ARCHS}"
-echo "Building vcx.framework wrapper for architectures: ${archs[@]}"    ##Or printf "%s\n" ${array[@]}
+echo "Building vcx.${COMBINED_LIB} wrapper for architectures: ${archs[@]}"    ##Or printf "%s\n" ${array[@]}
 IFS="$bkpIFS"
 cd $VCX_SDK/vcx/wrappers/ios/vcx
 mv lib/libvcx.a lib/libvcx.a.original
@@ -71,18 +70,9 @@ cp $WORK_DIR/evernym.vcx-sdk.git.commit.log $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vc
 cp $WORK_DIR/hyperledger.indy-sdk.git.commit.log $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/
 
 zip -r vcx.${COMBINED_LIB}_${DATETIME}_universal.zip vcx
+mkdir -p ~/IOSBuilds/${COMBINED_LIB}
 cp $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx.${COMBINED_LIB}_${DATETIME}_universal.zip ~/IOSBuilds/${COMBINED_LIB}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+#curl --insecure -u normjarvis -X POST -F file=@./vcx.${COMBINED_LIB}_${DATETIME}_universal.zip https://kraken.corp.evernym.com/repo/ios/upload
+# Download the file at https://repo.corp.evernym.com/filely/ios/vcx.${COMBINED_LIB}_${DATETIME}_universal.zip
+#sudo cp ./vcx.${COMBINED_LIB}_${DATETIME}_universal.zip  /usr/local/var/www/download/ios

@@ -37,4 +37,4 @@ cd $VCX_SDK/vcx/wrappers/ios/vcx/lib
 ls -alh
 echo "-----------------------------------------------------------------------------------------------------------------------------------------------"
 cd $START_DIR
-grep "error:" ./xcodebuild.vcx.framework.build.out
+grep "error:" ./mac.13.build.cocoapod.sh.out
