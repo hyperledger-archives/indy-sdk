@@ -1,11 +1,10 @@
 #[allow(dead_code)] // FIXME
 pub mod environment;
-#[allow(dead_code)] // FIXME
 #[macro_use]
 pub mod logger;
 #[macro_use]
 pub mod term;
-#[allow(dead_code)] // FIXME
+#[cfg(test)]
 pub mod test;
 pub mod sequence;
 pub mod table;

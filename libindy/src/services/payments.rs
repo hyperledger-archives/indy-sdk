@@ -417,7 +417,7 @@ impl PaymentsService {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Output {
     pub recipient: String,
-    amount: i32,
+    amount: u64,
     extra: Option<String>
 }
 //

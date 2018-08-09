@@ -2,7 +2,7 @@ pub mod merkletree;
 
 use errors::common::CommonError;
 use errors::ledger::LedgerError;
-use domain::ledger::constants::{NYM, ROLE_REMOVE, STEWARD, TRUSTEE, TRUST_ANCHOR, TGB};
+use domain::ledger::constants::{NYM, ROLE_REMOVE, STEWARD, TRUSTEE, TRUST_ANCHOR, TGB, POOL_RESTART, GET_VALIDATOR_INFO};
 use domain::ledger::request::Request;
 use domain::ledger::nym::GetNymOperation;
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
@@ -326,9 +326,9 @@ impl LedgerService {
 
     pub fn build_pool_upgrade(&self, identifier: &str, name: &str, version: &str, action: &str,
                               sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
-                              justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, CommonError> {
+                              justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> Result<String, CommonError> {
         info!("build_pool_upgrade >>> identifier: {:?}, name {:?}, version {:?}, action {:?}, sha256 {:?}, timeout {:?}, schedule {:?}, justification {:?}, \
-        reinstall {:?}, reinstall {:?}", identifier, name, version, action, sha256, timeout, schedule, justification, reinstall, reinstall);
+        reinstall {:?}, reinstall {:?}, package {:?}", identifier, name, version, action, sha256, timeout, schedule, justification, reinstall, reinstall, package);
 
         let schedule = match schedule {
             Some(schedule) => Some(serde_json::from_str::<HashMap<String, String>>(schedule)
@@ -344,7 +344,7 @@ impl LedgerService {
             return Err(CommonError::InvalidStructure(format!("Schedule is required for `{}` action", action)));
         }
 
-        let operation = PoolUpgradeOperation::new(name, version, action, sha256, timeout, schedule, justification, reinstall, force);
+        let operation = PoolUpgradeOperation::new(name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
 
         let request = Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("POOL_UPGRADE request json is invalid {:?}.", err)))?;
@@ -575,12 +575,31 @@ impl LedgerService {
                 Ok(reply)
         }
     }
+
+    pub fn validate_action(&self, request: &str) -> Result<(), CommonError> {
+        trace!("validate_action >>> request {:?}", request);
+
+        let request: Request<serde_json::Value> = serde_json::from_str(request)
+            .map_err(|err| CommonError::InvalidStructure(format!("Request is invalid: {}", err)))?;
+
+        let res = match request.operation["type"].as_str() {
+            Some(POOL_RESTART) | Some(GET_VALIDATOR_INFO) => Ok(()),
+            Some(_) => Err(CommonError::InvalidStructure(format!("Request does not match any type of Actions: POOL_RESTART, GET_VALIDATOR_INFO"))),
+            None => Err(CommonError::InvalidStructure(format!("Request is invalid")))
+        };
+
+        trace!("validate_action <<< res {:?}", res);
+
+        res
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use domain::ledger::request::ProtocolVersion;
+
+    const IDENTIFIER: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
 
     #[test]
     fn build_nym_request_works_for_only_required_fields() {
@@ -845,5 +864,19 @@ mod tests {
 
         let res = ledger_service.build_get_txn_request(identifier, Some("type"), 1);
         assert_match!(Err(CommonError::InvalidStructure(_)), res);
+    }
+
+    #[test]
+    fn validate_action_works_for_pool_restart() {
+        let ledger_service = LedgerService::new();
+        let request = ledger_service.build_pool_restart(IDENTIFIER, "start", None).unwrap();
+        ledger_service.validate_action(&request).unwrap();
+    }
+
+    #[test]
+    fn validate_action_works_for_get_validator_info() {
+        let ledger_service = LedgerService::new();
+        let request = ledger_service.build_get_validator_info_request(IDENTIFIER).unwrap();
+        ledger_service.validate_action(&request).unwrap();
     }
 }

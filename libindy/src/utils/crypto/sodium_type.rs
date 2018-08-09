@@ -12,7 +12,7 @@ macro_rules! sodium_type (($newtype:ident, $sodiumtype:path, $len:ident) => (
         #[allow(dead_code)]
         pub fn from_slice(bs: &[u8]) -> Result<$newtype, ::errors::crypto::CryptoError> {
             let inner = <$sodiumtype>::from_slice(bs)
-                .ok_or(::errors::common::CommonError::InvalidStructure(format!("Invalid bytes length")))?;
+                .ok_or(::errors::common::CommonError::InvalidStructure(format!("Invalid bytes for $newtype")))?;
 
             Ok($newtype(inner))
         }
