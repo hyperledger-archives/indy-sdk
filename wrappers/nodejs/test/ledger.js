@@ -140,6 +140,11 @@ test('ledger', async function (t) {
   t.is(typeof res[1], 'object')
   t.is(typeof res[2], 'number')
 
+  // Submit Action
+  req = await indy.buildGetValidatorInfoRequest(myDid)
+  req = await indy.signRequest(wh, myDid, req)
+  res = await indy.submitAction(pool.handle, req, null, null)
+
   await indy.closeWallet(wh)
   await indy.deleteWallet(walletConfig, walletCredentials)
   pool.cleanup()

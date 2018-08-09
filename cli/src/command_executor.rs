@@ -151,7 +151,6 @@ pub struct CommandContext {
     plugins: RefCell<HashMap<String, libloading::Library>>,
 }
 
-#[allow(dead_code)] //FIXME
 impl CommandContext {
     pub fn new() -> CommandContext {
         CommandContext {
