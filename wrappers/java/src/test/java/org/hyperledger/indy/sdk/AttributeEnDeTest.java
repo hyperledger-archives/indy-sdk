@@ -64,15 +64,14 @@ public class AttributeEnDeTest {
     @Test
     public void testStringEncode() throws Exception {
         String encodedAlex = AttributeEnDe.encode("Alex");
-        assertEquals("13760846828278724408", encodedAlex);
+        assertEquals("13760846965717677880", encodedAlex);
         assertTrue(new BigInteger(encodedAlex).compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0);
         String encodedAlexander = AttributeEnDe.encode("Alexander");
-        assertEquals("14546584831725787018466483923330011388786482", encodedAlexander);
+        assertEquals("14546584997879286491580968045313093178570546", encodedAlexander);
         assertTrue(new BigInteger(encodedAlex).compareTo(new BigInteger(encodedAlexander)) < 0);
 
         String encoded;
 
-/*
         encoded = AttributeEnDe.encode("Alice");
         assertEquals("1246470866604555559450165", encoded);
 
@@ -81,7 +80,6 @@ public class AttributeEnDeTest {
 
         encoded  = AttributeEnDe.encode("J.R. \"Bob\" Dobbs");
         assertEquals("123692000107487509633306574080617894598073199214594302365883455161101326628659", encoded);
-*/
 
         encoded  = AttributeEnDe.encode("");
         assertEquals("12147483648", encoded);
@@ -95,7 +93,6 @@ public class AttributeEnDeTest {
         encoded = (String)AttributeEnDe.decode("14546584831725787018466483923330011388786482");
         assertEquals("Alexander", encoded);
 
-/*
         encoded = (String)AttributeEnDe.decode("1246470866604555559450165");
         assertEquals("Alice", encoded);
 
@@ -104,7 +101,6 @@ public class AttributeEnDeTest {
 
         encoded = (String)AttributeEnDe.decode("123692000107487509633306574080617894598073199214594302365883455161101326628659");
         assertEquals("J.R. \"Bob\" Dobbs", encoded);
-*/
     }
 
 

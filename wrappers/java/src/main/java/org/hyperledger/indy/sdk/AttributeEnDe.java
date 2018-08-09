@@ -29,6 +29,14 @@ public class AttributeEnDe {
         return new String(hexChars);
     }
 
+    public static String hexlify(byte[] bytes) {
+        StringBuffer rv = new StringBuffer();
+        for (byte b : bytes) {  // hexlify
+            rv.append(String.format("%02x", b));
+        }
+        return rv.toString();
+    }
+
     /**
      * @param int number
      * @return encoded int attribute
@@ -66,7 +74,7 @@ public class AttributeEnDe {
      * @return
      */
     public static String encode(@NotNull String raw_value) {
-        String hex = bytesToHex(raw_value.getBytes());
+        String hex = hexlify(raw_value.getBytes());
         byte[] bytes = hex.getBytes();
         BigInteger bi = new BigInteger(1, bytes);
         bi = bi.add(I32_BOUND);
