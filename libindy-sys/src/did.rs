@@ -36,10 +36,9 @@ extern {
 
     #[no_mangle]
     pub fn indy_key_for_local_did(command_handle: Handle,
-                                 wallet_handle: Handle,
-                                 did: CString,
-                                 cb: Option<ResponseStringCB>) -> Error;
-
+                                  wallet_handle: Handle,
+                                  did: CString,
+                                  cb: Option<ResponseStringCB>) -> Error;
     #[no_mangle]
     pub fn indy_set_endpoint_for_did(command_handle: Handle,
                                      wallet_handle: Handle,
@@ -57,11 +56,10 @@ extern {
 
     #[no_mangle]
     pub fn indy_set_did_metadata(command_handle: Handle,
-                             wallet_handle: Handle,
-                             did: CString,
-                             metadata: CString,
-                             cb: Option<ResponseEmptyCB>) -> Error;
-
+                                 wallet_handle: Handle,
+                                 did: CString,
+                                 metadata: CString,
+                                 cb: Option<ResponseEmptyCB>) -> Error;
     #[no_mangle]
     pub fn indy_get_did_metadata(command_handle: Handle,
                                  wallet_handle: Handle,
@@ -76,12 +74,11 @@ extern {
 
     #[no_mangle]
     pub fn indy_list_my_dids_with_meta(command_handle: Handle,
-                                   wallet_handle: Handle,
-                                   cb: Option<ResponseStringCB>) -> Error;
-
+                                       wallet_handle: Handle,
+                                       cb: Option<ResponseStringCB>) -> Error;
     #[no_mangle]
     pub fn indy_abbreviate_verkey(command_handle: Handle,
-                              did: CString,
-                              full_verkey: CString,
-                              cb: Option<ResponseStringCB>) -> Error;
+                                  did: CString,
+                                  full_verkey: CString,
+                                  cb: Option<ResponseStringCB>) -> Error;
 }

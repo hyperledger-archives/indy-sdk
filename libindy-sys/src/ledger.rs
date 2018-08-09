@@ -16,6 +16,13 @@ extern {
                                request_json: CString,
                                cb: Option<ResponseStringCB>) -> Error;
     #[no_mangle]
+    pub fn indy_submit_action(command_handle: Handle,
+                              pool_handle: Handle,
+                              request_json: CString,
+                              nodes: CString,
+                              timeout: Handle,
+                              cb: Option<ResponseStringCB>) -> Error;
+    #[no_mangle]
     pub fn indy_sign_request(command_handle: Handle,
                              wallet_handle: Handle,
                              submitter_did: CString,
@@ -129,6 +136,7 @@ extern {
                                            justification: CString,
                                            reinstall: bool,
                                            force: bool,
+                                           package: CString,
                                            cb: Option<ResponseStringCB>) -> Error;
     #[no_mangle]
     pub fn indy_build_revoc_reg_def_request(command_handle: Handle,
