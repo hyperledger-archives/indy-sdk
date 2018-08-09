@@ -249,7 +249,7 @@ public class Ledger extends IndyJava.API {
 				timeout,
 				submitRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
