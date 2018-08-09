@@ -360,7 +360,13 @@ pub mod get_validator_info_command {
             .map_err(|err| handle_transaction_error(err, None, None, None))?;
 
         let response = if nodes.is_some() || timeout.is_some() {
-            sign_and_submit_action(wallet_handle, pool_handle, &submitter_did, &request, nodes, timeout)?
+            sign_and_submit_action(wallet_handle, pool_handle, &submitter_did, &request, nodes, timeout)
+                .map_err(|err| {
+                    match err {
+                        ErrorCode::CommonInvalidStructure => println_err!("Unknown node present in list"),
+                        _ => handle_transaction_error(err, None, None, None)
+                    }
+                })?
         } else {
             Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
                 .map_err(|err| handle_transaction_error(err, None, None, None))?
@@ -381,13 +387,13 @@ pub mod get_validator_info_command {
 
         for (node, response) in responses {
             if response.eq("timeout") {
-                lines.push(format!("\t{:?}: {}", node, "Timeout"));
+                lines.push(format!("\t{:?}: {:?}", node, "Timeout"));
                 continue
             }
             let response = match serde_json::from_str::<Response<serde_json::Value>>(&response) {
                 Ok(resp) => resp,
                 Err(err) => {
-                    lines.push(format!("\t{:?}: Invalid data has been received: {:?}", node, err));
+                    lines.push(format!("\t{:?}: \"Invalid data has been received: {:?}\"", node, err));
                     continue
                 }
             };
@@ -727,7 +733,8 @@ pub mod pool_restart_command {
             .map_err(|err| handle_transaction_error(err, None, Some(&pool_name), Some(&wallet_name)))?;
 
         let response = if nodes.is_some() || timeout.is_some() {
-            sign_and_submit_action(wallet_handle, pool_handle, &submitter_did, &request, nodes, timeout)?
+            sign_and_submit_action(wallet_handle, pool_handle, &submitter_did, &request, nodes, timeout)
+                .map_err(|err| handle_transaction_error(err, None, None, None))?
         } else {
             Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
                 .map_err(|err| handle_transaction_error(err, None, None, None))?
@@ -766,17 +773,16 @@ pub mod pool_restart_command {
     }
 }
 
-fn sign_and_submit_action(wallet_handle: i32, pool_handle: i32, submitter_did: &str, request: &str, nodes: Option<Vec<&str>>, timeout: Option<i32>) -> Result<String, ()> {
+fn sign_and_submit_action(wallet_handle: i32, pool_handle: i32, submitter_did: &str, request: &str, nodes: Option<Vec<&str>>, timeout: Option<i32>) -> Result<String, ErrorCode> {
     let nodes = match nodes {
         Some(n) =>
             Some(serde_json::to_string(&n)
-                .map_err(|_| println_err!("Wrong data has been received"))?),
+                .map_err(|_| ErrorCode::CommonInvalidState)?),
         None => None
     };
 
     Ledger::sign_request(wallet_handle, submitter_did, request)
         .and_then(|request| Ledger::submit_action(pool_handle, &request, nodes.as_ref().map(String::as_ref), timeout))
-        .map_err(|err| handle_transaction_error(err, None, None, None))
 }
 
 pub mod pool_upgrade_command {
@@ -2362,6 +2368,27 @@ pub mod tests {
                 let mut params = CommandParams::new();
                 params.insert("nodes", "Node1,Node2".to_string());
                 cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn get_validator_info_works_for_unknown_node() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+            {
+                let cmd = get_validator_info_command::new();
+                let mut params = CommandParams::new();
+                params.insert("nodes", "Unknown Node".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
             }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
