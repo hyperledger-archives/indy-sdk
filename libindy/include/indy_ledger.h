@@ -68,6 +68,41 @@ extern "C" {
                                                                  const char*   request_result_json)
                                            );
 
+    /// Send action to particular nodes of validator pool.
+    ///
+    /// The list of requests can be send:
+    ///     POOL_RESTART
+    ///     GET_VALIDATOR_INFO
+    ///
+    /// The request is sent to the nodes as is. It's assumed that it's already prepared.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// pool_handle: pool handle (created by open_pool_ledger).
+    /// request_json: Request data json.
+    /// nodes: (Optional) List of node names to send the request.
+    ///        ["Node1", "Node2",...."NodeN"]
+    /// timeout: (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+    ///                     Pass -1 to use default timeout
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    /// Ledger*
+
+    extern indy_error_t indy_submit_action(indy_handle_t command_handle,
+                                           indy_handle_t pool_handle,
+                                           const char *  request_json,
+                                           const char *  nodes,
+                                           indy_i32_t    timeout,
+
+                                           void           (*cb)(indy_handle_t xcommand_handle,
+                                                                indy_error_t  err,
+                                                                const char*   request_result_json)
+                                           );
 
     /// Signs request message.
     ///

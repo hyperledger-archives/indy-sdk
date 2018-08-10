@@ -61,6 +61,23 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn submit_action(pool_handle: i32, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let request_json = CString::new(request_json).unwrap();
+        let nodes_str = nodes.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let timeout = timeout.unwrap_or(-1);
+
+        let err = indy_submit_action(command_handle,
+                                     pool_handle,
+                                     request_json.as_ptr(),
+                                     if nodes.is_some() { nodes_str.as_ptr() } else { null() },
+                                     timeout,
+                                     cb);
+
+        super::results::result_to_string(err, receiver)
+    }
+
     pub fn sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 

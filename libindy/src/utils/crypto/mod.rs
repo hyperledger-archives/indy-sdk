@@ -17,7 +17,7 @@ pub mod base58;
 #[path = "base64/rust_base64.rs"]
 pub mod base64;
 
-#[allow(dead_code)] /* FIXME */
+#[allow(dead_code)] /* FIXME Do we really need this module? */
 #[cfg(feature = "xsalsa20_sodium")]
 #[path = "xsalsa20/sodium.rs"]
 pub mod xsalsa20;

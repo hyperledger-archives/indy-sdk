@@ -51,7 +51,8 @@
     "c701": "PaymentIncompatibleMethodsError",
     "c702": "PaymentInsufficientFundsError",
     "c703": "PaymentSourceDoesNotExistError",
-    "c704": "PaymentOperationNotSupportedError"
+    "c704": "PaymentOperationNotSupportedError",
+    "c705": "PaymentExtraFundsError"
   },
   "functions": {
     "indy_issuer_create_schema": {
@@ -995,6 +996,26 @@
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "pool_handle", "type": "indy_handle_t"},
         {"name": "request_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_result_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_submit_action": {
+      "docs": "Send action to particular nodes of validator pool.\n\nThe request is sent to the nodes as is. It's assumed that it's already prepared.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\npool_handle: pool handle (created by open_pool_ledger).\nrequest_json: Request data json.\nnodes: (Optional) List of node names to send the request.\ntimeout: (Optional) Time to wait respond from nodes (override the default timeout) (in sec).\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*\nLedger*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "pool_handle", "type": "indy_handle_t"},
+        {"name": "request_json", "type": "const char*", "json": true},
+        {"name": "nodes", "type": "const char*", "json": true},
+        {"name": "timeout", "type": "indy_i32_t"},
         {
           "name": "cb",
           "params": [
