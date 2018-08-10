@@ -43,7 +43,7 @@ randombytes_sodium = ["sodiumoxide"]
 fatal_warnings = []
 
 [dependencies]
-indy-crypto = { version = "=0.4.3-rc-21", optional = true }
+indy-crypto = { version = "=0.4.3", optional = true }
 int_traits = { version = "0.1.1", optional = true }
 digest = "0.6.2"
 env_logger = "0.5.10"
