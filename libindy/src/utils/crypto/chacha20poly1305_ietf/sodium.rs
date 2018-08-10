@@ -34,7 +34,6 @@ pub fn derive_key(passphrase: &str, salt: &pwhash_argon2i13::Salt) -> Result<Key
     Ok(Key::new(key_bytes))
 }
 
-#[allow(dead_code)]
 pub fn gen_nonce() -> Nonce {
     Nonce(chacha20poly1305_ietf::gen_nonce())
 }
@@ -211,7 +210,7 @@ mod tests {
     extern crate rmp_serde;
 
     use super::*;
-    use self::sodiumoxide::randombytes::randombytes;
+    use utils::crypto::randombytes::randombytes;
 
     #[test]
     fn encrypt_decrypt_works() {

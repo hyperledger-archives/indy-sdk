@@ -10,7 +10,6 @@ use std::rc::Rc;
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
 use std::cell::RefCell;
-use self::indy_crypto::utils::json::JsonEncodable;
 
 use std::result;
 
@@ -296,7 +295,7 @@ impl NonSecretsCommandExecutor {
             records: if records.is_empty() { None } else { Some(records) }
         };
 
-        let res = search_result.to_json()
+        let res = serde_json::to_string(&search_result)
             .map_err(|err| CommonError::InvalidState(format!("Cannot serialize SearchRecords: {:?}", err)))?;
 
         trace!("fetch_search_next_records <<< res: {:?}", res);
@@ -332,5 +331,3 @@ pub struct SearchRecords {
     pub total_count: Option<usize>,
     pub records: Option<Vec<WalletRecord>>
 }
-
-impl JsonEncodable for SearchRecords {}

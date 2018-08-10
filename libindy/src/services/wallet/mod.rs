@@ -98,7 +98,7 @@ impl WalletService {
     pub fn create_wallet(&self,
                          config: &str,
                          credentials: &str) -> Result<(), WalletError> {
-        trace!("create_wallet >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: Log credentials in debug
+        trace!("create_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let config: Config = serde_json::from_str(config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
@@ -151,7 +151,7 @@ impl WalletService {
     }
 
     pub fn delete_wallet(&self, config: &str, credentials: &str) -> Result<(), WalletError> {
-        trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: Log credentials in debug
+        trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config,  secret!(credentials));
 
         let config: Config = serde_json::from_str(config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
@@ -217,7 +217,7 @@ impl WalletService {
     }
 
     pub fn open_wallet(&self, config: &str, credentials: &str) -> Result<i32, WalletError> {
-        trace!("open_wallet >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
+        trace!("open_wallet >>> config: {:?}, credentials: {:?}", config,  secret!(credentials));
 
         let config: Config = serde_json::from_str(config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
@@ -367,11 +367,6 @@ impl WalletService {
         }
     }
 
-    pub fn update_indy_record_tags<T>(&self, wallet_handle: i32, name: &str, tags: &HashMap<String, String>)
-                                      -> Result<(), WalletError> where T: NamedType {
-        self.update_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), name, tags)
-    }
-
     pub fn delete_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tag_names: &[&str]) -> Result<(), WalletError> {
         match self.wallets.borrow().get(&wallet_handle) {
             Some(wallet) => wallet.delete_tags(type_, name, tag_names),
@@ -430,17 +425,10 @@ impl WalletService {
         self.search_records(wallet_handle, &self.add_prefix(T::short_type_name()), query_json, options_json)
     }
 
-    pub fn search_all_records(&self, wallet_handle: i32) -> Result<WalletSearch, WalletError> {
+    #[allow(dead_code)] // TODO: Should we implement getting all records or delete everywhere?
+    pub fn search_all_records(&self, _wallet_handle: i32) -> Result<WalletSearch, WalletError> {
         //        match self.wallets.borrow().get(&wallet_handle) {
         //            Some(wallet) => wallet.search_all_records(),
-        //            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
-        //        }
-        unimplemented!()
-    }
-
-    pub fn close_search(&self, wallet_handle: i32, search_handle: u32) -> Result<(), WalletError> {
-        //        match self.wallets.borrow().get(&wallet_handle) {
-        //            Some(wallet) => wallet.close_search(search_handle),
         //            None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         //        }
         unimplemented!()
@@ -475,6 +463,8 @@ impl WalletService {
     }
 
     pub fn export_wallet(&self, wallet_handle: i32, export_config: &str, version: u32) -> Result<(), WalletError> {
+        trace!("export_wallet >>> wallet_handle: {:?}, export_config: {:?}, version: {:?}", wallet_handle,  secret!(export_config),  version);
+
         let wallets = self.wallets.borrow();
         let wallet = wallets
             .get(&wallet_handle)
@@ -497,13 +487,19 @@ impl WalletService {
                 .create_new(true)
                 .open(export_config.path)?;
 
-        export(wallet, &mut export_file, &export_config.key, version)
+        let res = export(wallet, &mut export_file, &export_config.key, version);
+
+        trace!("export_wallet <<<");
+
+        res
     }
 
     pub fn import_wallet(&self,
                          config: &str,
                          credentials: &str,
                          export_config: &str) -> Result<(), WalletError> {
+        trace!("import_wallet >>> config: {:?}, credentials: {:?}, export_config: {:?}", config,  secret!(export_config),  secret!(export_config));
+
         let export_config: ExportConfig = serde_json::from_str(export_config)
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize export config: {:?}", err)))?;
 
@@ -533,6 +529,8 @@ impl WalletService {
         if res.is_err() {
             self.delete_wallet(config, credentials)?;
         }
+
+        trace!("import_wallet <<<");
 
         res
     }
@@ -579,6 +577,7 @@ impl WalletRecord {
         self.id.as_str()
     }
 
+    #[allow(dead_code)]
     pub fn get_type(&self) -> Option<&str> {
         self.type_.as_ref().map(String::as_str)
     }
@@ -1127,7 +1126,6 @@ mod tests {
         let type_ = "type";
         let name = "name";
         let value = "value";
-        let new_value = "new_value";
 
         let wallet_service = WalletService::new();
         wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
@@ -1149,7 +1147,6 @@ mod tests {
         let type_ = "type";
         let name = "name";
         let value = "value";
-        let new_value = "new_value";
 
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
@@ -1201,7 +1198,6 @@ mod tests {
         let type_ = "type";
         let name = "name";
         let value = "value";
-        let new_value = "new_value";
         let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1"}"#).unwrap();
 
         let wallet_service = WalletService::new();
@@ -1255,7 +1251,6 @@ mod tests {
         let type_ = "type";
         let name = "name";
         let value = "value";
-        let new_value = "new_value";
         let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
         let wallet_service = WalletService::new();
 
@@ -1312,7 +1307,6 @@ mod tests {
         let type_ = "type";
         let name = "name";
         let value = "value";
-        let new_value = "new_value";
         let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"new_tag_value_2", "~tag_name_3":"new_tag_value_3"}"#).unwrap();
 
         let wallet_service = WalletService::new();

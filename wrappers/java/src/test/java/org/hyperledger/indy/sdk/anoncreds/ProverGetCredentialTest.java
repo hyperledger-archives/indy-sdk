@@ -8,8 +8,9 @@ import org.junit.Test;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import org.hyperledger.indy.sdk.JsonObjectSimilar;
 
 public class ProverGetCredentialTest extends AnoncredsIntegrationTest {
 
@@ -32,7 +33,7 @@ public class ProverGetCredentialTest extends AnoncredsIntegrationTest {
 		attrs.put("age", "28");
 		expected.put("attrs", attrs);
 
-		assertTrue(expected.similar(credential));
+		assertTrue(JsonObjectSimilar.similar(expected, credential));
 	}
 
 	@Test

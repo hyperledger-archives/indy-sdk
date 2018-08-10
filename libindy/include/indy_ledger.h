@@ -68,6 +68,41 @@ extern "C" {
                                                                  const char*   request_result_json)
                                            );
 
+    /// Send action to particular nodes of validator pool.
+    ///
+    /// The list of requests can be send:
+    ///     POOL_RESTART
+    ///     GET_VALIDATOR_INFO
+    ///
+    /// The request is sent to the nodes as is. It's assumed that it's already prepared.
+    ///
+    /// #Params
+    /// command_handle: command handle to map callback to caller context.
+    /// pool_handle: pool handle (created by open_pool_ledger).
+    /// request_json: Request data json.
+    /// nodes: (Optional) List of node names to send the request.
+    ///        ["Node1", "Node2",...."NodeN"]
+    /// timeout: (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+    ///                     Pass -1 to use default timeout
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// #Returns
+    /// Request result as json.
+    ///
+    /// #Errors
+    /// Common*
+    /// Ledger*
+
+    extern indy_error_t indy_submit_action(indy_handle_t command_handle,
+                                           indy_handle_t pool_handle,
+                                           const char *  request_json,
+                                           const char *  nodes,
+                                           indy_i32_t    timeout,
+
+                                           void           (*cb)(indy_handle_t xcommand_handle,
+                                                                indy_error_t  err,
+                                                                const char*   request_result_json)
+                                           );
 
     /// Signs request message.
     ///
@@ -452,6 +487,7 @@ extern "C" {
     /// data: Data associated with the Node: {
     ///     alias: string - Node's alias
     ///     blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+    ///     blskey_pop: string - (Optional) BLS key proof of possession as base58-encoded string.
     ///     client_ip: string - (Optional) Node's client listener IP address.
     ///     client_port: string - (Optional) Node's client listener port.
     ///     node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
@@ -594,6 +630,7 @@ extern "C" {
     /// reinstall: Whether it's allowed to re-install the same version. False by default.
     /// force: Whether we should apply transaction (schedule Upgrade) without waiting
     ///        for consensus of this transaction.
+    /// package: (Optional) Package to be upgraded.
     /// cb: Callback that takes command result as parameter.
     ///
     /// #Returns
@@ -613,6 +650,7 @@ extern "C" {
                                                         const char *  justification,
                                                         indy_bool_t   reinstall,
                                                         indy_bool_t   force,
+                                                        const char *  package_,
 
                                                         void           (*cb)(indy_handle_t xcommand_handle,
                                                                              indy_error_t  err,

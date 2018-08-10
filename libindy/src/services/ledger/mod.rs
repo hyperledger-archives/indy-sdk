@@ -1,14 +1,8 @@
-extern crate time;
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-
 pub mod merkletree;
 
 use errors::common::CommonError;
 use errors::ledger::LedgerError;
-use serde_json::Value;
-use domain::ledger::constants::{NYM, ROLE_REMOVE, STEWARD, TRUSTEE, TRUST_ANCHOR, TGB};
+use domain::ledger::constants::{NYM, ROLE_REMOVE, STEWARD, TRUSTEE, TRUST_ANCHOR, TGB, POOL_RESTART, GET_VALIDATOR_INFO};
 use domain::ledger::request::Request;
 use domain::ledger::nym::GetNymOperation;
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
@@ -28,9 +22,12 @@ use domain::anoncreds::revocation_registry::RevocationRegistry;
 use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
 use domain::anoncreds::schema::{Schema, SchemaV1};
 use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
-use self::indy_crypto::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
-use self::indy_crypto::utils::json::{JsonEncodable, JsonDecodable};
 
+use indy_crypto::cl::RevocationRegistryDelta as CryproRevocationRegistryDelta;
+
+use serde_json;
+use serde_json::Value;
+use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 
 trait LedgerSerializer {
@@ -153,9 +150,9 @@ impl LedgerService {
     pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
         info!("build_schema_request >>> identifier: {:?}, data: {:?}", identifier, data);
 
-        let schema = SchemaV1::from(
-            Schema::from_json(&data)
-                .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?);
+        let schema = serde_json::from_str::<Schema>(data)
+            .map(SchemaV1::from)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?;
 
         let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
 
@@ -194,9 +191,9 @@ impl LedgerService {
     pub fn build_cred_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
         info!("build_cred_def_request >>> identifier: {:?}, data: {:?}", identifier, data);
 
-        let cred_def = CredentialDefinitionV1::from(
-            CredentialDefinition::from_json(&data)
-                .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?);
+        let cred_def = serde_json::from_str::<CredentialDefinition>(data)
+            .map(CredentialDefinitionV1::from)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?;
 
         let operation = CredDefOperation::new(cred_def);
 
@@ -238,8 +235,9 @@ impl LedgerService {
     pub fn build_node_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
         info!("build_node_request >>> identifier: {:?}, dest {:?}, data {:?}", identifier, dest, data);
 
-        let data = NodeOperationData::from_json(&data)
+        let data: NodeOperationData = serde_json::from_str(data)
             .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
+
         if data.node_ip.is_none() && data.node_port.is_none()
             && data.client_ip.is_none() && data.client_port.is_none()
             && data.services.is_none() && data.blskey.is_none() {
@@ -279,9 +277,9 @@ impl LedgerService {
 
         let ledger_id = match ledger_type {
             Some(type_) =>
-                LedgerType::from_json(&format!(r#""{}""#, type_))
+                serde_json::from_str::<LedgerType>(&format!(r#""{}""#, type_))
                     .map(|type_| type_.to_id())
-                    .or_else(|_|type_.parse::<i32>())
+                    .or_else(|_| type_.parse::<i32>())
                     .map_err(|_| CommonError::InvalidStructure(format!("Invalid Ledger type: {}", type_)))?,
             None => LedgerType::DOMAIN.to_id()
         };
@@ -328,9 +326,9 @@ impl LedgerService {
 
     pub fn build_pool_upgrade(&self, identifier: &str, name: &str, version: &str, action: &str,
                               sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
-                              justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, CommonError> {
+                              justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> Result<String, CommonError> {
         info!("build_pool_upgrade >>> identifier: {:?}, name {:?}, version {:?}, action {:?}, sha256 {:?}, timeout {:?}, schedule {:?}, justification {:?}, \
-        reinstall {:?}, reinstall {:?}", identifier, name, version, action, sha256, timeout, schedule, justification, reinstall, reinstall);
+        reinstall {:?}, reinstall {:?}, package {:?}", identifier, name, version, action, sha256, timeout, schedule, justification, reinstall, reinstall, package);
 
         let schedule = match schedule {
             Some(schedule) => Some(serde_json::from_str::<HashMap<String, String>>(schedule)
@@ -346,7 +344,7 @@ impl LedgerService {
             return Err(CommonError::InvalidStructure(format!("Schedule is required for `{}` action", action)));
         }
 
-        let operation = PoolUpgradeOperation::new(name, version, action, sha256, timeout, schedule, justification, reinstall, force);
+        let operation = PoolUpgradeOperation::new(name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
 
         let request = Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("POOL_UPGRADE request json is invalid {:?}.", err)))?;
@@ -359,9 +357,9 @@ impl LedgerService {
     pub fn build_revoc_reg_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
         info!("build_revoc_reg_def_request >>> identifier: {:?}, data {:?}", identifier, data);
 
-        let rev_reg_def = RevocationRegistryDefinitionV1::from(
-            RevocationRegistryDefinition::from_json(&data)
-                .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistryDefinition: {:?}", err)))?);
+        let rev_reg_def = serde_json::from_str::<RevocationRegistryDefinition>(data)
+            .map(RevocationRegistryDefinitionV1::from)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?;
 
         let rev_reg_def_operation = RevRegDefOperation::new(rev_reg_def);
 
@@ -391,9 +389,9 @@ impl LedgerService {
         info!("build_revoc_reg_entry_request >>> identifier: {:?}, revoc_reg_def_id {:?}, revoc_def_type {:?}, value {:?}",
               identifier, revoc_reg_def_id, revoc_def_type, value);
 
-        let rev_reg_entry = RevocationRegistryDeltaV1::from(
-            RevocationRegistryDelta::from_json(&value)
-                .map_err(|err| CommonError::InvalidStructure(format!("Can not deserialize RevocationRegistry: {:?}", err)))?);
+        let rev_reg_entry = serde_json::from_str::<RevocationRegistryDelta>(value)
+            .map(RevocationRegistryDeltaV1::from)
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
 
         let operation = RevRegEntryOperation::new(revoc_def_type, revoc_reg_def_id, rev_reg_entry);
 
@@ -454,8 +452,7 @@ impl LedgerService {
         };
 
         let res = (schema.id.clone(),
-                   Schema::SchemaV1(schema)
-                       .to_json()
+                   serde_json::to_string(&Schema::SchemaV1(schema))
                        .map_err(|err|
                            LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize Schema {:?}.", err))))?);
 
@@ -487,8 +484,7 @@ impl LedgerService {
         };
 
         let res = (cred_def.id.clone(),
-                   CredentialDefinition::CredentialDefinitionV1(cred_def)
-                       .to_json()
+                   serde_json::to_string(&CredentialDefinition::CredentialDefinitionV1(cred_def))
                        .map_err(|err|
                            LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize CredentialDefinition {:?}.", err))))?);
 
@@ -508,8 +504,7 @@ impl LedgerService {
         };
 
         let res = (revoc_reg_def.id.clone(),
-                   RevocationRegistryDefinition::RevocationRegistryDefinitionV1(revoc_reg_def)
-                       .to_json()
+                   serde_json::to_string(&RevocationRegistryDefinition::RevocationRegistryDefinitionV1(revoc_reg_def))
                        .map_err(|err|
                            LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDefinition {:?}.", err))))?);
 
@@ -529,8 +524,7 @@ impl LedgerService {
         };
 
         let res = (revoc_reg_def_id,
-                   RevocationRegistry::RevocationRegistryV1(revoc_reg)
-                       .to_json()
+                   serde_json::to_string(&RevocationRegistry::RevocationRegistryV1(revoc_reg))
                        .map_err(|err|
                            LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistry {:?}.", err))))?,
                    txn_time);
@@ -551,14 +545,13 @@ impl LedgerService {
         };
 
         let res = (revoc_reg_def_id.clone(),
-                   RevocationRegistryDelta::RevocationRegistryDeltaV1(
+                   serde_json::to_string(&RevocationRegistryDelta::RevocationRegistryDeltaV1(
                        RevocationRegistryDeltaV1 {
                            value: CryproRevocationRegistryDelta::from_parts(revoc_reg.value.accum_from.map(|accum| accum.value).as_ref(),
                                                                             &revoc_reg.value.accum_to.value,
                                                                             &revoc_reg.value.issued,
                                                                             &revoc_reg.value.revoked)
-                       })
-                       .to_json()
+                       }))
                        .map_err(|err|
                            LedgerError::CommonError(CommonError::InvalidState(format!("Cannot serialize RevocationRegistryDelta {:?}.", err))))?,
                    revoc_reg.value.accum_to.txn_time);
@@ -568,7 +561,7 @@ impl LedgerService {
         Ok(res)
     }
 
-    pub fn parse_response<'a, T>(response: &'a str) -> Result<Reply<T>, LedgerError> where T: JsonDecodable<'a> {
+    pub fn parse_response<T>(response: &str) -> Result<Reply<T>, LedgerError> where T: DeserializeOwned {
         trace!("parse_response >>> response {:?}", response);
 
         let message: Message<T> = serde_json::from_str(&response)
@@ -582,12 +575,31 @@ impl LedgerService {
                 Ok(reply)
         }
     }
+
+    pub fn validate_action(&self, request: &str) -> Result<(), CommonError> {
+        trace!("validate_action >>> request {:?}", request);
+
+        let request: Request<serde_json::Value> = serde_json::from_str(request)
+            .map_err(|err| CommonError::InvalidStructure(format!("Request is invalid: {}", err)))?;
+
+        let res = match request.operation["type"].as_str() {
+            Some(POOL_RESTART) | Some(GET_VALIDATOR_INFO) => Ok(()),
+            Some(_) => Err(CommonError::InvalidStructure(format!("Request does not match any type of Actions: POOL_RESTART, GET_VALIDATOR_INFO"))),
+            None => Err(CommonError::InvalidStructure(format!("Request is invalid")))
+        };
+
+        trace!("validate_action <<< res {:?}", res);
+
+        res
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use domain::ledger::request::ProtocolVersion;
+
+    const IDENTIFIER: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
 
     #[test]
     fn build_nym_request_works_for_only_required_fields() {
@@ -852,5 +864,19 @@ mod tests {
 
         let res = ledger_service.build_get_txn_request(identifier, Some("type"), 1);
         assert_match!(Err(CommonError::InvalidStructure(_)), res);
+    }
+
+    #[test]
+    fn validate_action_works_for_pool_restart() {
+        let ledger_service = LedgerService::new();
+        let request = ledger_service.build_pool_restart(IDENTIFIER, "start", None).unwrap();
+        ledger_service.validate_action(&request).unwrap();
+    }
+
+    #[test]
+    fn validate_action_works_for_get_validator_info() {
+        let ledger_service = LedgerService::new();
+        let request = ledger_service.build_get_validator_info_request(IDENTIFIER).unwrap();
+        ledger_service.validate_action(&request).unwrap();
     }
 }

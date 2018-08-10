@@ -1,6 +1,6 @@
 [package]
 name = "indy"
-version = "1.6.1"
+version = "1.6.2"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
   "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
@@ -20,9 +20,10 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
-default = ["bn_openssl", "box_sodium", "sealedbox_sodium", "base58_rust_base58", "base64_rust_base64", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests", "pwhash_argon2i13_sodium", "hmacsha256_sodium", "memzero_sodium"]
+default = ["bn_openssl", "ed25519_sign_sodium", "ed25519_box_sodium", "sealedbox_sodium", "base58_rust_base58", "base64_rust_base64", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests", "pwhash_argon2i13_sodium", "hmacsha256_sodium", "memzero_sodium", "randombytes_sodium"]
 bn_openssl = ["openssl", "int_traits"]
-box_sodium = ["sodiumoxide"]
+ed25519_sign_sodium = ["sodiumoxide"]
+ed25519_box_sodium = ["sodiumoxide"]
 sealedbox_sodium = ["sodiumoxide"]
 base58_rust_base58 = ["rust-base58"]
 base64_rust_base64 = ["base64"]
@@ -36,12 +37,13 @@ revocation_tests = []
 sodium_static = []
 hmacsha256_sodium = ["sodiumoxide"]
 memzero_sodium = ["sodiumoxide"]
+randombytes_sodium = ["sodiumoxide"]
 
 # Causes the build to fail on all warnings
 fatal_warnings = []
 
 [dependencies]
-indy-crypto = { version = "=0.4.2", optional = true }
+indy-crypto = { version = "=0.4.3", optional = true }
 int_traits = { version = "0.1.1", optional = true }
 digest = "0.6.2"
 env_logger = "0.5.10"
@@ -51,6 +53,7 @@ generic-array = "0.8.3"
 hex = "0.2.0"
 libc = "0.2.21"
 log = "0.4.1"
+derivative = "1.0.0"
 openssl = { version = "=0.9.24", optional = true }
 owning_ref = "0.3.3"
 rand = "0.3"

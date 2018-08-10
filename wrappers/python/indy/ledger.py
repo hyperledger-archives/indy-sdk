@@ -85,6 +85,55 @@ async def submit_request(pool_handle: int,
     return res
 
 
+async def submit_action(pool_handle: int,
+                        request_json: str,
+                        nodes: Optional[str],
+                        timeout: Optional[int]) -> str:
+    """
+    Send action to particular nodes of validator pool.
+    
+    The list of requests can be send:
+        POOL_RESTART
+        GET_VALIDATOR_INFO
+   
+    The request is sent to the nodes as is. It's assumed that it's already prepared.
+
+    :param pool_handle: pool handle (created by open_pool_ledger).
+    :param request_json: Request data json.
+    :param nodes: (Optional) List of node names to send the request.
+           ["Node1", "Node2",...."NodeN"]
+    :param timeout: (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("submit_action: >>> pool_handle: %r, request_json: %r, nodes: %r, timeout: %r",
+                 pool_handle,
+                 request_json,
+                 nodes,
+                 timeout)
+
+    if not hasattr(submit_action, "cb"):
+        logger.debug("submit_action: Creating callback")
+        submit_action.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_pool_handle = c_int32(pool_handle)
+    c_request_json = c_char_p(request_json.encode('utf-8'))
+    c_nodes = c_char_p(nodes.encode('utf-8')) if nodes is not None else None
+    c_timeout = c_int32(timeout) if timeout is not None else None
+
+    request_result = await do_call('indy_submit_action',
+                                   c_pool_handle,
+                                   c_request_json,
+                                   c_nodes,
+                                   c_timeout,
+                                   submit_action.cb)
+
+    res = request_result.decode()
+    logger.debug("submit_action: <<< res: %r", res)
+    return res
+
+
 async def sign_request(wallet_handle: int,
                        submitter_did: str,
                        request_json: str) -> str:
@@ -605,6 +654,7 @@ async def build_node_request(submitter_did: str,
       {
           alias: string - Node's alias
           blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+          blskey_pop: string - (Optional) BLS key proof of possession as base58-encoded string.
           client_ip: string - (Optional) Node's client listener IP address.
           client_port: string - (Optional) Node's client listener port.
           node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
@@ -785,7 +835,8 @@ async def build_pool_upgrade_request(submitter_did: str,
                                      schedule: Optional[str],
                                      justification: Optional[str],
                                      reinstall: bool,
-                                     force: bool) -> str:
+                                     force: bool,
+                                     package: Optional[str]) -> str:
     """
     Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
     It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
@@ -802,13 +853,15 @@ async def build_pool_upgrade_request(submitter_did: str,
     :param reinstall: Whether it's allowed to re-install the same version. False by default.
     :param force: Whether we should apply transaction (schedule Upgrade) without waiting
                   for consensus of this transaction.
+    :param package: (Optional) Package to be upgraded.
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
     logger.debug("build_pool_upgrade_request: >>> submitter_did: %r, name: %r, version: %r, action: %r, _sha256: %r, "
-                 "timeout: %r, schedule: %r, justification: %r, reinstall: %r, force: %r",
-                 submitter_did, name, version, action, _sha256, _timeout, schedule, justification, reinstall, force)
+                 "timeout: %r, schedule: %r, justification: %r, reinstall: %r, force: %r, package: %r",
+                 submitter_did, name, version, action, _sha256, _timeout, schedule, justification, reinstall, force,
+                 package)
 
     if not hasattr(build_pool_upgrade_request, "cb"):
         logger.debug("build_pool_upgrade_request: Creating callback")
@@ -824,6 +877,7 @@ async def build_pool_upgrade_request(submitter_did: str,
     c_justification = c_char_p(justification.encode('utf-8')) if justification is not None else None
     c_reinstall = c_bool(reinstall)
     c_force = c_bool(force)
+    c_package = c_char_p(package.encode('utf-8')) if package is not None else None
 
     request_json = await do_call('indy_build_pool_upgrade_request',
                                  c_submitter_did,
@@ -836,6 +890,7 @@ async def build_pool_upgrade_request(submitter_did: str,
                                  c_justification,
                                  c_reinstall,
                                  c_force,
+                                 c_package,
                                  build_pool_upgrade_request.cb)
 
     res = request_json.decode()

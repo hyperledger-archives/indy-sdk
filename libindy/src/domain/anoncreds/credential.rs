@@ -1,12 +1,9 @@
-extern crate indy_crypto;
-
-use self::indy_crypto::cl::{
+use indy_crypto::cl::{
     CredentialSignature,
     RevocationRegistry,
     SignatureCorrectnessProof,
     Witness
 };
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use super::DELIMITER;
 
@@ -51,10 +48,6 @@ impl Credential {
     pub fn cred_def_id(&self) -> String { self.cred_def_id.to_string() }
 }
 
-impl JsonEncodable for Credential {}
-
-impl<'a> JsonDecodable<'a> for Credential {}
-
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct CredentialInfo {
     pub referent: String,
@@ -65,9 +58,7 @@ pub struct CredentialInfo {
     pub cred_rev_id: Option<String>
 }
 
-impl JsonEncodable for CredentialInfo {}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq)]
 pub struct AttributeValues {
     pub raw: String,
     pub encoded: String

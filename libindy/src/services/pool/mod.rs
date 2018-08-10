@@ -36,7 +36,6 @@ use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 use std::sync::Mutex;
 
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use services::pool::pool::{Pool, ZMQPool};
 use self::zmq::Socket;
 
@@ -58,13 +57,12 @@ impl PoolService {
     }
 
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
-
         //TODO: initialize all state machines
         trace!("PoolService::create {} with config {:?}", name, config);
 
         let mut path = EnvironmentUtils::pool_path(name);
         let pool_config: PoolConfig = match config {
-            Some(config) => PoolConfig::from_json(config)
+            Some(config) => serde_json::from_str(config)
                 .map_err(|err|
                     CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
             None => PoolConfig::default_for_name(name)
@@ -93,8 +91,7 @@ impl PoolService {
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path()).map_err(map_err_trace!())?;
 
-        f.write(pool_config
-            .to_json()
+        f.write(serde_json::to_string(&pool_config)
             .map_err(|err|
                 CommonError::InvalidState(format!("Can't serialize pool config: {}", err.description()))).map_err(map_err_trace!())?
             .as_bytes()).map_err(map_err_trace!())?;
@@ -125,7 +122,8 @@ impl PoolService {
         }
 
         let config: PoolOpenConfig = if let Some(config) = config {
-            JsonDecodable::from_json(config)?
+            serde_json::from_str(config)
+                .map_err(|err| CommonError::InvalidStructure(format!("Invalid Pool config: {}", err)))?
         } else {
             PoolOpenConfig::default()
         };
@@ -143,7 +141,7 @@ impl PoolService {
         send_cmd_sock.connect(inproc_sock_name.as_str())?;
 
         new_pool.work(recv_cmd_sock);
-        self._send_msg(pool_handle, "connect", &send_cmd_sock)?;
+        self._send_msg(pool_handle, "connect", &send_cmd_sock, None, None)?;
 
         self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
             .insert(new_pool.get_id(), ZMQPool::new(new_pool, send_cmd_sock));
@@ -165,7 +163,19 @@ impl PoolService {
 
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
         match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket)?,
+            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, None, None)?,
+            None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
+        }
+
+        Ok(cmd_id)
+    }
+
+    pub fn send_action(&self, handle: i32, msg: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<i32, PoolError> {
+        let cmd_id: i32 = SequenceUtils::get_next_id();
+
+        let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
+        match pools.get(&handle) {
+            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, nodes, timeout)?,
             None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         }
 
@@ -197,7 +207,7 @@ impl PoolService {
 
         let mut pools = self.open_pools.try_borrow_mut().map_err(CommonError::from)?;
         match pools.remove(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, "exit", &pool.cmd_socket)?,
+            Some(ref pool) => self._send_msg(cmd_id, "exit", &pool.cmd_socket, None, None)?,
             None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         }
 
@@ -209,17 +219,24 @@ impl PoolService {
 
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
         match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, "refresh", &pool.cmd_socket)?,
+            Some(ref pool) => self._send_msg(cmd_id, "refresh", &pool.cmd_socket, None, None)?,
             None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         };
 
         Ok(cmd_id)
     }
 
-    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket) -> Result<(), PoolError> {
+    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket, nodes: Option<&str>, timeout: Option<i32>) -> Result<(), PoolError> {
         let mut buf = [0u8; 4];
+        let mut buf_to = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
-        Ok(socket.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT)?)
+        let timeout = timeout.unwrap_or(-1);
+        LittleEndian::write_i32(&mut buf_to, timeout);
+        if let Some(nodes) = nodes {
+            Ok(socket.send_multipart(&[msg.as_bytes(), &buf, &buf_to, nodes.as_bytes()], zmq::DONTWAIT)?)
+        } else {
+            Ok(socket.send_multipart(&[msg.as_bytes(), &buf, &buf_to], zmq::DONTWAIT)?)
+        }
     }
 
     pub fn list(&self) -> Result<Vec<serde_json::Value>, PoolError> {
@@ -290,7 +307,7 @@ mod tests {
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id, PoolOpenConfig::default()), send_soc));
             let cmd_id = ps.close(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
-            assert_eq!(recv.len(), 2);
+            assert_eq!(recv.len(), 3);
             assert_eq!("exit", String::from_utf8(recv[0].clone()).unwrap());
             assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
         }
@@ -309,7 +326,7 @@ mod tests {
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id, PoolOpenConfig::default()), send_soc));
             let cmd_id = ps.refresh(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
-            assert_eq!(recv.len(), 2);
+            assert_eq!(recv.len(), 3);
             assert_eq!("refresh", String::from_utf8(recv[0].clone()).unwrap());
             assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
         }
@@ -392,6 +409,25 @@ mod tests {
             TestUtils::cleanup_storage();
             let ps = PoolService::new();
             assert_match!(Err(PoolError::InvalidHandle(_)), ps.send_tx(-1, "txn"));
+        }
+
+        #[test]
+        fn pool_send_action_works() {
+            TestUtils::cleanup_storage();
+
+            let name = "test";
+            let zmq_ctx = zmq::Context::new();
+            let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let inproc_sock_name: String = format!("inproc://pool_{}", name);
+            recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
+            send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+            let pool = Pool::new(name, 0, PoolOpenConfig::default());
+            let ps = PoolService::new();
+            ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
+            let test_data = "str_instead_of_tx_json";
+            ps.send_action(-1, test_data, None, None).unwrap();
+            assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
         }
 
         #[test]
@@ -510,7 +546,7 @@ mod tests {
         extern crate sodiumoxide;
 
         use services::pool::rust_base58::{FromBase58, ToBase58};
-        use utils::crypto::box_::CryptoBox;
+        use utils::crypto::ed25519_sign;
         use std::thread;
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
@@ -534,6 +570,7 @@ mod tests {
                             node_port: Some(0),
                             services: Some(vec!["VALIDATOR".to_string()]),
                             blskey: Some(blskey.to_string()),
+                            blskey_pop: None,
                         },
                         dest: "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv".to_string(),
                         verkey: None,
@@ -567,6 +604,7 @@ mod tests {
                             node_port: Some(0),
                             services: Some(vec!["VALIDATOR".to_string()]),
                             blskey: Some(blskey.to_string()),
+                            blskey_pop: None,
                         },
                         dest: "Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv".to_string(),
                         verkey: None,
@@ -585,15 +623,16 @@ mod tests {
 
         pub fn start(gt: &mut NodeTransactionV1) -> thread::JoinHandle<Vec<String>> {
             let (vk, sk) = sodiumoxide::crypto::sign::ed25519::gen_keypair();
-            let pkc = CryptoBox::vk_to_curve25519(&Vec::from(&vk.0 as &[u8])).expect("Invalid pkc");
-            let skc = CryptoBox::sk_to_curve25519(&Vec::from(&sk.0 as &[u8])).expect("Invalid skc");
+            let (vk, sk) = (ed25519_sign::PublicKey::from_slice(&vk[..]).unwrap(), ed25519_sign::SecretKey::from_slice(&sk[..]).unwrap());
+            let pkc = ed25519_sign::vk_to_curve25519(&vk).expect("Invalid pkc");
+            let skc = ed25519_sign::sk_to_curve25519(&sk).expect("Invalid skc");
             let ctx = zmq::Context::new();
             let s: zmq::Socket = ctx.socket(zmq::SocketType::ROUTER).unwrap();
 
-            gt.txn.data.dest = (&vk.0 as &[u8]).to_base58();
+            gt.txn.data.dest = (&vk[..]).to_base58();
 
-            s.set_curve_publickey(&zmq::z85_encode(pkc.as_slice()).unwrap()).expect("set public key");
-            s.set_curve_secretkey(&zmq::z85_encode(skc.as_slice()).unwrap()).expect("set secret key");
+            s.set_curve_publickey(&zmq::z85_encode(&pkc[..]).unwrap()).expect("set public key");
+            s.set_curve_secretkey(&zmq::z85_encode(&skc[..]).unwrap()).expect("set secret key");
             s.set_curve_server(true).expect("set curve server");
 
             s.bind("tcp://127.0.0.1:*").expect("bind");

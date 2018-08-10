@@ -57,7 +57,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
     check_useful_c_str!(did_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_json);
+    trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, secret!(did_json.as_str()));
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::CreateAndStoreMyDid(
@@ -119,7 +119,7 @@ pub  extern fn indy_replace_keys_start(command_handle: i32,
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_replace_keys_start: entities>>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, identity_json);
+    trace!("indy_replace_keys_start: entities>>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, secret!(identity_json.as_str()));
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::ReplaceKeysStart(

@@ -72,6 +72,28 @@
            poolHandle:(IndyHandle)poolHandle
            completion:(void (^)(NSError *error, NSString *requestResultJSON))completion;
 
+/**
+ Send action to particular nodes of validator pool.
+
+ The list of requests can be send:
+    POOL_RESTART
+    GET_VALIDATOR_INFO
+
+ The request is sent to the nodes as is. It's assumed that it's already prepared.
+
+ @param requestJson Request data json.
+ @param nodes (Optional) List of node names to send the request.
+           ["Node1", "Node2",...."NodeN"]
+ @param timeout (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+ @param poolHandle Pool handle (created by IndyPool::openPoolLedgerWithName).
+ @param completion Callback that takes command result as parameter. Returns signed request json.
+ */
++ (void)submitAction:(NSString *)requestJson
+               nodes:(NSString *)nodes
+             timeout:(NSNumber *)timeout
+          poolHandle:(IndyHandle)poolHandle
+          completion:(void (^)(NSError *error, NSString *requestResultJSON))completion;
+
 // MARK: - Nym request
 
 /**
@@ -285,6 +307,7 @@
  {
      alias: string - Node's alias
      blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+     blskey_pop: string - (Optional) BLS key proof of possession as base58-encoded string.
      client_ip: string - (Optional) Node's client listener IP address.
      client_port: string - (Optional) Node's client listener port.
      node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
@@ -367,6 +390,7 @@
  @param justification (Optional) justification string for this particular Upgrade.
  @param reinstall Whether it's allowed to re-install the same version. False by default.
  @param force Whether we should apply transaction (schedule Upgrade) without waiting for consensus of this transaction.
+ @param package_ (Optional) Package to be upgraded.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
 + (void)buildPoolUpgradeRequestWithSubmitterDid:(NSString *)submitterDid
@@ -379,6 +403,7 @@
                                   justification:(NSString *)justification
                                       reinstall:(BOOL)reinstall
                                           force:(BOOL)force
+                                       package_:(NSString *)package_
                                      completion:(void (^)(NSError *error, NSString *requestJSON))completion;
 // MARK: - Revocation registry definition request
 

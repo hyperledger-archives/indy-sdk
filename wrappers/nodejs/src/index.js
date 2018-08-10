@@ -109,9 +109,9 @@ indy.proverGetCredential = function proverGetCredential (wh, credId, cb) {
   return cb.promise
 }
 
-indy.proverSearchCredentials = function proverSearchCredentials (wh, filter, cb) {
+indy.proverSearchCredentials = function proverSearchCredentials (wh, query, cb) {
   cb = wrapIndyCallback(cb)
-  capi.proverSearchCredentials(wh, toJson(filter), cb)
+  capi.proverSearchCredentials(wh, toJson(query), cb)
   return cb.promise
 }
 
@@ -331,6 +331,12 @@ indy.submitRequest = function submitRequest (poolHandle, request, cb) {
   return cb.promise
 }
 
+indy.submitAction = function submitAction (poolHandle, request, nodes, timeout, cb) {
+  cb = wrapIndyCallback(cb, fromJson)
+  capi.submitAction(poolHandle, toJson(request), toJson(nodes), nodes == null ? -1 : nodes, cb)
+  return cb.promise
+}
+
 indy.signRequest = function signRequest (wh, submitterDid, request, cb) {
   cb = wrapIndyCallback(cb, fromJson)
   capi.signRequest(wh, submitterDid, toJson(request), cb)
@@ -443,9 +449,9 @@ indy.buildPoolRestartRequest = function buildPoolRestartRequest (submitterDid, a
   return cb.promise
 }
 
-indy.buildPoolUpgradeRequest = function buildPoolUpgradeRequest (submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb) {
+indy.buildPoolUpgradeRequest = function buildPoolUpgradeRequest (submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.buildPoolUpgradeRequest(submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, cb)
+  capi.buildPoolUpgradeRequest(submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package_, cb)
   return cb.promise
 }
 
@@ -697,7 +703,7 @@ indy.createPoolLedgerConfig = function createPoolLedgerConfig (configName, confi
 
 indy.openPoolLedger = function openPoolLedger (configName, config, cb) {
   cb = wrapIndyCallback(cb)
-  capi.openPoolLedger(configName, config, cb)
+  capi.openPoolLedger(configName, toJson(config), cb)
   return cb.promise
 }
 
@@ -749,9 +755,9 @@ indy.exportWallet = function exportWallet (wh, exportConfig, cb) {
   return cb.promise
 }
 
-indy.deleteWallet = function deleteWallet (config, credentials, cb) {
+indy.importWallet = function importWallet (config, credentials, importConfig, cb) {
   cb = wrapIndyCallback(cb)
-  capi.deleteWallet(toJson(config), toJson(credentials), cb)
+  capi.importWallet(toJson(config), toJson(credentials), toJson(importConfig), cb)
   return cb.promise
 }
 
@@ -761,9 +767,9 @@ indy.closeWallet = function closeWallet (wh, cb) {
   return cb.promise
 }
 
-indy.importWallet = function importWallet (config, credentials, importConfigJson, cb) {
+indy.deleteWallet = function deleteWallet (config, credentials, cb) {
   cb = wrapIndyCallback(cb)
-  capi.importWallet(toJson(config), toJson(credentials), toJson(importConfigJson), cb)
+  capi.deleteWallet(toJson(config), toJson(credentials), cb)
   return cb.promise
 }
 

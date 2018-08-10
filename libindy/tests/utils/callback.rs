@@ -14,10 +14,6 @@ lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 }
 
-lazy_static! {
-    static ref CLOSURE_CB_MAP: Mutex<HashMap<i32, i32>> = Default::default();
-}
-
 pub struct CallbackUtils {}
 
 impl CallbackUtils {
