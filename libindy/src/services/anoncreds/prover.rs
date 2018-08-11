@@ -284,6 +284,7 @@ impl Prover {
         res.insert("schema_version".to_string(), credential.schema_version());
         res.insert("issuer_did".to_string(), credential.issuer_did());
         res.insert("cred_def_id".to_string(), credential.cred_def_id());
+        res.insert("rev_reg_id".to_string(), credential.rev_reg_id.clone().unwrap_or("None".to_string()));
 
         credential.values
             .iter()
@@ -444,6 +445,8 @@ mod tests {
     const SCHEMA_VERSION: &'static str = "1.0";
     const ISSUER_DID: &'static str = "did";
     const CRED_DEF_ID: &'static str = "did:3:CL:did:2:gvt:1.0";
+    const REV_REG_ID: &'static str = "did:4:did:3:CL:did:2:gvt:1.0:CL_ACCUM:TAG_1";
+    const NO_REV_REG_ID: &'static str = "None";
 
     macro_rules! hashmap {
         ($( $key: expr => $val: expr ),*) => {
@@ -492,6 +495,31 @@ mod tests {
                     "schema_version".to_string() => SCHEMA_VERSION.to_string(),
                     "issuer_did".to_string() => ISSUER_DID.to_string(),
                     "cred_def_id".to_string() => CRED_DEF_ID.to_string(),
+                    "rev_reg_id".to_string() => NO_REV_REG_ID.to_string(),
+                    "attr::name::marker".to_string() => ATTRIBUTE_EXISTENCE_MARKER.to_string(),
+                    "attr::name::value".to_string() => "Alex".to_string(),
+                    "attr::age::marker".to_string() => ATTRIBUTE_EXISTENCE_MARKER.to_string(),
+                    "attr::age::value".to_string() => "25".to_string()
+                 );
+
+            assert_eq!(expected_tags, tags)
+        }
+
+        #[test]
+        fn build_credential_tags_works_for_rev_reg_id() {
+            let ps = Prover::new();
+            let mut credential = _credential();
+            credential.rev_reg_id = Some(REV_REG_ID.to_string());
+            let tags = ps.build_credential_tags(&credential);
+
+            let expected_tags: HashMap<String, String> = hashmap!(
+                    "schema_id".to_string() => SCHEMA_ID.to_string(),
+                    "schema_issuer_did".to_string() => SCHEMA_ISSUER_DID.to_string(),
+                    "schema_name".to_string() => SCHEMA_NAME.to_string(),
+                    "schema_version".to_string() => SCHEMA_VERSION.to_string(),
+                    "issuer_did".to_string() => ISSUER_DID.to_string(),
+                    "cred_def_id".to_string() => CRED_DEF_ID.to_string(),
+                    "rev_reg_id".to_string() => REV_REG_ID.to_string(),
                     "attr::name::marker".to_string() => ATTRIBUTE_EXISTENCE_MARKER.to_string(),
                     "attr::name::value".to_string() => "Alex".to_string(),
                     "attr::age::marker".to_string() => ATTRIBUTE_EXISTENCE_MARKER.to_string(),

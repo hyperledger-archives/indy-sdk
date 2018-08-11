@@ -45,11 +45,12 @@ pub fn build_catchup_req(merkle: &MerkleTree, target_mt_size: usize) -> Result<O
 
 pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Option<Vec<String>>), HashSet<String>>,
                                        merkle_tree: &MerkleTree,
-                                       node_count: usize,
+                                       node_cnt: usize,
                                        f: usize,
                                        pool_name: &str) -> Result<CatchupProgress, PoolError> {
     if let Some((most_popular_vote, votes_cnt)) = nodes_votes.iter().map(|(key, val)| (key, val.len())).max_by_key(|entry| entry.1) {
-        if votes_cnt == node_count - f {
+        let is_consensus_reached = votes_cnt == node_cnt - f;
+        if is_consensus_reached {
             if most_popular_vote.0.eq("timeout") {
                 return Err(PoolError::Timeout);
             }
@@ -61,6 +62,14 @@ pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Opt
                     Err(err)
                 }
             });
+        } else {
+            let reps_cnt: usize = nodes_votes.values().map(|set| set.len()).sum();
+            let positive_votes_cnt = votes_cnt + (node_cnt - reps_cnt);
+            let is_consensus_reachable = positive_votes_cnt < node_cnt - f;
+            if is_consensus_reachable {
+                //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
+                return Err(PoolError::Timeout);
+            }
         }
     }
     Ok(CatchupProgress::InProgress)

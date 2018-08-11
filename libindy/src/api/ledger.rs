@@ -119,6 +119,71 @@ pub extern fn indy_submit_request(command_handle: i32,
     res
 }
 
+/// Send action to particular nodes of validator pool.
+///
+/// The list of requests can be send:
+///     POOL_RESTART
+///     GET_VALIDATOR_INFO
+///
+/// The request is sent to the nodes as is. It's assumed that it's already prepared.
+///
+/// #Params
+/// command_handle: command handle to map callback to caller context.
+/// pool_handle: pool handle (created by open_pool_ledger).
+/// request_json: Request data json.
+/// nodes: (Optional) List of node names to send the request.
+///        ["Node1", "Node2",...."NodeN"]
+/// timeout: (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+///                     Pass -1 to use default timeout
+/// cb: Callback that takes command result as parameter.
+///
+/// #Returns
+/// Request result as json.
+///
+/// #Errors
+/// Common*
+/// Ledger*
+#[no_mangle]
+pub extern fn indy_submit_action(command_handle: i32,
+                                 pool_handle: i32,
+                                 request_json: *const c_char,
+                                 nodes: *const c_char,
+                                 timeout: i32,
+                                 cb: Option<extern fn(xcommand_handle: i32,
+                                                      err: ErrorCode,
+                                                      request_result_json: *const c_char)>) -> ErrorCode {
+    trace!("indy_submit_action: >>> pool_handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", pool_handle, request_json, nodes, timeout);
+
+    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(nodes, ErrorCode::CommonInvalidParam4);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
+
+    let timeout = if timeout != -1 { Some(timeout) } else { None };
+
+    trace!("indy_submit_action: entities >>> pool_handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", pool_handle, request_json, nodes, timeout);
+
+    let result = CommandExecutor::instance()
+        .send(Command::Ledger(
+            LedgerCommand::SubmitAction(
+                pool_handle,
+                request_json,
+                nodes,
+                timeout,
+                Box::new(move |result| {
+                    let (err, request_result_json) = result_to_err_code_1!(result, String::new());
+                    trace!("indy_submit_action: request_result_json: {:?}", request_result_json);
+                    let request_result_json = CStringUtils::string_to_cstring(request_result_json);
+                    cb(command_handle, err, request_result_json.as_ptr())
+                })
+            )));
+
+    let res = result_to_err_code!(result);
+
+    trace!("indy_submit_action: <<< res: {:?}", res);
+
+    res
+}
+
 /// Signs request message.
 ///
 /// Adds submitter information to passed request json, signs it with submitter
@@ -904,9 +969,9 @@ pub extern fn indy_build_node_request(command_handle: i32,
 /// Common*
 #[no_mangle]
 pub extern fn indy_build_get_validator_info_request(command_handle: i32,
-                                         submitter_did: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
-                                                              request_json: *const c_char)>) -> ErrorCode {
+                                                    submitter_did: *const c_char,
+                                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                                         request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -1097,6 +1162,7 @@ pub extern fn indy_build_pool_restart_request(command_handle: i32,
 /// reinstall: Whether it's allowed to re-install the same version. False by default.
 /// force: Whether we should apply transaction (schedule Upgrade) without waiting
 ///        for consensus of this transaction.
+/// package: (Optional) Package to be upgraded.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -1116,12 +1182,13 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
                                               justification: *const c_char,
                                               reinstall: bool,
                                               force: bool,
+                                              package: *const c_char,
                                               cb: Option<extern fn(xcommand_handle: i32,
                                                                    err: ErrorCode,
                                                                    request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_pool_upgrade_request: >>> submitter_did: {:?}, name: {:?}, version: {:?}, action: {:?}, sha256: {:?}, timeout: {:?}, \
-    schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}",
-           submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force);
+    schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}, package: {:?}",
+           submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(name, ErrorCode::CommonInvalidParam3);
@@ -1130,13 +1197,14 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
     check_useful_c_str!(sha256, ErrorCode::CommonInvalidParam6);
     check_useful_opt_c_str!(schedule, ErrorCode::CommonInvalidParam8);
     check_useful_opt_c_str!(justification, ErrorCode::CommonInvalidParam9);
-    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam12);
+    check_useful_opt_c_str!(package, ErrorCode::CommonInvalidParam12);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam13);
 
     let timeout = if timeout != -1 { Some(timeout as u32) } else { None };
 
     trace!("indy_build_pool_upgrade_request: entities >>> submitter_did: {:?}, name: {:?}, version: {:?}, action: {:?}, sha256: {:?}, timeout: {:?}, \
-    schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}",
-           submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force);
+    schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}, package: {:?}",
+           submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
@@ -1151,6 +1219,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
                 justification,
                 reinstall,
                 force,
+                package,
                 Box::new(move |result| {
                     let (err, request_json) = result_to_err_code_1!(result, String::new());
                     trace!("indy_build_pool_upgrade_request: request_json: {:?}", request_json);
