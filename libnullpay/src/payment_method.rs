@@ -290,7 +290,7 @@ pub mod build_set_txn_fees_req {
         check_useful_c_str!(fees_json, ErrorCode::CommonInvalidState);
         trace!("libnullpay::build_set_txn_fees_req::handle << fees_json: {}, submitter_did: {}", fees_json, submitter_did);
 
-        parse_json!(fees_json, HashMap<String, i32>, ErrorCode::CommonInvalidStructure);
+        parse_json!(fees_json, HashMap<String, u64>, ErrorCode::CommonInvalidStructure);
 
         ledger::build_get_txn_request(submitter_did.as_str(),
                                       None,
@@ -467,10 +467,10 @@ fn _add_response(request: &str, response: &str) -> ErrorCode {
     }
 }
 
-fn _count_total_inputs(inputs: &Vec<String>) -> i32 {
+fn _count_total_inputs(inputs: &Vec<String>) -> u64 {
     inputs.into_iter().filter_map(source_cache::get_balance_of_source).fold(0, |acc, next| acc + next)
 }
 
-fn _count_total_payments(outputs: &Vec<Output>) -> i32 {
+fn _count_total_payments(outputs: &Vec<Output>) -> u64 {
     outputs.into_iter().fold(0, |acc, next| acc + next.amount)
 }

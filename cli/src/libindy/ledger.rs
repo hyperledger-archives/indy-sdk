@@ -40,6 +40,41 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
+    pub fn submit_action(pool_handle: i32, request_json: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+
+        let request_json = CString::new(request_json).unwrap();
+        let nodes_str = nodes.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let timeout = timeout.unwrap_or(-1);
+
+        let err = unsafe {
+            indy_submit_action(command_handle,
+                               pool_handle,
+                               request_json.as_ptr(),
+                               if nodes.is_some() { nodes_str.as_ptr() } else { null() },
+                               timeout,
+                               cb)
+        };
+
+        super::results::result_to_string(err, receiver)
+    }
+
+    pub fn sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
+
+        let submitter_did = CString::new(submitter_did).unwrap();
+        let request_json = CString::new(request_json).unwrap();
+
+        let err = unsafe {
+            indy_sign_request(command_handle,
+                              wallet_handle,
+                              submitter_did.as_ptr(),
+                              request_json.as_ptr(),
+                              cb)
+        };
+
+        super::results::result_to_string(err, receiver)
+    }
 
     pub fn multi_sign_request(wallet_handle: i32, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
@@ -198,8 +233,8 @@ impl Ledger {
 
         let err = unsafe {
             indy_build_get_validator_info_request(command_handle,
-                                         submitter_did.as_ptr(),
-                                         cb)
+                                                  submitter_did.as_ptr(),
+                                                  cb)
         };
 
         super::results::result_to_string(err, receiver)
@@ -273,7 +308,7 @@ impl Ledger {
     }
 
     pub fn indy_build_pool_upgrade_request(submitter_did: &str, name: &str, version: &str, action: &str, sha256: &str, timeout: Option<u32>, schedule: Option<&str>,
-                                           justification: Option<&str>, reinstall: bool, force: bool) -> Result<String, ErrorCode> {
+                                           justification: Option<&str>, reinstall: bool, force: bool, package: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
         let submitter_did = CString::new(submitter_did).unwrap();
@@ -285,6 +320,7 @@ impl Ledger {
 
         let schedule_str = schedule.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let justification_str = justification.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let package_str = package.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
         let err = unsafe {
             indy_build_pool_upgrade_request(command_handle,
@@ -298,6 +334,7 @@ impl Ledger {
                                             if justification.is_some() { justification_str.as_ptr() } else { null() },
                                             reinstall,
                                             force,
+                                            if package.is_some() { package_str.as_ptr() } else { null() },
                                             cb)
         };
 
@@ -316,10 +353,25 @@ extern {
                                     cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_result_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
+    fn indy_sign_request(command_handle: i32,
+                         wallet_handle: i32,
+                         submitter_did: *const c_char,
+                         request_json: *const c_char,
+                         cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, signed_request_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
     fn indy_submit_request(command_handle: i32,
                            pool_handle: i32,
                            request_json: *const c_char,
                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_result_json: *const c_char)>) -> ErrorCode;
+
+    #[no_mangle]
+    fn indy_submit_action(command_handle: i32,
+                          pool_handle: i32,
+                          request_json: *const c_char,
+                          nodes: *const c_char,
+                          timeout: i32,
+                          cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_result_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_multi_sign_request(command_handle: i32,
@@ -376,8 +428,8 @@ extern {
 
     #[no_mangle]
     fn indy_build_get_validator_info_request(command_handle: i32,
-                                            submitter_did: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
+                                             submitter_did: *const c_char,
+                                             cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 
     #[no_mangle]
     fn indy_build_cred_def_request(command_handle: i32,
@@ -424,5 +476,6 @@ extern {
                                        justification: *const c_char,
                                        reinstall: bool,
                                        force: bool,
+                                       package: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode, request_json: *const c_char)>) -> ErrorCode;
 }
