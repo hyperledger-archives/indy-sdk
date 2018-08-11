@@ -411,6 +411,7 @@ pub extern fn indy_prover_create_credential_req(command_handle: i32,
 ///         "schema_version": <credential schema version>,
 ///         "issuer_did": <credential issuer did>,
 ///         "cred_def_id": <credential definition id>,
+///         "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
 ///         // for every attribute in <credential values>
 ///         "attr::<attribute name>::marker": "1",
 ///         "attr::<attribute name>::value": <attribute raw value>,

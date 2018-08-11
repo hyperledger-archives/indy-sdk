@@ -71,7 +71,7 @@ execute_on_device(){
 
 
 download_sdk
-download_and_unzip_dependencies_for_all_architectures
+download_and_unzip_dependencies ${ABSOLUTE_ARCH}
 download_and_setup_toolchain
 set_env_vars
 create_standalone_toolchain_and_rust_target

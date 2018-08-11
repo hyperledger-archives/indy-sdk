@@ -46,7 +46,6 @@ pub extern fn nullpay_init() -> ErrorCode {
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
-#[allow(dead_code)]
 pub enum ErrorCode
 {
     Success = 0,

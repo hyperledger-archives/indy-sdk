@@ -293,6 +293,11 @@ public enum ErrorCode {
 	 * Operation is not supported for payment method
 	 */
 	PaymentOperationNotSupportedError(704),
+
+	/**
+	 * Extra funds on inputs
+	 */
+	ExtraFundsError(705),
 	;
 
 	private int value;
