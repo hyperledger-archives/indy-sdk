@@ -461,6 +461,8 @@ mod tests {
         use super::*;
 
         fn _credential() -> Credential {
+            // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
+            // so Alex -> 12345 is an application choice while 25 -> 25 is not
             let mut attr_values: HashMap<String, AttributeValues> = HashMap::new();
             attr_values.insert("name".to_string(), AttributeValues { raw: "Alex".to_string(), encoded: "12345".to_string() });
             attr_values.insert("age".to_string(), AttributeValues { raw: "25".to_string(), encoded: "25".to_string() });
