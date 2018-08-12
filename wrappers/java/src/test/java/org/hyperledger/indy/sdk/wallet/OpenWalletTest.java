@@ -5,6 +5,7 @@ import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
+import org.json.JSONObject;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -34,7 +35,7 @@ public class OpenWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	public void testOpenWalletWorksForEncryptedWalletChangingCredentials() throws Exception {
+	public void testOpenWalletWorksForChangingCredentials() throws Exception {
 		Wallet.createWallet(WALLET_CONFIG, "{\"key\": \"key\"}").get();
 
 		Wallet wallet = Wallet.openWallet(WALLET_CONFIG, "{\"key\": \"key\", \"rekey\": \"other_key\"}").get();
@@ -67,9 +68,13 @@ public class OpenWalletTest extends IndyIntegrationTest {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(WalletAlreadyOpenedException.class));
 
-		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		String config = new JSONObject()
+				.put("id", "openWalletWorksForTwice")
+				.toString();
 
-		Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
+		Wallet.createWallet(config, WALLET_CREDENTIALS).get();
+
+		Wallet.openWallet(config, WALLET_CREDENTIALS).get();
+		Wallet.openWallet(config, WALLET_CREDENTIALS).get();
 	}
 }

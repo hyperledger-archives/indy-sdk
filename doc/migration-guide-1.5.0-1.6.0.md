@@ -65,6 +65,18 @@ This wallet configuration json has the following format:
    }
  }
 ```
+* Updated wallet `credentials` to accept the additional parameter `simplified_security`.
+This parameter provides the ability to use less secured but faster crypto algorithm for master key derivation.
+Wallet credentials json has the following format:
+```
+ {
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
+   "simplified_security": optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
+ }
+```
 
 *WARNING* Wallet format of libindy v1.6 isn't compatible with a wallet format of libindy v1.5.
 
@@ -100,6 +112,7 @@ indy_create_wallet(command_handle: i32,
                                         err: ErrorCode)>)
       </pre>
       <b>Note:</b> Format of <i>config</i> parameter was changed. Current format is described above.
+      <b>Note:</b> Format of <i>credentials</i> parameter was changed. Current format is described above.
     </td>
   </tr>
   </tr>
