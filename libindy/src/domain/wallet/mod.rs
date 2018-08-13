@@ -20,14 +20,15 @@ pub struct Credentials {
     pub rekey_key_derivation_method: KeyDerivationMethod
 }
 
+#[allow(non_camel_case_types)]
 #[derive(Debug, Serialize, Deserialize)]
 pub enum KeyDerivationMethod {
-    Moderate,
-    Interactive
+    ARAGON2I_MOD,
+    ARAGON2I_INT
 }
 
 fn default_key_derivation_method() -> KeyDerivationMethod {
-    KeyDerivationMethod::Moderate
+    KeyDerivationMethod::ARAGON2I_MOD
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -1737,7 +1737,7 @@ mod tests {
     }
 
     fn _credentials_interactive() -> String {
-        json!({"key": "my_key", "key_derivation_method": "Interactive"}).to_string()
+        json!({"key": "my_key", "key_derivation_method": "ARAGON2I_INT"}).to_string()
     }
 
     fn _rekey_credentials() -> String {
@@ -1745,7 +1745,7 @@ mod tests {
     }
 
     fn _rekey_credentials_interactive() -> String {
-        json!({"key": "my_key", "rekey": "my_new_key", "rekey_derivation_method": "Interactive"}).to_string()
+        json!({"key": "my_key", "rekey": "my_new_key", "rekey_derivation_method": "ARAGON2I_INT"}).to_string()
     }
 
     fn _credentials_for_new_key() -> String {
@@ -1773,7 +1773,7 @@ mod tests {
         json!({
             "path": _export_file_path().to_str().unwrap(),
             "key": "export_key",
-            "key_derivation_method": "Interactive"
+            "key_derivation_method": "ARAGON2I_INT"
         }).to_string()
     }
 

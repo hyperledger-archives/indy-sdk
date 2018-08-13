@@ -75,8 +75,8 @@ Wallet credentials json has the following format:
                           Can be optional if storage supports default configuration.
                           For 'default' storage type should be empty.
    "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                          Moderate (used by default)
-                          Interactive - less secured but faster 
+                          ARAGON2I_MOD (used by default)
+                          ARAGON2I_INT - less secured but faster 
  }
 ```
 

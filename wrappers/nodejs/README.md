@@ -2287,8 +2287,9 @@ Create a new secure wallet.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           Moderate (used by default)
-                           Interactive - less secured but faster}
+                           ARAGON2I_MOD (used by default)
+                           ARAGON2I_INT - less secured but faster
+}
 ````
 * __->__ void
 
@@ -2327,11 +2328,12 @@ Wallet must be previously created with createWallet method.
       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                              Can be optional if storage supports default configuration.
       "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                               Moderate (used by default)
-                               Interactive - less secured but faster}
+                               ARAGON2I_MOD (used by default)
+                               ARAGON2I_INT - less secured but faster}
       "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
-                               Moderate (used by default)
-                               Interactive - less secured but faster}  }
+                               ARAGON2I_MOD (used by default)
+                               ARAGON2I_INT - less secured but faster
+  }
 ````
 * __->__ `handle`: Handle (Number) - err: Error code
 handle: Handle to opened wallet to use in methods that require wallet access.
@@ -2349,8 +2351,9 @@ Exports opened wallet
     "path": <string>, Path of the file that contains exported wallet content
     "key": <string>, Passphrase used to derive export key
     "key_derivation_method": optional<string> algorithm to use for export key derivation:
-                             Moderate (used by default)
-                             Interactive - less secured but faster}  }
+                             ARAGON2I_MOD (used by default)
+                             ARAGON2I_INT - less secured but faster  
+  }
 ```
 * __->__ void
 
@@ -2388,8 +2391,9 @@ This can be seen as an createWallet call with additional content import
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           Moderate (used by default)
-                           Interactive - less secured but faster}}
+                           ARAGON2I_MOD (used by default)
+                           ARAGON2I_INT - less secured but faster
+}
 ````
 * `importConfig`: Json
 ```
@@ -2441,8 +2445,9 @@ Deletes created wallet.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           Moderate (used by default)
-                           Interactive - less secured but faster}}
+                           ARAGON2I_MOD (used by default)
+                           ARAGON2I_INT - less secured but faster
+}
 ````
 * __->__ void
 

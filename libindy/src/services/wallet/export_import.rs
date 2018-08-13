@@ -24,12 +24,12 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
     let chunk_size = CHUNK_SIZE;
 
     let encryption_method = match key_derivation_method {
-        KeyDerivationMethod::Moderate => EncryptionMethod::ChaCha20Poly1305IETF {
+        KeyDerivationMethod::ARAGON2I_MOD => EncryptionMethod::ChaCha20Poly1305IETF {
             salt: salt[..].to_vec(),
             nonce: nonce[..].to_vec(),
             chunk_size,
         },
-        KeyDerivationMethod::Interactive => EncryptionMethod::ChaCha20Poly1305IETFInteractive {
+        KeyDerivationMethod::ARAGON2I_INT => EncryptionMethod::ChaCha20Poly1305IETFInteractive {
             salt: salt[..].to_vec(),
             nonce: nonce[..].to_vec(),
             chunk_size,
@@ -101,8 +101,8 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
     }
 
     let key_derivation_method = match header.encryption_method {
-        EncryptionMethod::ChaCha20Poly1305IETF { .. } => KeyDerivationMethod::Moderate,
-        EncryptionMethod::ChaCha20Poly1305IETFInteractive { .. } => KeyDerivationMethod::Interactive,
+        EncryptionMethod::ChaCha20Poly1305IETF { .. } => KeyDerivationMethod::ARAGON2I_MOD,
+        EncryptionMethod::ChaCha20Poly1305IETFInteractive { .. } => KeyDerivationMethod::ARAGON2I_INT,
     };
 
     // Reads encrypted
@@ -175,7 +175,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_wallet1(), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::Moderate).unwrap();
+        export(&_wallet1(), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARAGON2I_MOD).unwrap();
 
         let wallet = _wallet2();
         _assert_is_empty(&wallet);
@@ -189,7 +189,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::Moderate).unwrap();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARAGON2I_MOD).unwrap();
 
         let wallet = _wallet2();
         _assert_is_empty(&wallet);
@@ -203,7 +203,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::Interactive).unwrap();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARAGON2I_INT).unwrap();
 
         let wallet = _wallet2();
         _assert_is_empty(&wallet);
@@ -217,7 +217,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::Moderate).unwrap();
+        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARAGON2I_MOD).unwrap();
 
         let wallet = _wallet2();
         _assert_is_empty(&wallet);
@@ -272,7 +272,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_wallet1(), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::Moderate).unwrap();
+        export(&_wallet1(), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARAGON2I_MOD).unwrap();
 
         // Modifying one of the bytes in the header hash
         let pos = (&mut output.as_slice()).read_u32::<LittleEndian>().unwrap() as usize + 2;
@@ -287,7 +287,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::Moderate).unwrap();
+        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARAGON2I_MOD).unwrap();
 
         // Modifying one byte in the middle of encrypted part
         let pos = output.len() / 2;
@@ -302,7 +302,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::Moderate).unwrap();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARAGON2I_MOD).unwrap();
 
         output.pop().unwrap();
 
@@ -315,7 +315,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::Moderate).unwrap();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARAGON2I_MOD).unwrap();
 
         output.push(10);
 

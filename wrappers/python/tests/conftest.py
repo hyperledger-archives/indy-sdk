@@ -149,7 +149,7 @@ def credentials():
     logger = logging.getLogger(__name__)
     logger.debug("credentials: >>>")
 
-    res = '{"key":"key", "key_derivation_method": "Interactive"}'
+    res = '{"key":"key", "key_derivation_method": "ARAGON2I_INT"}'
 
     logger.debug("credentials: <<< res: %r", res)
     return res

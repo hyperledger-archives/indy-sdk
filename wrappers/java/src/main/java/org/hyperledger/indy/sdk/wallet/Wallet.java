@@ -160,8 +160,8 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                          Can be optional if storage supports default configuration.
 	 *                           For 'default' storage type should be empty.
 	 *   "key_derivation_method": optional[string] algorithm to use for master key derivation:
-	 *                          Moderate (used by default)
-	 *                          Interactive - less secured but faster
+	 *                          ARAGON2I_MOD (used by default)
+	 *                          ARAGON2I_INT - less secured but faster
 	 * }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -212,11 +212,11 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                              Can be optional if storage supports default configuration.
 	 *                               For 'default' storage type should be empty.
 	 *   "key_derivation_method": optional[string] algorithm to use for master key derivation:
-	 *                          Moderate (used by default)
-	 *                          Interactive - less secured but faster
+	 *                          ARAGON2I_MOD (used by default)
+	 *                          ARAGON2I_INT - less secured but faster
 	 *   "rekey_derivation_method": optional[string] algorithm to use for master rekey derivation:
-	 *                              Moderate (used by default)
-	 *                              Interactive - less secured but faster
+	 *                              ARAGON2I_MOD (used by default)
+	 *                              ARAGON2I_INT - less secured but faster
 	 *
 	 *   }
 	 * @return A future that resolves no value.
@@ -294,8 +294,8 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                              Can be optional if storage supports default configuration.
 	 *                               For 'default' storage type should be empty.
 	 *       "key_derivation_method": optional[string] algorithm to use for master key derivation:
-	 *                                Moderate (used by default)
-	 *                                Interactive - less secured but faster
+	 *                                ARAGON2I_MOD (used by default)
+	 *                                ARAGON2I_INT - less secured but faster
 	 *   }
 	 *                       
 	 * @return A future that resolves no value.
@@ -328,8 +328,8 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *     "path": "string", Path of the file that contains exported wallet content
 	 *     "key": "string", Passphrase used to derive export key
 	 *     "key_derivation_method": optional[string] algorithm to use for export key derivation:
-	 *                            Moderate (used by default)
-	 *                            Interactive - less secured but faster
+	 *                            ARAGON2I_MOD (used by default)
+	 *                            ARAGON2I_INT - less secured but faster
 	 *   }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -386,8 +386,8 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                          Can be optional if storage supports default configuration.
 	 *                          For 'default' storage type should be empty.
 	 *   "key_derivation_method": optional[string] algorithm to use for master key derivation:
-	 *                          Moderate (used by default)
-	 *                          Interactive - less secured but faster
+	 *                          ARAGON2I_MOD (used by default)
+	 *                          ARAGON2I_INT - less secured but faster
 	 * }	
 	 * @param importConfigJson Import settings json.
 	 * {
