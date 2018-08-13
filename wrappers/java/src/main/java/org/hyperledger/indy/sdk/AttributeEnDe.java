@@ -56,8 +56,7 @@ public class AttributeEnDe {
      * @return
      */
     public static String encode(@NotNull String raw_value) {
-        String jsonDumped = '\"' + raw_value + '\"';
-        BigInteger bi = new BigInteger(1, jsonDumped.getBytes());
+        BigInteger bi = new BigInteger(1, raw_value.getBytes());
         bi = bi.add(I32_BOUND);
         return STR_CODE + bi.toString();
     }
@@ -109,17 +108,7 @@ public class AttributeEnDe {
         if (STR_CODE.equals(prefix)) {
             bi = new BigInteger(value);
             bi = bi.subtract(I32_BOUND);
-            byte[] bytes = bi.toByteArray();
-            if (bytes.length % 2 != 0) {
-                throw new IllegalArgumentException("Encoded value does not decode to an even number of UTF-8 characters");
-            }
-            StringBuffer rv = new StringBuffer();
-            for (int j = 0; j < bytes.length / 2; j++) { // unhexlify
-                int top = Character.digit(bytes[2 * j], 16);
-                int bot = Character.digit(bytes[2 * j + 1], 16);
-                rv.append((char)((top << 4) + bot));
-            }
-            return rv.toString();
+            return new String(bi.toByteArray());
         }
         if (POSINT.equals(prefix)) {
             return new BigInteger(value);
