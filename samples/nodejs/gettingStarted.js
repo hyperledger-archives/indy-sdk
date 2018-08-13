@@ -204,6 +204,7 @@ async function run() {
     [aliceFaberVerkey, authdecryptedTranscriptCredRequestJson] = await authDecrypt(faberWallet, faberAliceKey, authcryptedTranscriptCredRequest);
 
     console.log("\"Faber\" -> Create \"Transcript\" Credential for Alice");
+    // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
     let transcriptCredValues = {
         "first_name": {"raw": "Alice", "encoded": "1139481716457488690172217916278103335"},
         "last_name": {"raw": "Garcia", "encoded": "5321642780241790123587902456789123452"},
