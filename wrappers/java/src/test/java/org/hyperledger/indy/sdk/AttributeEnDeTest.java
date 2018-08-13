@@ -94,6 +94,42 @@ public class AttributeEnDeTest {
 
         encoded = (String)AttributeEnDe.decode("198603384155604289281926069284365296243");
         assertEquals("J.R. \"Bob\" Dobbs", encoded);
+
+        encoded = AttributeEnDe.encode("True");
+        assertEquals("13564270949", encoded);
+        encoded = (String)AttributeEnDe.decode("13564270949");
+        assertEquals("True", encoded);
+
+        encoded = AttributeEnDe.encode("False");
+        assertEquals("1304429691749", encoded);
+        encoded = (String)AttributeEnDe.decode("1304429691749");
+        assertEquals("False", encoded);
+
+        encoded = AttributeEnDe.encode("1234");
+        assertEquals("12972857140", encoded);
+        encoded = (String)AttributeEnDe.decode("12972857140");
+        assertEquals("1234", encoded);
+
+        encoded = AttributeEnDe.encode("-12345");
+        assertEquals("149691466347573", encoded);
+        encoded = (String)AttributeEnDe.decode("149691466347573");
+        assertEquals("-12345", encoded);
+
+        encoded = AttributeEnDe.encode("\u0000");
+        assertEquals("92475982747121758242", encoded);
+        encoded = (String)AttributeEnDe.decode(encoded);
+        assertEquals("\u0000", encoded);
+
+        encoded = AttributeEnDe.encode("\u0001");
+        assertEquals("12147483649", encoded);
+        encoded = (String)AttributeEnDe.decode(encoded);
+        assertEquals("\u0001", encoded);
+
+        encoded = AttributeEnDe.encode("\u0002");
+        assertEquals("12147483650", encoded);
+        encoded = (String)AttributeEnDe.decode(encoded);
+        assertEquals("\u0002", encoded);
+
     }
 
     @Test
@@ -130,36 +166,27 @@ public class AttributeEnDeTest {
 
     @Test
     public void testFloat() {
-/*
-  (float)(0.0) -> 456284244423472 -> (float)(0.0)
-  (float)(0.1) -> 456284244423473 -> (float)(0.1)
-  (float)(-0.1) -> 43631083483811885873 -> (float)(-0.1)
-  (float)(-1.9234856120348166e+37) -> 4118346363103572376150257369462524638568181085458527748347795511114206373863808144206434440804224330543005905719 -> (float)(-1.9234856120348166e+37)
-  (float)(1.9234856120348166e+37) -> 41834518484686151139011264936952423078332017444442362935927001841153457642328110021483463741845116787307319 -> (float)(1.9234856120348166e+37)
-*/
         String encoded;
 
         encoded = AttributeEnDe.encode(0d);
-        assertEquals("52150641200", encoded);
+        assertEquals("513642949358284848", encoded);
         assertEquals(0d, AttributeEnDe.decode(encoded));
 
         encoded = AttributeEnDe.encode(0.1);
-        assertEquals("456284244423473", encoded);
+        assertEquals("5276711930654430623867169382163965112486145830196", encoded);
         assertEquals(0.1, AttributeEnDe.decode(encoded));
 
         encoded = AttributeEnDe.encode(-0.1d);
-        assertEquals("43631083483811885873", encoded);
+        assertEquals("566044285610545061943032986854396700997003110264116", encoded);
         assertEquals(-0.1d, AttributeEnDe.decode(encoded));
 
         encoded = AttributeEnDe.encode(-1.9234856120348166e+37);
         assertEquals(-1.9234856120348166e+37, AttributeEnDe.decode(encoded));
-        assertEquals("4118346363103572376150257369462524638568181085458527748347795511114206373863808144206434440804224330543005905719", encoded);
+        assertEquals("516907337116313887486272534785745044898174533144490547", encoded);
 
         encoded = AttributeEnDe.encode(1.9234856120348166e+37);
         assertEquals(1.9234856120348166e+37, AttributeEnDe.decode(encoded));
-        assertEquals("41834518484686151139011264936952423078332017444442362935927001841153457642328110021483463741845116787307319", encoded);
-
-
+        assertEquals("570838254261885868566085512853464511738190249407027", encoded);
     }
 
 

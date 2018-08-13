@@ -56,6 +56,8 @@ public class AttributeEnDe {
      * @return
      */
     public static String encode(@NotNull String raw_value) {
+        // sklump special case
+        if ("\u0000".equals(raw_value)) return "92475982747121758242";
         BigInteger bi = new BigInteger(1, raw_value.getBytes());
         bi = bi.add(I32_BOUND);
         return STR_CODE + bi.toString();
@@ -66,9 +68,8 @@ public class AttributeEnDe {
      * @return
      */
     public static String encode(@NotNull Double raw_value) {
-        String stringified = String.valueOf(raw_value);
-        String jsonDumped = "\"" + "0" + "\"";
-        byte[] bytes = jsonDumped.getBytes();
+        String hexString = Double.toHexString(raw_value);
+        byte[] bytes = hexString.getBytes();
         BigInteger bi = new BigInteger(1, bytes);
         bi = bi.add(I32_BOUND);
         return FLOAT_CODE + bi.toString();
@@ -90,6 +91,7 @@ public class AttributeEnDe {
         if (String.valueOf(Integer.MAX_VALUE).equals(encoded)) return null;
         if ("22147483650".equals(encoded)) return Boolean.TRUE;
         if ("22147483649".equals(encoded)) return Boolean.FALSE;
+        if ("92475982747121758242".equals(encoded)) return "\u0000";
 
         BigInteger bi = new BigInteger(encoded);
         if ((BigInteger.valueOf(Integer.MIN_VALUE).compareTo(bi) <= 0)
