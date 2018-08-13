@@ -166,6 +166,7 @@ If you would like to analyse CPU performance of libindy for your use case, you h
 ## How to start local nodes pool with docker
 To test the SDK codebase with a virtual Indy node network, you can start a pool of local nodes using docker:
 
+### 1) Starting the test pool on localhost
 Start the pool of local nodes on `127.0.0.1:9701-9708` with Docker by running:
 
 ```
@@ -173,9 +174,23 @@ docker build -f ci/indy-pool.dockerfile -t indy_pool .
 docker run -itd -p 9701-9708:9701-9708 indy_pool
 ```
 
+### 2) Starting the test pool on a specific IP address
  Dockerfile `ci/indy-pool.dockerfile` supports an optional pool_ip param that allows
- changing ip of pool nodes in generated pool configuration. The following commands
- allow to start local nodes pool in custom docker network and access this pool
+ changing ip of pool nodes in generated pool configuration. 
+
+ You can start the pool with e.g. with the IP address of your development machine's WIFI interface
+ so that mobile apps in the same network can reach the pool.
+
+ ```
+ # replace 192.168.179.90 with your wifi IP address
+ docker build --build-arg pool_ip=192.168.179.90 -f ci/indy-pool.dockerfile -t indy_pool .
+ docker run -itd -p 192.168.179.90:9701-9708:9701-9708 indy_pool
+ ```
+ To connect to the pool the IP addresses in /var/lib/indy/sandbox/pool_transactions_genesis (in docker) and the
+ pool configuration you use in your mobile app must match.
+
+### 3) Starting the test pool on a docker network
+ The following commands allow to start local nodes pool in custom docker network and access this pool
  by custom ip in docker network:
 
  ```
