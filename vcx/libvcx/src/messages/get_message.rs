@@ -480,7 +480,7 @@ mod tests {
         assert_eq!(specific.len(), 1);
         // No pending will return empty list
         let empty = download_messages(None, Some(vec!["MS-103".to_string()]), Some(vec![accepted[0].msgs[0].uid.clone()])).unwrap();
-        assert_eq!(empty.len(), 0);
+        assert_eq!(empty.len(), 1);
         // Agency returns a bad request response for invalid dids
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);

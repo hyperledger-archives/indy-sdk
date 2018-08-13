@@ -4,7 +4,7 @@ import { assert } from 'chai'
 import { connectionCreate, connectionCreateConnect, dataConnectionCreate } from 'helpers/entities'
 import { gcTest } from 'helpers/gc'
 import { TIMEOUT_GC } from 'helpers/test-constants'
-import { initVcxTestMode, shouldThrow } from 'helpers/utils'
+import { initVcxTestMode, shouldThrow, sleep } from 'helpers/utils'
 import { Connection, rustAPI, StateType, VCXCode, VCXMock, VCXMockMessage } from 'src'
 
 describe('Connection:', () => {
@@ -137,6 +137,25 @@ describe('Connection:', () => {
       VCXMock.setVcxMock(VCXMockMessage.GetMessages)
       await connection.updateState()
       assert.equal(await connection.getState(), StateType.Accepted)
+    })
+
+    it(`returns ${StateType.Accepted}: mocked accepted in parallel`, async () => {
+      const numConnections = 50
+      const interval = 50
+      const sleepTime = 100
+      const connectionsWithTimers = await Promise.all(new Array(numConnections).fill(0).map(async () => {
+        const connection = await connectionCreate()
+        const timer = setInterval(() => connection.updateState(), interval)
+        return { connection, timer }
+      }))
+      let cond = false
+      while (cond) {
+        const states = await Promise.all(connectionsWithTimers.map(({ connection }) => connection.getState()))
+        cond = states.every((state) => state === StateType.Accepted)
+        VCXMock.setVcxMock(VCXMockMessage.GetMessages)
+        await sleep(sleepTime)
+      }
+      connectionsWithTimers.forEach(({ timer }) => clearInterval(timer))
     })
   })
 

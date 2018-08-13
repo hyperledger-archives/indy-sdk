@@ -253,8 +253,10 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
         Err(x) => return Err(map_rust_indy_sdk_error_code(x)),
     };
 
-    let parsed_response = Payment::parse_response_with_fees(&payment_method, &response)
-        .map_err(map_rust_indy_sdk_error_code)?;
+    let parsed_response = match Payment::parse_response_with_fees(&payment_method, &response) {
+        Ok(x) => x,
+        Err(x) => return Err(error::INVALID_LEDGER_RESPONSE.code_num),
+    };
 
     Ok((parsed_response, response))
 }
@@ -715,6 +717,21 @@ pub mod tests {
         ::utils::libindy::wallet::init_wallet(wallet_name).unwrap();
         ::utils::devsetup::tests::set_trustee_did();
         ::utils::libindy::pool::tests::open_sandbox_pool();
+        let fees = get_ledger_fees().unwrap();
+        println!("fees: {}", fees);
+        ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
+        ::utils::libindy::wallet::delete_wallet(wallet_name).unwrap();
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_zero_fees() {
+        let wallet_name = "test_zero_fees";
+        init_payments().unwrap();
+        ::utils::libindy::wallet::init_wallet(wallet_name).unwrap();
+        ::utils::devsetup::tests::set_trustee_did();
+        ::utils::libindy::pool::tests::open_sandbox_pool();
+        mint_tokens_and_set_fees(Some(0), Some(0), Some("{\"101\":0, \"102\":0}"), false).unwrap();
         let fees = get_ledger_fees().unwrap();
         println!("fees: {}", fees);
         ::utils::libindy::anoncreds::tests::create_and_write_test_schema();

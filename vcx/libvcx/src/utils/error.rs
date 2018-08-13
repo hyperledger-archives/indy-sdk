@@ -93,6 +93,7 @@ pub static MISSING_BACKUP_KEY: Error = Error { code_num: 1078, message: "Missing
 pub static WALLET_NOT_FOUND: Error = Error { code_num: 1079, message: "Wallet Not Found"};
 pub static LIBINDY_INVALID_STRUCTURE: Error = Error { code_num: 1080, message: "Object (json, config, key, credential and etc...) passed to libindy has invalid structure"};
 pub static INVALID_STATE: Error = Error { code_num: 1081, message: "Object is in invalid state for requested operation"};
+pub static INVALID_LEDGER_RESPONSE: Error = Error {code_num: 1082, message: "Invalid response from ledger for paid transaction"};
 
 
 lazy_static! {
@@ -180,6 +181,7 @@ lazy_static! {
         insert_c_message(&mut m, &WALLET_NOT_FOUND);
         insert_c_message(&mut m, &LIBINDY_INVALID_STRUCTURE);
         insert_c_message(&mut m, &INVALID_STATE);
+        insert_c_message(&mut m, &INVALID_LEDGER_RESPONSE);
        m
     };
 }

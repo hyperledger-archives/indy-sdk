@@ -41,3 +41,5 @@ export const shouldThrow = (fn: () => any): Promise<vcx.VCXInternalError> => new
     resolve(e)
   }
 })
+
+export const sleep = (timeout: number) => new Promise((resolve, reject) => setTimeout(resolve, timeout))

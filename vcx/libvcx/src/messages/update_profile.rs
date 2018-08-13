@@ -86,9 +86,12 @@ impl UpdateProfileData{
             Err(x) => return Err(x),
         };
 
-        if settings::test_agency_mode_enabled() { httpclient::set_next_u8_response(UPDATE_PROFILE_RESPONSE.to_vec()); }
-
         let mut result = Vec::new();
+        if settings::test_agency_mode_enabled() {
+            result.push(parse_update_profile_response(UPDATE_PROFILE_RESPONSE.to_vec()).unwrap());
+            return Ok(result.to_owned());
+        }
+
         match httpclient::post_u8(&data) {
             Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
             Ok(response) => {
