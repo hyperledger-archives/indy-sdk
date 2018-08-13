@@ -169,8 +169,9 @@ extern "C" {
     ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                          Can be optional if storage supports default configuration.
     ///                          For 'default' storage type should be empty.
-    ///   "simplified_security": Optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
-    ///
+    ///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
+    ///                          Moderate (used by default)
+    ///                          Interactive - less secured but faster
     /// }
     ///
     /// #Returns
@@ -200,7 +201,7 @@ extern "C" {
     ///                       Custom storage types can be registered with indy_register_wallet_storage call.
     ///       "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
     ///                         Can be optional if storage supports default configuration.
-    //                          For 'default' storage type configuration is:
+    ///                         For 'default' storage type configuration is:
     ///           {
     ///              "path": optional<string>, Path to the directory with wallet files.
     ///                      Defaults to $HOME/.indy_client/wallets.
@@ -216,9 +217,12 @@ extern "C" {
     ///       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                              Can be optional if storage supports default configuration.
     ///                              For 'default' storage type should be empty.
-    ///
-    ///   "simplified_security": Optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
-    ///   "rekey_simplified_security": Optional<bool> Use less secured but faster crypto algorithm for new master rekey derivation (false by default).
+    ///       "key_derivation_method": optional<string> algorithm to use for master key derivation:
+    ///                             Moderate (used by default)
+    ///                             Interactive - less secured but faster
+    ///       "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
+    ///                             Moderate (used by default)
+    ///                             Interactive - less secured but faster
     ///   }
     ///
     /// #Returns
@@ -235,15 +239,17 @@ extern "C" {
                                          void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err, indy_handle_t handle)
                                         );
 
-    /// Exports opened wallet's content using key and path provided in export_config_json
+    /// Exports opened wallet
     ///
-    /// #Params
-    /// wallet_handle: wallet handle returned by indy_open_wallet.
-    /// export_config_json: JSON containing settings for input operation.
+    /// #Params:
+    /// wallet_handle: wallet handle returned by indy_open_wallet
+    /// export_config: JSON containing settings for input operation.
     ///   {
-    ///     "path": path of the file that contains exported wallet content
-    ///     "key": passphrase used to derive export key
-    ///     "simplified_security": Optional<bool> Use less secured but faster crypto algorithm for export key derivation (false by default).
+    ///     "path": <string>, Path of the file that contains exported wallet content
+    ///     "key": <string>, Passphrase used to derive export key
+    ///     "key_derivation_method": optional<string> algorithm to use for export key derivation:
+    ///                              Moderate (used by default)
+    ///                             Interactive - less secured but faster
     ///   }
     ///
     /// #Returns
@@ -274,7 +280,7 @@ extern "C" {
     ///                  Custom storage types can be registered with indy_register_wallet_storage call.
     ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
     ///                     Can be optional if storage supports default configuration.
-    //                      For 'default' storage type configuration is:
+    ///                     For 'default' storage type configuration is:
     ///   {
     ///     "path": optional<string>, Path to the directory with wallet files.
     ///             Defaults to $HOME/.indy_client/wallets.
@@ -287,8 +293,9 @@ extern "C" {
     ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                          Can be optional if storage supports default configuration.
     ///                          For 'default' storage type should be empty.
-    ///   "simplified_security": Optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
-    ///
+    ///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
+    ///                            Moderate (used by default)
+    ///                            Interactive - less secured but faster
     /// }
     /// import_config: Import settings json.
     /// {
@@ -339,7 +346,7 @@ extern "C" {
     ///                  Custom storage types can be registered with indy_register_wallet_storage call.
     ///   "storage_config": optional<object>, Storage configuration json. Storage type defines set of supported keys.
     ///                     Can be optional if storage supports default configuration.
-    //                      For 'default' storage type configuration is:
+    ///                     For 'default' storage type configuration is:
     ///   {
     ///     "path": optional<string>, Path to the directory with wallet files.
     ///             Defaults to $HOME/.indy_client/wallets.
@@ -352,7 +359,9 @@ extern "C" {
     ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                          Can be optional if storage supports default configuration.
     ///                          For 'default' storage type should be empty.
-    ///   "simplified_security": Optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
+    ///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
+    ///                            Moderate (used by default)
+    ///                            Interactive - less secured but faster
     /// }
     ///
     /// #Returns

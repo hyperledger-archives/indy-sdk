@@ -11,8 +11,8 @@ pub enum EncryptionMethod {
         // size of encrypted chunk
         chunk_size: usize,
     },
-    // **ChaCha20-Poly1305-IETF with simplified key derivation** cypher in blocks per chunk_size bytes
-    ChaCha20Poly1305IETFWithSimplify {
+    // **ChaCha20-Poly1305-IETF interactive key derivation** cypher in blocks per chunk_size bytes
+    ChaCha20Poly1305IETFInteractive {
         // pwhash_argon2i13::Salt as bytes. Random salt used for deriving of key from passphrase
         salt: Vec<u8>,
         // chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency
@@ -20,15 +20,6 @@ pub enum EncryptionMethod {
         // size of encrypted chunk
         chunk_size: usize,
     },
-}
-
-impl EncryptionMethod {
-    pub fn simplify_security(&self) -> bool {
-        match self {
-            EncryptionMethod::ChaCha20Poly1305IETF { .. } => false,
-            EncryptionMethod::ChaCha20Poly1305IETFWithSimplify { .. } => true,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

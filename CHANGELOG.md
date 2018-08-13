@@ -7,8 +7,8 @@
     * Updated `indy_build_pool_upgrade_request` API function to accept the additional parameter `package` that allow specify package to be upgraded.* Bugfixes
 * Added `pool restart` command in Indy CLI.
 * Updated Libindy CD pipeline to run iOS tests and to publish artifacts for Libindy and Libnullpay.
-* Updated wallet `credentials` to accept the additional parameter `simplified_security`.
-  This parameter provides the ability to use less secured but faster crypto algorithm for master key derivation.
+* Updated wallet `credentials` to accept the additional parameter `key_derivation_method`.
+  This parameter provides the ability to use different crypto algorithms for master key derivation.
 * Bugfixes
  
 ## 1.6.1 bugfixes

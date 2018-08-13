@@ -8,6 +8,8 @@ use errors::common::CommonError;
 use self::sodiumoxide::crypto::pwhash;
 use self::libc::{size_t, c_ulonglong, c_int};
 
+use domain::wallet::KeyDerivationMethod;
+
 pub const SALTBYTES: usize = pwhash::SALTBYTES;
 
 sodium_type!(Salt, pwhash::Salt, SALTBYTES);
@@ -16,12 +18,11 @@ pub fn gen_salt() -> Salt {
     Salt(pwhash::gen_salt())
 }
 
-pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt, simplified_security: bool) -> Result<&'a [u8], CommonError> {
+pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt, key_derivation_method: &KeyDerivationMethod) -> Result<&'a [u8], CommonError> {
     let (opslimit, memlimit) = unsafe {
-        if simplified_security {
-            (crypto_pwhash_opslimit_interactive(), crypto_pwhash_memlimit_interactive())
-        } else {
-            (crypto_pwhash_opslimit_moderate(), crypto_pwhash_memlimit_moderate())
+        match key_derivation_method {
+            KeyDerivationMethod::Moderate => (crypto_pwhash_opslimit_moderate(), crypto_pwhash_memlimit_moderate()),
+            KeyDerivationMethod::Interactive => (crypto_pwhash_opslimit_interactive(), crypto_pwhash_memlimit_interactive())
         }
     };
 
@@ -90,20 +91,20 @@ mod tests {
         let mut key = [0u8; 64];
 
         let salt = gen_salt();
-        let _key = pwhash(&mut key, passwd, &salt, false).unwrap();
+        let _key = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::Moderate).unwrap();
     }
 
     #[test]
-    fn pwhash_works_for_simplified_security() {
+    fn pwhash_works_for_interactive_method() {
         let passwd = b"Correct Horse Battery Staple";
 
         let salt = gen_salt();
 
         let mut key = [0u8; 64];
-        let key_moderate = pwhash(&mut key, passwd, &salt, false).unwrap();
+        let key_moderate = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::Moderate).unwrap();
 
         let mut key = [0u8; 64];
-        let key_interactive = pwhash(&mut key, passwd, &salt, true).unwrap();
+        let key_interactive = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::Interactive).unwrap();
 
         assert_ne!(key_moderate, key_interactive);
     }

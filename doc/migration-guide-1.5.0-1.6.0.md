@@ -65,8 +65,8 @@ This wallet configuration json has the following format:
    }
  }
 ```
-* Updated wallet `credentials` to accept the additional parameter `simplified_security`.
-This parameter provides the ability to use less secured but faster crypto algorithm for master key derivation.
+* Updated wallet `credentials` to accept the additional parameter `key_derivation_method`.
+  This parameter provides the ability to use different crypto algorithms for master key derivation.
 Wallet credentials json has the following format:
 ```
  {
@@ -74,7 +74,9 @@ Wallet credentials json has the following format:
    "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                           Can be optional if storage supports default configuration.
                           For 'default' storage type should be empty.
-   "simplified_security": optional<bool> Use less secured but faster crypto algorithm for master key derivation (false by default).
+   "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                          Moderate (used by default)
+                          Interactive - less secured but faster 
  }
 ```
 
