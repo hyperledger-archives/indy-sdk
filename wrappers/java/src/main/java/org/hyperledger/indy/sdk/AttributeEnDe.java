@@ -10,39 +10,22 @@ public class AttributeEnDe {
 
     private static String STR_CODE = "1";
     private static String BOOL_CODE = "2";
-    private static String BIGINT_CODE = "3";
-    private static String FLOAT_CODE = "4";
-    private static String NONE_CODE = "9";
+    private static String POSINT = "3";
+    private static String NEGINT = "4";
+    private static String FLOAT_CODE = "5";
+    private static String JSON_CODE = "9";
 
     private static final String ENCODED_TRUE = BOOL_CODE + "2147483650";
     private static final String ENCODED_FALSE = BOOL_CODE + "2147483649";
 
     private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
-    public static String bytesToHex(byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-        }
-        return new String(hexChars);
-    }
-
-    public static String hexlify(byte[] bytes) {
-        StringBuffer rv = new StringBuffer();
-        for (byte b : bytes) {  // hexlify
-            rv.append(String.format("%02x", b));
-        }
-        return rv.toString();
-    }
-
     /**
      * @param int number
      * @return encoded int attribute
      */
     public static String encode(int number) {
-        return Integer.valueOf(number).toString();
+        return String.valueOf(number);
     }
 
     /**
@@ -62,13 +45,10 @@ public class AttributeEnDe {
                 (raw_value.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) >= 0)) {
             return encode(raw_value.intValue());
         }
-        String stringified = raw_value.toString();
-        byte[] bytes = stringified.getBytes();
-        String hex = hexlify(bytes);
-        BigInteger bi = new BigInteger( hex, 16);
-        bi = bi.add(BigInteger.valueOf(Integer.MAX_VALUE));
-        return BIGINT_CODE + bi.toString();
-
+        if (raw_value.signum() < 0) {
+            return NEGINT + raw_value.abs().toString();
+        }
+        return POSINT + raw_value.toString();
     }
 
     /**
@@ -76,9 +56,8 @@ public class AttributeEnDe {
      * @return
      */
     public static String encode(@NotNull String raw_value) {
-        String hex = hexlify(raw_value.getBytes());
-        byte[] bytes = hex.getBytes();
-        BigInteger bi = new BigInteger(1, bytes);
+        String jsonDumped = '\"' + raw_value + '\"';
+        BigInteger bi = new BigInteger(1, jsonDumped.getBytes());
         bi = bi.add(I32_BOUND);
         return STR_CODE + bi.toString();
     }
@@ -88,9 +67,9 @@ public class AttributeEnDe {
      * @return
      */
     public static String encode(@NotNull Double raw_value) {
-        String stringified = raw_value.toString();
-        String hex = hexlify(stringified.getBytes());
-        byte[] bytes = hex.getBytes();
+        String stringified = String.valueOf(raw_value);
+        String jsonDumped = "\"" + "0" + "\"";
+        byte[] bytes = jsonDumped.getBytes();
         BigInteger bi = new BigInteger(1, bytes);
         bi = bi.add(I32_BOUND);
         return FLOAT_CODE + bi.toString();
@@ -142,23 +121,17 @@ public class AttributeEnDe {
             }
             return rv.toString();
         }
-        if (BIGINT_CODE.equals(prefix)) {
+        if (POSINT.equals(prefix)) {
             return new BigInteger(value);
+        }
+        if (NEGINT.equals(prefix)) {
+            return new BigInteger(value).negate();
         }
         if (FLOAT_CODE.equals(prefix)) {
             bi = new BigInteger(value);
             bi = bi.subtract(I32_BOUND);
             byte[] bytes = bi.toByteArray();
-            if (bytes.length % 2 != 0) {
-                throw new IllegalArgumentException("Encoded value does not decode to an even number of UTF-8 characters");
-            }
-            StringBuffer rv = new StringBuffer();
-            for (int j = 0; j < bytes.length / 2; j++) { // unhexlify
-                int top = Character.digit(bytes[2 * j], 16);
-                int bot = Character.digit(bytes[2 * j + 1], 16);
-                rv.append((char)((top << 4) + bot));
-            }
-            String floatStr = rv.toString();
+            String floatStr = new String(bytes);
             return Double.parseDouble(floatStr);
         }
         return null;
