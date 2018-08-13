@@ -37,5 +37,5 @@ if [ ! -z "$(ls -A /Users/jenkins/IOSBuilds/libvcxall/)" ]; then
    rm /Users/jenkins/IOSBuilds/libvcxall/*
 fi
 
-./mac.13.build.cocopod.sh libvcxpartial IOS_ARCHS
-./mac.13.build.cocopod.sh libvcxall
+./mac.13.build.cocoapod.sh libvcxpartial IOS_ARCHS
+./mac.13.build.cocoapod.sh libvcxall
