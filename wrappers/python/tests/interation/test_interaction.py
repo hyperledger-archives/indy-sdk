@@ -90,6 +90,7 @@ async def test_anoncreds_revocation_interaction_test_issuance_by_demand(pool_nam
     blob_storage_reader_cfg_handle = await blob_storage.open_reader('default', tails_writer_config)
 
     #  Issuer create credential for credential Request
+    #  note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
     cred_values_json = json.dumps({
         "sex": {
             "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103"},

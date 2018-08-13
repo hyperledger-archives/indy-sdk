@@ -59,6 +59,7 @@ public class IndyIntegrationTest {
 	protected String TAILS_WRITER_CONFIG =
 			"{ \"base_dir\":\"" +  getIndyHomePath("tails").replace('\\', '/') + "\", \"uri_pattern\":\"\"}";
 	protected String REV_CRED_DEF_CONFIG = "{\"support_revocation\":true}";
+	// note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
 	protected String GVT_CRED_VALUES = "{\n" +
 			"        \"sex\": {\"raw\": \"male\", \"encoded\": \"5944657099558967239210949258394887428692050081607692519917050\"},\n" +
 			"        \"name\": {\"raw\": \"Alex\", \"encoded\": \"1139481716457488690172217916278103335\"},\n" +

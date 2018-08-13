@@ -456,6 +456,7 @@ Now Alice has everything to create a Credential Request of the issuance of the *
 **Faber** creates the **Transcript** Credential for Alice.
 ```python
   # Faber Agent
+  # note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
   transcript_cred_values = json.dumps({
       "first_name": {"raw": "Alice", "encoded": "1139481716457488690172217916278103335"},
       "last_name": {"raw": "Garcia", "encoded": "5321642780241790123587902456789123452"},
