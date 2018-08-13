@@ -215,6 +215,7 @@ fn anoncreds_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 8. Issuer create Credential for Credential Request
+    //    note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
     let credential_json = r#"{
                                "sex":{"raw":"male", "encoded":"5944657099558967239210949258394887428692050081607692519917050011144233115103"},
                                "name":{"raw":"Alex", "encoded":"1139481716457488690172217916278103335"},

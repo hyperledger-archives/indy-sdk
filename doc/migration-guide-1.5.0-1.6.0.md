@@ -65,6 +65,20 @@ This wallet configuration json has the following format:
    }
  }
 ```
+* Updated wallet `credentials` to accept the additional parameter `key_derivation_method`.
+  This parameter provides the ability to use different crypto algorithms for master key derivation.
+Wallet credentials json has the following format:
+```
+ {
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
+   "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                          ARAGON2I_MOD (used by default)
+                          ARAGON2I_INT - less secured but faster 
+ }
+```
 
 *WARNING* Wallet format of libindy v1.6 isn't compatible with a wallet format of libindy v1.5.
 
@@ -100,6 +114,7 @@ indy_create_wallet(command_handle: i32,
                                         err: ErrorCode)>)
       </pre>
       <b>Note:</b> Format of <i>config</i> parameter was changed. Current format is described above.
+      <b>Note:</b> Format of <i>credentials</i> parameter was changed. Current format is described above.
     </td>
   </tr>
   </tr>
