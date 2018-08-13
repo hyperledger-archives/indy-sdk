@@ -57,7 +57,6 @@ public class AttributeEnDe {
      * @param raw_value
      * @return
      */
-/*
     public static String encode(@NotNull BigInteger raw_value) {
         if ((raw_value.compareTo(I32_BOUND) < 0) &&
                 (raw_value.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) >= 0)) {
@@ -71,7 +70,6 @@ public class AttributeEnDe {
         return BIGINT_CODE + bi.toString();
 
     }
-*/
 
     /**
      * @param raw_value
@@ -83,6 +81,19 @@ public class AttributeEnDe {
         BigInteger bi = new BigInteger(1, bytes);
         bi = bi.add(I32_BOUND);
         return STR_CODE + bi.toString();
+    }
+
+    /**
+     * @param raw_value
+     * @return
+     */
+    public static String encode(@NotNull Double raw_value) {
+        String stringified = raw_value.toString();
+        String hex = hexlify(stringified.getBytes());
+        byte[] bytes = hex.getBytes();
+        BigInteger bi = new BigInteger(1, bytes);
+        bi = bi.add(I32_BOUND);
+        return FLOAT_CODE + bi.toString();
     }
 
     /**
@@ -133,6 +144,22 @@ public class AttributeEnDe {
         }
         if (BIGINT_CODE.equals(prefix)) {
             return new BigInteger(value);
+        }
+        if (FLOAT_CODE.equals(prefix)) {
+            bi = new BigInteger(value);
+            bi = bi.subtract(I32_BOUND);
+            byte[] bytes = bi.toByteArray();
+            if (bytes.length % 2 != 0) {
+                throw new IllegalArgumentException("Encoded value does not decode to an even number of UTF-8 characters");
+            }
+            StringBuffer rv = new StringBuffer();
+            for (int j = 0; j < bytes.length / 2; j++) { // unhexlify
+                int top = Character.digit(bytes[2 * j], 16);
+                int bot = Character.digit(bytes[2 * j + 1], 16);
+                rv.append((char)((top << 4) + bot));
+            }
+            String floatStr = rv.toString();
+            return Double.parseDouble(floatStr);
         }
         return null;
     }
