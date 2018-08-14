@@ -122,7 +122,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
                 Ok(_) => (),
                 Err(e) => {
                     error!("Init Pool Error {}.", e);
-                    cb(command_handle, e)
+                    return cb(command_handle, e)
                 },
             }
         }
@@ -235,6 +235,8 @@ mod tests {
     use super::*;
     use std::time::Duration;
     use std::ptr;
+    use std::fs;
+    use std::io::Write;
     use utils::libindy::wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path};
     use utils::libindy::{ pool::get_pool_handle, return_types_u32 };
 
@@ -293,6 +295,36 @@ mod tests {
         // Assert pool was initialized
         assert_ne!(get_pool_handle().unwrap(), 0);
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_init_fails_when_open_pool_fails() {
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        settings::set_config_value(settings::CONFIG_WALLET_KEY,settings::TEST_WALLET_KEY);
+
+        // Write invalid genesis.txn
+        let mut f = fs::File::create(::utils::constants::GENESIS_PATH).unwrap();
+        f.write_all("{}".as_bytes()).unwrap();
+        f.flush().unwrap();
+        f.sync_all().unwrap();
+
+        let wallet_name = "test_init_fails_when_open_pool_fails";
+        wallet::create_wallet(wallet_name).unwrap();
+
+        let content = create_config_util(wallet_name, settings::TEST_WALLET_KEY);
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_init_with_config(cb.command_handle,
+                                        CString::new(content).unwrap().into_raw(),
+                                        Some(cb.get_callback())),
+                   error::SUCCESS.code_num);
+        let rc = cb.receive(Some(Duration::from_secs(10)));
+        thread::sleep(Duration::from_secs(1));
+        assert!(rc.is_err());
+        assert_eq!(get_pool_handle(), Err(error::NO_POOL_OPEN.code_num));
+        assert_eq!(wallet::get_wallet_handle(), 0);
+        wallet::delete_wallet(wallet_name).unwrap();
     }
 
     #[test]
