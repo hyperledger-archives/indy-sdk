@@ -42,15 +42,14 @@ export interface IConnectOptions {
  */
 export class Connection extends VCXBaseWithState<IConnectionData> {
   /**
-   * @memberof Connection
-   * @description Builds a generic Connection object.
-   * @static
-   * @async
-   * @function create
-   * @param {IConnectionCreateData} recipientInfo
-   * @example <caption>Example of recipientInfo</caption>
-   * {id: "123"}
-   * @returns {Promise<Connection>} A Connection Object
+   * Create a connection object, represents a single endpoint and can be used for sending and receiving
+   * credentials and proofs
+   *
+   * Example:
+   * ```
+   * source_id = 'foobar123'
+   * connection = await Connection.create(source_id)
+   * ```
    */
   public static async create ({ id }: IConnectionCreateData): Promise<Connection> {
     try {
@@ -64,15 +63,15 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   }
 
   /**
-   * @memberof Connection
-   * @description Builds a generic Connection object.
-   * @static
-   * @async
-   * @function create
-   * @param {IConnectionCreateData} recipientInfo
-   * @example <caption>Example of recipientInfo</caption>
-   * {id: "123"}
-   * @returns {Promise<Connection>} A Connection Object
+   * Create a connection object with a provided invite, represents a single endpoint and can be used for
+   * sending and receiving credentials and proofs.
+   * Invite details are provided by the entity offering a connection and generally pulled from a provided QRCode.
+   *
+   * Example:
+   * ```
+   * sourceId = 'foobar123'
+   * connection_handle = await Connection.createWithInvite({sourceId, inviteDetails})
+   * ```
    */
   public static async createWithInvite ({ id, invite }: IRecipientInviteInfo): Promise<Connection> {
     const connection = new Connection(id)
@@ -88,18 +87,10 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   }
 
   /**
-   * @memberof Connection
-   * @description Builds a Connection object with defined attributes.
-   * The attributes are often provided by a previous call to the serialize function
-   * @static
-   * @async
-   * @function deserialize
-   * @param {ISerializedData<IConnectionData>} connectionData - contains the information
-   * that will be used to build a connection object
-   * @example <caption>Example of Connection Data </caption>
-   * {source_id:"234",handle:560373036,pw_did:"did",pw_verkey:"verkey",did_endpoint:"",state:2,uuid:"",endpoint:"",
-   * invite_detail:{e:"",rid:"",sakdp:"",sn:"",sD:"",lu:"",sVk:"",tn:""}}
-   * @returns {Promise<Connection>} A Connection Object
+   * Create the object from a previously serialized object.
+   * Example:
+   * data = await connection1.serialize()
+   * connection2 = await Connection.deserialize(data)
    */
   public static async deserialize (connectionData: ISerializedData<IConnectionData>) {
     const connection = await super._deserialize(Connection, connectionData)
@@ -114,10 +105,13 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   protected _inviteDetailFn = rustAPI().vcx_connection_invite_details
 
   /**
-   * @memberof Connection
-   * @description Deletes and releases a connection
-   * @function delete
-   * @returns {Promis<void>}
+   * Delete the object from the agency and release any memory associated with it
+   *
+   * Example:
+   * ```
+   * def connection = await Connection.create(source_id)
+   * await connection.delete()
+   * ```
    */
   public async delete (): Promise<void> {
     try {
@@ -148,8 +142,9 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
    *
    * Example:
    * ```
-   * connection = await Connection.create({id: 'foobar'})
-   * inviteDetails = await connection.connect()
+   * phoneNumber = '8019119191'
+   * connection = await Connection.create('foobar123')
+   * inviteDetails = await connection.connect({phone: phoneNumber})
    * ```
    * @returns {Promise<string}
    */
@@ -185,12 +180,15 @@ export class Connection extends VCXBaseWithState<IConnectionData> {
   }
 
   /**
-   * @memberof Connection
-   * @description
    * Gets the details of the invitation that was returned from the Agent Service.
-   * @async
-   * @function inviteDetails
-   * @returns {Promise<string>} - String with the details
+   *
+   * Example:
+   * ```
+   * phoneNumber = '8019119191'
+   * connection = await Connection.create('foobar123')
+   * inviteDetails = await connection.connect({phone: phoneNumber})
+   * inivteDetailsAgain = await connection.inviteDetails()
+   * ```
    */
   public async inviteDetails (abbr: boolean = false): Promise<IConnectionInvite> {
     try {

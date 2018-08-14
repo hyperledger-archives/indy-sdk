@@ -51,21 +51,19 @@ export class CredentialDefPaymentManager extends PaymentManager {
  */
 export class CredentialDef extends VCXBase<ICredentialDefData> {
   /**
-   * @memberof CredentialDef
-   * creates a credential definition on the ledger and returns an associated object.
-   * @static
-   * @async
-   * @function create
-   * @param {ICredentialDefCreateData} data
-   * @example <caption>Example of ICredentialDefinition</caption>
-   * {
-   *    sourceId: "12",
-   *    schemaId: "2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4",
-   *    name: "test-licence",
-   *    revocation: false,
-   *    paymentHandle: 0
+   * Creates a new CredentialDef object that is written to the ledger
+   *
+   * Example:
+   * ```
+   * data = {
+   *   name: 'testCredentialDefName',
+   *   paymentHandle: 0,
+   *   revocation: false,
+   *   schemaId: 'testCredentialDefSchemaId',
+   *   sourceId: 'testCredentialDefSourceId'
    * }
-   * @returns {Promise<CredentialDef>} A credentialDef Object
+   * credentialDef = await CredentialDef.create(data)
+   * ```
    */
   public static async create ({
     name,
@@ -96,15 +94,21 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
   }
 
   /**
-   * @memberof CredentialDef
-   * @description Builds a credentialDef object with defined attributes.
+   * Builds a credentialDef object with defined attributes.
    * Attributes are provided by a previous call to the serialize function.
-   * @static
-   * @async
-   * @function deserialize
-   * @param {ISerialziedData<ICredentialDefData>} data - data obtained by serialize api.
-   * Used to build a credentialdef object.
-   * @returns {Promise<credentialDef>} A credentialDef Object
+   * Example:
+   * ```
+   * data = {
+   *   name: 'testCredentialDefName',
+   *   paymentHandle: 0,
+   *   revocation: false,
+   *   schemaId: 'testCredentialDefSchemaId',
+   *   sourceId: 'testCredentialDefSourceId'
+   * }
+   * credentialDef = await CredentialDef.create(data)
+   * data1 = await credentialDef.serialize()
+   * credentialDef2 = await CredentialDef.deserialzie(data1)
+   * ```
    */
   public static async deserialize (credentialDef: ISerializedData<ICredentialDefData>) {
     // Todo: update the ICredentialDefObj
@@ -132,11 +136,19 @@ export class CredentialDef extends VCXBase<ICredentialDefData> {
   }
 
   /**
-   * @memberof CredentialDef
-   * @description Retrieves the credential definition id associated with the created cred def.
-   * @async
-   * @function getCredDefId
-   * @returns {Promise<string>} - CredDef's Identifier
+   * Retrieves the credential definition id associated with the created cred def.
+   * Example:
+   * ```
+   * data = {
+   *   name: 'testCredentialDefName',
+   *   paymentHandle: 0,
+   *   revocation: false,
+   *   schemaId: 'testCredentialDefSchemaId',
+   *   sourceId: 'testCredentialDefSourceId'
+   * }
+   * credentialDef = await CredentialDef.create(data)
+   * id = await credentialDef.getCredDefId()
+   * ```
    */
   public async getCredDefId (): Promise<string> {
     try {

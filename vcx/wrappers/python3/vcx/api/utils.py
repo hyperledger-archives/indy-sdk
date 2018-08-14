@@ -4,6 +4,23 @@ from vcx.common import do_call, create_cb
 
 
 async def vcx_agent_provision(config: str) -> None:
+    """
+    Provision an agent in the agency, populate configuration and wallet for this agent.
+    Example:
+    import json
+    enterprise_config = {
+        'agency_url': 'https://enym-eagency.pdev.evernym.com',
+        'agency_did': 'YRuVCckY6vfZfX9kcQZe3u',
+        'agency_verkey': "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
+        'wallet_name': 'LIBVCX_SDK_WALLET',
+        'agent_seed': '00000000000000000000000001234561',
+        'enterprise_seed': '000000000000000000000000Trustee1',
+        'wallet_key': '1234'
+    }
+    vcx_config = await vcx_agent_provision(json.dumps(enterprise_config))
+    :param config: JSON configuration
+    :return: Configuration for vcx_init call.
+    """
     logger = logging.getLogger(__name__)
 
     if not hasattr(vcx_agent_provision, "cb"):
@@ -20,6 +37,11 @@ async def vcx_agent_provision(config: str) -> None:
     return result.decode()
 
 async def vcx_agent_update_info(config: str) -> None:
+    """
+    Update information on the agent (ie, comm method and type)
+    :param config:
+    :return:
+    """
     logger = logging.getLogger(__name__)
 
     if not hasattr(vcx_agent_update_info, "cb"):
@@ -36,6 +58,12 @@ async def vcx_agent_update_info(config: str) -> None:
     return result
 
 async def vcx_ledger_get_fees() -> str:
+    """
+    Get ledger fees from the sovrin network
+    Example:
+    fees = await vcx_ledger_get_fees()
+    :return: JSON representing fees
+    """
     logger = logging.getLogger(__name__)
 
     if not hasattr(vcx_ledger_get_fees, "cb"):
@@ -49,6 +77,13 @@ async def vcx_ledger_get_fees() -> str:
     return result
 
 async def vcx_messages_download(status: str = None, uids: str = None, pw_dids: str = None) -> str:
+    """
+    Retrieve messages from the specified connection
+    :param status:
+    :param uids:
+    :param pw_dids:
+    :return:
+    """
     logger = logging.getLogger(__name__)
 
     if not hasattr(vcx_messages_download, "cb"):
@@ -80,6 +115,11 @@ async def vcx_messages_download(status: str = None, uids: str = None, pw_dids: s
     return result
 
 async def vcx_messages_update_status(msg_json: str):
+    """
+    Update the status of messages from the specified connection
+    :param msg_json:
+    :return:
+    """
     logger = logging.getLogger(__name__)
 
     if not hasattr(vcx_messages_update_status, "cb"):

@@ -51,6 +51,11 @@ class CredentialDef(VcxBase):
         :param name: Name of credential definition
         :param schema_id: The schema ID given during the creation of the schema
         :param payment_handle: NYI - payment of ledger fee is taken from wallet automatically
+        Example:
+        source_id = 'foobar123'
+        schema_name = 'Schema Name'
+        payment_handle = 0
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
         :return: credential_def object, written to ledger
         """
         constructor_params = (source_id, name, schema_id)
@@ -70,12 +75,34 @@ class CredentialDef(VcxBase):
                                            constructor_params,
                                            c_params)
 
+    async def serialize(self) -> dict:
+        """
+        Serialize the object for storage
+
+        :return: serialized object
+        Example:
+        source_id = 'foobar123'
+        schema_name = 'Schema Name'
+        payment_handle = 0
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        data1 = await credential_def1.serialize()
+        :return: A re-instantiated object
+        """
+        return await self._serialize(CredentialDef, 'vcx_credentialdef_serialize')
+
     @staticmethod
     async def deserialize(data: dict):
         """
         Create the object from a previously serialized object.
 
         :param data: The output of the "serialize" call
+        Example:
+        source_id = 'foobar123'
+        schema_name = 'Schema Name'
+        payment_handle = 0
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        data1 = await credential_def1.serialize()
+        credential_def2 = await CredentialDef.deserialize(data1)
         :return: A re-instantiated object
         """
         try:
@@ -88,18 +115,17 @@ class CredentialDef(VcxBase):
         except KeyError:
             raise VcxError(ErrorCode.InvalidCredentialDef, error_message(ErrorCode.InvalidCredentialDef))
 
-    async def serialize(self) -> dict:
-        """
-        Serialize the object for storage
-
-        :return: serialized object
-        """
-        return await self._serialize(CredentialDef, 'vcx_credentialdef_serialize')
 
     async def get_cred_def_id(self):
         """
         Get the ledger ID of the object
 
+        Example:
+        source_id = 'foobar123'
+        schema_name = 'Schema Name'
+        payment_handle = 0
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        assert await credential_def.get_cred_def_id() == '2hoqvcwupRTUNkXn6ArYzs:3:CL:2471'
         :return: ID string
         """
         cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
@@ -110,7 +136,12 @@ class CredentialDef(VcxBase):
     def release(self) -> None:
         """
         destroy the object and release any memory associated with it
-
+        Example:
+        source_id = 'foobar123'
+        schema_name = 'Schema Name'
+        payment_handle = 0
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        credential_def1.release()
         :return: None
         """
         self._release(CredentialDef, 'vcx_credentialdef_release')
@@ -119,6 +150,12 @@ class CredentialDef(VcxBase):
         """
         Get the payment transaction information generated when paying the ledger fee
 
+        Example:
+        source_id = 'foobar123'
+        schema_name = 'Schema Name'
+        payment_handle = 0
+        credential_def1 = await CredentialDef.create(source_id, name, schema_id, payment_handle)
+        txn = await credential_def1.get_payment_txn()
         :return: JSON object with input address and output UTXOs
         """
         if not hasattr(CredentialDef.get_payment_txn, "cb"):

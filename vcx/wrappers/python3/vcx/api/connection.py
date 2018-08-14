@@ -52,11 +52,14 @@ class Connection(VcxStateful):
     @staticmethod
     async def create_with_details(source_id: str, invite_details: str):
         """
-        Create a connection object with an invite, represents a single endpoint and can be used for sending and receiving
+        Create a connection object with a provided invite, represents a single endpoint and can be used for sending and receiving
         credentials and proofs
 
+        Invite details are provided by the entity offering a connection and generally pulled from a provided QRCode.
         :param source_id: Institution's unique ID for the connection
-        :param invite_details:
+        :param invite_details: A string representing a json object which is provided by an entity that wishes to make a connection.
+        Example:
+        connection2 = await Connection.create_with_details('MyBank', invite_details)
         :return: connection object
         """
         constructor_params = (source_id,)
@@ -76,6 +79,9 @@ class Connection(VcxStateful):
         Create the object from a previously serialized object.
 
         :param data: The output of the "serialize" call
+        Example:
+        data = await connection1.serialize()
+        connection2 = await Connection.deserialize(data)
         :return: A re-instantiated object
         """
         return await Connection._deserialize("vcx_connection_deserialize",
@@ -87,6 +93,10 @@ class Connection(VcxStateful):
         Connect securely and privately to the endpoint represented by the object.
 
         :param phone_number: optional phone number that will receive SMS with invite details
+        Example:
+        phone_number = '8019119191'
+        connection = await Connection.create('foobar123')
+        invite_details = await connection.connect(phone_number)
         :return: the invite details sent via SMS or ready to be sent via some other mechanism (QR for example)
         """
         if not hasattr(Connection.connect, "cb"):
@@ -113,7 +123,8 @@ class Connection(VcxStateful):
     async def serialize(self) -> dict:
         """
         Serialize the object for storage
-
+        Example:
+        data = await connection1.serialize()
         :return: serialized object
         """
         return await self._serialize(Connection, 'vcx_connection_serialize')
@@ -122,7 +133,9 @@ class Connection(VcxStateful):
         """
         Query the agency for the current state of the connection.  Used to determine whether the connection
         has been accepted by both endpoints.
-
+        Example:
+        connection = await Connection.create(source_id)
+        assert await connection.update_state() == State.Initialized
         :return: Current state of the connection
         """
         return await self._update_state(Connection, 'vcx_connection_update_state')
@@ -130,7 +143,9 @@ class Connection(VcxStateful):
     async def get_state(self) -> int:
         """
         Returns the current internal state of the connection.  Does NOT query agency for state updates.
-
+        Example:
+        connection = await Connection.create(source_id)
+        assert await connection.get_state() == State.Initialized
         :return:  Current internal state of the connection
         """
         return await self._get_state(Connection, 'vcx_connection_get_state')
@@ -149,6 +164,9 @@ class Connection(VcxStateful):
 
         NOTE: This eliminates the connection and any ability to use it for any communication.
 
+        Example:
+        connection = await Connection.create(source_id)
+        await connection.delete()
         :return: None
         """
         await self._delete()
@@ -158,6 +176,11 @@ class Connection(VcxStateful):
         Get the invite details that were sent or can be sent to the endpoint.
 
         :param abbreviated: abbreviate invite details or not
+        Example:
+        phone_number = '8019119191'
+        connection = await Connection.create('foobar123')
+        invite_details = await connection.connect(phone_number)
+        inivte_details_again = await connection.invite_details()
         :return: JSON of invite_details sent to connection
         """
         if not hasattr(Connection.invite_details, "cb"):

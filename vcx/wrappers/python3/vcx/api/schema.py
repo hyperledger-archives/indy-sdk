@@ -71,6 +71,13 @@ class Schema(VcxBase):
         :param version: Version of the schema
         :param attrs: Atttributes of the schema
         :param payment_handle: NYI - payment of ledger fee is taken from wallet automatically
+        Example:
+        source_id = 'foobar123'
+        name = 'Address Schema'
+        version = '1.0'
+        attrs = ['address', 'city', 'state']
+        payment_handle = 0
+        schema = await Schema.create(source_id, name, version, attrs, payment_handle)
         :return: schema object, written to ledger
         """
         constructor_params = (source_id, name, version, attrs)
@@ -92,6 +99,14 @@ class Schema(VcxBase):
         Create the object from a previously serialized object.
 
         :param data: The output of the "serialize" call
+        Example:
+        source_id = 'foobar123'
+        name = 'Address Schema'
+        version = '1.0'
+        attrs = ['address', 'city', 'state']
+        payment_handle = 0
+        schema1 = await Schema.create(source_id, name, version, attrs, payment_handle)
+        data1 = await schema1.serialize()
         :return: A re-instantiated object
         """
         try:
@@ -115,6 +130,18 @@ class Schema(VcxBase):
 
         :param source_id: Institution's personal identification for the schema
         :param schema_id: Ledger schema ID for lookup
+        Example:
+        source_id = 'foobar123'
+        name = 'Address Schema'
+        version = '1.0'
+        attrs = ['address', 'city', 'state']
+        payment_handle = 0
+        schema1 = await Schema.create(source_id, name, version, attrs, payment_handle)
+        id1 = await schema.get_schema_id()
+        data = await Schema.lookup(source_id, schema_id)
+        assert data.attrs.sort() == ['sex', 'age', 'name', 'height'].sort()
+        assert data.name == 'test-licence'
+        assert data.handle > 0
         :return: schema object
         """
         try:
@@ -146,6 +173,14 @@ class Schema(VcxBase):
         """
         Serialize the object for storage
 
+        Example:
+        source_id = 'foobar123'
+        name = 'Address Schema'
+        version = '1.0'
+        attrs = ['address', 'city', 'state']
+        payment_handle = 0
+        schema1 = await Schema.create(source_id, name, version, attrs, payment_handle)
+        data1 = await schema1.serialize()
         :return: serialized object
         """
         return await self._serialize(Schema, 'vcx_schema_serialize')
@@ -162,6 +197,14 @@ class Schema(VcxBase):
         """
         Get the ledger ID of the object
 
+        Example:
+        source_id = 'foobar123'
+        name = 'Address Schema'
+        version = '1.0'
+        attrs = ['address', 'city', 'state']
+        payment_handle = 0
+        schema1 = await Schema.create(source_id, name, version, attrs, payment_handle)
+        id1 = await schema.get_schema_id()
         :return: ID string
         """
         cb = create_cb(CFUNCTYPE(None, c_uint32, c_uint32, c_char_p))
@@ -173,6 +216,14 @@ class Schema(VcxBase):
         """
         Get the payment transaction information generated when paying the ledger fee
 
+        Example:
+        source_id = 'foobar123'
+        name = 'Address Schema'
+        version = '1.0'
+        attrs = ['address', 'city', 'state']
+        payment_handle = 0
+        schema1 = await Schema.create(source_id, name, version, attrs, payment_handle)
+        txn = await schema1.get_payment_txn()
         :return: JSON object with input address and output UTXOs
         """
         if not hasattr(Schema.get_payment_txn, "cb"):

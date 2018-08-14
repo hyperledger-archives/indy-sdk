@@ -1,3 +1,4 @@
+
 # VCX NodeJS Wrapper
 
 ## Contribution Guide
@@ -18,3 +19,13 @@ Run this commands before submitting your PR:
 ```
 npm run lint
 ```
+
+## Documentation:
+ Run these commands:
+```
+npm install
+npm ci
+npm doc-gen
+```
+* A directory will be created locally `./docs` which contains an `index.html` file which can be used to navigate the generated documents.
+

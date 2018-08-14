@@ -7,6 +7,22 @@ import { IInitVCXOptions } from './common'
 // import { resolve } from 'url';
 
 export async function provisionAgent (configAgent: string, options: IInitVCXOptions = {}): Promise<string> {
+  /**
+   * Provision an agent in the agency, populate configuration and wallet for this agent.
+   *
+   * Example:
+   * ```
+   * enterpriseConfig = {
+   *     'agency_url': 'https://enym-eagency.pdev.evernym.com',
+   *     'agency_did': 'YRuVCckY6vfZfX9kcQZe3u',
+   *     'agency_verkey': "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v",
+   *     'wallet_name': 'LIBVCX_SDK_WALLET',
+   *     'agent_seed': '00000000000000000000000001234561',
+   *     'enterprise_seed': '000000000000000000000000Trustee1',
+   *     'wallet_key': '1234'
+   *  }
+   * vcxConfig = await provisionAgent(JSON.stringify(enterprise_config))
+   */
   try {
     initRustAPI(options.libVCXPath)
     return await createFFICallbackPromise<string>(
@@ -62,6 +78,9 @@ export function getVersion (): string {
 }
 
 export async function getLedgerFees (): Promise<string> {
+  /**
+   * Get ledger fees from the sovrin network
+   */
   try {
     const ledgerFees = await createFFICallbackPromise<string>(
       (resolve, reject, cb) => {

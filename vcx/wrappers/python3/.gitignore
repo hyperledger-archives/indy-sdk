@@ -104,3 +104,6 @@ venv.bak/
 .mypy_cache/
 
 vcxconfig.json
+
+*.html
+docs/

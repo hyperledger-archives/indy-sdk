@@ -36,7 +36,7 @@
     "scripts": {
         "compile": "./node_modules/.bin/tsc -p ./tsconfig.json",
         "lint": "./node_modules/.bin/tslint --type-check -c ./tslint.json -p ./tsconfig.json && ./node_modules/.bin/tslint --type-check -c ./test/tslint.json -p ./test/tsconfig.json",
-        "doc-gen": "./node_modules/.bin/jsdoc -r -d doc dist/*",
+        "doc-gen": "./node_modules/.bin/typedoc --out doc --excludePrivate --excludeProtected --ignoreCompilerErrors src",
         "test": "export TS_NODE_PROJECT=\"./test/tsconfig.json\" export NODE_ENV='test' && export RUST_LOG=\"trace\" && export RUST_BACKTRACE=full && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite1/**/*.test.ts && ./node_modules/.bin/mocha --timeout 10000 -gc --expose-gc --exit --recursive --use_strict --require ts-node/register ./test/suite2/**/*.test.ts"
     },
     "devDependencies": {
@@ -53,6 +53,7 @@
         "ts-node": "^6.1.2",
         "tslint": "^5.8.0",
         "tslint-config-standard": "^7.1.0",
+        "typedoc": "0.11.1",
         "typescript": "^2.9.1"
     },
     "main": "dist/index.js",

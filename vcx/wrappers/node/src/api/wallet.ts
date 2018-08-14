@@ -82,12 +82,12 @@ export interface IPaymentAddressSeed {
 export class Wallet {
 
   /**
-   * @memberof Wallet
-   * @description Gets wallet token info
-   * @static
-   * @async
-   * @param {paymentAddress} address
-   * @returns {Promise<string>} Wallet info, balance, addresses, etc
+   * Gets wallet token info
+   *
+   * Example:
+   * ```
+   * info = await Wallet.getTokenInfo()
+   * ```
    */
   public static async getTokenInfo (handle?: PaymentHandle): Promise<IWalletTokenInfo> {
     try {
@@ -117,12 +117,12 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Creates payment address inside wallet
-   * @static
-   * @async
-   * @param
-   * @returns {Promise<string>} New address
+   * Creates payment address inside wallet
+   *
+   * Example:
+   * ```
+   * address = await Wallet.createPaymentAddress('00000000000000000000000001234567')
+   * ```
    */
   public static async createPaymentAddress (seed: IPaymentAddressSeed): Promise<string> {
     const cSeed = seed.seed ? seed.seed : null
@@ -151,12 +151,13 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Validates Payment Address
-   * @static
-   * @async
-   * @param
-   * @returns {Promise<void>} New address
+   * Validates Payment Address
+   *
+   * Example:
+   * ```
+   * address = await Wallet.createPaymentAddress('00000000000000000000000001234567')
+   * await Wallet.validatePaymentAddress(address)
+   * ```
    */
   public static async validatePaymentAddress (paymentAddress: string): Promise<void> {
     try {
@@ -184,12 +185,16 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Sends token to a specified address
-   * @static
-   * @async
-   * @param {ISendTokens} sendTokensData
-   * @returns {Promise<string>} The receipt
+   * Sends token to a specified address
+   *
+   * Example:
+   * ```
+   * address = await Wallet.createPaymentAddress('00000000000000000000000001234567')
+   * await Wallet.sendTokens({
+   *     payment: 0,
+   *     recipient: address,
+   *     tokens: 1
+   * })
    */
   public static async sendTokens ({ payment, tokens, recipient }: ISendTokens): Promise<string> {
     try {
@@ -217,9 +222,16 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Adds a record to the wallet for storage
-   * @static
+   * Adds a record to the wallet for storage
+   * Example:
+   * ```
+   * await Wallet.addRecord({
+   *    id: 'RecordId',
+   *    tags: {},
+   *    type_: 'TestType',
+   *    value: 'RecordValue'
+   * })
+   * ```
    * @async
    * @param {Record} record
    * @returns {Promise<void>}
@@ -254,12 +266,22 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Updates a record already in the wallet
-   * @static
-   * @async
-   * @param {Record} record
-   * @returns {Promise<void>}
+   * Updates a record already in the wallet
+   *
+   * Example:
+   * ```
+   * await Wallet.addRecord({
+   *    id: 'RecordId',
+   *    tags: {},
+   *    type_: 'TestType',
+   *    value: 'RecordValue'
+   * })
+   * await Wallet.updateRecordValue({
+   *   id: 'RecordId',
+   *   type_: 'TestType',
+   *   value: 'RecordValueNew'
+   * })
+   * ```
    */
   public static async updateRecordValue (record: IRecordUpdate): Promise<void> {
     const commandHandle = 0
@@ -291,12 +313,24 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Updates a record's tags already in the wallet
-   * @static
-   * @async
-   * @param {Record} record
-   * @returns {Promise<void>}
+   * Updates a record's tags already in the wallet
+   *
+   * Example:
+   * ```
+   * await Wallet.addRecord({
+   *     id: 'RecordId',
+   *     tags: {},
+   *     type_: 'TestType',
+   *     value: 'RecordValue'
+   * })
+   *
+   * updateRecordTags({
+   *     id: 'RecordId',
+   *     tags: {},
+   *     type_: 'TestType',
+   *     value: ''
+   * })
+   * ```
    */
   public static async updateRecordTags (record: IRecord): Promise<void> {
     const commandHandle = 0
@@ -329,12 +363,27 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Adds tags to a record already in the wallet
-   * @static
-   * @async
-   * @param {Record} record
-   * @returns {Promise<void>}
+   * Adds tags to a record already in the wallet
+   *
+   * Example:
+   * ```
+   * await Wallet.addRecord({
+   *     id: 'RecordId',
+   *     tags: {},
+   *     type_: 'TestType',
+   *     value: 'RecordValue'
+   * })
+   *
+   * addRecordTags({  id: 'RecordId',
+   *     tags: { 
+   *          "tagName1": "tag value 1",
+   *          "~tagName2": "tag value 2 unencrypted",
+   *           "tagName3", 1
+   *     },
+   *     type_: 'TestType',
+   *     value: ''
+   * })
+   * ```
    */
   public static async addRecordTags (record: IRecord): Promise<void> {
     const commandHandle = 0
@@ -367,13 +416,30 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Tags to delete from a record already in the wallet
-   * @static
-   * @async
-   * @param {Record} record
-   * @param {IDeleteRecordTagsOptions} options
-   * @returns {Promise<void>}
+   * Tags to delete from a record already in the wallet
+   *
+   * Example:
+   * ```
+   * await Wallet.addRecord({
+   *    id: 'RecordId',
+   *    tags: { 
+   *        "foo": "bar",
+   *        "~fizz": "buzz",
+   *        "unencyrptedStringTag": "tag value 1",
+   *        "~encryptedStringTag": "tag value 2 unencrypted",
+   *        "unencyrptedIntTag": 1
+   *    },
+   *    type_: 'TestType',
+   *    value: 'RecordValue'
+   * })
+   *
+   * deleteRecordTags({ 
+   *     id: 'RecordId',
+   *     tags: { tagList: [ "foo", "buzz", "~encryptedStringTag" ] }
+   *     type_: 'TestType',
+   *     value: ''
+   * })
+   * ```
    */
   public static async deleteRecordTags (record: IRecord, { tagList }: IDeleteRecordTagsOptions): Promise<void> {
     const commandHandle = 0
@@ -406,13 +472,28 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Delete a record already in the wallet
-   * @static
-   * @async
-   * @param {Record} record
-   * @param {List} tagList
-   * @returns {Promise<void>}
+   * Delete a record already in the wallet
+   *
+   * Example:
+   * ```
+   * await Wallet.addRecord({
+   *    id: 'RecordId',
+   *    tags: {
+   *        "foo": "bar",
+   *        "~fizz": "buzz",
+   *        "unencyrptedStringTag": "tag value 1",
+   *        "~encryptedStringTag": "tag value 2 unencrypted",
+   *        "unencyrptedIntTag": 1
+   *    },
+   *    type_: 'TestType',
+   *    value: 'RecordValue'
+   * })
+   *
+   * await Wallet.deleteRecord({
+   *    id: 'RecordId',
+   *    type_: 'TestType'
+   * })
+   * ```
    */
   public static async deleteRecord ({ type, id }: IDeleteRecordData): Promise<void> {
     const commandHandle = 0
@@ -444,13 +525,25 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Retrieve a record already in the wallet
-   * @static
-   * @async
-   * @param {String} type
-   * @param {String} id
-   * @returns {Promise<string>}
+   * Retrieve a record already in the wallet
+   *
+   * Example:
+   * ```
+   * await Wallet.addRecord({
+   *    id: 'RecordId',
+   *    tags: { 
+   *        "foo": "bar",
+   *        "~fizz": "buzz",
+   *        "unencyrptedStringTag": "tag value 1",
+   *        "~encryptedStringTag": "tag value 2 unencrypted",
+   *        "unencyrptedIntTag": 1
+   *    },
+   *    type_: 'TestType',
+   *    value: 'RecordValue'
+   * })
+   *
+   * record = await Wallet.getReocrd({ type: 'TestType', id: 'RecordId'})
+   * ```
    */
   public static async getRecord ({ type, id, options }: IGerRecordData): Promise<string> {
     const commandHandle = 0
@@ -483,12 +576,12 @@ export class Wallet {
   }
 
    /**
-    * @memberof Wallet
-    * @description Open a search handle
-    * @static
-    * @async
-    * @param {IOpenSearchData} searchData
-    * @returns {Promise<string>}
+    * Open a search handle
+    *
+    * Example:
+    * ```
+    * searchHandle = await openSearch({type: 'TestType'})
+    * ```
     */
   public static async openSearch ({ type, queryJson, options }: IOpenSearchData): Promise<number> {
     const commandHandle = 0
@@ -521,13 +614,13 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Open a search handle
-   * @static
-   * @async
-   * @param {String} type
-   * @param {String} id
-   * @returns {Promise<string>}
+   * Close a search handle
+   *
+   * Example:
+   * ```
+   * searchHandle = await Wallet.openSearch({type: 'TestType'})
+   * await Wallet.closeSearch(searchHandle)
+   * ```
    */
   public static async closeSearch (handle: number): Promise<void> {
     const commandHandle = 0
@@ -558,13 +651,14 @@ export class Wallet {
   }
 
   /**
-   * @memberof Wallet
-   * @description Initiate or continue a search
-   * @static
-   * @async
-   * @param {number} searchHandle
-   * @param {number} count
-   * @returns {Promise<string>}
+   * Initiate or continue a search
+   *
+   * Example:
+   * ```
+   * searchHandle = await Wallet.openSearch({type: 'TestType'})
+   * records = await Wallet.searchNextRecords(searchHandle, {count:5})
+   * await Wallet.closeSearch(searchHandle)
+   * ```
    */
   public static async searchNextRecords (handle: number, { count }: ISearchNextRecordsOptions): Promise<string> {
     const commandHandle = 0
@@ -601,8 +695,13 @@ export class Wallet {
    *
    * Example:
    * ```
-   * config: '{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}'
-   * await Wallet.import(config)
+   * config = {
+   *     "wallet_name":"",
+   *     "wallet_key":"",
+   *     "exported_wallet_path":"",
+   *     "backup_key":""
+   * }
+   * await Wallet.import(JSON.stringify(config))
    * ```
    */
   public static async import (config: string): Promise<void> {

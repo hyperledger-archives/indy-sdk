@@ -4,6 +4,13 @@ from vcx.common import do_call, create_cb
 
 
 async def vcx_init(config_path: str) -> None:
+    """
+    Initializes VCX with config file.
+    :param config_path: String
+    Example:
+    await vcx_init('/home/username/vcxconfig.json')
+    :return:
+    """
     logger = logging.getLogger(__name__)
 
     if not hasattr(vcx_init, "cb"):
@@ -21,6 +28,27 @@ async def vcx_init(config_path: str) -> None:
 
 
 async def vcx_init_with_config(config: str) -> None:
+    """
+
+    :param config:
+    Example:
+    config = {
+      "agency_did": "L5nbFwXJRmdnJVYhCsy52j",
+      "agency_verkey": "BQEgx9PJ7JJgt1LadyP45a7JrWdyqkrzrCBGRZ9QVrvL",
+      "agency_endpoint": "https://cagency.pdev.evernym.com",
+      "genesis_path":"/var/lib/indy/verity-staging/pool_transactions_genesis",
+      "institution_name": "institution",
+      "institution_logo_url": "http://robohash.org/234",
+      "institution_did": "EwsFhWVoc3Fwqzrwe998aQ",
+      "institution_verkey": "8brs38hPDkw5yhtzyk2tz7zkp8ijTyWnER165zDQbpK6",
+      "remote_to_sdk_did": "EtfeMFytvYTKnWwqTScp9D",
+      "remote_to_sdk_verkey": "8a7hZDyJK1nNCizRCKMr4H4QbDm8Gg2vcbDRab8SVfsi",
+      "sdk_to_remote_did": "KacwZ2ndG6396KXJ9NDDw6",
+      "sdk_to_remote_verkey": "B8LgZGxEPcpTJfZkeqXuKNLihM1Awm8yidqsNwYi5QGc"
+    }
+    await vcx_init_with_config(config)
+    :return:
+    """
     logger = logging.getLogger(__name__)
 
     if not hasattr(vcx_init_with_config, "cb"):

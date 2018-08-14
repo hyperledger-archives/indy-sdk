@@ -26,6 +26,18 @@ class Wallet:
 
     @staticmethod
     async def open_search(type_: str, query: dict, options: dict):
+        """
+        Opens a search handle within the storage wallet.
+
+        :param type_: String
+        :param query: dictionary
+        :param options: dictionary
+        Example:
+        query_json = {"tagName1": "str1"}
+        type_ = 'TestType'
+        search_handle = await Wallet.open_search(type_, query_json, None)
+        :return: int
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.open_search, "cb"):
@@ -47,6 +59,18 @@ class Wallet:
 
     @staticmethod
     async def search_next_records(handle: int, count: int):
+        """
+        Searches for next n record from an open search handle
+
+        :param handle: int
+        :param count: int
+         Example:
+        query_json = {"tagName1": "str1"}
+        type_ = 'TestType'
+        search_handle = await Wallet.open_search(type_, query_json, None)
+        results = await Wallet.search_next_records(search_handle, 5)
+        :return:
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.search_next_records, "cb"):
@@ -65,6 +89,28 @@ class Wallet:
 
     @staticmethod
     async def get_record(type_: str, id: str, options: str):
+        """
+        Retrieves a record from the wallet storage.
+        :param type_: String
+        :param id: String
+        :param options: String
+        Example:
+        import json
+        await Wallet.add_record({
+            'id': 'RecordId',
+            'tags': json.dumps({
+                'tag1': 'unencrypted value1',
+                '~encryptedTag', 'this value is encrypted,
+                'integerTag', 1
+                }),
+            'type_': 'TestType',
+            'value': 'RecordValue'
+        })
+        options = json.dumps({"retrieveType": True, "retrieveValue": True, "retrieveTags": True})
+        record = await Wallet.get_record('TestType', 'RecordId', options)
+        :return:
+        :return:
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.get_record, "cb"):
@@ -85,6 +131,25 @@ class Wallet:
 
     @staticmethod
     async def delete_record(type_: str, id: str):
+        """
+        Delete a record from the storage wallet.
+
+        :param type_:
+        :param id:
+        Example:
+        await Wallet.add_record({
+            'id': 'RecordId',
+            'tags': json.dumps({
+                'tag1': 'unencrypted value1',
+                '~encryptedTag', 'this value is encrypted,
+                'integerTag', 1
+                }),
+            'type_': 'TestType',
+            'value': 'RecordValue'
+        })
+        await Wallet.delete_record('TestType', 'RecordId')
+        :return:
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.delete_record, "cb"):
@@ -103,6 +168,26 @@ class Wallet:
 
     @staticmethod
     async def delete_record_tags(type_: str, id: str, tags: list ):
+        """
+        Delete tags associated with a record
+        :param type_:
+        :param id:
+        :param tags:
+
+        Example:
+        await Wallet.add_record({
+            'id': 'RecordId',
+            'tags': json.dumps({
+                'tag1': 'unencrypted value1',
+                '~encryptedTag', 'this value is encrypted,
+                'integerTag', 1
+                }),
+            'type_': 'TestType',
+            'value': 'RecordValue'
+        })
+        await Wallet.delete_record_tags('TestType', 'RecordId', ['tag1', 'integerTag'])
+        :return:
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.delete_record_tags, "cb"):
@@ -124,6 +209,21 @@ class Wallet:
 
     @staticmethod
     async def add_record_tags(type_: str, id: str, tags: str):
+        """
+        Adds tags to a record already stored in the storage wallet.
+        :param type_: String
+        :param id: String
+        :param tags: String
+        Example:
+        import json
+        await Wallet.add_record({
+            'id': 'RecordId',
+            'tags': '{}',
+            'type_': 'TestType',
+            'value': 'RecordValue
+        await Wallet.add_record_tags('TestType', 'RecordId', json.dumps({'addthistag':'valuetag1'}))
+        :return:
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.add_record_tags, "cb"):
@@ -144,6 +244,21 @@ class Wallet:
 
     @staticmethod
     async def update_record_tags(type_: str, id: str, tags: str):
+        """
+        Updates the tags on a record, removing any previous value.
+        :param type_: String
+        :param id: String
+        :param tags: String
+        Example:
+        import json
+        await Wallet.add_record({
+            'id': 'RecordId',
+            'tags': json.dumps({'foobar':'this value will get overwritten'}),
+            'type_': 'TestType',
+            'value': 'RecordValue
+        await Wallet.update_record_tags('TestType', 'RecordId', json.dumps({'foobar':'new value'}))
+        :return:
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.update_record_tags, "cb"):
@@ -164,6 +279,20 @@ class Wallet:
 
     @staticmethod
     async def update_record_value(type_: str, id: str, value: str):
+        """
+        Updates the value of a record
+        :param type_: String
+        :param id: String
+        :param value: String
+        Example:
+        await Wallet.add_record({
+            'id': 'RecordId',
+            'tags': '{}',
+            'type_': 'TestType',
+            'value': 'this will be overwritten' })
+        await Wallet.update_record('TestType', 'RecordId', 'new value')
+        :return: 
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.update_record_value, "cb"):
@@ -184,6 +313,26 @@ class Wallet:
 
     @staticmethod
     async def add_record(type_: str, id: str, value: str, tags: str):
+        """
+
+        :param type_: String
+        :param id: String
+        :param value: String
+        :param tags: Dictionary
+        Example:
+        import json
+        await Wallet.add_record({
+            'id': 'RecordId',
+            'tags': json.dumps({
+                'tag1': 'unencrypted value1',
+                '~encryptedTag', 'this value is encrypted,
+                'integerTag', 1
+                }),
+            'type_': 'TestType',
+            'value': 'RecordValue'
+        })
+        :return:
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.add_record, "cb"):
@@ -206,6 +355,14 @@ class Wallet:
 
     @staticmethod
     async def get_token_info(handle: int) -> str:
+        """
+        Retrieves from the ledger token info associated with the wallet.
+        :param handle:
+        Example:
+        payment_handle = 0 // payment handle is always 0, for now.
+        info = await Wallet.get_token_info(payment_handle)
+        :return:
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.get_token_info, "cb"):
@@ -223,6 +380,13 @@ class Wallet:
 
     @staticmethod
     async def create_payment_address(seed: str = None) -> str:
+        """
+        Creates a payment address inside the wallet.
+        :param seed: String
+        Example:
+        address = await Wallet.create_payment_address('00000000000000000000000001234567')
+        :return: String
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.create_payment_address, "cb"):
@@ -243,6 +407,15 @@ class Wallet:
 
     @staticmethod
     async def validate_payment_address(address: str) -> None:
+        """
+        Determines whether a payment address is valid or not
+        :param address: String
+        Example:
+        address = await Wallet.create_payment_address('00000000000000000000000001234567')
+        b = await Wallet.validate_payment_address(address)
+        :return: Boolean
+        """
+
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.validate_payment_address, "cb"):
@@ -259,6 +432,19 @@ class Wallet:
 
     @staticmethod
     async def send_tokens(payment_handle: int, tokens: int, address: str) -> str:
+        """
+        Sends tokens to an address
+        payment_handle is always 0
+        :param payment_handle: Integer
+        :param tokens: Integer
+        :param address: String
+        Example:
+        payment_handle = 0
+        amount = 1000
+        address = await Wallet.create_payment_address('00000000000000000000000001234567')
+        await Wallet.send_tokens(payment_handle, amount, address)
+        :return:
+        """
         logger = logging.getLogger(__name__)
 
         if not hasattr(Wallet.send_tokens, "cb"):

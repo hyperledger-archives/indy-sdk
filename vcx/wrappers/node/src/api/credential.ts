@@ -98,6 +98,7 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
   }
 
   /**
+   * Create a Credential object that requests and receives a credential for an institution
    *
    * ```
    * credential = Credential.createWithMsgId({
@@ -106,8 +107,6 @@ export class Credential extends VCXBaseWithState<ICredentialStructData> {
    *   sourceId: 'testCredentialSourceId'
    * })
    * ```
-   *
-   *
    */
   public static async createWithMsgId (
     { connection, sourceId, msgId }: ICredentialCreateWithMsgId

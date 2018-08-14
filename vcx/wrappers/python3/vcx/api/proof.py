@@ -136,6 +136,7 @@ class Proof(VcxStateful):
 
     async def get_proof(self, connection: Connection) -> list:
         """
+        Example:
         connection = await Connection.create(source_id)
         await connection.connect(phone_number)
         name = "proof name"
@@ -143,8 +144,8 @@ class Proof(VcxStateful):
         proof = await Proof.create(source_id, name, requested_attrs)
         await proof.request_proof(connection)
         await proof.get_proof(connection)
-        :param connection:
-        :return:
+        :param connection: Handle for the connection to receive a proof from.
+        :return: List of proofs received from the given connection.
         """
         if not hasattr(Proof.get_proof, "cb"):
             self.logger.debug("vcx_get_proof: Creating callback")

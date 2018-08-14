@@ -5,6 +5,15 @@ import { initRustAPI, rustAPI } from '../rustlib'
 import { createFFICallbackPromise } from '../utils/ffi-helpers'
 import { IInitVCXOptions } from './common'
 
+/**
+ * Initializes VCX with config file.
+ * An example config file is at libvcx/sample_config/config.json
+ *
+ * Example:
+ * ```
+ * await initVcx('/home/username/vcxconfig.json')
+ * ```
+ */
 export async function initVcx (configPath: string, options: IInitVCXOptions = {}): Promise<void> {
   initRustAPI(options.libVCXPath)
   let rc = null
@@ -32,6 +41,29 @@ export async function initVcx (configPath: string, options: IInitVCXOptions = {}
   }
 }
 
+/**
+ * Initializes VCX with config file.
+ * An example config file is at libvcx/sample_config/config.json
+ *
+ * Example:
+ * ```
+ * config = {
+ *   "agency_did": "L5nbFwXJRmdnJVYhCsy52j",
+ *   "agency_verkey": "BQEgx9PJ7JJgt1LadyP45a7JrWdyqkrzrCBGRZ9QVrvL",
+ *   "agency_endpoint": "https://cagency.pdev.evernym.com",
+ *   "genesis_path":"/var/lib/indy/verity-staging/pool_transactions_genesis",
+ *   "institution_name": "institution",
+ *   "institution_logo_url": "http://robohash.org/234",
+ *   "institution_did": "EwsFhWVoc3Fwqzrwe998aQ",
+ *   "institution_verkey": "8brs38hPDkw5yhtzyk2tz7zkp8ijTyWnER165zDQbpK6",
+ *   "remote_to_sdk_did": "EtfeMFytvYTKnWwqTScp9D",
+ *   "remote_to_sdk_verkey": "8a7hZDyJK1nNCizRCKMr4H4QbDm8Gg2vcbDRab8SVfsi",
+ *   "sdk_to_remote_did": "KacwZ2ndG6396KXJ9NDDw6",
+ *   "sdk_to_remote_verkey": "B8LgZGxEPcpTJfZkeqXuKNLihM1Awm8yidqsNwYi5QGc"
+ *  }
+ * await initVcxWithConfig('/home/username/vcxconfig.json')
+ * ```
+ */
 export async function initVcxWithConfig (config: string, options: IInitVCXOptions = {}): Promise<void> {
   initRustAPI(options.libVCXPath)
   let rc = null

@@ -65,15 +65,23 @@ export class SchemaPaymentManager extends PaymentManager {
 
 export class Schema extends VCXBase<ISchemaSerializedData> {
   /**
-   * @memberof Schema
-   * @description Builds a generic Schema object
-   * @static
-   * @async
-   * @function create
-   * @param {ISchemaCreateData} data
-   * @example <caption>Example of ISchema</caption>
-   * {sourceId: '123', data: {name: 'name', version: '1.0', attrNames:['name', 'address', 'city']}}
-   * @returns {Promise<Schema>} A Schema Object
+   * Builds a generic Schema object
+   *
+   * Example:
+   * ```
+   * data: {
+   *     attrNames: [
+   *       'attr1',
+   *       'attr2'
+   *     ],
+   *     name: 'Schema',
+   *     version: '1.0.0'
+   *   },
+   *   paymentHandle: 0,
+   *   sourceId: 'testSchemaSourceId'
+   * }
+   * schema1 = await Schema.create(data)
+   * ```
    */
   public static async create ({ paymentHandle, data, sourceId }: ISchemaCreateData): Promise<Schema> {
     try {
@@ -96,15 +104,26 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
   }
 
   /**
-   * @memberof Schema
-   * @description Builds Schema object with defined attributes.
+   * Builds Schema object with defined attributes.
    * Attributes are provided by a previous call to the serialize function.
-   * @static
-   * @async
-   * @function deserialize
-   * @param {ISerializedData<ISchemaSerializedData>} schema - contains the information that will
-   * be used to build a Schema object
-   * @returns {Promise<Schema>} A Schema Object
+   *
+   * Example:
+   * ```
+   * sourceId = 'lookupTest'
+   * data: {
+   *     attrNames: [
+   *       'attr1',
+   *       'attr2'
+   *     ],
+   *     name: 'Schema',
+   *     version: '1.0.0'
+   *   },
+   *   paymentHandle: 0,
+   *   sourceId: sourceId
+   * }
+   * schema1 = await Schema.create(data)
+   * data1 = await schema1.serialize()
+   * schema2 = Schema.deserialize(data1)
    */
   public static async deserialize (schema: ISerializedData<ISchemaSerializedData>) {
     const { data: { name, schema_id, version, data } } = schema
@@ -117,12 +136,26 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
   }
 
   /**
-   * @memberof Schema
-   * @description Looks up the attributes of an already created Schema.
-   * @async
-   * @function lookup
-   * @param {obj} data - contains sourceId and schema id
-   * @returns {Promise<Schema>} - A schema object with the attributes set
+   * Looks up the attributes of an already created Schema.
+   *
+   * Example:
+   * ```
+   * sourceId = 'lookupTest'
+   * data: {
+   *     attrNames: [
+   *       'attr1',
+   *       'attr2'
+   *     ],
+   *     name: 'Schema',
+   *     version: '1.0.0'
+   *   },
+   *   paymentHandle: 0,
+   *   sourceId: sourceId
+   * }
+   * schema1 = await Schema.create(data)
+   * schemaId1 = await schema1.getSchemaId()
+   * data = await Schema.lookup(sourceId, schemaId1)
+   * ```
    */
   public static async lookup ({ sourceId, schemaId }: ISchemaLookupData): Promise<Schema> {
     try {
@@ -193,7 +226,26 @@ export class Schema extends VCXBase<ISchemaSerializedData> {
   get name () {
     return this._name
   }
-
+  /**
+   * Get the ledger ID of the object
+   *
+   * Example:
+   * ```
+   * data: {
+   *     attrNames: [
+   *       'attr1',
+   *       'attr2'
+   *     ],
+   *     name: 'Schema',
+   *     version: '1.0.0'
+   *   },
+   *   paymentHandle: 0,
+   *   sourceId: 'testSchemaSourceId'
+   * }
+   * schema1 = await Schema.create(data)
+   * id1 = await schema1.getSchemaId()
+   * ```
+   */
   protected async getSchemaId (): Promise<string> {
     try {
       const schemaId = await createFFICallbackPromise<string>(
