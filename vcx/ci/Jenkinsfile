@@ -213,7 +213,7 @@ def buildAndroid(envn) {
     envn.inside {
         ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
         LIBINDY_BRANCH="stable"
-        LIBINDY_VERSION="1.6.1"
+        LIBINDY_VERSION="1.6.2"
         LIBINDY_TAG=""
 
         sh 'sudo ./vcx/ci/scripts/installCert.sh'

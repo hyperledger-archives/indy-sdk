@@ -139,7 +139,7 @@ describe('Connection:', () => {
       assert.equal(await connection.getState(), StateType.Accepted)
     })
 
-    it(`returns ${StateType.Accepted}: mocked accepted in parallel`, async () => {
+    it.skip(`returns ${StateType.Accepted}: mocked accepted in parallel`, async () => {
       const numConnections = 50
       const interval = 50
       const sleepTime = 100
