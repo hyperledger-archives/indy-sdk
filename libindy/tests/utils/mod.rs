@@ -19,6 +19,7 @@ pub mod non_secrets;
 pub mod results;
 pub mod payments;
 pub mod rand_utils;
+pub mod logger;
 
 #[macro_use]
 #[allow(unused_macros)]
