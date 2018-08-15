@@ -21,7 +21,7 @@ pub fn create_wallet(wallet_name: &str) -> Result<(), u32> {
         Ok(x) => Ok(()),
         Err(x) => if x != ErrorCode::WalletAlreadyExistsError && x != ErrorCode::Success {
             warn!("could not create wallet {}: {:?}", wallet_name, x);
-            Err(error::UNKNOWN_LIBINDY_ERROR.code_num)
+            Err(error::INVALID_WALLET_CREATION.code_num)
         } else {
             warn!("could not create wallet {}: {:?}", wallet_name, x);
             Ok(())
@@ -184,7 +184,7 @@ pub mod tests {
         let wallet_name = String::from("walletUnique");
         let mut wallet_handle = init_wallet(&wallet_name).unwrap();
         assert!( wallet_handle > 0);
-        assert_eq!(error::UNKNOWN_LIBINDY_ERROR.code_num, init_wallet(&String::from("")).unwrap_err());
+        assert_eq!(error::INVALID_WALLET_CREATION.code_num, init_wallet(&String::from("")).unwrap_err());
 
         thread::sleep(Duration::from_secs(1));
         delete_wallet("walletUnique").unwrap();
