@@ -628,18 +628,26 @@ pub mod tests {
 
         let txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
         doc.apply_txn(txn_1).unwrap();
-        let expected_did_doc_1 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"]}}"#;
+        let expected_did_doc_1 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{}}}"#;
         assert_eq!(doc.as_json().unwrap(), expected_did_doc_1);
 
         let txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
         doc.apply_txn(txn_2).unwrap();
-        let expected_did_doc_2 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["add_key"]},"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"]}}"#;
-        assert_eq!(doc.as_json().unwrap(), expected_did_doc_2);
+        let expected_did_doc_2_1 = r#""CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["add_key"],"endpoints":{}}"#;
+        let expected_did_doc_2_2 = r#""6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{}}"#;
+        let d = doc.as_json().unwrap();
+        assert!(d.contains(expected_did_doc_2_1));
+        assert!(d.contains(expected_did_doc_2_2));
 
         let txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["rem_key"],"type":"2","verkey":"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB"}}"#;
         doc.apply_txn(txn_3).unwrap();
-        let expected_did_doc_3 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["add_key"]},"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"]},"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB":{"authorizations":["rem_key"]}}"#;;
-        assert_eq!(doc.as_json().unwrap(), expected_did_doc_2);
+        let expected_did_doc_3_1 = r#""CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["add_key"],"endpoints":{}}"#;;
+        let expected_did_doc_3_2 = r#""6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{}}"#;;
+        let expected_did_doc_3_3 = r#""46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB":{"authorizations":["rem_key"],"endpoints":{}}"#;;
+        let d = doc.as_json().unwrap();
+        assert!(d.contains(expected_did_doc_3_1));
+        assert!(d.contains(expected_did_doc_3_2));
+        assert!(d.contains(expected_did_doc_3_3));
     }
 
     #[test]
@@ -650,17 +658,17 @@ pub mod tests {
 
         let txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
         doc.apply_txn(txn_1).unwrap();
-        let expected_did_doc_1 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["add_key"]}}"#;
+        let expected_did_doc_1 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["add_key"],"endpoints":{}}}"#;
         assert_eq!(doc.as_json().unwrap(), expected_did_doc_1);
 
         let txn_2 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key","rem_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
         doc.apply_txn(txn_2).unwrap();
-        let expected_did_doc_2 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["add_key","rem_key"]}}"#;
+        let expected_did_doc_2 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["add_key","rem_key"],"endpoints":{}}}"#;
         assert_eq!(doc.as_json().unwrap(), expected_did_doc_2);
 
         let txn_3 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["rem_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
         doc.apply_txn(txn_3).unwrap();
-        let expected_did_doc_3 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["rem_key"]}}"#;
+        let expected_did_doc_3 = r#"{"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW":{"authorizations":["rem_key"],"endpoints":{}}}"#;
         assert_eq!(doc.as_json().unwrap(), expected_did_doc_3);
     }
 
@@ -693,9 +701,11 @@ pub mod tests {
         let end_point_txn_4 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"address":"https://agent3.example.com","type":"3","verkey":"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB"}}"#;
         doc.apply_txn(end_point_txn_4).unwrap();
 
-        let expected_did_doc_4 = r#"{"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB":{"authorizations":["all"],"endpoints":{"https://agent3.example.com":{}}},"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{}}}}"#;
-        let expected_did_doc_4_1 = r#"{"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{}}},"46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB":{"authorizations":["all"],"endpoints":{"https://agent3.example.com":{}}}}"#;
-        assert_eq!((doc.as_json().unwrap() == expected_did_doc_4) || (doc.as_json().unwrap() == expected_did_doc_4_1), true);
+        let expected_did_doc_4_1 = r#""46Kq4hASUdvUbwR7s7Pie3x8f4HRB3NLay7Z9jh9eZsB":{"authorizations":["all"],"endpoints":{"https://agent3.example.com":{}}}"#;
+        let expected_did_doc_4_2 = r#""6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1":{"authorizations":["all"],"endpoints":{"https://agent.example.com":{}}}"#;
+        let d = doc.as_json().unwrap();
+        assert!(d.contains(expected_did_doc_4_1));
+        assert!(d.contains(expected_did_doc_4_2));
     }
 
     #[test]
