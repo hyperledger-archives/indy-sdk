@@ -18,10 +18,10 @@ from indy.error import IndyError
 
 
 pool_name = 'pool'
-wallet_name = 'wallet'
 genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+wallet_config = json.dumps({"id": "wallet"})
 wallet_credentials = json.dumps({"key": "wallet_key"})
-
+PROTOCOL_VERSION=2
 
 def print_log(value_color="", value_noncolor=""):
     """set the colors for text."""
@@ -32,14 +32,12 @@ def print_log(value_color="", value_noncolor=""):
 
 async def write_schema_and_cred_def():
     try:
-        await pool.set_protocol_version(2)
+        await pool.set_protocol_version(PROTOCOL_VERSION)
         # Step 2 code goes here.
 
         # Step 3 code goes here.
 
         # Step 4 code goes here.
-
-        # Step 5 code goes here.
 
     except IndyError as e:
         print('Error occurred: %s' % e)
