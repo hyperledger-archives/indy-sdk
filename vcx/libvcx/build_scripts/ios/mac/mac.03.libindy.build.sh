@@ -77,6 +77,12 @@ if [ "$#" -gt 0 ]; then
     # cargo lipo --release --verbose --targets="${IOS_TARGETS}"
     cargo lipo --release --targets="${IOS_TARGETS}"
     #cargo lipo
+    mkdir -p $WORK_DIR/libindy
+    cp $WORK_DIR/vcx-indy-sdk/libindy/target/universal/release/libindy.a $WORK_DIR/libindy/libindy.a
+    for hfile in $(find ${WORK_DIR}/vcx-indy-sdk/libindy -name "*.h")
+    do
+        cp ${hfile} $WORK_DIR/libindy
+    done
 else
 
     if [ -d $WORK_DIR/libindy ]; then
