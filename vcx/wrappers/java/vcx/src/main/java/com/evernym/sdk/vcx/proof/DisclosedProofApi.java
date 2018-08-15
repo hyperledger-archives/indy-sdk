@@ -108,4 +108,75 @@ public class DisclosedProofApi extends VcxJava.API {
         return future;
     }
 
+
+    private static Callback vcxProofCreateWithRequestCB = new Callback() {
+        public void callback(int command_handle, int err, int proofHandle) {
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(command_handle);
+            if(!checkCallback(future, err)) return;
+            // resolving with no error
+            Integer result = proofHandle;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<Integer> proofCreateWithRequest(
+            String sourceId,
+            String proofRequest
+    ) throws VcxException {
+        ParamGuard.notNull(sourceId, "sourceId");
+        ParamGuard.notNull(proofRequest, "proofRequest");
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_disclosed_proof_create_with_request(commandHandle, sourceId, proofRequest, vcxProofCreateWithRequestCB);
+        checkResult(result);
+
+        return future;
+    }
+
+
+    private static Callback vcxProofSerializeCB = new Callback() {
+        public void callback(int command_handle, int err, String serializedProof) {
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
+            if(!checkCallback(future, err)) return;
+
+            future.complete(serializedProof);
+        }
+    };
+
+    public static CompletableFuture<String> proofSerialize(
+            int proofHandle
+    ) throws VcxException {
+        CompletableFuture<String> future = new CompletableFuture<String>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_disclosed_proof_serialize(commandHandle, proofHandle, vcxProofSerializeCB);
+        checkResult(result);
+
+        return future;
+    }
+
+
+    private static Callback vcxProofDeserializeCB = new Callback() {
+        public void callback(int command_handle, int err, int proofHandle) {
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(command_handle);
+            if(!checkCallback(future, err)) return;
+
+            future.complete(proofHandle);
+        }
+    };
+
+    public static CompletableFuture<Integer> proofDeserialize(
+            String serializedProof
+    ) throws VcxException {
+        ParamGuard.notNull(serializedProof, "serializedProof");
+        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_disclosed_proof_deserialize(commandHandle, serializedProof, vcxProofDeserializeCB);
+        checkResult(result);
+
+        return future;
+    }
+
 }

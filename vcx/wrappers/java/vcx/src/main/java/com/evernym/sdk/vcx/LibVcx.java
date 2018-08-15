@@ -305,6 +305,11 @@ public abstract class LibVcx {
         public int vcx_disclosed_proof_create(int command_handle, String source_id, String requested_attrs, String requested_predicates, String name, Callback cb);
 
         /**
+         * Create a proof object with proof request
+         */
+        public int vcx_disclosed_proof_create_with_request(int command_handle, String source_id, String proof_req, Callback cb);
+
+        /**
          * Asynchronously send a proof to the connection.
          */
         public int vcx_disclosed_proof_send_proof(int command_handle, int proof_handle, int connection_handle, Callback cb);
