@@ -11,13 +11,14 @@ use utils::crypto::ed25519_box;
 use utils::crypto::randombytes::randombytes;
 
 pub const SEEDBYTES: usize = sign::SEEDBYTES;
-pub const PUBLICKEYBYTES: usize = sign::PUBLICKEYBYTES;
+pub const SIG_PUBLICKEYBYTES: usize = sign::PUBLICKEYBYTES;
+pub const ENC_PUBLICKEYBYTES: usize = box_::PUBLICKEYBYTES;
 pub const SIG_SECRETKEYBYTES: usize = sign::SECRETKEYBYTES;
 pub const ENC_SECRETKEYBYTES: usize = box_::SECRETKEYBYTES;
 pub const SIGNATUREBYTES: usize = sign::SIGNATUREBYTES;
 
 sodium_type!(Seed, sign::Seed, SEEDBYTES);
-sodium_type!(PublicKey, sign::PublicKey, PUBLICKEYBYTES);
+sodium_type!(PublicKey, sign::PublicKey, SIG_PUBLICKEYBYTES);
 sodium_type!(SecretKey, sign::SecretKey, SIG_SECRETKEYBYTES);
 sodium_type!(Signature, sign::Signature, SIGNATUREBYTES);
 
@@ -26,8 +27,8 @@ extern {
     // this functions isn't included to sodiumoxide rust wrappers,
     // temporary local binding is used to call libsodium-sys function
     pub fn crypto_sign_ed25519_pk_to_curve25519(
-        curve25519_pk: *mut [u8; PUBLICKEYBYTES],
-        ed25519_pk: *const [u8; PUBLICKEYBYTES]) -> c_int;
+        curve25519_pk: *mut [u8; ENC_PUBLICKEYBYTES],
+        ed25519_pk: *const [u8; SIG_PUBLICKEYBYTES]) -> c_int;
     pub fn crypto_sign_ed25519_sk_to_curve25519(
         curve25519_sk: *mut [u8; ENC_SECRETKEYBYTES],
         ed25519_sk: *const [u8; SIG_SECRETKEYBYTES]) -> c_int;
@@ -70,7 +71,7 @@ pub fn sk_to_curve25519(sk: &SecretKey) -> Result<ed25519_box::SecretKey, Crypto
 }
 
 pub fn vk_to_curve25519(pk: &PublicKey) -> Result<ed25519_box::PublicKey, CryptoError> {
-    let mut to: [u8; PUBLICKEYBYTES] = [0; PUBLICKEYBYTES];
+    let mut to: [u8; ENC_PUBLICKEYBYTES] = [0; ENC_PUBLICKEYBYTES];
     unsafe {
         crypto_sign_ed25519_pk_to_curve25519(&mut to, &(pk.0).0);
     }
