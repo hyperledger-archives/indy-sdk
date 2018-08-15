@@ -7,6 +7,7 @@ pub mod ed25519_sign;
 
 #[cfg(feature = "ed25519_box_sodium")]
 #[path = "ed25519_box/sodium.rs"]
+// TODO: The name is misleading as the operations do not happen over ed25519 curve
 pub mod ed25519_box;
 
 #[cfg(feature = "base58_rust_base58")]
