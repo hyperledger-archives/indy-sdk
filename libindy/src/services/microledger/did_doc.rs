@@ -430,7 +430,21 @@ impl<'a> DidDoc<'a> {
                                     return Ok(false)
                                 }
                                 let vk = j_vk.as_str().unwrap();
-                                if !DidDoc::is_valid_endpoint_txn_auth(&txn.operation, vk, did_doc)? {
+                                if !DidDoc::is_valid_endpoint_txn_add_auth(&txn.operation, vk, did_doc)? {
+                                    return Ok(false)
+                                }
+                                Ok(true)
+                            }
+                            Some(ENDPOINT_REM_TXN) => {
+                                if !DidMicroledger::is_valid_endpoint_txn_schema(&txn.operation) {
+                                    return Ok(false)
+                                }
+                                let j_vk = idr.unwrap();
+                                if !DidMicroledger::is_valid_txn_sig(crypto_service, txn.clone(), j_vk.clone(), sig.unwrap())? {
+                                    return Ok(false)
+                                }
+                                let vk = j_vk.as_str().unwrap();
+                                if !DidDoc::is_valid_endpoint_rem_txn_auth(&txn.operation, vk, did_doc)? {
                                     return Ok(false)
                                 }
                                 Ok(true)
@@ -470,7 +484,27 @@ impl<'a> DidDoc<'a> {
                         }
                     }
                 } else {
-                    // TODO
+                    match did_doc.get_key_authorisations(subject_vk) {
+                        Ok(subj_auths) => {
+                            let (adding_new_auths, removing_old_auths) = DidDoc::get_auth_changes(&subj_auths, &proposed_auths);
+                            match did_doc.get_key_authorisations(txn_author_vk) {
+                                Ok(auths) => {
+                                    if !DidDoc::can_make_auth_changes(adding_new_auths, removing_old_auths,
+                                                                      &auths, subject_vk, txn_author_vk) {
+                                        return Ok(false)
+                                    }
+                                }
+                                Err(e) => {
+                                    println!("Cannot get authorisations for key {}. Error: {:?}", txn_author_vk, e);
+                                    return Ok(false)
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            println!("Cannot get authorisations for key {}. Error: {:?}", subject_vk, e);
+                            return Ok(false)
+                        }
+                    }
                 }
                 Ok(true)
             }
@@ -491,8 +525,8 @@ impl<'a> DidDoc<'a> {
         }
     }
 
-    pub fn is_valid_endpoint_txn_auth(operation: &JValue, txn_author_vk: &str,
-                                      did_doc: &DidDoc) -> Result<bool, CommonError> {
+    pub fn is_valid_endpoint_txn_add_auth(operation: &JValue, txn_author_vk: &str,
+                                          did_doc: &DidDoc) -> Result<bool, CommonError> {
         let subject_vk = operation.get(VERKEY).unwrap();
         let subject_vk = subject_vk.as_str().unwrap();
         match did_doc.get_key_endpoints(subject_vk) {
@@ -500,20 +534,51 @@ impl<'a> DidDoc<'a> {
                 if subject_vk == txn_author_vk {
                     return Ok(true)
                 }
-                if endpoints.is_empty() {
-                    match did_doc.get_key_authorisations(txn_author_vk) {
-                        Ok(auths) => {
-                            if !(auths.contains(&AUTHZ_ALL.to_string()) || auths.contains(&AUTHZ_ADD_KEY.to_string())) {
-                                return Ok(false)
-                            }
-                        }
-                        Err(e) => {
-                            println!("Cannot get authorisations for key {}. Error: {:?}", txn_author_vk, e);
+                if !endpoints.is_empty() {
+                    return Ok(false)
+                }
+                match did_doc.get_key_authorisations(txn_author_vk) {
+                    Ok(auths) => {
+                        if !(auths.contains(&AUTHZ_ALL.to_string()) || auths.contains(&AUTHZ_ADD_KEY.to_string())) {
                             return Ok(false)
                         }
                     }
-                } else {
-                    // TODO
+                    Err(e) => {
+                        println!("Cannot get authorisations for key {}. Error: {:?}", txn_author_vk, e);
+                        return Ok(false)
+                    }
+                }
+                Ok(true)
+            }
+            _ => {
+                println!("Cannot add endpoint for non-existent key {}", subject_vk);
+                Ok(false)
+            }
+        }
+    }
+
+    pub fn is_valid_endpoint_rem_txn_auth(operation: &JValue, txn_author_vk: &str,
+                                          did_doc: &DidDoc) -> Result<bool, CommonError> {
+        let subject_vk = operation.get(VERKEY).unwrap();
+        let subject_vk = subject_vk.as_str().unwrap();
+        match did_doc.get_key_endpoints(subject_vk) {
+            Ok(endpoints) => {
+                if subject_vk == txn_author_vk {
+                    return Ok(true)
+                }
+                if !endpoints.is_empty() {
+                    return Ok(false)
+                }
+                match did_doc.get_key_authorisations(txn_author_vk) {
+                    Ok(auths) => {
+                        if !(auths.contains(&AUTHZ_ALL.to_string()) || auths.contains(&AUTHZ_REM_KEY.to_string())) {
+                            return Ok(false)
+                        }
+                    }
+                    Err(e) => {
+                        println!("Cannot get authorisations for key {}. Error: {:?}", txn_author_vk, e);
+                        return Ok(false)
+                    }
                 }
                 Ok(true)
             }
@@ -574,6 +639,41 @@ impl<'a> DidDoc<'a> {
                 Err(CommonError::InvalidStructure(format!("Key txn not present for: {}.", &verkey)))
             }
         }
+    }
+
+    // Move to `Auth`?
+    pub fn get_auth_changes(subj_auths: &Vec<String>, proposed_auths: &Vec<String>) -> (bool, bool) {
+        let mut adding_new_auths = false;
+        let mut removing_old_auths = false;
+        let existing_auths: HashSet<String> = subj_auths.iter().cloned().collect();
+        for pa in proposed_auths {
+            if !existing_auths.contains(pa) {
+                adding_new_auths = true;
+                break;
+            }
+        }
+        let prop_auths: HashSet<String> = proposed_auths.iter().cloned().collect();
+        for sa in subj_auths {
+            if !prop_auths.contains(sa) {
+                removing_old_auths = true;
+                break;
+            }
+        }
+        (adding_new_auths, removing_old_auths)
+    }
+
+    // Move to `Auth`?
+    pub fn can_make_auth_changes(adding_new_auths: bool, removing_old_auths: bool,
+                                 actor_auths: &Vec<String>, subject_vk: &str, actor_vk: &str) -> bool {
+        if adding_new_auths && !(actor_auths.contains(&AUTHZ_ALL.to_string()) ||
+            actor_auths.contains(&AUTHZ_ADD_KEY.to_string())) {
+            return false
+        }
+        if removing_old_auths && !(actor_auths.contains(&AUTHZ_ALL.to_string()) ||
+            actor_auths.contains(&AUTHZ_REM_KEY.to_string()) || subject_vk == actor_vk) {
+            return false
+        }
+        true
     }
 }
 
@@ -833,5 +933,62 @@ pub mod tests {
 
         let empty_str_vec: Vec<String> = vec![];
         assert_eq!(doc.get_keys_by_authorisation(AUTHZ_MPROX).unwrap(), empty_str_vec);
+    }
+
+    #[test]
+    fn test_get_auth_changes() {
+        let old_auths_1 = vec![AUTHZ_ALL.to_string()];
+        let new_auths_1 = vec![AUTHZ_ALL.to_string()];
+        assert_eq!((false, false), DidDoc::get_auth_changes(&old_auths_1, &new_auths_1));
+
+        let old_auths_2 = vec![AUTHZ_ADD_KEY.to_string()];
+        let new_auths_2 = vec![AUTHZ_ADD_KEY.to_string(), AUTHZ_REM_KEY.to_string()];
+        assert_eq!((true, false), DidDoc::get_auth_changes(&old_auths_2, &new_auths_2));
+
+        let old_auths_3 = vec![AUTHZ_ADD_KEY.to_string(), AUTHZ_REM_KEY.to_string()];
+        let new_auths_3 = vec![AUTHZ_ADD_KEY.to_string()];
+        assert_eq!((false, true), DidDoc::get_auth_changes(&old_auths_3, &new_auths_3));
+
+        let old_auths_4 = vec![AUTHZ_ADD_KEY.to_string()];
+        let new_auths_4 = vec![AUTHZ_REM_KEY.to_string(), AUTHZ_MPROX.to_string()];
+        assert_eq!((true, true), DidDoc::get_auth_changes(&old_auths_4, &new_auths_4));
+    }
+
+    #[test]
+    fn test_can_make_auth_changes() {
+        let subject_vk = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
+        let actor_vk = "4AdS22kC7xzb4bcqg9JATuCfAMNcQYcZa1u5eWzs6cSJ";
+
+        let actor_auths_1 = vec![AUTHZ_ALL.to_string()];
+        assert!(DidDoc::can_make_auth_changes(false, false, &actor_auths_1, subject_vk, actor_vk));
+        assert!(DidDoc::can_make_auth_changes(true, false, &actor_auths_1, subject_vk, actor_vk));
+        assert!(DidDoc::can_make_auth_changes(false, true, &actor_auths_1, subject_vk, actor_vk));
+        assert!(DidDoc::can_make_auth_changes(true, true, &actor_auths_1, subject_vk, actor_vk));
+
+        let actor_auths_2 = vec![AUTHZ_ADD_KEY.to_string()];
+        assert!(DidDoc::can_make_auth_changes(false, false, &actor_auths_2, subject_vk, actor_vk));
+        assert!(DidDoc::can_make_auth_changes(true, false, &actor_auths_2, subject_vk, actor_vk));
+        assert_eq!(DidDoc::can_make_auth_changes(true, true, &actor_auths_2, subject_vk, actor_vk), false);
+        assert_eq!(DidDoc::can_make_auth_changes(false, true, &actor_auths_2, subject_vk, actor_vk), false);
+
+        let actor_auths_3 = vec![AUTHZ_REM_KEY.to_string()];
+        assert!(DidDoc::can_make_auth_changes(false, false, &actor_auths_3, subject_vk, actor_vk));
+        assert!(DidDoc::can_make_auth_changes(false, true, &actor_auths_3, subject_vk, actor_vk));
+        assert_eq!(DidDoc::can_make_auth_changes(true, true, &actor_auths_3, subject_vk, actor_vk), false);
+        assert_eq!(DidDoc::can_make_auth_changes(true, false, &actor_auths_3, subject_vk, actor_vk), false);
+
+        // Works same as AUTHZ_ALL
+        let actor_auths_4 = vec![AUTHZ_ADD_KEY.to_string(), AUTHZ_REM_KEY.to_string()];
+        assert!(DidDoc::can_make_auth_changes(false, false, &actor_auths_4, subject_vk, actor_vk));
+        assert!(DidDoc::can_make_auth_changes(true, false, &actor_auths_4, subject_vk, actor_vk));
+        assert!(DidDoc::can_make_auth_changes(false, true, &actor_auths_4, subject_vk, actor_vk));
+        assert!(DidDoc::can_make_auth_changes(true, true, &actor_auths_4, subject_vk, actor_vk));
+
+        // Subject is same as actor but no relevant permissions
+        let actor_auths_5 = vec![AUTHZ_MPROX.to_string()];
+        assert!(DidDoc::can_make_auth_changes(false, false, &actor_auths_5, subject_vk, subject_vk));
+        assert!(DidDoc::can_make_auth_changes(false, true, &actor_auths_5, subject_vk, subject_vk));
+        assert_eq!(DidDoc::can_make_auth_changes(true, true, &actor_auths_5, subject_vk, subject_vk), false);
+        assert_eq!(DidDoc::can_make_auth_changes(true, false, &actor_auths_5, subject_vk, subject_vk), false);
     }
 }
