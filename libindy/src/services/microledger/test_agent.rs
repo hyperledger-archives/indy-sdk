@@ -463,7 +463,6 @@ mod tests {
     use super::super::testing_utils::tests::{get_new_network};
     use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger, valid_did_doc_storage_options};
     use services::microledger::helpers::{create_storage_options};
-    use utils::test::TestUtils;
     use utils::environment::EnvironmentUtils;
     use services::microledger::testing_utils::Network;
     use services::microledger::constants::AUTHZ_ADD_KEY;
@@ -471,6 +470,7 @@ mod tests {
     use services::microledger::constants::AUTHZ_ALL;
     use services::microledger::constants::AUTHZ_MPROX;
     use std::collections::HashSet;
+    use services::microledger::helpers::tests::test_data_cleanup;
 
     /*pub fn gen_storage_options(extra_path: Option<&str>) -> HashMap<String, String>{
         let mut path = EnvironmentUtils::tmp_path();
@@ -698,7 +698,7 @@ mod tests {
 
     #[test]
     fn test_new_agent_create_new_microledger() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let seed1 = String::from("11111111111111111111111111111111");
         let agent1 = get_new_agent(did, seed1, String::from(""));
@@ -714,7 +714,7 @@ mod tests {
 
     #[test]
     fn test_new_connection_message() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let seed1 = String::from("11111111111111111111111111111111");
         let (agent1, conn1) = bootstrap_agent1(did1, seed1);
@@ -733,7 +733,7 @@ mod tests {
 
     #[test]
     fn test_connection_response() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let network = get_new_network("n");
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let seed1 = String::from("11111111111111111111111111111111");
@@ -781,7 +781,7 @@ mod tests {
 
     #[test]
     fn test_messaging() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let (mut network, mut agent1, mut agent2) = connected_agents();
         let payload = json!({
@@ -806,7 +806,7 @@ mod tests {
     #[test]
     fn test_key_rotation1() {
         // 2 parties with each having 1 edge agent only, 1 party rotates its (only agent's) key
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
         let (mut network, mut agent1, mut agent2) = connected_agents();
@@ -891,7 +891,7 @@ mod tests {
     #[test]
     fn test_new_cloud_agent() {
         // Alice and Bob both have edge agents. Alice adds a new cloud agent
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let (mut network, mut agent1, mut agent2) = connected_agents();
         let mut agent1 = Rc::new(RefCell::new(agent1));
         let mut agent2 = Rc::new(RefCell::new(agent2));
@@ -917,7 +917,7 @@ mod tests {
         // 2 parties, Alice and Bob. Alice has 1 cloud agent and 1 edge agent. Bob has 1 edge agent.
         // Alice uses its edge agent (`agent1`) to change cloud agent's (`agent3`) verkey
 
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
 
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
@@ -960,7 +960,7 @@ mod tests {
         // 2 parties, Alice and Bob. Alice has 1 cloud agent and 1 edge agent. Bob has 1 edge agent.
         // Alice uses its cloud agent (`agent3`) to change edge agent's (`agent1`) verkey
 
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
 
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
@@ -1008,7 +1008,7 @@ mod tests {
     fn test_key_rotation4() {
         // 2 parties, Alice and Bob. Alice has 1 cloud agent and 1 edge agent. Bob has 1 edge agent.
         // Bob rotates it's edge agent key (`agent2`)
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
 
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
@@ -1049,7 +1049,7 @@ mod tests {
         // Alice and Bob both have edge agents. Both Alice and Bob add a new cloud agent each.
         // Alice's cloud agent is `agent3`, Bob's cloud agent is `agent4`
 
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
         let (mut network, mut agent1, mut agent2) = connected_agents();
@@ -1076,7 +1076,7 @@ mod tests {
         // 2 parties, Alice and Bob. Both Alice and Bob have 1 cloud agent and 1 edge agent each.
         // Bob rotates it's cloud agent key (`agent4`)
 
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
         let (mut network, mut agent1, mut agent2) = connected_agents();
@@ -1110,7 +1110,7 @@ mod tests {
     fn test_new_edge_agent() {
         // 2 parties, Alice and Bob. Both Alice and Bob have 1 cloud agent and 1 edge agent each.
         // Bob adds new edge agent (`agent5`)
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did1 = "75KUW8tPUQNBS4W7ibFeY8";
         let did2 = "84qiTnsJrdefBDMrF49kfa";
         let (mut network, mut agent1, mut agent2) = connected_agents();

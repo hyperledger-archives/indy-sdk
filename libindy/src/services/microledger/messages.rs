@@ -50,12 +50,11 @@ pub enum ValidProtocolMessages {
 
 pub mod tests {
     use super::*;
-    use utils;
-    use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger, get_10_txns};
+    use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger, get_10_txns, test_data_cleanup};
 
     #[test]
     fn test_create_ledger_update_message() {
-        utils::test::TestUtils::cleanup_temp();
+        test_data_cleanup();
         let txns = get_10_txns();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut ml = get_new_microledger(did);

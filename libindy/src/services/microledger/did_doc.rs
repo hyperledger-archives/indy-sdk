@@ -580,15 +580,15 @@ impl<'a> DidDoc<'a> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::test::TestUtils;
     use services::microledger::helpers::tests::{valid_did_doc_storage_options, check_empty_storage, get_new_did_doc};
     use services::microledger::constants::AUTHZ_MPROX;
     use services::microledger::constants::AUTHZ_ADD_KEY;
     use services::microledger::constants::AUTHZ_REM_KEY;
+    use services::microledger::helpers::tests::test_data_cleanup;
 
     #[test]
     fn test_setup_did_doc() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();;
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let options = valid_did_doc_storage_options();
         let doc = DidDoc::new(did, options).unwrap();
@@ -598,7 +598,7 @@ pub mod tests {
 
     #[test]
     fn test_apply_invalid_txn() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();;
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut doc = get_new_did_doc(did);
 
@@ -621,7 +621,7 @@ pub mod tests {
 
     #[test]
     fn test_add_new_keys_in_did_doc() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();;
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut doc = get_new_did_doc(did);
         assert_eq!(doc.as_json().unwrap(), "{}");
@@ -644,7 +644,7 @@ pub mod tests {
 
     #[test]
     fn test_update_old_keys_in_did_doc() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();;
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut doc = get_new_did_doc(did);
 
@@ -666,7 +666,7 @@ pub mod tests {
 
     #[test]
     fn test_add_rem_endpoint_txns_in_did_doc() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();;
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut doc = get_new_did_doc(did);
         let key_txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
@@ -700,7 +700,7 @@ pub mod tests {
 
     #[test]
     fn test_has_keys() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();;
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut doc = get_new_did_doc(did);
         let txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
@@ -718,7 +718,7 @@ pub mod tests {
 
     #[test]
     fn test_get_key_authorisations() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();;
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut doc = get_new_did_doc(did);
         let txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["add_key"],"type":"2","verkey":"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW"}}"#;
@@ -748,7 +748,7 @@ pub mod tests {
 
     #[test]
     fn test_get_key_endpoints() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();;
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut doc = get_new_did_doc(did);
         let key_txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;
@@ -788,7 +788,7 @@ pub mod tests {
 
     #[test]
     fn test_get_keys_by_authorisation() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();;
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut doc = get_new_did_doc(did);
         let key_txn_1 = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"authorizations":["all"],"type":"2","verkey":"6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1"}}"#;

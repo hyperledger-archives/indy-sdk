@@ -161,15 +161,30 @@ pub fn in_memory_wallet_with_key(wallet_service: &WalletService, seed: Option<St
     wallet_handle
 }
 
+pub fn in_memory_wallets_cleanup() {
+    InmemWallet::cleanup()
+}
+
 pub mod tests {
     use super::*;
+    use std::fs;
     use utils;
+    // This import does not work
+//    use utils::test::TestUtils;
     use services::microledger::constants::*;
     use std::collections::HashMap;
     use services::microledger::microledger::Microledger;
     use services::microledger::did_microledger::DidMicroledger;
     use services::microledger::did_doc::DidDoc;
     use services::microledger::view::View;
+
+    pub fn test_data_cleanup() {
+        let path = EnvironmentUtils::tmp_path();
+        if path.exists() {
+            fs::remove_dir_all(path).unwrap();
+        }
+        in_memory_wallets_cleanup();
+    }
 
     pub fn valid_did_ml_storage_options() -> HashMap<String, String>{
         /*let mut options: HashMap<String, String> = HashMap::new();
@@ -261,7 +276,7 @@ pub mod tests {
 
     #[test]
     fn test_get_ledger_storage() {
-        utils::test::TestUtils::cleanup_temp();
+        test_data_cleanup();
         let options = valid_did_ml_storage_options();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let metadata = vec![

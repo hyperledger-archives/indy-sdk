@@ -349,12 +349,13 @@ impl<'a> DidMicroledger<'a> {
 pub mod tests {
     use super::*;
     use utils::environment::EnvironmentUtils;
-    use super::super::super::super::utils::test::TestUtils;
     use services::microledger::constants::*;
     use services::microledger::helpers::tests::{valid_did_ml_storage_options, get_new_microledger,
                                                 get_4_txns, check_empty_storage, get_new_did_doc};
     use services::microledger::helpers::{register_inmem_wallet, in_memory_wallet_with_key};
     use domain::crypto::key::KeyInfo;
+    use services::microledger::helpers::in_memory_wallets_cleanup;
+    use services::microledger::helpers::tests::test_data_cleanup;
 
     fn add_4_txns(ml: &mut DidMicroledger) -> usize {
         for txn in get_4_txns() {
@@ -366,7 +367,7 @@ pub mod tests {
 
     #[test]
     fn test_did_create_microledger() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let ml = get_new_microledger(did);
         assert_eq!(ml.did, did);
@@ -377,7 +378,7 @@ pub mod tests {
 
     #[test]
     fn test_add_to_did_microledger() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut ml = get_new_microledger(did);
         let txn = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1"}}"#;
@@ -392,7 +393,7 @@ pub mod tests {
 
     #[test]
     fn test_add_multiple_to_did_microledger() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut ml = get_new_microledger(did);
         let txn = r#"{"protocolVersion":1,"txnVersion":1,"operation":{"dest":"75KUW8tPUQNBS4W7ibFeY8","type":"1"}}"#;
@@ -405,7 +406,7 @@ pub mod tests {
 
     #[test]
     fn test_rebuild_merkle_tree() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut root_hash = String::from("");
         let mut size = 0;
@@ -437,7 +438,7 @@ pub mod tests {
 
     #[test]
     fn test_add_nym_txn() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let verkey = "6baBEYA94sAphWBA5efEsaA6X2wCdyaH7PXuBtv2H5S1";
         let mut ml = get_new_microledger(did);
@@ -447,7 +448,8 @@ pub mod tests {
 
     #[test]
     fn test_add_key_txn() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
+        in_memory_wallets_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let verkey = "4Yk9HoDSfJv9QcmJbLcXdWVgS7nfvdUqiVcvbSu8VBru";
         let authorisations: Vec<&str> = vec![AUTHZ_ALL, AUTHZ_ADD_KEY, AUTHZ_REM_KEY];
@@ -471,7 +473,8 @@ pub mod tests {
 
     #[test]
     fn test_add_endpoint_txn() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
+        in_memory_wallets_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let verkey = "4Yk9HoDSfJv9QcmJbLcXdWVgS7nfvdUqiVcvbSu8VBru";
         let address = "https://agent.example.com";
@@ -495,7 +498,8 @@ pub mod tests {
 
     #[test]
     fn test_add_endpoint_rem_txn() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
+        in_memory_wallets_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let verkey = "4Yk9HoDSfJv9QcmJbLcXdWVgS7nfvdUqiVcvbSu8VBru";
         let address = "https://agent.example.com";
@@ -528,7 +532,7 @@ pub mod tests {
 
     #[test]
     fn test_get_txns() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut ml = get_new_microledger(did);
         let s = add_4_txns(&mut ml);
@@ -571,7 +575,7 @@ pub mod tests {
 
     #[test]
     fn test_get_with_seq_no_txns() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let mut ml = get_new_microledger(did);
         let s = add_4_txns(&mut ml);
@@ -595,7 +599,7 @@ pub mod tests {
 
     #[test]
     fn test_did_doc_registered_with_ledger() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let doc = Rc::new(RefCell::new(get_new_did_doc(did)));
         let mut ml = get_new_microledger(did);
@@ -608,7 +612,7 @@ pub mod tests {
 
     #[test]
     fn test_did_doc_updated_with_ledger_txns() {
-        TestUtils::cleanup_temp();
+        test_data_cleanup();
         let did = "75KUW8tPUQNBS4W7ibFeY8";
         let doc = Rc::new(RefCell::new(get_new_did_doc(did)));
         // TODO: Use Rc here
