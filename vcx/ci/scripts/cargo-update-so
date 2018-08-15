@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+import os
+import toml_utils
+import re
+
+# this will update the so file with version and 
+# revision number from the Cargo.toml file.
+
+# This must be run from the ./libvcx directory
+
+TOML = 'Cargo.toml'
+SO_DIR = './target/debug/'
+
+
+def remove_old_so(d):
+    cur_path = os.getcwd()
+    print(d)
+    print(os.path.isdir(d))
+    files = os.listdir(d)
+
+    pat = re.compile("libvcx\.so\.*\d")
+    files = filter(pat.match, files)
+    for f in files:
+        print("removing file: %s " % f)
+        os.remove(d + "/" + f)
+
+
+def main():
+    dir_path = os.getcwd()
+    full_path_file = dir_path + '/' + SO_DIR
+    if os.path.isdir(full_path_file) is True:
+        remove_old_so(full_path_file)
+        if os.path.isfile(dir_path + '/' + TOML) is True:
+            version = toml_utils.get_version_from_file(TOML)
+            toml_utils.update_so(SO_DIR, version)
+        else:
+            print("Error, %s does not exist" % TOML)
+    else:
+        print("%s does not exists" % full_path_file)
+
+
+if __name__ == "__main__":
+    main()
+        
