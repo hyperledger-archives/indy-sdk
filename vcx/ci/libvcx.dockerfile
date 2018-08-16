@@ -10,12 +10,3 @@ WORKDIR /home/vcx
 ENV PATH /home/vcx:$PATH
 # cargo deb for debian packaging of libvcx
 RUN cargo install cargo-deb --color=never
-
-
-
-
-# RUN cargo update-version
-# RUN cargo test --color=never --no-default-features --features "ci sovtoken" -- --test-threads=1
-# RUN cargo update-so
-# RUN cargo deb --no-build
-# RUN find -type f -name "libvcx*.deb" -exec dpkg -i {} \;
