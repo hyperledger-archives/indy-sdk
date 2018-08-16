@@ -9,8 +9,8 @@ WORK_DIR=$(abspath "$WORK_DIR")
 
 #LIBINDY_PATH=$PWD/vcx-indy-sdk/libindy/target/debug/libindy.dylib
 #LIBINDY_PATH=$WORK_DIR/vcx-indy-sdk/libindy/target/universal/debug/libindy.a
-LIBINDY_PATH=$WORK_DIR/vcx-indy-sdk/libindy/target/universal/release/libindy.a
-LIBINDY_HEADER_PATH=$WORK_DIR/vcx-indy-sdk/libindy/include
+LIBINDY_PATH=$WORK_DIR/libindy/libindy.a
+LIBINDY_HEADER_PATH=$WORK_DIR/libindy
 VCXHEADER_PATH=$(abspath "$START_DIR/../../../include")/vcx.h
 
 ls -al $LIBINDY_PATH
@@ -21,7 +21,7 @@ lipo -info /usr/local/lib/libindy.a
 
 ln -sf $VCXHEADER_PATH /usr/local/include/vcx.h
 
-for h in `ls $LIBINDY_HEADER_PATH`
+for h in `ls ${LIBINDY_HEADER_PATH}/*.h`
 do
     ln -sf $LIBINDY_HEADER_PATH/$h /usr/local/include/$h
 done
