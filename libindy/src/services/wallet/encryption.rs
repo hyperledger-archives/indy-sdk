@@ -5,6 +5,7 @@ use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
 
 use super::{Keys, WalletRecord};
 use super::storage::{Tag, TagName, StorageRecord};
+use domain::wallet::KeyDerivationMethod;
 
 use errors::wallet::WalletError;
 
@@ -19,8 +20,8 @@ pub(super) fn master_key_salt_from_slice(slice: &[u8]) -> Result<pwhash_argon2i1
     Ok(salt)
 }
 
-pub(super) fn derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt) -> Result<chacha20poly1305_ietf::Key, WalletError> {
-    let key = chacha20poly1305_ietf::derive_key(passphrase, salt)?;
+pub(super) fn derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> Result<chacha20poly1305_ietf::Key, WalletError> {
+    let key = chacha20poly1305_ietf::derive_key(passphrase, salt, key_derivation_method)?;
     Ok(key)
 }
 
