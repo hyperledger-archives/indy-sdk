@@ -50,6 +50,7 @@ test('anoncreds', async function (t) {
   var blobReaderHandle = await indy.openBlobStorageReader('default', tailsWriterConfig)
 
   // Issuer create credential for credential Request
+  // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
   var [cred, revId, revDelta] = await indy.issuerCreateCredential(wh, credOffer, credReq, {
     name: {'raw': 'Alex', 'encoded': '1139481716457488690172217916278103335'},
     height: {'raw': '175', 'encoded': '175'},

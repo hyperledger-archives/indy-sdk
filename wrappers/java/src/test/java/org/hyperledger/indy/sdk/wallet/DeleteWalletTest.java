@@ -37,7 +37,6 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	@Ignore // TODO: FIXME checking has been lost
 	public void testDeleteWalletWorksForOpened() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStateException.class));

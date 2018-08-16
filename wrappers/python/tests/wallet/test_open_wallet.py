@@ -18,7 +18,6 @@ async def test_open_wallet_works_for_not_created_wallet(wallet_config, credentia
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="checking has been lost")
 async def test_open_wallet_works_for_twice(wallet_handle, wallet_config, credentials):
     with pytest.raises(IndyError) as e:
         await wallet.open_wallet(wallet_config, credentials)
