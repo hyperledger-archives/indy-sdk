@@ -184,7 +184,7 @@ rustup target add ${CROSS_COMPILE}
 
 pushd $LIBVCX
 export OPENSSL_STATIC=1
-cargo clean
+#cargo clean
 cargo build --release --no-default-features --features "ci ${PAYMENT_PLUGIN}" --target=${CROSS_COMPILE}
 popd
 
