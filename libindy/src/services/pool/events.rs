@@ -4,7 +4,7 @@ use errors::pool::PoolError;
 use serde_json;
 use serde_json::Value as SJsonValue;
 use services::ledger::merkletree::merkletree::MerkleTree;
-use services::pool::types::*;
+use services::pool::{PoolService, types::*};
 use std::error::Error;
 
 pub const REQUESTS_FOR_STATE_PROOFS: [&'static str; 7] = [
@@ -215,7 +215,8 @@ impl Into<Option<RequestEvent>> for PoolEvent {
                         error!("Timeout {:?} or nodes {:?} is specified for non-supported request operation type {}",
                                timeout, nodes, op);
                         None
-                    } else if REQUESTS_FOR_STATE_PROOFS.contains(&op.as_str()) /* FIXME check plugged also */ {
+                    } else if REQUESTS_FOR_STATE_PROOFS.contains(&op.as_str())
+                        || PoolService::get_sp_parser(&op.as_str()).is_some() {
                         Some(RequestEvent::CustomSingleRequest(msg, req_id.clone()))
                     } else {
                         Some(RequestEvent::CustomConsensusRequest(msg, req_id.clone()))

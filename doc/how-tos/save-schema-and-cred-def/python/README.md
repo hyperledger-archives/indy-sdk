@@ -93,10 +93,6 @@ Copy the contents of [step4.py](step4.py) into
 
 Save the updated version of `save_schema_and_cred_def.py``.
 
-### Step 5
-
-Run the [finished code](save_schema_and_cred_def.py) and observe the whole sequence.
-
 ## More experiments
 
 You might try the ["Issue a Credential"](../../issue-credential/../not-yet-written.md)
