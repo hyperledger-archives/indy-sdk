@@ -8,12 +8,10 @@ import org.hyperledger.indy.sdk.LibIndy;
 import org.hyperledger.indy.sdk.ParamGuard;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.did.DidResults.CreateAndStoreMyDidResult;
-import org.hyperledger.indy.sdk.did.DidResults.EncryptResult;
 import org.hyperledger.indy.sdk.did.DidResults.EndpointForDidResult;
 import org.hyperledger.indy.sdk.wallet.Wallet;
 
 import com.sun.jna.Callback;
-import com.sun.jna.Pointer;
 
 /**
  * did.rs API
@@ -41,7 +39,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String did, String verkey) {
 
 			CompletableFuture<CreateAndStoreMyDidResult> future = (CompletableFuture<CreateAndStoreMyDidResult>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			CreateAndStoreMyDidResult result = new CreateAndStoreMyDidResult(did, verkey);
 			future.complete(result);
@@ -57,7 +55,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String verkey) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = verkey;
 			future.complete(result);
@@ -73,7 +71,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -89,7 +87,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -105,7 +103,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String key) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = key;
 			future.complete(result);
@@ -121,7 +119,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String key) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = key;
 			future.complete(result);
@@ -137,7 +135,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -153,7 +151,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String endpoint, String transport_vk) {
 
 			CompletableFuture<EndpointForDidResult> future = (CompletableFuture<EndpointForDidResult>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			EndpointForDidResult result = new EndpointForDidResult(endpoint, transport_vk);
 			future.complete(result);
@@ -169,7 +167,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -185,7 +183,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String metadata) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = metadata;
 			future.complete(result);
@@ -201,7 +199,7 @@ public class Did extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String verkey) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = verkey;
 			future.complete(result);
@@ -243,7 +241,7 @@ public class Did extends IndyJava.API {
 				didJson,
 				createAndStoreMyDidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -278,7 +276,7 @@ public class Did extends IndyJava.API {
 				identityJson,
 				replaceKeysStartCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -309,7 +307,7 @@ public class Did extends IndyJava.API {
 				did,
 				replaceKeysApplyCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -340,7 +338,7 @@ public class Did extends IndyJava.API {
 				identityJson,
 				storeTheirDidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -387,7 +385,7 @@ public class Did extends IndyJava.API {
 				did,
 				keyForDidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -426,7 +424,7 @@ public class Did extends IndyJava.API {
 				did,
 				keyForLocalDidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -465,7 +463,7 @@ public class Did extends IndyJava.API {
 				transportKey,
 				setEndpointForDidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -501,7 +499,7 @@ public class Did extends IndyJava.API {
 				did,
 				getEndpointForDidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -536,7 +534,7 @@ public class Did extends IndyJava.API {
 				metadata,
 				setDidMetadataCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -567,7 +565,7 @@ public class Did extends IndyJava.API {
 				did,
 				getDidMetadataCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -602,7 +600,7 @@ public class Did extends IndyJava.API {
 				did,
 				getDidMetadataCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -633,7 +631,7 @@ public class Did extends IndyJava.API {
 				walletHandle,
 				getDidMetadataCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -662,7 +660,7 @@ public class Did extends IndyJava.API {
 				verkey,
 				getAttrVerkeyCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
