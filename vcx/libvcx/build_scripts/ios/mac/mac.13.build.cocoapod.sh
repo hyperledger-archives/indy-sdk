@@ -26,8 +26,9 @@ IFS="$bkpIFS"
 cd $VCX_SDK/vcx/wrappers/ios/vcx
 mv lib/libvcx.a lib/libvcx.a.original
 cp -v lib/${COMBINED_LIB}.a lib/libvcx.a
-xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug CONFIGURATION_BUILD_DIR=. clean 
+xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug CONFIGURATION_BUILD_DIR=. clean
 
+rm -rf vcx.framework.previousbuild
 IPHONE_SDK=iphoneos
 for arch in ${archs[*]}
 do
@@ -39,7 +40,7 @@ do
         # This sdk supports armv7, armv7s, and arm64
         IPHONE_SDK=iphoneos
     fi
-    xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug -arch ${arch} -sdk ${IPHONE_SDK} CONFIGURATION_BUILD_DIR=. build 
+    xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug -arch ${arch} -sdk ${IPHONE_SDK} CONFIGURATION_BUILD_DIR=. build
 
     if [ -d "./vcx.framework.previousbuild" ]; then
         lipo -create -output combined.ios.vcx vcx.framework/vcx vcx.framework.previousbuild/vcx
@@ -48,7 +49,6 @@ do
     fi
     cp -rp vcx.framework vcx.framework.previousbuild
 done
-
 
 mv lib/libvcx.a.original lib/libvcx.a
 rm -rf vcx.framework.previousbuild

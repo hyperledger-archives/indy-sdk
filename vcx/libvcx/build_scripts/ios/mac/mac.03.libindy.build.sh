@@ -8,7 +8,7 @@ mkdir -p $WORK_DIR
 WORK_DIR=$(abspath "$WORK_DIR")
 SHA_HASH_DIR=$START_DIR/../..
 SHA_HASH_DIR=$(abspath "$SHA_HASH_DIR")
-LIBSOVTOKEN_IOS_BUILD_URL="https://repo.corp.evernym.com/filely/ios/libsovtoken_0.8.1-201807262135-cbb1520_all.zip"
+LIBSOVTOKEN_IOS_BUILD_URL="https://repo.corp.evernym.com/filely/ios/libsovtoken_0.9.0-201808150520-8d1150a_all.zip"
 LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/stable/libindy-core/1.6.2/libindy.tar.gz"
 
 source ./mac.02.libindy.env.sh
@@ -77,6 +77,12 @@ if [ "$#" -gt 0 ]; then
     # cargo lipo --release --verbose --targets="${IOS_TARGETS}"
     cargo lipo --release --targets="${IOS_TARGETS}"
     #cargo lipo
+    mkdir -p $WORK_DIR/libindy
+    cp $WORK_DIR/vcx-indy-sdk/libindy/target/universal/release/libindy.a $WORK_DIR/libindy/libindy.a
+    for hfile in $(find ${WORK_DIR}/vcx-indy-sdk/libindy -name "*.h")
+    do
+        cp ${hfile} $WORK_DIR/libindy
+    done
 else
 
     if [ -d $WORK_DIR/libindy ]; then
@@ -88,7 +94,7 @@ else
         tar -xvzf libindy.tar.gz
         # Deletes extra folders that we don't need
         rm -rf __MACOSX
-        rm libindy.tar.gz 
+        rm libindy.tar.gz
     fi
 
     #########################################################################################################################

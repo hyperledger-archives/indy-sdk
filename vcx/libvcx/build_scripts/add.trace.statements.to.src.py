@@ -111,6 +111,7 @@ def recursive_walk(folder):
                     not previousTrimmedLine.endswith("\\") and
                     not previousTrimmedLine.endswith("}") and
                     not previousTrimmedLine.startswith("retun") and
+                    not previousTrimmedLine.startswith("#[cfg") and
                     not previousLine.startswith("#[cfg") and
                     not previousLine.startswith("pub trait") and
                     not previousLine.startswith("impl")
