@@ -8,7 +8,7 @@ mkdir -p $WORK_DIR
 WORK_DIR=$(abspath "$WORK_DIR")
 SHA_HASH_DIR=$START_DIR/../..
 SHA_HASH_DIR=$(abspath "$SHA_HASH_DIR")
-LIBSOVTOKEN_IOS_BUILD_URL="https://repo.corp.evernym.com/filely/ios/libsovtoken_0.8.1-201807262135-cbb1520_all.zip"
+LIBSOVTOKEN_IOS_BUILD_URL="https://repo.corp.evernym.com/filely/ios/libsovtoken_0.9.0-201808150519-5fb8db8_ios.zip"
 LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/stable/libindy-core/1.6.2/libindy.tar.gz"
 
 source ./mac.02.libindy.env.sh
@@ -94,7 +94,7 @@ else
         tar -xvzf libindy.tar.gz
         # Deletes extra folders that we don't need
         rm -rf __MACOSX
-        rm libindy.tar.gz 
+        rm libindy.tar.gz
     fi
 
     #########################################################################################################################
