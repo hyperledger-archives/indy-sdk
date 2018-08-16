@@ -32,7 +32,9 @@ async def create_wallet(config: str,
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                                For 'default' storage type should be empty.
-
+       "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                                ARAGON2I_MOD (used by default)
+                                ARAGON2I_INT - less secured but faster
      }
     :return: Error code
     """
@@ -90,7 +92,12 @@ async def open_wallet(config: str,
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                               For 'default' storage type should be empty.
-
+       "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                                ARAGON2I_MOD (used by default)
+                                ARAGON2I_INT - less secured but faster
+       "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
+                                  ARAGON2I_MOD (used by default)
+                                  ARAGON2I_INT - less secured but faster
     }
     :return: Handle to opened wallet to use in methods that require wallet access.
     """
@@ -167,7 +174,9 @@ async def delete_wallet(config: str,
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                               For 'default' storage type should be empty.
-
+       "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                                ARAGON2I_MOD (used by default)
+                                ARAGON2I_INT - less secured but faster
      }
     :return:
     """
@@ -200,8 +209,11 @@ async def export_wallet(handle: int,
     :param handle: wallet handle returned by indy_open_wallet.
     :param export_config_json: JSON containing settings for input operation.
        {
-           "path": path of the file that contains exported wallet content
+          "path": path of the file that contains exported wallet content
           "key": passphrase used to export key
+          "key_derivation_method": optional<string> algorithm for учзщке key derivation:
+                                   ARAGON2I_MOD (used by default)
+                                   ARAGON2I_INT - less secured but faster
        }
     :return:
     """
@@ -255,7 +267,9 @@ async def import_wallet(config: str,
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                               For 'default' storage type should be empty.
-
+       "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                                ARAGON2I_MOD (used by default)
+                                ARAGON2I_INT - less secured but faster
      }
     :param import_config_json: JSON containing settings for input operationЖ {
      "path": path of the file that contains exported wallet content
