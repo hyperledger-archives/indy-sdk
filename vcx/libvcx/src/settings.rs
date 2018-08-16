@@ -12,8 +12,6 @@ use std::io::prelude::*;
 use serde_json::Value;
 
 pub static CONFIG_POOL_NAME: &'static str = "pool_name";
-pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
-pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
 pub static CONFIG_AGENCY_ENDPOINT: &'static str = "agency_endpoint";
 pub static CONFIG_AGENCY_DID: &'static str = "agency_did";
 pub static CONFIG_AGENCY_VERKEY: &'static str = "agency_verkey";
@@ -27,11 +25,13 @@ pub static CONFIG_INSTITUTION_NAME: &'static str = "institution_name";
 pub static CONFIG_INSTITUTION_LOGO_URL: &'static str = "institution_logo_url";
 pub static CONFIG_ENABLE_TEST_MODE: &'static str = "enable_test_mode";
 pub static CONFIG_GENESIS_PATH: &str = "genesis_path";
-pub static CONFIG_WALLET_KEY: &str = "wallet_key";
 pub static CONFIG_LOG_CONFIG: &str = "log_config";
 pub static CONFIG_LINK_SECRET_ALIAS: &str = "link_secret_alias";
 pub static CONFIG_EXPORTED_WALLET_PATH: &str = "exported_wallet_path";
 pub static CONFIG_WALLET_BACKUP_KEY: &str = "backup_key";
+pub static CONFIG_WALLET_KEY: &str = "wallet_key";
+pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
+pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
 
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 pub static UNINITIALIZED_BACKUP_KEY: &str = "<KEY_IS_NOT_SET>";
@@ -45,6 +45,8 @@ pub static DEFAULT_URL: &str = "http://127.0.0.1:8080";
 pub static DEFAULT_DID: &str = "2hoqvcwupRTUNkXn6ArYzs";
 pub static DEFAULT_VERKEY: &str = "FuN98eH2eZybECWkofW6A9BKJxxnTatBCopfUiNxo6ZB";
 pub static DEFAULT_ENABLE_TEST_MODE: &str = "false";
+pub static DEFAULT_WALLET_BACKUP_KEY: &str = "backup_wallet_key";
+pub static DEFAULT_WALLET_KEY: &str = "foobar1234";
 pub static TEST_WALLET_KEY: &str = "key";
 pub static MASK_VALUE: &str = "********";
 lazy_static! {

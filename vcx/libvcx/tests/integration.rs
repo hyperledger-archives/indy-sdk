@@ -8,15 +8,18 @@ extern crate serde_json;
 
 use rand::Rng;
 use vcx::utils::cstring::CStringUtils;
+use std::ffi::CString;
 use vcx::utils::libindy::return_types_u32;
 use std::fs;
+use std::path::PathBuf;
 use std::io::Write;
 use std::time::Duration;
-use std::ffi::CString;
 use vcx::settings;
 use vcx::utils::constants::GENESIS_PATH;
 use vcx::api::utils::vcx_agent_provision_async;
 use vcx::api::vcx::{ vcx_init_with_config, vcx_shutdown };
+use vcx::utils::error;
+use vcx::api::wallet;
 
 pub fn get_sandbox() -> serde_json::Value {
     json!({
@@ -57,10 +60,10 @@ fn provision_agent() -> Result<String, u32> {
     let mut rng = rand::thread_rng();
     let settings = get_sandbox();
     let config = json!({
-            "wallet_name": "LIBVCX_SDK_WALLET",
+            "wallet_name": settings::DEFAULT_WALLET_NAME,
             "agent_seed": format!("HANKHILL{}00000000001DIRECTION", rng.gen_range(1000,9999)),
             "enterprise_seed": settings["seed"],
-            "wallet_key": "1234",
+            "wallet_key": settings::DEFAULT_WALLET_KEY,
             "agency_url": settings["url"],
             "agency_did": settings["did"],
             "agency_verkey": settings["verkey"],
@@ -76,7 +79,7 @@ fn provision_agent() -> Result<String, u32> {
     vcx_config.insert( "genesis_path".to_string(), json!(GENESIS_PATH));
     match serde_json::to_string(&vcx_config) {
         Ok(s) => Ok(s),
-        Err(e) => Err(1),
+        Err(_) => Err(1),
     }
 }
 
@@ -100,9 +103,65 @@ fn init_vcx(vcx_config: &str) -> Result<(), u32> {
     let err = vcx_init_with_config(cb.command_handle,
                                    CString::new(vcx_config).unwrap().as_ptr(),
                                    Some(cb.get_callback()));
+    assert_eq!(err, error::SUCCESS.code_num);
     cb.receive(Some(Duration::from_secs(10)))
 }
 
+fn get_token_info() -> String {
+    let cb = return_types_u32::Return_U32_STR::new().unwrap();
+    assert_eq!(wallet::vcx_wallet_get_token_info(cb.command_handle,
+                                                 0,
+                                                 Some(cb.get_callback())),
+               error::SUCCESS.code_num);
+    cb.receive(Some(Duration::from_secs(10))).unwrap().unwrap()
+}
+fn export_wallet(path: std::path::PathBuf) {
+    let cb = return_types_u32::Return_U32::new().unwrap();
+    assert_eq!(wallet::vcx_wallet_export(cb.command_handle,
+                                         CString::new(path.to_str().unwrap()).unwrap().as_ptr(),
+                                         CString::new(settings::DEFAULT_WALLET_BACKUP_KEY).unwrap().as_ptr(),
+                                         Some(cb.get_callback())), error::SUCCESS.code_num);
+    cb.receive(Some(Duration::from_secs(10))).unwrap();
+}
+
+fn send_tokens(amt:u32) {
+    let cb = return_types_u32::Return_U32_STR::new().unwrap();
+    wallet::vcx_wallet_send_tokens(cb.command_handle,
+                                   0,
+                                   CString::new(amt.to_string()).unwrap().as_ptr(),
+                                   CString::new("pay:sov:22UFLTPu1MagmX6b6g2ZXy9n98dA52Kd1VH8Hjjf82L7zZEnC5").unwrap().as_ptr(),
+                                   Some(cb.get_callback()));
+    cb.receive(Some(Duration::from_secs(10))).unwrap();
+}
+
+fn import_wallet(path: std::path::PathBuf) {
+    let cb = return_types_u32::Return_U32::new().unwrap();
+    let import_config = json!({
+                settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
+                settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
+                settings::CONFIG_EXPORTED_WALLET_PATH: path.to_str().unwrap(),
+                settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
+            }).to_string();
+
+    let import_config_c = CString::new(import_config).unwrap();
+    assert_eq!(wallet::vcx_wallet_import(cb.command_handle,
+                                         import_config_c.as_ptr(),
+                                         Some(cb.get_callback())), error::SUCCESS.code_num);
+
+    match cb.receive(Some(Duration::from_secs(5))) {
+        Ok(_) => (),
+        Err(e) => println!("ERROR: {}", e),
+    };
+}
+
+fn create_path_and_file_name() -> std::path::PathBuf {
+    let mut path = PathBuf::new();
+    let export_wallet_name = "backup.wallet";
+    path.push("/tmp");
+    path.push(export_wallet_name);
+    fs::remove_file(path.clone()).unwrap_or(());
+    path
+}
 
 #[cfg(test)]
 mod tests {
@@ -122,5 +181,30 @@ mod tests {
         init_vcx(&vcx_config).unwrap();
         vcx_shutdown(false);
         assert_eq!(provision_agent().err(), Some(error::DID_ALREADY_EXISTS_IN_WALLET.code_num));
+        vcx_shutdown(true);
+    }
+
+    #[test]
+    fn test_token_balance() {
+        use vcx::api::vcx::vcx_mint_tokens;
+
+
+        delete_indy_client();
+        create_genesis_txn_file();
+        let vcx_config = provision_agent().unwrap();
+        init_vcx(&vcx_config).unwrap();
+        vcx_mint_tokens(2,1000);
+        send_tokens(1500);
+        let token_info2 = get_token_info();
+        let path = create_path_and_file_name();
+        export_wallet(path.clone());
+        assert_eq!(vcx_shutdown(true), error::SUCCESS.code_num);
+        settings::clear_config();
+        import_wallet(path.clone());
+        init_vcx(&vcx_config).unwrap();
+        let token_info3 = get_token_info();
+        let token_info2: serde_json::Value = serde_json::from_str(&token_info2).unwrap();
+        let token_info3: serde_json::Value = serde_json::from_str(&token_info3).unwrap();
+        assert_eq!(token_info2["balance_str"], token_info3["balance_str"]);
     }
 }
