@@ -55,3 +55,4 @@ impl From<serde_json::Error> for IssuerCredError {
         IssuerCredError::InvalidJson()
     }
 }
+

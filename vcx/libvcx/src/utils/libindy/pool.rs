@@ -87,7 +87,7 @@ pub mod tests {
         open_pool_ledger(POOL, None).unwrap()
     }
 
-    fn create_genesis_txn_file() {
+    pub fn create_genesis_txn_file() {
         let test_pool_ip = "127.0.0.1".to_string();
 
         let node_txns = vec![

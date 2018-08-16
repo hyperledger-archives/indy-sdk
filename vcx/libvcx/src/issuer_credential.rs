@@ -355,7 +355,6 @@ pub fn encode_attributes(attributes: &str) -> Result<String, IssuerCredError> {
         Ok(x) => x,
         Err(e) => {
             warn!("Invalid Json for Attribute data");
-            println!("serde json error:\n{}", e);
             return Err(IssuerCredError::CommonError(INVALID_JSON.code_num))
         }
     };
@@ -554,19 +553,6 @@ pub fn set_credential_request(handle: u32, credential_request: CredentialRequest
     ISSUER_CREDENTIAL_MAP.get_mut(handle,|i|{
         i.set_credential_request(credential_request.clone())
     }).map_err(|ec|IssuerCredError::CommonError(ec))
-}
-
-pub fn append_value(original_payload: &str,key: &str,  value: &str) -> Result<String, IssuerCredError> {
-    use serde_json::Value;
-    let mut payload_json: Value = match serde_json::from_str(original_payload) {
-        Ok(s) => s,
-        Err(_) => return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num)),
-    };
-    payload_json[key] = json!(&value);
-    match serde_json::to_string(&payload_json) {
-        Ok(s) => Ok(s),
-        Err(_) => return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num)),
-    }
 }
 
 pub fn convert_to_map(s:&str) -> Result<serde_json::Map<String, serde_json::Value>, IssuerCredError>{

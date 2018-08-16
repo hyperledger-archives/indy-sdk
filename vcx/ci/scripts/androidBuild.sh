@@ -18,7 +18,7 @@ setup() {
         mkdir runtime_android_build
     fi
     cd runtime_android_build
-	retrieve_prebuilt_binaries
+	retrieve_prebuilt_binaries ${ARCH}
 	generate_flags $1
     if [ ! -d "toolchains" ]; then
         mkdir toolchains
@@ -33,25 +33,30 @@ setup() {
 
 
 retrieve_prebuilt_binaries() {
-    OPENSSL_PREBUILT_ZIP=openssl_1.1.0h-201807251800_r17b.zip
-    SODIUM_PREBUILT_ZIP=sodium_1.0.14-201807251900_r17b.zip
-    ZMQ_PREBUILT_ZIP=zmq_4.2.5-201807252000_r17b.zip
+    ANDROID_BUILD_FOLDER=${PWD}
+    pushd ${ANDROID_BUILD_FOLDER}
+        echo -e "${GREEN}Downloading openssl for $1 ${RESET}"
+        curl -sSLO https://repo.sovrin.org/android/libindy/deps/openssl/openssl_$1.zip
+        unzip -o -qq openssl_$1.zip
+        export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
+        echo -e "${GREEN}Done!${RESET}"
 
-    if [ ! -d "openssl_prebuilt" ]; then
-        echo "retrieving openssl prebuilt library"
-        wget -q ${EVERNYM_REPO}/${OPENSSL_PREBUILT_ZIP}
-        unzip -qq ${OPENSSL_PREBUILT_ZIP}
-    fi
-    if [ ! -d "sodium_prebuilt" ]; then
-        echo "retrieving openssl prebuilt library"
-        wget -q ${EVERNYM_REPO}/${SODIUM_PREBUILT_ZIP}
-        unzip -qq ${SODIUM_PREBUILT_ZIP}
-    fi
-    if [ ! -d "zmq_prebuilt" ]; then
-        echo "retrieving openssl prebuilt library"
-        wget -q ${EVERNYM_REPO}/${ZMQ_PREBUILT_ZIP}
-        unzip -qq ${ZMQ_PREBUILT_ZIP}
-    fi
+        echo -e "${GREEN}Downloading sodium for $1 ${RESET}"
+        curl -sSLO https://repo.sovrin.org/android/libindy/deps/sodium/libsodium_$1.zip
+        unzip -o -qq libsodium_$1.zip
+        export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
+        echo -e "${GREEN}Done!${RESET}"
+
+        echo -e "${GREEN}Downloading zmq for $1 ${RESET}"
+        curl -sSLO https://repo.sovrin.org/android/libindy/deps/zmq/libzmq_$1.zip
+        unzip -o -qq libzmq_$1.zip
+        export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/libzmq_$1
+        echo -e "${GREEN}Done!${RESET}"
+
+        rm openssl_$1.zip
+        rm libsodium_$1.zip
+        rm libzmq_$1.zip
+    popd
 }
 
 generate_flags(){
@@ -83,29 +88,38 @@ generate_flags(){
 
 get_libindy() {
     set -xv
-    [ -z ${LIBINDY_BRANCH} ] && exit 1
-    [ -z ${LIBINDY_VERSION} ] && exit 1
+    if [ -z ${LIBINDY_DIR} ]; then
+        [ -z ${LIBINDY_BRANCH} ] && exit 1
+        [ -z ${LIBINDY_VERSION} ] && exit 1
 
-    if [ ! -d "libindy_${ARCH}" ]; then
-        if [ "$LIBINDY_BRANCH" = "stable" ]; then
-            wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
-        else 
-            wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}-${LIBINDY_TAG}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+        if [ ! -d "libindy_${ARCH}" ]; then
+            if [ "$LIBINDY_BRANCH" = "stable" ]; then
+                wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+            else
+                wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}-${LIBINDY_TAG}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+            fi
+
+            unzip libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+
         fi
-
-        unzip libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+        export LIBINDY_DIR="${PWD}/libindy_${ARCH}"
     fi
+
 }
 
 get_libsovtoken() {
     set -xv
     # Todo: This artifact was manually uploaded to this repo. Eventually, the file format will change. That is why it is hardcoded
-    LIBSOVTOKEN_ZIP=libsovtoken_0.8.1-201807262112-cbb1520_all.zip
-    if [ ! -d "libsovtoken" ]; then
-        echo "retrieving libsovtoken prebuilt library"
-        wget ${EVERNYM_REPO}/${LIBSOVTOKEN_ZIP}
-        unzip ${LIBSOVTOKEN_ZIP}
+    if [ -z ${LIBSOVTOKEN_DIR} ]; then
+        LIBSOVTOKEN_ZIP=libsovtoken_0.8.1-201807262112-cbb1520_all.zip
+        if [ ! -d "libsovtoken" ]; then
+            echo "retrieving libsovtoken prebuilt library"
+            wget ${EVERNYM_REPO}/${LIBSOVTOKEN_ZIP}
+            unzip ${LIBSOVTOKEN_ZIP}
+        fi
+        export LIBSOVTOKEN_DIR="${PWD}/libsovtoken/${TRIPLET}"
     fi
+
 }
 
 build_vcx() {
@@ -116,19 +130,20 @@ build_vcx() {
     #PREBUILT_BIN=../../../../ci/scripts/runtime_android_build
     # PREBUILT_BIN=$(realpath ${VCX_BASE}/ci/scripts/runtime_android_build)
 
-    if [ ! -d libindy_${ARCH} ]; then
-        echo "missing libindy_${ARCH}. Cannot proceed without it."
+    if [ ! -d ${LIBINDY_DIR} ]; then
+        echo "missing libindy_${ARCH} directory. Cannot proceed without it."
         exit 1
     fi
-    if [ ! -d libsovtoken ]; then
-        echo "missing libsovtoken. Cannot proceed without it."
+    if [ ! -d ${LIBSOVTOKEN_DIR} ]; then
+        echo "missing libsovtoken directory. Cannot proceed without it."
         exit 1
     fi
 
     pushd ${LIBVCX_PATH}
     mkdir -p toolchains/
-    ./build.nondocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${PREBUILT_BIN}/openssl_prebuilt/${ARCH} ${PREBUILT_BIN}/sodium_prebuilt/${ARCH} ${PREBUILT_BIN}/zmq_prebuilt/${ARCH} ${PREBUILT_BIN}/libindy_${ARCH} ${PREBUILT_BIN}/libsovtoken/${TRIPLET} 
+    ./build.nondocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${OPENSSL_DIR} ${SODIUM_DIR} ${LIBZMQ_DIR} ${LIBINDY_DIR} ${LIBSOVTOKEN_DIR}
     popd
+    rm -rf libvcx_${ARCH}
     mv ${LIBVCX_PATH}libvcx_${ARCH} .
 
 }

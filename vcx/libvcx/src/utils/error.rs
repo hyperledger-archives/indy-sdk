@@ -94,7 +94,8 @@ pub static WALLET_NOT_FOUND: Error = Error { code_num: 1079, message: "Wallet No
 pub static LIBINDY_INVALID_STRUCTURE: Error = Error { code_num: 1080, message: "Object (json, config, key, credential and etc...) passed to libindy has invalid structure"};
 pub static INVALID_STATE: Error = Error { code_num: 1081, message: "Object is in invalid state for requested operation"};
 pub static INVALID_LEDGER_RESPONSE: Error = Error {code_num: 1082, message: "Invalid response from ledger for paid transaction"};
-
+pub static DID_ALREADY_EXISTS_IN_WALLET: Error = Error { code_num: 1083, message: "Attempted to add a DID to wallet when that DID already exists in wallet" };
+pub static DUPLICATE_MASTER_SECRET: Error = Error { code_num: 1084, message: "Attempted to add a Master Secret that already existed in wallet"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -181,8 +182,10 @@ lazy_static! {
         insert_c_message(&mut m, &WALLET_NOT_FOUND);
         insert_c_message(&mut m, &LIBINDY_INVALID_STRUCTURE);
         insert_c_message(&mut m, &INVALID_STATE);
+        insert_c_message(&mut m, &DID_ALREADY_EXISTS_IN_WALLET);
+        insert_c_message(&mut m, &DUPLICATE_MASTER_SECRET);
         insert_c_message(&mut m, &INVALID_LEDGER_RESPONSE);
-       m
+        m
     };
 }
 
