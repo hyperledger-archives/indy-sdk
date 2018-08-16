@@ -12,7 +12,7 @@ ls
 cd ${SCRIPTS_PATH}
 ./mac.02.libindy.env.sh
 ./mac.03.libindy.build.sh
-./mac.04.libvcx.setup.sh
+#./mac.04.libvcx.setup.sh
 source ./mac.05.libvcx.env.sh
 cp -rf ~/OpenSSL-for-iPhone ${BASE_DIR}/.macosbuild
 cp -rf ~/libzmq-ios ${BASE_DIR}/.macosbuild
