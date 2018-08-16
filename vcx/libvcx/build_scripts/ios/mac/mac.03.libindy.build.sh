@@ -8,7 +8,7 @@ mkdir -p $WORK_DIR
 WORK_DIR=$(abspath "$WORK_DIR")
 SHA_HASH_DIR=$START_DIR/../..
 SHA_HASH_DIR=$(abspath "$SHA_HASH_DIR")
-LIBSOVTOKEN_IOS_BUILD_URL="https://repo.corp.evernym.com/filely/ios/libsovtoken_0.9.0-201808150519-5fb8db8_ios.zip"
+LIBSOVTOKEN_IOS_BUILD_URL="https://repo.corp.evernym.com/filely/ios/libsovtoken_0.9.0-201808150520-8d1150a_all.zip"
 LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/stable/libindy-core/1.6.2/libindy.tar.gz"
 
 source ./mac.02.libindy.env.sh
