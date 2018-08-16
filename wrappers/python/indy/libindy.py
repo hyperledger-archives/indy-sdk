@@ -34,6 +34,16 @@ def do_call(name: str, *args):
     return future
 
 
+def do_call_sync(name: str, *args):
+    logger = logging.getLogger(__name__)
+    logger.debug("do_call_sync: >>> name: %s, args: %s", name, args)
+
+    err = getattr(_cdll(), name)(*args)
+
+    logger.debug("do_call: <<< %s", err)
+    return err
+
+
 def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
     logger = logging.getLogger(__name__)
     logger.debug("create_cb: >>> cb_type: %s", cb_type)

@@ -34,17 +34,31 @@ use utils::test::TestUtils;
 use utils::logger::LoggerUtils;
 use utils::constants::*;
 
-
 #[test]
-fn indy_init_logger_works() {
+fn indy_set_logger_works() {
     TestUtils::cleanup_storage();
 
     WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-    LoggerUtils::init_logger();
+    LoggerUtils::set_logger();
 
-    WalletUtils::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+    let wallet_handle = WalletUtils::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
+    WalletUtils::close_wallet(wallet_handle).unwrap();
+    TestUtils::cleanup_storage();
+}
+
+#[test]
+fn indy_set_default_logger_works() {
+    TestUtils::cleanup_storage();
+
+    WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+    LoggerUtils::set_default_logger();
+
+    let wallet_handle = WalletUtils::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+    WalletUtils::close_wallet(wallet_handle).unwrap();
     TestUtils::cleanup_storage();
 }
 

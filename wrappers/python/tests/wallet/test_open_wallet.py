@@ -3,6 +3,7 @@ import pytest
 from indy import IndyError
 from indy import wallet
 from indy.error import ErrorCode
+from indy.logger import set_default_logger, set_logger
 
 
 @pytest.mark.asyncio
@@ -12,6 +13,7 @@ async def test_open_wallet_works(wallet_handle):
 
 @pytest.mark.asyncio
 async def test_open_wallet_works_for_not_created_wallet(wallet_config, credentials):
+    set_logger()
     with pytest.raises(IndyError) as e:
         await wallet.open_wallet(wallet_config, credentials)
     assert ErrorCode.WalletNotFoundError == e.value.error_code
