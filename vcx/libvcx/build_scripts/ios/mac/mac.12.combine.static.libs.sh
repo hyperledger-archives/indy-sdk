@@ -62,7 +62,7 @@ IFS="$bkpIFS"
 #    archs=(armv7 armv7s arm64 i386 x86_64)
 # fi
 
-libraries=(*.a)
+libraries=(*.a.tocombine)
 libtool="/usr/bin/libtool"
 mkdir -p ${BUILD_CACHE}/arch_libs
 
@@ -75,7 +75,7 @@ do
     # Extract individual architectures for this library
     for arch in ${archs[*]}
     do
-        if [ "${library}" = "libvcx.a" ]; then
+        if [ "${library}" = "libvcx.a.tocombine" ]; then
             rm ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
             lipo -extract $arch $library -o ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
         elif [ ! -f ${BUILD_CACHE}/arch_libs/${library}_${arch}.a ]; then
@@ -93,7 +93,7 @@ do
     for library in ${libraries[*]}
     do
         if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
-            if [ "${library}" = "libvcx.a" ]; then
+            if [ "${library}" = "libvcx.a.tocombine" ]; then
                 rm ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a
                 strip -S -x -o ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a -r ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
             elif [ ! -f ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a ]; then
@@ -107,6 +107,7 @@ do
     done
 
     echo "Using source_libraries: ${source_libraries} to create ${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
+    rm "${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
     $libtool -static ${source_libraries} -o "${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
     source_combined="${source_combined} ${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
 

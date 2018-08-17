@@ -24,7 +24,7 @@ IFS=',()][' read -r -a archs <<<"${IOS_ARCHS}"
 echo "Building vcx.${COMBINED_LIB} wrapper for architectures: ${archs[@]}"    ##Or printf "%s\n" ${array[@]}
 IFS="$bkpIFS"
 cd $VCX_SDK/vcx/wrappers/ios/vcx
-mv lib/libvcx.a lib/libvcx.a.original
+#mv lib/libvcx.a lib/libvcx.a.original
 cp -v lib/${COMBINED_LIB}.a lib/libvcx.a
 xcodebuild -project vcx.xcodeproj -scheme vcx -configuration Debug CONFIGURATION_BUILD_DIR=. clean
 
@@ -50,7 +50,8 @@ do
     cp -rp vcx.framework vcx.framework.previousbuild
 done
 
-mv lib/libvcx.a.original lib/libvcx.a
+#mv lib/libvcx.a.original lib/libvcx.a
+rm lib/libvcx.a
 rm -rf vcx.framework.previousbuild
 
 mkdir -p vcx.framework/lib
