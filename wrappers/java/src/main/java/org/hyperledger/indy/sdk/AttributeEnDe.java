@@ -2,6 +2,7 @@ package org.hyperledger.indy.sdk;
 
 import com.sun.istack.internal.NotNull;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class AttributeEnDe {
@@ -67,12 +68,11 @@ public class AttributeEnDe {
      * @param raw_value
      * @return
      */
-    public static String encode(@NotNull Double raw_value) {
-        String hexString = Double.toHexString(raw_value);
-        byte[] bytes = hexString.getBytes();
+    public static String encode(BigDecimal raw_value) {
+        byte[] bytes = raw_value.toString().getBytes();
         BigInteger bi = new BigInteger(1, bytes);
         bi = bi.add(I32_BOUND);
-        return FLOAT_CODE + bi.toString();
+        return "5" + bi.toString();
     }
 
     /**
@@ -123,7 +123,7 @@ public class AttributeEnDe {
             bi = bi.subtract(I32_BOUND);
             byte[] bytes = bi.toByteArray();
             String floatStr = new String(bytes);
-            return Double.parseDouble(floatStr);
+            return new BigDecimal(floatStr);
         }
         return null;
     }

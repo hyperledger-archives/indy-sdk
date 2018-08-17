@@ -2,6 +2,7 @@ package org.hyperledger.indy.sdk;
 
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 import static org.junit.Assert.*;
@@ -164,70 +165,114 @@ public class AttributeEnDeTest {
 
     }
 
-    @Test
-    public void testFloat() {
-        String encoded;
-
-        encoded = AttributeEnDe.encode(0d);
-        assertEquals("513642949358284848", encoded);
-        assertEquals(0d, AttributeEnDe.decode(encoded));
-
-        encoded = AttributeEnDe.encode(0.1);
-        assertEquals("5276711930654430623867169382163965112486145830196", encoded);
-        assertEquals(0.1, AttributeEnDe.decode(encoded));
-
-        encoded = AttributeEnDe.encode(-0.1d);
-        assertEquals("566044285610545061943032986854396700997003110264116", encoded);
-        assertEquals(-0.1d, AttributeEnDe.decode(encoded));
-
-        encoded = AttributeEnDe.encode(-1.9234856120348166e+37);
-        assertEquals(-1.9234856120348166e+37, AttributeEnDe.decode(encoded));
-        assertEquals("516907337116313887486272534785745044898174533144490547", encoded);
-
-        encoded = AttributeEnDe.encode(1.9234856120348166e+37);
-        assertEquals(1.9234856120348166e+37, AttributeEnDe.decode(encoded));
-        assertEquals("570838254261885868566085512853464511738190249407027", encoded);
+    private final static char[] hexArray = "0123456789ABCDEF".toCharArray();
+    public static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for ( int j = 0; j < bytes.length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 
+    private void aDecimalTest(BigDecimal orig, String expectedEncoding) {
+        String encoded;
+        BigDecimal decoded;
 
-/*
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals(expectedEncoding, encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+    }
 
-    test cases by sklump
+    @Test
+    public void testDecimal() {
+        String encoded;
+        BigDecimal orig;
+        BigDecimal decoded;
 
-(type) orig -> encoded -> (type) decoded:
-  (str)(0x00) -> 92475982747121758242 -> (str)(0x00)
-  (str)(0x01) -> 12147483649 -> (str)(0x01)
-  (str)(0x02) -> 12147483650 -> (str)(0x02)
-  (str)(Alice) -> 1283139203941 -> (str)(Alice)
-  (str)(Bob) -> 12151837538 -> (str)(Bob)
-  (str)(J.R. "Bob" Dobbs) -> 198603384155604289281926069284365296243 -> (str)(J.R. "Bob" Dobbs)
-  (NoneType)(None) -> 2147483648 -> (NoneType)(None)
-  (bool)(True) -> 22147483650 -> (bool)(True)
-  (bool)(False) -> 22147483649 -> (bool)(False)
-  (int)(-5) -> -5 -> (int)(-5)
-  (int)(0) -> 0 -> (int)(0)
-  (int)(1024) -> 1024 -> (int)(1024)
-  (int)(2147483647) -> 2147483647 -> (int)(2147483647)
-  (int)(2147483648) -> 32147483648 -> (int)(2147483648)
-  (int)(2147483649) -> 32147483649 -> (int)(2147483649)
-  (int)(-2147483649) -> 42147483649 -> (int)(-2147483649)
-  (int)(-2147483648) -> -2147483648 -> (int)(-2147483648)
-  (int)(-2147483647) -> -2147483647 -> (int)(-2147483647)
-  (float)(0.0) -> 52150641200 -> (float)(0.0)
-  (str)(0.0) -> 12150641200 -> (str)(0.0)
-  (float)(0.1) -> 52150641201 -> (float)(0.1)
-  (float)(-0.1) -> 52905615921 -> (float)(-0.1)
-  (float)(-1.9234856120348166e+37) -> 54328544340831280174737077750937923315076594647320703799 -> (float)(-1.9234856120348166e+37)
-  (float)(1.9234856120348166e+37) -> 518400632145967760604226737077678736148890866179322679 -> (float)(1.9234856120348166e+37)
-  (str)(Hello) -> 1313086733423 -> (str)(Hello)
-  (str)() -> 12147483648 -> (str)()
-  (str)(True) -> 13564270949 -> (str)(True)
-  (str)(False) -> 1304429691749 -> (str)(False)
-  (str)(1234) -> 12972857140 -> (str)(1234)
-  (str)(-12345) -> 149691466347573 -> (str)(-12345)
-  (list)([]) -> 92147507037 -> (list)([])
-  (list)([0, 1, 2, 3]) -> 928221372711048202486278009693 -> (list)([0, 1, 2, 3])
-  (dict)({'a': 1, 'b': 2, 'c': 3}) -> 93019244119479962529376486787157177996876144122637435548541 -> (dict)({'a': 1, 'b': 2, 'c': 3})
-  (list)([{}, {'a': [0, 1], 'b': [2, 3, 4]}, True]) -> 9195405174979923098884988550719541473293292774988805351916090378761664927737665970773195426373133661 -> (list)([{}, {'a': [0, 1], 'b': [2, 3, 4]}, True])
-*/
+        //(Decimal)(-1.9234856120348166E+37) -> 54328544340831280174737077750937923315076594646783832887 -> (Decimal)(-1.9234856120348166E+37)
+        orig = new BigDecimal(-1.9234856120348166E+37);
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals("51472932770584838315967883574639936084657212638119163710453309300161582593139596536619977881398", encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+
+        orig = new BigDecimal(0d);
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals("52147483696", encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+
+        encoded = AttributeEnDe.encode(new BigDecimal("0.1"));
+        assertEquals("52150641201", encoded);
+        assertEquals(BigDecimal.valueOf(0.1), AttributeEnDe.decode(encoded));
+
+        encoded = AttributeEnDe.encode(new BigDecimal("-0.1"));
+        assertEquals("52905615921", encoded);
+        assertEquals(BigDecimal.valueOf(-0.1d), AttributeEnDe.decode(encoded));
+
+        //(Decimal)(-1.9234856120348166E+37) -> 54328544340831280174737077750937923315076594646783832887 -> (Decimal)(-1.9234856120348166E+37)
+        orig = new BigDecimal(-19234856120348165827208446428657483776d);
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals("51472932770584838315967883574639936084657212638119163710453309300161582593139596536619977881398", encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+
+        orig = new BigDecimal(1.7976931348623157e+308);
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals("5269161618268042360145972004017465694160335431035209070264743835985788283147221721580935312561110946133507975343508594859652344770724128074847981685487152443622741405518894752003899242539047325884518363202478638322310509556173992084275874584046909927658401011484944150045656452585156807624649491085747233252439449003263586096402086333577995530944069599365921765556791796837319741044157258139053932589350484934760974950877213300639056696370692524570936673598361670837667621686283336687753958203404085519417100796390887548426184699350466891653483118820866871180793923062728988519292524483654481567674008917683910310359425535500424285508251141056820528030169509698440710321678537647941733488238720665247624257819334169035761346284186696393912694328", encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+
+        orig = new BigDecimal(-19234856120348165827208446428657483776d);
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals("51472932770584838315967883574639936084657212638119163710453309300161582593139596536619977881398", encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+
+        orig = new BigDecimal(-1.9234856120348166e+37);
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals("51472932770584838315967883574639936084657212638119163710453309300161582593139596536619977881398", encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+
+        orig = new BigDecimal(-19234856120348165827208446428657483776d);
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals("51472932770584838315967883574639936084657212638119163710453309300161582593139596536619977881398", encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+
+        orig = new BigDecimal(-19234856120348166000000000000000000000d);
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals("51472932770584838315967883574639936084657212638119163710453309300161582593139596536619977881398", encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+
+        orig = new BigDecimal(-19234856120348165827208446428657483776d);
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals("51472932770584838315967883574639936084657212638119163710453309300161582593139596536619977881398", encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+
+        encoded = AttributeEnDe.encode(new BigDecimal(19234856120348165827208446428657483776d));
+        assertEquals(new BigDecimal(19234856120348165827208446428657483776d), AttributeEnDe.decode(encoded));
+        assertEquals("56266867624008333854602678985183808700155394679689609995288176626428057309994108167931770678", encoded);
+
+        orig = new BigDecimal(-19234856120348165827208446428657483776d);
+        encoded = AttributeEnDe.encode(orig);
+        assertEquals("51472932770584838315967883574639936084657212638119163710453309300161582593139596536619977881398", encoded);
+        decoded = (BigDecimal)AttributeEnDe.decode(encoded);
+        assertEquals(0, decoded.compareTo(orig));
+
+        aDecimalTest(BigDecimal.valueOf(0.1), "52150641201");
+        aDecimalTest(BigDecimal.valueOf(-0.1), "52905615921");
+        aDecimalTest(BigDecimal.valueOf(1.9234856120348166E+37), "518400632145967760604226737077678736148890865642451767");
+
+        decoded = (BigDecimal)AttributeEnDe.decode("51472932770584838315967883574639936084657212638119163710453309300161582593139596536619977881398");
+        assertEquals(new BigDecimal("-19234856120348165827208446428657483776"), decoded);
+
+    }
+
 }
