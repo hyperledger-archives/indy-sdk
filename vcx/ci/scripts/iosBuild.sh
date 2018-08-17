@@ -8,7 +8,6 @@ IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x
 IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
 #IOS_ARCHS="x86_64"
 
-ls
 cd ${SCRIPTS_PATH}
 ./mac.02.libindy.env.sh
 ./mac.03.libindy.build.sh

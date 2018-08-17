@@ -668,6 +668,54 @@ mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_case_for_proof_req_doesnt_matter_for_retrieve_creds() {
+        settings::set_defaults();
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        let wallet_name = "test_retrieve_credentials";
+        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        ::utils::libindy::payments::mint_tokens_and_set_fees(None, Some(10000000), None, false).unwrap();
+        ::utils::libindy::anoncreds::tests::create_and_store_credential();
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let mut req = json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": json!({
+               "zip_1": json!({
+                   "name":"zip",
+                   "restrictions": [json!({ "issuer_did": did })]
+               })
+           }),
+           "requested_predicates": json!({}),
+        });
+
+        let mut proof_req = ProofRequestMessage::create();
+        let mut proof: DisclosedProof = Default::default();
+        proof_req.proof_request_data = serde_json::from_str(&req.to_string()).unwrap();
+        proof.proof_request = Some(proof_req.clone());
+
+        // All lower case
+        let retrieved_creds = proof.retrieve_credentials().unwrap();
+        assert!(retrieved_creds.contains(r#""zip":"84000""#));
+
+        // First letter upper
+        req["requested_attributes"]["zip_1"]["name"] = json!("Zip");
+        proof_req.proof_request_data = serde_json::from_str(&req.to_string()).unwrap();
+        proof.proof_request = Some(proof_req.clone());
+        let retrieved_creds2 = proof.retrieve_credentials().unwrap();
+        assert!(retrieved_creds2.contains(r#""zip":"84000""#));
+
+        //entire word upper
+        req["requested_attributes"]["zip_1"]["name"] = json!("ZIP");
+        proof_req.proof_request_data = serde_json::from_str(&req.to_string()).unwrap();
+        proof.proof_request = Some(proof_req.clone());
+        let retrieved_creds3 = proof.retrieve_credentials().unwrap();
+        assert!(retrieved_creds3.contains(r#""zip":"84000""#));
+        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
+    }
+
     #[test]
     fn test_retrieve_credentials_fails_with_no_proof_req() {
         settings::set_defaults();

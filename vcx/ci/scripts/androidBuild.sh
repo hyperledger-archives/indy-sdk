@@ -25,10 +25,6 @@ setup() {
     fi
 
     ANDROID_JNI_LIB=${VCX_BASE}/wrappers/java/vcx/src/main/jniLibs
-
-    mkdir -p ${ANDROID_JNI_LIB}/arm
-    mkdir -p ${ANDROID_JNI_LIB}/x86
-    mkdir -p ${ANDROID_JNI_LIB}/arm64
 }
 
 
