@@ -60,7 +60,7 @@ impl log::Log for IndyLogger {
 
         let level = record.level() as u32;
         let target = CString::new(record.target()).unwrap();
-        let args = CString::new(record.args().to_string()).unwrap();
+        let message = CString::new(record.args().to_string()).unwrap();
 
         let module_path = record.module_path().map(|a| CString::new(a).unwrap());
         let file = record.file().map(|a| CString::new(a).unwrap());
@@ -69,7 +69,7 @@ impl log::Log for IndyLogger {
         log_cb(self.context,
                level,
                target.as_ptr(),
-               args.as_ptr(),
+               message.as_ptr(),
                module_path.as_ref().map(|p| p.as_ptr()).unwrap_or(ptr::null()),
                file.as_ref().map(|p| p.as_ptr()).unwrap_or(ptr::null()),
                line,
@@ -86,6 +86,10 @@ impl log::Log for IndyLogger {
 unsafe impl Sync for IndyLogger {}
 
 unsafe impl Send for IndyLogger {}
+
+pub fn get_indy_logger() -> &'static log::Log {
+    log::logger()
+}
 
 pub fn init_indy_logger(context: *const c_void, log_cb: LogCB, flush_cb: Option<FlushCB>) -> Result<(), log::SetLoggerError> {
     let logger = IndyLogger::new(context, log_cb, flush_cb);

@@ -178,5 +178,10 @@
 			<version>20160810</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.8.0-beta1</version>
+		</dependency>
 	</dependencies>
 </project>
