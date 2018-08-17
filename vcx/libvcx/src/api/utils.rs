@@ -97,7 +97,7 @@ pub extern fn vcx_agent_provision_async(command_handle : u32,
     info!("vcx_agent_provision_async(command_handle: {}, json: {})",
           command_handle, json);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match messages::agent_utils::connect_register_provision(&my_config.agency_url,
                                                                 &my_config.agency_did,
                                                                 &my_config.agency_verkey,
@@ -116,9 +116,10 @@ pub extern fn vcx_agent_provision_async(command_handle : u32,
                 cb(command_handle, 0, msg.as_ptr());
             },
         }
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Update information on the agent (ie, comm method and type)
@@ -151,7 +152,7 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
         },
     };
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match messages::agent_utils::update_agent_info(&agent_info.id, &agent_info.value){
             Ok(x) => {
                 info!("vcx_agent_update_info_cb(command_handle: {}, rc: {})",
@@ -164,9 +165,10 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
                 cb(command_handle, e);
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Get ledger fees from the sovrin network
@@ -187,7 +189,7 @@ pub extern fn vcx_ledger_get_fees(command_handle: u32,
     info!("vcx_ledger_get_fees(command_handle: {})",
           command_handle);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match ::utils::libindy::payments::get_ledger_fees() {
             Ok(x) => {
                 info!("vcx_ledger_get_fees_cb(command_handle: {}, rc: {}, fees: {})",
@@ -203,9 +205,10 @@ pub extern fn vcx_ledger_get_fees(command_handle: u32,
                 cb(command_handle, e, ptr::null_mut());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 #[no_mangle]
@@ -279,7 +282,7 @@ pub extern fn vcx_messages_download(command_handle: u32,
     info!("vcx_messages_download(command_handle: {}, message_status: {:?}, uids: {:?})",
           command_handle, message_status, uids);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match ::messages::get_message::download_messages(pw_dids, message_status, uids) {
             Ok(x) => {
                 match  serde_json::to_string(&x) {
@@ -305,9 +308,10 @@ pub extern fn vcx_messages_download(command_handle: u32,
                 cb(command_handle, e, ptr::null_mut());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Update the status of messages from the specified connection
@@ -338,7 +342,7 @@ pub extern fn vcx_messages_update_status(command_handle: u32,
     info!("vcx_messages_set_status(command_handle: {}, message_status: {:?}, uids: {:?})",
           command_handle, message_status, msg_json);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match ::messages::update_message::update_agency_messages(&message_status, &msg_json) {
             Ok(_) => {
                 info!("vcx_messages_set_status_cb(command_handle: {}, rc: {})",
@@ -353,9 +357,10 @@ pub extern fn vcx_messages_update_status(command_handle: u32,
                 cb(command_handle, e);
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 #[cfg(test)]

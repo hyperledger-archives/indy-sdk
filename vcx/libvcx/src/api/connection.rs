@@ -37,7 +37,7 @@ pub extern fn vcx_connection_delete_connection(command_handle: u32,
         return ConnectionError::InvalidHandle().to_error_code()
     }
     info!("vcx_connection_delete_connection(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match delete_connection(connection_handle) {
             Ok(_) => {
                 info!("vcx_connection_delete_connection_cb(command_handle: {}, rc: {})", command_handle, 0);
@@ -48,8 +48,10 @@ pub extern fn vcx_connection_delete_connection(command_handle: u32,
                 cb(command_handle, e.to_error_code())
             },
         }
-    });
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// -> Create a Connection object that provides a pairwise connection for an institution's user
@@ -71,7 +73,7 @@ pub extern fn vcx_connection_create(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     info!("vcx_connection_create(command_handle: {}, source_id: {})", command_handle, source_id);
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match build_connection(&source_id) {
             Ok(handle) => {
                 info!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {})",
@@ -84,9 +86,10 @@ pub extern fn vcx_connection_create(command_handle: u32,
                 cb(command_handle, x.to_error_code(), 0)
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }){
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// -> Create a Connection object from the given invite_details that provides a pairwise connection.
@@ -112,7 +115,7 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(invite_details, error::INVALID_OPTION.code_num);
     info!("vcx_connection_create_with_invite(command_handle: {}, source_id: {})", command_handle, source_id);
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match build_connection_with_invite(&source_id, &invite_details) {
             Ok(handle) => {
                 info!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {})",
@@ -125,9 +128,10 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
                 cb(command_handle, x.to_error_code(), 0)
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Establishes connection between institution and its user
@@ -170,7 +174,7 @@ pub extern fn vcx_connection_connect(command_handle:u32,
     info!("vcx_connection_connect(command_handle: {}, connection_handle: {}, connection_options: {:?}), source_id: {:?}",
           command_handle, connection_handle, options, source_id);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match connect(connection_handle, options) {
             Ok(_) => {
                 match get_invite_details(connection_handle,true) {
@@ -193,9 +197,10 @@ pub extern fn vcx_connection_connect(command_handle:u32,
                 cb(command_handle,x.to_error_code(), ptr::null_mut())
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Takes the Connection object and returns a json string of all its attributes
@@ -225,7 +230,7 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match to_string(connection_handle) {
             Ok(json) => {
                 info!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -239,9 +244,10 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
                 cb(command_handle, x, ptr::null_mut());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Takes a json string representing a connection object and recreates an object matching the json
@@ -265,7 +271,7 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
 
     info!("vcx_connection_deserialize(command_handle: {}, connection_data: {})", command_handle, connection_data);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         let (rc, handle) = match from_string(&connection_data) {
             Ok(x) => {
                 let source_id = get_source_id(x).unwrap_or_default();
@@ -281,9 +287,10 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
         };
 
         cb(command_handle, rc, handle);
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 
@@ -314,7 +321,7 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         let rc = match update_state(connection_handle) {
             Ok(x) => {
                 info!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
@@ -330,9 +337,10 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
         };
         let state = get_state(connection_handle);
         cb(command_handle, rc, state);
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 #[no_mangle]
@@ -351,13 +359,14 @@ pub extern fn vcx_connection_get_state(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         info!("vcx_connection_get_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
               command_handle, error_string(0), connection_handle, get_state(connection_handle), source_id);
         cb(command_handle, error::SUCCESS.code_num, get_state(connection_handle));
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Gets the current connection details
@@ -390,7 +399,7 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match get_invite_details(connection_handle, abbreviated){
             Ok(str) => {
                 info!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
@@ -404,9 +413,10 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
                 cb(command_handle, x.to_error_code(), ptr::null_mut());
             }
         }
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Releases the connection object by de-allocating memory

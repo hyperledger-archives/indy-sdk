@@ -47,7 +47,7 @@ pub extern fn vcx_proof_create(command_handle: u32,
     info!("vcx_proof_create(command_handle: {}, source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {})",
           command_handle, source_id, requested_attrs, requested_predicates, name);
 
-    thread::spawn( move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
         let ( rc, handle) = match proof::create_proof(source_id, requested_attrs, requested_predicates, name) {
             Ok(x) => {
                 info!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
@@ -61,9 +61,10 @@ pub extern fn vcx_proof_create(command_handle: u32,
             },
         };
         cb(command_handle, rc, handle);
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Checks for any state change and updates the proof state attribute
@@ -91,7 +92,7 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
         return error::INVALID_PROOF_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match proof::update_state(proof_handle) {
             Ok(x) => {
                 info!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
@@ -104,9 +105,10 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
                 cb(command_handle, x.to_error_code(), 0);
             }
         }
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 #[no_mangle]
@@ -123,7 +125,7 @@ pub extern fn vcx_proof_get_state(command_handle: u32,
         return error::INVALID_PROOF_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match proof::get_state(proof_handle) {
             Ok(x) => {
                 info!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
@@ -136,9 +138,10 @@ pub extern fn vcx_proof_get_state(command_handle: u32,
                 cb(command_handle, x.to_error_code(), 0);
             }
         }
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Takes the proof object and returns a json string of all its attributes
@@ -166,7 +169,7 @@ pub extern fn vcx_proof_serialize(command_handle: u32,
         return error::INVALID_PROOF_HANDLE.code_num;
     };
 
-    thread::spawn( move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
         match proof::to_string(proof_handle) {
             Ok(x) => {
                 info!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -181,9 +184,10 @@ pub extern fn vcx_proof_serialize(command_handle: u32,
             },
         };
 
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Takes a json string representing a proof object and recreates an object matching the json
@@ -208,7 +212,7 @@ pub extern fn vcx_proof_deserialize(command_handle: u32,
     info!("vcx_proof_deserialize(command_handle: {}, proof_data: {})",
           command_handle, proof_data);
 
-    thread::spawn( move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
         let (rc, handle) = match proof::from_string(&proof_data) {
             Ok(x) => {
                 info!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
@@ -222,9 +226,10 @@ pub extern fn vcx_proof_deserialize(command_handle: u32,
             },
         };
         cb(command_handle, rc, handle);
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Releases the proof object by de-allocating memory
@@ -276,7 +281,7 @@ pub extern fn vcx_proof_send_request(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         let err = match proof::send_proof_request(proof_handle, connection_handle) {
             Ok(x) => {
                 info!("vcx_proof_send_request_cb(command_handle: {}, rc: {}, proof_handle: {})", command_handle, 0, proof_handle);
@@ -289,9 +294,10 @@ pub extern fn vcx_proof_send_request(command_handle: u32,
         };
 
         cb(command_handle,err);
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Get Proof
@@ -323,7 +329,7 @@ pub extern fn vcx_get_proof(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         //update the state to see if proof has come, ignore any errors
         match proof::update_state(proof_handle) {
             Ok(_) => (),
@@ -341,9 +347,10 @@ pub extern fn vcx_get_proof(command_handle: u32,
                 cb(command_handle, x.to_error_code(), proof::get_proof_state(proof_handle).unwrap(), ptr::null_mut());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 

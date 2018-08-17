@@ -75,7 +75,7 @@ pub extern fn vcx_issuer_create_credential(command_handle: u32,
           credential_data,
           credential_name);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         let (rc, handle) = match issuer_credential::issuer_credential_create(cred_def_id, source_id, issuer_did, credential_name, credential_data, price) {
             Ok(x) => {
                 info!("vcx_issuer_create_credential_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
@@ -90,9 +90,10 @@ pub extern fn vcx_issuer_create_credential(command_handle: u32,
         };
 
         cb(command_handle, rc, handle);
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Send a credential offer to user showing what will be included in the actual credential
@@ -128,7 +129,7 @@ pub extern fn vcx_issuer_send_credential_offer(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         let err = match issuer_credential::send_credential_offer(credential_handle, connection_handle) {
             Ok(x) => {
                 info!("vcx_issuer_send_credential_cb(command_handle: {}, credential_handle: {}, rc: {}), source_id: {:?}",
@@ -143,9 +144,10 @@ pub extern fn vcx_issuer_send_credential_offer(command_handle: u32,
         };
 
         cb(command_handle,err);
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Checks for any state change in the credential and updates the the state attribute
@@ -174,7 +176,7 @@ pub extern fn vcx_issuer_credential_update_state(command_handle: u32,
         return error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match issuer_credential::update_state(credential_handle) {
             Ok(x) => {
                 info!("vcx_issuer_credential_update_state_cb(command_handle: {}, credential_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -187,9 +189,10 @@ pub extern fn vcx_issuer_credential_update_state(command_handle: u32,
                 cb(command_handle, x.to_error_code(), 0);
             }
         }
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 #[no_mangle]
@@ -207,7 +210,7 @@ pub extern fn vcx_issuer_credential_get_state(command_handle: u32,
         return error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match issuer_credential::get_state(credential_handle) {
             Ok(x) => {
                 info!("vcx_issuer_credential_get_state_cb(command_handle: {}, credential_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -220,9 +223,10 @@ pub extern fn vcx_issuer_credential_get_state(command_handle: u32,
                 cb(command_handle, x, 0);
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 #[allow(unused_variables, unused_mut)]
@@ -262,7 +266,7 @@ pub extern fn vcx_issuer_send_credential(command_handle: u32,
     let source_id = issuer_credential::get_source_id(credential_handle).unwrap_or_default();
     info!("vcx_issuer_send_credential(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: {:?}",
           command_handle, credential_handle, connection_handle, source_id);
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         let err = match issuer_credential::send_credential(credential_handle, connection_handle) {
             Ok(x) => {
                 info!("vcx_issuer_send_credential_cb(command_handle: {}, credential_handle: {}, rc: {})",
@@ -277,9 +281,10 @@ pub extern fn vcx_issuer_send_credential(command_handle: u32,
         };
 
         cb(command_handle,err);
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 #[allow(unused_variables)]
@@ -310,7 +315,7 @@ pub extern fn vcx_issuer_credential_serialize(command_handle: u32,
     let source_id = issuer_credential::get_source_id(credential_handle).unwrap_or_default();
     info!("vcx_issuer_credential_serialize(credential_serialize(command_handle: {}, credential_handle: {}), source_id: {:?}",
           command_handle, credential_handle, source_id);
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match issuer_credential::to_string(credential_handle) {
             Ok(x) => {
                 info!("vcx_issuer_credential_serialize_cb(command_handle: {}, credential_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -324,9 +329,10 @@ pub extern fn vcx_issuer_credential_serialize(command_handle: u32,
                 cb(command_handle,x.to_error_code(),ptr::null_mut());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Takes a json string representing an issuer credential object and recreates an object matching the json
@@ -350,7 +356,7 @@ pub extern fn vcx_issuer_credential_deserialize(command_handle: u32,
 
     info!("vcx_issuer_credential_deserialize(command_handle: {}, credential_data: {})", command_handle, credential_data);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         let (rc, handle) = match issuer_credential::from_string(&credential_data) {
             Ok(x) => {
                 info!("vcx_issuer_credential_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
@@ -365,9 +371,10 @@ pub extern fn vcx_issuer_credential_deserialize(command_handle: u32,
         };
 
         cb(command_handle, rc, handle);
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Releases the issuer credential object by deallocating memory
@@ -416,7 +423,7 @@ pub extern fn vcx_issuer_credential_get_payment_txn(command_handle: u32,
 
     info!("vcx_issuer_credential_get_payment_txn(command_handle: {})", command_handle);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match issuer_credential::get_payment_txn(handle) {
             Ok(x) => {
                 match serde_json::to_string(&x) {
@@ -440,9 +447,10 @@ pub extern fn vcx_issuer_credential_get_payment_txn(command_handle: u32,
                 cb(command_handle, x.to_error_code(), ptr::null());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 #[cfg(test)]

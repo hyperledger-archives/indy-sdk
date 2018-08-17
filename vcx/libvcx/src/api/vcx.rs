@@ -100,23 +100,23 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
 
     settings::log_settings();
 
-   if wallet::get_wallet_handle() > 0 {
-       error!("Library was already initialized");
-       return error::ALREADY_INITIALIZED.code_num;
-   }
+    if wallet::get_wallet_handle() > 0 {
+        error!("Library was already initialized");
+        return error::ALREADY_INITIALIZED.code_num;
+    }
     // Wallet name was already validated
-   let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
-       Ok(x) => x,
-       Err(_) => {
-           info!("Using default wallet: {}", settings::DEFAULT_WALLET_NAME.to_string());
-           settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
-           settings::DEFAULT_WALLET_NAME.to_string()
-       }
-   };
+    let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
+        Ok(x) => x,
+        Err(_) => {
+            info!("Using default wallet: {}", settings::DEFAULT_WALLET_NAME.to_string());
+            settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
+            settings::DEFAULT_WALLET_NAME.to_string()
+        }
+    };
 
     info!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
             match ::utils::libindy::init_pool() {
                 Ok(_) => (),
@@ -137,9 +137,10 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
                 cb(command_handle, e);
             }
         }
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 lazy_static!{
@@ -235,8 +236,6 @@ mod tests {
     use super::*;
     use std::time::Duration;
     use std::ptr;
-    use std::fs;
-    use std::io::Write;
     use utils::libindy::wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path};
     use utils::libindy::{ pool::get_pool_handle, return_types_u32 };
 
@@ -300,6 +299,8 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_fails_when_open_pool_fails() {
+        use std::fs;
+        use std::io::Write;
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY,settings::TEST_WALLET_KEY);
 

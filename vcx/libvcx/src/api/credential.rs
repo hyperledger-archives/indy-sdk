@@ -29,7 +29,7 @@ pub extern fn vcx_credential_get_payment_info(command_handle: u32,
                                                credential_handle: u32,
                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::get_payment_information(credential_handle) {
             Ok(p) => {
                 match p {
@@ -54,8 +54,10 @@ pub extern fn vcx_credential_get_payment_info(command_handle: u32,
                 cb(command_handle, e.to_error_code(), ptr::null_mut())
             }
         }
-    });
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 /// Create a Credential object that requests and receives a credential for an institution
 ///
@@ -87,7 +89,7 @@ pub extern fn vcx_credential_create_with_offer(command_handle: u32,
     info!("vcx_credential_create_with_offer(command_handle: {}, source_id: {}, offer: {})",
           command_handle, source_id, offer);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::credential_create_with_offer(&source_id, &offer) {
             Ok(x) => {
                 info!("vcx_credential_create_with_offer_cb(command_handle: {}, source_id: {}, rc: {}, handle: {})",
@@ -100,9 +102,10 @@ pub extern fn vcx_credential_create_with_offer(command_handle: u32,
                 cb(command_handle, x.to_error_code(), 0);
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 
@@ -127,7 +130,7 @@ pub extern fn vcx_get_credential(command_handle: u32,
         return CredentialError::InvalidHandle().to_error_code();
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::get_credential(credential_handle) {
             Ok(s) => {
                 info!("vcx_get_credential_cb(commmand_handle: {}, rc: {}, msg: {})",
@@ -142,8 +145,10 @@ pub extern fn vcx_get_credential(command_handle: u32,
 
             },
         };
-    });
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Create a Credential object that requests and receives a credential for an institution
@@ -177,7 +182,7 @@ pub extern fn vcx_credential_create_with_msgid(command_handle: u32,
     info!("vcx_credential_create_with_msgid(command_handle: {}, source_id: {}, connection_handle: {}, msg_id: {})",
           command_handle, source_id, connection_handle, msg_id);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::get_credential_offer_msg(connection_handle, &msg_id) {
             Ok(offer) => {
                 match credential::credential_create_with_offer(&source_id, &offer) {
@@ -200,9 +205,10 @@ pub extern fn vcx_credential_create_with_msgid(command_handle: u32,
             },
             Err(e) => cb(command_handle, e.to_error_code(), 0, ptr::null_mut()),
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Send a credential request to the connection, called after having received a credential offer
@@ -240,7 +246,7 @@ pub extern fn vcx_credential_send_request(command_handle: u32,
     info!("vcx_credential_send_request(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: {:?}",
           command_handle, credential_handle, connection_handle, source_id);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::send_credential_request(credential_handle, connection_handle) {
             Ok(x) => {
                 info!("vcx_credential_send_request_cb(command_handle: {}, rc: {}, source_id: {:?})",
@@ -253,9 +259,10 @@ pub extern fn vcx_credential_send_request(command_handle: u32,
                 cb(command_handle,e.to_error_code());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Queries agency for credential offers from the given connection.
@@ -284,7 +291,7 @@ pub extern fn vcx_credential_get_offers(command_handle: u32,
     info!("vcx_credential_get_offers(command_handle: {}, connection_handle: {})",
           command_handle, connection_handle);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::get_credential_offer_messages(connection_handle, None) {
             Ok(x) => {
                 info!("vcx_credential_get_offers_cb(command_handle: {}, rc: {}, msg: {})",
@@ -298,9 +305,10 @@ pub extern fn vcx_credential_get_offers(command_handle: u32,
                 cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Checks for any state change in the credential and updates the the state attribute.  If it detects a credential it
@@ -331,7 +339,7 @@ pub extern fn vcx_credential_update_state(command_handle: u32,
     info!("vcx_credential_update_state(command_handle: {}, credential_handle: {}), source_id: {:?}",
           command_handle, credential_handle, source_id);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::update_state(credential_handle) {
             Ok(_) => (),
             Err(e) => {
@@ -353,9 +361,10 @@ pub extern fn vcx_credential_update_state(command_handle: u32,
                 cb(command_handle, e.to_error_code(), 0)
             }
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 #[no_mangle]
@@ -372,7 +381,7 @@ pub extern fn vcx_credential_get_state(command_handle: u32,
     info!("vcx_credential_get_state(command_handle: {}, credential_handle: {}), source_id: {:?}",
           command_handle, handle, source_id);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::get_state(handle) {
             Ok(s) => {
                 info!("vcx_credential_get_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -385,9 +394,10 @@ pub extern fn vcx_credential_get_state(command_handle: u32,
                 cb(command_handle, e.to_error_code(), 0)
             }
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 
@@ -417,7 +427,7 @@ pub extern fn vcx_credential_serialize(command_handle: u32,
     info!("vcx_credential_serialize(command_handle: {}, credential_handle: {}), source_id: {:?}",
           command_handle, handle, source_id);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::to_string(handle) {
             Ok(x) => {
                 info!("vcx_credential_serialize_cb(command_handle: {}, rc: {}, data: {}), source_id: {:?}",
@@ -431,9 +441,10 @@ pub extern fn vcx_credential_serialize(command_handle: u32,
                 cb(command_handle,x,ptr::null_mut());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Takes a json string representing an credential object and recreates an object matching the json
@@ -459,7 +470,7 @@ pub extern fn vcx_credential_deserialize(command_handle: u32,
     info!("vcx_credential_deserialize(command_handle: {}, credential_data: {})",
           command_handle, credential_data);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::from_string(&credential_data) {
             Ok(x) => {
                 info!("vcx_credential_deserialize_cb(command_handle: {}, rc: {}, credential_handle: {}), source_id: {:?}",
@@ -473,9 +484,10 @@ pub extern fn vcx_credential_deserialize(command_handle: u32,
                 cb(command_handle, x, 0);
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Releases the credential object by de-allocating memory
@@ -524,7 +536,7 @@ pub extern fn vcx_credential_get_payment_txn(command_handle: u32,
 
     info!("vcx_credential_get_payment_txn(command_handle: {})", command_handle);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential::get_payment_txn(handle) {
             Ok(x) => {
                 match serde_json::to_string(&x) {
@@ -548,9 +560,10 @@ pub extern fn vcx_credential_get_payment_txn(command_handle: u32,
                 cb(command_handle, x.to_error_code(), ptr::null());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 #[cfg(test)]
