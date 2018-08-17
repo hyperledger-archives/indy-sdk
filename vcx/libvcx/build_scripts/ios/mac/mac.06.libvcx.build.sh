@@ -33,9 +33,6 @@ if [ ! -z "$3" ]; then
     CLEAN_BUILD=$3
 fi
 
-BUILD_CACHE=~/.build_libvxc/ioscache
-mkdir -p ${BUILD_CACHE}
-
 if [ "$CLEAN_BUILD" = "cleanbuild" ]; then
     cargo clean
     rm -rf ${BUILD_CACHE}/target
@@ -72,10 +69,10 @@ do
     fi
 
     libtool="/usr/bin/libtool"
-    libsovtoken_dir="${WORK_DIR}/libsovtoken-ios/libsovtoken"
-    libindy_dir="${WORK_DIR}/libindy"
+    libsovtoken_dir="${BUILD_CACHE}/libsovtoken-ios/${LIBSOVTOKEN_VERSION}/libsovtoken"
+    libindy_dir="${BUILD_CACHE}/libindy/${LIBINDY_VERSION}"
 
-    if [ -d ${libsovtoken_dir}/${target_arch} ]; then
+    if [ -e ${libsovtoken_dir}/${target_arch}/libsovtoken.a ]; then
         echo "${target_arch} libsovtoken architecture already extracted"
     else
         mkdir -p ${libsovtoken_dir}/${target_arch}
@@ -84,7 +81,7 @@ do
         mv ${libsovtoken_dir}/${target_arch}/libsovtoken_libtool.a ${libsovtoken_dir}/${target_arch}/libsovtoken.a
     fi
 
-    if [ -d ${libindy_dir}/${target_arch} ]; then
+    if [ -e ${libindy_dir}/${target_arch}/libindy.a ]; then
         echo "${target_arch} libindy architecture already extracted"
     else
         mkdir -p ${libindy_dir}/${target_arch}
