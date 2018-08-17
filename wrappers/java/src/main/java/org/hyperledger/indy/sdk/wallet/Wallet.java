@@ -51,7 +51,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -67,7 +67,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 		public void callback(int xcommand_handle, int err, int handle) {
 
 			CompletableFuture<Wallet> future = (CompletableFuture<Wallet>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Wallet wallet = new Wallet(handle);
 
@@ -129,7 +129,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				null,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -179,7 +179,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				credentials,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -236,7 +236,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				credentials,
 				openWalletCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -263,7 +263,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				handle,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -314,7 +314,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				credentials,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -352,7 +352,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				exportConfigJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -414,7 +414,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				importConfigJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}

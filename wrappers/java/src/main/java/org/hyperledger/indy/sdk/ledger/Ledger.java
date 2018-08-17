@@ -40,7 +40,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String request_result_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = request_result_json;
 			future.complete(result);
@@ -56,7 +56,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String request_result_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = request_result_json;
 			future.complete(result);
@@ -72,7 +72,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String signed_request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = signed_request_json;
 			future.complete(result);
@@ -88,7 +88,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = request_json;
 			future.complete(result);
@@ -104,7 +104,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String id, String object_json) {
 
 			CompletableFuture<ParseResponseResult> future = (CompletableFuture<ParseResponseResult>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			ParseResponseResult result = new ParseResponseResult(id, object_json);
 			future.complete(result);
@@ -120,7 +120,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String id, String object_json, long timestamp) {
 
 			CompletableFuture<ParseRegistryResponseResult> future = (CompletableFuture<ParseRegistryResponseResult>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			ParseRegistryResponseResult result = new ParseRegistryResponseResult(id, object_json, timestamp);
 			future.complete(result);
@@ -171,7 +171,7 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				signAndSubmitRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -204,7 +204,7 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				submitRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -249,7 +249,7 @@ public class Ledger extends IndyJava.API {
 				timeout,
 				submitRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -287,7 +287,7 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				signRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -325,7 +325,7 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				signRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -354,7 +354,7 @@ public class Ledger extends IndyJava.API {
 				targetDid,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -397,7 +397,7 @@ public class Ledger extends IndyJava.API {
 				role,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -435,7 +435,7 @@ public class Ledger extends IndyJava.API {
 				enc,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -473,7 +473,7 @@ public class Ledger extends IndyJava.API {
 				enc,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -502,7 +502,7 @@ public class Ledger extends IndyJava.API {
 				targetDid,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -538,7 +538,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -567,7 +567,7 @@ public class Ledger extends IndyJava.API {
 				id,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -599,7 +599,7 @@ public class Ledger extends IndyJava.API {
 				getSchemaResponse,
 				parseResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -640,7 +640,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -670,7 +670,7 @@ public class Ledger extends IndyJava.API {
 				id,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -706,7 +706,7 @@ public class Ledger extends IndyJava.API {
 				getCredDefResponse,
 				parseResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -748,7 +748,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -773,7 +773,7 @@ public class Ledger extends IndyJava.API {
 				submitterDid,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -808,7 +808,7 @@ public class Ledger extends IndyJava.API {
 				seqNo,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -841,7 +841,7 @@ public class Ledger extends IndyJava.API {
 				force,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -872,7 +872,7 @@ public class Ledger extends IndyJava.API {
 				datetime,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -929,7 +929,7 @@ public class Ledger extends IndyJava.API {
 				package_,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -972,7 +972,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1002,7 +1002,7 @@ public class Ledger extends IndyJava.API {
 				id,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1041,7 +1041,7 @@ public class Ledger extends IndyJava.API {
 				getRevocRegDefResponse,
 				parseResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1089,7 +1089,7 @@ public class Ledger extends IndyJava.API {
 				value,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1122,7 +1122,7 @@ public class Ledger extends IndyJava.API {
 				timestamp,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1153,7 +1153,7 @@ public class Ledger extends IndyJava.API {
 				getRevocRegResponse,
 				parseRegistryResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1190,7 +1190,7 @@ public class Ledger extends IndyJava.API {
 				to,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1224,7 +1224,7 @@ public class Ledger extends IndyJava.API {
 				getRevocRegDeltaResponse,
 				parseRegistryResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
