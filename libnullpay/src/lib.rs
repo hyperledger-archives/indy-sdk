@@ -23,7 +23,16 @@ use std::ffi::CString;
 
 #[no_mangle]
 pub extern fn nullpay_init() -> ErrorCode {
-    utils::logger::LoggerUtils::init();
+    let logger =
+        libindy::logger::get_indy_logger()
+            .and_then(|libindy_logger| utils::logger::init_nullpay_logger(libindy_logger)
+                .map_err(|_| ErrorCode::CommonInvalidState)
+            );
+
+    if let Err(err) = logger {
+        return err;
+    }
+
     let payment_method_name = CString::new(payment_method::PAYMENT_METHOD_NAME).unwrap();
 
     libindy::payments::register_payment_method(

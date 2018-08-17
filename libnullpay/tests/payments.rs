@@ -20,6 +20,7 @@ use utils::types::*;
 use utils::ledger;
 use utils::pool;
 use utils::did;
+use utils::logger;
 use nullpay::ErrorCode;
 
 use std::collections::HashMap;
@@ -41,6 +42,8 @@ mod high_cases {
         #[test]
         pub fn create_payment_address_works() {
             test_utils::cleanup_storage();
+            logger::set_default_logger();
+
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
 

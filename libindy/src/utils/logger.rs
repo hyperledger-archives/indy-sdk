@@ -34,18 +34,18 @@ pub type FlushCB = extern fn(context: *const c_void);
 struct IndyLogger {
     context: *const c_void,
     #[allow(dead_code)]
-    enabled_cb: Option<EnabledCB>,
-    log_cb: LogCB,
-    flush_cb: Option<FlushCB>,
+    enabled: Option<EnabledCB>,
+    log: LogCB,
+    flush: Option<FlushCB>,
 }
 
 impl IndyLogger {
-    fn new(context: *const c_void, log_cb: LogCB, flush_cb: Option<FlushCB>) -> Self {
+    fn new(context: *const c_void, log: LogCB, flush: Option<FlushCB>) -> Self {
         IndyLogger {
             context,
-            enabled_cb: None,
-            log_cb,
-            flush_cb,
+            enabled: None,
+            log,
+            flush,
         }
     }
 }
@@ -56,7 +56,7 @@ impl log::Log for IndyLogger {
     }
 
     fn log(&self, record: &Record) {
-        let log_cb = self.log_cb;
+        let log_cb = self.log;
 
         let level = record.level() as u32;
         let target = CString::new(record.target()).unwrap();
@@ -77,8 +77,8 @@ impl log::Log for IndyLogger {
     }
 
     fn flush(&self) {
-        if let Some(flush_cb) = self.flush_cb {
-            flush_cb(self.context)
+        if let Some(flush) = self.flush {
+            flush(self.context)
         }
     }
 }
@@ -91,9 +91,8 @@ pub fn get_indy_logger() -> &'static log::Log {
     log::logger()
 }
 
-pub fn init_indy_logger(context: *const c_void, log_cb: LogCB, flush_cb: Option<FlushCB>) -> Result<(), log::SetLoggerError> {
-    let logger = IndyLogger::new(context, log_cb, flush_cb);
-
+pub fn init_indy_logger(context: *const c_void, log: LogCB, flush: Option<FlushCB>) -> Result<(), log::SetLoggerError> {
+    let logger = IndyLogger::new(context, log, flush);
     log::set_boxed_logger(Box::new(logger))?;
     log::set_max_level(LevelFilter::Trace);
     Ok(())
