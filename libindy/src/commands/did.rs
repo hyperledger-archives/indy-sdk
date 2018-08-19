@@ -387,14 +387,14 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&did)?;
 
         // Look to my did
-        match self._wallet_get_my_did(wallet_handle, &did) {
+        match self._wallet_get_my_did(wallet_handle, did) {
             Ok(my_did) => return Ok(my_did.verkey),
             Err(WalletError::ItemNotFound) => {}
             Err(err) => return Err(IndyError::from(err))
         };
 
         // look to their did
-        let their_did = self._wallet_get_their_did(wallet_handle, &did)?;
+        let their_did = self._wallet_get_their_did(wallet_handle, did)?;
 
         let res = their_did.verkey;
 
