@@ -169,7 +169,7 @@ impl DidCommandExecutor {
             }
             DidCommand::SetDidMetadata(wallet_handle, did, metadata, cb) => {
                 info!("SetDidMetadata command received");
-                cb(self.set_did_metadata(wallet_handle, did, metadata));
+                cb(self.set_did_metadata(wallet_handle, &did, metadata));
             }
             DidCommand::GetDidMetadata(wallet_handle, did, cb) => {
                 info!("GetDidMetadata command received");
@@ -451,18 +451,18 @@ impl DidCommandExecutor {
 
     fn set_did_metadata(&self,
                         wallet_handle: i32,
-                        did: String,
+                        did: &str,
                         metadata: String) -> Result<(), IndyError> {
         debug!("set_did_metadata >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
 
-        self.crypto_service.validate_did(&did)?;
+        self.crypto_service.validate_did(did)?;
 
-        self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::id())?;
+        self.wallet_service.get_indy_record::<Did>(wallet_handle, did, &RecordOptions::id())?;
 
         let mut tags = HashMap::new();
         tags.insert(String::from("metadata"), metadata);
 
-        let res = self.wallet_service.add_indy_record_tags::<Did>(wallet_handle, &did, &tags)?;
+        let res = self.wallet_service.add_indy_record_tags::<Did>(wallet_handle, did, &tags)?;
 
         debug!("set_did_metadata >>> res: {:?}", res);
 
@@ -471,12 +471,12 @@ impl DidCommandExecutor {
 
     fn get_did_metadata(&self,
                         wallet_handle: i32,
-                        did: String) -> Result<String, IndyError> {
+                        did: &str) -> Result<String, IndyError> {
         debug!("get_did_metadata >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-        self.crypto_service.validate_did(&did)?;
+        self.crypto_service.validate_did(did)?;
 
-        let res = self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full())?
+        let res = self.wallet_service.get_indy_record::<Did>(wallet_handle, did, &RecordOptions::full())?
             .get_tags()
             .and_then(|tags| tags.get("metadata").cloned())
             .ok_or(WalletError::ItemNotFound)?;
