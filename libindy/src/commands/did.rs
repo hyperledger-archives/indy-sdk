@@ -161,7 +161,7 @@ impl DidCommandExecutor {
             }
             DidCommand::SetEndpointForDid(wallet_handle, did, address, transport_key, cb) => {
                 info!("SetEndpointForDid command received");
-                cb(self.set_endpoint_for_did(wallet_handle, did, address, transport_key));
+                cb(self.set_endpoint_for_did(wallet_handle, &did, &address, &transport_key));
             }
             DidCommand::GetEndpointForDid(wallet_handle, pool_handle, did, cb) => {
                 info!("GetEndpointForDid command received");
@@ -405,17 +405,17 @@ impl DidCommandExecutor {
 
     fn set_endpoint_for_did(&self,
                             wallet_handle: i32,
-                            did: String,
-                            address: String,
-                            transport_key: String) -> Result<(), IndyError> {
+                            did: &str,
+                            address: &str,
+                            transport_key: &str) -> Result<(), IndyError> {
         debug!("set_endpoint_for_did >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}", wallet_handle, did, address, transport_key);
 
-        self.crypto_service.validate_did(&did)?;
-        self.crypto_service.validate_key(&transport_key)?;
+        self.crypto_service.validate_did(did)?;
+        self.crypto_service.validate_key(transport_key)?;
 
         let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
 
-        self.wallet_service.upsert_indy_object(wallet_handle, &did, &endpoint)?;
+        self.wallet_service.upsert_indy_object(wallet_handle, did, &endpoint)?;
 
         debug!("set_endpoint_for_did <<<");
         Ok(())
