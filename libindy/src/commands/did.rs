@@ -157,7 +157,7 @@ impl DidCommandExecutor {
             }
             DidCommand::KeyForLocalDid(wallet_handle, did, cb) => {
                 info!("KeyForLocalDid command received");
-                cb(self.key_for_local_did(wallet_handle, did));
+                cb(self.key_for_local_did(wallet_handle, &did));
             }
             DidCommand::SetEndpointForDid(wallet_handle, did, address, transport_key, cb) => {
                 info!("SetEndpointForDid command received");
@@ -381,7 +381,7 @@ impl DidCommandExecutor {
 
     fn key_for_local_did(&self,
                          wallet_handle: i32,
-                         did: String) -> Result<String, IndyError> {
+                         did: &str) -> Result<String, IndyError> {
         info!("key_for_local_did >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
         self.crypto_service.validate_did(&did)?;
