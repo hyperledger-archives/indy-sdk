@@ -173,7 +173,7 @@ impl DidCommandExecutor {
             }
             DidCommand::GetDidMetadata(wallet_handle, did, cb) => {
                 info!("GetDidMetadata command received");
-                cb(self.get_did_metadata(wallet_handle, did));
+                cb(self.get_did_metadata(wallet_handle, &did));
             }
             DidCommand::AbbreviateVerkey(did, verkey, cb) => {
                 info!("AbbreviateVerkey command received");
