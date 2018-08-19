@@ -26,7 +26,7 @@ use utils::crypto::base58;
 pub enum DidCommand {
     CreateAndStoreMyDid(
         i32, // wallet handle
-        String, // my did info json
+        MyDidInfo, // my did info
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     ReplaceKeysStart(
         i32, // wallet handle
@@ -127,9 +127,9 @@ impl DidCommandExecutor {
 
     pub fn execute(&self, command: DidCommand) {
         match command {
-            DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info_json, cb) => {
+            DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info, cb) => {
                 info!("CreateAndStoreMyDid command received");
-                cb(self.create_and_store_my_did(wallet_handle, &my_did_info_json));
+                cb(self.create_and_store_my_did(wallet_handle, &my_did_info));
             }
             DidCommand::ReplaceKeysStart(wallet_handle, key_info_json, did, cb) => {
                 info!("ReplaceKeysStart command received");
@@ -192,14 +192,8 @@ impl DidCommandExecutor {
 
     fn create_and_store_my_did(&self,
                                wallet_handle: i32,
-                               my_did_info_json: &str) -> Result<(String, String), IndyError> {
-        debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, secret!(my_did_info_json));
-
-        let my_did_info: MyDidInfo = serde_json::from_str(&my_did_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(
-                    format!("Invalid MyDidInfo json: {:?}", err)))?;
+                               my_did_info: &MyDidInfo) -> Result<(String, String), IndyError> {
+        debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, secret!(my_did_info));
 
         let (did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 

@@ -1,14 +1,18 @@
 extern crate libc;
 
+use errors::common::CommonError;
+
 use api::ErrorCode;
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::did::DidCommand;
 use utils::cstring::CStringUtils;
 
+use serde_json;
 use self::libc::c_char;
 use std::ptr;
 
+use domain::crypto::did::MyDidInfo;
 
 /// Creates keys (signing and encryption keys) for a new
 /// DID (owned by the caller of the library).
@@ -19,7 +23,7 @@ use std::ptr;
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// did_json: Identity information as json. Example:
+/// did_info_json: Identity information as json. Example:
 /// {
 ///     "did": string, (optional;
 ///             if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
@@ -47,29 +51,39 @@ use std::ptr;
 #[no_mangle]
 pub  extern fn indy_create_and_store_my_did(command_handle: i32,
                                             wallet_handle: i32,
-                                            did_json: *const c_char,
+                                            did_info_json: *const c_char,
                                             cb: Option<extern fn(xcommand_handle: i32,
                                                                  err: ErrorCode,
                                                                  did: *const c_char,
                                                                  verkey: *const c_char)>) -> ErrorCode {
-    trace!("indy_create_and_store_my_did: >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_json);
+    trace!("indy_create_and_store_my_did: >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_info_json);
 
-    check_useful_c_str!(did_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(did_info_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, secret!(did_json.as_str()));
+    trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, secret!(did_info_json.as_str()));
+
+    let my_did_info: MyDidInfo  = match serde_json::from_str(&did_info_json)
+        .map_err(map_err_trace!())
+        .map_err(|err|
+            CommonError::InvalidStructure(
+                format!("Invalid MyDidInfo json: {:?}", err))) {
+        Ok(my_did_info) => my_did_info,
+        Err(err) => return err.to_error_code(),
+    };
+
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::CreateAndStoreMyDid(
             wallet_handle,
-            did_json,
+            my_did_info,
             Box::new(move |result| {
                 let (err, did, verkey) = result_to_err_code_2!(result, String::new(), String::new());
                 trace!("indy_create_and_store_my_did: did: {:?}, verkey: {:?}", did, verkey);
                 let did = CStringUtils::string_to_cstring(did);
                 let verkey = CStringUtils::string_to_cstring(verkey);
                 cb(command_handle, err, did.as_ptr(), verkey.as_ptr())
-            })
+            }),
         )));
 
     let res = result_to_err_code!(result);
