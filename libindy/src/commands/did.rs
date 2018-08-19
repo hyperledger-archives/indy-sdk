@@ -177,7 +177,7 @@ impl DidCommandExecutor {
             }
             DidCommand::AbbreviateVerkey(did, verkey, cb) => {
                 info!("AbbreviateVerkey command received");
-                cb(self.abbreviate_verkey(did, verkey));
+                cb(self.abbreviate_verkey(&did, verkey));
             }
             DidCommand::GetNymAck(wallet_handle, result, deferred_cmd_id) => {
                 info!("GetNymAck command received");
@@ -487,7 +487,7 @@ impl DidCommandExecutor {
     }
 
     fn abbreviate_verkey(&self,
-                         did: String,
+                         did: &str,
                          verkey: String) -> Result<String, IndyError> {
         info!("abbreviate_verkey >>> did: {:?}, verkey: {:?}", did, verkey);
 
