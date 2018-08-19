@@ -145,7 +145,7 @@ impl DidCommandExecutor {
             }
             DidCommand::GetMyDidWithMeta(wallet_handle, my_did, cb) => {
                 info!("GetMyDidWithMeta command received");
-                cb(self.get_my_did_with_meta(wallet_handle, my_did))
+                cb(self.get_my_did_with_meta(wallet_handle, &my_did))
             }
             DidCommand::ListMyDidsWithMeta(wallet_handle, cb) => {
                 info!("ListMyDidsWithMeta command received");
@@ -279,7 +279,7 @@ impl DidCommandExecutor {
         Ok(())
     }
 
-    fn get_my_did_with_meta(&self, wallet_handle: i32, my_did: String) -> Result<String, IndyError> {
+    fn get_my_did_with_meta(&self, wallet_handle: i32, my_did: &str) -> Result<String, IndyError> {
         debug!("get_my_did_with_meta >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
         self.crypto_service.validate_did(&my_did)?;
