@@ -142,6 +142,8 @@ public class IndyException extends Exception {
 				return new IncompatiblePaymentException();
 			case InsufficientFundsError:
 				return new InsufficientFundsException();
+			case ExtraFundsError:
+				return new ExtraFundsException();
 			case PaymentSourceDoesNotExistError:
 				return new PaymentSourceDoesNotExistException();
 			case PaymentOperationNotSupportedError:

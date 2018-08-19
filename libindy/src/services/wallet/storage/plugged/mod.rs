@@ -101,11 +101,7 @@ impl StorageIterator for PluggedStorageIterator {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
-        let record_free_helper = ResourceGuard {
-            storage_handle: self.storage_handle,
-            item_handle: record_handle,
-            free_handler: self.free_record_handler
-        };
+        let _record_free_helper = ResourceGuard::new(self.storage_handle, record_handle, self.free_record_handler);
 
         let type_ = if self.options.retrieve_type {
             let mut type_ptr: *const c_char = ptr::null_mut();
@@ -349,11 +345,7 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
-        let record_free_helper = ResourceGuard {
-            storage_handle: self.handle,
-            item_handle: record_handle,
-            free_handler: self.free_record_handler
-        };
+        let _record_free_helper = ResourceGuard::new(self.handle, record_handle, self.free_record_handler);
 
         let value = if options.retrieve_value {
             let mut value_bytes: *const u8 = ptr::null();
@@ -515,11 +507,7 @@ impl WalletStorage for PluggedStorage {
             return Err(WalletStorageError::PluggedStorageError(err));
         }
 
-        let metadata_free_helper = ResourceGuard {
-            storage_handle: self.handle,
-            item_handle: metadata_handle,
-            free_handler: self.free_storage_metadata_handler
-        };
+        let _metadata_free_helper = ResourceGuard::new(self.handle, metadata_handle, self.free_storage_metadata_handler);
 
         let metadata = base64::decode(
             unsafe { CStr::from_ptr(metadata_ptr).to_str()? }
@@ -1353,7 +1341,7 @@ mod tests {
 
     #[test]
     fn plugged_storage_type_new_works() {
-        let storage_type = _create_storage_type();
+        let _storage_type = _create_storage_type();
     }
 
 
@@ -1417,7 +1405,7 @@ mod tests {
         let storage_name = "wallet1";
         let credentials = "credentials";
 
-        let storage = storage_type.delete_storage(storage_name, None, Some(credentials)).unwrap();
+        storage_type.delete_storage(storage_name, None, Some(credentials)).unwrap();
 
         let expected_call = Call::DeleteHandler(
             Some(storage_name.to_owned()),

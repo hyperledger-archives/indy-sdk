@@ -24,7 +24,26 @@ public class PoolUpgradeRequestTest extends IndyIntegrationTestWithPoolAndSingle
 				"\"force\":false}", DID);
 
 		String request = Ledger.buildPoolUpgradeRequest(DID, "upgrade-java", "2.0.0", "start", "f284b", - 1,
-				"{}", null, false, false).get();
+				"{}", null, false, false, null).get();
+
+		assertTrue(request.contains(expectedResult));
+	}
+
+	@Test
+	public void testBuildPoolUpgradeRequestWorksForPackage() throws Exception {
+		String expectedResult = String.format("\"identifier\":\"%s\"," +
+				"\"operation\":{\"type\":\"109\"," +
+				"\"name\":\"upgrade-java\"," +
+				"\"version\":\"2.0.0\"," +
+				"\"action\":\"start\"," +
+				"\"sha256\":\"f284b\"," +
+				"\"schedule\":{}," +
+				"\"reinstall\":false," +
+				"\"force\":false," +
+				"\"package\":\"some_package\"}", DID);
+
+		String request = Ledger.buildPoolUpgradeRequest(DID, "upgrade-java", "2.0.0", "start", "f284b", - 1,
+				"{}", null, false, false, "some_package").get();
 
 		assertTrue(request.contains(expectedResult));
 	}
@@ -41,7 +60,7 @@ public class PoolUpgradeRequestTest extends IndyIntegrationTestWithPoolAndSingle
 				"\"force\":false}", DID);
 
 		String request = Ledger.buildPoolUpgradeRequest(DID, "upgrade-java", "2.0.0", "cancel", "f284b", - 1,
-				null, null, false, false).get();
+				null, null, false, false, null).get();
 
 		assertTrue(request.contains(expectedResult));
 	}
@@ -60,12 +79,12 @@ public class PoolUpgradeRequestTest extends IndyIntegrationTestWithPoolAndSingle
 						"                   \"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\":\"%s-01-25T15:49:05.258870+00:00\"}",
 				nextYear, nextYear, nextYear, nextYear);
 		String request = Ledger.buildPoolUpgradeRequest(did, "upgrade-java", "2.0.0", "start",
-				"f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398", - 1, schedule, null, false, false).get();
+				"f284bdc3c1c9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398", - 1, schedule, null, false, false, null).get();
 		Ledger.signAndSubmitRequest(pool, wallet, did, request).get();
 
 		//cancel
 		request = Ledger.buildPoolUpgradeRequest(did, "upgrade-java", "2.0.0", "cancel",
-				"ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398", - 1, null, null, false, false).get();
+				"ac3eb2cc3ac9e24a494e285cb387c69510f28de51c15bb93179d9c7f28705398", - 1, null, null, false, false, null).get();
 		Ledger.signAndSubmitRequest(pool, wallet, did, request).get();
 	}
 }

@@ -4953,6 +4953,7 @@ mod demos {
                                                       &gvt_cred_def_json);
 
         //8. Issuer2 issue ABC Credential for Prover
+        //   note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
         let abc_cred_values = r#"{
             "name": {"raw":"Alexander", "encoded": "126328542632549235769221"},
             "second_name": {"raw":"Park", "encoded": "42935129364832492914638245934"},

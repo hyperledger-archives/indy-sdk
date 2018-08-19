@@ -203,6 +203,16 @@ def buildAndroid(buildEnv) {
         sh "./${ANDROID_SCRIPT_PATH} -d arm64"
     }
 
+    echo 'Building Libindy android files for armv7'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} -d armv7"
+    }
+
+    echo 'Building Libindy android files for x86_64'
+    buildEnv.inside {
+        sh "./${ANDROID_SCRIPT_PATH} -d x86_64"
+    }
+
 }
 
 def iosTesting() {

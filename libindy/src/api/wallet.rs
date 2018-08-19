@@ -164,7 +164,9 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
-///
+///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
+///                          ARAGON2I_MOD (used by default)
+///                          ARAGON2I_INT - less secured but faster
 /// }
 ///
 /// #Returns
@@ -235,7 +237,12 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                              Can be optional if storage supports default configuration.
 ///                              For 'default' storage type should be empty.
-///
+///       "key_derivation_method": optional<string> algorithm to use for master key derivation:
+///                             ARAGON2I_MOD (used by default)
+///                             ARAGON2I_INT - less secured but faster
+///       "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
+///                             ARAGON2I_MOD (used by default)
+///                             ARAGON2I_INT - less secured but faster
 ///   }
 ///
 /// #Returns
@@ -287,6 +294,9 @@ pub extern fn indy_open_wallet(command_handle: i32,
 ///   {
 ///     "path": <string>, Path of the file that contains exported wallet content
 ///     "key": <string>, Passphrase used to derive export key
+///     "key_derivation_method": optional<string> algorithm to use for export key derivation:
+///                              ARAGON2I_MOD (used by default)
+///                              ARAGON2I_INT - less secured but faster
 ///   }
 ///
 /// #Returns
@@ -352,7 +362,9 @@ pub extern fn indy_export_wallet(command_handle: i32,
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
-///
+///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
+///                            ARAGON2I_MOD (used by default)
+///                            ARAGON2I_INT - less secured but faster
 /// }
 /// import_config: Import settings json.
 /// {
@@ -465,7 +477,9 @@ pub extern fn indy_close_wallet(command_handle: i32,
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
-///
+///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
+///                            ARAGON2I_MOD (used by default)
+///                            ARAGON2I_INT - less secured but faster
 /// }
 ///
 /// #Returns
