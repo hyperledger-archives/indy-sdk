@@ -532,7 +532,6 @@ mod medium_cases {
         }
 
         #[test]
-        #[ignore]
         fn indy_open_wallet_works_for_invalid_config() {
             utils::setup();
 

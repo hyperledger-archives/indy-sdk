@@ -25,7 +25,7 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 		public void callback(int xcommand_handle, int err, int search_handle) {
 
 			CompletableFuture<CredentialsSearchForProofReq> future = (CompletableFuture<CredentialsSearchForProofReq>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (!checkResult(future, err)) return;
 
 			CredentialsSearchForProofReq result = new CredentialsSearchForProofReq(search_handle);
 			future.complete(result);
@@ -41,7 +41,7 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (!checkCallback(future, err)) return;
+			if (!checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -131,7 +131,7 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 				extraQueryJson,
 				proverSearchCredentialsForProofReqCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -176,7 +176,7 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 				count,
 				Anoncreds.stringCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -196,7 +196,7 @@ public class CredentialsSearchForProofReq extends IndyJava.API implements AutoCl
 				searchHandle,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}

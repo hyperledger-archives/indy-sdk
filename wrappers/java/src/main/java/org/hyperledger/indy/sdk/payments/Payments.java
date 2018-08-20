@@ -28,7 +28,7 @@ public class Payments extends IndyJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int xcommandHandle, int err, String paymentAddress) {
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommandHandle);
-            if (!checkCallback(future, err)) return;
+            if (!checkResult(future, err)) return;
 
             future.complete(paymentAddress);
         }
@@ -41,7 +41,7 @@ public class Payments extends IndyJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int xcommandHandle, int err, String reqWithFeesJson, String paymentMethod) {
             CompletableFuture<AddRequestFeesResult> future = (CompletableFuture<AddRequestFeesResult>) removeFuture(xcommandHandle);
-            if (!checkCallback(future, err)) return;
+            if (!checkResult(future, err)) return;
 
             AddRequestFeesResult addRequestFeesResult = new AddRequestFeesResult(reqWithFeesJson, paymentMethod);
 
@@ -56,7 +56,7 @@ public class Payments extends IndyJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int xcommandHandle, int err, String sourcesJson, String paymentMethod) {
             CompletableFuture<BuildGetPaymentSourcesRequestResult> future = (CompletableFuture<BuildGetPaymentSourcesRequestResult>) removeFuture(xcommandHandle);
-            if (!checkCallback(future, err)) return;
+            if (!checkResult(future, err)) return;
 
             BuildGetPaymentSourcesRequestResult addRequestFeesResult = new BuildGetPaymentSourcesRequestResult(sourcesJson, paymentMethod);
 
@@ -71,7 +71,7 @@ public class Payments extends IndyJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int xcommandHandle, int err, String paymentReqJson, String paymentMethod) {
             CompletableFuture<BuildPaymentReqResult> future = (CompletableFuture<BuildPaymentReqResult>) removeFuture(xcommandHandle);
-            if (!checkCallback(future, err)) return;
+            if (!checkResult(future, err)) return;
 
             BuildPaymentReqResult addRequestFeesResult = new BuildPaymentReqResult(paymentReqJson, paymentMethod);
 
@@ -86,7 +86,7 @@ public class Payments extends IndyJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int xcommandHandle, int err, String mintReqJson, String paymentMethod) {
             CompletableFuture<BuildMintReqResult> future = (CompletableFuture<BuildMintReqResult>) removeFuture(xcommandHandle);
-            if (!checkCallback(future, err)) return;
+            if (!checkResult(future, err)) return;
 
             BuildMintReqResult addRequestFeesResult = new BuildMintReqResult(mintReqJson, paymentMethod);
 
@@ -101,7 +101,7 @@ public class Payments extends IndyJava.API {
 		@SuppressWarnings({"unused", "unchecked"})
 		public void callback(int xcommandHandle, int err, String verifyReqJson, String paymentMethod) {
 			CompletableFuture<BuildVerifyPaymentReqResult> future = (CompletableFuture<BuildVerifyPaymentReqResult>) removeFuture(xcommandHandle);
-			if (!checkCallback(future, err)) return;
+			if (!checkResult(future, err)) return;
 
 			BuildVerifyPaymentReqResult verifyRequestResult = new BuildVerifyPaymentReqResult(verifyReqJson, paymentMethod);
 
@@ -153,7 +153,7 @@ public class Payments extends IndyJava.API {
                 stringCompleteCb
         );
 
-        checkResult(result);
+        checkResult(future, result);
 
         return future;
     }
@@ -179,7 +179,7 @@ public class Payments extends IndyJava.API {
                 stringCompleteCb
         );
 
-        checkResult(result);
+        checkResult(future, result);
 
         return future;
     }
@@ -241,7 +241,7 @@ public class Payments extends IndyJava.API {
                 extra,
                 addRequestFeesCb);
 
-        checkResult(result);
+        checkResult(future, result);
 
         return future;
     }
@@ -297,7 +297,7 @@ public class Payments extends IndyJava.API {
                 paymentAddress,
                 BuildGetPaymentSourcesRequestCB);
 
-        checkResult(result);
+        checkResult(future, result);
 
         return future;
     }
@@ -372,7 +372,7 @@ public class Payments extends IndyJava.API {
                 extra,
                 buildPaymentReqCb);
 
-        checkResult(result);
+        checkResult(future, result);
 
         return future;
     }
@@ -437,7 +437,7 @@ public class Payments extends IndyJava.API {
                 extra,
                 buildMintReqCb);
 
-        checkResult(result);
+        checkResult(future, result);
 
         return future;
     }
@@ -480,7 +480,7 @@ public class Payments extends IndyJava.API {
                 feesJson,
                 stringCompleteCb);
 
-        checkResult(result);
+        checkResult(future, result);
 
         return future;
     }
@@ -514,7 +514,7 @@ public class Payments extends IndyJava.API {
                 paymentMethod,
                 stringCompleteCb);
 
-        checkResult(result);
+        checkResult(future, result);
 
         return future;
     }
@@ -569,7 +569,7 @@ public class Payments extends IndyJava.API {
 		        receipt,
                 buildVerifyPaymentReqCb);
 
-        checkResult(result);
+        checkResult(future, result);
 
         return future;
     }
@@ -611,7 +611,7 @@ public class Payments extends IndyJava.API {
 
         int result = method.apply(commandHandle, paymentMethod, respJson, stringCompleteCb);
 
-        checkResult(result);
+        checkResult(future, result);
 
         return future;
     }
