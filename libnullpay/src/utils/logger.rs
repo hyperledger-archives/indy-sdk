@@ -1,14 +1,6 @@
-extern crate env_logger;
-extern crate log_panics;
 extern crate log;
-#[cfg(target_os = "android")]
-extern crate android_logger;
-extern crate libc;
 
-#[cfg(target_os = "android")]
-use self::android_logger::Filter;
 use self::log::LevelFilter;
-
 
 pub fn init_nullpay_logger(log: &'static log::Log) -> Result<(), log::SetLoggerError> {
     log::set_logger(log)?;
