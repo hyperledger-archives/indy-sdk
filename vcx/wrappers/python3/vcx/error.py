@@ -89,7 +89,8 @@ class ErrorCode(IntEnum):
     InvalidState = 1081,
     InvalidLedgerResponse = 1082,
     DidAlreadyExistsInWallet = 1083,
-    DuplicateMasterSecret = 1084
+    DuplicateMasterSecret = 1084,
+    ThreadError = 1085
 
 
 class VcxError(Exception):
