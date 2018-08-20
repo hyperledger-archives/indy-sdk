@@ -16,8 +16,7 @@ use utils::cstring::CStringUtils;
 ///
 /// #Params
 /// context: logger context
-/// enabled: "enabled" operation handler
-///     NOTE: it's ignored and is a false positive.
+/// enabled: "enabled" operation handler (false positive if not specified)
 /// log: "log" operation handler
 /// flush: "flush" operation handler
 ///
@@ -25,14 +24,14 @@ use utils::cstring::CStringUtils;
 /// Error code
 #[no_mangle]
 pub extern fn indy_set_logger(context: *const c_void,
-                              _enabled: Option<EnabledCB>,
+                              enabled: Option<EnabledCB>,
                               log: Option<LogCB>,
                               flush: Option<FlushCB>) -> ErrorCode {
-    trace!("indy_set_logger >>> context: {:?}, log: {:?}, flush: {:?}", context, log, flush);
+    trace!("indy_set_logger >>> context: {:?}, enabled: {:?}, log: {:?}, flush: {:?}", context, enabled, log, flush);
 
     check_useful_c_callback!(log, ErrorCode::CommonInvalidParam3);
 
-    let res = match init_indy_logger(context, log, flush) {
+    let res = match init_indy_logger(context, enabled, log, flush) {
         Ok(()) => ErrorCode::Success,
         Err(_) => ErrorCode::CommonInvalidState
     };

@@ -14,8 +14,7 @@ extern "C" {
     ///
     /// #Params
     /// context: logger context
-    /// enabled: "enabled" operation handler
-    ///     NOTE: it's ignored and is a false positive.
+    /// enabled: "enabled" operation handler (false positive if not specified)
     /// log: "log" operation handler
     /// flush: "flush" operation handler
     ///

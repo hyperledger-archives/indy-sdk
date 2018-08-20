@@ -136,9 +136,6 @@ def _load_cdll() -> CDLL:
 
 
 def _set_logger():
-    if hasattr(_set_logger, "logger"):
-        return
-
     logger = logging.getLogger(__name__)
     logging.addLevelName(TRACE, "TRACE")
 
@@ -168,5 +165,3 @@ def _set_logger():
                  _set_logger.callbacks['flush_cb'])
 
     logger.debug("set_logger: <<<")
-
-    _set_logger.logger = True

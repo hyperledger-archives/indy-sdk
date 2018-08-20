@@ -58,7 +58,6 @@ impl LoggerUtils {
     }
 
     pub fn set_default_logger() {
-        let level = CString::new("TRACE").unwrap();
-        indy_set_default_logger(level.as_ptr());
+        indy_set_default_logger(null());
     }
 }
