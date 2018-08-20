@@ -16,6 +16,7 @@ version you can check migration guides history:
 * [Anoncreds API](#anoncreds-api)
 * [Payments API](#payments-api)
 * [Pool API](#payments-api)
+* [Ledger API](#ledger-api)
 
 ## Notes
 
@@ -64,6 +65,20 @@ This wallet configuration json has the following format:
    }
  }
 ```
+* Updated wallet `credentials` to accept the additional parameter `key_derivation_method`.
+  This parameter provides the ability to use different crypto algorithms for master key derivation.
+Wallet credentials json has the following format:
+```
+ {
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
+   "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                          ARAGON2I_MOD (used by default)
+                          ARAGON2I_INT - less secured but faster 
+ }
+```
 
 *WARNING* Wallet format of libindy v1.6 isn't compatible with a wallet format of libindy v1.5.
 
@@ -99,6 +114,7 @@ indy_create_wallet(command_handle: i32,
                                         err: ErrorCode)>)
       </pre>
       <b>Note:</b> Format of <i>config</i> parameter was changed. Current format is described above.
+      <b>Note:</b> Format of <i>credentials</i> parameter was changed. Current format is described above.
     </td>
   </tr>
   </tr>
@@ -813,6 +829,82 @@ Left the same but the format of config has been changed to:
        Note: Not specified nodes will be placed in a random way.
 }
       </pre>
+    </td>
+  </tr>
+</table>
+
+### Ledger API
+
+<table>
+  <tr>
+    <th>v1.5.0 - Ledger API</th>
+    <th>v1.6.2 - Ledger API</th>
+  </tr>  
+  <tr>
+    <th colspan="2">
+        <a https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/ledger.rs#L122">
+            Send action to particular nodes of validator pool
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td><b>NEW</b></td>
+    <td>
+      <pre>
+indy_submit_action(command_handle: i32,
+                   pool_handle: i32,
+                   request_json: *const c_char,
+                   nodes: *const c_char,
+                   timeout: i32,
+                   cb: fn(xcommand_handle: i32,
+                          err: ErrorCode,
+                          request_result_json: *const c_char))
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/ledger.rs#L1148">
+            Builds a POOL_UPGRADE request
+        </a>
+    </th>
+  </tr>
+  <tr>
+      <pre>
+indy_build_pool_upgrade_request(command_handle: i32,
+                                submitter_did: *const c_char,
+                                name: *const c_char,
+                                version: *const c_char,
+                                action: *const c_char,
+                                sha256: *const c_char,
+                                timeout: i32,
+                                schedule: *const c_char,
+                                justification: *const c_char,
+                                reinstall: bool,
+                                force: bool,
+                                cb: fn(xcommand_handle: i32,
+                                       err: ErrorCode,
+                                       request_json: *const c_char))
+      </pre>
+    <td>
+      <pre>
+indy_build_pool_upgrade_request(command_handle: i32,
+                                submitter_did: *const c_char,
+                                name: *const c_char,
+                                version: *const c_char,
+                                action: *const c_char,
+                                sha256: *const c_char,
+                                timeout: i32,
+                                schedule: *const c_char,
+                                justification: *const c_char,
+                                reinstall: bool,
+                                force: bool,
+                                package: *const c_char,
+                                cb: fn(xcommand_handle: i32,
+                                       err: ErrorCode,
+                                       request_json: *const c_char))
+      </pre>
+      <b>Note:</b> Added <i>package</i> parameter that allows to specify package to be upgraded
     </td>
   </tr>
 </table>

@@ -79,42 +79,17 @@ public class IndyJava {
 
 		/**
 		 * Sets the provided future with an exception if the error code provided does not indicate success.
-		 * 
+		 *
 		 * @param future The future.
 		 * @param err The error value to check.
 		 * @return true if the error code indeicated Success, otherwise false.
 		 */
-		protected static boolean checkCallback(CompletableFuture<?> future, int err) {
+		protected static boolean checkResult(CompletableFuture<?> future, int err) {
 
 			ErrorCode errorCode = ErrorCode.valueOf(err);
 			if (! ErrorCode.Success.equals(errorCode)) { future.completeExceptionally(IndyException.fromSdkError(err)); return false; }
 
 			return true;
-		}
-
-		//TODO: Is this redundant?
-		/**
-		 * Throws an IndyException if the provided error code does not indicate success.
-		 * 
-		 * @param err The error code to check.
-		 * @throws IndyException Thrown if the error code does not indicate success.
-		 */
-		protected static void checkCallback(int err) throws IndyException {
-
-			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromSdkError(err);
-		}
-
-		/**
-		 * Throws an IndyException if the provided error code does not indicate success.
-		 * 
-		 * @param err The error code to check.
-		 * @throws IndyException Thrown if the error code does not indicate success.
-		 */
-		protected static void checkResult(int err) throws IndyException {
-
-			ErrorCode errorCode = ErrorCode.valueOf(err);
-			if (! ErrorCode.Success.equals(errorCode)) throw IndyException.fromSdkError(err);
 		}
 
 		/*
