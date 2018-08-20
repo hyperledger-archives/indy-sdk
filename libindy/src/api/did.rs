@@ -58,20 +58,10 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
                                                                  verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_create_and_store_my_did: >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_info_json);
 
-    check_useful_c_str!(did_info_json, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(did_info_json, ErrorCode::CommonInvalidParam3, my_did_info, MyDidInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, secret!(did_info_json.as_str()));
-
-    let my_did_info: MyDidInfo  = match serde_json::from_str(&did_info_json)
-        .map_err(map_err_trace!())
-        .map_err(|err|
-            CommonError::InvalidStructure(
-                format!("Invalid MyDidInfo json: {:?}", err))) {
-        Ok(my_did_info) => my_did_info,
-        Err(err) => return err.to_error_code(),
-    };
-
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::CreateAndStoreMyDid(

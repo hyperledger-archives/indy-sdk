@@ -40,6 +40,29 @@ macro_rules! check_useful_c_str {
     }
 }
 
+macro_rules! check_useful_json {
+    ($x:ident, $e:expr, $n:ident, $t:ty) => {
+        let $x = match CStringUtils::c_str_to_string($x) {
+            Ok(Some(val)) => val,
+            _ => return $e,
+        };
+
+        if $x.is_empty() {
+            return $e
+        }
+        let $n: $t = match
+            serde_json::from_str(&$x)
+                .map_err(map_err_trace!())
+                .map_err(|err|
+                    CommonError::InvalidStructure(
+                        format!("Invalid $t json: {:?}", err)))
+            {
+                Ok(ok) => ok,
+                Err(err) => return err.to_error_code(),
+            };
+    }
+}
+
 macro_rules! check_useful_c_str_empty_accepted {
     ($x:ident, $e:expr) => {
         let $x = match CStringUtils::c_str_to_string($x) {
