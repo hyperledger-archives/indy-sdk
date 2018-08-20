@@ -69,7 +69,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_request_works_for_invalid_pool_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -91,7 +91,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works_for_invalid_pool_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -113,7 +113,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works_for_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -130,13 +130,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
@@ -168,13 +168,13 @@ mod high_cases {
 
             PoolUtils::close(pool_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -188,7 +188,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -198,7 +198,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_pool_restart() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -213,13 +213,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_validator_info() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -234,13 +234,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_not_supported_request_type() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
@@ -250,13 +250,13 @@ mod high_cases {
 
             PoolUtils::close(pool_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_pool_restart_for_invalid_pool_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -273,13 +273,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_list_nodes() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -300,13 +300,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_timeout() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -321,7 +321,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -330,7 +330,7 @@ mod high_cases {
 
         #[test]
         fn indy_sign_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -343,12 +343,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         fn indy_sign_works_for_unknown_signer() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -357,12 +357,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         fn indy_sign_request_works_for_invalid_message_format() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -373,12 +373,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         fn indy_sign_request_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -390,7 +390,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -399,7 +399,7 @@ mod high_cases {
 
         #[test]
         fn indy_multi_sign_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -417,12 +417,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         fn indy_multi_sign_request_works_for_unknown_signer() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -431,12 +431,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         fn indy_multi_sign_request_works_for_invalid_message_format() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -447,7 +447,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -521,7 +521,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_request_works_without_signature() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -536,13 +536,13 @@ mod high_cases {
             WalletUtils::close_wallet(wallet_handle).unwrap();
             PoolUtils::close(pool_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_get_nym_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -558,13 +558,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_requests_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -584,7 +584,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -695,7 +695,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_request_works_without_signature() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -710,13 +710,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_requests_works_for_raw_value() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -739,13 +739,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_requests_works_for_hash_value() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -772,13 +772,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_requests_works_for_encrypted_value() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -805,7 +805,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -834,7 +834,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_schema_request_works_without_signature() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -847,13 +847,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_schema_requests_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -869,7 +869,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -888,7 +888,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_node_request_works_without_signature() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -903,14 +903,14 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         #[ignore] //FIXME currently unstable pool behaviour after new non-existing node was added
         fn indy_submit_node_request_works_for_new_steward() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -930,7 +930,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -981,7 +981,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_cred_def_request_works_without_signature() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -996,13 +996,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_cred_def_requests_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1018,7 +1018,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1036,7 +1036,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_validator_info_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1057,7 +1057,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1099,7 +1099,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_txn_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1128,13 +1128,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_txn_request_works_for_invalid_seq_no() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1160,7 +1160,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1170,20 +1170,20 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_pool_config_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let expected_result = r#""operation":{"type":"111","writes":true,"force":false"#;
             let request = LedgerUtils::build_pool_config_request(DID_TRUSTEE, true, false).unwrap();
             assert!(request.contains(expected_result));
 
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_pool_config_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1196,13 +1196,13 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_pool_config_request_works_for_disabling_writing() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1225,7 +1225,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1235,7 +1235,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_pool_restart_request_works_for_start_action() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let expected_result = r#""operation":{"type":"118","action":"start","datetime":"0""#;
             let request = LedgerUtils::build_pool_restart_request(DID_TRUSTEE,
@@ -1244,13 +1244,13 @@ mod high_cases {
             println!("Request restart look like {}", request);
             assert!(request.contains(expected_result));
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_pool_restart_request_works_for_cancel_action() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let expected_result = r#""operation":{"type":"118","action":"cancel""#;
             let request = LedgerUtils::build_pool_restart_request(DID_TRUSTEE,
@@ -1258,7 +1258,7 @@ mod high_cases {
                                                                   None).unwrap();
             assert!(request.contains(expected_result));
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         lazy_static! {
@@ -1271,7 +1271,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_pool_restart_request_works_for_start_cancel_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1293,7 +1293,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1304,7 +1304,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_pool_upgrade_request_works_for_start_action() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let expected_result = r#""operation":{"type":"109","name":"upgrade-libindy","version":"2.0.0","action":"start","sha256":"f284b","schedule":{},"reinstall":false,"force":false"#;
             let request = LedgerUtils::build_pool_upgrade_request(DID_TRUSTEE,
@@ -1320,13 +1320,13 @@ mod high_cases {
                                                                   None).unwrap();
             assert!(request.contains(expected_result));
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_pool_upgrade_request_works_for_cancel_action() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let expected_result = r#""type":"109","name":"upgrade-libindy","version":"2.0.0","action":"cancel","sha256":"f284b","reinstall":false,"force":false"#;
             let request = LedgerUtils::build_pool_upgrade_request(DID_TRUSTEE,
@@ -1342,13 +1342,13 @@ mod high_cases {
                                                                   None).unwrap();
             assert!(request.contains(expected_result));
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_pool_upgrade_request_works_for_package() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let expected_result = r#""operation":{"type":"109","name":"upgrade-libindy","version":"2.0.0","action":"start","sha256":"f284b","schedule":{},"reinstall":false,"force":false,"package":"some_package"}"#;
             let request = LedgerUtils::build_pool_upgrade_request(DID_TRUSTEE,
@@ -1364,7 +1364,7 @@ mod high_cases {
                                                                   Some("some_package")).unwrap();
             assert!(request.contains(expected_result));
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         lazy_static! {
@@ -1381,7 +1381,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_pool_upgrade_request_works_for_start_cancel_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1419,7 +1419,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1429,7 +1429,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_revoc_reg_def_request() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let data = json!({
                 "ver": "1.0",
@@ -1455,13 +1455,13 @@ mod high_cases {
             let request = LedgerUtils::build_revoc_reg_def_request(DID, &data).unwrap();
             assert!(request.contains(expected_result));
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_def_request() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let expected_result = r#""operation":{"type":"115","id":"RevocRegID"}"#;
 
@@ -1469,13 +1469,13 @@ mod high_cases {
 
             assert!(request.contains(expected_result));
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_revoc_reg_def_requests_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1491,7 +1491,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1501,7 +1501,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_revoc_reg_entry_request() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let expected_result = r#""operation":{"type":"114","revocRegDefId":"RevocRegID","revocDefType":"CL_ACCUM","value":{"accum":"false 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"}}"#;
 
@@ -1510,13 +1510,13 @@ mod high_cases {
             let request = LedgerUtils::build_revoc_reg_entry_request(DID, "RevocRegID", REVOC_REG_TYPE, rev_reg_entry_value).unwrap();
             assert!(request.contains(expected_result));
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_revoc_reg_entry_requests_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1526,7 +1526,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1536,20 +1536,20 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_request() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let expected_result = r#""operation":{"type":"116","revocRegDefId":"RevRegId","timestamp":100}"#;
 
             let request = LedgerUtils::build_get_revoc_reg_request(DID, "RevRegId", 100).unwrap();
             assert!(request.contains(expected_result));
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_revoc_reg_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1567,7 +1567,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1577,7 +1577,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_revoc_reg_delta_request() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let expected_result = r#""operation":{"type":"117","revocRegDefId":"RevRegId","to":100}"#;
 
@@ -1585,13 +1585,13 @@ mod high_cases {
 
             assert!(request.contains(expected_result));
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_revoc_reg_delta_request_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1609,7 +1609,7 @@ mod high_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1622,7 +1622,7 @@ mod high_cases {
 
         #[test]
         fn indy_register_transaction_parser_for_sp_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             extern fn parse(msg: *const c_char, parsed: *mut *const c_char) -> ErrorCode {
                 unsafe { *parsed = msg; }
@@ -1632,7 +1632,7 @@ mod high_cases {
 
             LedgerUtils::register_transaction_parser_for_sp("my_txn_type", parse, free).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 }
@@ -1646,7 +1646,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works_for_not_found_signer() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1659,13 +1659,13 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_request_works_for_invalid_message() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
@@ -1674,13 +1674,13 @@ mod medium_cases {
 
             PoolUtils::close(pool_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_sign_and_submit_request_works_for_invalid_json() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1693,7 +1693,7 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1703,7 +1703,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_pool_restart_for_unknown_node_name() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1720,13 +1720,13 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_action_works_for_pool_restart_for_invalid_nodes_format() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1743,7 +1743,7 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1753,7 +1753,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_nym_request_works_for_only_required_fields() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1768,13 +1768,13 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_nym_request_works_with_option_fields() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1791,13 +1791,13 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_nym_request_works_for_different_roles() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1813,7 +1813,7 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
@@ -1827,7 +1827,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_request_works_for_wrong_signer_role() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1849,13 +1849,13 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_request_works_for_unknown_signer_did() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1870,13 +1870,13 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_nym_request_works_for_unknown_did() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1892,7 +1892,7 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
@@ -1926,7 +1926,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_nym_requests_works_for_reset_role() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1960,7 +1960,7 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -1970,7 +1970,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_attrib_request_works_for_unknown_did() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -1985,13 +1985,13 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_attrib_request_works_for_unknown_did() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -2006,13 +2006,13 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_attrib_request_works_for_unknown_attribute() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -2027,7 +2027,7 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
 
@@ -2108,7 +2108,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_schema_request_works_for_unknown_did() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -2123,13 +2123,13 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_get_schema_request_works_for_unknown_schema() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -2146,7 +2146,7 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -2170,7 +2170,7 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_send_node_request_works_for_wrong_role() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -2185,13 +2185,13 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_submit_node_request_works_for_steward_already_has_node() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -2206,7 +2206,7 @@ mod medium_cases {
             PoolUtils::close(pool_handle).unwrap();
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+             utils::tear_down();
         }
     }
 
@@ -2215,7 +2215,7 @@ mod medium_cases {
 
         #[test]
         fn indy_build_cred_def_request_works_for_invalid_data_json() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let data = r#"{"primary":{"n":"1","s":"2","rms":"3","r":{"name":"1"}}}"#;
 
@@ -2225,7 +2225,7 @@ mod medium_cases {
 
         #[test]
         fn indy_build_cred_def_request_works_for_invalid_submitter_did() {
-            TestUtils::cleanup_storage();
+             utils::setup();
 
             let res = LedgerUtils::build_cred_def_txn(INVALID_IDENTIFIER, &AnoncredsUtils::credential_def_json());
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
@@ -2233,7 +2233,7 @@ mod medium_cases {
 
         #[test]
         fn indy_build_get_cred_def_request_works_for_invalid_submitter_did() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let res = LedgerUtils::build_get_cred_def_txn(INVALID_IDENTIFIER, &AnoncredsUtils::issuer_1_gvt_cred_def_id());
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);

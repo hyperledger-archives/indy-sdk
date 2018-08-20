@@ -46,3 +46,12 @@ pub mod inmem_wallet;
 
 #[path = "../../src/domain/mod.rs"]
 pub mod domain;
+
+pub fn setup(){
+    test::TestUtils::cleanup_storage();
+    logger::LoggerUtils::set_default_logger();
+}
+
+pub fn tear_down(){
+    test::TestUtils::cleanup_storage();
+}
