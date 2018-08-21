@@ -224,10 +224,25 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
 }
 
 #[no_mangle]
-pub extern fn vcx_mint_tokens(number_of_addresses: u32, tokens_per_address: u32) {
-    let ledger_fees = r#"{"101":2, "102":3}"#;
-    info!("vcx_mint_tokens(number_of_addresses: {}, tokens_per_address: {})", number_of_addresses, tokens_per_address);
-    ::utils::libindy::payments::mint_tokens_and_set_fees(Some(number_of_addresses), Some(tokens_per_address), Some(ledger_fees), false).unwrap_or_default();
+pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
+
+    let seed = if !seed.is_null() {
+        check_useful_opt_c_str!(seed, ());
+        seed.to_owned()
+    }
+    else {
+        None
+    };
+
+    let fees = if !fees.is_null() {
+        check_useful_opt_c_str!(fees, ());
+        fees.to_owned()
+    }
+    else {
+        None
+    };
+
+    ::utils::libindy::payments::mint_tokens_and_set_fees(None, None, fees, seed).unwrap_or_default();
 }
 
 #[cfg(test)]

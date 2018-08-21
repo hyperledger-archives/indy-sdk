@@ -17,6 +17,7 @@ default = ["nullpay"]
 pool_tests = []
 nullpay = []
 sovtoken = []
+agency = []
 
 # turn on release versioning
 ci = []

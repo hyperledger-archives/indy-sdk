@@ -133,6 +133,8 @@ impl DisclosedProof {
     }
 
     fn _find_schemas(&self, credentials_identifiers: &Vec<(String, String, String, String)>) -> Result<String, ProofError> {
+        if credentials_identifiers.len() == 0 { return Ok("{}".to_string()); }
+
         let mut rtn: HashMap<String, Value> = HashMap::new();
 
         for &(ref attr_id, ref cred_uuid, ref schema_id, ref cred_def_id) in credentials_identifiers {
@@ -153,6 +155,7 @@ impl DisclosedProof {
     }
 
     fn _find_credential_def(&self, credentials_identifiers: &Vec<(String, String, String, String)>) -> Result<String, ProofError> {
+        if credentials_identifiers.len() == 0 { return Ok("{}".to_string()); }
 
         let mut rtn: HashMap<String, Value> = HashMap::new();
 
@@ -214,14 +217,8 @@ impl DisclosedProof {
         let credentials_identifiers = credential_def_identifiers(credentials)?;
         let requested_credentials = self._build_requested_credentials(&credentials_identifiers,
                                                                       self_attested_attrs)?;
-        let schemas = match self._find_schemas(&credentials_identifiers) {
-            Ok(x) => x,
-            Err(_) => format!("{{}}"),
-        };
-        let credential_defs_json = match self._find_credential_def(&credentials_identifiers) {
-            Ok(x) => x,
-            Err(_) => format!("{{}}"),
-        };
+        let schemas = self._find_schemas(&credentials_identifiers)?;
+        let credential_defs_json = self._find_credential_def(&credentials_identifiers)?;
         let revoc_regs_json = Some("{}");
 
         let proof = anoncreds::libindy_prover_create_proof(&proof_req_data_json,
@@ -571,12 +568,13 @@ mod tests {
     #[test]
     fn test_find_schemas_fails() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
 
-        let credential_ids = Vec::new();
+        let mut credential_ids = Vec::new();
+        credential_ids.push(("1".to_string(), "2".to_string(), "3".to_string(), "4".to_string()));
         let proof: DisclosedProof = Default::default();
         assert_eq!(proof._find_schemas(&credential_ids).err(),
-                   Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
+                   Some(ProofError::InvalidSchema()));
     }
 
     #[test]
@@ -596,12 +594,13 @@ mod tests {
     #[test]
     fn test_find_credential_def_fails() {
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
 
-        let credential_ids = Vec::new();
+        let mut credential_ids = Vec::new();
+        credential_ids.push(("1".to_string(), "2".to_string(), "3".to_string(), "4".to_string()));
         let proof: DisclosedProof = Default::default();
         assert_eq!(proof._find_credential_def(&credential_ids).err(),
-                   Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
+                   Some(ProofError::InvalidCredData()));
     }
 
     #[test]
@@ -653,7 +652,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_retrieve_credentials";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        ::utils::libindy::payments::mint_tokens_and_set_fees(None, Some(10000000), None, false).unwrap();
+        ::utils::libindy::payments::mint_tokens_and_set_fees(None, Some(10000000), None, None).unwrap();
         ::utils::libindy::anoncreds::tests::create_and_store_credential();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (_, _, req, _) = ::utils::libindy::anoncreds::tests::create_proof();
@@ -677,7 +676,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let wallet_name = "test_retrieve_credentials";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        ::utils::libindy::payments::mint_tokens_and_set_fees(None, Some(10000000), None, false).unwrap();
+        ::utils::libindy::payments::mint_tokens_and_set_fees(None, Some(10000000), None, None).unwrap();
         ::utils::libindy::anoncreds::tests::create_and_store_credential();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let mut req = json!({

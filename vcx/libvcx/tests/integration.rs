@@ -15,6 +15,7 @@ mod tests {
     use std::fs;
     use std::path::PathBuf;
     use std::io::Write;
+    use std::ptr;
     use std::time::Duration;
     use vcx::settings;
     use vcx::utils::constants::GENESIS_PATH;
@@ -191,7 +192,7 @@ mod tests {
         create_genesis_txn_file();
         let vcx_config = provision_agent().unwrap();
         init_vcx(&vcx_config).unwrap();
-        vcx_mint_tokens(2,1000);
+        vcx_mint_tokens(ptr::null_mut(),ptr::null_mut());
         send_tokens(1500);
         let token_info2 = get_token_info();
         let path = create_path_and_file_name();
