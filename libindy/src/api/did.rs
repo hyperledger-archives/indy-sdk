@@ -13,6 +13,7 @@ use self::libc::c_char;
 use std::ptr;
 
 use domain::crypto::did::MyDidInfo;
+use domain::crypto::key::KeyInfo;
 
 /// Creates keys (signing and encryption keys) for a new
 /// DID (owned by the caller of the library).
@@ -90,7 +91,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// identity_json: Identity information as json. Example:
+/// key_info: key information as json. Example:
 /// {
 ///     "seed": string, (optional; if not provide then a random one will be created)
 ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
@@ -114,22 +115,22 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
 pub  extern fn indy_replace_keys_start(command_handle: i32,
                                        wallet_handle: i32,
                                        did: *const c_char,
-                                       identity_json: *const c_char,
+                                       key_info: *const c_char,
                                        cb: Option<extern fn(xcommand_handle: i32,
                                                             err: ErrorCode,
                                                             verkey: *const c_char)>) -> ErrorCode {
-    trace!("indy_replace_keys_start: >>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, identity_json);
+    trace!("indy_replace_keys_start: >>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, key_info);
 
-    check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(key_info, ErrorCode::CommonInvalidParam3, KeyInfo);
     check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_replace_keys_start: entities>>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, secret!(identity_json.as_str()));
+    trace!("indy_replace_keys_start: entities>>> wallet_handle: {:?}, did: {:?}, key_info: {:?}", wallet_handle, did, secret!(&key_info));
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::ReplaceKeysStart(
             wallet_handle,
-            identity_json,
+            key_info,
             did,
             Box::new(move |result| {
                 let (err, verkey) = result_to_err_code_1!(result, String::new());

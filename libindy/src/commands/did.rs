@@ -30,7 +30,7 @@ pub enum DidCommand {
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     ReplaceKeysStart(
         i32, // wallet handle
-        String, // key info json
+        KeyInfo, // key info
         String, // did
         Box<Fn(Result<String, IndyError>) + Send>),
     ReplaceKeysApply(
@@ -131,9 +131,9 @@ impl DidCommandExecutor {
                 info!("CreateAndStoreMyDid command received");
                 cb(self.create_and_store_my_did(wallet_handle, &my_did_info));
             }
-            DidCommand::ReplaceKeysStart(wallet_handle, key_info_json, did, cb) => {
+            DidCommand::ReplaceKeysStart(wallet_handle, key_info, did, cb) => {
                 info!("ReplaceKeysStart command received");
-                cb(self.replace_keys_start(wallet_handle, &key_info_json, &did));
+                cb(self.replace_keys_start(wallet_handle, &key_info, &did));
             }
             DidCommand::ReplaceKeysApply(wallet_handle, did, cb) => {
                 info!("ReplaceKeysApply command received");
@@ -213,16 +213,11 @@ impl DidCommandExecutor {
 
     fn replace_keys_start(&self,
                           wallet_handle: i32,
-                          key_info_json: &str,
+                          key_info: &KeyInfo,
                           my_did: &str) -> Result<String, IndyError> {
-        debug!("replace_keys_start >>> wallet_handle: {:?}, key_info_json: {:?}, my_did: {:?}", wallet_handle, secret!(key_info_json), my_did);
+        debug!("replace_keys_start >>> wallet_handle: {:?}, key_info_json: {:?}, my_did: {:?}", wallet_handle, secret!(key_info), my_did);
 
         self.crypto_service.validate_did(my_did)?;
-
-        let key_info: KeyInfo = serde_json::from_str(key_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(format!("Invalid KeyInfo json: {}", err.description())))?;
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
 
