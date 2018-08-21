@@ -44,11 +44,11 @@ public class CredentialApi extends VcxJava.API {
     }
 
     private static Callback vcxCredentialSendRequestCB = new Callback() {
-        public void callback(int command_handle,int err, String credential){
+        public void callback(int command_handle, int err) {
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
             if (!checkCallback(future,err)) return;
-            String result = credential;
-            future.complete(result);
+            // returning empty string from here because we don't want to complete future with null
+            future.complete("");
         }
     };
 
