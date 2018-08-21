@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using static Hyperledger.Indy.Utils.CallbackHelper;
 
 namespace Hyperledger.Indy.AnonCredsApi
 {
