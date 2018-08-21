@@ -132,15 +132,36 @@ namespace Hyperledger.Indy.PaymentsApi
             taskCompletionSource.SetResult(get_txn_fees_json);
         };
 
-        static ParseGetUtxoResponseDelegate _parseGetTxnFeesResponseCallback = (xcommand_handle, err, utxo_json) =>
+        static ParseGetTxnFeesResponseDelegate _parseGetTxnFeesResponseCallback = (xcommand_handle, err, get_txn_fees_json) =>
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(utxo_json);
+            taskCompletionSource.SetResult(get_txn_fees_json);
         };
+
+        static BuildVerifyPaymentRequestDelegate _buildVerifyPaymentRequestCallback = (xcommand_handle, err, verify_txn_json, payment_method) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<PaymentResult>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(new PaymentResult(verify_txn_json, payment_method));
+        };
+
+        static ParseVerifyPaymentResponseDelegate _parseVerifyPaymentResponseDelegate = (xcommand_handle, err, txn_json) =>
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(txn_json);
+        };
+
 
         /// <summary>
         /// Create the payment address for this payment method.
@@ -232,14 +253,16 @@ namespace Hyperledger.Indy.PaymentsApi
                 implementation.CreatePaymentAddressCallback,
                 implementation.AddRequestFeesCallback,
                 implementation.ParseResponseWithFeesCallback,
-                implementation.BuildGetUtxoRequstCallback,
-                implementation.ParseGetUtxoResponseCallback,
+                implementation.BuildGetPaymentSourcesRequstCallback,
+                implementation.ParseGetPaymentSourcesResponseCallback,
                 implementation.BuildPaymentRequestCallback,
                 implementation.ParsePaymentResponseCallback,
                 implementation.BuildMintReqCallback,
                 implementation.BuildSetTxnFeesReqCallback,
                 implementation.BuildGetTxnFeesReqCallback,
                 implementation.ParseGetTxnFeesResponseCallback,
+                implementation.BuildVerifyPaymentRequestCallback,
+                implementation.ParseVerifyPaymentResponseCallback,
                 _registerPaymentMethodCallback);
 
             CallbackHelper.CheckResult(result);
@@ -357,7 +380,7 @@ namespace Hyperledger.Indy.PaymentsApi
             var taskCompletionSource = new TaskCompletionSource<PaymentResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = NativeMethods.indy_build_get_utxo_request(
+            var result = NativeMethods.indy_build_get_payment_sources_request(
                 commandHandle,
                 wallet.Handle,
                 submittedDid,
@@ -392,7 +415,7 @@ namespace Hyperledger.Indy.PaymentsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = NativeMethods.indy_parse_get_utxo_response(
+            var result = NativeMethods.indy_parse_get_payment_sources_response(
                 commandHandle,
                 paymentMethod,
                 responseJson,
@@ -427,7 +450,8 @@ namespace Hyperledger.Indy.PaymentsApi
         ///     amount: &lt;int>, // amount of tokens to transfer to this payment address
         ///     extra: &lt;str>, // optional data
         ///   }]</param>
-        public static Task<PaymentResult> BuildPaymentRequestAsync(Wallet wallet, string submitterDid, string inputsJson, string outputsJson)
+        /// <param name="extra">Optional information for payment operation</param>
+        public static Task<PaymentResult> BuildPaymentRequestAsync(Wallet wallet, string submitterDid, string inputsJson, string outputsJson, string extra)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
@@ -443,6 +467,7 @@ namespace Hyperledger.Indy.PaymentsApi
                 submitterDid,
                 inputsJson,
                 outputsJson,
+                extra,
                 _buildPaymentRequestCallback);
 
             CallbackHelper.CheckResult(result);
@@ -501,7 +526,8 @@ namespace Hyperledger.Indy.PaymentsApi
         ///     amount: &lt;int>, // amount of tokens to transfer to this payment address
         ///     extra: &lt;str>, // optional data
         ///   }]</param>
-        public static Task<PaymentResult> BuildMintRequestAsync(Wallet wallet, string submitterDid, string outputsJson)
+        /// <param name="extra">Optional information for payment operation</param>
+        public static Task<PaymentResult> BuildMintRequestAsync(Wallet wallet, string submitterDid, string outputsJson, string extra)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
@@ -515,6 +541,7 @@ namespace Hyperledger.Indy.PaymentsApi
                 wallet.Handle,
                 submitterDid,
                 outputsJson,
+                extra,
                 _buildMintRequestCallback);
 
             CallbackHelper.CheckResult(result);
@@ -615,11 +642,72 @@ namespace Hyperledger.Indy.PaymentsApi
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = NativeMethods.indy_parse_get_utxo_response(
+            var result = NativeMethods.indy_parse_get_txn_fees_response(
                 commandHandle,
                 paymentMethod,
                 responseJson,
                 _parseGetTxnFeesResponseCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Builds Indy request for information to verify the payment receipt
+        /// </summary>
+        /// <returns>Indy request for verification receipt.</returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="submitterDid">DID of request sender</param>
+        /// <param name="receipt">Payment receipt to verify.</param>
+        public static Task<PaymentResult> BuildVerifyPaymentRequestAsync(Wallet wallet, string submitterDid, string receipt)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(receipt, "receipt");
+
+            var taskCompletionSource = new TaskCompletionSource<PaymentResult>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_verify_payment_req(
+                commandHandle,
+                wallet.Handle,
+                submitterDid,
+                receipt,
+                _buildVerifyPaymentRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Parses Indy response with information to verify receipt
+        /// </summary>
+        /// <returns>txn_json: {
+        ///     sources: [&lt;str>, ]
+        ///     receipts: [ {
+        ///         recipient: &lt;str>, // payment address of recipient
+        ///         receipt: &lt;str>, // receipt that can be used for payment referencing and verification
+        ///         amount: &lt;int>, // amount
+        ///     } ],
+        ///     extra: &lt;str>, //optional data
+        /// }</returns>
+        /// <param name="paymentMethod">Payment method to use.</param>
+        /// <param name="responseJson">Response of the ledger for verify txn.</param>
+        public static Task<string> ParseVerifyPaymentResponseAsync(string paymentMethod, string responseJson)
+        {
+            ParamGuard.NotNullOrWhiteSpace(paymentMethod, "paymentMethod");
+            ParamGuard.NotNullOrWhiteSpace(responseJson, "responseJson");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_parse_verify_payment_response(
+                commandHandle,
+                paymentMethod,
+                responseJson,
+                _parseVerifyPaymentResponseDelegate);
 
             CallbackHelper.CheckResult(result);
 
