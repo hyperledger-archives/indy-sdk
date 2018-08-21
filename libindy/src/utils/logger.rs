@@ -5,7 +5,7 @@ extern crate log;
 extern crate android_logger;
 extern crate libc;
 
-use self::env_logger::Builder;
+use self::env_logger::Builder as EnvLoggerBuilder;
 use self::log::{LevelFilter, Level};
 use std::env;
 use std::io::Write;
@@ -27,6 +27,16 @@ pub enum LoggerState {
     Custom
 }
 
+impl LoggerState {
+    pub fn get(&self) -> (*const c_void, Option<EnabledCB>, Option<LogCB>, Option<FlushCB>) {
+        match self {
+            LoggerState::Default => (ptr::null(), Some(LibindyDefaultLogger::enabled), Some(LibindyDefaultLogger::log), Some(LibindyDefaultLogger::flush)),
+            LoggerState::Custom => unsafe { (CONTEXT, ENABLED_CB, LOG_CB, FLUSH_CB) },
+        }
+    }
+}
+
+
 pub type EnabledCB = extern fn(context: *const c_void,
                                level: u32,
                                target: *const c_char) -> bool;
@@ -41,25 +51,25 @@ pub type LogCB = extern fn(context: *const c_void,
 
 pub type FlushCB = extern fn(context: *const c_void);
 
-pub static mut CONTEXT: *const c_void = ptr::null();
-pub static mut ENABLED_CB: Option<EnabledCB> = None;
-pub static mut LOG_CB: Option<LogCB> = None;
-pub static mut FLUSH_CB: Option<FlushCB> = None;
+static mut CONTEXT: *const c_void = ptr::null();
+static mut ENABLED_CB: Option<EnabledCB> = None;
+static mut LOG_CB: Option<LogCB> = None;
+static mut FLUSH_CB: Option<FlushCB> = None;
 
-pub struct IndyLogger {
+pub struct LibindyLogger {
     context: *const c_void,
     enabled: Option<EnabledCB>,
     log: LogCB,
     flush: Option<FlushCB>,
 }
 
-impl IndyLogger {
+impl LibindyLogger {
     fn new(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Self {
-        IndyLogger { context, enabled, log, flush }
+        LibindyLogger { context, enabled, log, flush }
     }
 }
 
-impl log::Log for IndyLogger {
+impl log::Log for LibindyLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         if let Some(enabled_cb) = self.enabled {
             let level = metadata.level() as u32;
@@ -100,13 +110,13 @@ impl log::Log for IndyLogger {
     }
 }
 
-unsafe impl Sync for IndyLogger {}
+unsafe impl Sync for LibindyLogger {}
 
-unsafe impl Send for IndyLogger {}
+unsafe impl Send for LibindyLogger {}
 
-impl IndyLogger {
+impl LibindyLogger {
     pub fn init(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Result<(), CommonError> {
-        let logger = IndyLogger::new(context, enabled, log, flush);
+        let logger = LibindyLogger::new(context, enabled, log, flush);
 
         log::set_boxed_logger(Box::new(logger))?;
         log::set_max_level(LevelFilter::Trace);
@@ -123,17 +133,17 @@ impl IndyLogger {
     }
 }
 
-pub struct IndyDefaultLogger;
+pub struct LibindyDefaultLogger;
 
-impl IndyDefaultLogger {
-    pub fn init(level: Option<String>) -> Result<(), CommonError> {
-        let level = level.or(env::var("RUST_LOG").ok());
+impl LibindyDefaultLogger {
+    pub fn init(pattern: Option<String>) -> Result<(), CommonError> {
+        let pattern = pattern.or(env::var("RUST_LOG").ok());
 
         log_panics::init(); //Logging of panics is essential for android. As android does not log to stdout for native code
 
         if cfg!(target_os = "android") {
             #[cfg(target_os = "android")]
-            let log_filter = match level {
+            let log_filter = match pattern {
                 Some(val) => match val.to_lowercase().as_ref() {
                     "error" => Filter::default().with_min_level(log::Level::Error),
                     "warn" => Filter::default().with_min_level(log::Level::Warn),
@@ -150,17 +160,17 @@ impl IndyDefaultLogger {
             android_logger::init_once(log_filter);
             info!("Logging for Android");
         } else {
-            Builder::new()
+            EnvLoggerBuilder::new()
                 .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
                 .filter(None, LevelFilter::Off)
-                .parse(level.as_ref().map(String::as_str).unwrap_or(""))
+                .parse(pattern.as_ref().map(String::as_str).unwrap_or(""))
                 .try_init()?;
         }
         unsafe { LOGGER_STATE = LoggerState::Default };
         Ok(())
     }
 
-    pub extern fn enabled(_context: *const c_void,
+    extern fn enabled(_context: *const c_void,
                           level: u32,
                           target: *const c_char) -> bool {
         let level = get_level(level);
@@ -174,7 +184,7 @@ impl IndyDefaultLogger {
         log::logger().enabled(&metadata)
     }
 
-    pub extern fn log(_context: *const c_void,
+    extern fn log(_context: *const c_void,
                       level: u32,
                       target: *const c_char,
                       args: *const c_char,
@@ -200,12 +210,12 @@ impl IndyDefaultLogger {
         );
     }
 
-    pub extern fn flush(_context: *const c_void) {
+    extern fn flush(_context: *const c_void) {
         log::logger().flush()
     }
 }
 
-pub fn get_level(level: u32) -> Level {
+fn get_level(level: u32) -> Level {
     match level {
         1 => Level::Error,
         2 => Level::Warn,

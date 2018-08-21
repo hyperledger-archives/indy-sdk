@@ -3,11 +3,9 @@ extern crate log;
 
 use self::libc::c_char;
 use nullpay::ErrorCode;
-use std::ffi::CString;
 
 pub fn set_default_indy_logger() {
-    let level = CString::new("TRACE").unwrap();
-    unsafe { indy_set_default_logger(level.as_ptr()); }
+    unsafe { indy_set_default_logger(::std::ptr::null()); }
 }
 
 extern {

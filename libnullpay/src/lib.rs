@@ -23,7 +23,7 @@ use std::ffi::CString;
 
 #[no_mangle]
 pub extern fn nullpay_init() -> ErrorCode {
-    if let Err(err) = utils::logger::IndyLogger::init() {
+    if let Err(err) = utils::logger::LibnullpayLogger::init() {
         return err;
     }
 

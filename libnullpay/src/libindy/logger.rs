@@ -2,10 +2,23 @@ extern crate log;
 
 use ErrorCode;
 
-use libc::c_void;
-use utils::logger::{EnabledCB, LogCB, FlushCB};
+use libc::{c_void, c_char};
 
-pub fn get_indy_logger() -> Result<(*const c_void, Option<EnabledCB>, Option<LogCB>, Option<FlushCB>), ErrorCode> {
+pub type EnabledCB = extern fn(context: *const c_void,
+                               level: u32,
+                               target: *const c_char) -> bool;
+
+pub type LogCB = extern fn(context: *const c_void,
+                           level: u32,
+                           target: *const c_char,
+                           message: *const c_char,
+                           module_path: *const c_char,
+                           file: *const c_char,
+                           line: u32);
+
+pub type FlushCB = extern fn(context: *const c_void);
+
+pub fn get_logger() -> Result<(*const c_void, Option<EnabledCB>, Option<LogCB>, Option<FlushCB>), ErrorCode> {
     let mut context_p: *const c_void = ::std::ptr::null();
     let mut enabled_cb_p: Option<EnabledCB> = None;
     let mut log_cb_p: Option<LogCB> = None;
@@ -16,9 +29,7 @@ pub fn get_indy_logger() -> Result<(*const c_void, Option<EnabledCB>, Option<Log
     };
 
     match res {
-        ErrorCode::Success => {
-            Ok((context_p, enabled_cb_p, log_cb_p, flush_cb_p))
-        }
+        ErrorCode::Success => Ok((context_p, enabled_cb_p, log_cb_p, flush_cb_p)),
         err @ _ => Err(err)
     }
 }

@@ -5,6 +5,8 @@ use libindy::ErrorCode;
 use command_executor::{Command, CommandContext, CommandParams, CommandMetadata, CommandResult};
 use commands::get_str_param;
 
+use utils::logger;
+
 pub mod about_command {
     use super::*;
 
@@ -111,27 +113,29 @@ pub mod load_plugin_command {
     }
 }
 
-//pub mod init_logger_command {
-//    use super::*;
-//
-//    command!(CommandMetadata::build("init-logger", "Init logger from config file")
-//                            .add_main_param("file", "The path to the logger config file")
-//                            .add_example("init-logger /home/log.yml")
-//                            .finalize());
-//
-//    fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
-//        trace!("execute >> params: {:?}", params);
-//
-//        let library = get_str_param("library", params).map_err(error_err!())?;
-//        let initializer = get_str_param("initializer", params).map_err(error_err!())?;
-//
-//        let res = load_plugin(_ctx, library, initializer)?;
-//
-//        trace!("execute << {:?}", res);
-//
-//        Ok(res)
-//    }
-//}
+pub mod init_logger_command {
+    use super::*;
+
+    command!(CommandMetadata::build("init-logger", "Init logger according to a config file. \n\tIndy Cli uses `log4rs` logging framework: https://crates.io/crates/log4rs")
+                            .add_main_param("file", "The path to the logger config file")
+                            .add_example("init-logger /home/logger.yml")
+                            .finalize());
+
+    fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
+        trace!("execute >> params: {:?}", params);
+
+        let file = get_str_param("file", params).map_err(error_err!())?;
+
+        let res = match logger::IndyCliLogger::init(&file){
+            Ok(()) => println_succ!("Logger has been initialized according to the config file: \"{}\"", file),
+            Err(err) => println_err!("{}", err)
+        };
+
+        trace!("execute << {:?}", res);
+
+        Ok(res)
+    }
+}
 
 pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Result<(), ()> {
     let lib = _load_lib(library)

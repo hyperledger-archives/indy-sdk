@@ -3,9 +3,9 @@ refresh_rate: 30 seconds
 
 appenders:
   # An appender named "requests" that writes to a file with a custom pattern encoder
-  libindy:
+  indy_cli:
     kind: file
-    path: "log/libindy.log"
+    path: "log/indy_cli.log"
     encoder:
       pattern: "{d} [{t}] {l} {M}:{m}{n}"
 
@@ -13,4 +13,4 @@ appenders:
 root:
   level: trace
   appenders:
-    - libindy
+    - indy_cli

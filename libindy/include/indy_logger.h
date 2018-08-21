@@ -13,10 +13,10 @@ extern "C" {
     /// Allows library user to provide custom logger implementation as set of handlers.
     ///
     /// #Params
-    /// context: logger context
-    /// enabled: "enabled" operation handler (false positive if not specified)
-    /// log: "log" operation handler
-    /// flush: "flush" operation handler
+    /// context: pointer to some logger context that will be available in logger handlers.
+    /// enabled: (optional) "enabled" operation handler - calls to determines if a log record would be logged. (false positive if not specified)
+    /// log: "log" operation handler - calls to logs a record.
+    /// flush: (optional) "flush" operation handler - calls to flushes buffered records (in case of crash or signal).
     ///
     /// #Returns
     /// Error code
@@ -37,27 +37,45 @@ extern "C" {
 
     /// Set default logger implementation.
     ///
-    /// Allows library user use default "environment" logger implementation.
+    /// Allows library user use `env_logger` logger as default implementation.
+    /// More details about `env_logger` and its customization can be found here: https://crates.io/crates/env_logger
     ///
     /// #Params
-    /// level: min level of message to log
+    /// pattern: (optional) pattern that corresponds with the log messages to show.
+    ///
+    /// NOTE: You should specify either `pattern` parameter or `RUST_LOG` environment variable to init logger.
     ///
     /// #Returns
     /// Error code
     
-    extern indy_error_t indy_set_default_logger(const char *  level );
+    extern indy_error_t indy_set_default_logger(const char *  pattern );
 
     /// Get the currently used logger.
     ///
-    /// NOTE: if logger is not set dummy implementation would be returned
+    /// NOTE: if logger is not set dummy implementation would be returned.
     ///
     /// #Params
-    /// `logger_p` - Reference that will contain logger pointer.
+    /// `context_p` - Reference that will contain logger context.
+    /// `enabled_cb_p` - Reference that will contain pointer to enable operation handler.
+    /// `log_cb_p` - Reference that will contain pointer to log operation handler.
+    /// `flush_cb_p` - Reference that will contain pointer to flush operation handler.
     ///
     /// #Returns
     /// Error code
 
-    extern indy_error_t indy_get_logger(const void*  logger_p);
+    extern indy_error_t indy_get_logger(const void*  indy_get_logger,
+                                        indy_bool_t (**enabledFn)(const void*  context,
+                                                                 indy_u32_t level,
+                                                                 const char* target),
+                                        void (**logFn)(const void*  context,
+                                                      indy_u32_t level,
+                                                      const char* target,
+                                                      const char* message,
+                                                      const char* module_path,
+                                                      const char* file,
+                                                      indy_u32_t line),
+                                        void (**flushFn)(const void*  context)
+                                                  );
 
 #ifdef __cplusplus
 }
