@@ -447,6 +447,7 @@ mod tests {
         println!("response: {:?}", result);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_download_messages() {

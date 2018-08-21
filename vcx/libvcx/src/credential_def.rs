@@ -246,6 +246,7 @@ pub mod tests {
         assert!(retrieve_credential_def(CRED_DEF_ID).is_err());
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_credential_def() {
@@ -263,6 +264,7 @@ pub mod tests {
         assert_eq!(def1, def2);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_real() {
@@ -287,6 +289,7 @@ pub mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_no_fees_real() {
@@ -320,6 +323,7 @@ pub mod tests {
         assert_eq!(id, CRED_DEF_ID);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_fails_when_already_created() {

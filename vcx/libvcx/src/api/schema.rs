@@ -364,6 +364,7 @@ mod tests {
         assert!(handle>0)
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature="pool_tests")]
     #[test]
     fn test_vcx_create_schema_with_pool() {
@@ -388,6 +389,7 @@ mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature="pool_tests")]
     #[test]
     fn test_vcx_schema_get_attrs_with_pool() {
@@ -481,6 +483,7 @@ mod tests {
         assert!(txn.is_some());
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_schema_serialize_contains_version() {
@@ -507,7 +510,6 @@ mod tests {
         assert_eq!(vcx_schema_serialize(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
         let data = cb.receive(Some(Duration::from_secs(2))).unwrap().unwrap();
         use schema::CreateSchema;
-        println!("{}", &data);
         let j:serde_json::Value = serde_json::from_str(&data.clone()).unwrap();
         let schema:CreateSchema = serde_json::from_value(j["data"].clone()).unwrap();
         assert_eq!(j["version"], "1.0");

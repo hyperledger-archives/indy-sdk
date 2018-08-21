@@ -80,7 +80,6 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_INSTITUTION_DID.to_string(),DEFAULT_DID.to_string());
     settings.insert(CONFIG_INSTITUTION_NAME.to_string(),DEFAULT_DEFAULT.to_string());
     settings.insert(CONFIG_INSTITUTION_LOGO_URL.to_string(),DEFAULT_URL.to_string());
-//    settings.set(CONFIG_ENABLE_TEST_MODE,DEFAULT_ENABLE_TEST_MODE);
     settings.insert(CONFIG_SDK_TO_REMOTE_DID.to_string(),DEFAULT_DID.to_string());
     settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(),DEFAULT_VERKEY.to_string());
     settings.insert(CONFIG_WALLET_KEY.to_string(),TEST_WALLET_KEY.to_string());

@@ -401,6 +401,7 @@ pub mod tests {
         assert_eq!(schema.err(),Some(SchemaError::InvalidSchemaCreation()));
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_schema_attrs_from_ledger(){
@@ -417,6 +418,7 @@ pub mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_schema_with_pool(){
@@ -439,6 +441,7 @@ pub mod tests {
         let schema_id = get_schema_id(handle).unwrap();
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_schema_no_fees_with_pool(){
@@ -459,6 +462,7 @@ pub mod tests {
         let schema_id = get_schema_id(handle).unwrap();
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_duplicate_fails(){
@@ -479,6 +483,7 @@ pub mod tests {
         assert!(rc.is_err());
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn from_pool_ledger_with_id(){

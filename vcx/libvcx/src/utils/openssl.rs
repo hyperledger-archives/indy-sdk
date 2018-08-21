@@ -47,7 +47,6 @@ mod test{
         // with the bignum_hash value as the input.
         let hex_str = "48735C4FAE42D1501164976AFEC76730B9E5FE467F680BDD8DAFF4BB77674045";
         let bignum_from_hex = BigNum::from_hex_str(hex_str).unwrap();
-        println!("{}", bignum_from_hex);
         assert_eq!(bignum_from_hex, bignum_hash);
         assert_eq!(bignum_from_hex, big_number_from_dec_str);
         let encoded_str = encode(&cat_string).unwrap();

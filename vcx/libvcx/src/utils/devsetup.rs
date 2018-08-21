@@ -153,6 +153,7 @@ pub mod tests {
         delete_wallet(test_name).or(Err(format!("Unable to delete wallet: {}", test_name)))
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     pub fn test_two_enterprise_connections() {

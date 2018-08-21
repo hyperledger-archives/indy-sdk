@@ -252,6 +252,7 @@ mod tests {
                         "wallet_key": wallet_key}).to_string()
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_file() {
@@ -275,6 +276,7 @@ mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_config() {
@@ -414,6 +416,7 @@ mod tests {
         wallet::delete_wallet(wallet_name).unwrap();
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_called_twice_fails() {
@@ -441,6 +444,7 @@ mod tests {
         wallet::delete_wallet(wallet_name).unwrap();
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_called_twice_passes_after_shutdown() {
@@ -479,6 +483,7 @@ mod tests {
         vcx_shutdown(true);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_fails_with_open_wallet() {

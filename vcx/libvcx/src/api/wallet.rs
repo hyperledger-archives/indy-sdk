@@ -801,6 +801,7 @@ pub mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_send_payment() {

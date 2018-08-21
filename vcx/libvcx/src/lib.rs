@@ -56,8 +56,9 @@ mod tests {
     use rand::Rng;
     use std::thread;
     use std::time::Duration;
-    use ::utils::devsetup::tests::{setup_local_env, set_institution, set_consumer, cleanup_dev_env};
+    use ::utils::devsetup::tests::{set_institution, set_consumer, cleanup_dev_env};
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_delete_connection() {
@@ -70,9 +71,11 @@ mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(test_name);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_real_proof() {
+        use ::utils::devsetup::tests::setup_local_env;
         settings::set_defaults();
 	    setup_local_env("test_real_proof");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
