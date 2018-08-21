@@ -14,6 +14,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 extern crate prettytable;
+extern crate log4rs;
 
 #[macro_use]
 mod utils;
@@ -35,10 +36,19 @@ use std::io::BufReader;
 use std::rc::Rc;
 
 fn main() {
-    utils::logger::init();
-
     if env::args().find(|a| a == "-h" || a == "--help").is_some() {
         return _print_help();
+    }
+
+    if env::args().find(|a| a == "--logger-config").is_some() {
+        // setup logger
+        let mut args = env::args();
+        args.next(); //skip 0 param
+        args.next(); //skip 1 param
+
+        if let Err(_) = utils::logger::init(&args.next().unwrap()) {
+            return println_err!("Cannot init Logger");
+        };
     }
 
     let command_executor = build_executor();

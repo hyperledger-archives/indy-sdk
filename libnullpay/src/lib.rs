@@ -23,13 +23,7 @@ use std::ffi::CString;
 
 #[no_mangle]
 pub extern fn nullpay_init() -> ErrorCode {
-    let logger =
-        libindy::logger::get_indy_logger()
-            .and_then(|libindy_logger| utils::logger::init_nullpay_logger(libindy_logger)
-                .map_err(|_| ErrorCode::CommonInvalidState)
-            );
-
-    if let Err(err) = logger {
+    if let Err(err) = utils::logger::IndyLogger::init() {
         return err;
     }
 

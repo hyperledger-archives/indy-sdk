@@ -1,13 +1,14 @@
 extern crate libc;
+extern crate time;
+extern crate log;
 
 use self::libc::{c_void, c_char};
 
 use api::ErrorCode;
+use errors::ToErrorCode;
 
-extern crate time;
-extern crate log;
-
-use utils::logger::{EnabledCB, LogCB, FlushCB, init_indy_logger, init_default_logger, get_indy_logger};
+use utils::logger;
+use utils::logger::{EnabledCB, LogCB, FlushCB, IndyLogger, IndyDefaultLogger};
 use utils::cstring::CStringUtils;
 
 /// Set custom logger implementation.
@@ -31,10 +32,9 @@ pub extern fn indy_set_logger(context: *const c_void,
 
     check_useful_c_callback!(log, ErrorCode::CommonInvalidParam3);
 
-    let res = match init_indy_logger(context, enabled, log, flush) {
-        Ok(()) => ErrorCode::Success,
-        Err(_) => ErrorCode::CommonInvalidState
-    };
+    let result = IndyLogger::init(context, enabled, log, flush);
+
+    let res = result_to_err_code!(result);
 
     trace!("indy_set_logger: <<< res: {:?}", res);
 
@@ -58,10 +58,9 @@ pub extern fn indy_set_default_logger(level: *const c_char) -> ErrorCode {
 
     trace!("indy_set_default_logger: entities >>> level: {:?}", level);
 
-    let res = match init_default_logger(level) {
-        Ok(()) => ErrorCode::Success,
-        Err(_) => ErrorCode::CommonInvalidState
-    };
+    let result = IndyDefaultLogger::init(level);
+
+    let res = result_to_err_code!(result);
 
     trace!("indy_set_default_logger: <<< res: {:?}", res);
 
@@ -78,14 +77,30 @@ pub extern fn indy_set_default_logger(level: *const c_char) -> ErrorCode {
 /// #Returns
 /// Error code
 #[no_mangle]
-pub extern fn indy_get_logger(logger_p: *mut *const c_void) -> ErrorCode {
-    trace!("indy_get_logger >>> logger_p: {:?}", logger_p);
+pub extern fn indy_get_logger(context_p: *mut *const c_void,
+                              enabled_cb_p: *mut Option<EnabledCB>,
+                              log_cb_p: *mut Option<LogCB>,
+                              flush_cb_p: *mut Option<FlushCB>) -> ErrorCode {
+    trace!("indy_get_logger >>> context_p: {:?}, enabled_cb_p: {:?}, log_cb_p: {:?}, flush_cb_p: {:?}", context_p, enabled_cb_p, log_cb_p, flush_cb_p);
 
-    let logger = get_indy_logger();
+    //    let logger = get_indy_logger();
 
     unsafe {
-        *logger_p = Box::into_raw(Box::new(logger)) as *const c_void;
+        match logger::LOGGER_STATE {
+            logger::LoggerState::Default => {
+                *enabled_cb_p = Some(logger::IndyDefaultLogger::enabled);
+                *log_cb_p = Some(logger::IndyDefaultLogger::log);
+                *flush_cb_p = Some(logger::IndyDefaultLogger::flush);
+            }
+            logger::LoggerState::Custom => {
+                *context_p = logger::CONTEXT;
+                *enabled_cb_p = logger::ENABLED_CB;
+                *log_cb_p = logger::LOG_CB;
+                *flush_cb_p = logger::FLUSH_CB;
+            }
+        }
     };
+
 
     let res = ErrorCode::Success;
 

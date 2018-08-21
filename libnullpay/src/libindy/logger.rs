@@ -3,19 +3,21 @@ extern crate log;
 use ErrorCode;
 
 use libc::c_void;
-use std::ptr;
+use utils::logger::{EnabledCB, LogCB, FlushCB};
 
-pub fn get_indy_logger() -> Result<&'static log::Log, ErrorCode> {
-    let mut logger_p: *const c_void = ptr::null();
+pub fn get_indy_logger() -> Result<(*const c_void, Option<EnabledCB>, Option<LogCB>, Option<FlushCB>), ErrorCode> {
+    let mut context_p: *const c_void = ::std::ptr::null();
+    let mut enabled_cb_p: Option<EnabledCB> = None;
+    let mut log_cb_p: Option<LogCB> = None;
+    let mut flush_cb_p: Option<FlushCB> = None;
 
     let res = unsafe {
-        indy_get_logger(&mut logger_p)
+        indy_get_logger(&mut context_p, &mut enabled_cb_p, &mut log_cb_p, &mut flush_cb_p)
     };
 
     match res {
         ErrorCode::Success => {
-            let logger = unsafe { *(logger_p as *const &'static log::Log) };
-            Ok(logger)
+            Ok((context_p, enabled_cb_p, log_cb_p, flush_cb_p))
         }
         err @ _ => Err(err)
     }
@@ -23,5 +25,5 @@ pub fn get_indy_logger() -> Result<&'static log::Log, ErrorCode> {
 
 extern {
     #[no_mangle]
-    pub fn indy_get_logger(logger_p: *mut *const c_void) -> ErrorCode;
+    pub fn indy_get_logger(context: *mut *const c_void, enabled_cb_p: *mut Option<EnabledCB>, log_cb_p: *mut Option<LogCB>, flush_cb_p: *mut Option<FlushCB>) -> ErrorCode;
 }

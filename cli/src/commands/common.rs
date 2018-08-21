@@ -111,6 +111,28 @@ pub mod load_plugin_command {
     }
 }
 
+//pub mod init_logger_command {
+//    use super::*;
+//
+//    command!(CommandMetadata::build("init-logger", "Init logger from config file")
+//                            .add_main_param("file", "The path to the logger config file")
+//                            .add_example("init-logger /home/log.yml")
+//                            .finalize());
+//
+//    fn execute(_ctx: &CommandContext, params: &CommandParams) -> CommandResult {
+//        trace!("execute >> params: {:?}", params);
+//
+//        let library = get_str_param("library", params).map_err(error_err!())?;
+//        let initializer = get_str_param("initializer", params).map_err(error_err!())?;
+//
+//        let res = load_plugin(_ctx, library, initializer)?;
+//
+//        trace!("execute << {:?}", res);
+//
+//        Ok(res)
+//    }
+//}
+
 pub fn load_plugin(ctx: &CommandContext, library: &str, initializer: &str) -> Result<(), ()> {
     let lib = _load_lib(library)
         .map_err(|_| println_err!("Plugin not found: {:?}", library))?;

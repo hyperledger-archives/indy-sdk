@@ -6,7 +6,7 @@ extern crate android_logger;
 extern crate libc;
 
 use self::env_logger::Builder;
-use self::log::LevelFilter;
+use self::log::{LevelFilter, Level};
 use std::env;
 use std::io::Write;
 #[cfg(target_os = "android")]
@@ -16,6 +16,16 @@ use log::{Record, Metadata};
 use self::libc::{c_void, c_char};
 use std::ffi::CString;
 use std::ptr;
+
+use errors::common::CommonError;
+use utils::cstring::CStringUtils;
+
+pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
+
+pub enum LoggerState {
+    Default,
+    Custom
+}
 
 pub type EnabledCB = extern fn(context: *const c_void,
                                level: u32,
@@ -31,7 +41,12 @@ pub type LogCB = extern fn(context: *const c_void,
 
 pub type FlushCB = extern fn(context: *const c_void);
 
-struct IndyLogger {
+pub static mut CONTEXT: *const c_void = ptr::null();
+pub static mut ENABLED_CB: Option<EnabledCB> = None;
+pub static mut LOG_CB: Option<LogCB> = None;
+pub static mut FLUSH_CB: Option<FlushCB> = None;
+
+pub struct IndyLogger {
     context: *const c_void,
     enabled: Option<EnabledCB>,
     log: LogCB,
@@ -40,12 +55,7 @@ struct IndyLogger {
 
 impl IndyLogger {
     fn new(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Self {
-        IndyLogger {
-            context,
-            enabled,
-            log,
-            flush,
-        }
+        IndyLogger { context, enabled, log, flush }
     }
 }
 
@@ -94,47 +104,115 @@ unsafe impl Sync for IndyLogger {}
 
 unsafe impl Send for IndyLogger {}
 
-pub fn get_indy_logger() -> &'static log::Log {
-    log::logger()
-}
+impl IndyLogger {
+    pub fn init(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Result<(), CommonError> {
+        let logger = IndyLogger::new(context, enabled, log, flush);
 
-pub fn init_indy_logger(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Result<(), log::SetLoggerError> {
-    let logger = IndyLogger::new(context, enabled, log, flush);
-    log::set_boxed_logger(Box::new(logger))?;
-    log::set_max_level(LevelFilter::Trace);
-    Ok(())
-}
+        log::set_boxed_logger(Box::new(logger))?;
+        log::set_max_level(LevelFilter::Trace);
 
-pub fn init_default_logger(level: Option<String>) -> Result<(), log::SetLoggerError> {
-    let level = level.or(env::var("RUST_LOG").ok());
-
-    log_panics::init(); //Logging of panics is essential for android. As android does not log to stdout for native code
-
-    if cfg!(target_os = "android") {
-        #[cfg(target_os = "android")]
-        let log_filter = match level {
-            Some(val) => match val.to_lowercase().as_ref() {
-                "error" => Filter::default().with_min_level(log::Level::Error),
-                "warn" => Filter::default().with_min_level(log::Level::Warn),
-                "info" => Filter::default().with_min_level(log::Level::Info),
-                "debug" => Filter::default().with_min_level(log::Level::Debug),
-                "trace" => Filter::default().with_min_level(log::Level::Trace),
-                _ => Filter::default().with_min_level(log::Level::Error),
-            },
-            None => Filter::default().with_min_level(log::Level::Error)
+        unsafe {
+            LOGGER_STATE = LoggerState::Custom;
+            CONTEXT = context;
+            ENABLED_CB = enabled;
+            LOG_CB = Some(log);
+            FLUSH_CB = flush
         };
 
-        //Set logging to off when deploying production android app.
-        #[cfg(target_os = "android")]
-        android_logger::init_once(log_filter);
-        info!("Logging for Android");
         Ok(())
-    } else {
-        Builder::new()
-            .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
-            .filter(None, LevelFilter::Off)
-            .parse(level.as_ref().map(String::as_str).unwrap_or(""))
-            .try_init()
+    }
+}
+
+pub struct IndyDefaultLogger;
+
+impl IndyDefaultLogger {
+    pub fn init(level: Option<String>) -> Result<(), CommonError> {
+        let level = level.or(env::var("RUST_LOG").ok());
+
+        log_panics::init(); //Logging of panics is essential for android. As android does not log to stdout for native code
+
+        if cfg!(target_os = "android") {
+            #[cfg(target_os = "android")]
+            let log_filter = match level {
+                Some(val) => match val.to_lowercase().as_ref() {
+                    "error" => Filter::default().with_min_level(log::Level::Error),
+                    "warn" => Filter::default().with_min_level(log::Level::Warn),
+                    "info" => Filter::default().with_min_level(log::Level::Info),
+                    "debug" => Filter::default().with_min_level(log::Level::Debug),
+                    "trace" => Filter::default().with_min_level(log::Level::Trace),
+                    _ => Filter::default().with_min_level(log::Level::Error),
+                },
+                None => Filter::default().with_min_level(log::Level::Error)
+            };
+
+            //Set logging to off when deploying production android app.
+            #[cfg(target_os = "android")]
+            android_logger::init_once(log_filter);
+            info!("Logging for Android");
+        } else {
+            Builder::new()
+                .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
+                .filter(None, LevelFilter::Off)
+                .parse(level.as_ref().map(String::as_str).unwrap_or(""))
+                .try_init()?;
+        }
+        unsafe { LOGGER_STATE = LoggerState::Default };
+        Ok(())
+    }
+
+    pub extern fn enabled(_context: *const c_void,
+                          level: u32,
+                          target: *const c_char) -> bool {
+        let level = get_level(level);
+        let target = CStringUtils::c_str_to_string(target).unwrap().unwrap();
+
+        let metadata: Metadata = Metadata::builder()
+            .level(level)
+            .target(&target)
+            .build();
+
+        log::logger().enabled(&metadata)
+    }
+
+    pub extern fn log(_context: *const c_void,
+                      level: u32,
+                      target: *const c_char,
+                      args: *const c_char,
+                      module_path: *const c_char,
+                      file: *const c_char,
+                      line: u32) {
+        let target = CStringUtils::c_str_to_string(target).unwrap().unwrap();
+        let args = CStringUtils::c_str_to_string(args).unwrap().unwrap();
+        let module_path = CStringUtils::c_str_to_string(module_path).unwrap();
+        let file = CStringUtils::c_str_to_string(file).unwrap();
+
+        let level = get_level(level);
+
+        log::logger().log(
+            &Record::builder()
+                .args(format_args!("{}", args))
+                .level(level)
+                .target(&target)
+                .module_path(module_path.as_ref().map(String::as_str))
+                .file(file.as_ref().map(String::as_str))
+                .line(Some(line))
+                .build(),
+        );
+    }
+
+    pub extern fn flush(_context: *const c_void) {
+        log::logger().flush()
+    }
+}
+
+pub fn get_level(level: u32) -> Level {
+    match level {
+        1 => Level::Error,
+        2 => Level::Warn,
+        3 => Level::Info,
+        4 => Level::Debug,
+        5 => Level::Trace,
+        _ => unreachable!(),
     }
 }
 

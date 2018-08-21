@@ -5,7 +5,6 @@ extern crate time;
 extern crate log;
 
 use std::ptr::null;
-use std::ffi::CString;
 
 use self::libc::{c_void, c_char};
 
@@ -28,18 +27,18 @@ impl LoggerUtils {
         let file = CStringUtils::c_str_to_string(file).unwrap();
 
         let level = match level {
-            1 => Some(Level::Error),
-            2 => Some(Level::Warn),
-            3 => Some(Level::Info),
-            4 => Some(Level::Debug),
-            5 => Some(Level::Trace),
-            _ => None,
+            1 => Level::Error,
+            2 => Level::Warn,
+            3 => Level::Info,
+            4 => Level::Debug,
+            5 => Level::Trace,
+            _ => unreachable!(),
         };
 
         println!(
             "{} {:>5}|{:<30}|{:>35}:{:<4}| {}",
             time::strftime("%Y-%m-%d %H:%M:%S", &time::now()).unwrap(),
-            level.map(|l| l.to_string()).unwrap_or(String::new()),
+            level.to_string(),
             target.to_string(),
             file.unwrap_or(String::new()),
             line,

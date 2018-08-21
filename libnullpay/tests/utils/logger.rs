@@ -1,11 +1,8 @@
 extern crate libc;
-
-use self::libc::c_char;
-
-use nullpay::ErrorCode;
-
 extern crate log;
 
+use self::libc::c_char;
+use nullpay::ErrorCode;
 use std::ffi::CString;
 
 pub fn set_default_indy_logger() {
