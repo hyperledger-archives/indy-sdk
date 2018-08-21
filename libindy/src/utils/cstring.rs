@@ -41,7 +41,7 @@ macro_rules! check_useful_c_str {
 }
 
 macro_rules! check_useful_json {
-    ($x:ident, $e:expr, $n:ident, $t:ty) => {
+    ($x:ident, $e:expr, $t:ty) => {
         let $x = match CStringUtils::c_str_to_string($x) {
             Ok(Some(val)) => val,
             _ => return $e,
@@ -50,7 +50,7 @@ macro_rules! check_useful_json {
         if $x.is_empty() {
             return $e
         }
-        let $n: $t = match
+        let $x: $t = match
             serde_json::from_str(&$x)
                 .map_err(map_err_trace!())
                 .map_err(|err|

@@ -23,7 +23,8 @@ use domain::crypto::did::MyDidInfo;
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
-/// did_info_json: Identity information as json. Example:
+/// did_info: Identity information as json. See domain::crypto::did::MyDidInfo
+/// Example:
 /// {
 ///     "did": string, (optional;
 ///             if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
@@ -51,22 +52,22 @@ use domain::crypto::did::MyDidInfo;
 #[no_mangle]
 pub  extern fn indy_create_and_store_my_did(command_handle: i32,
                                             wallet_handle: i32,
-                                            did_info_json: *const c_char,
+                                            did_info: *const c_char,
                                             cb: Option<extern fn(xcommand_handle: i32,
                                                                  err: ErrorCode,
                                                                  did: *const c_char,
                                                                  verkey: *const c_char)>) -> ErrorCode {
-    trace!("indy_create_and_store_my_did: >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_info_json);
+    trace!("indy_create_and_store_my_did: >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, did_info);
 
-    check_useful_json!(did_info_json, ErrorCode::CommonInvalidParam3, my_did_info, MyDidInfo);
+    check_useful_json!(did_info, ErrorCode::CommonInvalidParam3, MyDidInfo); // redefine to MyDidInfo if valid
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, secret!(did_info_json.as_str()));
+    trace!("indy_create_and_store_my_did: entities >>> wallet_handle: {:?}, did_json: {:?}", wallet_handle, secret!(&did_info));
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::CreateAndStoreMyDid(
             wallet_handle,
-            my_did_info,
+            did_info,
             Box::new(move |result| {
                 let (err, did, verkey) = result_to_err_code_2!(result, String::new(), String::new());
                 trace!("indy_create_and_store_my_did: did: {:?}, verkey: {:?}", did, verkey);
