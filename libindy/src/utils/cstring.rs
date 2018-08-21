@@ -51,7 +51,7 @@ macro_rules! check_useful_json {
             return $e
         }
         let $x: $t = match
-            serde_json::from_str(&$x)
+            serde_json::from_str::<$t>(&$x)
                 .map_err(map_err_trace!())
                 .map_err(|err|
                     CommonError::InvalidStructure(
