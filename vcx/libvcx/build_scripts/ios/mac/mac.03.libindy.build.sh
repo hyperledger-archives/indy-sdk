@@ -58,6 +58,8 @@ if [ "$#" -gt 0 ]; then
 
     #if [ "$DEBUG_SYMBOLS" = "debuginfo" ]; then
         cat $START_DIR/cargo.toml.add.debug.txt >> Cargo.toml
+    #else
+    #    cat $START_DIR/cargo.toml.reduce.size.txt >> Cargo.toml
     #fi
     if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
         sed -i .bak 's/debug = true/debug = false/' Cargo.toml
