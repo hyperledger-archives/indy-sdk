@@ -773,4 +773,10 @@ indy.deleteWallet = function deleteWallet (config, credentials, cb) {
   return cb.promise
 }
 
+indy.generateWalletKey = function generateWalletKey (config, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.generateWalletKey(toJson(config), cb)
+  return cb.promise
+}
+
 module.exports = indy

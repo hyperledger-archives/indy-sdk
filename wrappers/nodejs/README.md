@@ -2453,6 +2453,19 @@ Deletes created wallet.
 
 Errors: `Common*`, `Wallet*`
 
+#### generateWalletKey \( config \) -&gt; void
+
+Generate wallet master key
+
+* `config`: Json - (Optional) key configuration json.
+```
+{
+  seed": optional<string> Seed that allows deterministic key creation (if not set random one will be used).
+}
+````
+* __->__ `key`: String - wallet master key
+
+Errors: `Common*`, `Wallet*`
 
 [//]: # (CODEGEN-END - don't edit by hand see `codegen/index.js`)
 

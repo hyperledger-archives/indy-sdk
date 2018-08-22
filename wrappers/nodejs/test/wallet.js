@@ -53,5 +53,10 @@ test('wallet', async function (t) {
   await indy.closeWallet(handle)
   await indy.deleteWallet(walletConfig, walletCredentials)
 
+  var key = await indy.generateWalletKey({})
+  walletCredentials = {'key': key, 'key_derivation_method': 'RAW'}
+  await indy.createWallet(walletConfig, walletCredentials)
+  await indy.deleteWallet(walletConfig, walletCredentials)
+
   pool.cleanup()
 })

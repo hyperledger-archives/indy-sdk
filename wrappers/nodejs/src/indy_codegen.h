@@ -2479,6 +2479,22 @@ NAN_METHOD(deleteWallet) {
   delete arg1;
 }
 
+void generateWalletKey_cb(indy_handle_t handle, indy_error_t xerr, const char *const arg0) {
+  IndyCallback* icb = IndyCallback::getCallback(handle);
+  if(icb != nullptr){
+    icb->cbString(xerr, arg0);
+  }
+}
+NAN_METHOD(generateWalletKey) {
+  INDY_ASSERT_NARGS(generateWalletKey, 2)
+  INDY_ASSERT_STRING(generateWalletKey, 0, config)
+  INDY_ASSERT_FUNCTION(generateWalletKey, 1)
+  const char* arg0 = argToCString(info[0]);
+  IndyCallback* icb = argToIndyCb(info[1]);
+  indyCalled(icb, indy_generate_wallet_key(icb->handle, arg0, generateWalletKey_cb));
+  delete arg0;
+}
+
 NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "issuerCreateSchema", issuerCreateSchema);
   Nan::Export(target, "issuerCreateAndStoreCredentialDef", issuerCreateAndStoreCredentialDef);
@@ -2599,5 +2615,6 @@ NAN_MODULE_INIT(InitAll) {
   Nan::Export(target, "importWallet", importWallet);
   Nan::Export(target, "closeWallet", closeWallet);
   Nan::Export(target, "deleteWallet", deleteWallet);
+  Nan::Export(target, "generateWalletKey", generateWalletKey);
 }
 NODE_MODULE(indynodejs, InitAll)

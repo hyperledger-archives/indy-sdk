@@ -377,6 +377,28 @@ extern "C" {
                                            void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
                                           );
 
+    /// Generate wallet master key.
+    ///
+    /// #Params
+    /// config: (optional) key configuration json.
+    /// {
+    ///   "seed": optional<string> Seed that allows deterministic key creation (if not set random one will be used).
+    /// }
+    ///
+    /// #Returns
+    /// err: Error code
+    ///
+    /// #Errors
+    /// Common*
+    /// Wallet*
+    extern indy_error_t indy_generate_wallet_key(indy_handle_t     command_handle,
+                                                 const char *const config,
+
+                                                 void              (*cb)(indy_handle_t     command_handle,
+                                                                         indy_error_t      err,
+                                                                         const char *const key)
+                                                );
+
 #ifdef __cplusplus
 }
 #endif

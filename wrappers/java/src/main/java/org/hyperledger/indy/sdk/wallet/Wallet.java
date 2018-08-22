@@ -178,6 +178,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *   "key_derivation_method": optional[string] algorithm to use for master key derivation:
 	 *                          ARAGON2I_MOD (used by default)
 	 *                          ARAGON2I_INT - less secured but faster
+	 *                          RAW - raw wallet master key is provided (skip derivation)
 	 * }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -230,9 +231,11 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *   "key_derivation_method": optional[string] algorithm to use for master key derivation:
 	 *                          ARAGON2I_MOD (used by default)
 	 *                          ARAGON2I_INT - less secured but faster
+	 *                          RAW - raw wallet master key is provided (skip derivation)
 	 *   "rekey_derivation_method": optional[string] algorithm to use for master rekey derivation:
 	 *                              ARAGON2I_MOD (used by default)
 	 *                              ARAGON2I_INT - less secured but faster
+	 *                              RAW - raw wallet master rekey is provided (skip derivation)
 	 *
 	 *   }
 	 * @return A future that resolves no value.
@@ -312,6 +315,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *       "key_derivation_method": optional[string] algorithm to use for master key derivation:
 	 *                                ARAGON2I_MOD (used by default)
 	 *                                ARAGON2I_INT - less secured but faster
+	 *                                RAW - raw wallet master key is provided (skip derivation)
 	 *   }
 	 *                       
 	 * @return A future that resolves no value.

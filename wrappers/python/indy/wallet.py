@@ -1,6 +1,7 @@
 from .libindy import do_call, create_cb
 
 from ctypes import *
+from typing import Optional
 
 import logging
 
@@ -35,6 +36,7 @@ async def create_wallet(config: str,
        "key_derivation_method": optional<string> algorithm to use for master key derivation:
                                 ARAGON2I_MOD (used by default)
                                 ARAGON2I_INT - less secured but faster
+                                RAW - raw wallet master key is provided (skip derivation)
      }
     :return: Error code
     """
@@ -95,9 +97,11 @@ async def open_wallet(config: str,
        "key_derivation_method": optional<string> algorithm to use for master key derivation:
                                 ARAGON2I_MOD (used by default)
                                 ARAGON2I_INT - less secured but faster
+                                RAW - raw wallet master key is provided (skip derivation)
        "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
                                   ARAGON2I_MOD (used by default)
                                   ARAGON2I_INT - less secured but faster
+                                  RAW - raw wallet master rekey is provided (skip derivation)
     }
     :return: Handle to opened wallet to use in methods that require wallet access.
     """
@@ -177,6 +181,7 @@ async def delete_wallet(config: str,
        "key_derivation_method": optional<string> algorithm to use for master key derivation:
                                 ARAGON2I_MOD (used by default)
                                 ARAGON2I_INT - less secured but faster
+                                RAW - raw wallet master key is provided (skip derivation)
      }
     :return:
     """
@@ -299,3 +304,34 @@ async def import_wallet(config: str,
                   import_wallet.cb)
 
     logger.debug("import_wallet: <<<")
+
+
+async def generate_wallet_key(config: Optional[str]) -> str:
+    """
+    Generate wallet master key.
+
+    :param config: (optional) key configuration json.
+     {
+       seed": optional<string> Seed that allows deterministic key creation (if not set random one will be used).
+     }
+    :return: Error code
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("generate_wallet_key: >>> config: %r",
+                 config)
+
+    if not hasattr(generate_wallet_key, "cb"):
+        logger.debug("generate_wallet_key: Creating callback")
+        generate_wallet_key.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_config = c_char_p(config.encode('utf-8')) if config is not None else None
+
+    key = await do_call('indy_generate_wallet_key',
+                        c_config,
+                        generate_wallet_key.cb)
+
+    res = key.decode()
+
+    logger.debug("generate_wallet_key: <<< res: %r", res)
+    return res
