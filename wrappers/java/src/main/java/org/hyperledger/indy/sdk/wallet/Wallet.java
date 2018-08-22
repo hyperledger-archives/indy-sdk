@@ -59,6 +59,22 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	};
 
 	/**
+	 * Callback used when function returning string completes.
+	 */
+	private static Callback stringCb = new Callback() {
+
+		@SuppressWarnings({"unused", "unchecked"})
+		public void callback(int xcommand_handle, int err, String str) {
+
+			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+			if (! checkResult(future, err)) return;
+
+			String result = str;
+			future.complete(result);
+		}
+	};
+
+	/**
 	 * Callback used when openWallet completes.
 	 */
 	private static Callback openWalletCb = new Callback() {
@@ -419,6 +435,33 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 		return future;
 	}
 
+	/**
+	 * Generate wallet master key.
+	 *
+	 * @param config (optional) key configuration json.
+	 * {
+	 *   seed": optional[string] Seed that allows deterministic key creation (if not set random one will be used).
+	 * }
+	 *   
+	 * @return A future that resolves to key.
+	 * @throws IndyException Thrown if a call to the underlying SDK fails.
+	 */
+	public static CompletableFuture<String> generateWalletKey(
+			String config) throws IndyException {
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int result = LibIndy.api.indy_generate_wallet_key(
+				commandHandle,
+				config,
+				stringCb);
+
+		checkResult(future, result);
+
+		return future;
+	}
+	
 	/*
 	 * INSTANCE METHODS
 	 */

@@ -28,7 +28,9 @@ pub(super) fn derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt,
 }
 
 pub(super) fn raw_master_key(passphrase: &str) -> Result<chacha20poly1305_ietf::Key, WalletError> {
-    let key = chacha20poly1305_ietf::Key::from_slice(&base58::decode(passphrase)?[..chacha20poly1305_ietf::KEYBYTES]).unwrap(); // We can safety unwrap here
+    let bytes = &base58::decode(passphrase)?;
+    let key = chacha20poly1305_ietf::Key::from_slice(&bytes)
+        .map_err(|_| ::errors::common::CommonError::InvalidStructure("Invalid Master Key length".to_string()))?;
     Ok(key)
 }
 

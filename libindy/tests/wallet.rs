@@ -447,6 +447,17 @@ mod medium_cases {
 
             TestUtils::cleanup_storage();
         }
+
+        #[test]
+        fn indy_create_wallet_works_for_raw_key_invalid_length() {
+            TestUtils::cleanup_storage();
+
+            let credentials = json!({"key": "key", "key_derivation_method": "RAW"}).to_string();
+            let res = WalletUtils::create_wallet(WALLET_CONFIG, &credentials);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
     }
 
     mod delete_wallet {
