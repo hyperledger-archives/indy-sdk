@@ -323,7 +323,7 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
     }
 }
 
-pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<Vec<u8>, u32> {
+pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<(String, Vec<u8>), u32> {
     let message = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
     trace!("checking for ref_msg: {:?}", message);
     let msg_id;
@@ -343,7 +343,7 @@ pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, age
         let data = to_u8(message[0].payload.as_ref().unwrap());
 	// TOD: check returned verkey
         let (_, msg) = crypto::parse_msg(&pw_vk, &data)?;
-	Ok(msg)
+	Ok((message[0].uid.clone(), msg))
     }
     else {
         Err(error::INVALID_HTTP_RESPONSE.code_num)

@@ -12,7 +12,8 @@ name = 'Credential Name'
 issuer_did = '8XFh8yBzrpJQmNyZzgoTqB'
 phone_number = '8019119191'
 price = 1
-
+req = {'libindy_cred_req': '', 'libindy_cred_req_meta': '', 'cred_def_id': '', 'tid': '', 'to_did': '', 'from_did': '',
+       'version': '', 'mid': '', 'msg_ref_id': '123'}
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -160,6 +161,7 @@ async def test_send_credential():
     # simulate consumer sending credential_req
     data = await issuer_credential.serialize()
     data['data']['state'] = State.RequestReceived
+    data['data']['credential_request'] = req
     issuer_credential2 = await issuer_credential.deserialize(data)
     await issuer_credential2.send_credential(connection)
     assert await issuer_credential2.get_state() == State.Accepted

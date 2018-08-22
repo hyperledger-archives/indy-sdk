@@ -17,6 +17,7 @@ pub struct CredentialRequest {
     pub from_did: String,
     pub version: String,
     pub mid: String,
+    pub msg_ref_id: Option<String>,
 }
 
 impl CredentialRequest {
@@ -30,6 +31,7 @@ impl CredentialRequest {
            libindy_cred_req: String::new(),
            libindy_cred_req_meta: String::new(),
            cred_def_id: String::new(),
+           msg_ref_id: None
        }
     }
 

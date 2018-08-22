@@ -250,7 +250,7 @@ impl Proof {
             return Ok(self.get_state());
         }
 
-        let payload = messages::get_message::get_ref_msg(&self.msg_uid, &self.prover_did,
+        let (_, payload) = messages::get_message::get_ref_msg(&self.msg_uid, &self.prover_did,
                                                          &self.prover_vk, &self.agent_did,
                                                          &self.agent_vk)
             .map_err(|ec| ProofError::ProofMessageError(ec))?;

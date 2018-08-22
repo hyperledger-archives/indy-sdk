@@ -182,6 +182,8 @@ impl IssuerCredential {
 
         debug!("credential data: {}", data);
 
+        let cred_req_msg_id = self.credential_request.as_ref().ok_or(IssuerCredError::InvalidCredRequest())?
+            .msg_ref_id.as_ref().ok_or(IssuerCredError::InvalidCredRequest())?;
         let data = connection::generate_encrypted_payload(&self.issued_vk, &self.remote_vk, &data, "CRED")
             .map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
 
@@ -192,6 +194,7 @@ impl IssuerCredential {
             .edge_agent_payload(&data)
             .agent_did(&self.agent_did)
             .agent_vk(&self.agent_vk)
+            .ref_msg_id(cred_req_msg_id)
             .send_secure() {
             Err(x) => {
                 warn!("could not send credential: {}", x);
@@ -221,14 +224,14 @@ impl IssuerCredential {
 
             return Ok(self.get_state());
         }
-        let payload = messages::get_message::get_ref_msg(&self.msg_uid,
+        let (offer_uid, payload) = messages::get_message::get_ref_msg(&self.msg_uid,
                                                                &self.issued_did,
                                                                &self.issued_vk,
                                                                &self.agent_did,
                                                                &self.agent_vk)
             .map_err(|wc|IssuerCredError::CommonError(wc))?;
 
-        self.credential_request = Some(parse_credential_req_payload(&payload)?);
+        self.credential_request = Some(parse_credential_req_payload(offer_uid, &payload)?);
         debug!("received credential request for credential offer: {}", self.source_id);
         self.state = VcxStateType::VcxStateRequestReceived;
         Ok(self.get_state())
@@ -415,17 +418,18 @@ pub fn get_payment_txn(handle: u32) -> Result<payments::PaymentTxn, IssuerCredEr
     }).map_err(|ec|IssuerCredError::CommonError(ec))
 }
 
-fn parse_credential_req_payload(payload: &Vec<u8>) -> Result<CredentialRequest, IssuerCredError> {
+fn parse_credential_req_payload(offer_uid: String, payload: &Vec<u8>) -> Result<CredentialRequest, IssuerCredError> {
     debug!("parsing credentialReq payload: {:?}", payload);
     let data = messages::extract_json_payload(payload).map_err(|ec|IssuerCredError::CommonError(ec))?;
 
-    let my_credential_req = match CredentialRequest::from_str(&data) {
+    let mut my_credential_req = match CredentialRequest::from_str(&data) {
          Ok(x) => x,
          Err(x) => {
              warn!("invalid json {}", x);
              return Err(IssuerCredError::CommonError(error::INVALID_JSON.code_num));
          },
     };
+    my_credential_req.msg_ref_id = Some(offer_uid);
     Ok(my_credential_req)
 }
 
