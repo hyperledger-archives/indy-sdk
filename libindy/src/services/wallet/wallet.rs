@@ -1817,7 +1817,7 @@ mod tests {
             let master_key_salt = encryption::gen_master_key_salt().unwrap();
 
             let metadata = Metadata {
-                master_key_salt: master_key_salt[..].to_vec(),
+                master_key_salt: Some(master_key_salt[..].to_vec()),
                 keys: keys.serialize_encrypted(&master_key).unwrap(),
             };
 

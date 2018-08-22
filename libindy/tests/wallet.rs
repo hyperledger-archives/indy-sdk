@@ -340,6 +340,37 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod generate_wallet_key {
+        use super::*;
+        use rust_base58::FromBase58;
+
+        #[test]
+        fn indy_generate_wallet_key_works() {
+            TestUtils::cleanup_storage();
+
+            let key = WalletUtils::generate_wallet_key(None).unwrap();
+
+            let credentials = json!({"key": key, "key_derivation_method": "RAW"}).to_string();
+            WalletUtils::create_wallet(WALLET_CONFIG, &credentials).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_generate_wallet_key_works_for_seed() {
+            TestUtils::cleanup_storage();
+
+            let config = json!({"seed": MY1_SEED}).to_string();
+            let key = WalletUtils::generate_wallet_key(Some(config.as_str())).unwrap();
+            assert_eq!(key.from_base58().unwrap(), vec![156, 79, 89, 5, 135, 97, 180, 4, 193, 105, 4, 97, 248, 165, 120, 214, 47, 251, 0, 180, 205, 33, 61, 58, 172, 85, 35, 51, 22, 177, 167, 114]);
+
+            let credentials = json!({"key": key, "key_derivation_method": "RAW"}).to_string();
+            WalletUtils::create_wallet(WALLET_CONFIG, &credentials).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
 }
 
 mod medium_cases {

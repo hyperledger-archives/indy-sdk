@@ -33,7 +33,8 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
             salt: salt[..].to_vec(),
             nonce: nonce[..].to_vec(),
             chunk_size,
-        }
+        },
+        KeyDerivationMethod::RAW => return Err(WalletError::CommonError(CommonError::InvalidStructure("RAW key derivation method is not acceptable".to_string())))
     };
 
     let header = Header {
@@ -344,7 +345,7 @@ mod tests {
             let master_key_salt = encryption::gen_master_key_salt().unwrap();
 
             let metadata = Metadata {
-                master_key_salt: master_key_salt[..].to_vec(),
+                master_key_salt: Some(master_key_salt[..].to_vec()),
                 keys: keys.serialize_encrypted(&master_key).unwrap(),
             };
 

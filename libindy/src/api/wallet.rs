@@ -167,6 +167,7 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 ///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
 ///                          ARAGON2I_MOD (used by default)
 ///                          ARAGON2I_INT - less secured but faster
+///                          RAW - raw wallet master key is provided (skip derivation)
 /// }
 ///
 /// #Returns
@@ -240,9 +241,11 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///       "key_derivation_method": optional<string> algorithm to use for master key derivation:
 ///                             ARAGON2I_MOD (used by default)
 ///                             ARAGON2I_INT - less secured but faster
+///                             RAW - raw wallet master rekey is provided (skip derivation)
 ///       "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
 ///                             ARAGON2I_MOD (used by default)
 ///                             ARAGON2I_INT - less secured but faster
+///                             RAW - raw wallet master key is provided (skip derivation)
 ///   }
 ///
 /// #Returns
@@ -480,6 +483,7 @@ pub extern fn indy_close_wallet(command_handle: i32,
 ///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
 ///                            ARAGON2I_MOD (used by default)
 ///                            ARAGON2I_INT - less secured but faster
+///                            RAW - raw wallet master key is provided (skip derivation)
 /// }
 ///
 /// #Returns
@@ -516,6 +520,50 @@ pub extern fn indy_delete_wallet(command_handle: i32,
 
     let res = result_to_err_code!(result);
     trace!("indy_delete_wallet: <<< res: {:?}", res);
+    res
+}
+
+/// Generate wallet master key.
+///
+/// #Params
+/// config: (optional) key configuration json.
+/// {
+///   seed": optional<string> Seed that allows deterministic key creation (if not set random one will be used).
+/// }
+///
+/// #Returns
+/// err: Error code
+///
+/// #Errors
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_generate_wallet_key(command_handle: i32,
+                                       config: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: i32,
+                                                            err: ErrorCode,
+                                                            key: *const c_char)>) -> ErrorCode {
+    trace!("indy_generate_wallet_key: >>> command_handle: {:?}, config: {:?}, cb: {:?}",
+           command_handle, config, cb);
+
+    check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam2);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_generate_wallet_key: params config: {:?}", secret!(config.as_ref()));
+
+    let result = CommandExecutor::instance()
+        .send(Command::Wallet(WalletCommand::GenerateKey(
+            config,
+            Box::new(move |result| {
+                let (err, key) = result_to_err_code_1!(result, String::new());
+                trace!("indy_generate_wallet_key: key: {:?}", key);
+                let key = CStringUtils::string_to_cstring(key);
+                cb(command_handle, err, key.as_ptr())
+            })
+        )));
+
+    let res = result_to_err_code!(result);
+    trace!("indy_generate_wallet_key: <<< res: {:?}", res);
     res
 }
 

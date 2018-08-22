@@ -1,7 +1,7 @@
 use std::str;
 use std::collections::HashMap;
 
-use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
+use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13, base58};
 
 use super::{Keys, WalletRecord};
 use super::storage::{Tag, TagName, StorageRecord};
@@ -13,7 +13,9 @@ pub(super) fn gen_master_key_salt() -> Result<pwhash_argon2i13::Salt, WalletErro
     Ok(pwhash_argon2i13::gen_salt())
 }
 
-pub(super) fn master_key_salt_from_slice(slice: &[u8]) -> Result<pwhash_argon2i13::Salt, WalletError> {
+pub(super) fn master_key_salt_from_slice(slice: Option<&[u8]>) -> Result<pwhash_argon2i13::Salt, WalletError> {
+    let slice = slice
+        .ok_or(::errors::common::CommonError::InvalidState("Invalid master key salt".to_string()))?;
     let salt = pwhash_argon2i13::Salt::from_slice(slice)
         .map_err(|_| ::errors::common::CommonError::InvalidState("Invalid master key salt".to_string()))?;
 
@@ -22,6 +24,11 @@ pub(super) fn master_key_salt_from_slice(slice: &[u8]) -> Result<pwhash_argon2i1
 
 pub(super) fn derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> Result<chacha20poly1305_ietf::Key, WalletError> {
     let key = chacha20poly1305_ietf::derive_key(passphrase, salt, key_derivation_method)?;
+    Ok(key)
+}
+
+pub(super) fn raw_master_key(passphrase: &str) -> Result<chacha20poly1305_ietf::Key, WalletError> {
+    let key = chacha20poly1305_ietf::Key::from_slice(&base58::decode(passphrase)?[..chacha20poly1305_ietf::KEYBYTES]).unwrap(); // We can safety unwrap here
     Ok(key)
 }
 

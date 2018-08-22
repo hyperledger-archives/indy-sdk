@@ -15,7 +15,7 @@ use named_type::NamedType;
 use std::rc::Rc;
 
 use api::wallet::*;
-use domain::wallet::{Config, Credentials, ExportConfig, Metadata};
+use domain::wallet::{Config, Credentials, ExportConfig, Metadata, KeyDerivationMethod};
 use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::sequence::SequenceUtils;
@@ -123,12 +123,20 @@ impl WalletService {
                 .ok_or(WalletError::UnknownType(storage_type.to_string()))?
         };
 
+        // TODO: FIXME avoid copypast
         let metadata = {
-            let master_key_salt = encryption::gen_master_key_salt()?;
-            let master_key = encryption::derive_master_key(&credentials.key, &master_key_salt, &credentials.key_derivation_method)?;
+            let (master_key_salt, master_key) = match credentials.key_derivation_method {
+                KeyDerivationMethod::RAW =>
+                    (None, encryption::raw_master_key(&credentials.key)?),
+                KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
+                    let master_key_salt = encryption::gen_master_key_salt()?;
+                    let master_key = encryption::derive_master_key(&credentials.key, &master_key_salt, &credentials.key_derivation_method)?;
+                    (Some(master_key_salt[..].to_vec()), master_key)
+                }
+            };
 
             let metadata = Metadata {
-                master_key_salt: master_key_salt[..].to_vec(),
+                master_key_salt,
                 keys: Keys::new().serialize_encrypted(&master_key)?,
             };
 
@@ -195,9 +203,12 @@ impl WalletService {
                     .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err)))?
             };
 
-            let master_key = {
-                let master_key_salt = encryption::master_key_salt_from_slice(&metadata.master_key_salt)?;
-                encryption::derive_master_key(&credentials.key, &master_key_salt, &credentials.key_derivation_method)?
+            let master_key = match credentials.key_derivation_method {
+                KeyDerivationMethod::RAW => encryption::raw_master_key(&credentials.key)?,
+                KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
+                    let master_key_salt = encryption::master_key_salt_from_slice(metadata.master_key_salt.as_ref().map(Vec::as_slice))?;
+                    encryption::derive_master_key(&credentials.key, &master_key_salt, &credentials.key_derivation_method)?
+                }
             };
 
             Keys::deserialize_encrypted(&metadata.keys, &master_key)
@@ -262,9 +273,12 @@ impl WalletService {
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err)))?
         };
 
-        let master_key = {
-            let master_key_salt = encryption::master_key_salt_from_slice(&metadata.master_key_salt)?;
-            encryption::derive_master_key(&credentials.key, &master_key_salt, &credentials.key_derivation_method)?
+        let master_key = match credentials.key_derivation_method {
+            KeyDerivationMethod::RAW => encryption::raw_master_key(&credentials.key)?,
+            KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
+                let master_key_salt = encryption::master_key_salt_from_slice(metadata.master_key_salt.as_ref().map(Vec::as_slice))?;
+                encryption::derive_master_key(&credentials.key, &master_key_salt, &credentials.key_derivation_method)?
+            }
         };
 
         let keys = Keys::deserialize_encrypted(&metadata.keys, &master_key)?;
@@ -272,11 +286,18 @@ impl WalletService {
         // Rotate master key
         if let Some(rekey) = credentials.rekey {
             let metadata = {
-                let master_key_salt = encryption::gen_master_key_salt()?;
-                let master_key = encryption::derive_master_key(&rekey, &master_key_salt, &credentials.rekey_key_derivation_method)?;
+                let (master_key_salt, master_key) = match credentials.key_derivation_method {
+                    KeyDerivationMethod::RAW =>
+                        (None, encryption::raw_master_key(&rekey)?),
+                    KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
+                        let master_key_salt = encryption::gen_master_key_salt()?;
+                        let master_key = encryption::derive_master_key(&rekey, &master_key_salt, &credentials.rekey_key_derivation_method)?;
+                        (Some(master_key_salt[..].to_vec()), master_key)
+                    }
+                };
 
                 let metadata = Metadata {
-                    master_key_salt: master_key_salt[..].to_vec(),
+                    master_key_salt,
                     keys: keys.serialize_encrypted(&master_key)?,
                 };
 

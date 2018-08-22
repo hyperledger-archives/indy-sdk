@@ -23,6 +23,7 @@ pub struct Credentials {
 #[allow(non_camel_case_types)]
 #[derive(Debug, Serialize, Deserialize)]
 pub enum KeyDerivationMethod {
+    RAW,
     ARAGON2I_MOD,
     ARAGON2I_INT
 }
@@ -42,5 +43,5 @@ pub struct ExportConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Metadata {
     pub keys: Vec<u8>,
-    pub master_key_salt: Vec<u8>,
+    pub master_key_salt: Option<Vec<u8>>,
 }
