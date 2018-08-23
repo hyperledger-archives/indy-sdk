@@ -160,14 +160,14 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 /// }
 /// credentials: Wallet credentials json
 /// {
-///   "key": string, Passphrase used to derive wallet master key
+///   "key": string, Auth key for the wallet
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
-///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-///                          ARAGON2I_MOD (used by default)
-///                          ARAGON2I_INT - less secured but faster
-///                          RAW - raw wallet master key is provided (skip derivation)
+///   "key_derivation_method": optional<string> Type of wallet auth key:
+///                          ARAGON2I_MOD - derive secured wallet master key (used by default)
+///                          ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+///                          RAW - raw wallet master key provided (skip derivation)
 /// }
 ///
 /// #Returns
@@ -232,20 +232,19 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///   }
 /// credentials: Wallet credentials json
 ///   {
-///       "key": string, Passphrase used to derive current wallet master key
-///       "rekey": optional<string>, If present than wallet master key will be rotated to a new one
-///                                  derived from this passphrase.
+///       "key": string, Auth key for the wallet
+///       "rekey": optional<string>, If present than wallet master key will be rotated to a new one.
 ///       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                              Can be optional if storage supports default configuration.
 ///                              For 'default' storage type should be empty.
-///       "key_derivation_method": optional<string> algorithm to use for master key derivation:
-///                             ARAGON2I_MOD (used by default)
-///                             ARAGON2I_INT - less secured but faster
-///                             RAW - raw wallet master key is provided (skip derivation)
-///       "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
-///                             ARAGON2I_MOD (used by default)
-///                             ARAGON2I_INT - less secured but faster
-///                             RAW - raw wallet master rekey is provided (skip derivation)
+///       "key_derivation_method": optional<string> Type of wallet auth key:
+///                          ARAGON2I_MOD - derive secured wallet master key (used by default)
+///                          ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+///                          RAW - raw wallet master key provided (skip derivation)
+///       "rekey_derivation_method": optional<string> Type of wallet auth rekey:
+///                          ARAGON2I_MOD - derive secured wallet master rekey (used by default)
+///                          ARAGON2I_INT - derive secured wallet master rekey (less secured but faster)
+///                          RAW - raw wallet master rekey provided (skip derivation)
 ///   }
 ///
 /// #Returns
@@ -296,11 +295,11 @@ pub extern fn indy_open_wallet(command_handle: i32,
 /// export_config: JSON containing settings for input operation.
 ///   {
 ///     "path": <string>, Path of the file that contains exported wallet content
-///     "key": <string>, Passphrase used to derive export key
-///     "key_derivation_method": optional<string> algorithm to use for export key derivation:
-///                              ARAGON2I_MOD (used by default)
-///                              ARAGON2I_INT - less secured but faster
-///                              RAW - raw wallet master key is provided (skip derivation)
+///     "key": <string>, Key for export of the wallet
+///     "key_derivation_method": optional<string> Type of wallet export key:
+///                              ARAGON2I_MOD - derive secured export key (used by default)
+///                              ARAGON2I_INT - derive secured export key (less secured but faster)
+///                              RAW - raw export key provided (skip derivation)
 ///   }
 ///
 /// #Returns
@@ -362,19 +361,19 @@ pub extern fn indy_export_wallet(command_handle: i32,
 /// }
 /// credentials: Wallet credentials json
 /// {
-///   "key": string, Passphrase used to derive wallet master key
+///   "key": string, Auth key for the wallet
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
-///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-///                            ARAGON2I_MOD (used by default)
-///                            ARAGON2I_INT - less secured but faster
-///                            RAW - raw wallet master key is provided (skip derivation)
+///   "key_derivation_method": optional<string> Type of wallet auth key:
+///                             ARAGON2I_MOD - derive secured wallet master key (used by default)
+///                             ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+///                             RAW - raw wallet master key provided (skip derivation)
 /// }
 /// import_config: Import settings json.
 /// {
 ///   "path": <string>, path of the file that contains exported wallet content
-///   "key": <string>, passphrase used to derive export key
+///   "key": <string>, key used for export of the wallet
 /// }
 ///
 /// #Returns
@@ -478,14 +477,14 @@ pub extern fn indy_close_wallet(command_handle: i32,
 /// }
 /// credentials: Wallet credentials json
 /// {
-///   "key": string, Passphrase used to derive wallet master key
+///   "key": string, Auth key for the wallet
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
-///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-///                            ARAGON2I_MOD (used by default)
-///                            ARAGON2I_INT - less secured but faster
-///                            RAW - raw wallet master key is provided (skip derivation)
+///   "key_derivation_method": optional<string> Type of wallet auth key:
+///                             ARAGON2I_MOD - derive secured wallet master key (used by default)
+///                             ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+///                             RAW - raw wallet key master provided (skip derivation)
 /// }
 ///
 /// #Returns

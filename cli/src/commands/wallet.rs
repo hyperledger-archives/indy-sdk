@@ -26,6 +26,10 @@ pub mod create_command {
     command!(CommandMetadata::build("create", "Create new wallet with specified name")
                 .add_main_param("name", "Identifier of the wallet")
                 .add_required_deferred_param("key", "Auth key for the wallet")
+                .add_optional_param("key_type", "Type of auth key. One of:
+                                    argon2m - derive secured wallet key (used by default)
+                                    argon2i - derive secured wallet key (less secured but faster)
+                                    raw - raw wallet key provided (skip derivation)")
                 .add_optional_param("storage_type", "Type of the wallet storage.")
                 .add_optional_param("storage_config", "The list of key:value pairs defined by storage type.")
                 .add_example("wallet create wallet1 key")
@@ -39,11 +43,12 @@ pub mod create_command {
 
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
+        let key_type = get_opt_str_param("key_type", params).map_err(error_err!())?;
         let storage_type = get_opt_str_param("storage_type", params).map_err(error_err!())?.unwrap_or("default");
         let storage_config = get_opt_object_param("storage_config", params).map_err(error_err!())?;
 
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
-        let credentials: String = json!({ "key": key.clone() }).to_string();
+        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_type(key_type)? }).to_string();
 
         trace!("Wallet::create_wallet try: config {}", config);
 
@@ -76,7 +81,15 @@ pub mod open_command {
     command_with_cleanup!(CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
                             .add_main_param("name", "The name of wallet")
                             .add_required_deferred_param("key", "Auth key for the wallet")
+                            .add_optional_param("key_type", "Type of auth key. One of:
+                                                argon2m - derive secured wallet key (used by default)
+                                                argon2i - derive secured wallet key (less secured but faster)
+                                                raw - raw key provided (skip derivation)")
                             .add_optional_deferred_param("rekey", "New auth key for the wallet (will replace previous one).")
+                            .add_optional_param("rekey_type", "Type of new auth key. One of:
+                                                argon2m - derive secured wallet key (used by default)
+                                                argon2i - derive secured wallet key (less secured but faster)
+                                                raw - raw key provided (skip derivation)")
                             .add_example("wallet open wallet1 key")
                             .add_example("wallet open wallet1 key rekey")
                             .finalize());
@@ -87,6 +100,8 @@ pub mod open_command {
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
         let rekey = get_opt_str_param("rekey", params).map_err(error_err!())?;
+        let key_type = get_opt_str_param("key_type", params).map_err(error_err!())?;
+        let rekey_type = get_opt_str_param("rekey_type", params).map_err(error_err!())?;
 
         let config = _read_wallet_config(id)
             .map_err(|_| println_err!("Wallet \"{}\" not found or unavailable", id))?;
@@ -95,8 +110,13 @@ pub mod open_command {
             let mut json = JSONMap::new();
 
             json.insert("key".to_string(), serde_json::Value::String(key.to_string()));
+            json.insert("key_derivation_method".to_string(), serde_json::Value::String(map_key_type(key_type)?.to_string()));
 
             update_json_map_opt_key!(json, "rekey", rekey);
+
+            if rekey.is_some(){
+                json.insert("rekey_derivation_method".to_string(), serde_json::Value::String(map_key_type(rekey_type)?.to_string()));
+            }
 
             JSONValue::from(json).to_string()
         };
@@ -221,6 +241,10 @@ pub mod delete_command {
     command!(CommandMetadata::build("delete", "Delete wallet with specified name")
                 .add_main_param("name", "The name of deleted wallet")
                 .add_required_deferred_param("key", "Auth key for the wallet")
+                .add_optional_param("key_type", "Type of auth key. One of:
+                                    argon2m - derive secured wallet key (used by default)
+                                    argon2i - derive secured wallet key (less secured but faster)
+                                    raw - raw key provided (skip derivation)")
                 .add_example("wallet delete wallet1 key")
                 .finalize()
     );
@@ -230,11 +254,12 @@ pub mod delete_command {
 
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
+        let key_type = get_opt_str_param("key_type", params).map_err(error_err!())?;
 
         let config = _read_wallet_config(id)
             .map_err(|_| println_err!("Wallet \"{}\" not found or unavailable", id))?;
 
-        let credentials: String = json!({ "key": key }).to_string();
+        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_type(key_type)? }).to_string();
 
         let res = match Wallet::delete_wallet(config.as_str(), credentials.as_str()) {
             Ok(()) => {
@@ -260,7 +285,11 @@ pub mod export_command {
 
     command!(CommandMetadata::build("export", "Export opened wallet to the file")
                 .add_required_param("export_path", "Path to the export file")
-                .add_required_deferred_param("export_key", "Passphrase used to derive export key")
+                .add_required_deferred_param("export_key", "Key for export of the wallet")
+                .add_optional_param("export_key_type", "Type of export key. One of:
+                                    argon2m - derive secured export key (used by default)
+                                    argon2i - derive secured export key (less secured but faster)
+                                    raw - raw key provided (skip derivation)")
                 .add_example("wallet export export_path=/home/indy/export_wallet export_key")
                 .finalize()
     );
@@ -272,8 +301,9 @@ pub mod export_command {
 
         let export_path = get_str_param("export_path", params).map_err(error_err!())?;
         let export_key = get_str_param("export_key", params).map_err(error_err!())?;
+        let export_key_type = get_opt_str_param("export_key_type", params).map_err(error_err!())?;
 
-        let export_config: String = json!({ "path": export_path.clone(), "key": export_key.clone() }).to_string();
+        let export_config: String = json!({ "path": export_path.clone(), "key": export_key.clone(), "key_derivation_method": map_key_type(export_key_type)? }).to_string();
 
         trace!("Wallet::export_wallet try: wallet_name {}, export_path {}", wallet_name, export_path);
 
@@ -300,10 +330,14 @@ pub mod import_command {
     command!(CommandMetadata::build("import", "Create new wallet and then import content from the specified file")
                 .add_main_param("name", "The name of new wallet")
                 .add_required_deferred_param("key", "Auth key for the wallet")
+                .add_optional_param("key_type", "Type of auth key. One of:
+                                    argon2m - derive secured wallet key (used by default)
+                                    argon2i - derive secured wallet key (less secured but faster)
+                                    raw - raw key provided (skip derivation)")
                 .add_optional_param("storage_type", "Type of the wallet storage.")
                 .add_optional_param("storage_config", "The list of key:value pairs defined by storage type.")
                 .add_required_param("export_path", "Path to the file that contains exported wallet content")
-                .add_required_deferred_param("export_key", "Passphrase used to derive export key")
+                .add_required_deferred_param("export_key", "Key used for export of the wallet")
                 .add_example("wallet import wallet1 key export_path=/home/indy/export_wallet export_key")
                 .add_example(r#"wallet import wallet1 key export_path=/home/indy/export_wallet export_key storage_type=default storage_config={"key1":"value1","key2":"value2"}"#)
                 .finalize()
@@ -314,14 +348,15 @@ pub mod import_command {
 
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
+        let key_type = get_opt_str_param("key_type", params).map_err(error_err!())?;
         let export_path = get_str_param("export_path", params).map_err(error_err!())?;
         let export_key = get_str_param("export_key", params).map_err(error_err!())?;
         let storage_type = get_opt_str_param("storage_type", params).map_err(error_err!())?;
         let storage_config = get_opt_object_param("storage_config", params).map_err(error_err!())?;
 
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
-        let credentials: String = json!({ "key": key.clone() }).to_string();
-        let import_config: String = json!({ "path": export_path.clone(), "key": export_key.clone() }).to_string();
+        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_type(key_type)? }).to_string();
+        let import_config: String = json!({ "path": export_path.clone(), "key": export_key.clone()}).to_string();
 
         trace!("Wallet::import_wallet try: config {}, import_config {}", config, import_config);
 
@@ -413,6 +448,16 @@ fn _list_wallets() -> Vec<serde_json::Value> {
     }
 
     configs
+}
+
+fn map_key_type(key: Option<&str>) -> Result<&'static str, ()> {
+    // argon2m, argon2i, raw
+    match key {
+        None | Some("argon2m") => Ok("ARAGON2I_MOD"),
+        Some("argon2i") => Ok("ARAGON2I_INT"),
+        Some("raw") => Ok("RAW"),
+        val @ _ => Err(println_err!("Unsupported Wallet Key type has been specified \"{}\"", val.unwrap())),
+    }
 }
 
 #[cfg(test)]
@@ -526,6 +571,44 @@ pub mod tests {
                        serde_json::from_str::<serde_json::Value>(config).unwrap().as_object().unwrap());
 
             delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn create_works_for_key_type() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key_type", "argon2m".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(1, wallets.len());
+
+            assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
+
+            delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn create_works_for_wrong_key_type() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key_type", "some_type".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+
             TestUtils::cleanup_storage();
         }
     }
@@ -971,6 +1054,96 @@ pub mod tests {
             assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
             assert_eq!(wallets[0]["storage_config"].as_object().unwrap(),
                        serde_json::from_str::<serde_json::Value>(config).unwrap().as_object().unwrap());
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn import_works_for_key_types() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key_type", "argon2i".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            {
+                let cmd = open_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key_type", "argon2i".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            new_did(&ctx, SEED_MY1);
+            use_did(&ctx, DID_MY1);
+
+            let (_, path_str) = export_wallet_path();
+
+            {
+                let cmd = export_command::new();
+                let mut params = CommandParams::new();
+                params.insert("export_path", path_str.clone());
+                params.insert("export_key", EXPORT_KEY.to_string());
+                params.insert("key_type", "argon2m".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let wallet_name = "imported_wallet";
+            let key = "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw";
+            // import wallet
+            {
+                let cmd = import_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", wallet_name.to_string());
+                params.insert("key", key.to_string());
+                params.insert("key_type", "raw".to_string());
+                params.insert("export_path", path_str);
+                params.insert("export_key", EXPORT_KEY.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            // open exported wallet
+            {
+                let cmd = open_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", wallet_name.to_string());
+                params.insert("key", key.to_string());
+                params.insert("key_type", "raw".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            use_did(&ctx, DID_MY1);
+
+            {
+                let cmd = close_command::new();
+                let params = CommandParams::new();
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            // delete first wallet
+            {
+                let cmd = delete_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("key_type", "argon2i".to_string());
+                cmd.execute(&CommandContext::new(), &params).unwrap();
+            }
+
+            // delete second wallet
+            {
+                let cmd = delete_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", wallet_name.to_string());
+                params.insert("key", key.to_string());
+                params.insert("key_type", "raw".to_string());
+                cmd.execute(&CommandContext::new(), &params).unwrap();
+            }
 
             TestUtils::cleanup_storage();
         }

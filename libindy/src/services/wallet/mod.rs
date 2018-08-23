@@ -123,26 +123,7 @@ impl WalletService {
                 .ok_or(WalletError::UnknownType(storage_type.to_string()))?
         };
 
-        // TODO: FIXME avoid copypast
-        let metadata = {
-            let (master_key_salt, master_key) = match credentials.key_derivation_method {
-                KeyDerivationMethod::RAW =>
-                    (None, encryption::raw_master_key(&credentials.key)?),
-                KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
-                    let master_key_salt = encryption::gen_master_key_salt()?;
-                    let master_key = encryption::derive_master_key(&credentials.key, &master_key_salt, &credentials.key_derivation_method)?;
-                    (Some(master_key_salt[..].to_vec()), master_key)
-                }
-            };
-
-            let metadata = Metadata {
-                master_key_salt,
-                keys: Keys::new().serialize_encrypted(&master_key)?,
-            };
-
-            serde_json::to_vec(&metadata)
-                .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err)))?
-        };
+        let metadata = self._prepare_metadata(&credentials.key, &credentials.key_derivation_method, &Keys::new())?;
 
         storage_type.create_storage(&config.id,
                                     config.storage_config
@@ -203,16 +184,7 @@ impl WalletService {
                     .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err)))?
             };
 
-            let master_key = match credentials.key_derivation_method {
-                KeyDerivationMethod::RAW => encryption::raw_master_key(&credentials.key)?,
-                KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
-                    let master_key_salt = encryption::master_key_salt_from_slice(metadata.master_key_salt.as_ref().map(Vec::as_slice))?;
-                    encryption::derive_master_key(&credentials.key, &master_key_salt, &credentials.key_derivation_method)?
-                }
-            };
-
-            Keys::deserialize_encrypted(&metadata.keys, &master_key)
-                .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
+            self._restore_keys(&metadata, &credentials.key, &credentials.key_derivation_method)?;
         }
 
         storage_type.delete_storage(&config.id,
@@ -273,38 +245,11 @@ impl WalletService {
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err)))?
         };
 
-        let master_key = match credentials.key_derivation_method {
-            KeyDerivationMethod::RAW => encryption::raw_master_key(&credentials.key)?,
-            KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
-                let master_key_salt = encryption::master_key_salt_from_slice(metadata.master_key_salt.as_ref().map(Vec::as_slice))?;
-                encryption::derive_master_key(&credentials.key, &master_key_salt, &credentials.key_derivation_method)?
-            }
-        };
-
-        let keys = Keys::deserialize_encrypted(&metadata.keys, &master_key)?;
+        let keys = self._restore_keys(&metadata, &credentials.key, &credentials.key_derivation_method)?;
 
         // Rotate master key
         if let Some(rekey) = credentials.rekey {
-            let metadata = {
-                let (master_key_salt, master_key) = match credentials.rekey_derivation_method {
-                    KeyDerivationMethod::RAW =>
-                        (None, encryption::raw_master_key(&rekey)?),
-                    KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
-                        let master_key_salt = encryption::gen_master_key_salt()?;
-                        let master_key = encryption::derive_master_key(&rekey, &master_key_salt, &credentials.rekey_derivation_method)?;
-                        (Some(master_key_salt[..].to_vec()), master_key)
-                    }
-                };
-
-                let metadata = Metadata {
-                    master_key_salt,
-                    keys: keys.serialize_encrypted(&master_key)?,
-                };
-
-                serde_json::to_vec(&metadata)
-                    .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err)))?
-            };
-
+            let metadata = self._prepare_metadata(&rekey, &credentials.rekey_derivation_method, &keys)?;
             storage.set_storage_metadata(&metadata)?;
         }
 
@@ -553,6 +498,43 @@ impl WalletService {
         trace!("import_wallet <<<");
 
         res
+    }
+
+    fn _prepare_metadata(&self, key: &str, key_derivation_method: &KeyDerivationMethod, keys: &Keys) -> Result<Vec<u8>, WalletError> {
+        let (master_key_salt, master_key) = match key_derivation_method {
+            KeyDerivationMethod::RAW =>
+                (None, encryption::raw_master_key(key)?),
+            KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
+                let master_key_salt = encryption::gen_master_key_salt()?;
+                let master_key = encryption::derive_master_key(key, &master_key_salt, key_derivation_method)?;
+                (Some(master_key_salt[..].to_vec()), master_key)
+            }
+        };
+
+        let metadata = Metadata {
+            master_key_salt,
+            keys: keys.serialize_encrypted(&master_key)?,
+        };
+
+        let res = serde_json::to_vec(&metadata)
+            .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err)))?;
+
+        Ok(res)
+    }
+
+    fn _restore_keys(&self, metadata: &Metadata, key: &str, key_derivation_method: &KeyDerivationMethod) -> Result<Keys, WalletError> {
+        let master_key = match key_derivation_method {
+            KeyDerivationMethod::RAW => encryption::raw_master_key(key)?,
+            KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
+                let master_key_salt = encryption::master_key_salt_from_slice(metadata.master_key_salt.as_ref().map(Vec::as_slice))?;
+                encryption::derive_master_key(key, &master_key_salt, key_derivation_method)?
+            }
+        };
+
+        let res = Keys::deserialize_encrypted(&metadata.keys, &master_key)
+            .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
+
+        Ok(res)
     }
 
     pub const PREFIX: &'static str = "Indy";
@@ -1595,7 +1577,6 @@ mod tests {
 
         // Access failed for old key
         let res = wallet_service.open_wallet(&_config(), &_credentials());
-        println!("res {:?}", res);
         assert_match!(Err(WalletError::AccessFailed(_)), res);
 
         // Works ok with new key when reopening
