@@ -65,7 +65,8 @@
                           For 'default' storage type should be empty.
    "key_derivation_method": optional<string> algorithm to use for master key derivation:
                             ARAGON2I_MOD (used by default)
-                            ARAGON2I_INT - less secured but faster}
+                            ARAGON2I_INT - less secured but faster
+                            RAW - raw wallet master key is provided (skip derivation)
  }
  @param completion Completion callback that returns error code.
 */
@@ -105,16 +106,19 @@
                           For 'default' storage type should be empty.
    "key_derivation_method": optional<string> algorithm to use for master key derivation:
                             ARAGON2I_MOD (used by default)
-                            ARAGON2I_INT - less secured but faster}
+                            ARAGON2I_INT - less secured but faster
+                            RAW - raw wallet master key is provided (skip derivation)
    "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
                               ARAGON2I_MOD (used by default)
-                              ARAGON2I_INT - less secured but faster} }
+                              ARAGON2I_INT - less secured but faster
+                              RAW - raw wallet master rekey is provided (skip derivation)
+ }
  
  @param completion Completion callback that returns error code and created handle to opened wallet to use in methods that require wallet access.
  */
 - (void)openWalletWithConfig:(NSString *)config
-               credentials:(NSString *)credentials
-                completion:(void (^)(NSError *error, IndyHandle walletHandle))completion;
+                 credentials:(NSString *)credentials
+                  completion:(void (^)(NSError *error, IndyHandle walletHandle))completion;
 
 /**
  Closes opened wallet and frees allocated resources.
@@ -153,12 +157,15 @@
                           For 'default' storage type should be empty.
    "key_derivation_method": optional<string> algorithm to use for master key derivation:
                             ARAGON2I_MOD (used by default)
-                            ARAGON2I_INT - less secured but faster} }
+                            ARAGON2I_INT - less secured but faster
+                            RAW - raw wallet master key is provided (skip derivation)
+ }
+
  @param completion Completion callback that returns error code.
  */
 - (void)deleteWalletWithConfig:(NSString *)config
-                 credentials:(NSString *)credentials
-                  completion:(void (^)(NSError *error))completion;
+                   credentials:(NSString *)credentials
+                    completion:(void (^)(NSError *error))completion;
 
 
 /**
@@ -169,9 +176,11 @@
    {
      "path": path of the file that contains exported wallet content
      "key": passphrase used to export key
-   "key_derivation_method": optional<string> algorithm to use for export key derivation:
+     "key_derivation_method": optional<string> algorithm to use for export key derivation:
                             ARAGON2I_MOD (used by default)
-                            ARAGON2I_INT - less secured but faster}   }
+                            ARAGON2I_INT - less secured but faster
+                            RAW - raw wallet master key is provided (skip derivation)
+    }
  @param completion Completion callback that returns error code.
  */
 - (void)exportWalletWithHandle:(IndyHandle)walletHandle
@@ -208,7 +217,9 @@
                           For 'default' storage type should be empty.
    "key_derivation_method": optional<string> algorithm to use for master key derivation:
                             ARAGON2I_MOD (used by default)
-                            ARAGON2I_INT - less secured but faster} }
+                            ARAGON2I_INT - less secured but faster
+                            RAW - raw wallet master key is provided (skip derivation)
+ }
  @param importConfigJson  JSON containing settings for input operation.
    {
      "path": path of the file that contains exported wallet content
@@ -217,9 +228,23 @@
  @param completion Completion callback that returns error code.
 */
 - (void)importWalletWithConfig:(NSString *)config
-                 credentials:(NSString *)credentials
-            importConfigJson:(NSString *)importConfigJson
-                  completion:(void (^)(NSError *error))completion;
+                   credentials:(NSString *)credentials
+              importConfigJson:(NSString *)importConfigJson
+                    completion:(void (^)(NSError *error))completion;
+
+/**
+ Generate wallet master key.
+
+ @param walletHandle  wallet handle returned by IndyWallet::openWalletWithName.
+ @param configJson  (optional) key configuration json.
+   {
+     "seed": optional<string> Seed that allows deterministic key creation (if not set random one will be used).
+    }
+ @param completion Completion callback that returns error code.
+ */
++ (void)generateWalletKeyForConfig:(NSString *)configJson
+                        completion:(void (^)(NSError *error,
+                                NSString *key))completion;
 
 /**
  Delete all keychain wallets from Keychain.
