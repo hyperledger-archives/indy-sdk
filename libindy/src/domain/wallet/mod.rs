@@ -17,7 +17,7 @@ pub struct Credentials {
     #[serde(default = "default_key_derivation_method")]
     pub key_derivation_method: KeyDerivationMethod,
     #[serde(default = "default_key_derivation_method")]
-    pub rekey_key_derivation_method: KeyDerivationMethod
+    pub rekey_derivation_method: KeyDerivationMethod
 }
 
 #[allow(non_camel_case_types)]

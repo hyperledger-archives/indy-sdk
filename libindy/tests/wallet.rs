@@ -354,6 +354,10 @@ mod high_cases {
             let credentials = json!({"key": key, "key_derivation_method": "RAW"}).to_string();
             WalletUtils::create_wallet(WALLET_CONFIG, &credentials).unwrap();
 
+            let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, &credentials).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::delete_wallet(WALLET_CONFIG, &credentials).unwrap();
+
             TestUtils::cleanup_storage();
         }
 
@@ -367,6 +371,10 @@ mod high_cases {
 
             let credentials = json!({"key": key, "key_derivation_method": "RAW"}).to_string();
             WalletUtils::create_wallet(WALLET_CONFIG, &credentials).unwrap();
+
+            let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, &credentials).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::delete_wallet(WALLET_CONFIG, &credentials).unwrap();
 
             TestUtils::cleanup_storage();
         }

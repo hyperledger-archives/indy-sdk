@@ -241,11 +241,11 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///       "key_derivation_method": optional<string> algorithm to use for master key derivation:
 ///                             ARAGON2I_MOD (used by default)
 ///                             ARAGON2I_INT - less secured but faster
-///                             RAW - raw wallet master rekey is provided (skip derivation)
+///                             RAW - raw wallet master key is provided (skip derivation)
 ///       "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
 ///                             ARAGON2I_MOD (used by default)
 ///                             ARAGON2I_INT - less secured but faster
-///                             RAW - raw wallet master key is provided (skip derivation)
+///                             RAW - raw wallet master rekey is provided (skip derivation)
 ///   }
 ///
 /// #Returns
@@ -300,6 +300,7 @@ pub extern fn indy_open_wallet(command_handle: i32,
 ///     "key_derivation_method": optional<string> algorithm to use for export key derivation:
 ///                              ARAGON2I_MOD (used by default)
 ///                              ARAGON2I_INT - less secured but faster
+///                              RAW - raw wallet master key is provided (skip derivation)
 ///   }
 ///
 /// #Returns
@@ -368,6 +369,7 @@ pub extern fn indy_export_wallet(command_handle: i32,
 ///   "key_derivation_method": optional<string> algorithm to use for master key derivation:
 ///                            ARAGON2I_MOD (used by default)
 ///                            ARAGON2I_INT - less secured but faster
+///                            RAW - raw wallet master key is provided (skip derivation)
 /// }
 /// import_config: Import settings json.
 /// {
