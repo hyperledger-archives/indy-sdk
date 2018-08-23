@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Hyperledger.Indy.Utils;
-using Hyperledger.Indy.WalletApi;
 using static Hyperledger.Indy.PaymentsApi.NativeMethods;
 
 namespace Hyperledger.Indy.PaymentsApi
@@ -19,14 +18,16 @@ namespace Hyperledger.Indy.PaymentsApi
             CreatePaymentAddressCallback = CreatePaymentAddressHandler;
             AddRequestFeesCallback = AddRequestFeesHandler;
             ParseResponseWithFeesCallback = ParseResponseWithFeesHandler;
-            BuildGetUtxoRequstCallback = BuildGetUtxoRequstHandler;
-            ParseGetUtxoResponseCallback = ParseGetUtxoResponseHandler;
+            BuildGetPaymentSourcesRequstCallback = BuildGetPaymentSourcesRequstHandler;
+            ParseGetPaymentSourcesResponseCallback = ParseGetPaymentSourcesResponseHandler;
             BuildPaymentRequestCallback = BuildPaymentRequestHandler;
             ParsePaymentResponseCallback = ParsePaymentResponseHandler;
             BuildMintReqCallback = BuildMintReqHandler;
             BuildSetTxnFeesReqCallback = BuildSetTxnFeesReqHandler;
             BuildGetTxnFeesReqCallback = BuildGetTxnFeesReqHandler;
             ParseGetTxnFeesResponseCallback = ParseGetTxnFeesResponseHandler;
+            BuildVerifyPaymentRequestCallback = BuildVerifyPaymentRequestHandler;
+            ParseVerifyPaymentResponseCallback = ParseVerifyPaymentResponseHandler;
         }
 
         ErrorCode CreatePaymentAddressHandler(int command_handle, IntPtr wallet_handle, string config, PaymentMethodResultDelegate cb)
@@ -41,9 +42,9 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode AddRequestFeesHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string req_json, string inputs_json, string outputs_json, PaymentMethodResultDelegate cb)
+        ErrorCode AddRequestFeesHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string req_json, string inputs_json, string outputs_json, string extra, PaymentMethodResultDelegate cb)
         {
-            AddRequestFeesAsync(submitter_did, req_json, inputs_json, outputs_json)
+            AddRequestFeesAsync(submitter_did, req_json, inputs_json, outputs_json, extra)
                 .ContinueWith(reqWithFeesJson =>
                 {
                     var result = cb(command_handle, 0, reqWithFeesJson.Result);
@@ -65,9 +66,9 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode BuildGetUtxoRequstHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string payment_address, PaymentMethodResultDelegate cb)
+        ErrorCode BuildGetPaymentSourcesRequstHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string payment_address, PaymentMethodResultDelegate cb)
         {
-            BuildGetUtxoRequestAsync(submitter_did, payment_address)
+            BuildGetPaymentSourcesRequestAsync(submitter_did, payment_address)
                 .ContinueWith(getUtxoTxnJson =>
                 {
                     var result = cb(command_handle, 0, getUtxoTxnJson.Result);
@@ -77,9 +78,9 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode ParseGetUtxoResponseHandler(int command_handle, string resp_json, PaymentMethodResultDelegate cb)
+        ErrorCode ParseGetPaymentSourcesResponseHandler(int command_handle, string resp_json, PaymentMethodResultDelegate cb)
         {
-            ParseGetUtxoResponseAsync(resp_json)
+            ParseGetPaymentSourcesResponseAsync(resp_json)
                 .ContinueWith(utxoJson =>
                 {
                     var result = cb(command_handle, 0, utxoJson.Result);
@@ -89,9 +90,9 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode BuildPaymentRequestHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string inputs_json, string outputs_json, PaymentMethodResultDelegate cb)
+        ErrorCode BuildPaymentRequestHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string inputs_json, string outputs_json, string extra, PaymentMethodResultDelegate cb)
         {
-            BuildPaymentRequestAsync(submitter_did, inputs_json, outputs_json)
+            BuildPaymentRequestAsync(submitter_did, inputs_json, outputs_json, extra)
                 .ContinueWith(paymentReqJson =>
                 {
                     var result = cb(command_handle, 0, paymentReqJson.Result);
@@ -113,9 +114,9 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
-        ErrorCode BuildMintReqHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string outputs_json, PaymentMethodResultDelegate cb)
+        ErrorCode BuildMintReqHandler(int command_handle, IntPtr wallet_handle, string submitter_did, string outputs_json, string extra, PaymentMethodResultDelegate cb)
         {
-            BuildMintRequestAsync(submitter_did, outputs_json)
+            BuildMintRequestAsync(submitter_did, outputs_json, extra)
                 .ContinueWith(mintReqJson =>
                 {
                     var result = cb(command_handle, 0, mintReqJson.Result);
@@ -161,15 +162,39 @@ namespace Hyperledger.Indy.PaymentsApi
             return ErrorCode.Success;
         }
 
+        ErrorCode BuildVerifyPaymentRequestHandler(int command_handle, IntPtr wallet_handle, string submitterDid, string receipt, PaymentMethodResultDelegate cb)
+        {
+            BuildVerifyPaymentRequestAsync(submitterDid, receipt)
+                .ContinueWith(feesJson =>
+                {
+                    var result = cb(command_handle, 0, feesJson.Result);
+                    CallbackHelper.CheckCallback(result);
+                });
+
+            return ErrorCode.Success;
+        }
+
+        ErrorCode ParseVerifyPaymentResponseHandler(int command_handle, string responseJson, PaymentMethodResultDelegate cb)
+        {
+            ParseVerifyPaymentResponseAsync(responseJson)
+                .ContinueWith(feesJson =>
+                {
+                    var result = cb(command_handle, 0, feesJson.Result);
+                    CallbackHelper.CheckCallback(result);
+                });
+
+            return ErrorCode.Success;
+        }
+
         internal CreatePaymentAddressCallbackDelegate CreatePaymentAddressCallback { get; }
 
         internal AddRequestFeesCallbackDelegate AddRequestFeesCallback { get; }
 
         internal ParseResponseWithFeesCallbackDelegate ParseResponseWithFeesCallback { get; }
 
-        internal BuildGetUtxoRequstCallbackDelegate BuildGetUtxoRequstCallback { get; }
+        internal BuildGetPaymentSourcesRequestCallbackDelegate BuildGetPaymentSourcesRequstCallback { get; }
 
-        internal ParseGetUtxoResponseCallbackDelegate ParseGetUtxoResponseCallback { get; }
+        internal ParseGetPaymentSourcesResponseCallbackDelegate ParseGetPaymentSourcesResponseCallback { get; }
 
         internal BuildPaymentRequestCallbackDelegate BuildPaymentRequestCallback { get; }
 
@@ -182,6 +207,10 @@ namespace Hyperledger.Indy.PaymentsApi
         internal BuildGetTxnFeesReqCallbackDelegate BuildGetTxnFeesReqCallback { get; }
 
         internal ParseGetTxnFeesResponseCallbackDelegate ParseGetTxnFeesResponseCallback { get; }
+
+        internal BuildVerifyPaymentRequestCallbackDelegate BuildVerifyPaymentRequestCallback { get; }
+
+        internal ParseVerifyPaymentResponseCallbackDelegate ParseVerifyPaymentResponseCallback { get; }
 
         /// <summary>
         /// Creates the payment address async.
@@ -198,7 +227,8 @@ namespace Hyperledger.Indy.PaymentsApi
         /// <param name="reqJson">Req json.</param>
         /// <param name="inputsJson">Inputs json.</param>
         /// <param name="outputsJson">Outputs json.</param>
-        public abstract Task<string> AddRequestFeesAsync(string submitterDid, string reqJson, string inputsJson, string outputsJson);
+        /// <param name="extra">Optional exrra information about payment.</param>
+        public abstract Task<string> AddRequestFeesAsync(string submitterDid, string reqJson, string inputsJson, string outputsJson, string extra);
 
         /// <summary>
         /// Parses the response with fees async.
@@ -213,14 +243,14 @@ namespace Hyperledger.Indy.PaymentsApi
         /// <returns>The get utxo request async.</returns>
         /// <param name="submittedDid">Submitted did.</param>
         /// <param name="paymentAddress">Payment address.</param>
-        public abstract Task<string> BuildGetUtxoRequestAsync(string submittedDid, string paymentAddress);
+        public abstract Task<string> BuildGetPaymentSourcesRequestAsync(string submittedDid, string paymentAddress);
 
         /// <summary>
         /// Parses the get utxo response async.
         /// </summary>
         /// <returns>The get utxo response async.</returns>
         /// <param name="responseJson">Response json.</param>
-        public abstract Task<string> ParseGetUtxoResponseAsync(string responseJson);
+        public abstract Task<string> ParseGetPaymentSourcesResponseAsync(string responseJson);
 
         /// <summary>
         /// Builds the payment request async.
@@ -229,7 +259,8 @@ namespace Hyperledger.Indy.PaymentsApi
         /// <param name="submitterDid">Submitter did.</param>
         /// <param name="inputsJson">Inputs json.</param>
         /// <param name="outputsJson">Outputs json.</param>
-        public abstract Task<string> BuildPaymentRequestAsync(string submitterDid, string inputsJson, string outputsJson);
+        /// <param name="extra">Optional exrra information about payment.</param>
+        public abstract Task<string> BuildPaymentRequestAsync(string submitterDid, string inputsJson, string outputsJson, string extra);
 
         /// <summary>
         /// Parses the payment response async.
@@ -244,7 +275,8 @@ namespace Hyperledger.Indy.PaymentsApi
         /// <returns>The mint request async.</returns>
         /// <param name="submitterDid">Submitter did.</param>
         /// <param name="outputsJson">Outputs json.</param>
-        public abstract Task<string> BuildMintRequestAsync(string submitterDid, string outputsJson);
+        /// <param name="extra">Optional exrra information about payment.</param>
+        public abstract Task<string> BuildMintRequestAsync(string submitterDid, string outputsJson, string extra);
 
         /// <summary>
         /// Builds the set txn fees async.
@@ -267,5 +299,20 @@ namespace Hyperledger.Indy.PaymentsApi
         /// <returns>The get txn fees response async.</returns>
         /// <param name="responseJson">Response json.</param>
         public abstract Task<string> ParseGetTxnFeesResponseAsync(string responseJson);
+
+        /// <summary>
+        /// Builds the verify payment request async.
+        /// </summary>
+        /// <returns>The verify payment request async.</returns>
+        /// <param name="submitterDid">Submitter did.</param>
+        /// <param name="receipt">Receipt.</param>
+        public abstract Task<string> BuildVerifyPaymentRequestAsync(string submitterDid, string receipt);
+
+        /// <summary>
+        /// Parses the verify payment response async.
+        /// </summary>
+        /// <returns>The verify payment response async.</returns>
+        /// <param name="responseJson">Response json.</param>
+        public abstract Task<string> ParseVerifyPaymentResponseAsync(string responseJson);
     }
 }

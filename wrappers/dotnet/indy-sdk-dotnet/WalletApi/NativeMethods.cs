@@ -6,6 +6,7 @@ namespace Hyperledger.Indy.WalletApi
 {
     internal static class NativeMethods
     {
+        /*
         /// <summary>
         /// Registers custom wallet implementation.
         /// </summary>
@@ -24,6 +25,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_register_wallet_type(int command_handle, string xtype, WalletTypeCreateDelegate create, WalletTypeOpenDelegate open, WalletTypeSetDelegate set, WalletTypeGetDelegate get, WalletTypeGetNotExpiredDelegate get_not_expired, WalletTypeListDelegate list, WalletTypeCloseDelegate close, WalletTypeDeleteDelegate delete, WalletTypeFreeDelegate free, IndyMethodCompletedDelegate cb);
+        */
 
         /// <summary>
         /// Delegate for the function called back to when a wallet of a custom type is created.
