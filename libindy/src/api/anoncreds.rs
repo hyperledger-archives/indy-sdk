@@ -820,6 +820,7 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
+#[deprecated(since="1.6.1")]
 pub extern fn indy_prover_get_credential(command_handle: i32,
                                          wallet_handle: i32,
                                          cred_id: *const c_char,
