@@ -2,21 +2,26 @@
 using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.DidApi.NativeMethods;
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.DidApi
 {
     /// <summary>
     /// Provides cryptographic functionality related to DIDs.
     /// </summary>
-    public static class Did 
+    public static class Did
     {
         /// <summary>
         /// Gets the callback to use when the command for CreateAndStoreMyDidResultAsync has completed.
         /// </summary>
-        private static CreateAndStoreMyDidCompletedDelegate _createAndStoreMyDidCallback = (xcommand_handle, err, did, verkey) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(CreateAndStoreMyDidCompletedDelegate))]
+#endif
+        private static void CreateAndStoreMyDidCallback(int xcommand_handle, int err, string did, string verkey)
         {
             var taskCompletionSource = PendingCommands.Remove<CreateAndStoreMyDidResult>(xcommand_handle);
 
@@ -26,12 +31,15 @@ namespace Hyperledger.Indy.DidApi
             var callbackResult = new CreateAndStoreMyDidResult(did, verkey);
 
             taskCompletionSource.SetResult(callbackResult);
-        };
+        }
 
         /// <summary>
         /// Gets the callback to use when the command for ReplaceKeysAsync has completed.
         /// </summary>
-        private static ReplaceKeysStartCompletedDelegate _replaceKeysCallback = (xcommand_handle, err, verkey) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ReplaceKeysStartCompletedDelegate))]
+#endif
+        private static void ReplaceKeysCallback(int xcommand_handle, int err, string verkey)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -39,12 +47,15 @@ namespace Hyperledger.Indy.DidApi
                 return;
 
             taskCompletionSource.SetResult(verkey);
-        };
+        }
 
         /// <summary>
         /// Gets the callback to use when the command for KeyForDidAsync has completed.
         /// </summary>
-        private static DidKeyForDidCompletedDelegate _keyForDidCompletedCallback = (xcommand_handle, err, key) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(DidKeyForDidCompletedDelegate))]
+#endif
+        private static void KeyForDidCompletedCallback(int xcommand_handle, int err, string key)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -52,12 +63,15 @@ namespace Hyperledger.Indy.DidApi
                 return;
 
             taskCompletionSource.SetResult(key);
-        };
+        }
 
         /// <summary>
         /// Gets the callback to use when the command for KeyForLocalDidAsync has completed.
         /// </summary>
-        private static DidKeyForLocalDidCompletedDelegate _keyForLocalDidCompletedCallback = (xcommand_handle, err, key) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(DidKeyForLocalDidCompletedDelegate))]
+#endif
+        private static void KeyForLocalDidCompletedCallback(int xcommand_handle, int err, string key)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -65,12 +79,15 @@ namespace Hyperledger.Indy.DidApi
                 return;
 
             taskCompletionSource.SetResult(key);
-        };
+        }
 
         /// <summary>
         /// Gets the callback to use when the command for GetEndpointForDidAsync has completed.
         /// </summary>
-        private static DidGetEndpointForDidCompletedDelegate _getEndpointForDidCompletedCallback = (xcommand_handle, err, endpoint, transport_vk) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(DidGetEndpointForDidCompletedDelegate))]
+#endif
+        private static void GetEndpointForDidCompletedCallback(int xcommand_handle, int err, string endpoint, string transport_vk)
         {
             var taskCompletionSource = PendingCommands.Remove<EndpointForDidResult>(xcommand_handle);
 
@@ -80,12 +97,15 @@ namespace Hyperledger.Indy.DidApi
             var result = new EndpointForDidResult(endpoint, transport_vk);
 
             taskCompletionSource.SetResult(result);
-        };
+        }
 
         /// <summary>
         /// Gets the callback to use when the command for GetDidMetadataAsync has completed.
         /// </summary>
-        private static DidGetDidMetadataCompletedDelegate _getDidMetadataCompletedCallback = (xcommand_handle, err, metadata) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(DidGetDidMetadataCompletedDelegate))]
+#endif
+        private static void GetDidMetadataCompletedCallback(int xcommand_handle, int err, string metadata)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -93,12 +113,15 @@ namespace Hyperledger.Indy.DidApi
                 return;
 
             taskCompletionSource.SetResult(metadata);
-        };
+        }
 
         /// <summary>
         /// Gets the callback to use when the command for GetMyDidWithMetaAsync has completed.
         /// </summary>
-        private static GetMyDidWithMetaCompletedDelegate _getMyDidWithMetaCompletedCallback = (xcommand_handle, err, didWithMeta) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(GetMyDidWithMetaCompletedDelegate))]
+#endif
+        private static void GetMyDidWithMetaCompletedCallback(int xcommand_handle, int err, string didWithMeta)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -106,12 +129,15 @@ namespace Hyperledger.Indy.DidApi
                 return;
 
             taskCompletionSource.SetResult(didWithMeta);
-        };
+        }
 
         /// <summary>
         /// Gets the callback to use when the command for GetMyDidWithMetaAsync has completed.
         /// </summary>
-        private static ListMyDidsWithMetaCompletedDelegate _listMyDidsWithMetaCompletedCallback = (xcommand_handle, err, dids) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ListMyDidsWithMetaCompletedDelegate))]
+#endif
+        private static void ListMyDidsWithMetaCompletedCallback(int xcommand_handle, int err, string dids)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -119,12 +145,15 @@ namespace Hyperledger.Indy.DidApi
                 return;
 
             taskCompletionSource.SetResult(dids);
-        };
+        }
 
         /// <summary>
         /// Gets the callback to use when the command for AbbreviateVerkeyAsync has completed.
         /// </summary>
-        private static AbbreviateVerkeyCompletedDelegate _abbreviateVerkeyCompletedCallback = (xcommand_handle, err, verkey) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(AbbreviateVerkeyCompletedDelegate))]
+#endif
+        private static void AbbreviateVerkeyCompletedCallback(int xcommand_handle, int err, string verkey)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -132,7 +161,7 @@ namespace Hyperledger.Indy.DidApi
                 return;
 
             taskCompletionSource.SetResult(verkey);
-        };
+        }
 
         /// <summary>
         /// Creates signing and encryption keys in specified wallet for a new DID owned by the caller.
@@ -180,7 +209,7 @@ namespace Hyperledger.Indy.DidApi
                 commandHandle,
                 wallet.Handle,
                 didJson,
-                _createAndStoreMyDidCallback);
+                CreateAndStoreMyDidCallback);
 
             CallbackHelper.CheckResult(commandResult);
 
@@ -225,7 +254,7 @@ namespace Hyperledger.Indy.DidApi
                 wallet.Handle,
                 did,
                 identityJson,
-                _replaceKeysCallback);
+                ReplaceKeysCallback);
 
             CallbackHelper.CheckResult(commandResult);
 
@@ -300,7 +329,7 @@ namespace Hyperledger.Indy.DidApi
 
             return taskCompletionSource.Task;
         }
-        
+
         /// <summary>
         /// Gets the verification key for the specified DID.
         /// </summary>
@@ -332,7 +361,7 @@ namespace Hyperledger.Indy.DidApi
                 pool.Handle,
                 wallet.Handle,
                 did,
-                _keyForDidCompletedCallback
+                KeyForDidCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -368,7 +397,7 @@ namespace Hyperledger.Indy.DidApi
                 commandHandle,
                 wallet.Handle,
                 did,
-                _keyForLocalDidCompletedCallback
+                KeyForLocalDidCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -436,7 +465,7 @@ namespace Hyperledger.Indy.DidApi
                 wallet.Handle,
                 pool.Handle,
                 did,
-                _getEndpointForDidCompletedCallback
+                GetEndpointForDidCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -497,7 +526,7 @@ namespace Hyperledger.Indy.DidApi
                 commandHandle,
                 wallet.Handle,
                 did,
-                _getDidMetadataCompletedCallback
+                GetDidMetadataCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -523,7 +552,7 @@ namespace Hyperledger.Indy.DidApi
                 commandHandle,
                 wallet.Handle,
                 myDid,
-                _getMyDidWithMetaCompletedCallback
+                GetMyDidWithMetaCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -546,7 +575,7 @@ namespace Hyperledger.Indy.DidApi
             var commandResult = NativeMethods.indy_list_my_dids_with_meta(
                 commandHandle,
                 wallet.Handle,
-                _listMyDidsWithMetaCompletedCallback
+                ListMyDidsWithMetaCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -572,7 +601,7 @@ namespace Hyperledger.Indy.DidApi
                 commandHandle,
                 did,
                 fullVerkey,
-                _abbreviateVerkeyCompletedCallback
+                AbbreviateVerkeyCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);

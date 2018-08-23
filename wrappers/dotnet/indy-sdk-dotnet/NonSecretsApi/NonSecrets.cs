@@ -4,6 +4,9 @@ using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
 using static Hyperledger.Indy.NonSecretsApi.NativeMethods;
 using static Hyperledger.Indy.Utils.CallbackHelper;
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.NonSecretsApi
 {
@@ -12,19 +15,25 @@ namespace Hyperledger.Indy.NonSecretsApi
     /// </summary>
     public static class NonSecrets
     {
-        #region Static callback fields
+        #region Static callback methods
 
-        static readonly GetRecordCompletedDelegate _getRecordCallback = (xcommand_handle, err, value) =>
-         {
-             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+#if __IOS__
+        [MonoPInvokeCallback(typeof(GetRecordCompletedDelegate))]
+#endif
+        static void GetRecordCallback(int xcommand_handle, int err, string value)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
-             if (!CheckCallback(taskCompletionSource, err))
-                 return;
+            if (!CheckCallback(taskCompletionSource, err))
+                return;
 
-             taskCompletionSource.SetResult(value);
-         };
+            taskCompletionSource.SetResult(value);
+        }
 
-        static readonly OpenWalletSearchCompletedDelegate _openSearchCallback = (xcommand_handle, err, search_handle) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(OpenWalletSearchCompletedDelegate))]
+#endif
+        static void OpenSearchCallback(int xcommand_handle, int err, IntPtr search_handle)
         {
             var taskCompletionSource = PendingCommands.Remove<WalletSearch>(xcommand_handle);
 
@@ -32,9 +41,12 @@ namespace Hyperledger.Indy.NonSecretsApi
                 return;
 
             taskCompletionSource.SetResult(new WalletSearch(search_handle));
-        };
+        }
 
-        static readonly FetchNextRecordCompletedDelegate _fetchNextCallback = (xcommand_handle, err, records_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(FetchNextRecordCompletedDelegate))]
+#endif
+        static void FetchNextCallback(int xcommand_handle, int err, string records_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -42,7 +54,7 @@ namespace Hyperledger.Indy.NonSecretsApi
                 return;
 
             taskCompletionSource.SetResult(records_json);
-        };
+        }
 
         #endregion
 
@@ -291,7 +303,7 @@ namespace Hyperledger.Indy.NonSecretsApi
                 type,
                 id,
                 optionsJson,
-                _getRecordCallback);
+                GetRecordCallback);
 
             return taskCompletionSource.Task;
         }
@@ -343,7 +355,7 @@ namespace Hyperledger.Indy.NonSecretsApi
                 type,
                 queryJson,
                 optionsJson,
-                _openSearchCallback);
+                OpenSearchCallback);
 
             return taskCompletionSource.Task;
         }
@@ -380,7 +392,7 @@ namespace Hyperledger.Indy.NonSecretsApi
                 wallet.Handle,
                 walletSearch.Handle,
                 count,
-                _fetchNextCallback);
+                FetchNextCallback);
 
             return taskCompletionSource.Task;
         }
