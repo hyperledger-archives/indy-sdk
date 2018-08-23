@@ -233,12 +233,6 @@ mod tests {
     pub const NODE1_OLD: &'static str = r#"{"data":{"alias":"Node1","client_ip":"192.168.1.35","client_port":9702,"node_ip":"192.168.1.35","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv","identifier":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4","txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62","type":"0"}"#;
     pub const NODE2_OLD: &'static str = r#"{"data":{"alias":"Node2","client_ip":"192.168.1.35","client_port":9704,"node_ip":"192.168.1.35","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb","identifier":"8QhFxKxyaFsJy4CyxeYX34dFH8oWqyBv1P4HLQCsoeLy","txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc","type":"0"}"#;
 
-    pub const NODE1: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","client_ip":"10.0.0.2","client_port":9702,"node_ip":"10.0.0.2","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"},"metadata":{"from":"Th7MpTaRZVRYnPiabds81Y"},"type":"0"},"txnMetadata":{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"},"ver":"1"}"#;
-    pub const NODE2: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node2","blskey":"37rAPpXVoxzKhz7d9gkUe52XuXryuLXoM6P6LbWDB7LSbG62Lsb33sfG7zqS8TK1MXwuCHj1FKNzVpsnafmqLG1vXN88rt38mNFs9TENzm4QHdBzsvCuoBnPH7rpYYDo9DZNJePaDvRvqJKByCabubJz3XXKbEeshzpz4Ma5QYpJqjk","client_ip":"10.0.0.2","client_port":9704,"node_ip":"10.0.0.2","node_port":9703,"services":["VALIDATOR"]},"dest":"8ECVSk179mjsjKRLWiQtssMLgp6EPhWXtaYyStWPSGAb"},"metadata":{"from":"EbP4aYNeTHL6q385GuVpRV"},"type":"0"},"txnMetadata":{"seqNo":2,"txnId":"1ac8aece2a18ced660fef8694b61aac3af08ba875ce3026a160acbc3a3af35fc"},"ver":"1"}"#;
-    pub const NODE3: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node3","blskey":"3WFpdbg7C5cnLYZwFZevJqhubkFALBfCBBok15GdrKMUhUjGsk3jV6QKj6MZgEubF7oqCafxNdkm7eswgA4sdKTRc82tLGzZBd6vNqU8dupzup6uYUf32KTHTPQbuUM8Yk4QFXjEf2Usu2TJcNkdgpyeUSX42u5LqdDDpNSWUK5deC5","client_ip":"10.0.0.2","client_port":9706,"node_ip":"10.0.0.2","node_port":9705,"services":["VALIDATOR"]},"dest":"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya"},"metadata":{"from":"4cU41vWW82ArfxJxHkzXPG"},"type":"0"},"txnMetadata":{"seqNo":3,"txnId":"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4"},"ver":"1"}"#;
-    pub const NODE4: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node4","blskey":"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw","client_ip":"10.0.0.2","client_port":9708,"node_ip":"10.0.0.2","node_port":9707,"services":["VALIDATOR"]},"dest":"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA"},"metadata":{"from":"TWwCRQRZ2ZHMJFn9TzLp7W"},"type":"0"},"txnMetadata":{"seqNo":4,"txnId":"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008"},"ver":"1"}"#;
-
-
     fn _write_genesis_txns(txns: &str) {
         let pool_name = "test";
         let mut path = EnvironmentUtils::pool_path(pool_name);
@@ -257,7 +251,8 @@ mod tests {
 
         _set_protocol_version(1);
 
-        let txns_src = format!("{}\n{}\n", NODE1, NODE2);
+        let node_txns = TestUtils::gen_txns();
+        let txns_src = node_txns[0..(2 as usize)].join("\n");
 
         _write_genesis_txns(&txns_src);
 
@@ -272,10 +267,12 @@ mod tests {
 
         _set_protocol_version(TEST_PROTOCOL_VERSION);
 
-        let txn1_json: serde_json::Value = serde_json::from_str(NODE1).unwrap();
-        let txn2_json: serde_json::Value = serde_json::from_str(NODE2).unwrap();
-        let txn3_json: serde_json::Value = serde_json::from_str(NODE3).unwrap();
-        let txn4_json: serde_json::Value = serde_json::from_str(NODE4).unwrap();
+        let node_txns = TestUtils::gen_txns();
+
+        let txn1_json: serde_json::Value = serde_json::from_str(&node_txns[0]).unwrap();
+        let txn2_json: serde_json::Value = serde_json::from_str(&node_txns[1]).unwrap();
+        let txn3_json: serde_json::Value = serde_json::from_str(&node_txns[2]).unwrap();
+        let txn4_json: serde_json::Value = serde_json::from_str(&node_txns[3]).unwrap();
 
         let pool_cache = vec![rmp_serde::to_vec_named(&txn1_json).unwrap(),
                               rmp_serde::to_vec_named(&txn2_json).unwrap(),
@@ -301,13 +298,14 @@ mod tests {
     fn pool_worker_restore_merkle_tree_works_from_genesis_txns() {
         TestUtils::cleanup_storage();
 
-        let txns_src = format!("{}\n{}", NODE1, NODE2);
+        let node_txns = TestUtils::gen_txns();
+        let txns_src = node_txns[0..(2 as usize)].join("\n");
         _write_genesis_txns(&txns_src);
 
         let merkle_tree = super::create("test").unwrap();
 
         assert_eq!(merkle_tree.count(), 2, "test restored MT size");
-        assert_eq!(merkle_tree.root_hash_hex(), "3768ef5b25a01d19c0fda687f2354b29e004821bce8557e70085379f536907ed", "test restored MT root hash");
+        assert_eq!(merkle_tree.root_hash_hex(), "c715aef44aaacab8746c9a505ba106b5554fe6d29ec7f0a2abc9d7723fdea523", "test restored MT root hash");
     }
 
     #[test]
@@ -342,10 +340,12 @@ mod tests {
 
         _set_protocol_version(TEST_PROTOCOL_VERSION);
 
-        let node1: NodeTransactionV1 = serde_json::from_str(NODE1).unwrap();
-        let node2: NodeTransactionV1 = serde_json::from_str(NODE2).unwrap();
+        let node_txns = TestUtils::gen_txns();
 
-        let txns_src = format!("{}\n{}\n{}\n{}\n", NODE1, NODE2, NODE3, NODE4);
+        let node1: NodeTransactionV1 = serde_json::from_str(&node_txns[0]).unwrap();
+        let node2: NodeTransactionV1 = serde_json::from_str(&node_txns[1]).unwrap();
+
+        let txns_src = node_txns.join("\n");
 
         _write_genesis_txns(&txns_src);
 
