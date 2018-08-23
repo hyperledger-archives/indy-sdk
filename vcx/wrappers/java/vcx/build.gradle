@@ -4,31 +4,23 @@ import java.text.SimpleDateFormat
 apply plugin: 'maven'
 apply plugin: 'com.android.library'
 
-apply plugin: 'digital.wup.android-maven-publish'
 
 group = 'com.evernym.sdk'
 
-def versionMajor() {
+static def versionMajor() {
     return '1.0.0'
 }
 
 //TODO: consider removing buildtime from version number when the wrapper api is on par with vcx-rust api
-def buildTime() {
+static def buildTime() {
     def df = new SimpleDateFormat("dd-MM-yyyy'T'HH-mm") // you can change it
     df.setTimeZone(TimeZone.getTimeZone("UTC"))
     return df.format(new Date())
 }
 
-def getKrakenPassFromEnv(){
-    return System.getenv( 'KRAKEN_PASS' )
-}
-
-def getKrakenUserFromEnv(){
-    return System.getenv( 'KRAKEN_USER' )
-}
 version = "${versionMajor()}"
 
-def fullVersionName() {
+static def fullVersionName() {
     return "com.evernym-vcx_${versionMajor()}-${buildTime()}_x86-armv7"
 }
 
@@ -64,8 +56,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
 
 }
+
 
 archivesBaseName = fullVersionName()
 buildscript {
@@ -104,12 +100,7 @@ allprojects {
     }
 }
 
-task uploadToKraken(type:Exec) {
-    executable "/bin/sh"
-    String krakenPass= getKrakenPassFromEnv()
-    String krakenUser= getKrakenUserFromEnv()
-    args "-c", "curl --insecure -u $krakenUser:$krakenPass -X POST -F file=@$buildDir/outputs/aar/${archivesBaseName}-release.aar https://kraken.corp.evernym.com/repo/android/upload"
-}
+
 
 tasks.withType(Test) {
     testLogging {
@@ -119,7 +110,6 @@ tasks.withType(Test) {
     }
 }
 
-uploadToKraken.dependsOn(assemble)
 
 
 dependencies {
@@ -131,6 +121,8 @@ dependencies {
     testImplementation group: 'junit', name: 'junit', version:'4.12'
     testImplementation group: 'commons-io', name: 'commons-io', version:'2.5'
     testImplementation group: 'org.json', name: 'json', version:'20160810'
+    testImplementation 'net.java.dev.jna:jna:4.5.0'
+    testImplementation 'org.awaitility:awaitility-scala:3.1.2'
 
 }
 

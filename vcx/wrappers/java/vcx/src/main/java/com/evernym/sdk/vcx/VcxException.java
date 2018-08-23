@@ -1,8 +1,6 @@
 package com.evernym.sdk.vcx;
 
 
-import android.util.Log;
-
 import com.evernym.sdk.vcx.connection.ConnectionErrorException;
 import com.evernym.sdk.vcx.connection.InvalidConnectionHandleException;
 import com.evernym.sdk.vcx.connection.InvalidInviteDetailsException;
@@ -59,8 +57,8 @@ import com.evernym.sdk.vcx.vcx.UnknownErrorException;
 import com.evernym.sdk.vcx.vcx.UnknownLibindyErrorException;
 import com.evernym.sdk.vcx.vcx.WalletAleradyOpenException;
 import com.evernym.sdk.vcx.vcx.WalletAlreadyExistsException;
-import com.evernym.sdk.vcx.vcx.WalletItemNotFoundException;
 import com.evernym.sdk.vcx.vcx.WalletItemAlreadyExistsException;
+import com.evernym.sdk.vcx.vcx.WalletItemNotFoundException;
 
 /**
  * Thrown when an Indy specific error has occurred.
@@ -102,7 +100,9 @@ public class VcxException extends Exception {
             if (errorCode == null) {
                 errorCode = ErrorCode.UNKNOWN_ERROR;
             }
-        } catch(Exception e) {}
+        } catch(Exception e) {
+            //TODO: Log exception to logger
+        }
 
         switch (errorCode) {
             case UNKNOWN_ERROR:
@@ -225,8 +225,8 @@ public class VcxException extends Exception {
                 String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
                 return new VcxException(message, sdkErrorCode);
             default:
-                String err_message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
-                return new VcxException(err_message, sdkErrorCode);
+                String errMessage = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
+                return new VcxException(errMessage, sdkErrorCode);
         }
     }
 }

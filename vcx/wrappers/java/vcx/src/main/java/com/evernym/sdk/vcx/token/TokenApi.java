@@ -11,13 +11,16 @@ import java9.util.concurrent.CompletableFuture;
 
 public class TokenApi extends VcxJava.API {
 
-    private TokenApi(){}
+    private TokenApi() {
+    }
+
     private static String TAG = "JAVA_WRAPPER::API_CONNECTION";
 
     private static Callback vcxTokenCB = new Callback() {
-        public void callback(int command_handle, int err, String tokenInfo){
-            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
-            if(!checkCallback(future,err)) return;
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, String tokenInfo) {
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
 
             future.complete(tokenInfo);
         }
@@ -36,6 +39,7 @@ public class TokenApi extends VcxJava.API {
     }
 
     private static Callback vcxSendTokensCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int error, String receipt) {
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, error)) {
@@ -50,7 +54,7 @@ public class TokenApi extends VcxJava.API {
             String tokens,
             String recipient
     ) throws VcxException {
-        Log.d(TAG, "sendTokens, called with paymentHandle=["+paymentHandle+"] tokens=["+tokens+"]");
+        Log.d(TAG, "sendTokens, called with paymentHandle=[" + paymentHandle + "] tokens=[" + tokens + "]");
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
         int result = LibVcx.api.vcx_wallet_send_tokens(commandHandle, paymentHandle, tokens, recipient, vcxSendTokensCB);
@@ -60,6 +64,7 @@ public class TokenApi extends VcxJava.API {
 
 
     private static Callback vcxCreatePaymentAddressCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
         public void callback(int commandHandle, int error, String address) {
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, error)) {

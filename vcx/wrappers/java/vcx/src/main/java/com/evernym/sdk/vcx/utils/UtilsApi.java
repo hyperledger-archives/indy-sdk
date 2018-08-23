@@ -17,11 +17,11 @@ import java9.util.concurrent.CompletableFuture;
 
 public class UtilsApi extends VcxJava.API {
     static String TAG = "JAVA_WRAPPER:API_UTILS ";
-    public static Callback provAsyncCB = new Callback() {
+    private static Callback provAsyncCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int xcommand_handle, int err, String config) {
-            Log.d(TAG, "provAsyncCB() called with: xcommand_handle = [" + xcommand_handle + "], err = [" + err + "], config = [" + config + "]");
-            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
+        public void callback(int commandHandle, int err, String config) {
+            Log.d(TAG, "provAsyncCB() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], config = [" + config + "]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
 
             String result = config;
@@ -54,11 +54,12 @@ public class UtilsApi extends VcxJava.API {
     }
 
     private static Callback vcxUpdateAgentInfoCB = new Callback() {
-        public void callback(int command_handle, int err){
-            Log.d(TAG, "vcxUpdateAgentInfoCB() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(command_handle);
-            if (!checkCallback(future,err)) return;
-            Integer result = command_handle;
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            Log.d(TAG, "vcxUpdateAgentInfoCB() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            Integer result = commandHandle;
             future.complete(result);
         }
     };
@@ -78,19 +79,20 @@ public class UtilsApi extends VcxJava.API {
         return future;
     }
 
-    private static Callback vcxGetMessagesCB = new Callback(){
-        public void callback(int command_handle, int err, String messages){
-            Log.d(TAG, "vcxGetMessagesCB() called with command_handle = [" + command_handle + "], err = [" + err + "]");
-            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(command_handle);
-            if (!checkCallback(future,err)) return;
+    private static Callback vcxGetMessagesCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, String messages) {
+            Log.d(TAG, "vcxGetMessagesCB() called with commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
             String result = messages;
             future.complete(result);
         }
     };
 
-    public static CompletableFuture<String> vcxGetMessages(String messageStatus, String uids, String pwdids) throws VcxException{
-        Log.d(TAG, "vcxGetMessage() called with: message_status = [" + messageStatus + "], uids =[" + uids + "], pw_dids = ["+ pwdids +"]");
-        ParamGuard.notNullOrWhiteSpace(messageStatus, "messageStatus" );
+    public static CompletableFuture<String> vcxGetMessages(String messageStatus, String uids, String pwdids) throws VcxException {
+        Log.d(TAG, "vcxGetMessage() called with: message_status = [" + messageStatus + "], uids =[" + uids + "], pw_dids = [" + pwdids + "]");
+        ParamGuard.notNullOrWhiteSpace(messageStatus, "messageStatus");
         CompletableFuture<String> future = new CompletableFuture<String>();
         int commandHandle = addFuture(future);
 
@@ -106,11 +108,12 @@ public class UtilsApi extends VcxJava.API {
     }
 
     private static Callback vcxUpdateMessagesCB = new Callback() {
-        public void callback(int command_handle, int err){
-            Log.d(TAG, "vcxUpdateMessageCB() called with: command_handle = [" + command_handle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(command_handle);
-            if (!checkCallback(future,err)) return;
-            Integer result = command_handle;
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err) {
+            Log.d(TAG, "vcxUpdateMessageCB() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
+            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            Integer result = commandHandle;
             future.complete(result);
         }
     };
@@ -127,6 +130,28 @@ public class UtilsApi extends VcxJava.API {
                 messageStatus,
                 msgJson,
                 vcxUpdateMessagesCB
+        );
+        checkResult(result);
+        return future;
+    }
+
+    private static Callback getLedgerFeesCB = new Callback() {
+        @SuppressWarnings({"unused", "unchecked"})
+        public void callback(int commandHandle, int err, String fees) {
+            CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
+            if (!checkCallback(future, err)) return;
+            String result = fees;
+            future.complete(result);
+        }
+    };
+
+    public static CompletableFuture<String> getLedgerFees() throws VcxException {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        int commandHandle = addFuture(future);
+
+        int result = LibVcx.api.vcx_ledger_get_fees(
+                commandHandle,
+                getLedgerFeesCB
         );
         checkResult(result);
         return future;
