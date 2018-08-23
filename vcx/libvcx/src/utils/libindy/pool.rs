@@ -104,7 +104,6 @@ pub mod tests {
         f.sync_all().unwrap();
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_open_close_pool() {

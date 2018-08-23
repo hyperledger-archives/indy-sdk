@@ -225,9 +225,9 @@ pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(Option<PaymentTxn>, Str
         let txn_response = libindy_sign_and_submit_request(&did, req)?;
         Ok((None, txn_response))
     } else {
-        let (refund, inputs) = inputs(txn_price).map_err(|e| e.to_error_code())?;
+        let (refund, inputs, refund_address) = inputs(txn_price).map_err(|e| e.to_error_code())?;
 
-        let output = outputs(refund, None, None).map_err(|e| e.to_error_code())?;
+        let output = outputs(refund, &refund_address, None, None).map_err(|e| e.to_error_code())?;
 
         let (fee_response, txn_response) = _submit_fees_request(req, &inputs, &output)?;
 
@@ -264,8 +264,8 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
 pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), PaymentError> {
     info!("sending {} tokens to address {}", price, address);
 
-    let (remainder, input) = inputs(price)?;
-    let output = outputs(remainder, Some(address.to_string()), Some(price))?;
+    let (remainder, input, refund_address) = inputs(price)?;
+    let output = outputs(remainder, &refund_address, Some(address.to_string()), Some(price))?;
 
     let payment = PaymentTxn::from_parts(&input, &output, price).map_err(|e|PaymentError::CommonError(e))?;
     let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -299,10 +299,11 @@ fn _address_balance(address: &Vec<UTXO>) -> u64 {
     address.iter().fold(0, |balance, utxo| balance + utxo.amount)
 }
 
-pub fn inputs(cost: u64) -> Result<(u64, String), PaymentError> {
+pub fn inputs(cost: u64) -> Result<(u64, String, String), PaymentError> {
     let mut inputs: Vec<String> = Vec::new();
     let mut balance = 0;
     let wallet_info: WalletInfo = get_wallet_token_info().map_err(|ec| PaymentError::CommonError(ec))?;
+    let mut refund_address = String::new();
 
     if wallet_info.balance < cost {
         warn!("not enough tokens in wallet to pay");
@@ -311,6 +312,7 @@ pub fn inputs(cost: u64) -> Result<(u64, String), PaymentError> {
 
     // Todo: explore 'smarter' ways of selecting utxos ie bitcoin algorithms etc
     'outer: for address in wallet_info.addresses.iter() {
+        refund_address = address.address.clone();
         'inner: for utxo in address.utxo.iter() {
             if balance < cost {
                 inputs.push(utxo.source.clone().unwrap().to_string());
@@ -320,17 +322,18 @@ pub fn inputs(cost: u64) -> Result<(u64, String), PaymentError> {
     }
 
     let remainder = balance - cost;
+    let inputs = serde_json::to_string(&inputs).or(Err(PaymentError::InvalidWalletJson()))?;
 
-    Ok((remainder, serde_json::to_string(&inputs).or(Err(PaymentError::InvalidWalletJson()))?))
+    Ok((remainder, inputs, refund_address))
 }
 
-pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Option<u64>) -> Result<String, PaymentError> {
+pub fn outputs(remainder: u64, refund_address: &str, payee_address: Option<String>, payee_amount: Option<u64>) -> Result<String, PaymentError> {
     // In the future we might provide a way for users to specify multiple output address for their remainder tokens
     // As of now, we only handle one output address which we create
 
     let mut outputs = Vec::new();
     if remainder > 0 {
-        outputs.push(json!({ "recipient": create_address(None).map_err(|ec| PaymentError::CommonError(ec))?, "amount": remainder }));
+        outputs.push(json!({ "recipient": refund_address, "amount": remainder }));
     }
 
     if let Some(address) = payee_address {
@@ -463,7 +466,6 @@ pub mod tests {
         assert_eq!(balance, r#"{"balance":6,"balance_str":"6","addresses":[{"address":"pay:null:9UFgyjuJxi1i1HD","balance":3,"utxo":[{"source":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"source":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]},{"address":"pay:null:zR3GN9lfbCVtHjp","balance":3,"utxo":[{"source":"pov:null:1","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":1,"extra":"yqeiv5SisTeUGkw"},{"source":"pov:null:2","paymentAddress":"pay:null:zR3GN9lfbCVtHjp","amount":2,"extra":"Lu1pdm7BuAN2WNi"}]}]}"#);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_wallet_token_info_real() {
@@ -483,7 +485,6 @@ pub mod tests {
         assert!(fees.contains(r#""1":0"#));
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_ledger_fees_real() {
@@ -512,13 +513,13 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         // Success - Exact amount
-        assert_eq!(inputs(6).unwrap(), (0, r#"["pov:null:1","pov:null:2","pov:null:1","pov:null:2"]"#.to_string()));
+        assert_eq!(inputs(6).unwrap(), (0, r#"["pov:null:1","pov:null:2","pov:null:1","pov:null:2"]"#.to_string(), "pay:null:zR3GN9lfbCVtHjp".to_string()));
 
         // Success - utxo with remainder tokens
-        assert_eq!(inputs(5).unwrap(), (1, r#"["pov:null:1","pov:null:2","pov:null:1","pov:null:2"]"#.to_string()));
+        assert_eq!(inputs(5).unwrap(), (1, r#"["pov:null:1","pov:null:2","pov:null:1","pov:null:2"]"#.to_string(), "pay:null:zR3GN9lfbCVtHjp".to_string()));
 
         // Success - requesting amount that partial address (1 of 2 utxos) can satisfy
-        assert_eq!(inputs(1).unwrap(), (0, r#"["pov:null:1"]"#.to_string()));
+        assert_eq!(inputs(1).unwrap(), (0, r#"["pov:null:1"]"#.to_string(), "pay:null:9UFgyjuJxi1i1HD".to_string()));
 
         // Err - request more than wallet contains
         assert_eq!(inputs(7).err(), Some(PaymentError::InsufficientFunds()));
@@ -530,16 +531,16 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         let mut cost = 5;
-        let mut expected_output = r#"[{"amount":1,"recipient":"pay:null:J81AxU9hVHYFtJc"}]"#;
-        let (remainder, _) = inputs(cost).unwrap();
-        assert_eq!(&outputs(remainder, None, None).unwrap(), expected_output);
+        let (remainder, _, refund_address) = inputs(cost).unwrap();
+        let mut expected_output = format!(r#"[{{"amount":1,"recipient":"{}"}}]"#, refund_address);
+        assert_eq!(outputs(remainder, &refund_address, None, None).unwrap(), expected_output);
 
         // No remainder so don't create an address in outputs
         cost = 6;
-        expected_output = r#"[]"#;
-        let (remainder, _) = inputs(cost).unwrap();
+        expected_output = r#"[]"#.to_string();
+        let (remainder, _, refund_address) = inputs(cost).unwrap();
         assert_eq!(remainder, 0);
-        assert_eq!(&outputs(remainder, None, None).unwrap(), expected_output);
+        assert_eq!(outputs(remainder, &refund_address, None, None).unwrap(), expected_output);
     }
 
     #[test]
@@ -547,10 +548,11 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let expected_output = r#"[{"amount":4,"recipient":"pay:null:J81AxU9hVHYFtJc"},{"amount":11,"recipient":"pay:null:payee_address"}]"#;
         let payee_amount = 11;
         let payee_address = r#"pay:null:payee_address"#.to_string();
-        assert_eq!(&outputs(4, Some(payee_address), Some(payee_amount)).unwrap(), expected_output);
+        let refund_address = r#"pay:null:refund_address"#;
+        let expected_output = format!(r#"[{{"amount":4,"recipient":"{}"}},{{"amount":11,"recipient":"{}"}}]"#, refund_address, payee_address);
+        assert_eq!(outputs(4, refund_address, Some(payee_address), Some(payee_amount)).unwrap(), expected_output);
     }
 
     #[test]
@@ -574,7 +576,6 @@ pub mod tests {
         assert_eq!(response, SUBMIT_SCHEMA_RESPONSE.to_string());
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_pay_for_txn_real() {
@@ -597,7 +598,6 @@ pub mod tests {
         assert_eq!(start_wallet.balance - 2, end_wallet.balance);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_pay_for_txn_fails_with_insufficient_tokens_in_wallet() {
@@ -614,7 +614,6 @@ pub mod tests {
         assert!(rc.is_err());
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_payment_request() {
@@ -649,7 +648,6 @@ pub mod tests {
         tests::cleanup_dev_env(name);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_submit_fees_with_insufficient_tokens_on_ledger() {
@@ -659,8 +657,8 @@ pub mod tests {
 
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
         let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
-        let (remainder, inputs) = inputs(2).unwrap();
-        let output = outputs(remainder, None, None).unwrap();
+        let (remainder, inputs, refund_address) = inputs(2).unwrap();
+        let output = outputs(remainder, &refund_address, None, None).unwrap();
         let start_wallet = get_wallet_token_info().unwrap();
 
         _submit_fees_request(&req, &inputs, &output).unwrap();
@@ -675,7 +673,6 @@ pub mod tests {
     }
 
     #[cfg(feature = "nullpay")]
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_pay_for_txn_with_empty_outputs_success() {
@@ -685,17 +682,19 @@ pub mod tests {
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
         let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
 
-        let (remainder, inputs) = inputs(45).unwrap();
-        assert_eq!(remainder, 0);
-
-        let output = outputs(remainder, None, None).unwrap();
-        assert_eq!(output, "[]");
-
+        let cost = 45;
         let start_wallet = get_wallet_token_info().unwrap();
+        let remaining_balance = start_wallet.balance - cost;
+        let (remainder, inputs, refund_address) = inputs(cost).unwrap();
+        assert_eq!(remainder, remaining_balance);
+
+        let output = outputs(remainder, &refund_address, None, None).unwrap();
+        assert_eq!(output, format!(r#"[{{"amount":{},"recipient":"{}"}}]"#, remaining_balance, refund_address));
+
         let rc = _submit_fees_request(&req, &inputs, &output).unwrap();
         let end_wallet = get_wallet_token_info().unwrap();
 
-        assert_eq!(end_wallet.balance, 0);
+        assert_eq!(end_wallet.balance, remaining_balance);
 
         ::utils::devsetup::tests::cleanup_dev_env(name);
     }
@@ -710,7 +709,6 @@ pub mod tests {
         assert_eq!(wallet_info.to_string(), r#"{"balance":12345,"balance_str":"12345","addresses":[]}"#.to_string());
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_custom_mint_tokens() {

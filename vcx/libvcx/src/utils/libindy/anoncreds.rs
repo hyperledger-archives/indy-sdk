@@ -328,7 +328,6 @@ pub mod tests {
         (proof_req, proof)
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_prover_verify_proof() {

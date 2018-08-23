@@ -364,7 +364,6 @@ mod tests {
         assert!(handle>0)
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature="pool_tests")]
     #[test]
     fn test_vcx_create_schema_with_pool() {
@@ -389,7 +388,6 @@ mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature="pool_tests")]
     #[test]
     fn test_vcx_schema_get_attrs_with_pool() {
@@ -483,7 +481,6 @@ mod tests {
         assert!(txn.is_some());
     }
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_schema_serialize_contains_version() {

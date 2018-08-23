@@ -61,7 +61,6 @@ pub fn init_pool() -> Result<(), u32>  {
 #[cfg(test)]
 mod tests {
 
-    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_pool_and_wallet() {
