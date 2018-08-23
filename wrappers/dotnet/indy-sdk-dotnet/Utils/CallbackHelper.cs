@@ -1,5 +1,8 @@
 ﻿using System.Threading.Tasks;
-using static Hyperledger.Indy.Consts;
+
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.Utils
 {
@@ -15,7 +18,10 @@ namespace Hyperledger.Indy.Utils
         /// <summary>
         /// Gets the callback to use for completing tasks that don't return a value.
         /// </summary>
-        public static IndyMethodCompletedDelegate TaskCompletingNoValueCallback = (xcommand_handle, err) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IndyMethodCompletedDelegate))]
+#endif
+        public static void TaskCompletingNoValueCallback(int xcommand_handle, int err)
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -23,15 +29,18 @@ namespace Hyperledger.Indy.Utils
                 return;
 
             taskCompletionSource.SetResult(true);
-        };
+        }
 
         /// <summary>
         /// Gets the callback to use for functions that don't return a value and are not associated with a task.
         /// </summary>
-        public static IndyMethodCompletedDelegate NoValueCallback = (xcommand_handle, err) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IndyMethodCompletedDelegate))]
+#endif
+        public static void NoValueCallback(int xcommand_handle, int err)
         {
             CheckCallback(err);
-        };
+        }
 
         /// <summary>
         /// Checks the result from a Sovrin function call.
