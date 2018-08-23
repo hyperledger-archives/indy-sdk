@@ -328,6 +328,7 @@ To support efficient and flexible search the following tags will be created for 
         "schema_version": <credential schema version>,
         "issuer_did": <credential issuer did>,
         "cred_def_id": <credential definition id>,
+        "rev_reg_id": <credential revocation registry id>, // "None" as string if not present
         // for every attribute in <credential values>
         "attr::<attribute name>::marker": "1",
         "attr::<attribute name>::value": <attribute raw value>,
@@ -1198,6 +1199,25 @@ The request is sent to the validator pool as is. It's assumed that it's already 
 
 Errors: `Common*`, `Ledger*`
 
+#### submitAction \( poolHandle, request, nodes, timeout \) -&gt; requestResult
+
+Send action to particular nodes of validator pool.
+
+The list of requests can be send:
+* POOL_RESTART
+* GET_VALIDATOR_INFO
+
+The request is sent to the nodes as is. It's assumed that it's already prepared.
+
+* `poolHandle`: Handle (Number) - pool handle \(created by open\_pool\_ledger\).
+* `request`: Json - Request data json.
+* `nodes`: Json - (Optional) List of node names to send the request. 
+["Node1", "Node2",...."NodeN"]
+* `timeout`: Number - (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+* __->__ `requestResult`: Json
+
+Errors: `Common*`, `Ledger*`
+
 #### signRequest \( wh, submitterDid, request \) -&gt; signedRequest
 
 Signs request message.
@@ -1466,7 +1486,7 @@ Builds a POOL\_RESTART request.
 
 Errors: `Common*`
 
-#### buildPoolUpgradeRequest \( submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force \) -&gt; request
+#### buildPoolUpgradeRequest \( submitterDid, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package \) -&gt; request
 
 Builds a POOL\_UPGRADE request. Request to upgrade the Pool \(sent by Trustee\).
 It upgrades the specified Nodes \(either all nodes in the Pool, or some specific ones\).
@@ -1482,6 +1502,7 @@ Must be greater than existing one \(or equal if reinstall flag is True\).
 * `justification`: String - \(Optional\) justification string for this particular Upgrade.
 * `reinstall`: Boolean - Whether it's allowed to re-install the same version. False by default.
 * `force`: Boolean - Whether we should apply transaction \(schedule Upgrade\) without waiting
+* `package`: String - \(Optional\) Package to be upgraded.
 for consensus of this transaction.
 * __->__ `request`: Json
 
@@ -2265,6 +2286,9 @@ Create a new secure wallet.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
+  "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                           ARAGON2I_MOD (used by default)
+                           ARAGON2I_INT - less secured but faster
 }
 ````
 * __->__ void
@@ -2303,7 +2327,12 @@ Wallet must be previously created with createWallet method.
                                  derived from this passphrase.
       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                              Can be optional if storage supports default configuration.
-                             For 'default' storage type should be empty.
+      "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                               ARAGON2I_MOD (used by default)
+                               ARAGON2I_INT - less secured but faster}
+      "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
+                               ARAGON2I_MOD (used by default)
+                               ARAGON2I_INT - less secured but faster
   }
 ````
 * __->__ `handle`: Handle (Number) - err: Error code
@@ -2316,7 +2345,16 @@ Errors: `Common*`, `Wallet*`
 Exports opened wallet
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `exportConfig`: Json
+* `exportConfig`: JSON - settings for export operation
+```
+  {
+    "path": <string>, Path of the file that contains exported wallet content
+    "key": <string>, Passphrase used to derive export key
+    "key_derivation_method": optional<string> algorithm to use for export key derivation:
+                             ARAGON2I_MOD (used by default)
+                             ARAGON2I_INT - less secured but faster  
+  }
+```
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -2352,9 +2390,18 @@ This can be seen as an createWallet call with additional content import
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
+  "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                           ARAGON2I_MOD (used by default)
+                           ARAGON2I_INT - less secured but faster
 }
 ````
 * `importConfig`: Json
+```
+  {
+    "path": <string>, Path of the file that contains exported wallet content
+    "key": <string>, Passphrase used to derive export key
+  }
+```
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
@@ -2397,6 +2444,9 @@ Deletes created wallet.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
+  "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                           ARAGON2I_MOD (used by default)
+                           ARAGON2I_INT - less secured but faster
 }
 ````
 * __->__ void

@@ -100,6 +100,7 @@ pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
         ErrorCode::PaymentUnknownMethodError => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
         ErrorCode::PaymentIncompatibleMethodsError => println_err!("No methods were scraped or more than one was scraped"),
         ErrorCode::PaymentInsufficientFundsError => println_err!("Insufficient funds on inputs"),
+        ErrorCode::PaymentExtraFundsError => println_err!("Extra funds on inputs"),
         ErrorCode::CommonInvalidState => println_err!("Input not found"),
         ErrorCode::PaymentSourceDoesNotExistError => println_err!("Payment source not found"),
         ErrorCode::PaymentOperationNotSupportedError => println_err!("Payment operation not supported"),

@@ -36,7 +36,7 @@ public class AnoncredsIntegrationTest {
 	static String issuer1GvtCredReq;
 	static String issuer1GvtCredReqMetadata;
 	static String issuer1GvtCredential;
-	protected String CREDENTIALS = "{\"key\": \"key\"}";
+	protected String CREDENTIALS = "{\"key\": \"key\", \"key_derivation_method\": \"ARAGON2I_INT\"}";
 	String masterSecretId = "master_secret_name";
 	String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
@@ -47,6 +47,7 @@ public class AnoncredsIntegrationTest {
 	String gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
 	String credentialId1 = "id1";
 	String credentialId2 = "id2";
+	// note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
 	String gvtCredentialValuesJson = new JSONObject("{\n" +
 			"               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
 			"               \"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},\n" +

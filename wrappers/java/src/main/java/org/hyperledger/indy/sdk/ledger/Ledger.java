@@ -40,7 +40,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String request_result_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = request_result_json;
 			future.complete(result);
@@ -56,7 +56,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String request_result_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = request_result_json;
 			future.complete(result);
@@ -72,7 +72,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String signed_request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = signed_request_json;
 			future.complete(result);
@@ -88,7 +88,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String request_json) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = request_json;
 			future.complete(result);
@@ -104,7 +104,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String id, String object_json) {
 
 			CompletableFuture<ParseResponseResult> future = (CompletableFuture<ParseResponseResult>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			ParseResponseResult result = new ParseResponseResult(id, object_json);
 			future.complete(result);
@@ -120,7 +120,7 @@ public class Ledger extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String id, String object_json, long timestamp) {
 
 			CompletableFuture<ParseRegistryResponseResult> future = (CompletableFuture<ParseRegistryResponseResult>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			ParseRegistryResponseResult result = new ParseRegistryResponseResult(id, object_json, timestamp);
 			future.complete(result);
@@ -171,7 +171,7 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				signAndSubmitRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -204,7 +204,52 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				submitRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
+
+		return future;
+	}
+
+	/**
+	 * Send action to particular nodes of validator pool.
+	 *
+	 * The list of requests can be send:
+	 *     POOL_RESTART
+	 *     GET_VALIDATOR_INFO
+	 *
+	 * The request is sent to the nodes as is. It's assumed that it's already prepared.
+	 *
+	 * @param pool        The Pool to publish to.
+	 * @param requestJson Request data json.
+	 * @param nodes      (Optional) List of node names to send the request.
+	 *                   ["Node1", "Node2",...."NodeN"]
+	 * @param timeout    (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+	 *                   Pass -1 to use default timeout
+	 * @return A future resolving to a request result as json.
+	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
+	 */
+	public static CompletableFuture<String> submitAction(
+			Pool pool,
+			String requestJson,
+			String nodes,
+			int timeout) throws IndyException {
+
+		ParamGuard.notNull(pool, "pool");
+		ParamGuard.notNullOrWhiteSpace(requestJson, "requestJson");
+
+		CompletableFuture<String> future = new CompletableFuture<String>();
+		int commandHandle = addFuture(future);
+
+		int poolHandle = pool.getPoolHandle();
+
+		int result = LibIndy.api.indy_submit_action(
+				commandHandle,
+				poolHandle,
+				requestJson,
+				nodes,
+				timeout,
+				submitRequestCb);
+
+		checkResult(future, result);
 
 		return future;
 	}
@@ -242,7 +287,7 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				signRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -280,7 +325,7 @@ public class Ledger extends IndyJava.API {
 				requestJson,
 				signRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -309,7 +354,7 @@ public class Ledger extends IndyJava.API {
 				targetDid,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -352,7 +397,7 @@ public class Ledger extends IndyJava.API {
 				role,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -390,7 +435,7 @@ public class Ledger extends IndyJava.API {
 				enc,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -428,7 +473,7 @@ public class Ledger extends IndyJava.API {
 				enc,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -457,7 +502,7 @@ public class Ledger extends IndyJava.API {
 				targetDid,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -493,7 +538,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -522,7 +567,7 @@ public class Ledger extends IndyJava.API {
 				id,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -554,7 +599,7 @@ public class Ledger extends IndyJava.API {
 				getSchemaResponse,
 				parseResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -595,7 +640,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -625,7 +670,7 @@ public class Ledger extends IndyJava.API {
 				id,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -661,7 +706,7 @@ public class Ledger extends IndyJava.API {
 				getCredDefResponse,
 				parseResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -703,7 +748,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -728,7 +773,7 @@ public class Ledger extends IndyJava.API {
 				submitterDid,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -763,7 +808,7 @@ public class Ledger extends IndyJava.API {
 				seqNo,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -796,7 +841,7 @@ public class Ledger extends IndyJava.API {
 				force,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -827,7 +872,7 @@ public class Ledger extends IndyJava.API {
 				datetime,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -847,6 +892,7 @@ public class Ledger extends IndyJava.API {
 	 * @param justification (Optional) justification string for this particular Upgrade.
 	 * @param reinstall     Whether it's allowed to re-install the same version. False by default.
 	 * @param force         Whether we should apply transaction (schedule Upgrade) without waiting for consensus of this transaction.
+	 * @param package_      (Optional) Package to be upgraded.
 	 * @return A future resolving to a JSON request string.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -860,7 +906,8 @@ public class Ledger extends IndyJava.API {
 			String schedule,
 			String justification,
 			boolean reinstall,
-			boolean force) throws IndyException {
+			boolean force,
+			String package_) throws IndyException {
 
 		ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
 
@@ -879,9 +926,10 @@ public class Ledger extends IndyJava.API {
 				justification,
 				reinstall,
 				force,
+				package_,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -924,7 +972,7 @@ public class Ledger extends IndyJava.API {
 				data,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -954,7 +1002,7 @@ public class Ledger extends IndyJava.API {
 				id,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -993,7 +1041,7 @@ public class Ledger extends IndyJava.API {
 				getRevocRegDefResponse,
 				parseResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1041,7 +1089,7 @@ public class Ledger extends IndyJava.API {
 				value,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1074,7 +1122,7 @@ public class Ledger extends IndyJava.API {
 				timestamp,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1105,7 +1153,7 @@ public class Ledger extends IndyJava.API {
 				getRevocRegResponse,
 				parseRegistryResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1142,7 +1190,7 @@ public class Ledger extends IndyJava.API {
 				to,
 				buildRequestCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -1176,7 +1224,7 @@ public class Ledger extends IndyJava.API {
 				getRevocRegDeltaResponse,
 				parseRegistryResponseCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}

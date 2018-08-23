@@ -9,6 +9,7 @@ use std::io::{Read, Write};
 
 use utils::crypto::pwhash_argon2i13;
 use errors::common::CommonError;
+use domain::wallet::KeyDerivationMethod;
 
 pub const KEYBYTES: usize = chacha20poly1305_ietf::KEYBYTES;
 pub const NONCEBYTES: usize = chacha20poly1305_ietf::NONCEBYTES;
@@ -27,14 +28,13 @@ pub fn gen_key() -> Key {
     Key(chacha20poly1305_ietf::gen_key())
 }
 
-pub fn derive_key(passphrase: &str, salt: &pwhash_argon2i13::Salt) -> Result<Key, CommonError> {
+pub fn derive_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> Result<Key, CommonError> {
     let mut key_bytes = [0u8; chacha20poly1305_ietf::KEYBYTES];
-    pwhash_argon2i13::pwhash(&mut key_bytes, passphrase.as_bytes(), salt)
+    pwhash_argon2i13::pwhash(&mut key_bytes, passphrase.as_bytes(), salt, key_derivation_method)
         .map_err(|err| CommonError::InvalidStructure(format!("Can't derive key: {}", err)))?;
     Ok(Key::new(key_bytes))
 }
 
-#[allow(dead_code)]
 pub fn gen_nonce() -> Nonce {
     Nonce(chacha20poly1305_ietf::gen_nonce())
 }

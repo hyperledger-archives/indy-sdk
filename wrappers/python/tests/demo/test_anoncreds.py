@@ -35,6 +35,7 @@ async def test_anoncreds_demo_works(pool_name, path_home, wallet_config, credent
                                                      cred_def_json, master_secret_id)
 
     #  6. Issuer create credential for credential Request
+    #  note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
     cred_values_json = json.dumps({
         "sex": {
             "raw": "male", "encoded": "5944657099558967239210949258394887428692050081607692519917050011144233115103"},

@@ -338,6 +338,14 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                             PoolState::Terminated(state)
                         }
                     }
+                    PoolEvent::Timeout(req_id, node_alias) => {
+                        if "".eq(&req_id) {
+                            state.networker.borrow_mut().process_event(Some(NetworkerEvent::Timeout));
+                        } else {
+                            warn!("Unexpected timeout: req_id {}, node_alias {}", req_id, node_alias)
+                        }
+                        PoolState::Terminated(state)
+                    }
                     _ => PoolState::Terminated(state)
                 }
             }
@@ -356,7 +364,7 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
                             PoolState::Terminated(state.into())
                         }
                     }
-                    PoolEvent::SendRequest(cmd_id, _) => {
+                    PoolEvent::SendRequest(cmd_id, _, _, _) => {
                         trace!("received request to send");
                         let re: Option<RequestEvent> = pe.into();
                         match re.as_ref().map(|r| r.get_req_id()) {
@@ -392,11 +400,13 @@ impl<T: Networker, R: RequestHandler<T>> PoolSM<T, R> {
 
                         PoolState::Active(state)
                     }
-                    PoolEvent::Timeout(req_id, _) => {
+                    PoolEvent::Timeout(req_id, node_alias) => {
                         if let Some(rh) = state.request_handlers.get_mut(&req_id) {
                             rh.process_event(pe.into());
                         } else if "".eq(&req_id) {
                             state.networker.borrow_mut().process_event(Some(NetworkerEvent::Timeout));
+                        } else {
+                            warn!("Unexpected timeout: req_id {}, node_alias {}", req_id, node_alias)
                         }
                         PoolState::Active(state)
                     }
@@ -801,6 +811,30 @@ mod tests {
         }
 
         #[test]
+        pub fn pool_wrapper_terminated_timeout_works() {
+            let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM {
+                pool_name: POOL.to_string(),
+                id: 1,
+                state: PoolState::Terminated(TerminatedState {
+                    networker: Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))),
+                }),
+                timeout: 0,
+                extended_timeout: 0,
+            };
+
+            let p = p.handle_event(PoolEvent::Timeout("".to_string(), "".to_string()));
+            assert_match!(PoolState::Terminated(_), p.state);
+            match p.state {
+                PoolState::Terminated(state) => {
+                    assert_eq!(state.networker.borrow().events.len(), 1);
+                    let event = state.networker.borrow_mut().events.remove(0);
+                    assert_match!(Some(NetworkerEvent::Timeout), event);
+                }
+                _ => assert!(false)
+            }
+        }
+
+        #[test]
         pub fn pool_wrapper_cloe_works_from_initialization() {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
             let p = p.handle_event(PoolEvent::Close(1));
@@ -975,7 +1009,7 @@ mod tests {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
-            let p = p.handle_event(PoolEvent::SendRequest(3, req));
+            let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
             assert_match!(PoolState::Active(_), p.state);
             match p.state {
                 PoolState::Active(state) => {
@@ -1004,7 +1038,7 @@ mod tests {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
-            let p = p.handle_event(PoolEvent::SendRequest(3, req));
+            let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
             assert_match!(PoolState::Active(_), p.state);
             match p.state {
                 PoolState::Active(state) => {
@@ -1047,7 +1081,7 @@ mod tests {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
-            let p = p.handle_event(PoolEvent::SendRequest(3, req));
+            let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
             let p = p.handle_event(PoolEvent::NodeReply(rep, "node".to_string()));
             assert_match!(PoolState::Active(_), p.state);
             match p.state {
@@ -1091,7 +1125,7 @@ mod tests {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
-            let p = p.handle_event(PoolEvent::SendRequest(3, req));
+            let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
             let p = p.handle_event(PoolEvent::NodeReply(rep, "node".to_string()));
             assert_match!(PoolState::Active(_), p.state);
             match p.state {
@@ -1124,7 +1158,7 @@ mod tests {
             let p: PoolSM<MockNetworker, MockRequestHandler> = PoolSM::new(Rc::new(RefCell::new(MockNetworker::new(0, 0, vec![]))), POOL, 1, 0, 0);
             let p = p.handle_event(PoolEvent::CheckCache(1));
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
-            let p = p.handle_event(PoolEvent::SendRequest(3, req));
+            let p = p.handle_event(PoolEvent::SendRequest(3, req, None, None));
             let p = p.handle_event(PoolEvent::NodeReply(rep.to_string(), "node".to_string()));
             assert_match!(PoolState::Active(_), p.state);
             match p.state {

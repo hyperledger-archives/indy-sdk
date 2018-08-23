@@ -68,6 +68,7 @@ class Anoncreds {
 		String credReqMetadataJson = createCredReqResult.getCredentialRequestMetadataJson();
 
 		//9. Issuer create Credential
+		//   note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
 		String credValuesJson = new JSONObject("{\n" +
 				"        \"sex\": {\"raw\": \"male\", \"encoded\": \"594465709955896723921094925839488742869205008160769251991705001\"},\n" +
 				"        \"name\": {\"raw\": \"Alex\", \"encoded\": \"1139481716457488690172217916278103335\"},\n" +
