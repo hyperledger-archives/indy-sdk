@@ -4,12 +4,10 @@
 //
 
 #import "WalletUtils.h"
-#import <Indy/Indy.h>
 #import "TestUtils.h"
 
 @interface WalletUtils ()
 
-@property(strong, readwrite) NSMutableArray *registeredWalletTypes;
 @end
 
 @implementation WalletUtils
@@ -22,32 +20,9 @@ NSString *credentials = @"{\"key\":\"key\"}";
 
     dispatch_once(&dispatch_once_block, ^{
         instance = [WalletUtils new];
-        instance.registeredWalletTypes = [NSMutableArray new];
     });
 
     return instance;
-}
-
-- (NSError *)registerWalletType:(NSString *)xtype {
-    if ([self.registeredWalletTypes containsObject:xtype]) {
-        return [NSError errorWithDomain:@"IndyErrorDomain" code:WalletTypeAlreadyRegisteredError userInfo:nil];;
-    }
-
-    __block NSError *err = nil;
-    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
-
-
-    [[IndyWallet sharedInstance] registerIndyKeychainWalletType:xtype
-                                                     completion:^(NSError *error) {
-                                                         err = error;
-                                                         [completionExpectation fulfill];
-                                                     }];
-
-    [self.registeredWalletTypes addObject:xtype];
-
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
-
-    return err;
 }
 
 - (NSError *)createAndOpenWalletWithHandle:(IndyHandle *)handle {
