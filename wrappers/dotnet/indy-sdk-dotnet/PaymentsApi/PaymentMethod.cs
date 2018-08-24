@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Hyperledger.Indy.Utils;
-using Hyperledger.Indy.WalletApi;
 using static Hyperledger.Indy.PaymentsApi.NativeMethods;
 
 namespace Hyperledger.Indy.PaymentsApi

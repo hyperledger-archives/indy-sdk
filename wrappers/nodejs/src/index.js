@@ -333,7 +333,7 @@ indy.submitRequest = function submitRequest (poolHandle, request, cb) {
 
 indy.submitAction = function submitAction (poolHandle, request, nodes, timeout, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.submitAction(poolHandle, toJson(request), toJson(nodes), nodes == null ? -1 : nodes, cb)
+  capi.submitAction(poolHandle, toJson(request), toJson(nodes), timeout == null ? -1 : timeout, cb)
   return cb.promise
 }
 

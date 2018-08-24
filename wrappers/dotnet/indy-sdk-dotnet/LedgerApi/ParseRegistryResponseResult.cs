@@ -21,7 +21,7 @@
         /// Gets the timestamp.
         /// </summary>
         /// <value>The timestamp.</value>
-        public long Timestamp { get; private set; }
+        public ulong Timestamp { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Hyperledger.Indy.LedgerApi.ParseRegistryResponseResult"/> class.
@@ -29,7 +29,7 @@
         /// <param name="id">Identifier.</param>
         /// <param name="objectJson">Object json.</param>
         /// <param name="timestamp">Timestamp.</param>
-        internal ParseRegistryResponseResult(string id, string objectJson, long timestamp)
+        internal ParseRegistryResponseResult(string id, string objectJson, ulong timestamp)
         {
             Id = id;
             ObjectJson = objectJson;

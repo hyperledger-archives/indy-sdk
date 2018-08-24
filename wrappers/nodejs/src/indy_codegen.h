@@ -1052,13 +1052,13 @@ NAN_METHOD(submitAction) {
   INDY_ASSERT_STRING(submitAction, 1, request)
   INDY_ASSERT_STRING(submitAction, 2, nodes)
   INDY_ASSERT_NUMBER(submitAction, 3, timeout)
-  INDY_ASSERT_FUNCTION(submitRequest, 4)
+  INDY_ASSERT_FUNCTION(submitAction, 4)
   indy_handle_t arg0 = info[0]->Int32Value();
   const char* arg1 = argToCString(info[1]);
   const char* arg2 = argToCString(info[2]);
   indy_i32_t arg3 = info[3]->Int32Value();
   IndyCallback* icb = argToIndyCb(info[4]);
-  indyCalled(icb, indy_submit_action(icb->handle, arg0, arg1, arg2, arg3, submitRequest_cb));
+  indyCalled(icb, indy_submit_action(icb->handle, arg0, arg1, arg2, arg3, submitAction_cb));
   delete arg1;
   delete arg2;
 }
