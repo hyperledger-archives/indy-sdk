@@ -41,7 +41,24 @@ pub struct ExportConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Metadata {
+#[serde(untagged)]
+pub enum Metadata {
+    MetadataArgon(MetadataArgon),
+    MetadataRaw(MetadataRaw),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MetadataArgon {
     pub keys: Vec<u8>,
-    pub master_key_salt: Option<Vec<u8>>,
+    pub master_key_salt: Vec<u8>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MetadataRaw {
+    pub keys: Vec<u8>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct KeyConfig {
+    pub seed: Option<String>
 }

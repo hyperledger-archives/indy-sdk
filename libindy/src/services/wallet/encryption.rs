@@ -13,9 +13,7 @@ pub(super) fn gen_master_key_salt() -> Result<pwhash_argon2i13::Salt, WalletErro
     Ok(pwhash_argon2i13::gen_salt())
 }
 
-pub(super) fn master_key_salt_from_slice(slice: Option<&[u8]>) -> Result<pwhash_argon2i13::Salt, WalletError> {
-    let slice = slice
-        .ok_or(WalletError::AccessFailed("Invalid master key salt".to_string()))?;
+pub(super) fn master_key_salt_from_slice(slice: &[u8]) -> Result<pwhash_argon2i13::Salt, WalletError> {
     let salt = pwhash_argon2i13::Salt::from_slice(slice)
         .map_err(|_| WalletError::AccessFailed("Invalid master key salt".to_string()))?;
 

@@ -165,14 +165,16 @@ extern "C" {
     /// }
     /// credentials: Wallet credentials json
     /// {
-    ///   "key": string, Auth key for the wallet
+    ///   "key": string, Key or passphrase used for wallet key derivation.
+    ///                  Look to key_derivation_method param for information about supported key derivation methods.
     ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                          Can be optional if storage supports default configuration.
     ///                          For 'default' storage type should be empty.
-    ///   "key_derivation_method": optional<string> Type of wallet auth key:
+    ///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
     ///                          ARAGON2I_MOD - derive secured wallet master key (used by default)
     ///                          ARAGON2I_INT - derive secured wallet master key (less secured but faster)
-    ///                          RAW - raw wallet master key provided (skip derivation)
+    ///                          RAW - raw wallet key master provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
     /// }
     ///
     /// #Returns
@@ -212,19 +214,22 @@ extern "C" {
     ///   }
     /// credentials: Wallet credentials json
     ///   {
-    ///       "key": string, Auth key for the wallet
+    ///       "key": string, Key or passphrase used for wallet key derivation.
+    ///                      Look to key_derivation_method param for information about supported key derivation methods.
     ///       "rekey": optional<string>, If present than wallet master key will be rotated to a new one.
     ///       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                              Can be optional if storage supports default configuration.
     ///                              For 'default' storage type should be empty.
-    ///       "key_derivation_method": optional<string> Type of wallet auth key:
+    ///       "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
     ///                          ARAGON2I_MOD - derive secured wallet master key (used by default)
     ///                          ARAGON2I_INT - derive secured wallet master key (less secured but faster)
-    ///                          RAW - raw wallet master key provided (skip derivation)
-    ///       "rekey_derivation_method": optional<string> Type of wallet auth rekey:
+    ///                          RAW - raw wallet key master provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
+    ///       "rekey_derivation_method": optional<string> Algorithm to use for wallet rekey derivation:
     ///                          ARAGON2I_MOD - derive secured wallet master rekey (used by default)
     ///                          ARAGON2I_INT - derive secured wallet master rekey (less secured but faster)
-    ///                          RAW - raw wallet master rekey provided (skip derivation)
+    ///                          RAW - raw wallet key master provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
     ///   }
     ///
     /// #Returns
@@ -248,11 +253,13 @@ extern "C" {
     /// export_config: JSON containing settings for input operation.
     ///   {
     ///     "path": <string>, Path of the file that contains exported wallet content
-    ///     "key": <string>, Key for export of the wallet
-    ///     "key_derivation_method": optional<string> Type of wallet auth key:
-    ///                                 ARAGON2I_MOD - derive secured export key (used by default)
-    ///                                 ARAGON2I_INT - derive secured export key (less secured but faster)
-    ///                                 RAW - raw export key provided (skip derivation)
+    ///     "key": <string>, Key or passphrase used for wallet export key derivation.
+    ///                     Look to key_derivation_method param for information about supported key derivation methods.
+    ///     "key_derivation_method": optional<string> Algorithm to use for export key derivation:
+    ///                              ARAGON2I_MOD - derive secured export key (used by default)
+    ///                              ARAGON2I_INT - derive secured export key (less secured but faster)
+    ///                              RAW - raw export key provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
     ///   }
     ///
     /// #Returns
@@ -292,19 +299,21 @@ extern "C" {
     /// }
     /// credentials: Wallet credentials json
     /// {
-    ///   "key": string, Auth key for the wallet
+    ///   "key": string, Key or passphrase used for wallet key derivation.
+    ///                  Look to key_derivation_method param for information about supported key derivation methods.
     ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                          Can be optional if storage supports default configuration.
     ///                          For 'default' storage type should be empty.
-    ///   "key_derivation_method": optional<string> Type of wallet auth key:
+    ///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
     ///                             ARAGON2I_MOD - derive secured wallet master key (used by default)
     ///                             ARAGON2I_INT - derive secured wallet master key (less secured but faster)
-    ///                             RAW - raw wallet master key provided (skip derivation)
+    ///                             RAW - raw wallet key master provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
     /// }
     /// import_config: Import settings json.
     /// {
     ///   "path": <string>, path of the file that contains exported wallet content
-    ///   "key": <string>, Key used for export of the wallet
+    ///   "key": <string>, key used for export of the wallet
     /// }
     ///
     /// #Returns
@@ -359,14 +368,16 @@ extern "C" {
     /// }
     /// credentials: Wallet credentials json
     /// {
-    ///   "key": string, Auth key for the wallet
+    ///   "key": string, Key or passphrase used for wallet key derivation.
+    ///                  Look to key_derivation_method param for information about supported key derivation methods.
     ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
     ///                          Can be optional if storage supports default configuration.
     ///                          For 'default' storage type should be empty.
-    ///   "key_derivation_method": optional<string> Type of wallet auth key:
+    ///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
     ///                             ARAGON2I_MOD - derive secured wallet master key (used by default)
     ///                             ARAGON2I_INT - derive secured wallet master key (less secured but faster)
-    ///                             RAW - raw wallet key master provided (skip derivation)
+    ///                             RAW - raw wallet key master provided (skip derivation).
+    ///                                RAW keys can be generated with indy_generate_wallet_key call
     /// }
     ///
     /// #Returns
@@ -383,6 +394,8 @@ extern "C" {
                                           );
 
     /// Generate wallet master key.
+    /// Returned key is compatible with "RAW" key derivation method.
+    /// It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
     ///
     /// #Params
     /// config: (optional) key configuration json.

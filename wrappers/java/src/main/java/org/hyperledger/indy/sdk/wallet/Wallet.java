@@ -171,14 +171,16 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * }
 	 * @param credentials Wallet credentials json
 	 * {
-	 *   "key": string, Auth key for the wallet
+	 *   "key": string, Key or passphrase used for wallet key derivation.
+	 *                  Look to key_derivation_method param for information about supported key derivation methods.
 	 *   "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                          Can be optional if storage supports default configuration.
 	 *                           For 'default' storage type should be empty.
-	 *   "key_derivation_method": optional[string] Type of wallet auth key:
+	 *   "key_derivation_method": optional[string] Algorithm to use for wallet key derivation:
 	 *                           ARAGON2I_MOD - derive secured wallet master key (used by default)
 	 *                           ARAGON2I_INT - derive secured wallet master key (less secured but faster)
-	 *                           RAW - raw wallet master key provided (skip derivation)
+	 *                           RAW - raw wallet key master provided (skip derivation).
+	 *                              RAW keys can be generated with generateWalletKey call
 	 * }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -222,19 +224,22 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * }
 	 * @param credentials Wallet credentials json
 	 *   {
-	 *       "key": string, Auth key for the wallet
+	 *       "key": string, Key or passphrase used for wallet key derivation.
+	 *                      Look to key_derivation_method param for information about supported key derivation methods.
 	 *       "rekey": optional["string"], If present than wallet master key will be rotated to a new one.
 	 *       "storage_credentials": optional[{credentiails object}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                              Can be optional if storage supports default configuration.
 	 *                               For 'default' storage type should be empty.
-	 *   "key_derivation_method": optional[string] Type of wallet auth key:
+	 *   "key_derivation_method": optional[string] Algorithm to use for wallet key derivation:
 	 *                           ARAGON2I_MOD - derive secured wallet master key (used by default)
 	 *                           ARAGON2I_INT - derive secured wallet master key (less secured but faster)
-	 *                           RAW - raw wallet master key provided (skip derivation)
-	 *   "rekey_derivation_method": optional[string] Type of wallet auth rekey:
-	 *                           ARAGON2I_MOD - derive secured wallet master key (used by default)
-	 *                           ARAGON2I_INT - derive secured wallet master key (less secured but faster)
-	 *                           RAW - raw wallet master key provided (skip derivation)
+	 *                           RAW - raw wallet key master provided (skip derivation).
+	 *                              RAW keys can be generated with generateWalletKey call
+	 *   "rekey_derivation_method": optional[string] Algorithm to use for wallet rekey derivation:
+	 *                           ARAGON2I_MOD - derive secured wallet master rekey (used by default)
+	 *                           ARAGON2I_INT - derive secured wallet master rekey (less secured but faster)
+	 *                           RAW - raw wallet master rekey provided (skip derivation).
+	 *                              RAW keys can be generated with generateWalletKey call
 	 *
 	 *   }
 	 * @return A future that resolves no value.
@@ -307,14 +312,16 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * }
 	 * @param credentials Wallet credentials json
 	 *   {
-	 *       "key": string, Auth key for the wallet
+	 *       "key": string, Key or passphrase used for wallet key derivation.
+	 *                      Look to key_derivation_method param for information about supported key derivation methods.
 	 *       "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                              Can be optional if storage supports default configuration.
 	 *                               For 'default' storage type should be empty.
-	 *       "key_derivation_method": optional[string] Type of wallet auth key:
+	 *       "key_derivation_method": optional[string] Algorithm to use for wallet key derivation:
 	 *                           ARAGON2I_MOD - derive secured wallet master key (used by default)
 	 *                           ARAGON2I_INT - derive secured wallet master key (less secured but faster)
-	 *                           RAW - raw wallet master key provided (skip derivation)
+	 *                           RAW - raw wallet key master provided (skip derivation).
+	 *                              RAW keys can be generated with generateWalletKey call
 	 *   }
 	 *                       
 	 * @return A future that resolves no value.
@@ -345,11 +352,13 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * @param exportConfigJson: JSON containing settings for input operation.
 	 *   {
 	 *     "path": "string", Path of the file that contains exported wallet content
-	 *     "key": "string", Key for export of the wallet
-	 *     "key_derivation_method": optional[string] Type of wallet export key:
-	 *                           ARAGON2I_MOD - derive secured wallet master key (used by default)
-	 *                           ARAGON2I_INT - derive secured wallet master key (less secured but faster)
-	 *                           RAW - raw wallet master key provided (skip derivation)
+	 *     "key": string, Key or passphrase used for wallet export key derivation.
+	 *                    Look to key_derivation_method param for information about supported key derivation methods.
+	 *     "key_derivation_method": optional[string] algorithm to use for export key derivation:
+	 *                           ARAGON2I_MOD - derive secured wallet export key (used by default)
+	 *                           ARAGON2I_INT - derive secured wallet export key (less secured but faster)
+	 *                           RAW - raw wallet export master provided (skip derivation).
+	 *                              RAW keys can be generated with generateWalletKey call
 	 *   }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -401,14 +410,16 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * }
 	 * @param credentials Wallet credentials json
 	 * {
-	 *   "key": string, Auth key for the wallet
+	 *    "key": string, Key or passphrase used for wallet key derivation.
+	 *                   Look to key_derivation_method param for information about supported key derivation methods.
 	 *   "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                          Can be optional if storage supports default configuration.
 	 *                          For 'default' storage type should be empty.
-	 *   "key_derivation_method": optional[string] Type of wallet auth key:
+	 *   "key_derivation_method": optional[string] Algorithm to use for wallet key derivation:
 	 *                           ARAGON2I_MOD - derive secured wallet master key (used by default)
 	 *                           ARAGON2I_INT - derive secured wallet master key (less secured but faster)
-	 *                           RAW - raw wallet master key provided (skip derivation)
+	 *                           RAW - raw wallet key master provided (skip derivation).
+	 *                              RAW keys can be generated with generateWalletKey call
 	 * }	
 	 * @param importConfigJson Import settings json.
 	 * {
@@ -442,6 +453,8 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 
 	/**
 	 * Generate wallet master key.
+	 * Returned key is compatible with "RAW" key derivation method.
+	 * It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
 	 *
 	 * @param config (optional) key configuration json.
 	 * {

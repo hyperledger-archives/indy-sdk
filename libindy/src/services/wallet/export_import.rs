@@ -183,7 +183,7 @@ mod tests {
     use std::rc::Rc;
     use std::collections::HashMap;
 
-    use domain::wallet::Metadata;
+    use domain::wallet::{Metadata, MetadataArgon};
     use utils::crypto::pwhash_argon2i13;
     use utils::test::TestUtils;
     use services::wallet::encryption;
@@ -364,10 +364,10 @@ mod tests {
         let metadata = {
             let master_key_salt = encryption::gen_master_key_salt().unwrap();
 
-            let metadata = Metadata {
-                master_key_salt: Some(master_key_salt[..].to_vec()),
+            let metadata = Metadata::MetadataArgon(MetadataArgon {
+                master_key_salt: master_key_salt[..].to_vec(),
                 keys: keys.serialize_encrypted(&master_key).unwrap(),
-            };
+            });
 
             serde_json::to_vec(&metadata)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err))).unwrap()

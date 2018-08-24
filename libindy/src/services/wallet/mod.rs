@@ -15,7 +15,7 @@ use named_type::NamedType;
 use std::rc::Rc;
 
 use api::wallet::*;
-use domain::wallet::{Config, Credentials, ExportConfig, Metadata, KeyDerivationMethod};
+use domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, KeyDerivationMethod};
 use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::sequence::SequenceUtils;
@@ -501,19 +501,23 @@ impl WalletService {
     }
 
     fn _prepare_metadata(&self, key: &str, key_derivation_method: &KeyDerivationMethod, keys: &Keys) -> Result<Vec<u8>, WalletError> {
-        let (master_key_salt, master_key) = match key_derivation_method {
-            KeyDerivationMethod::RAW =>
-                (None, encryption::raw_master_key(key)?),
+        let metadata = match key_derivation_method {
+            KeyDerivationMethod::RAW => {
+                let master_key = encryption::raw_master_key(key)?;
+                Metadata::MetadataRaw(
+                    MetadataRaw { keys: keys.serialize_encrypted(&master_key)? }
+                )
+            }
             KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
                 let master_key_salt = encryption::gen_master_key_salt()?;
                 let master_key = encryption::derive_master_key(key, &master_key_salt, key_derivation_method)?;
-                (Some(master_key_salt[..].to_vec()), master_key)
+                Metadata::MetadataArgon(
+                    MetadataArgon {
+                        keys: keys.serialize_encrypted(&master_key)?,
+                        master_key_salt: master_key_salt[..].to_vec()
+                    }
+                )
             }
-        };
-
-        let metadata = Metadata {
-            master_key_salt,
-            keys: keys.serialize_encrypted(&master_key)?,
         };
 
         let res = serde_json::to_vec(&metadata)
@@ -523,15 +527,19 @@ impl WalletService {
     }
 
     fn _restore_keys(&self, metadata: &Metadata, key: &str, key_derivation_method: &KeyDerivationMethod) -> Result<Keys, WalletError> {
-        let master_key = match key_derivation_method {
-            KeyDerivationMethod::RAW => encryption::raw_master_key(key)?,
-            KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
-                let master_key_salt = encryption::master_key_salt_from_slice(metadata.master_key_salt.as_ref().map(Vec::as_slice))?;
-                encryption::derive_master_key(key, &master_key_salt, key_derivation_method)?
+        let (metadata_keys, master_key) = match (key_derivation_method, metadata) {
+            (KeyDerivationMethod::RAW, Metadata::MetadataRaw(metadata)) =>
+                (metadata.keys.as_ref(), encryption::raw_master_key(key)?),
+            (KeyDerivationMethod::ARAGON2I_INT, Metadata::MetadataArgon(metadata)) |
+            (KeyDerivationMethod::ARAGON2I_MOD, Metadata::MetadataArgon(metadata)) => {
+                let master_key_salt = encryption::master_key_salt_from_slice(&metadata.master_key_salt)?;
+                let master_key = encryption::derive_master_key(key, &master_key_salt, key_derivation_method)?;
+                ((metadata.keys.as_ref(), master_key))
             }
+            _ => return Err(WalletError::AccessFailed("Invalid combination of KeyDerivationMethod and Metadata".to_string()))
         };
 
-        let res = Keys::deserialize_encrypted(&metadata.keys, &master_key)
+        let res = Keys::deserialize_encrypted(&metadata_keys, &master_key)
             .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
 
         Ok(res)

@@ -7,7 +7,7 @@ use errors::common::CommonError;
 use services::wallet::WalletService;
 use api::wallet::*;
 use utils::crypto::{base58, randombytes, chacha20poly1305_ietf};
-
+use domain::wallet::KeyConfig;
 
 use std::rc::Rc;
 use std::result;
@@ -234,10 +234,10 @@ impl WalletCommandExecutor {
                      config: Option<&str>) -> Result<String> {
         trace!("_generate_key >>>config: {:?}", secret!(config));
 
-        let config = serde_json::from_str::<serde_json::Value>(config.unwrap_or("{}"))
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Config: {:?}", err)))?;
+        let config: KeyConfig = serde_json::from_str(config.unwrap_or("{}"))
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Key Config: {:?}", err)))?;
 
-        let key = match config["seed"].as_str() {
+        let key = match config.seed {
             Some(seed) => randombytes::randombytes_deterministic(chacha20poly1305_ietf::KEYBYTES, &randombytes::Seed::from_slice(seed.as_bytes())?),
             None => randombytes::randombytes(chacha20poly1305_ietf::KEYBYTES)
         };
