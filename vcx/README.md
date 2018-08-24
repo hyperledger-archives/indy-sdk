@@ -1,4 +1,9 @@
 # VCX
+
+libvcx is library on top of libindy which fully implements the credentials exchange.
+
+This library is currently in experimental state.
+
 ## Linux
 1) Install rust and rustup (https://www.rust-lang.org/install.html).
 2) Install libindy_1.6.1 (https://repo.sovrin.org/sdk/deb/pool/xenial/stable/libi/libindy/)

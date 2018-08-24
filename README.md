@@ -24,6 +24,17 @@ functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-St
 that explored the ecosystem via command line. That material is being
 rewritten but still contains some useful ideas.
 
+## Items included in this SDK
+
+### libindy
+SDK for Hyperledger Indy, which provides a distributed-ledger-based foundation for self-sovereign identity.
+
+### libnullpay
+Null Payment Plugin for Indy SDK.
+
+### vcx
+Credentials exchange library. This library is currently in experimental state and it is not part of official releases.
+
 ## How-To Tutorials
 
 Short, simple tutorials that demonstrate how to accomplish common tasks
