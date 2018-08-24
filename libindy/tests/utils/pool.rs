@@ -142,7 +142,7 @@ impl PoolUtils {
     }
 
     pub fn dump_correct_genesis_txns_to_cache(pool_name: &str) -> Result<(), ErrorCode> {
-        PoolUtils::_dump_genesis_txns_to_cache(pool_name, &PoolUtils::gen_txns())
+        PoolUtils::_dump_genesis_txns_to_cache(pool_name, &TestUtils::gen_txns())
     }
 
     pub fn dump_incorrect_genesis_txns_to_cache(pool_name: &str) -> Result<(), ErrorCode> {

@@ -297,9 +297,11 @@ mod tests {
     #[test]
     fn pool_worker_restore_merkle_tree_works_from_genesis_txns() {
         TestUtils::cleanup_storage();
-
+        
         let node_txns = TestUtils::gen_txns();
-        let txns_src = node_txns[0..(2 as usize)].join("\n");
+        let txns_src = format!("{}\n{}",
+                               node_txns[0].replace(EnvironmentUtils::test_pool_ip().as_str(), "10.0.0.2"),
+                               node_txns[1].replace(EnvironmentUtils::test_pool_ip().as_str(), "10.0.0.2"));
         _write_genesis_txns(&txns_src);
 
         let merkle_tree = super::create("test").unwrap();
