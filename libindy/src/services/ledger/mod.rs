@@ -810,6 +810,19 @@ mod tests {
     }
 
     #[test]
+    fn build_node_request_works_with_pop() {
+        let ledger_service = LedgerService::new();
+        let identifier = "identifier";
+        let dest = "dest";
+        let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["VALIDATOR"], "blskey":"blskey", "blskey_pop":"pop"}"#;
+
+        let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"blskey","blskey_pop":"pop"}}"#;
+
+        let node_request = ledger_service.build_node_request(identifier, dest, data).unwrap();
+        assert!(node_request.contains(expected_result));
+    }
+
+    #[test]
     fn build_node_request_works_for_wrong_data() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
