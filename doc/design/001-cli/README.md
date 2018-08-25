@@ -127,14 +127,14 @@ indy> wallet <command>
 #### Wallet create
 Create new wallet with specified name:
 ```
-indy> wallet create <wallet name> key=<key> [storage_type=<storage_type>] [storage_config={config json}]
+indy> wallet create <wallet name> key [storage_type=<storage_type>] [storage_config={config json}]
 ```
 TODO: Think about custom wallet types support. Now we force default wallet security model.. 
 
 #### Wallet open
 Open the wallet with specified name and make it available for commands that require wallet. If there was opened wallet it will be closed:
 ```
-indy> wallet open <wallet name> key=<key> [rekey=<rekey>]
+indy> wallet open <wallet name> key [rekey]
 ```
 
 #### Wallet close
@@ -146,7 +146,7 @@ indy> wallet close
 #### Wallet delete
 Delete the opened wallet
 ```
-indy> wallet delete <wallet name> key=<key>
+indy> wallet delete <wallet name> key
 ```
 
 #### Wallet list
@@ -184,6 +184,12 @@ indy> pool create [name=]<pool name> gen_txn_file=<gen txn file path>
 Connect to Indy nodes pool and make it available for operation that require pool access. If there was pool connection it will be disconnected.
 ```
 indy> pool connect [name=]<pool name> [protocol-version=<version>] [timeout=<timeout>] [extended-timeout=<timeout>] [pre-ordered-nodes=<node names>]
+```
+
+#### Refresh
+Refresh a local copy of a pool ledger and updates pool nodes connections.
+```
+indy> pool refresh
 ```
 
 #### Disconnect
@@ -288,13 +294,13 @@ ledger node target=<target-value> alias=<alias-value> [node_ip=<node_ip-value>] 
 #### GET_VALIDATOR_INFO transaction
 Send GET_VALIDATOR_INFO transaction to get info from all nodes
 ```
-ledger get-validator-info 
+ledger get-validator-info [nodes=<node names>] [timeout=<timeout>]
 ```
 
 #### POOL_UPGRADE transaction
 Send POOL_UPGRADE transaction
 ```
-ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>]
+ledger pool-upgrade name=<name> version=<version> action=<start or cancel> sha256=<sha256> [timeout=<timeout>] [schedule=<schedule>] [justification=<justification>] [reinstall=<true or false (default false)>] [force=<true or false (default false)>] [package=<package>]
 ```
 
 #### POOL_CONFIG transaction
@@ -306,7 +312,7 @@ ledger pool-config writes=<true or false (default false)> [force=<true or false 
 #### POOL_RESTART transaction
 Send POOL_RESTART transaction
 ```
-ledger pool-restart action=<start or cancel> [datetime=<datetime>]
+ledger pool-restart action=<start or cancel> [datetime=<datetime>] [nodes=<node names>] [timeout=<timeout>]
 ```
 
 #### Custom transaction
@@ -385,8 +391,8 @@ pool(sandbox):indy> pool list
 
 #### Create and open wallet
 ```
-sandbox|indy> wallet create alice_wallet key=key
-sandbox|indy> wallet open alice_wallet key=key
+sandbox|indy> wallet create alice_wallet key
+sandbox|indy> wallet open alice_wallet key
 pool(sandbox):wallet(alice_wallet):indy> wallet list
 ```
 

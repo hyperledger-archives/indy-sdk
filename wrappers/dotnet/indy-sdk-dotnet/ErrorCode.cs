@@ -124,6 +124,11 @@
         /// </summary>
         WalletAlreadyOpenedError = 206,
 
+        /// <summary>
+        /// No value with the specified key exists in the wallet from which it was requested.
+        /// </summary>
+        WalletItemNotFoundError = 212,
+
         // Ledger errors
 
         /// <summary>

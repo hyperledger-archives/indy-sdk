@@ -96,8 +96,10 @@ namespace Hyperledger.Indy
                     return new ClaimRevokedException();
                 case ErrorCode.SignusUnknownCryptoError:
                     return new UnknownCryptoException();
+                case ErrorCode.WalletItemNotFoundError:
+                    return new WalletItemNotFoundException();
                 default:
-                    var message = string.Format("An unmapped error with the code '{0}' was returned by the SDK.", sdkErrorCode);
+                    var message = $"An unmapped error with the code '{sdkErrorCode}' was returned by the SDK.";
                     return new IndyException(message, sdkErrorCode);
             }      
         }

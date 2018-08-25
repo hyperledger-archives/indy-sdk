@@ -51,7 +51,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -67,7 +67,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 		public void callback(int xcommand_handle, int err, int handle) {
 
 			CompletableFuture<Wallet> future = (CompletableFuture<Wallet>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Wallet wallet = new Wallet(handle);
 
@@ -129,7 +129,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				null,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -159,7 +159,9 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *   "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                          Can be optional if storage supports default configuration.
 	 *                           For 'default' storage type should be empty.
-	 *
+	 *   "key_derivation_method": optional[string] algorithm to use for master key derivation:
+	 *                          ARAGON2I_MOD (used by default)
+	 *                          ARAGON2I_INT - less secured but faster
 	 * }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -177,7 +179,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				credentials,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -209,6 +211,12 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *       "storage_credentials": optional[{credentiails object}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                              Can be optional if storage supports default configuration.
 	 *                               For 'default' storage type should be empty.
+	 *   "key_derivation_method": optional[string] algorithm to use for master key derivation:
+	 *                          ARAGON2I_MOD (used by default)
+	 *                          ARAGON2I_INT - less secured but faster
+	 *   "rekey_derivation_method": optional[string] algorithm to use for master rekey derivation:
+	 *                              ARAGON2I_MOD (used by default)
+	 *                              ARAGON2I_INT - less secured but faster
 	 *
 	 *   }
 	 * @return A future that resolves no value.
@@ -228,7 +236,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				credentials,
 				openWalletCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -255,7 +263,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				handle,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -282,12 +290,12 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 * @param credentials Wallet credentials json
 	 *   {
 	 *       "key": string, Passphrase used to derive current wallet master key
-	 *       "rekey": optional["string"], If present than wallet master key will be rotated to a new one
-	 *                                  derived from this passphrase.
 	 *       "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                              Can be optional if storage supports default configuration.
 	 *                               For 'default' storage type should be empty.
-	 *
+	 *       "key_derivation_method": optional[string] algorithm to use for master key derivation:
+	 *                                ARAGON2I_MOD (used by default)
+	 *                                ARAGON2I_INT - less secured but faster
 	 *   }
 	 *                       
 	 * @return A future that resolves no value.
@@ -306,7 +314,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				credentials,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -319,6 +327,9 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *   {
 	 *     "path": "string", Path of the file that contains exported wallet content
 	 *     "key": "string", Passphrase used to derive export key
+	 *     "key_derivation_method": optional[string] algorithm to use for export key derivation:
+	 *                            ARAGON2I_MOD (used by default)
+	 *                            ARAGON2I_INT - less secured but faster
 	 *   }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -341,7 +352,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				exportConfigJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -368,13 +379,20 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
 	 * }
-	 * @param importConfigJson Wallet credentials json
+	 * @param credentials Wallet credentials json
 	 * {
 	 *   "key": string, Passphrase used to derive wallet master key
 	 *   "storage_credentials": optional[{credentials json}] Credentials for wallet storage. Storage type defines set of supported keys.
 	 *                          Can be optional if storage supports default configuration.
 	 *                          For 'default' storage type should be empty.
-	 *
+	 *   "key_derivation_method": optional[string] algorithm to use for master key derivation:
+	 *                          ARAGON2I_MOD (used by default)
+	 *                          ARAGON2I_INT - less secured but faster
+	 * }	
+	 * @param importConfigJson Import settings json.
+	 * {
+	 *   "path": "string", path of the file that contains exported wallet content
+	 *   "key": "string", passphrase used to derive export key
 	 * }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -396,7 +414,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 				importConfigJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}

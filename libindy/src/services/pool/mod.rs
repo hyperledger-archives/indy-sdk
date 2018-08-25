@@ -57,7 +57,6 @@ impl PoolService {
     }
 
     pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
-
         //TODO: initialize all state machines
         trace!("PoolService::create {} with config {:?}", name, config);
 
@@ -142,7 +141,7 @@ impl PoolService {
         send_cmd_sock.connect(inproc_sock_name.as_str())?;
 
         new_pool.work(recv_cmd_sock);
-        self._send_msg(pool_handle, "connect", &send_cmd_sock)?;
+        self._send_msg(pool_handle, "connect", &send_cmd_sock, None, None)?;
 
         self.pending_pools.try_borrow_mut().map_err(CommonError::from)?
             .insert(new_pool.get_id(), ZMQPool::new(new_pool, send_cmd_sock));
@@ -164,7 +163,19 @@ impl PoolService {
 
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
         match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket)?,
+            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, None, None)?,
+            None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
+        }
+
+        Ok(cmd_id)
+    }
+
+    pub fn send_action(&self, handle: i32, msg: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<i32, PoolError> {
+        let cmd_id: i32 = SequenceUtils::get_next_id();
+
+        let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
+        match pools.get(&handle) {
+            Some(ref pool) => self._send_msg(cmd_id, msg, &pool.cmd_socket, nodes, timeout)?,
             None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         }
 
@@ -196,7 +207,7 @@ impl PoolService {
 
         let mut pools = self.open_pools.try_borrow_mut().map_err(CommonError::from)?;
         match pools.remove(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, "exit", &pool.cmd_socket)?,
+            Some(ref pool) => self._send_msg(cmd_id, "exit", &pool.cmd_socket, None, None)?,
             None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         }
 
@@ -208,17 +219,24 @@ impl PoolService {
 
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
         match pools.get(&handle) {
-            Some(ref pool) => self._send_msg(cmd_id, "refresh", &pool.cmd_socket)?,
+            Some(ref pool) => self._send_msg(cmd_id, "refresh", &pool.cmd_socket, None, None)?,
             None => return Err(PoolError::InvalidHandle(format!("No pool with requested handle {}", handle)))
         };
 
         Ok(cmd_id)
     }
 
-    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket) -> Result<(), PoolError> {
+    fn _send_msg(&self, cmd_id: i32, msg: &str, socket: &Socket, nodes: Option<&str>, timeout: Option<i32>) -> Result<(), PoolError> {
         let mut buf = [0u8; 4];
+        let mut buf_to = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
-        Ok(socket.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT)?)
+        let timeout = timeout.unwrap_or(-1);
+        LittleEndian::write_i32(&mut buf_to, timeout);
+        if let Some(nodes) = nodes {
+            Ok(socket.send_multipart(&[msg.as_bytes(), &buf, &buf_to, nodes.as_bytes()], zmq::DONTWAIT)?)
+        } else {
+            Ok(socket.send_multipart(&[msg.as_bytes(), &buf, &buf_to], zmq::DONTWAIT)?)
+        }
     }
 
     pub fn list(&self) -> Result<Vec<serde_json::Value>, PoolError> {
@@ -246,7 +264,6 @@ mod tests {
     use domain::ledger::request::ProtocolVersion;
     use std::thread;
 
-    pub const NODE1: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","client_ip":"10.0.0.2","client_port":9702,"node_ip":"10.0.0.2","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"},"metadata":{"from":"Th7MpTaRZVRYnPiabds81Y"},"type":"0"},"txnMetadata":{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"},"ver":"1"}"#;
     const TEST_PROTOCOL_VERSION: usize = 2;
 
     fn _set_protocol_version(version: usize) {
@@ -289,7 +306,7 @@ mod tests {
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id, PoolOpenConfig::default()), send_soc));
             let cmd_id = ps.close(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
-            assert_eq!(recv.len(), 2);
+            assert_eq!(recv.len(), 3);
             assert_eq!("exit", String::from_utf8(recv[0].clone()).unwrap());
             assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
         }
@@ -308,7 +325,7 @@ mod tests {
             ps.open_pools.borrow_mut().insert(pool_id, ZMQPool::new(Pool::new("", pool_id, PoolOpenConfig::default()), send_soc));
             let cmd_id = ps.refresh(pool_id).unwrap();
             let recv = recv_soc.recv_multipart(zmq::DONTWAIT).unwrap();
-            assert_eq!(recv.len(), 2);
+            assert_eq!(recv.len(), 3);
             assert_eq!("refresh", String::from_utf8(recv[0].clone()).unwrap());
             assert_eq!(cmd_id, LittleEndian::read_i32(recv[1].as_slice()));
         }
@@ -394,6 +411,25 @@ mod tests {
         }
 
         #[test]
+        fn pool_send_action_works() {
+            TestUtils::cleanup_storage();
+
+            let name = "test";
+            let zmq_ctx = zmq::Context::new();
+            let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
+            let inproc_sock_name: String = format!("inproc://pool_{}", name);
+            recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
+            send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
+            let pool = Pool::new(name, 0, PoolOpenConfig::default());
+            let ps = PoolService::new();
+            ps.open_pools.borrow_mut().insert(-1, ZMQPool::new(pool, send_cmd_sock));
+            let test_data = "str_instead_of_tx_json";
+            ps.send_action(-1, test_data, None, None).unwrap();
+            assert_eq!(recv_cmd_sock.recv_string(zmq::DONTWAIT).unwrap().unwrap(), test_data);
+        }
+
+        #[test]
         fn pool_close_works_for_invalid_handle() {
             TestUtils::cleanup_storage();
             let ps = PoolService::new();
@@ -476,7 +512,7 @@ mod tests {
             let ps = PoolService::new();
 
             let pool_name = "pool_drop_works";
-            let gen_txn = NODE1;
+            let gen_txn = TestUtils::gen_txns()[0].clone();
 
             let zmq_ctx = zmq::Context::new();
             let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();

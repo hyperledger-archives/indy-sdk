@@ -2,6 +2,9 @@
 using System;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.PoolApi.NativeMethods;
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.PoolApi
 {
@@ -14,7 +17,10 @@ namespace Hyperledger.Indy.PoolApi
         /// <summary>
         /// Callback to use when a pool open command has completed.
         /// </summary>
-        private static OpenPoolLedgerCompletedDelegate _openPoolLedgerCallback = (command_handle, err, pool_handle) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(OpenPoolLedgerCompletedDelegate))]
+#endif
+        private static void OpenPoolLedgerCallback(int command_handle, int err, IntPtr pool_handle)
         {
             var taskCompletionSource = PendingCommands.Remove<Pool>(command_handle);
 
@@ -22,12 +28,15 @@ namespace Hyperledger.Indy.PoolApi
                 return;
 
             taskCompletionSource.SetResult(new Pool(pool_handle));
-        };
+        }
 
         /// <summary>
         /// Callback to use when list pools command has completed.
         /// </summary>
-        private static ListPoolsCompletedDelegate _listPoolsCallback = (command_handle, err, pools) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ListPoolsCompletedDelegate))]
+#endif
+        private static void ListPoolsCallback(int command_handle, int err, string pools)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(command_handle);
 
@@ -35,7 +44,7 @@ namespace Hyperledger.Indy.PoolApi
                 return;
 
             taskCompletionSource.SetResult(pools);
-        };
+        }
 
         /// <summary>
         /// Creates a new local pool configuration with the specified name that can be used later to open a connection to 
@@ -144,7 +153,7 @@ namespace Hyperledger.Indy.PoolApi
                 commandHandle,
                 configName,
                 config,
-                _openPoolLedgerCallback
+                OpenPoolLedgerCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -163,7 +172,7 @@ namespace Hyperledger.Indy.PoolApi
 
             var result = NativeMethods.indy_list_pools(
                 commandHandle,
-                _listPoolsCallback
+                ListPoolsCallback
                 );
 
             CallbackHelper.CheckResult(result);

@@ -29,9 +29,8 @@ pub mod create_command {
                 .add_optional_param("storage_type", "Type of the wallet storage.")
                 .add_optional_param("storage_config", "The list of key:value pairs defined by storage type.")
                 .add_example("wallet create wallet1 key")
-                .add_example("wallet create wallet1 key=key")
-                .add_example("wallet create wallet1 key=key storage_type=default")
-                .add_example(r#"wallet create wallet1 key=key storage_type=default storage_config={"key1":"value1","key2":"value2"}"#)
+                .add_example("wallet create wallet1 key storage_type=default")
+                .add_example(r#"wallet create wallet1 key storage_type=default storage_config={"key1":"value1","key2":"value2"}"#)
                 .finalize()
     );
 
@@ -80,7 +79,6 @@ pub mod open_command {
                             .add_optional_deferred_param("rekey", "New auth key for the wallet (will replace previous one).")
                             .add_example("wallet open wallet1 key")
                             .add_example("wallet open wallet1 key rekey")
-                            .add_example("wallet open wallet1 key=key rekey=other_key")
                             .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
@@ -224,7 +222,6 @@ pub mod delete_command {
                 .add_main_param("name", "The name of deleted wallet")
                 .add_required_deferred_param("key", "Auth key for the wallet")
                 .add_example("wallet delete wallet1 key")
-                .add_example("wallet delete wallet1 key=key")
                 .finalize()
     );
 
@@ -239,13 +236,6 @@ pub mod delete_command {
 
         let credentials: String = json!({ "key": key }).to_string();
 
-        if let Some((_, opened_wallet_id)) = get_opened_wallet(&ctx) {
-            // TODO: Indy-Sdk allows delete opened wallet
-            if id == opened_wallet_id {
-                return Err(println_err!("Wallet {:?} is opened", id));
-            }
-        }
-
         let res = match Wallet::delete_wallet(config.as_str(), credentials.as_str()) {
             Ok(()) => {
                 _delete_wallet_config(id)
@@ -256,6 +246,7 @@ pub mod delete_command {
             Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
             Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key has been provided ", id)),
+            Err(ErrorCode::CommonInvalidState) => Err(println_err!("Wallet {:?} is opened", id)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -270,7 +261,7 @@ pub mod export_command {
     command!(CommandMetadata::build("export", "Export opened wallet to the file")
                 .add_required_param("export_path", "Path to the export file")
                 .add_required_deferred_param("export_key", "Passphrase used to derive export key")
-                .add_example("wallet export export_path=/home/indy/export_wallet export_key=key")
+                .add_example("wallet export export_path=/home/indy/export_wallet export_key")
                 .finalize()
     );
 
@@ -314,8 +305,7 @@ pub mod import_command {
                 .add_required_param("export_path", "Path to the file that contains exported wallet content")
                 .add_required_deferred_param("export_key", "Passphrase used to derive export key")
                 .add_example("wallet import wallet1 key export_path=/home/indy/export_wallet export_key")
-                .add_example("wallet import wallet1 key=key export_path=/home/indy/export_wallet export_key=export_key")
-                .add_example(r#"wallet import wallet1 key export_path=/home/indy/export_wallet export_key=export_key storage_type=default storage_config={"key1":"value1","key2":"value2"}"#)
+                .add_example(r#"wallet import wallet1 key export_path=/home/indy/export_wallet export_key storage_type=default storage_config={"key1":"value1","key2":"value2"}"#)
                 .finalize()
     );
 
