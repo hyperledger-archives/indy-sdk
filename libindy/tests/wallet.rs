@@ -367,7 +367,7 @@ mod high_cases {
 
             let config = json!({"seed": MY1_SEED}).to_string();
             let key = WalletUtils::generate_wallet_key(Some(config.as_str())).unwrap();
-            assert_eq!(key.from_base58().unwrap(), vec![156, 79, 89, 5, 135, 97, 180, 4, 193, 105, 4, 97, 248, 165, 120, 214, 47, 251, 0, 180, 205, 33, 61, 58, 172, 85, 35, 51, 22, 177, 167, 114]);
+            assert_eq!(key.from_base58().unwrap(), vec![177, 92, 220, 199, 104, 203, 161, 4, 218, 78, 105, 13, 7, 50, 66, 107, 154, 155, 108, 133, 1, 30, 87, 149, 233, 76, 39, 156, 178, 46, 230, 124]);
 
             let credentials = json!({"key": key, "key_derivation_method": "RAW"}).to_string();
             WalletUtils::create_wallet(WALLET_CONFIG, &credentials).unwrap();

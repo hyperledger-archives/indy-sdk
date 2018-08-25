@@ -20,7 +20,7 @@ public class GenerateWalletKeyTest extends IndyIntegrationTest {
 	public void testGenerateWalletKeyWorksForSeed() throws Exception {
 		String config = "{ \"seed\":\"" + MY1_SEED + "\"}";
 		String key = Wallet.generateWalletKey(config).get();
-		assertEquals("BXAn2nwceAwtWDneN77wHYcx4XkSheaCkYUBk1TtF3ER", key);
+		assertEquals("CwMHrEQJnwvuE8q9zbR49jyYtVxVBHNTjCPEPk1aV3cP", key);
 
 		String credentials = "{ \"key\":\"" + key + "\", \"key_derivation_method\":\"RAW\"}";
 		Wallet.createWallet(WALLET_CONFIG, credentials).get();

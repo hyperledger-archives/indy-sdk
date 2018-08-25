@@ -17,7 +17,7 @@ async def test_generate_wallet_key_works(wallet_config):
 @pytest.mark.asyncio
 async def test_generate_wallet_key_works_for_seed(wallet_config, seed_my1):
     key = await wallet.generate_wallet_key(json.dumps({'seed': seed_my1}))
-    assert key == 'BXAn2nwceAwtWDneN77wHYcx4XkSheaCkYUBk1TtF3ER'
+    assert key == 'CwMHrEQJnwvuE8q9zbR49jyYtVxVBHNTjCPEPk1aV3cP'
 
     credentials = {'key': key, 'key_derivation_method': 'RAW'}
     await wallet.create_wallet(wallet_config, json.dumps(credentials))

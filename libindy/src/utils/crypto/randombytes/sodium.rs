@@ -4,6 +4,8 @@ extern crate libc;
 use self::libc::size_t;
 use errors::common::CommonError;
 
+use utils::crypto::memzero::memzero;
+
 pub const SEEDBYTES: usize = 32; // randombytes_seedbytes
 
 pub struct Seed([u8; SEEDBYTES]);
@@ -18,6 +20,12 @@ impl Seed {
             *ni = bsi
         }
         Ok(seed)
+    }
+}
+
+impl Drop for Seed {
+    fn drop(&mut self) {
+        memzero(self.0.as_mut());
     }
 }
 
@@ -50,7 +58,7 @@ mod tests {
     fn randombytes_deterministic_works() {
         let seed = Seed::from_slice(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5]).unwrap();
         let res = randombytes_deterministic(32, &seed);
-        let expected_bytes = vec![203, 243, 240, 238, 23, 2, 1, 74, 141, 80, 55, 246, 124, 240, 253, 28, 40, 65, 244, 88, 126, 56, 211, 233, 241, 217, 224, 244, 179, 12, 168, 8];
+        let expected_bytes = vec![7, 183, 0, 143, 100, 203, 87, 27, 32, 132, 126, 172, 180, 123, 39, 26, 18, 243, 64, 60, 92, 43, 111, 227, 54, 129, 201, 185, 53, 73, 93, 93];
         assert_eq!(expected_bytes, res);
     }
 }
