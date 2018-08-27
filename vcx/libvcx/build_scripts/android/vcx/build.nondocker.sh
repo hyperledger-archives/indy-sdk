@@ -154,7 +154,12 @@ fi
 #cp -rf ./../../../../../vcx/libvcx/src ${LIBVCX}
 #cp -rf ./../../../../../vcx/libvcx/build.rs ${LIBVCX}
 #cp -rf ./../../../../../vcx/libvcx/Cargo.toml ${LIBVCX}
+
 LIBVCX=../../../
+CROSS_COMPILE_DIR=${CROSS_COMPILE}
+if [ "${CROSS_COMPILE}" = "armv7-linux-androideabi" ]; then
+    CROSS_COMPILE_DIR="arm-linux-androideabi"
+fi
 
 export PAYMENT_PLUGIN="sovtoken"
 export SODIUM_LIB_DIR=${SODIUM_DIR}/lib
@@ -169,11 +174,11 @@ export RUST_BACKTRACE=1
 export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH}
 export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
 export PKG_CONFIG_ALLOW_CROSS=1
-export CC=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-clang
-export AR=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-ar
-export CXX=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-clang++
-export CXXLD=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-ld
-export RANLIB=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-ranlib
+export CC=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-clang
+export AR=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-ar
+export CXX=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-clang++
+export CXXLD=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-ld
+export RANLIB=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-ranlib
 export TARGET=android
 
 printenv
@@ -202,10 +207,10 @@ ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
 ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/liblog.so \
 ${LIBINDY_DIR}/libindy.a \
 ${LIBSOVTOKEN_DIR}/libsovtoken.a \
-${TOOLCHAIN_DIR}/${CROSS_COMPILE}/${NDK_LIB_DIR}/libgnustl_shared.so \
-${OPENSSL_DIR}/${NDK_LIB_DIR}/libssl.a \
-${OPENSSL_DIR}/${NDK_LIB_DIR}/libcrypto.a \
+${TOOLCHAIN_DIR}/${CROSS_COMPILE_DIR}/${NDK_LIB_DIR}/libgnustl_shared.so \
+${OPENSSL_DIR}/lib/libssl.a \
+${OPENSSL_DIR}/lib/libcrypto.a \
 ${SODIUM_LIB_DIR}/libsodium.a \
 ${LIBZMQ_LIB_DIR}/libzmq.a \
-${TOOLCHAIN_DIR}/${CROSS_COMPILE}/${NDK_LIB_DIR}/libgnustl_shared.so -Wl,--no-whole-archive -z muldefs
+${TOOLCHAIN_DIR}/${CROSS_COMPILE_DIR}/${NDK_LIB_DIR}/libgnustl_shared.so -Wl,--no-whole-archive -z muldefs
 cp "${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a" ${LIBVCX_BUILDS}/
