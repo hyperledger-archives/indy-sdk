@@ -107,7 +107,7 @@ get_libsovtoken() {
     set -xv
     # Todo: This artifact was manually uploaded to this repo. Eventually, the file format will change. That is why it is hardcoded
     if [ -z ${LIBSOVTOKEN_DIR} ]; then
-        LIBSOVTOKEN_ZIP=libsovtoken_0.9.0-201808150545-5fb8db8_android.zip
+        LIBSOVTOKEN_ZIP=libsovtoken_0.9.0-201808271619-7791a3b_all.zip
         if [ ! -d "libsovtoken" ]; then
             echo "retrieving libsovtoken prebuilt library"
             wget ${EVERNYM_REPO}/${LIBSOVTOKEN_ZIP}
