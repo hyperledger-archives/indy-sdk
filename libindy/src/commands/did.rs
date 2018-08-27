@@ -3,7 +3,7 @@ use errors::did::DidError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
 use domain::crypto::key::KeyInfo;
-use domain::crypto::did::{MyDidInfo, Did, TheirDidInfo, TheirDid, TemporaryDid, DidWithMeta};
+use domain::crypto::did::{MyDidInfo, Did, TheirDidInfo, TheirDid, TemporaryDid, DidWithMeta, DidMetadata};
 use domain::ledger::response::Reply;
 use domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
 use domain::ledger::attrib::{GetAttrReplyResult, AttribData, Endpoint};
@@ -463,26 +463,13 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(&did)?;
 
-        let mut tags = HashMap::new();
-        tags.insert(String::from("metadata"), metadata);
+        let metadata = DidMetadata{ metadata };
 
-        //  try to set for MyDid
-        let res_my_did = self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::id())
-            .and_then(|_| self.wallet_service.add_indy_record_tags::<Did>(wallet_handle, &did, &tags));
+        self.wallet_service.upsert_indy_object(wallet_handle, &did, &metadata)?;
 
-        let res = match res_my_did {
-            Ok(res) => Ok(res),
-            Err(WalletError::ItemNotFound) => {
-                //  try to set for TheirDid
-                self.wallet_service.get_indy_record::<TheirDid>(wallet_handle, &did, &RecordOptions::id())
-                    .and_then(|_| self.wallet_service.add_indy_record_tags::<TheirDid>(wallet_handle, &did, &tags))
-            }
-            Err(err) => Err(err)
-        }?;
+        debug!("set_did_metadata >>>");
 
-        debug!("set_did_metadata >>> res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 
     fn get_did_metadata(&self,
@@ -492,18 +479,10 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(&did)?;
 
-        let record = match self.wallet_service.get_indy_record::<Did>(wallet_handle, &did, &RecordOptions::full()) {
-            // Try to get MyDId
-            Ok(record) => Ok(record),
-            Err(WalletError::ItemNotFound) => self.wallet_service.get_indy_record::<TheirDid>(wallet_handle, &did, &RecordOptions::full()), // Try to get TheirDid
-            Err(err) => Err(err)
-        }?;
+        let metadata =
+            self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, &did, &RecordOptions::id_value(), &mut String::new())?;
 
-        let res =
-            record
-                .get_tags()
-                .and_then(|tags| tags.get("metadata").cloned())
-                .ok_or(WalletError::ItemNotFound)?;
+        let res = metadata.metadata;
 
         debug!("get_did_metadata <<< res: {:?}", res);
 

@@ -40,6 +40,11 @@ impl Did {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, NamedType)]
+pub struct DidMetadata {
+    pub metadata: String
+}
+
 #[derive(Serialize, Clone, Debug, NamedType)]
 pub struct DidWithMeta {
     pub did: String,
