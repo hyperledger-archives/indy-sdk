@@ -44,9 +44,6 @@ public class SetKeyMetadataTest extends IndyIntegrationTestWithSingleWallet {
 
 	@Test
 	public void testSetKeyMetadataWorksForNoKey() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletItemNotFoundException.class));
-
 		Crypto.setKeyMetadata(wallet, VERKEY, METADATA).get();
 	}
 }
