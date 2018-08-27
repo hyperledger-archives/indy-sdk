@@ -70,13 +70,16 @@ This wallet configuration json has the following format:
 Wallet credentials json has the following format:
 ```
  {
-   "key": string, Passphrase used to derive wallet master key
+   "key": string, Key or passphrase used for wallet key derivation.
+                  Look to key_derivation_method param for information about supported key derivation methods.
    "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                           Can be optional if storage supports default configuration.
                           For 'default' storage type should be empty.
-   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                          ARAGON2I_MOD (used by default)
-                          ARAGON2I_INT - less secured but faster 
+   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                          ARAGON2I_MOD - derive secured wallet master key (used by default)
+                          ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+                          RAW - raw wallet key master provided (skip derivation).
+                                RAW keys can be generated with indy_generate_wallet_key call
  }
 ```
 
@@ -85,7 +88,7 @@ Wallet credentials json has the following format:
 <table>
   <tr>  
     <th>v1.5.0 - Wallet API</th>
-    <th>v1.6.0 - Wallet API</th>
+    <th>v1.6.3 - Wallet API</th>
   </tr>
     <tr>
     <th colspan="2">
@@ -226,6 +229,27 @@ indy_list_wallets(command_handle: i32,
     </td>
     <td>
       <b>DELETED</b>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L538">
+            Generate wallet master key.
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <b>NEW</b>
+    </td>
+    <td>
+      <pre>
+indy_generate_wallet_key(command_handle: i32,
+                         config: *const c_char,
+                         cb: fn(xcommand_handle: i32,
+                                err: ErrorCode,
+                                key: *const c_char))
+        </pre>
     </td>
   </tr>
 </table>
@@ -838,7 +862,7 @@ Left the same but the format of config has been changed to:
 <table>
   <tr>
     <th>v1.5.0 - Ledger API</th>
-    <th>v1.6.2 - Ledger API</th>
+    <th>v1.6.3 - Ledger API</th>
   </tr>  
   <tr>
     <th colspan="2">
@@ -851,14 +875,15 @@ Left the same but the format of config has been changed to:
     <td><b>NEW</b></td>
     <td>
       <pre>
-indy_submit_action(command_handle: i32,
-                   pool_handle: i32,
-                   request_json: *const c_char,
-                   nodes: *const c_char,
-                   timeout: i32,
-                   cb: fn(xcommand_handle: i32,
-                          err: ErrorCode,
-                          request_result_json: *const c_char))
+indy_submit_action(
+               command_handle: i32,
+               pool_handle: i32,
+               request_json: *const c_char,
+               nodes: *const c_char,
+               timeout: i32,
+               cb: fn(xcommand_handle: i32,
+                      err: ErrorCode,
+                      request_result_json: *const c_char))
       </pre>
     </td>
   </tr>
@@ -870,41 +895,70 @@ indy_submit_action(command_handle: i32,
     </th>
   </tr>
   <tr>
-      <pre>
-indy_build_pool_upgrade_request(command_handle: i32,
-                                submitter_did: *const c_char,
-                                name: *const c_char,
-                                version: *const c_char,
-                                action: *const c_char,
-                                sha256: *const c_char,
-                                timeout: i32,
-                                schedule: *const c_char,
-                                justification: *const c_char,
-                                reinstall: bool,
-                                force: bool,
-                                cb: fn(xcommand_handle: i32,
-                                       err: ErrorCode,
-                                       request_json: *const c_char))
-      </pre>
     <td>
       <pre>
-indy_build_pool_upgrade_request(command_handle: i32,
-                                submitter_did: *const c_char,
-                                name: *const c_char,
-                                version: *const c_char,
-                                action: *const c_char,
-                                sha256: *const c_char,
-                                timeout: i32,
-                                schedule: *const c_char,
-                                justification: *const c_char,
-                                reinstall: bool,
-                                force: bool,
-                                package: *const c_char,
-                                cb: fn(xcommand_handle: i32,
-                                       err: ErrorCode,
-                                       request_json: *const c_char))
+indy_build_pool_upgrade_request(
+            command_handle: i32,
+            submitter_did: *const c_char,
+            name: *const c_char,
+            version: *const c_char,
+            action: *const c_char,
+            sha256: *const c_char,
+            timeout: i32,
+            schedule: *const c_char,
+            justification: *const c_char,
+            reinstall: bool,
+            force: bool,
+            cb: fn(xcommand_handle: i32,
+                   err: ErrorCode,
+                   request_json: *const c_char))
+      </pre>
+    </td>
+    <td>
+      <pre>
+indy_build_pool_upgrade_request(
+                command_handle: i32,
+                submitter_did: *const c_char,
+                name: *const c_char,
+                version: *const c_char,
+                action: *const c_char,
+                sha256: *const c_char,
+                timeout: i32,
+                schedule: *const c_char,
+                justification: *const c_char,
+                reinstall: bool,
+                force: bool,
+                package: *const c_char,
+                cb: fn(xcommand_handle: i32,
+                       err: ErrorCode,
+                       request_json: *const c_char))
       </pre>
       <b>Note:</b> Added <i>package</i> parameter that allows to specify package to be upgraded
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/ledger.rs#L898">
+            Builds a NODE request
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_build_node_request(
+            command_handle: i32,
+            submitter_did: *const c_char,
+            target_did: *const c_char,
+            data: *const c_char,
+            cb: fn(xcommand_handle: i32,
+                   err: ErrorCode,
+                   request_json: *const c_char))
+      </pre>
+    </td>
+    <td>
+Left the same but the additional optional field <b>blskey_pop</b> has been added in data json.
+</pre>
     </td>
   </tr>
 </table>

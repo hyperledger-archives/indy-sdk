@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.3
+* Performed the following changes related to Libindy Wallet API:
+    * Added separate API function `indy_generate_wallet_key` to generate a random wallet master key.
+    * Updated `key_derivation_method` parameter of wallet `credentials` to accept the addition type - `RAW`. 
+      By using this type, the result of `indy_generate_wallet_key` can be passed as a wallet master key (key derivation will be skipped).
+    * Updated Indy CLI wallet related commands to accept the addition parameter `key_derivation_method`.
+* Updated `data` parameter of `indy_build_node_request` API function to accept `blskey_pop` (Proof of possession for BLS key).
+* Bugfixes
+
 ## 1.6.2
 * Performed the following changes related to Libindy Ledger API:
     * Added `indy_submit_action` endpoint that provides the ability to send either GET_VALIDATOR_INFO or 
