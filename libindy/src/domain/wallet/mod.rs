@@ -24,12 +24,12 @@ pub struct Credentials {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum KeyDerivationMethod {
     RAW,
-    ARAGON2I_MOD,
-    ARAGON2I_INT
+    ARGON2I_MOD,
+    ARGON2I_INT
 }
 
 fn default_key_derivation_method() -> KeyDerivationMethod {
-    KeyDerivationMethod::ARAGON2I_MOD
+    KeyDerivationMethod::ARGON2I_MOD
 }
 
 #[derive(Debug, Serialize, Deserialize)]
