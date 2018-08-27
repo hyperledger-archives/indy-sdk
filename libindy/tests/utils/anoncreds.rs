@@ -519,6 +519,7 @@ impl AnoncredsUtils {
         CredentialOfferInfo { cred_def_id: AnoncredsUtils::issuer_2_gvt_cred_def_id() }
     }
 
+    // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
     pub fn gvt_credential_values() -> HashMap<String, AttributeValues> {
         map! {
             "sex".to_string() => AttributeValues {raw: "male".to_string(), encoded: "5944657099558967239210949258394887428692050081607692519917050011144233115103".to_string()},

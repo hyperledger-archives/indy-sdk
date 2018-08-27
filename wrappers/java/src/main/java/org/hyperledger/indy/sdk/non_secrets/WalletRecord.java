@@ -35,7 +35,7 @@ public class WalletRecord extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -51,7 +51,7 @@ public class WalletRecord extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String str) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = str;
 			future.complete(result);
@@ -103,7 +103,7 @@ public class WalletRecord extends IndyJava.API {
 				tagsJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -142,7 +142,7 @@ public class WalletRecord extends IndyJava.API {
 				value,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -185,7 +185,7 @@ public class WalletRecord extends IndyJava.API {
 				tagsJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -228,7 +228,7 @@ public class WalletRecord extends IndyJava.API {
 				tagsJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -268,7 +268,7 @@ public class WalletRecord extends IndyJava.API {
 				tagNamesJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -303,7 +303,7 @@ public class WalletRecord extends IndyJava.API {
 				id,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -353,7 +353,7 @@ public class WalletRecord extends IndyJava.API {
 				optionsJson,
 				stringCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}

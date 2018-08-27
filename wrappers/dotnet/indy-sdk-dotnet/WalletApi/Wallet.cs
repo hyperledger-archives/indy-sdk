@@ -3,6 +3,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.WalletApi.NativeMethods;
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.WalletApi
 {
@@ -20,7 +23,10 @@ namespace Hyperledger.Indy.WalletApi
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
         /// </summary>
-        private static OpenWalletCompletedDelegate _openWalletCallback = (xcommand_handle, err, wallet_handle) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(OpenWalletCompletedDelegate))]
+#endif
+        private static void OpenWalletCallback(int xcommand_handle, int err, IntPtr wallet_handle)
         {
             var taskCompletionSource = PendingCommands.Remove<Wallet>(xcommand_handle);
 
@@ -28,7 +34,7 @@ namespace Hyperledger.Indy.WalletApi
                 return;
 
             taskCompletionSource.SetResult(new Wallet(wallet_handle));
-        };
+        }
 
         ///// <summary>
         ///// Registers a custom wallet type implementation.
@@ -182,7 +188,7 @@ namespace Hyperledger.Indy.WalletApi
                 commandHandle,
                 config,
                 credentials,
-                _openWalletCallback
+                OpenWalletCallback
                 );
 
             CallbackHelper.CheckResult(result);

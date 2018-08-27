@@ -169,7 +169,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <summary>
         /// Parse registry response completed delegate.
         /// </summary>
-        internal delegate void ParseRegistryResponseCompletedDelegate(int xcommand_handle, int err, string id, string object_json, long timestamp);
+        internal delegate void ParseRegistryResponseCompletedDelegate(int xcommand_handle, int err, string id, string object_json, ulong timestamp);
 
         /// <summary>
         /// Indies the build cred def request.

@@ -770,7 +770,7 @@ pub extern fn indy_prover_store_credential(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam8);
 
     trace!("indy_prover_store_credential: entities >>> wallet_handle: {:?}, cred_id: {:?}, cred_req_metadata_json: {:?}, cred_json: {:?}, cred_def_json: {:?}, \
-    cred_def_json: {:?}", wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
+    rev_reg_def_json: {:?}", wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json);
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(
