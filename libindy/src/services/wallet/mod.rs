@@ -320,11 +320,6 @@ impl WalletService {
         }
     }
 
-    pub fn add_indy_record_tags<T>(&self, wallet_handle: i32, name: &str, tags: &HashMap<String, String>)
-                                   -> Result<(), WalletError> where T: NamedType {
-        self.add_record_tags(wallet_handle, &self.add_prefix(T::short_type_name()), name, tags)
-    }
-
     pub fn update_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
         match self.wallets.borrow_mut().get_mut(&wallet_handle) {
             Some(wallet) => wallet.update_tags(type_, name, tags),
@@ -377,6 +372,15 @@ impl WalletService {
             .map_err(map_err_trace!())
             .map_err(|err|
                 WalletError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", type_, err))))
+    }
+
+    // Dirty hack. json must live longer then result T
+    pub fn get_indy_opt_object<'a, T>(&self, wallet_handle: i32, name: &str, options_json: &str, json: &'a mut String) -> Result<Option<T>, WalletError> where T: ::serde::Deserialize<'a>, T: NamedType {
+        match self.get_indy_object::<T>(wallet_handle, name, options_json, json) {
+            Ok(res) => Ok(Some(res)),
+            Err(WalletError::ItemNotFound) => Ok(None),
+            Err(err) => Err(err)
+        }
     }
 
     pub fn search_records(&self, wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<WalletSearch, WalletError> {
@@ -596,6 +600,7 @@ impl WalletRecord {
         self.value.as_ref().map(String::as_str)
     }
 
+    #[allow(dead_code)]
     pub fn get_tags(&self) -> Option<&HashMap<String, String>> {
         self.tags.as_ref()
     }
@@ -632,16 +637,6 @@ impl RecordOptions {
             retrieve_type: false,
             retrieve_value: true,
             retrieve_tags: false
-        };
-
-        serde_json::to_string(&options).unwrap()
-    }
-
-    pub fn full() -> String {
-        let options = RecordOptions {
-            retrieve_type: true,
-            retrieve_value: true,
-            retrieve_tags: true
         };
 
         serde_json::to_string(&options).unwrap()
@@ -688,18 +683,6 @@ pub struct SearchOptions {
 }
 
 impl SearchOptions {
-    pub fn full() -> String {
-        let options = SearchOptions {
-            retrieve_records: true,
-            retrieve_total_count: true,
-            retrieve_type: true,
-            retrieve_value: true,
-            retrieve_tags: true
-        };
-
-        serde_json::to_string(&options).unwrap()
-    }
-
     pub fn id_value() -> String {
         let options = SearchOptions {
             retrieve_records: true,
