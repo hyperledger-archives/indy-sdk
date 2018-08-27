@@ -3,7 +3,7 @@ use errors::did::DidError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
 use domain::crypto::key::KeyInfo;
-use domain::crypto::did::{MyDidInfo, Did, TheirDidInfo, TheirDid, TemporaryDid, DidWithMeta, Metadata};
+use domain::crypto::did::{MyDidInfo, Did, TheirDidInfo, TheirDid, TemporaryDid, DidWithMeta, DidMetadata};
 use domain::ledger::response::Reply;
 use domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
 use domain::ledger::attrib::{GetAttrReplyResult, AttribData, Endpoint};
@@ -291,7 +291,7 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&my_did)?;
 
         let did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &my_did, &RecordOptions::id_value(), &mut String::new())?;
-        let metadata = self.wallet_service.get_indy_opt_object::<Metadata>(wallet_handle, &did.did, &RecordOptions::id_value(), &mut String::new())?;
+        let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did, &RecordOptions::id_value(), &mut String::new())?;
 
         let did_with_meta = DidWithMeta {
             did: did.did,
@@ -323,7 +323,7 @@ impl DidCommandExecutor {
                 .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
                 .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", did_id)))?;
 
-            let metadata = self.wallet_service.get_indy_opt_object::<Metadata>(wallet_handle, &did.did, &RecordOptions::id_value(), &mut String::new())?;
+            let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did, &RecordOptions::id_value(), &mut String::new())?;
 
             let did_with_meta = DidWithMeta {
                 did: did.did,
@@ -456,7 +456,7 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(&did)?;
 
-        let metadata = Metadata { value: metadata };
+        let metadata = DidMetadata { value: metadata };
 
         self.wallet_service.upsert_indy_object(wallet_handle, &did, &metadata)?;
 
@@ -473,7 +473,7 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&did)?;
 
         let metadata =
-            self.wallet_service.get_indy_object::<Metadata>(wallet_handle, &did, &RecordOptions::id_value(), &mut String::new())?;
+            self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, &did, &RecordOptions::id_value(), &mut String::new())?;
 
         let res = metadata.value;
 

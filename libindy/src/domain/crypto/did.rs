@@ -41,7 +41,7 @@ impl Did {
 }
 
 #[derive(Serialize, Deserialize, Debug, NamedType)]
-pub struct Metadata {
+pub struct DidMetadata {
     pub value: String
 }
 

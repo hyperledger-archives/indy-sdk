@@ -5,8 +5,7 @@ use std::collections::HashMap;
 
 use errors::common::CommonError;
 use errors::indy::IndyError;
-use domain::crypto::did::Metadata;
-use domain::crypto::key::{KeyInfo, Key};
+use domain::crypto::key::{KeyInfo, Key, KeyMetadata};
 use domain::crypto::combo_box::ComboBox;
 use utils::crypto::base64;
 use services::wallet::{WalletService, RecordOptions};
@@ -260,7 +259,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(verkey)?;
 
-        let metadata = Metadata {value: metadata.to_string()};
+        let metadata = KeyMetadata {value: metadata.to_string()};
 
         self.wallet_service.upsert_indy_object(wallet_handle, &verkey, &metadata)?;
 
@@ -277,7 +276,7 @@ impl CryptoCommandExecutor {
         self.crypto_service.validate_key(verkey)?;
 
         let metadata =
-            self.wallet_service.get_indy_object::<Metadata>(wallet_handle, &verkey, &RecordOptions::id_value(), &mut String::new())?;
+            self.wallet_service.get_indy_object::<KeyMetadata>(wallet_handle, &verkey, &RecordOptions::id_value(), &mut String::new())?;
 
         let res = metadata.value;
 
