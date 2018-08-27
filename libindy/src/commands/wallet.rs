@@ -3,10 +3,14 @@ extern crate serde_json;
 extern crate indy_crypto;
 
 use errors::indy::IndyError;
+use errors::common::CommonError;
 use services::wallet::WalletService;
+use services::crypto::CryptoService;
 use api::wallet::*;
-use std::rc::Rc;
+use utils::crypto::{base58, randombytes, chacha20poly1305_ietf};
+use domain::wallet::KeyConfig;
 
+use std::rc::Rc;
 use std::result;
 
 type Result<T> = result::Result<T, IndyError>;
@@ -56,16 +60,20 @@ pub enum WalletCommand {
            String, // credentials
            String, // import config
            Box<Fn(Result<()>) + Send>),
+    GenerateKey(Option<String>, // config
+                Box<Fn(Result<String>) + Send>),
 }
 
 pub struct WalletCommandExecutor {
-    wallet_service: Rc<WalletService>
+    wallet_service: Rc<WalletService>,
+    crypto_service: Rc<CryptoService>,
 }
 
 impl WalletCommandExecutor {
-    pub fn new(wallet_service: Rc<WalletService>) -> WalletCommandExecutor {
+    pub fn new(wallet_service: Rc<WalletService>, crypto_service: Rc<CryptoService>) -> WalletCommandExecutor {
         WalletCommandExecutor {
-            wallet_service
+            wallet_service,
+            crypto_service
         }
     }
 
@@ -108,6 +116,10 @@ impl WalletCommandExecutor {
             WalletCommand::Import(config, credentials, import_config, cb) => {
                 debug!(target: "wallet_command_executor", "Import command received");
                 cb(self._import(&config, &credentials, &import_config));
+            }
+            WalletCommand::GenerateKey(config, cb) => {
+                debug!(target: "wallet_command_executor", "DeriveKey command received");
+                cb(self._generate_key(config.as_ref().map(String::as_str)));
             }
         };
     }
@@ -218,6 +230,24 @@ impl WalletCommandExecutor {
         let res = self.wallet_service.import_wallet(config, credentials, import_config)?;
 
         trace!("_import <<< res: {:?}", res);
+        Ok(res)
+    }
+
+    fn _generate_key(&self,
+                     config: Option<&str>) -> Result<String> {
+        trace!("_generate_key >>>config: {:?}", secret!(config));
+
+        let config: KeyConfig = serde_json::from_str(config.unwrap_or("{}"))
+            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Key Config: {:?}", err)))?;
+
+        let key = match self.crypto_service.convert_seed(config.seed.as_ref().map(String::as_str))? {
+            Some(seed) => randombytes::randombytes_deterministic(chacha20poly1305_ietf::KEYBYTES, &randombytes::Seed::from_slice(&seed[..])?),
+            None => randombytes::randombytes(chacha20poly1305_ietf::KEYBYTES)
+        };
+
+        let res = base58::encode(&key[..]);
+
+        trace!("_generate_key <<< res: {:?}", res);
         Ok(res)
     }
 }

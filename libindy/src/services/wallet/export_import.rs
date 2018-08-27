@@ -9,6 +9,7 @@ use domain::wallet::export_import::{Header, EncryptionMethod, Record};
 use errors::common::CommonError;
 use utils::crypto::hash::{hash, HASHBYTES};
 use utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
+use services::wallet::encryption::raw_master_key;
 
 use super::{WalletError, Wallet, WalletRecord};
 
@@ -33,6 +34,10 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
             salt: salt[..].to_vec(),
             nonce: nonce[..].to_vec(),
             chunk_size,
+        },
+        KeyDerivationMethod::RAW => EncryptionMethod::ChaCha20Poly1305IETFRaw {
+            nonce: nonce[..].to_vec(),
+            chunk_size,
         }
     };
 
@@ -50,9 +55,14 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
     writer.write_u32::<LittleEndian>(header.len() as u32)?;
     writer.write_all(&header)?;
 
+    let master_key = match key_derivation_method {
+        KeyDerivationMethod::ARAGON2I_MOD | KeyDerivationMethod::ARAGON2I_INT => chacha20poly1305_ietf::derive_key(passphrase, &salt, key_derivation_method)?,
+        KeyDerivationMethod::RAW => raw_master_key(passphrase)?
+    };
+
     // Write ecnrypted
     let mut writer = chacha20poly1305_ietf::Writer::new(writer,
-                                                        chacha20poly1305_ietf::derive_key(passphrase, &salt, key_derivation_method)?,
+                                                        master_key,
                                                         nonce,
                                                         chunk_size);
 
@@ -103,10 +113,10 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
     let key_derivation_method = match header.encryption_method {
         EncryptionMethod::ChaCha20Poly1305IETF { .. } => KeyDerivationMethod::ARAGON2I_MOD,
         EncryptionMethod::ChaCha20Poly1305IETFInteractive { .. } => KeyDerivationMethod::ARAGON2I_INT,
+        EncryptionMethod::ChaCha20Poly1305IETFRaw { .. } => KeyDerivationMethod::RAW,
     };
 
-    // Reads encrypted
-    let mut reader = match header.encryption_method {
+    let (key, nonce, chunk_size) = match header.encryption_method {
         EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } | EncryptionMethod::ChaCha20Poly1305IETFInteractive { salt, nonce, chunk_size } => {
             let salt = pwhash_argon2i13::Salt::from_slice(&salt)
                 .map_err(|err| CommonError::InvalidStructure(format!("Invalid salt: {:?}", err)))?;
@@ -116,9 +126,20 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
 
             let key = chacha20poly1305_ietf::derive_key(passphrase, &salt, &key_derivation_method)?;
 
-            chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size)
+            (key, nonce, chunk_size)
+        }
+        EncryptionMethod::ChaCha20Poly1305IETFRaw { nonce, chunk_size } => {
+            let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
+                .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
+
+            let key = raw_master_key(passphrase)?;
+
+            (key, nonce, chunk_size)
         }
     };
+
+    // Reads encrypted
+    let mut reader = chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size);
 
     let mut header_hash = vec![0u8; HASHBYTES];
     reader.read_exact(&mut header_hash).map_err(_map_io_err)?;
@@ -162,7 +183,7 @@ mod tests {
     use std::rc::Rc;
     use std::collections::HashMap;
 
-    use domain::wallet::Metadata;
+    use domain::wallet::{Metadata, MetadataArgon};
     use utils::crypto::pwhash_argon2i13;
     use utils::test::TestUtils;
     use services::wallet::encryption;
@@ -343,10 +364,10 @@ mod tests {
         let metadata = {
             let master_key_salt = encryption::gen_master_key_salt().unwrap();
 
-            let metadata = Metadata {
+            let metadata = Metadata::MetadataArgon(MetadataArgon {
                 master_key_salt: master_key_salt[..].to_vec(),
                 keys: keys.serialize_encrypted(&master_key).unwrap(),
-            };
+            });
 
             serde_json::to_vec(&metadata)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err))).unwrap()

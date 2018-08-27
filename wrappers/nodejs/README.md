@@ -2282,13 +2282,16 @@ Create a new secure wallet.
 * `credentials`: Json - Wallet credentials json
 ```
 {
-  "key": string, Passphrase used to derive wallet master key
+  "key": string, Key or passphrase used for wallet key derivation.
+                 Look to key_derivation_method param for information about supported key derivation methods.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
-  "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           ARAGON2I_MOD (used by default)
-                           ARAGON2I_INT - less secured but faster
+  "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                          ARAGON2I_MOD - derive secured wallet master key (used by default)
+                          ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+                          RAW - raw wallet key master provided (skip derivation).
+                                RAW keys can be generated with generateWalletKey call
 }
 ````
 * __->__ void
@@ -2322,17 +2325,21 @@ Wallet must be previously created with createWallet method.
 * `credentials`: Json - Wallet credentials json
 ```
   {
-      "key": string, Passphrase used to derive current wallet master key
-      "rekey": optional<string>, If present than wallet master key will be rotated to a new one
-                                 derived from this passphrase.
+      "key": string, Key or passphrase used for wallet key derivation.
+                     Look to key_derivation_method param for information about supported key derivation methods.
+      "rekey": optional<string>, If present than wallet master key will be rotated to a new one.
       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                              Can be optional if storage supports default configuration.
-      "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                               ARAGON2I_MOD (used by default)
-                               ARAGON2I_INT - less secured but faster}
+      "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                              ARAGON2I_MOD - derive secured wallet master key (used by default)
+                              ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+                              RAW - raw wallet key master provided (skip derivation).
+                                    RAW keys can be generated with generateWalletKey call
       "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
-                               ARAGON2I_MOD (used by default)
-                               ARAGON2I_INT - less secured but faster
+                              ARAGON2I_MOD - derive secured wallet master rekey (used by default)
+                              ARAGON2I_INT - derive secured wallet master rekey (less secured but faster)
+                              RAW - raw wallet master rekey provided (skip derivation).
+                                    RAW keys can be generated with generateWalletKey call
   }
 ````
 * __->__ `handle`: Handle (Number) - err: Error code
@@ -2349,10 +2356,13 @@ Exports opened wallet
 ```
   {
     "path": <string>, Path of the file that contains exported wallet content
-    "key": <string>, Passphrase used to derive export key
+    "key": string, Key or passphrase used for wallet export key derivation.
+                   Look to key_derivation_method param for information about supported key derivation methods.
     "key_derivation_method": optional<string> algorithm to use for export key derivation:
-                             ARAGON2I_MOD (used by default)
-                             ARAGON2I_INT - less secured but faster  
+                            ARAGON2I_MOD - derive secured wallet export key (used by default)
+                            ARAGON2I_INT - derive secured wallet export key (less secured but faster)
+                            RAW - raw wallet export key provided (skip derivation).
+                                  RAW keys can be generated with generateWalletKey call 
   }
 ```
 * __->__ void
@@ -2386,20 +2396,23 @@ This can be seen as an createWallet call with additional content import
 * `credentials`: Json - Wallet credentials json
 ```
 {
-  "key": string, Passphrase used to derive wallet master key
+  "key": string, Key or passphrase used for wallet key derivation.
+                 Look to key_derivation_method param for information about supported key derivation methods.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
-  "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           ARAGON2I_MOD (used by default)
-                           ARAGON2I_INT - less secured but faster
+  "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                          ARAGON2I_MOD - derive secured wallet master key (used by default)
+                          ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+                          RAW - raw wallet key master provided (skip derivation).
+                                RAW keys can be generated with generateWalletKey call
 }
 ````
 * `importConfig`: Json
 ```
   {
     "path": <string>, Path of the file that contains exported wallet content
-    "key": <string>, Passphrase used to derive export key
+    "key": <string>, Key used for export of the wallet
   }
 ```
 * __->__ void
@@ -2440,19 +2453,37 @@ Deletes created wallet.
 * `credentials`: Json - Wallet credentials json
 ```
 {
-  "key": string, Passphrase used to derive wallet master key
+  "key": string, Key or passphrase used for wallet key derivation.
+                 Look to key_derivation_method param for information about supported key derivation methods.
   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
-  "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           ARAGON2I_MOD (used by default)
-                           ARAGON2I_INT - less secured but faster
+  "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                          ARAGON2I_MOD - derive secured wallet master key (used by default)
+                          ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+                          RAW - raw wallet key master provided (skip derivation).
+                                RAW keys can be generated with generateWalletKey call
 }
 ````
 * __->__ void
 
 Errors: `Common*`, `Wallet*`
 
+#### generateWalletKey \( config \) -&gt; void
+
+Generate wallet master key.
+Returned key is compatible with "RAW" key derivation method.
+It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+
+* `config`: Json - (Optional) key configuration json.
+```
+{
+  seed": optional<string> Seed that allows deterministic key creation (if not set random one will be used).
+}
+````
+* __->__ `key`: String - wallet master key
+
+Errors: `Common*`, `Wallet*`
 
 [//]: # (CODEGEN-END - don't edit by hand see `codegen/index.js`)
 
