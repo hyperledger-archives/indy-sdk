@@ -1,8 +1,5 @@
 package org.hyperledger.indy.sdk.wallet;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -79,60 +76,6 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	/*
 	 * STATIC METHODS
 	 */
-
-	private static final List<WalletType> REGISTERED_WALLET_TYPES = Collections.synchronizedList(new ArrayList<WalletType>());
-
-	/**
-	 * Registers custom wallet implementation.
-	 *
-	 * @param xtype Wallet type name.
-	 * @param walletType An instance of a WalletType subclass
-	 * @return A future that resolves no value.
-	 * @throws IndyException Thrown if a call to the underlying SDK fails.
-	 * @throws InterruptedException Thrown...???
-	 */
-	public static CompletableFuture<Void> registerWalletType(
-		String xtype,
-		WalletType walletType) throws IndyException, InterruptedException {
-
-		ParamGuard.notNullOrWhiteSpace(xtype, "xtype");
-		ParamGuard.notNull(walletType, "walletType");
-
-		CompletableFuture<Void> future = new CompletableFuture<Void>();
-		int commandHandle = addFuture(future);
-
-		REGISTERED_WALLET_TYPES.add(walletType);
-
-		int result = LibIndy.api.indy_register_wallet_storage( //TODO:FIXME
-				commandHandle,
-				xtype,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				null,
-				voidCb);
-
-		checkResult(future, result);
-
-		return future;
-	}
 
 	/**
 	 * Creates a new secure wallet with the given unique name.
