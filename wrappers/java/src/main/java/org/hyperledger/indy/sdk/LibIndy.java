@@ -43,6 +43,7 @@ public abstract class LibIndy {
 		public int indy_delete_wallet(int command_handle, String config, String credentials, Callback cb);
 		public int indy_export_wallet(int command_handle, int handle, String exportConfigJson, Callback cb);
 		public int indy_import_wallet(int command_handle, String config, String credentials, String importConfigJson, Callback cb);
+		public int indy_generate_wallet_key(int command_handle, String config, Callback cb);
 
 		// ledger.rs
 

@@ -356,5 +356,20 @@
 
     [[NSFileManager defaultManager] removeItemAtPath:exportFile error:nil];
 }
+// MARK: - Generate wallet key
+
+- (void)testGenerateWalletKeyWorks {
+    NSString *key;
+    NSError *ret = [[WalletUtils sharedInstance] generateWalletKeyForConfig:nil key:&key];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:generateWalletKeyForConfig failed");
+}
+
+- (void)testGenerateWalletKeyWorksForSeed {
+    NSString *key;
+    NSError *ret = [[WalletUtils sharedInstance] generateWalletKeyForConfig:[NSString stringWithFormat:@"{\"seed\":\"%@\"}", [TestUtils mySeed1]]
+                                                                        key:&key];
+    XCTAssertEqual(ret.code, Success, @"WalletUtils:generateWalletKeyForConfig failed");
+    XCTAssertEqualObjects(key, @"CwMHrEQJnwvuE8q9zbR49jyYtVxVBHNTjCPEPk1aV3cP");
+}
 
 @end

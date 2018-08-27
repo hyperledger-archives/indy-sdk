@@ -127,14 +127,14 @@ indy> wallet <command>
 #### Wallet create
 Create new wallet with specified name:
 ```
-indy> wallet create <wallet name> key [storage_type=<storage_type>] [storage_config={config json}]
+indy> wallet create <wallet name> key [key_derivation_method=<key_derivation_method>] [storage_type=<storage_type>] [storage_config={config json}]
 ```
 TODO: Think about custom wallet types support. Now we force default wallet security model.. 
 
 #### Wallet open
 Open the wallet with specified name and make it available for commands that require wallet. If there was opened wallet it will be closed:
 ```
-indy> wallet open <wallet name> key [rekey]
+indy> wallet open <wallet name> key [key_derivation_method=<key_derivation_method>] [rekey] [rekey_derivation_method=<rekey_derivation_method>]
 ```
 
 #### Wallet close
@@ -146,7 +146,7 @@ indy> wallet close
 #### Wallet delete
 Delete the opened wallet
 ```
-indy> wallet delete <wallet name> key
+indy> wallet delete <wallet name> key [key_derivation_method=<key_derivation_method>]
 ```
 
 #### Wallet list
@@ -159,14 +159,14 @@ indy> wallet list
 Exports opened wallet to the specified file.
 
 ```indy-cli
-indy> wallet export export_path=<path-to-file> export_key=[<export key>]
+indy> wallet export export_path=<path-to-file> export_key=[<export key>] [export_key_derivation_method=<export_key_derivation_method>]
 ```
 
 ### Import wallet
 Create new wallet and then import content from the specified file.
 
 ```indy-cli
-indy> wallet import <wallet name> key=<key> export_path=<path-to-file> export_key=<key used for export>  [storage_type=<storage_type>] [storage_config={config json}]
+indy> wallet import <wallet name> key=<key> [key_derivation_method=<key_derivation_method>] export_path=<path-to-file> export_key=<key used for export>  [storage_type=<storage_type>] [storage_config={config json}]
 ```
 
 ### Pool management commands

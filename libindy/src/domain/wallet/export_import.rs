@@ -20,6 +20,13 @@ pub enum EncryptionMethod {
         // size of encrypted chunk
         chunk_size: usize,
     },
+    // **ChaCha20-Poly1305-IETF raw key** cypher in blocks per chunk_size bytes
+    ChaCha20Poly1305IETFRaw {
+        // chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency
+        nonce: Vec<u8>,
+        // size of encrypted chunk
+        chunk_size: usize,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
