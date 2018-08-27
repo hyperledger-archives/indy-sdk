@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Hyperledger.Indy.DidApi
+﻿namespace Hyperledger.Indy.DidApi
 {
     /// <summary>
     /// Result of getting the endpoint for a DID.

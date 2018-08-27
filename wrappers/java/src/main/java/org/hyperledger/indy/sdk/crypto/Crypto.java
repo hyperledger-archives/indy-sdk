@@ -37,7 +37,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String verkey) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = verkey;
 			future.complete(result);
@@ -53,7 +53,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -69,7 +69,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String metadata) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = metadata;
 			future.complete(result);
@@ -85,7 +85,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, Pointer signature_raw, int signature_len) {
 
 			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			byte[] result = new byte[signature_len];
 			signature_raw.read(0, result, 0, signature_len);
@@ -102,7 +102,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, boolean valid) {
 
 			CompletableFuture<Boolean> future = (CompletableFuture<Boolean>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Boolean result = Boolean.valueOf(valid);
 			future.complete(result);
@@ -118,7 +118,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len, Pointer nonce_raw, int nonce_len) {
 
 			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			byte[] result = new byte[encrypted_msg_len];
 			encrypted_msg_raw.read(0, result, 0, encrypted_msg_len);
@@ -136,7 +136,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String their_vk, Pointer decrypted_msg_raw, int decrypted_msg_len) {
 
 			CompletableFuture<AuthDecryptResult> future = (CompletableFuture<AuthDecryptResult>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			byte[] decryptedMsg = new byte[decrypted_msg_len];
 			decrypted_msg_raw.read(0, decryptedMsg, 0, decrypted_msg_len);
@@ -156,7 +156,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, Pointer encrypted_msg_raw, int encrypted_msg_len) {
 
 			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			byte[] encryptedMsg = new byte[encrypted_msg_len];
 			encrypted_msg_raw.read(0, encryptedMsg, 0, encrypted_msg_len);
@@ -174,7 +174,7 @@ public class Crypto extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, Pointer decrypted_msg_raw, int decrypted_msg_len) {
 
 			CompletableFuture<byte[]> future = (CompletableFuture<byte[]>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			byte[] result = new byte[decrypted_msg_len];
 			decrypted_msg_raw.read(0, result, 0, decrypted_msg_len);
@@ -216,7 +216,7 @@ public class Crypto extends IndyJava.API {
 				keyJson,
 				createKeyCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -251,7 +251,7 @@ public class Crypto extends IndyJava.API {
 				metadata,
 				setKeyMetadataCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -282,7 +282,7 @@ public class Crypto extends IndyJava.API {
 				verkey,
 				getKeyMetadataCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -321,7 +321,7 @@ public class Crypto extends IndyJava.API {
 				message.length,
 				cryptoSignCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -358,7 +358,7 @@ public class Crypto extends IndyJava.API {
 				signature.length,
 				cryptoVerifyCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -410,7 +410,7 @@ public class Crypto extends IndyJava.API {
 				message.length,
 				authCrypCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -458,7 +458,7 @@ public class Crypto extends IndyJava.API {
 				encryptedMsg.length,
 				authDecryptCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -495,7 +495,7 @@ public class Crypto extends IndyJava.API {
 				message.length,
 				anonCryptCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -538,7 +538,7 @@ public class Crypto extends IndyJava.API {
 				encryptedMsg.length,
 				anonDecryptCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
