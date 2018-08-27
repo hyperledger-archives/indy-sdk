@@ -157,7 +157,9 @@ fi
 
 LIBVCX=../../../
 CROSS_COMPILE_DIR=${CROSS_COMPILE}
-if [ "${CROSS_COMPILE}" = "armv7-linux-androideabi" ]; then
+TARGET_ARCH_DIR=${TARGET_ARCH}
+if [ "${TARGET_ARCH}" = "armv7" ]; then
+    TARGET_ARCH_DIR="arm"
     CROSS_COMPILE_DIR="arm-linux-androideabi"
 fi
 
@@ -171,7 +173,7 @@ export CARGO_INCREMENTAL=1
 export RUST_LOG=indy=trace
 export RUST_TEST_THREADS=1
 export RUST_BACKTRACE=1
-export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH}
+export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH_DIR}
 export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
 export PKG_CONFIG_ALLOW_CROSS=1
 export CC=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-clang
@@ -183,7 +185,7 @@ export TARGET=android
 
 printenv
 
-python3 ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py --arch ${TARGET_ARCH} --api ${TARGET_API} --install-dir ${TOOLCHAIN_DIR}
+python3 ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py --arch ${TARGET_ARCH_DIR} --api ${TARGET_API} --install-dir ${TOOLCHAIN_DIR}
 cat << EOF > ~/.cargo/config
 [target.${CROSS_COMPILE}]
 ar = "${AR}"
