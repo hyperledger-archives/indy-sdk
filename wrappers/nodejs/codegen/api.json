@@ -2329,6 +2329,23 @@
         }
       ],
       "ret": "indy_error_t"
+    },
+    "indy_generate_wallet_key": {
+      "docs": "Generate wallet master key.\n\n#Params\nconfig: (optional) key configuration json.\n{\n  \"seed\":optional<string> Seed that allows deterministic key creation (if not set random one will be used).\n}\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "group": "wallet",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "config", "type": "const char*", "json": true},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "key", "type": "const char *const"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
     }
   }
 }

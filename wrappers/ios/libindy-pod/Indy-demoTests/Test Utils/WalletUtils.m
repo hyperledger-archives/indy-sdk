@@ -170,4 +170,21 @@ NSString *credentials = @"{\"key\":\"key\"}";
     return err;
 }
 
+- (NSError *)generateWalletKeyForConfig:(NSString *)configJson
+                                    key:(NSString **)key {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyWallet generateWalletKeyForConfig:configJson
+                                completion:^(NSError *error, NSString *res) {
+                                    err = error;
+                                    if (key) *key = res;
+                                    [completionExpectation fulfill];
+                                }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
+    return err;
+}
+
 @end

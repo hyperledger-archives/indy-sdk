@@ -23,8 +23,8 @@
 }
 
 - (void)createWalletWithConfig:(NSString *)config
-                 credentials:(NSString *)credentials
-                  completion:(void (^)(NSError *error))completion {
+                   credentials:(NSString *)credentials
+                    completion:(void (^)(NSError *error))completion {
     indy_error_t ret;
 
     [completion copy];
@@ -45,8 +45,8 @@
 }
 
 - (void)openWalletWithConfig:(NSString *)config
-               credentials:(NSString *)credentials
-                completion:(void (^)(NSError *error, IndyHandle walletHandle))completion {
+                 credentials:(NSString *)credentials
+                  completion:(void (^)(NSError *error, IndyHandle walletHandle))completion {
     indy_error_t ret;
 
     //id hghg = [completion copy];
@@ -88,8 +88,8 @@
 }
 
 - (void)deleteWalletWithConfig:(NSString *)config
-                 credentials:(NSString *)credentials
-                  completion:(void (^)(NSError *error))completion {
+                   credentials:(NSString *)credentials
+                    completion:(void (^)(NSError *error))completion {
     indy_error_t ret;
 
     indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
@@ -133,9 +133,9 @@
 }
 
 - (void)importWalletWithConfig:(NSString *)config
-                 credentials:(NSString *)credentials
-            importConfigJson:(NSString *)importConfigJson
-                  completion:(void (^)(NSError *error))completion {
+                   credentials:(NSString *)credentials
+              importConfigJson:(NSString *)importConfigJson
+                    completion:(void (^)(NSError *error))completion {
     indy_error_t ret;
 
     [completion copy];
@@ -154,6 +154,18 @@
             completion([NSError errorFromIndyError:ret]);
         });
     }
+}
+
++ (void)generateWalletKeyForConfig:(NSString *)configJson
+                        completion:(void (^)(NSError *error, NSString *key))completion {
+    indy_handle_t handle = [[IndyCallbacks sharedInstance] createCommandHandleFor:completion];
+    indy_error_t ret = indy_generate_wallet_key(handle, [configJson UTF8String], IndyWrapperCommonStringCallback);
+
+    [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
+}
+
+- (void)cleanupIndyKeychainWallet {
+    [[IndyKeychainWallet sharedInstance] cleanup];
 }
 
 @end

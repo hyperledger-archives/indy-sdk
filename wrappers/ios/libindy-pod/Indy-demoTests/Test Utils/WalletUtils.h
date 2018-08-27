@@ -28,4 +28,8 @@
 - (NSError *)importWalletWithConfig:(NSString *)config
                    importConfigJson:(NSString *)importConfigJson;
 
+
+- (NSError *)generateWalletKeyForConfig:(NSString *)configJson
+                                    key:(NSString **)key;
+
 @end

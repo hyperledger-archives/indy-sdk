@@ -9,6 +9,7 @@ use utils::environment::EnvironmentUtils;
 use std::collections::HashSet;
 use std::ffi::CString;
 use std::sync::Mutex;
+use std::ptr::null;
 use utils::constants::{TYPE, INMEM_TYPE, WALLET_CREDENTIALS};
 
 use std::path::{Path, PathBuf};
@@ -185,5 +186,18 @@ impl WalletUtils {
             "key": "export_key",
         });
         serde_json::to_string(&json).unwrap()
+    }
+
+    pub fn generate_wallet_key(config: Option<&str>) -> Result<String, ErrorCode> {
+        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+
+        let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+
+        let err =
+            indy_generate_wallet_key(command_handle,
+                                     if config.is_some() { config_str.as_ptr() } else { null() },
+                                     cb);
+
+        super::results::result_to_string(err, receiver)
     }
 }
