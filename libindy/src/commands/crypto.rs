@@ -4,8 +4,8 @@ extern crate serde_json;
 use std::collections::HashMap;
 
 use errors::common::CommonError;
-use errors::wallet::WalletError;
 use errors::indy::IndyError;
+use domain::crypto::did::Metadata;
 use domain::crypto::key::{KeyInfo, Key};
 use domain::crypto::combo_box::ComboBox;
 use utils::crypto::base64;
@@ -260,16 +260,13 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(verkey)?;
 
-        self.wallet_service.get_indy_record::<Key>(wallet_handle, verkey, &RecordOptions::id())?;
+        let metadata = Metadata {value: metadata.to_string()};
 
-        let mut tags = HashMap::new();
-        tags.insert("metadata".to_string(), metadata.to_string());
+        self.wallet_service.upsert_indy_object(wallet_handle, &verkey, &metadata)?;
 
-        let res = self.wallet_service.add_indy_record_tags::<Key>(wallet_handle, verkey, &tags)?;
+        debug!("set_key_metadata <<<");
 
-        debug!("set_key_metadata <<< res: {:?}", res);
-
-        Ok(res)
+        Ok(())
     }
 
     fn get_key_metadata(&self,
@@ -279,10 +276,10 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(verkey)?;
 
-        let res = self.wallet_service.get_indy_record::<Key>(wallet_handle, verkey, &RecordOptions::full())?
-            .get_tags()
-            .and_then(|tags| tags.get("metadata").cloned())
-            .ok_or(WalletError::ItemNotFound)?;
+        let metadata =
+            self.wallet_service.get_indy_object::<Metadata>(wallet_handle, &verkey, &RecordOptions::id_value(), &mut String::new())?;
+
+        let res = metadata.value;
 
         debug!("get_key_metadata <<< res: {:?}", res);
 

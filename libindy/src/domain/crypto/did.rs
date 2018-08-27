@@ -41,8 +41,8 @@ impl Did {
 }
 
 #[derive(Serialize, Deserialize, Debug, NamedType)]
-pub struct DidMetadata {
-    pub metadata: String
+pub struct Metadata {
+    pub value: String
 }
 
 #[derive(Serialize, Clone, Debug, NamedType)]

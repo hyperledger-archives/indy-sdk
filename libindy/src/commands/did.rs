@@ -3,7 +3,7 @@ use errors::did::DidError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
 use domain::crypto::key::KeyInfo;
-use domain::crypto::did::{MyDidInfo, Did, TheirDidInfo, TheirDid, TemporaryDid, DidWithMeta, DidMetadata};
+use domain::crypto::did::{MyDidInfo, Did, TheirDidInfo, TheirDid, TemporaryDid, DidWithMeta, Metadata};
 use domain::ledger::response::Reply;
 use domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
 use domain::ledger::attrib::{GetAttrReplyResult, AttribData, Endpoint};
@@ -290,19 +290,13 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(&my_did)?;
 
-        let did_record = self.wallet_service.get_indy_record::<Did>(wallet_handle, &my_did, &RecordOptions::full())?;
-
-        let did: Did = did_record.get_value()
-            .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
-            .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", my_did)))?;
-
-        let meta: Option<String> = did_record.get_tags()
-            .and_then(|tags| tags.get("metadata").cloned());
+        let did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &my_did, &RecordOptions::id_value(), &mut String::new())?;
+        let metadata = self.wallet_service.get_indy_opt_object::<Metadata>(wallet_handle, &did.did, &RecordOptions::id_value(), &mut String::new())?;
 
         let did_with_meta = DidWithMeta {
             did: did.did,
             verkey: did.verkey,
-            metadata: meta
+            metadata: metadata.map(|m|m.value)
         };
 
         let res = serde_json::to_string(&did_with_meta)
@@ -318,7 +312,7 @@ impl DidCommandExecutor {
         debug!("list_my_dids_with_meta >>> wallet_handle: {:?}", wallet_handle);
 
         let mut did_search =
-            self.wallet_service.search_indy_records::<Did>(wallet_handle, "{}", &SearchOptions::full())?;
+            self.wallet_service.search_indy_records::<Did>(wallet_handle, "{}", &SearchOptions::id_value())?;
 
         let mut dids: Vec<DidWithMeta> = Vec::new();
 
@@ -329,13 +323,12 @@ impl DidCommandExecutor {
                 .and_then(|tags_json| serde_json::from_str(&tags_json).ok())
                 .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", did_id)))?;
 
-            let meta: Option<String> = did_record.get_tags()
-                .and_then(|tags| tags.get("metadata").cloned());
+            let metadata = self.wallet_service.get_indy_opt_object::<Metadata>(wallet_handle, &did.did, &RecordOptions::id_value(), &mut String::new())?;
 
             let did_with_meta = DidWithMeta {
                 did: did.did,
                 verkey: did.verkey,
-                metadata: meta
+                metadata: metadata.map(|m|m.value)
             };
 
             dids.push(did_with_meta);
@@ -463,7 +456,7 @@ impl DidCommandExecutor {
 
         self.crypto_service.validate_did(&did)?;
 
-        let metadata = DidMetadata{ metadata };
+        let metadata = Metadata { value: metadata };
 
         self.wallet_service.upsert_indy_object(wallet_handle, &did, &metadata)?;
 
@@ -480,9 +473,9 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(&did)?;
 
         let metadata =
-            self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, &did, &RecordOptions::id_value(), &mut String::new())?;
+            self.wallet_service.get_indy_object::<Metadata>(wallet_handle, &did, &RecordOptions::id_value(), &mut String::new())?;
 
-        let res = metadata.metadata;
+        let res = metadata.value;
 
         debug!("get_did_metadata <<< res: {:?}", res);
 
@@ -695,13 +688,5 @@ impl DidCommandExecutor {
 
     fn _wallet_get_their_did(&self, wallet_handle: i32, their_did: &str) -> Result<TheirDid, WalletError> {
         self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())
-    }
-
-    fn _wallet_get_did_metadata(&self, wallet_handle: i32, did: &str) -> Option<String> {
-        self.wallet_service.get_indy_record::<Did>(wallet_handle, did, &RecordOptions::full()).ok()
-            .and_then(|rec|
-                rec.get_tags()
-                    .and_then(|tags| tags.get("metadata").cloned())
-            )
     }
 }
