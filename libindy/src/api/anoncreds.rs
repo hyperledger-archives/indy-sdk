@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate serde_json;
 
 use api::ErrorCode;
 use errors::ToErrorCode;
@@ -11,6 +12,7 @@ use utils::cstring::CStringUtils;
 
 use self::libc::c_char;
 use std::ptr;
+use std::collections::HashSet;
 
 /// Create credential schema entity that describes credential attributes list and allows credentials
 /// interoperability.
@@ -54,6 +56,21 @@ pub extern fn indy_issuer_create_schema(command_handle: i32,
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_issuer_create_schema: entity >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
+
+    let attrs: HashSet<String> = match serde_json::from_str(&attrs)
+        {
+            Ok(ok) => ok,
+            Err(err) => {
+                trace!("indy_issuer_create_schema: >>> Cannot deserialize AttributeNames: {:?}", err);
+                return ErrorCode::CommonInvalidStructure;
+            },
+        };
+
+    if attrs.is_empty() {
+        trace!("indy_issuer_create_schema: >>> List of Schema attributes is empty");
+        return ErrorCode::CommonInvalidStructure;
+    }
+
 
     let result = CommandExecutor::instance()
         .send(Command::Anoncreds(

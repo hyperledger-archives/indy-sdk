@@ -377,7 +377,7 @@ impl ProverCommandExecutor {
                       cred_id: &str) -> Result<String, IndyError> {
         debug!("get_credentials >>> wallet_handle: {:?}, cred_id: {:?}", wallet_handle, cred_id);
 
-        let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_id, &RecordOptions::id_value(), &mut String::new())?;
+        let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_id, &RecordOptions::id_value())?;
 
         let credential_info = self._get_credential_info(&cred_id, credential);
 
@@ -630,7 +630,7 @@ impl ProverCommandExecutor {
         let mut credentials: HashMap<String, Credential> = HashMap::new();
 
         for cred_referent in cred_referents.into_iter() {
-            let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_referent, &RecordOptions::id_value(), &mut String::new())?;
+            let credential: Credential = self.wallet_service.get_indy_object(wallet_handle, &cred_referent, &RecordOptions::id_value())?;
             credentials.insert(cred_referent, credential);
         }
 
@@ -823,7 +823,7 @@ impl ProverCommandExecutor {
 
 
     fn _wallet_get_master_secret(&self, wallet_handle: i32, key: &str) -> Result<MasterSecret, WalletError> {
-        self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value(), &mut String::new())
+        self.wallet_service.get_indy_object(wallet_handle, &key, &RecordOptions::id_value())
     }
 }
 
