@@ -57,7 +57,7 @@ pub enum IssuerCommand {
         String, // issuer did
         String, // name
         String, // version
-        String, // attribute names
+        HashSet<String>, // attribute names
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     CreateAndStoreCredentialDefinition(
         i32, // wallet handle
@@ -133,7 +133,7 @@ impl IssuerCommandExecutor {
         match command {
             IssuerCommand::CreateSchema(issuer_did, name, version, attrs, cb) => {
                 info!(target: "issuer_command_executor", "CreateSchema command received");
-                cb(self.create_schema(&issuer_did, &name, &version, &attrs));
+                cb(self.create_schema(&issuer_did, &name, &version, attrs));
             }
             IssuerCommand::CreateAndStoreCredentialDefinition(wallet_handle, issuer_did, schema_json, tag, type_, config_json, cb) => {
                 info!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
@@ -178,17 +178,10 @@ impl IssuerCommandExecutor {
                      issuer_did: &str,
                      name: &str,
                      version: &str,
-                     attrs: &str) -> Result<(String, String), IndyError> {
+                     attrs: HashSet<String>) -> Result<(String, String), IndyError> {
         debug!("create_schema >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
         self.crypto_service.validate_did(issuer_did)?;
-
-        let attrs: HashSet<String> = serde_json::from_str(attrs)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize AttributeNames: {:?}", err)))?;
-
-        if attrs.is_empty() {
-            return Err(IndyError::CommonError(CommonError::InvalidStructure("List of Schema attributes is empty".to_string())));
-        }
 
         let schema_id = Schema::schema_id(issuer_did, name, version);
 
