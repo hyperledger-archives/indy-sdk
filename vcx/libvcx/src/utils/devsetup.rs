@@ -1,5 +1,6 @@
 #[cfg(test)]
 pub mod tests {
+    extern crate serde_json;
 
     use utils::constants;
     use utils::libindy::wallet;
@@ -15,6 +16,8 @@ pub mod tests {
     }
 
     pub const TRUSTEE: &str = "000000000000000000000000Trustee1";
+    pub const ENTERPRISE_PREFIX: &'static str = "enterprise";
+    pub const CONSUMER_PREFIX: &'static str = "consumer";
 
     /* dev */
     /*
@@ -63,11 +66,28 @@ pub mod tests {
     }
 
     pub fn cleanup_dev_env(wallet_name: &str) {
-        //settings::set_defaults();
+        _delete_wallet(wallet_name);
+        _delete_pool();
+    }
+
+    pub fn cleanup_local_env(wallet_name: &str) {
+        set_institution();
+        _delete_wallet(&format!("{}_{}", ENTERPRISE_PREFIX, wallet_name));
+        set_consumer();
+        _delete_wallet(&format!("{}_{}", CONSUMER_PREFIX, wallet_name));
+        _delete_pool();
+    }
+
+    fn _delete_wallet(wallet_name: &str) {
         wallet::close_wallet().unwrap();
         wallet::delete_wallet(wallet_name).unwrap();
-        pool::close().unwrap();
-        pool::delete(::utils::constants::POOL).unwrap();
+    }
+
+    fn _delete_pool() {
+        if pool::get_pool_handle().is_ok() {
+            pool::close().unwrap();
+            pool::delete(::utils::constants::POOL).unwrap();
+        }
     }
 
     pub fn set_institution() {
@@ -77,6 +97,7 @@ pub mod tests {
                 settings::process_config_string(&t)
             }).unwrap();
         }
+        change_wallet_handle();
     }
 
     pub fn set_consumer() {
@@ -86,6 +107,12 @@ pub mod tests {
                 settings::process_config_string(&t)
             }).unwrap();
         }
+        change_wallet_handle();
+    }
+
+    fn change_wallet_handle() {
+        let wallet_handle = settings::get_config_value(settings::CONFIG_WALLET_HANDLE).unwrap();
+        unsafe { wallet::WALLET_HANDLE = wallet_handle.parse::<i32>().unwrap() }
     }
 
     pub fn setup_local_env(wallet_name: &str) {
@@ -93,27 +120,25 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::TEST_WALLET_KEY);
 
-        let config = ::messages::agent_utils::connect_register_provision(AGENCY_ENDPOINT,
-                                                                         AGENCY_DID,
-                                                                         AGENCY_VERKEY,
-                                                                         Some(wallet_name.to_string()),
-                                                                         None,
-                                                                         Some(TRUSTEE.to_string()),
-                                                                         settings::TEST_WALLET_KEY,
-                                                                         Some("institution".to_string()),
-                                                                         Some("http://www.logo.com".to_string()),
-                                                                         Some(constants::GENESIS_PATH.to_string())).unwrap();
-
-        unsafe {
-            INSTITUTION_CONFIG = CONFIG_STRING.add(config).unwrap();
-        }
+        let enterprise_wallet_name = format!("{}_{}", ENTERPRISE_PREFIX, wallet_name);
+        let enterprise_config = ::messages::agent_utils::connect_register_provision(AGENCY_ENDPOINT,
+                                                                                    AGENCY_DID,
+                                                                                    AGENCY_VERKEY,
+                                                                                    Some(enterprise_wallet_name.clone()),
+                                                                                    None,
+                                                                                    Some(TRUSTEE.to_string()),
+                                                                                    settings::TEST_WALLET_KEY,
+                                                                                    Some("institution".to_string()),
+                                                                                    Some("http://www.logo.com".to_string()),
+                                                                                    Some(constants::GENESIS_PATH.to_string())).unwrap();
 
         ::api::vcx::vcx_shutdown(false);
 
-        let config = ::messages::agent_utils::connect_register_provision(C_AGENCY_ENDPOINT,
+        let consumer_wallet_name = format!("{}_{}", CONSUMER_PREFIX, wallet_name);
+        let consumer_config = ::messages::agent_utils::connect_register_provision(C_AGENCY_ENDPOINT,
                                                                          C_AGENCY_DID,
                                                                          C_AGENCY_VERKEY,
-                                                                         Some(wallet_name.to_string()),
+                                                                         Some(consumer_wallet_name.clone()),
                                                                          None,
                                                                          None,
                                                                          settings::TEST_WALLET_KEY,
@@ -121,17 +146,29 @@ pub mod tests {
                                                                          Some("http://www.logo.com".to_string()),
                                                                          Some(constants::GENESIS_PATH.to_string())).unwrap();
 
+
         unsafe {
-            CONSUMER_CONFIG = CONFIG_STRING.add(config).unwrap();
+            INSTITUTION_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config)).unwrap();
+        }
+
+        unsafe {
+            CONSUMER_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&consumer_wallet_name, &consumer_config)).unwrap();
         }
 
         pool::tests::open_sandbox_pool();
 
-        wallet::open_wallet(wallet_name).unwrap();
-        set_institution();
-
+        set_consumer();
         ::utils::libindy::payments::tests::token_setup(None, None);
 
+        set_institution();
+        ::utils::libindy::payments::tests::token_setup(None, None);
+    }
+
+    fn _config_with_wallet_handle(wallet_n: &str, config: &str) -> String {
+        let wallet_handle = wallet::open_wallet(wallet_n).unwrap();
+        let mut config: serde_json::Value = serde_json::from_str(config).unwrap();
+        config[settings::CONFIG_WALLET_HANDLE] = json!(wallet_handle.to_string());
+        config.to_string()
     }
 
     #[cfg(feature = "pool_tests")]
@@ -140,7 +177,7 @@ pub mod tests {
         let wallet_name = "test_local_env";
         setup_local_env(wallet_name);
         ::utils::libindy::anoncreds::tests::create_and_store_credential();
-        cleanup_dev_env(wallet_name);
+        cleanup_local_env(wallet_name);
     }
 
     pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {
@@ -207,6 +244,6 @@ pub mod tests {
         update_state(alice).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(alice));
 
-        cleanup_dev_env(wallet_name);
+        cleanup_local_env(wallet_name);
     }
 }

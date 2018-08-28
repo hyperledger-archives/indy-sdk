@@ -420,7 +420,7 @@ pub mod tests {
     use settings;
 
     pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>) {
-        init_payments().unwrap();
+        init_payments().unwrap_or(());
         mint_tokens_and_set_fees(number_of_addresses, tokens_per_address, Some(DEFAULT_FEES.to_string()), None).unwrap();
     }
 
