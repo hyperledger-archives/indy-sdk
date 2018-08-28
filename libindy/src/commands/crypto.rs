@@ -138,7 +138,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(my_vk)?;
 
-        let key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
+        let key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value())?;
 
         let res = self.crypto_service.sign(&key, msg)?;
 
@@ -172,7 +172,7 @@ impl CryptoCommandExecutor {
         self.crypto_service.validate_key(my_vk)?;
         self.crypto_service.validate_key(their_vk)?;
 
-        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, my_vk, &RecordOptions::id_value(), &mut String::new())?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, my_vk, &RecordOptions::id_value())?;
 
         let msg = self.crypto_service.create_combo_box(&my_key, &their_vk, msg)?;
 
@@ -194,7 +194,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(my_vk)?;
 
-        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, my_vk, &RecordOptions::id_value(), &mut String::new())?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, my_vk, &RecordOptions::id_value())?;
 
         let decrypted_msg = self.crypto_service.decrypt_sealed(&my_key, &msg)?;
 
@@ -238,7 +238,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(&my_vk)?;
 
-        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value(), &mut String::new())?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_vk, &RecordOptions::id_value())?;
 
         let res = self.crypto_service.decrypt_sealed(&my_key, &encrypted_msg)?;
 
@@ -268,8 +268,7 @@ impl CryptoCommandExecutor {
 
         self.crypto_service.validate_key(verkey)?;
 
-        let metadata =
-            self.wallet_service.get_indy_object::<KeyMetadata>(wallet_handle, &verkey, &RecordOptions::id_value(), &mut String::new())?;
+        let metadata = self.wallet_service.get_indy_object::<KeyMetadata>(wallet_handle, &verkey, &RecordOptions::id_value())?;
 
         let res = metadata.value;
 

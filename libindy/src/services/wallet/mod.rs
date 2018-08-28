@@ -341,7 +341,7 @@ impl WalletService {
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_object<'a, T>(&self, wallet_handle: i32, name: &str, options_json: &str, json: &'a mut String) -> Result<T, WalletError> where T: ::serde::Deserialize<'a>, T: NamedType {
+    pub fn get_indy_object<T>(&self, wallet_handle: i32, name: &str, options_json: &str) -> Result<T, WalletError> where T: ::serde::de::DeserializeOwned, T: NamedType {
         let type_ = T::short_type_name();
 
         let record: WalletRecord = match self.wallets.borrow().get(&wallet_handle) {
@@ -349,18 +349,18 @@ impl WalletService {
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }?;
 
-        *json = record.get_value()
+        let record_value = record.get_value()
             .ok_or(CommonError::InvalidStructure(format!("{} not found for id: {:?}", type_, name)))?.to_string();
 
-        serde_json::from_str(json)
+        serde_json::from_str(&record_value)
             .map_err(map_err_trace!())
             .map_err(|err|
                 WalletError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", type_, err))))
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_opt_object<'a, T>(&self, wallet_handle: i32, name: &str, options_json: &str, json: &'a mut String) -> Result<Option<T>, WalletError> where T: ::serde::Deserialize<'a>, T: NamedType {
-        match self.get_indy_object::<T>(wallet_handle, name, options_json, json) {
+    pub fn get_indy_opt_object<T>(&self, wallet_handle: i32, name: &str, options_json: &str) -> Result<Option<T>, WalletError> where T: ::serde::de::DeserializeOwned, T: NamedType {
+        match self.get_indy_object::<T>(wallet_handle, name, options_json) {
             Ok(res) => Ok(Some(res)),
             Err(WalletError::ItemNotFound) => Ok(None),
             Err(err) => Err(err)
