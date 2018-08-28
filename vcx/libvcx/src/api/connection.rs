@@ -1,11 +1,12 @@
 extern crate libc;
+extern crate futures;
 
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
 use utils::error::error_string;
+use utils::threadpool::spawn;
 use std::ptr;
-use std::thread;
 use error::ToErrorCode;
 use error::connection::ConnectionError;
 use connection::{get_source_id, build_connection, build_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection};
@@ -37,21 +38,22 @@ pub extern fn vcx_connection_delete_connection(command_handle: u32,
         return ConnectionError::InvalidHandle().to_error_code()
     }
     info!("vcx_connection_delete_connection(command_handle: {}, connection_handle: {})", command_handle, connection_handle);
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match delete_connection(connection_handle) {
             Ok(_) => {
                 info!("vcx_connection_delete_connection_cb(command_handle: {}, rc: {})", command_handle, 0);
-                cb(command_handle, error::SUCCESS.code_num)
+                cb(command_handle, error::SUCCESS.code_num);
             },
             Err(e) => {
                 info!("vcx_connection_delete_connection_cb(command_handle: {}, rc: {})", command_handle, e);
-                cb(command_handle, e.to_error_code())
+                cb(command_handle, e.to_error_code());
             },
         }
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// -> Create a Connection object that provides a pairwise connection for an institution's user
@@ -73,23 +75,24 @@ pub extern fn vcx_connection_create(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     info!("vcx_connection_create(command_handle: {}, source_id: {})", command_handle, source_id);
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match build_connection(&source_id) {
             Ok(handle) => {
                 info!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {})",
                       command_handle, error_string(0), handle);
-                cb(command_handle, error::SUCCESS.code_num, handle)
+                cb(command_handle, error::SUCCESS.code_num, handle);
             },
             Err(x) => {
                 warn!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {})",
                       command_handle, x.to_string(), 0);
-                cb(command_handle, x.to_error_code(), 0)
+                cb(command_handle, x.to_error_code(), 0);
             },
         };
-    }){
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// -> Create a Connection object from the given invite_details that provides a pairwise connection.
@@ -115,23 +118,24 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(invite_details, error::INVALID_OPTION.code_num);
     info!("vcx_connection_create_with_invite(command_handle: {}, source_id: {})", command_handle, source_id);
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match build_connection_with_invite(&source_id, &invite_details) {
             Ok(handle) => {
                 info!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {})",
                       command_handle, error_string(0), handle);
-                cb(command_handle, error::SUCCESS.code_num, handle)
+                cb(command_handle, error::SUCCESS.code_num, handle);
             },
             Err(x) => {
                 warn!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {})",
                       command_handle, x.to_string(), 0);
-                cb(command_handle, x.to_error_code(), 0)
+                cb(command_handle, x.to_error_code(), 0);
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Establishes connection between institution and its user
@@ -174,7 +178,7 @@ pub extern fn vcx_connection_connect(command_handle:u32,
     info!("vcx_connection_connect(command_handle: {}, connection_handle: {}, connection_options: {:?}), source_id: {:?}",
           command_handle, connection_handle, options, source_id);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match connect(connection_handle, options) {
             Ok(_) => {
                 match get_invite_details(connection_handle,true) {
@@ -182,25 +186,26 @@ pub extern fn vcx_connection_connect(command_handle:u32,
                         info!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
                               command_handle, connection_handle, error_string(0), x, source_id);
                         let msg = CStringUtils::string_to_cstring(x);
-                        cb(command_handle, error::SUCCESS.code_num, msg.as_ptr())
+                        cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
                     },
                     Err(e) => {
                         warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
                               command_handle, connection_handle, error_string(0), "null", source_id);
-                        cb(command_handle, error::SUCCESS.code_num, ptr::null_mut())
+                        cb(command_handle, error::SUCCESS.code_num, ptr::null_mut());
                     },
                 }
             },
             Err(x) => {
                 warn!("vcx_connection_connect_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}, source_id: {})",
                       command_handle, connection_handle, x.to_string(), "null", source_id);
-                cb(command_handle,x.to_error_code(), ptr::null_mut())
+                cb(command_handle,x.to_error_code(), ptr::null_mut());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Takes the Connection object and returns a json string of all its attributes
@@ -230,7 +235,7 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match to_string(connection_handle) {
             Ok(json) => {
                 info!("vcx_connection_serialize_cb(command_handle: {}, connection_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -244,10 +249,11 @@ pub extern fn vcx_connection_serialize(command_handle: u32,
                 cb(command_handle, x, ptr::null_mut());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Takes a json string representing a connection object and recreates an object matching the json
@@ -271,7 +277,7 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
 
     info!("vcx_connection_deserialize(command_handle: {}, connection_data: {})", command_handle, connection_data);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         let (rc, handle) = match from_string(&connection_data) {
             Ok(x) => {
                 let source_id = get_source_id(x).unwrap_or_default();
@@ -287,10 +293,11 @@ pub extern fn vcx_connection_deserialize(command_handle: u32,
         };
 
         cb(command_handle, rc, handle);
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 
@@ -321,7 +328,7 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         let rc = match update_state(connection_handle) {
             Ok(x) => {
                 info!("vcx_connection_update_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
@@ -337,10 +344,11 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
         };
         let state = get_state(connection_handle);
         cb(command_handle, rc, state);
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 #[no_mangle]
@@ -359,14 +367,15 @@ pub extern fn vcx_connection_get_state(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         info!("vcx_connection_get_state_cb(command_handle: {}, rc: {}, connection_handle: {}, state: {}), source_id: {:?}",
               command_handle, error_string(0), connection_handle, get_state(connection_handle), source_id);
         cb(command_handle, error::SUCCESS.code_num, get_state(connection_handle));
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Gets the current connection details
@@ -399,7 +408,7 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match get_invite_details(connection_handle, abbreviated){
             Ok(str) => {
                 info!("vcx_connection_invite_details_cb(command_handle: {}, connection_handle: {}, rc: {}, details: {}), source_id: {:?}",
@@ -412,11 +421,12 @@ pub extern fn vcx_connection_invite_details(command_handle: u32,
                       command_handle, connection_handle, error_string(x.to_error_code()), "null", source_id);
                 cb(command_handle, x.to_error_code(), ptr::null_mut());
             }
-        }
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+        };
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Releases the connection object by de-allocating memory
@@ -442,7 +452,6 @@ pub extern fn vcx_connection_release(connection_handle: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use settings;
     use std::ffi::CString;
     use std::ptr;
     use utils::error;
@@ -452,11 +461,11 @@ mod tests {
     use utils::constants::GET_MESSAGES_RESPONSE;
     use utils::libindy::return_types_u32;
     use utils::error::SUCCESS;
+    use settings::tests::test_init;
 
     #[test]
     fn test_vcx_connection_create() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_connection_create(cb.command_handle,
                                        CString::new("test_create").unwrap().into_raw(),
@@ -467,8 +476,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_create_fails() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let rc = vcx_connection_create(0,
                                        CString::new("test_create_fails").unwrap().into_raw(),
                                        None);
@@ -482,8 +490,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_connect() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let rc = vcx_connection_connect(cb.command_handle, 0, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
@@ -498,8 +505,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_update_state() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let handle = build_connection("test_vcx_connection_update_state").unwrap();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
@@ -511,16 +517,14 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_update_state_fails() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let rc = vcx_connection_update_state(0,0,None);
         assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 
     #[test]
     fn test_vcx_connection_serialize() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let handle = build_connection("test_vcx_connection_get_data").unwrap();
         assert!(handle > 0);
 
@@ -534,8 +538,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_release() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let handle = build_connection("test_vcx_connection_release").unwrap();
         assert!(handle > 0);
 
@@ -548,8 +551,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_deserialize_succeeds() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let string = ::utils::constants::DEFAULT_CONNECTION;
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let err = vcx_connection_deserialize(cb.command_handle,
@@ -562,8 +564,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_get_state() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let handle = build_connection("test_vcx_connection_get_state").unwrap();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
@@ -578,8 +579,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_delete_connection() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let test_name = "test_vcx_connection_delete_connection";
         let connection_handle = build_connection(test_name).unwrap();
         let command_handle = 0;
