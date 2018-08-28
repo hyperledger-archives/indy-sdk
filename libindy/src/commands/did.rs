@@ -26,11 +26,11 @@ use utils::crypto::base58;
 pub enum DidCommand {
     CreateAndStoreMyDid(
         i32, // wallet handle
-        String, // my did info json
+        MyDidInfo, // my did info
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     ReplaceKeysStart(
         i32, // wallet handle
-        String, // key info json
+        KeyInfo, // key info
         String, // did
         Box<Fn(Result<String, IndyError>) + Send>),
     ReplaceKeysApply(
@@ -127,13 +127,13 @@ impl DidCommandExecutor {
 
     pub fn execute(&self, command: DidCommand) {
         match command {
-            DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info_json, cb) => {
+            DidCommand::CreateAndStoreMyDid(wallet_handle, my_did_info, cb) => {
                 info!("CreateAndStoreMyDid command received");
-                cb(self.create_and_store_my_did(wallet_handle, &my_did_info_json));
+                cb(self.create_and_store_my_did(wallet_handle, &my_did_info));
             }
-            DidCommand::ReplaceKeysStart(wallet_handle, key_info_json, did, cb) => {
+            DidCommand::ReplaceKeysStart(wallet_handle, key_info, did, cb) => {
                 info!("ReplaceKeysStart command received");
-                cb(self.replace_keys_start(wallet_handle, &key_info_json, &did));
+                cb(self.replace_keys_start(wallet_handle, &key_info, &did));
             }
             DidCommand::ReplaceKeysApply(wallet_handle, did, cb) => {
                 info!("ReplaceKeysApply command received");
@@ -145,7 +145,7 @@ impl DidCommandExecutor {
             }
             DidCommand::GetMyDidWithMeta(wallet_handle, my_did, cb) => {
                 info!("GetMyDidWithMeta command received");
-                cb(self.get_my_did_with_meta(wallet_handle, my_did))
+                cb(self.get_my_did_with_meta(wallet_handle, &my_did))
             }
             DidCommand::ListMyDidsWithMeta(wallet_handle, cb) => {
                 info!("ListMyDidsWithMeta command received");
@@ -157,11 +157,11 @@ impl DidCommandExecutor {
             }
             DidCommand::KeyForLocalDid(wallet_handle, did, cb) => {
                 info!("KeyForLocalDid command received");
-                cb(self.key_for_local_did(wallet_handle, did));
+                cb(self.key_for_local_did(wallet_handle, &did));
             }
             DidCommand::SetEndpointForDid(wallet_handle, did, address, transport_key, cb) => {
                 info!("SetEndpointForDid command received");
-                cb(self.set_endpoint_for_did(wallet_handle, did, address, transport_key));
+                cb(self.set_endpoint_for_did(wallet_handle, &did, &address, &transport_key));
             }
             DidCommand::GetEndpointForDid(wallet_handle, pool_handle, did, cb) => {
                 info!("GetEndpointForDid command received");
@@ -169,15 +169,15 @@ impl DidCommandExecutor {
             }
             DidCommand::SetDidMetadata(wallet_handle, did, metadata, cb) => {
                 info!("SetDidMetadata command received");
-                cb(self.set_did_metadata(wallet_handle, did, metadata));
+                cb(self.set_did_metadata(wallet_handle, &did, metadata));
             }
             DidCommand::GetDidMetadata(wallet_handle, did, cb) => {
                 info!("GetDidMetadata command received");
-                cb(self.get_did_metadata(wallet_handle, did));
+                cb(self.get_did_metadata(wallet_handle, &did));
             }
             DidCommand::AbbreviateVerkey(did, verkey, cb) => {
                 info!("AbbreviateVerkey command received");
-                cb(self.abbreviate_verkey(did, verkey));
+                cb(self.abbreviate_verkey(&did, verkey));
             }
             DidCommand::GetNymAck(wallet_handle, result, deferred_cmd_id) => {
                 info!("GetNymAck command received");
@@ -192,14 +192,8 @@ impl DidCommandExecutor {
 
     fn create_and_store_my_did(&self,
                                wallet_handle: i32,
-                               my_did_info_json: &str) -> Result<(String, String), IndyError> {
-        debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, secret!(my_did_info_json));
-
-        let my_did_info: MyDidInfo = serde_json::from_str(&my_did_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(
-                    format!("Invalid MyDidInfo json: {:?}", err)))?;
+                               my_did_info: &MyDidInfo) -> Result<(String, String), IndyError> {
+        debug!("create_and_store_my_did >>> wallet_handle: {:?}, my_did_info_json: {:?}", wallet_handle, secret!(my_did_info));
 
         let (did, key) = self.crypto_service.create_my_did(&my_did_info)?;
 
@@ -219,16 +213,11 @@ impl DidCommandExecutor {
 
     fn replace_keys_start(&self,
                           wallet_handle: i32,
-                          key_info_json: &str,
+                          key_info: &KeyInfo,
                           my_did: &str) -> Result<String, IndyError> {
-        debug!("replace_keys_start >>> wallet_handle: {:?}, key_info_json: {:?}, my_did: {:?}", wallet_handle, secret!(key_info_json), my_did);
+        debug!("replace_keys_start >>> wallet_handle: {:?}, key_info_json: {:?}, my_did: {:?}", wallet_handle, secret!(key_info), my_did);
 
         self.crypto_service.validate_did(my_did)?;
-
-        let key_info: KeyInfo = serde_json::from_str(key_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(format!("Invalid KeyInfo json: {}", err.description())))?;
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
 
@@ -285,7 +274,7 @@ impl DidCommandExecutor {
         Ok(())
     }
 
-    fn get_my_did_with_meta(&self, wallet_handle: i32, my_did: String) -> Result<String, IndyError> {
+    fn get_my_did_with_meta(&self, wallet_handle: i32, my_did: &str) -> Result<String, IndyError> {
         debug!("get_my_did_with_meta >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
         self.crypto_service.validate_did(&my_did)?;
@@ -380,20 +369,20 @@ impl DidCommandExecutor {
 
     fn key_for_local_did(&self,
                          wallet_handle: i32,
-                         did: String) -> Result<String, IndyError> {
+                         did: &str) -> Result<String, IndyError> {
         info!("key_for_local_did >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
         self.crypto_service.validate_did(&did)?;
 
         // Look to my did
-        match self._wallet_get_my_did(wallet_handle, &did) {
+        match self._wallet_get_my_did(wallet_handle, did) {
             Ok(my_did) => return Ok(my_did.verkey),
             Err(WalletError::ItemNotFound) => {}
             Err(err) => return Err(IndyError::from(err))
         };
 
         // look to their did
-        let their_did = self._wallet_get_their_did(wallet_handle, &did)?;
+        let their_did = self._wallet_get_their_did(wallet_handle, did)?;
 
         let res = their_did.verkey;
 
@@ -404,17 +393,17 @@ impl DidCommandExecutor {
 
     fn set_endpoint_for_did(&self,
                             wallet_handle: i32,
-                            did: String,
-                            address: String,
-                            transport_key: String) -> Result<(), IndyError> {
+                            did: &str,
+                            address: &str,
+                            transport_key: &str) -> Result<(), IndyError> {
         debug!("set_endpoint_for_did >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}", wallet_handle, did, address, transport_key);
 
-        self.crypto_service.validate_did(&did)?;
-        self.crypto_service.validate_key(&transport_key)?;
+        self.crypto_service.validate_did(did)?;
+        self.crypto_service.validate_key(transport_key)?;
 
         let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
 
-        self.wallet_service.upsert_indy_object(wallet_handle, &did, &endpoint)?;
+        self.wallet_service.upsert_indy_object(wallet_handle, did, &endpoint)?;
 
         debug!("set_endpoint_for_did <<<");
         Ok(())
@@ -450,11 +439,11 @@ impl DidCommandExecutor {
 
     fn set_did_metadata(&self,
                         wallet_handle: i32,
-                        did: String,
+                        did: &str,
                         metadata: String) -> Result<(), IndyError> {
         debug!("set_did_metadata >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
 
-        self.crypto_service.validate_did(&did)?;
+        self.crypto_service.validate_did(did)?;
 
         let metadata = DidMetadata { value: metadata };
 
@@ -467,13 +456,13 @@ impl DidCommandExecutor {
 
     fn get_did_metadata(&self,
                         wallet_handle: i32,
-                        did: String) -> Result<String, IndyError> {
+                        did: &str) -> Result<String, IndyError> {
         debug!("get_did_metadata >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-        self.crypto_service.validate_did(&did)?;
+        self.crypto_service.validate_did(did)?;
 
         let metadata =
-            self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, &did, &RecordOptions::id_value(), &mut String::new())?;
+            self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, did, &RecordOptions::id_value(), &mut String::new())?;
 
         let res = metadata.value;
 
@@ -483,7 +472,7 @@ impl DidCommandExecutor {
     }
 
     fn abbreviate_verkey(&self,
-                         did: String,
+                         did: &str,
                          verkey: String) -> Result<String, IndyError> {
         info!("abbreviate_verkey >>> did: {:?}, verkey: {:?}", did, verkey);
 
