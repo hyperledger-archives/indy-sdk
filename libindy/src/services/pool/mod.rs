@@ -24,7 +24,7 @@ use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs;
+use std::{fs, io};
 use std::io::Write;
 
 use api::ledger::{CustomFree, CustomTransactionParser};
@@ -84,14 +84,23 @@ impl PoolService {
 
         path.push(name);
         path.set_extension("txn");
-        fs::copy(&pool_config.genesis_txn, path.as_path()).map_err(map_err_trace!())?;
+        {
+            // fs::copy also copies attributes of the file
+            // and copying permissions can be problem for some cases
+            let mut gt_fin = fs::File::open(&pool_config.genesis_txn)
+                .map_err(map_err_trace!())?;
+            let mut gt_fout = fs::File::create(path.as_path())
+                .map_err(map_err_trace!())?;
+            io::copy(&mut gt_fin, &mut gt_fout)
+                .map_err(map_err_trace!())?;
+        }
         path.pop();
 
         path.push("config");
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path()).map_err(map_err_trace!())?;
 
-        f.write(serde_json::to_string(&pool_config)
+        f.write_all(serde_json::to_string(&pool_config)
             .map_err(|err|
                 CommonError::InvalidState(format!("Can't serialize pool config: {}", err.description()))).map_err(map_err_trace!())?
             .as_bytes()).map_err(map_err_trace!())?;
