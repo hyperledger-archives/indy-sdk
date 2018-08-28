@@ -1,11 +1,18 @@
 extern crate libc;
 
 use api::ErrorCode;
+use errors::common::CommonError;
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::ledger::LedgerCommand;
+use domain::anoncreds::credential_definition::CredentialDefinition;
+use domain::anoncreds::schema::Schema;
+use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
+use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
+use domain::ledger::node::NodeOperationData;
 use utils::cstring::CStringUtils;
 
+use serde_json;
 use self::libc::c_char;
 
 /// Signs and submits request message to validator pool.
@@ -609,7 +616,7 @@ pub extern fn indy_build_schema_request(command_handle: i32,
     trace!("indy_build_schema_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(data, ErrorCode::CommonInvalidParam3, Schema);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_schema_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -767,7 +774,7 @@ pub extern fn indy_build_cred_def_request(command_handle: i32,
     trace!("indy_build_cred_def_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(data, ErrorCode::CommonInvalidParam3, CredentialDefinition);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_cred_def_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -930,7 +937,7 @@ pub extern fn indy_build_node_request(command_handle: i32,
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam4);
+    check_useful_json!(data, ErrorCode::CommonInvalidParam4, NodeOperationData);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_build_node_request: entities >>> submitter_did: {:?}, target_did: {:?}, data: {:?}", submitter_did, target_did, data);
@@ -1273,7 +1280,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
     trace!("indy_build_revoc_reg_def_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(data, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(data, ErrorCode::CommonInvalidParam3, RevocationRegistryDefinition);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_build_revoc_reg_def_request: entities >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -1448,7 +1455,7 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: i32,
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(rev_def_type, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(value, ErrorCode::CommonInvalidParam5);
+    check_useful_json!(value, ErrorCode::CommonInvalidParam5, RevocationRegistryDelta);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_build_revoc_reg_entry_request: entities >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, rev_def_type: {:?}, value: {:?}",
