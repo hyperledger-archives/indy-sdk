@@ -512,7 +512,7 @@ impl WalletService {
                     MetadataRaw { keys: keys.serialize_encrypted(&master_key)? }
                 )
             }
-            KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
+            KeyDerivationMethod::ARGON2I_INT | KeyDerivationMethod::ARGON2I_MOD => {
                 let master_key_salt = encryption::gen_master_key_salt()?;
                 let master_key = encryption::derive_master_key(key, &master_key_salt, key_derivation_method)?;
                 Metadata::MetadataArgon(
@@ -534,8 +534,8 @@ impl WalletService {
         let (metadata_keys, master_key) = match (key_derivation_method, metadata) {
             (KeyDerivationMethod::RAW, Metadata::MetadataRaw(metadata)) =>
                 (metadata.keys.as_ref(), encryption::raw_master_key(key)?),
-            (KeyDerivationMethod::ARAGON2I_INT, Metadata::MetadataArgon(metadata)) |
-            (KeyDerivationMethod::ARAGON2I_MOD, Metadata::MetadataArgon(metadata)) => {
+            (KeyDerivationMethod::ARGON2I_INT, Metadata::MetadataArgon(metadata)) |
+            (KeyDerivationMethod::ARGON2I_MOD, Metadata::MetadataArgon(metadata)) => {
                 let master_key_salt = encryption::master_key_salt_from_slice(&metadata.master_key_salt)?;
                 let master_key = encryption::derive_master_key(key, &master_key_salt, key_derivation_method)?;
                 ((metadata.keys.as_ref(), master_key))
@@ -1841,7 +1841,7 @@ mod tests {
     }
 
     fn _credentials_interactive() -> String {
-        json!({"key": "my_key", "key_derivation_method": "ARAGON2I_INT"}).to_string()
+        json!({"key": "my_key", "key_derivation_method": "ARGON2I_INT"}).to_string()
     }
 
     fn _credentials_raw() -> String {
@@ -1857,7 +1857,7 @@ mod tests {
     }
 
     fn _rekey_credentials_interactive() -> String {
-        json!({"key": "my_key", "rekey": "my_new_key", "rekey_derivation_method": "ARAGON2I_INT"}).to_string()
+        json!({"key": "my_key", "rekey": "my_new_key", "rekey_derivation_method": "ARGON2I_INT"}).to_string()
     }
 
     fn _rekey_credentials_raw() -> String {
@@ -1869,7 +1869,7 @@ mod tests {
     }
 
     fn _credentials_for_new_key_interactive() -> String {
-        json!({"key": "my_new_key", "key_derivation_method": "ARAGON2I_INT"}).to_string()
+        json!({"key": "my_new_key", "key_derivation_method": "ARGON2I_INT"}).to_string()
     }
 
     fn _credentials_for_new_key_raw() -> String {
@@ -1893,7 +1893,7 @@ mod tests {
         json!({
             "path": _export_file_path().to_str().unwrap(),
             "key": "export_key",
-            "key_derivation_method": "ARAGON2I_INT"
+            "key_derivation_method": "ARGON2I_INT"
         }).to_string()
     }
 
