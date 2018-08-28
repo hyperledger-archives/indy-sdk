@@ -6,6 +6,8 @@ use api::ErrorCode;
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::did::DidCommand;
+use std::ffi::CStr;
+
 use utils::cstring::CStringUtils;
 
 use serde_json;

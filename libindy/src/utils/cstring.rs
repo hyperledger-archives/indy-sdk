@@ -42,16 +42,23 @@ macro_rules! check_useful_c_str {
 
 macro_rules! check_useful_json {
     ($x:ident, $e:expr, $t:ty) => {
-        let $x = match CStringUtils::c_str_to_string($x) {
-            Ok(Some(val)) => val,
-            _ => return $e,
+        if $x.is_null() {
+            return $e
+        }
+
+        let $x =  unsafe {
+            match CStr::from_ptr($x).to_str() {
+                Ok(str) => str,
+                _ => return $e
+            }
         };
 
         if $x.is_empty() {
             return $e
         }
+
         let $x: $t = match
-            serde_json::from_str::<$t>(&$x)
+            serde_json::from_str::<$t>($x)
                 .map_err(map_err_trace!())
                 .map_err(|err|
                     CommonError::InvalidStructure(
