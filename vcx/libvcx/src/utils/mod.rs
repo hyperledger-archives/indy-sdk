@@ -15,6 +15,7 @@ pub mod openssl;
 pub mod json;
 pub mod libindy;
 pub mod devsetup;
+pub mod threadpool;
 
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 lazy_static! {

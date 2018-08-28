@@ -32,6 +32,7 @@ pub static CONFIG_WALLET_BACKUP_KEY: &str = "backup_key";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
 pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
 pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
+pub static CONFIG_THREADPOOL_SIZE: &'static str = "threadpool_size";
 
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 pub static UNINITIALIZED_BACKUP_KEY: &str = "<KEY_IS_NOT_SET>";
@@ -47,8 +48,12 @@ pub static DEFAULT_VERKEY: &str = "FuN98eH2eZybECWkofW6A9BKJxxnTatBCopfUiNxo6ZB"
 pub static DEFAULT_ENABLE_TEST_MODE: &str = "false";
 pub static DEFAULT_WALLET_BACKUP_KEY: &str = "backup_wallet_key";
 pub static DEFAULT_WALLET_KEY: &str = "foobar1234";
+pub static DEFAULT_THREADPOOL_SIZE: usize = 8;
 pub static TEST_WALLET_KEY: &str = "key";
 pub static MASK_VALUE: &str = "********";
+
+pub static MAX_THREADPOOL_SIZE: usize = 128;
+
 lazy_static! {
     static ref SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::new());
 }
@@ -86,6 +91,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
     settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(), DEFAULT_EXPORTED_WALLET_PATH.to_string());
     settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), UNINITIALIZED_BACKUP_KEY.to_string());
+    settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
 
     error::SUCCESS.code_num
 }
@@ -145,6 +151,19 @@ pub fn test_indy_mode_enabled() -> bool {
     match config.get(CONFIG_ENABLE_TEST_MODE) {
         None => false,
         Some(value) => if value == "true" { true } else { if value == "indy" { true } else {false }},
+    }
+}
+
+pub fn get_threadpool_size() -> usize {
+    let size = match get_config_value(CONFIG_THREADPOOL_SIZE) {
+        Ok(x) => x.parse::<usize>().unwrap_or(DEFAULT_THREADPOOL_SIZE),
+        Err(x) => DEFAULT_THREADPOOL_SIZE,
+    };
+
+    if size > MAX_THREADPOOL_SIZE {
+        MAX_THREADPOOL_SIZE
+    } else {
+        size
     }
 }
 
@@ -232,6 +251,25 @@ pub fn clear_config() {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+
+    pub fn test_init(mode: &str) {
+        ::utils::threadpool::init();
+        clear_config();
+        match mode {
+            "true" => {
+                set_defaults();
+                set_config_value(CONFIG_ENABLE_TEST_MODE,"true");
+            },
+            "false" => {
+                set_config_value(CONFIG_ENABLE_TEST_MODE,"false");
+            },
+            "indy" => {
+                set_defaults();
+                set_config_value(CONFIG_ENABLE_TEST_MODE,"indy");
+            },
+            _ => {panic!("Invalid test mode");},
+        };
+    }
 
     #[test]
     fn test_bad_path() {

@@ -1,4 +1,5 @@
 extern crate libc;
+extern crate futures;
 
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
@@ -6,9 +7,9 @@ use utils::error;
 use utils::error::error_string;
 use connection;
 use disclosed_proof;
-use std::thread;
 use std::ptr;
 use error::ToErrorCode;
+use utils::threadpool::spawn;
 
 /// Create a proof for fulfilling a corresponding proof request
 ///
@@ -38,7 +39,7 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
     info!("vcx_disclosed_proof_create_with_request(command_handle: {}, source_id: {}, proof_req: {})",
           command_handle, source_id, proof_req);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match disclosed_proof::create_proof(source_id, proof_req){
             Ok(x) => {
                 info!("vcx_disclosed_proof_create_with_request_cb(command_handle: {}, rc: {}, handle: {})",
@@ -51,10 +52,11 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
                 cb(command_handle, x.to_error_code(), 0);
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 
@@ -89,8 +91,7 @@ pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: u32,
     info!("vcx_disclosed_proof_create_with_msgid(command_handle: {}, source_id: {}, connection_handle: {}, msg_id: {})",
           command_handle, source_id, connection_handle, msg_id);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
-
+    spawn(futures::lazy(move|| {
         match disclosed_proof::get_proof_request(connection_handle, &msg_id) {
             Ok(request) => {
                 match disclosed_proof::create_proof(source_id, request.clone()) {
@@ -110,10 +111,11 @@ pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: u32,
             },
             Err(e) => cb(command_handle, e.to_error_code(), 0, ptr::null()),
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Send a proof to the connection, called after having received a proof request
@@ -150,7 +152,7 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
     info!("vcx_disclosed_proof_send_proof(command_handle: {}, proof_handle: {}, connection_handle: {}), source_id: {:?}",
           command_handle, proof_handle, connection_handle, source_id);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         let err = match disclosed_proof::send_proof(proof_handle, connection_handle) {
             Ok(x) => {
                 info!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}), source_id: {:?}",
@@ -163,10 +165,11 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
                 cb(command_handle,x.to_error_code());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Queries agency for proof requests from the given connection.
@@ -195,7 +198,7 @@ pub extern fn vcx_disclosed_proof_get_requests(command_handle: u32,
     info!("vcx_disclosed_proof_get_requests(command_handle: {}, connection_handle: {})",
           command_handle, connection_handle);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match disclosed_proof::get_proof_request_messages(connection_handle, None) {
             Ok(x) => {
                 info!("vcx_disclosed_proof_get_requests_cb(command_handle: {}, rc: {}, msg: {})",
@@ -209,10 +212,11 @@ pub extern fn vcx_disclosed_proof_get_requests(command_handle: u32,
                 cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 #[no_mangle]
@@ -230,7 +234,7 @@ pub extern fn vcx_disclosed_proof_get_state(command_handle: u32,
     info!("vcx_disclosed_proof_get_state(command_handle: {}, proof_handle: {}), source_id: {:?}",
           command_handle, proof_handle, source_id);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match disclosed_proof::get_state(proof_handle) {
             Ok(s) => {
                 info!("vcx_disclosed_proof_get_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -243,10 +247,11 @@ pub extern fn vcx_disclosed_proof_get_state(command_handle: u32,
                 cb(command_handle, e, 0)
             }
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 #[no_mangle]
@@ -264,7 +269,7 @@ pub extern fn vcx_disclosed_proof_update_state(command_handle: u32,
     info!("vcx_disclosed_proof_update_state(command_handle: {}, proof_handle: {}), source_id: {:?}",
           command_handle, proof_handle, source_id);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match disclosed_proof::update_state(proof_handle) {
             Ok(s) => {
                 info!("vcx_disclosed_proof_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -277,10 +282,11 @@ pub extern fn vcx_disclosed_proof_update_state(command_handle: u32,
                 cb(command_handle, e, 0)
             }
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Takes the disclosed proof object and returns a json string of all its attributes
@@ -309,7 +315,7 @@ pub extern fn vcx_disclosed_proof_serialize(command_handle: u32,
     info!("vcx_disclosed_proof_serialize(command_handle: {}, proof_handle: {}), source_id: {:?}",
           command_handle, proof_handle, source_id);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match disclosed_proof::to_string(proof_handle) {
             Ok(x) => {
                 info!("vcx_disclosed_proof_serialize_cb(command_handle: {}, rc: {}, data: {}), source_id: {:?}",
@@ -323,10 +329,11 @@ pub extern fn vcx_disclosed_proof_serialize(command_handle: u32,
                 cb(command_handle,x,ptr::null_mut());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Takes a json string representing an disclosed proof object and recreates an object matching the json
@@ -352,7 +359,7 @@ pub extern fn vcx_disclosed_proof_deserialize(command_handle: u32,
     info!("vcx_disclosed_proof_deserialize(command_handle: {}, proof_data: {})",
           command_handle, proof_data);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match disclosed_proof::from_string(&proof_data) {
             Ok(x) => {
                 info!("vcx_disclosed_proof_deserialize_cb(command_handle: {}, rc: {}, proof_handle: {}), source_id: {:?}",
@@ -366,10 +373,11 @@ pub extern fn vcx_disclosed_proof_deserialize(command_handle: u32,
                 cb(command_handle, x.to_error_code(), 0);
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Takes the disclosed proof object and returns a json string of all credentials matching associated proof request from wallet
@@ -398,7 +406,7 @@ pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: u32,
     info!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, proof_handle: {}), source_id: {:?}",
           command_handle, proof_handle, source_id);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match disclosed_proof::retrieve_credentials(proof_handle) {
             Ok(x) => {
                 info!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, rc: {}, data: {}), source_id: {:?}",
@@ -412,10 +420,11 @@ pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: u32,
                 cb(command_handle,x.to_error_code(),ptr::null_mut());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 /// Takes the disclosed proof object and generates a proof from the selected credentials and self attested attributes
@@ -456,7 +465,7 @@ pub extern fn vcx_disclosed_proof_generate_proof(command_handle: u32,
     info!("vcx_disclosed_proof_generate_proof(command_handle: {}, proof_handle: {}, selected_credentials: {}, self_attested_attrs: {}), source_id: {:?}",
           command_handle, proof_handle, selected_credentials, self_attested_attrs, source_id);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(futures::lazy(move|| {
         match disclosed_proof::generate_proof(proof_handle, selected_credentials, self_attested_attrs) {
             Ok(_) => {
                 info!("vcx_disclosed_proof_generate_proof(command_handle: {}, rc: {}), source_id: {:?}",
@@ -469,10 +478,11 @@ pub extern fn vcx_disclosed_proof_generate_proof(command_handle: u32,
                 cb(command_handle,x.to_error_code());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    }));
+
+    error::SUCCESS.code_num
 }
 
 
@@ -501,19 +511,18 @@ mod tests {
     use super::*;
     use std::ffi::CString;
     use std::time::Duration;
-    use settings;
     use connection;
     use api::VcxStateType;
     use utils::constants::DEFAULT_SERIALIZE_VERSION;
     use utils::libindy::return_types_u32;
     use serde_json::Value;
+    use settings::tests::test_init;
 
     pub const BAD_PROOF_REQUEST: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","claim": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","claim_name": "Account Certificate","claim_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
 
     #[test]
     fn test_vcx_proof_create_with_request_success() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
                                                CString::new("test_create").unwrap().into_raw(),
@@ -524,8 +533,7 @@ mod tests {
 
     #[test]
     fn test_vcx_proof_create_with_request() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_request(
             cb.command_handle,
@@ -537,8 +545,7 @@ mod tests {
 
     #[test]
     fn test_create_with_msgid() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let cxn = ::connection::build_connection("test_create_with_msgid").unwrap();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
@@ -553,8 +560,7 @@ mod tests {
 
     #[test]
     fn test_vcx_disclosed_proof_serialize_and_deserialize() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
         assert_eq!(vcx_disclosed_proof_serialize(cb.command_handle,
@@ -576,8 +582,7 @@ mod tests {
 
     #[test]
     fn test_vcx_send_proof() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
 
         let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
         assert_eq!(disclosed_proof::get_state(handle).unwrap(),VcxStateType::VcxStateRequestReceived as u32);
@@ -591,8 +596,7 @@ mod tests {
 
     #[test]
     fn test_vcx_proof_get_requests(){
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let cxn = ::connection::build_connection("test_get_new_requests").unwrap();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
@@ -602,8 +606,7 @@ mod tests {
 
     #[test]
     fn test_vcx_proof_get_state() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        test_init("true");
         let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
@@ -614,8 +617,7 @@ mod tests {
 
     #[test]
     fn test_vcx_disclosed_proof_retrieve_credentials() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        test_init("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
                                                            CString::new("test_create").unwrap().into_raw(),
@@ -632,8 +634,7 @@ mod tests {
 
     #[test]
     fn test_vcx_disclosed_proof_generate_proof() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        test_init("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
                                                            CString::new("test_create").unwrap().into_raw(),
