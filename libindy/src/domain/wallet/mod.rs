@@ -1,15 +1,16 @@
 pub mod export_import;
 
 use serde_json::value::Value;
+use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub id: String,
     pub storage_type: Option<String>,
     pub storage_config: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Credentials {
     pub key: String,
     pub rekey: Option<String>,
@@ -62,3 +63,5 @@ pub struct MetadataRaw {
 pub struct KeyConfig {
     pub seed: Option<String>
 }
+
+pub type Tags = HashMap<String, String>;

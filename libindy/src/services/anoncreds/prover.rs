@@ -302,7 +302,7 @@ impl Prover {
                        name: &str,
                        referent: &str,
                        restrictions: &Option<serde_json::Value>,
-                       extra_query: &Option<ProofRequestExtraQuery>) -> Result<String, CommonError> {
+                       extra_query: &Option<&ProofRequestExtraQuery>) -> Result<String, CommonError> {
         trace!("build_query >>> name: {:?}, referent: {:?}, restrictions: {:?}, extra_query: {:?}", name, referent, restrictions, extra_query);
 
         let mut sub_queries: Vec<serde_json::Value> = vec![];

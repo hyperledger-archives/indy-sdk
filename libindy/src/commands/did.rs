@@ -39,7 +39,7 @@ pub enum DidCommand {
         Box<Fn(Result<(), IndyError>) + Send>),
     StoreTheirDid(
         i32, // wallet handle
-        String, // their did info json
+        TheirDidInfo, // their did info json
         Box<Fn(Result<(), IndyError>) + Send>),
     GetMyDidWithMeta(
         i32, // wallet handle
@@ -139,9 +139,9 @@ impl DidCommandExecutor {
                 info!("ReplaceKeysApply command received");
                 cb(self.replace_keys_apply(wallet_handle, &did));
             }
-            DidCommand::StoreTheirDid(wallet_handle, identity_json, cb) => {
+            DidCommand::StoreTheirDid(wallet_handle, their_did_info, cb) => {
                 info!("StoreTheirDid command received");
-                cb(self.store_their_did(wallet_handle, &identity_json));
+                cb(self.store_their_did(wallet_handle, &their_did_info));
             }
             DidCommand::GetMyDidWithMeta(wallet_handle, my_did, cb) => {
                 info!("GetMyDidWithMeta command received");
@@ -257,15 +257,10 @@ impl DidCommandExecutor {
 
     fn store_their_did(&self,
                        wallet_handle: i32,
-                       their_did_info_json: &str) -> Result<(), IndyError> {
-        debug!("store_their_did >>> wallet_handle: {:?}, their_did_info_json: {:?}", wallet_handle, their_did_info_json);
+                       their_did_info: &TheirDidInfo) -> Result<(), IndyError> {
+        debug!("store_their_did >>> wallet_handle: {:?}, their_did_info: {:?}", wallet_handle, their_did_info);
 
-        let their_did_info: TheirDidInfo = serde_json::from_str(their_did_info_json)
-            .map_err(map_err_trace!())
-            .map_err(|err|
-                CommonError::InvalidStructure(format!("Invalid TheirDidInfo json: {}", err.description())))?;
-
-        let their_did = self.crypto_service.create_their_did(&their_did_info)?;
+        let their_did = self.crypto_service.create_their_did(their_did_info)?;
 
         self.wallet_service.add_indy_object(wallet_handle, &their_did.did, &their_did, &HashMap::new())?;
 

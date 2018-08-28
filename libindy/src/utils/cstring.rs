@@ -9,14 +9,14 @@ use std::ffi::CString;
 pub struct CStringUtils {}
 
 impl CStringUtils {
-    pub fn c_str_to_string(cstr: *const c_char) -> Result<Option<String>, Utf8Error> {
+    pub fn c_str_to_string<'a>(cstr: *const c_char) -> Result<Option<&'a str>, Utf8Error> {
         if cstr.is_null() {
             return Ok(None);
         }
 
         unsafe {
             match CStr::from_ptr(cstr).to_str() {
-                Ok(str) => Ok(Some(str.to_string())),
+                Ok(str) => Ok(Some(str)),
                 Err(err) => Err(err)
             }
         }
@@ -30,7 +30,7 @@ impl CStringUtils {
 macro_rules! check_useful_c_str {
     ($x:ident, $e:expr) => {
         let $x = match CStringUtils::c_str_to_string($x) {
-            Ok(Some(val)) => val,
+            Ok(Some(val)) => val.to_string(),
             _ => return $e,
         };
 
@@ -40,19 +40,37 @@ macro_rules! check_useful_c_str {
     }
 }
 
-macro_rules! check_useful_json {
+macro_rules! check_useful_opt_json {
     ($x:ident, $e:expr, $t:ty) => {
-        if $x.is_null() {
-            return $e
-        }
-
-        let $x =  unsafe {
-            match CStr::from_ptr($x).to_str() {
-                Ok(str) => str,
-                _ => return $e
-            }
+        let $x = match CStringUtils::c_str_to_string($x) {
+            Ok(Some(val)) => Some(val),
+            Ok(None) => None,
+            _ => return $e,
         };
 
+        let $x: Option<$t>  = match $x {
+            Some(val) => {
+                parse_json!(val, $e, $t);
+                Some(val)
+            },
+            None => None
+        };
+    }
+}
+
+macro_rules! check_useful_json {
+    ($x:ident, $e:expr, $t:ty) => {
+        let $x = match CStringUtils::c_str_to_string($x) {
+            Ok(Some(val)) => val,
+            _ => return $e,
+        };
+
+        parse_json!($x, $e, $t);
+    }
+}
+
+macro_rules! parse_json {
+    ($x:ident, $e:expr, $t:ty) => {
         if $x.is_empty() {
             return $e
         }
@@ -73,7 +91,7 @@ macro_rules! check_useful_json {
 macro_rules! check_useful_c_str_empty_accepted {
     ($x:ident, $e:expr) => {
         let $x = match CStringUtils::c_str_to_string($x) {
-            Ok(Some(val)) => val,
+            Ok(Some(val)) => val.to_string(),
             _ => return $e,
         };
     }
@@ -82,7 +100,7 @@ macro_rules! check_useful_c_str_empty_accepted {
 macro_rules! check_useful_opt_c_str {
     ($x:ident, $e:expr) => {
         let $x = match CStringUtils::c_str_to_string($x) {
-            Ok(opt_val) => opt_val,
+            Ok(opt_val) => opt_val.map(String::from),
             Err(_) => return $e
         };
     }

@@ -3,12 +3,11 @@ extern crate serde_json;
 extern crate indy_crypto;
 
 use errors::indy::IndyError;
-use errors::common::CommonError;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use api::wallet::*;
 use utils::crypto::{base58, randombytes, chacha20poly1305_ietf};
-use domain::wallet::KeyConfig;
+use domain::wallet::{KeyConfig, Config, Credentials, ExportConfig};
 
 use std::rc::Rc;
 use std::result;
@@ -42,25 +41,25 @@ pub enum WalletCommand {
                        WalletFetchSearchNextRecord, // fetch search next record
                        WalletFreeSearch, // free search
                        Box<Fn(Result<()>) + Send>),
-    Create(String, // config
-           String, // credentials
+    Create(Config, // config
+           Credentials, // credentials
            Box<Fn(Result<()>) + Send>),
-    Open(String, // config
-         String, // credentials
+    Open(Config, // config
+         Credentials, // credentials
          Box<Fn(Result<i32>) + Send>),
     Close(i32, // handle
           Box<Fn(Result<()>) + Send>),
-    Delete(String, // config
-           String, // credentials
+    Delete(Config, // config
+           Credentials, // credentials
            Box<Fn(Result<()>) + Send>),
     Export(i32, // wallet_handle
-           String, // export config
+           ExportConfig, // export config
            Box<Fn(Result<()>) + Send>),
-    Import(String, // config
-           String, // credentials
-           String, // import config
+    Import(Config, // config
+           Credentials, // credentials
+           ExportConfig, // import config
            Box<Fn(Result<()>) + Send>),
-    GenerateKey(Option<String>, // config
+    GenerateKey(Option<KeyConfig>, // config
                 Box<Fn(Result<String>) + Send>),
 }
 
@@ -119,7 +118,7 @@ impl WalletCommandExecutor {
             }
             WalletCommand::GenerateKey(config, cb) => {
                 debug!(target: "wallet_command_executor", "DeriveKey command received");
-                cb(self._generate_key(config.as_ref().map(String::as_str)));
+                cb(self._generate_key(config.as_ref()));
             }
         };
     }
@@ -166,8 +165,8 @@ impl WalletCommandExecutor {
     }
 
     fn _create(&self,
-               config: &str,
-               credentials: &str) -> Result<()> {
+               config: &Config,
+               credentials: &Credentials) -> Result<()> {
         trace!("_create >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let res = self.wallet_service.create_wallet(config, credentials)?;
@@ -177,8 +176,8 @@ impl WalletCommandExecutor {
     }
 
     fn _open(&self,
-             config: &str,
-             credentials: &str) -> Result<i32> {
+             config: &Config,
+             credentials: &Credentials) -> Result<i32> {
         trace!("_open >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let res = self.wallet_service.open_wallet(config, credentials)?;
@@ -198,8 +197,8 @@ impl WalletCommandExecutor {
     }
 
     fn _delete(&self,
-               config: &str,
-               credentials: &str) -> Result<()> {
+               config: &Config,
+               credentials: &Credentials) -> Result<()> {
         trace!("_delete >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let res = self.wallet_service.delete_wallet(config, credentials)?;
@@ -210,7 +209,7 @@ impl WalletCommandExecutor {
 
     fn _export(&self,
                wallet_handle: i32,
-               export_config: &str) -> Result<()> {
+               export_config: &ExportConfig) -> Result<()> {
         trace!("_export >>> handle: {:?}, export_config: {:?}", wallet_handle, secret!(export_config));
 
         // TODO - later add proper versioning
@@ -221,9 +220,9 @@ impl WalletCommandExecutor {
     }
 
     fn _import(&self,
-               config: &str,
-               credentials: &str,
-               import_config: &str) -> Result<()> {
+               config: &Config,
+               credentials: &Credentials,
+               import_config: &ExportConfig) -> Result<()> {
         trace!("_import >>> config: {:?}, credentials: {:?}, import_config: {:?}",
                config, secret!(credentials), secret!(import_config));
 
@@ -234,13 +233,12 @@ impl WalletCommandExecutor {
     }
 
     fn _generate_key(&self,
-                     config: Option<&str>) -> Result<String> {
+                     config: Option<&KeyConfig>) -> Result<String> {
         trace!("_generate_key >>>config: {:?}", secret!(config));
 
-        let config: KeyConfig = serde_json::from_str(config.unwrap_or("{}"))
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Key Config: {:?}", err)))?;
+        let seed = config.and_then(|config| config.seed.as_ref().map(String::as_str));
 
-        let key = match self.crypto_service.convert_seed(config.seed.as_ref().map(String::as_str))? {
+        let key = match self.crypto_service.convert_seed(seed)? {
             Some(seed) => randombytes::randombytes_deterministic(chacha20poly1305_ietf::KEYBYTES, &randombytes::Seed::from_slice(&seed[..])?),
             None => randombytes::randombytes(chacha20poly1305_ietf::KEYBYTES)
         };
