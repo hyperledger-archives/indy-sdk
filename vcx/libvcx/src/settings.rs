@@ -32,6 +32,7 @@ pub static CONFIG_WALLET_BACKUP_KEY: &str = "backup_key";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
 pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
 pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
+pub static CONFIG_WALLET_HANDLE: &'static str = "wallet_handle";
 pub static CONFIG_THREADPOOL_SIZE: &'static str = "threadpool_size";
 
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";

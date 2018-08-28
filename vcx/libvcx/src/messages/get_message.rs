@@ -455,7 +455,8 @@ mod tests {
         use std::time::Duration;
 
         settings::set_defaults();
-        ::utils::devsetup::tests::setup_local_env("test_download_messages");
+        let wallet_name = "test_download_messages";
+        ::utils::devsetup::tests::setup_local_env(wallet_name);
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
@@ -486,6 +487,6 @@ mod tests {
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);
         assert_eq!(bad_req, Err(error::POST_MSG_FAILURE.code_num));
-        ::utils::devsetup::tests::cleanup_dev_env("test_download_messages");
+        ::utils::devsetup::tests::cleanup_local_env(wallet_name);
     }
 }
