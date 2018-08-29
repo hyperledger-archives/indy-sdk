@@ -28,6 +28,14 @@ impl XSalsa20 {
         )
     }
 
+    pub fn encrypt_detached(&self, key: &[u8], nonce: &[u8], doc: &[u8]) -> (Vec<u8>, Vec<u8>) {
+        let mut cipher = doc.to_vec();
+        let tag = secretbox::seal_detached(cipher.as_mut_slice(),
+                                 &secretbox::Nonce(_clone_into_array(nonce)),
+                                 &secretbox::Key(_clone_into_array(key)));
+        (cipher, tag[..].to_vec())
+    }
+
     pub fn decrypt(&self, key: &[u8], nonce: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
         secretbox::open(
             doc,
@@ -35,6 +43,15 @@ impl XSalsa20 {
             &secretbox::Key(_clone_into_array(key))
         )
             .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
+    }
+
+    pub fn decrypt_detached(&self, key: &[u8], nonce: &[u8], tag: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
+        let mut plain = doc.to_vec();
+        secretbox::open_detached(plain.as_mut_slice(),
+                                 &secretbox::Tag(_clone_into_array(tag)),
+                                 &secretbox::Nonce(_clone_into_array(nonce)),
+                                 &secretbox::Key(_clone_into_array(key))).map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))?;
+        Ok(plain.to_vec())
     }
 }
 
