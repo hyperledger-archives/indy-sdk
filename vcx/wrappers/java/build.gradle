@@ -1,0 +1,74 @@
+import java.text.SimpleDateFormat
+
+apply plugin: 'java'
+group = 'com.evernym.sdk'
+
+repositories {
+
+    maven { url "http://repo.maven.apache.org/maven2" }
+    maven {
+        url "https://maven.google.com"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+        maven {
+            url "https://maven.google.com"
+        }
+    }
+}
+
+static def versionMajor() {
+    return '1.0.0'
+}
+
+//TODO: consider removing buildtime from version number when the wrapper api is on par with vcx-rust api
+static def buildTime() {
+    def df = new SimpleDateFormat("dd-MM-yyyy'T'HH-mm")
+    df.setTimeZone(TimeZone.getTimeZone("UTC"))
+    return df.format(new Date())
+}
+
+version = "${versionMajor()}"
+
+static def fullVersionName() {
+    return "com.evernym-vcx_${versionMajor()}-${buildTime()}"
+}
+
+description = """vcx"""
+
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+    test.enabled = true
+}
+
+
+archivesBaseName = fullVersionName()
+
+tasks.withType(Test) {
+    testLogging {
+        exceptionFormat "full"
+        events "skipped", "passed", "failed"
+        showStandardStreams true
+    }
+}
+
+dependencies {
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    implementation 'net.java.dev.jna:jna:4.5.0'
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version:'3.5'
+    implementation 'net.sourceforge.streamsupport:android-retrofuture:1.6.2'
+    implementation group: 'net.sourceforge.streamsupport', name: 'android-retrostreams', version: '1.6.2'
+    testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+    testImplementation group: 'junit', name: 'junit', version:'4.12'
+    testImplementation group: 'commons-io', name: 'commons-io', version:'2.5'
+    testImplementation group: 'org.json', name: 'json', version:'20160810'
+    testImplementation 'net.java.dev.jna:jna:4.5.0'
+    testImplementation 'org.awaitility:awaitility-scala:3.1.2'
+
+}
+
