@@ -3,9 +3,12 @@ extern crate libc;
 use api::ErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::pool::PoolCommand;
+use domain::pool::{PoolConfig, PoolOpenConfig};
+use errors::common::CommonError;
 use errors::ToErrorCode;
 use utils::cstring::CStringUtils;
 
+use serde_json;
 use self::libc::c_char;
 
 /// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
@@ -33,7 +36,7 @@ pub extern fn indy_create_pool_ledger_config(command_handle: i32,
     trace!("indy_create_pool_ledger_config: >>> config_name: {:?}, config: {:?}", config_name, config);
 
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_json!(config, ErrorCode::CommonInvalidParam3, PoolConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_create_pool_ledger_config: entities >>> config_name: {:?}, config: {:?}", config_name, config);
@@ -89,7 +92,7 @@ pub extern fn indy_open_pool_ledger(command_handle: i32,
     trace!("indy_open_pool_ledger: >>> config_name: {:?}, config: {:?}", config_name, config);
 
     check_useful_c_str!(config_name, ErrorCode::CommonInvalidParam2);
-    check_useful_opt_c_str!(config, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_json!(config, ErrorCode::CommonInvalidParam3, PoolOpenConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_open_pool_ledger: entities >>> config_name: {:?}, config: {:?}", config_name, config);

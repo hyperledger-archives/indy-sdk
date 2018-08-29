@@ -14,7 +14,7 @@
 
 @implementation WalletUtils
 
-NSString *credentials = @"{\"key\":\"key\"}";
+NSString *credentials = @"{\"key\":\"6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw\", \"key_derivation_method\": \"RAW\"}";
 
 + (WalletUtils *)sharedInstance {
     static WalletUtils *instance = nil;
