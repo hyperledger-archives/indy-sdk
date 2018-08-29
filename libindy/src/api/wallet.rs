@@ -170,8 +170,8 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
 ///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
-///                          ARAGON2I_MOD - derive secured wallet master key (used by default)
-///                          ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+///                          ARGON2I_MOD - derive secured wallet master key (used by default)
+///                          ARGON2I_INT - derive secured wallet master key (less secured but faster)
 ///                          RAW - raw wallet key master provided (skip derivation).
 ///                                RAW keys can be generated with indy_generate_wallet_key call
 /// }
@@ -245,13 +245,13 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///                              Can be optional if storage supports default configuration.
 ///                              For 'default' storage type should be empty.
 ///       "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
-///                          ARAGON2I_MOD - derive secured wallet master key (used by default)
-///                          ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+///                          ARGON2I_MOD - derive secured wallet master key (used by default)
+///                          ARGON2I_INT - derive secured wallet master key (less secured but faster)
 ///                          RAW - raw wallet key master provided (skip derivation).
 ///                                RAW keys can be generated with indy_generate_wallet_key call
 ///       "rekey_derivation_method": optional<string> Algorithm to use for wallet rekey derivation:
-///                          ARAGON2I_MOD - derive secured wallet master rekey (used by default)
-///                          ARAGON2I_INT - derive secured wallet master rekey (less secured but faster)
+///                          ARGON2I_MOD - derive secured wallet master rekey (used by default)
+///                          ARGON2I_INT - derive secured wallet master rekey (less secured but faster)
 ///                          RAW - raw wallet rekey master provided (skip derivation).
 ///                                RAW keys can be generated with indy_generate_wallet_key call
 ///   }
@@ -307,8 +307,8 @@ pub extern fn indy_open_wallet(command_handle: i32,
 ///     "key": <string>, Key or passphrase used for wallet export key derivation.
 ///                     Look to key_derivation_method param for information about supported key derivation methods.
 ///     "key_derivation_method": optional<string> Algorithm to use for wallet export key derivation:
-///                              ARAGON2I_MOD - derive secured export key (used by default)
-///                              ARAGON2I_INT - derive secured export key (less secured but faster)
+///                              ARGON2I_MOD - derive secured export key (used by default)
+///                              ARGON2I_INT - derive secured export key (less secured but faster)
 ///                              RAW - raw export key provided (skip derivation).
 ///                                RAW keys can be generated with indy_generate_wallet_key call
 ///   }
@@ -378,8 +378,8 @@ pub extern fn indy_export_wallet(command_handle: i32,
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
 ///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
-///                             ARAGON2I_MOD - derive secured wallet master key (used by default)
-///                             ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+///                             ARGON2I_MOD - derive secured wallet master key (used by default)
+///                             ARGON2I_INT - derive secured wallet master key (less secured but faster)
 ///                             RAW - raw wallet key master provided (skip derivation).
 ///                                RAW keys can be generated with indy_generate_wallet_key call
 /// }
@@ -496,8 +496,8 @@ pub extern fn indy_close_wallet(command_handle: i32,
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
 ///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
-///                             ARAGON2I_MOD - derive secured wallet master key (used by default)
-///                             ARAGON2I_INT - derive secured wallet master key (less secured but faster)
+///                             ARGON2I_MOD - derive secured wallet master key (used by default)
+///                             ARGON2I_INT - derive secured wallet master key (less secured but faster)
 ///                             RAW - raw wallet key master provided (skip derivation).
 ///                                RAW keys can be generated with indy_generate_wallet_key call
 /// }

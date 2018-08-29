@@ -66,6 +66,7 @@ pub mod create_command {
 
                 Ok(println_succ!("Wallet \"{}\" has been created", id))
             }
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid key has been provided")),
             Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", id)),
             Err(ErrorCode::CommonIOError) => Err(println_err!("Invalid wallet name  \"{}\"", id)),
             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
@@ -141,7 +142,7 @@ pub mod open_command {
                     Err(err) => {
                         set_opened_wallet(ctx, None);
                         match err {
-                            ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid wallet config")),
+                            ErrorCode::CommonInvalidStructure => Err(println_err!("Invalid key or config has been provided")),
                             ErrorCode::WalletAlreadyOpenedError => Err(println_err!("Wallet \"{}\" already opened", id)),
                             ErrorCode::WalletAccessFailed => Err(println_err!("Cannot open wallet \"{}\". Invalid key has been provided", id)),
                             ErrorCode::WalletNotFoundError => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
@@ -271,6 +272,7 @@ pub mod delete_command {
             Err(ErrorCode::CommonIOError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
             Err(ErrorCode::WalletNotFoundError) => Err(println_err!("Wallet \"{}\" not found or unavailable", id)),
             Err(ErrorCode::WalletAccessFailed) => Err(println_err!("Cannot delete wallet \"{}\". Invalid key has been provided ", id)),
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Invalid key has been provided")),
             Err(ErrorCode::CommonInvalidState) => Err(println_err!("Wallet {:?} is opened", id)),
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
@@ -315,6 +317,7 @@ pub mod export_command {
 
         let res = match res {
             Ok(()) => Ok(println_succ!("Wallet \"{}\" has been exported to the file \"{}\"", wallet_name, export_path)),
+            Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Can not export Wallet: Invalid export file or encryption key")),
             Err(ErrorCode::CommonIOError) => Err(println_err!("Can not export Wallet: Path \"{}\" is invalid or file already exists", export_path)),
             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
@@ -454,8 +457,8 @@ fn _list_wallets() -> Vec<serde_json::Value> {
 fn map_key_derivation_method(key: Option<&str>) -> Result<&'static str, ()> {
     // argon2m, argon2i, raw
     match key {
-        None | Some("argon2m") => Ok("ARAGON2I_MOD"),
-        Some("argon2i") => Ok("ARAGON2I_INT"),
+        None | Some("argon2m") => Ok("ARGON2I_MOD"),
+        Some("argon2i") => Ok("ARGON2I_INT"),
         Some("raw") => Ok("RAW"),
         val @ _ => Err(println_err!("Unsupported Wallet Key type has been specified \"{}\"", val.unwrap())),
     }
