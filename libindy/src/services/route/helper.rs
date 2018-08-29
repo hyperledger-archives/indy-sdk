@@ -9,7 +9,20 @@ use utils::crypto::xsalsa20::XSalsa20;
 use utils::environment::EnvironmentUtils;
 use utils::crypto::base64::{encode, decode};
 
-pub fn encrypt_payload(plaintext: String) -> (String, String, String, String) {
+pub struct Payload {
+    iv: String,
+    tag: String,
+    ciphertext: String,
+    key: String
+}
+
+#[derive(Debug)]
+pub enum RouteError {
+    EncryptionError(String),
+    EncodingError(String)
+}
+
+pub fn encrypt_payload(plaintext: &str) -> Payload {
 
     //prep for payload encryption
     let xsalsa = XSalsa20::new();
@@ -17,52 +30,31 @@ pub fn encrypt_payload(plaintext: String) -> (String, String, String, String) {
     let iv = xsalsa.gen_nonce();
 
     //encrypt payload
-    let ciphertext_with_tag = xsalsa.encrypt(&ephem_sym_key, &iv, plaintext.as_bytes());
-    let split_tag_and_ciphertext = ciphertext_with_tag.split_at(sodiumoxide::crypto::secretbox::MACBYTES);
-    let tag = encode(split_tag_and_ciphertext.0);
-    let ciphertext = encode(split_tag_and_ciphertext.1);
+    let (ciphertext, tag) = xsalsa.encrypt_detached(&ephem_sym_key, &iv, plaintext.as_bytes());
+//    let tag = encode(&ciphertext_with_tag[0..sodiumoxide::crypto::secretbox::MACBYTES]);
+//    let ciphertext = encode(&ciphertext_with_tag[sodiumoxide::crypto::secretbox::MACBYTES..]);
 
-
-    (encode(&iv), tag, ciphertext, encode(&ephem_sym_key))
+    Payload {
+        iv: encode(&iv),
+        tag: encode(&tag),
+        ciphertext: encode(&ciphertext),
+        key: encode(&ephem_sym_key)
+    }
 }
 
-pub fn decrypt_payload(iv : String, tag : String, ciphertext : String, sym_key : String) -> String {
-    let iv_bytes = match decode(&iv) {
-        Ok(v) => v,
-        Err(e) => return e.to_string()
-    };
-
-    let tag_bytes = match decode(&tag) {
-        Ok(v) => v,
-        Err(e) => return e.to_string()
-    };
-
-    let ciphertext_bytes = match decode(&iv) {
-        Ok(v) => v,
-        Err(e) => return e.to_string()
-    };
-
-    let sym_key_bytes = match decode(&sym_key) {
-        Ok(v) => v,
-        Err(e) => return e.to_string()
-    };
+pub fn decrypt_payload(payload: &Payload) -> Result<String, RouteError> {
+    let iv = decode(&payload.iv).map_err(|err| RouteError::EncodingError(format!("{}", err)))?;
+    let tag = decode(&payload.tag).map_err(|err| RouteError::EncodingError(format!("{}", err)))?;
+    let ciphertext = decode(&payload.ciphertext).map_err(|err| RouteError::EncodingError(format!("{}", err)))?;
+    let sym_key = decode(&payload.key).map_err(|err| RouteError::EncodingError(format!("{}", err)))?;
 
     let xsalsa = XSalsa20::new();
-    let mut cipher_with_tag: Vec<u8> = vec![];
-    cipher_with_tag.extend(tag_bytes);
-    cipher_with_tag.extend(ciphertext_bytes);
+    let result = xsalsa.decrypt_detached(sym_key.as_slice(), iv.as_slice(), tag.as_slice(), ciphertext.as_slice());
 
-    let result = xsalsa.decrypt(&sym_key_bytes, &iv_bytes, cipher_with_tag.as_slice());
-
-    let message= match result {
-        Ok(v) => match String::from_utf8(v) {
-            Ok(m) => m,
-            Err(e) => e.to_string()
-        },
-        Err(e) => return e.to_string()
-    };
-
-    return message;
+    match result {
+        Ok(v) => Ok(String::from_utf8(v).map_err(|err| RouteError::EncodingError(format!("{}", err)))?),
+        Err(e) => Err(RouteError::EncodingError(format!("{}", e)))
+    }
 }
 
 
@@ -72,15 +64,15 @@ mod tests {
 
     #[test]
     pub fn test_encrypt_payload(){
-        let message = "This is a test message".to_string();
-        let (iv, tag, ciphertext, sym_key) = encrypt_payload(message);
+        let message = "This is a test message";
+        let payload= encrypt_payload(message);
     }
 
     #[test]
     pub fn test_encrypt_then_decrypt_payload_works(){
-        let message = "This is a test message".to_string();
-        let (iv, tag, ciphertext, sym_key) = encrypt_payload(message.clone());
-        let decrypted_message = decrypt_payload(iv, tag, ciphertext, sym_key);
+        let message = "This is a test message";
+        let payload = encrypt_payload(message.clone());
+        let decrypted_message = decrypt_payload(&payload).unwrap();
 
         assert_eq!(message, decrypted_message);
     }
