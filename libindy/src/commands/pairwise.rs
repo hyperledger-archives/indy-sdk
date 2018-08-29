@@ -166,7 +166,7 @@ impl PairwiseCommandExecutor {
         let mut pairwise: Pairwise =
             self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value())?;
 
-        pairwise.metadata = metadata.as_ref().map(|m| m.to_string());
+        pairwise.metadata = metadata.map(str::to_string);
 
         self.wallet_service.update_indy_object(wallet_handle, &their_did, &pairwise)?;
 

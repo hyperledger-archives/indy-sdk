@@ -1,6 +1,6 @@
 use indy_crypto::cl::{RevocationRegistryDelta as RegistryDelta};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RevocationRegistryDeltaV1 {
     pub value: RegistryDelta

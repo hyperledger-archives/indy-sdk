@@ -28,10 +28,9 @@ use std::{fs, io};
 use std::io::Write;
 
 use api::ledger::{CustomFree, CustomTransactionParser};
-use domain::pool::PoolOpenConfig;
+use domain::pool::{PoolConfig, PoolOpenConfig};
 use errors::pool::PoolError;
 use errors::common::CommonError;
-use self::types::*;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 use std::sync::Mutex;
@@ -56,17 +55,12 @@ impl PoolService {
         }
     }
 
-    pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
+    pub fn create(&self, name: &str, config: Option<PoolConfig>) -> Result<(), PoolError> {
         //TODO: initialize all state machines
         trace!("PoolService::create {} with config {:?}", name, config);
 
         let mut path = EnvironmentUtils::pool_path(name);
-        let pool_config: PoolConfig = match config {
-            Some(config) => serde_json::from_str(config)
-                .map_err(|err|
-                    CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
-            None => PoolConfig::default_for_name(name)
-        };
+        let pool_config = config.unwrap_or(PoolConfig::default_for_name(name));
 
         if path.as_path().exists() {
             return Err(PoolError::AlreadyExists(format!("Pool ledger config file with name \"{}\" already exists", name)));
@@ -122,7 +116,7 @@ impl PoolService {
         fs::remove_dir_all(path).map_err(PoolError::from)
     }
 
-    pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
+    pub fn open(&self, name: &str, config: Option<PoolOpenConfig>) -> Result<i32, PoolError> {
         for ref pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.pool.get_name()) {
                 //TODO change error
@@ -130,12 +124,7 @@ impl PoolService {
             }
         }
 
-        let config: PoolOpenConfig = if let Some(config) = config {
-            serde_json::from_str(config)
-                .map_err(|err| CommonError::InvalidStructure(format!("Invalid Pool config: {}", err)))?
-        } else {
-            PoolOpenConfig::default()
-        };
+        let config = config.unwrap_or(PoolOpenConfig::default() );
 
         let pool_handle: i32 = SequenceUtils::get_next_id();
         let mut new_pool = Pool::new(name, pool_handle, config);
@@ -272,6 +261,7 @@ mod tests {
     use utils::test::TestUtils;
     use domain::ledger::request::ProtocolVersion;
     use std::thread;
+    use services::pool::types::*;
 
     const TEST_PROTOCOL_VERSION: usize = 2;
 
