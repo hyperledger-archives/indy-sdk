@@ -41,63 +41,9 @@ use utils::constants::*;
 
 use criterion::{Criterion, Benchmark, ParameterizedBenchmark};
 
-mod wallet {
-    use super::*;
-    use utils::sequence::SequenceUtils;
-    use rand::Rng;
+use utils::sequence::SequenceUtils;
+use rand::Rng;
 
-    pub const COUNT: usize = 1000;
-    pub const TYPE_1: &'static str = "type_1";
-    pub const TYPE_2: &'static str = "type_2";
-
-    pub fn _type(suffix: usize) -> String {
-        if suffix % 2 != 0 { TYPE_1.to_string() } else { TYPE_2.to_string() }
-    }
-
-    pub fn _id(suffix: usize) -> String { format!("id_{}", suffix) }
-
-    pub fn _value(suffix: usize) -> String {
-        format!("value_{}", suffix)
-    }
-
-    pub fn _tags(suffix: usize) -> String {
-        json!({
-            "tag_id_1":  format!("tag_value_{}_1", suffix),
-            "tag_id_2":  format!("tag_value_{}_2", suffix),
-            "~tag_id_3":  format!("{}", suffix),
-        }).to_string()
-    }
-
-    pub fn add_records(wallet_handle: i32) {
-        for i in 0..COUNT {
-            NonSecretsUtils::add_wallet_record(wallet_handle,
-                                               &_type(i),
-                                               &_id(i),
-                                               &_value(i),
-                                               Some(&_tags(i))).unwrap();
-        }
-    }
-
-    pub fn setup() -> i32 {
-        TestUtils::cleanup_storage();
-
-        let config = json!({
-            "id": format!("default-wallet_id-{}", SequenceUtils::get_next_id())
-        }).to_string();
-
-        WalletUtils::create_wallet(&config, WALLET_CREDENTIALS_RAW).unwrap();
-        let wallet_handle = WalletUtils::open_wallet(&config, WALLET_CREDENTIALS_RAW).unwrap();
-
-        add_records(wallet_handle);
-
-        wallet_handle
-    }
-
-    pub fn get_rand_key() -> (String, String) {
-        let i = rand::thread_rng().gen_range(0, COUNT);
-        (_type(i), _id(i))
-    }
-}
 
 mod create {
     use super::*;
@@ -126,28 +72,40 @@ mod open {
     use super::*;
     use utils::sequence::SequenceUtils;
 
-    fn setup(credentials: &str) -> String {
+    pub static mut WALLET_HANDLE: i32 = 0;
+
+    pub const WALLET_CONFIG_ARAGON2I_MOD: &'static str = r#"{"id":"wallet_open_ARAGON2I_MOD"}"#;
+    pub const WALLET_CONFIG_ARAGON2I_INT: &'static str = r#"{"id":"wallet_open_ARAGON2I_INT"}"#;
+    pub const WALLET_CONFIG_RAW: &'static str = r#"{"id":"wallet_open_RAW"}"#;
+
+    fn pre_setup() {
         TestUtils::cleanup_storage();
 
-        let config = json!({
-            "id": format!("default-wallet_id-{}", SequenceUtils::get_next_id())
-        }).to_string();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW).unwrap();
+    }
 
-        WalletUtils::create_wallet(&config, credentials).unwrap();
-        config
+    fn setup<'a>(params: &'a (&'a str, &'a str)) -> &'a (&'a str, &'a str) {
+        unsafe { if WALLET_HANDLE != 0 { WalletUtils::close_wallet(WALLET_HANDLE).unwrap(); } }
+        params
     }
 
     fn open_wallet(config: &str, credentials: &str) {
-        WalletUtils::open_wallet(config, credentials).unwrap();
+        unsafe { WALLET_HANDLE = WalletUtils::open_wallet(config, credentials).unwrap(); }
     }
 
     pub fn bench(c: &mut Criterion) {
+        pre_setup();
+
         c.bench(
             "wallet_open",
             ParameterizedBenchmark::new(
                 "wallet_open",
-                |b, credentials| b.iter_with_setup(|| setup(credentials), |config: String| open_wallet(&config, credentials)),
-                vec![WALLET_CREDENTIALS_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_INT, WALLET_CREDENTIALS_RAW],
+                |b, params| b.iter_with_setup(|| setup(params), |(config, credentials)| open_wallet(config, credentials)),
+                vec![(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD),
+                     (WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT),
+                     (WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW)],
             ).sample_size(10),
         );
     }
@@ -156,10 +114,21 @@ mod open {
 mod close {
     use super::*;
 
-    fn setup(credentials: &str) -> i32 {
+    pub const WALLET_CONFIG_ARAGON2I_MOD: &'static str = r#"{"id":"wallet_close_ARAGON2I_MOD"}"#;
+    pub const WALLET_CONFIG_ARAGON2I_INT: &'static str = r#"{"id":"wallet_close_ARAGON2I_INT"}"#;
+    pub const WALLET_CONFIG_RAW: &'static str = r#"{"id":"wallet_close_RAW"}"#;
+
+    fn pre_setup() {
         TestUtils::cleanup_storage();
-        WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, credentials).unwrap();
-        WalletUtils::open_wallet(DEFAULT_WALLET_CONFIG, credentials).unwrap()
+
+        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW).unwrap();
+    }
+
+    fn setup<'a>(params: &'a (&'a str, &'a str)) -> i32 {
+        let (config, credentials) = params;
+        WalletUtils::open_wallet(config, credentials).unwrap()
     }
 
     fn close_wallet(handle: i32) {
@@ -167,12 +136,16 @@ mod close {
     }
 
     pub fn bench(c: &mut Criterion) {
+        pre_setup();
+
         c.bench(
             "wallet_close",
             ParameterizedBenchmark::new(
                 "wallet_close",
-                |b, credentials| b.iter_with_setup(|| setup(credentials), |handle: i32| close_wallet(handle)),
-                vec![WALLET_CREDENTIALS_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_INT, WALLET_CREDENTIALS_RAW],
+                |b, params| b.iter_with_setup(|| setup(params), |handle| close_wallet(handle)),
+                vec![(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD),
+                     (WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT),
+                     (WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW)],
             ).sample_size(10),
         );
     }
@@ -181,8 +154,11 @@ mod close {
 mod delete {
     use super::*;
 
-    fn setup(credentials: &str) {
+    fn pre_setup() {
         TestUtils::cleanup_storage();
+    }
+
+    fn setup(credentials: &str) {
         WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, credentials).unwrap();
     }
 
@@ -191,6 +167,8 @@ mod delete {
     }
 
     pub fn bench(c: &mut Criterion) {
+        pre_setup();
+
         c.bench(
             "wallet_delete",
             ParameterizedBenchmark::new(
@@ -210,12 +188,12 @@ mod get_record {
     }
 
     pub fn bench(c: &mut Criterion) {
-        let wallet_handle = wallet::setup();
+        let wallet_handle = init_wallet();
 
         c.bench(
             "wallet_get_record",
             Benchmark::new("wallet_get_record", move |b|
-                b.iter_with_setup(wallet::get_rand_key, |(type_, id): (String, String)| get_record(wallet_handle, &type_, &id)))
+                b.iter_with_setup(get_rand_key, |(type_, id): (String, String)| get_record(wallet_handle, &type_, &id)))
                 .sample_size(50));
     }
 }
@@ -227,8 +205,8 @@ mod delete_record {
 
     fn setup() -> (String, String) {
         unsafe {
-            INDEX = INDEX + 1 + 5;//TODO
-            (wallet::_type(INDEX), wallet::_id(INDEX))
+            INDEX = INDEX + 1;
+            (_type(INDEX), _id(INDEX))
         }
     }
 
@@ -237,7 +215,7 @@ mod delete_record {
     }
 
     pub fn bench(c: &mut Criterion) {
-        let wallet_handle = wallet::setup();
+        let wallet_handle = init_wallet();
 
         c.bench(
             "wallet_delete_record",
@@ -250,12 +228,12 @@ mod delete_record {
 mod add_record {
     use super::*;
 
-    static mut INDEX: usize = wallet::COUNT;
+    static mut INDEX: usize = COUNT;
 
     fn setup() -> (String, String, String, String) {
         unsafe {
             INDEX = INDEX + 1;
-            (wallet::_type(INDEX), wallet::_id(INDEX), wallet::_value(INDEX), wallet::_tags(INDEX))
+            (_type(INDEX), _id(INDEX), _value(INDEX), _tags(INDEX))
         }
     }
 
@@ -264,7 +242,7 @@ mod add_record {
     }
 
     pub fn bench(c: &mut Criterion) {
-        let wallet_handle = wallet::setup();
+        let wallet_handle = init_wallet();
 
         c.bench(
             "wallet_add_record",
@@ -280,7 +258,7 @@ mod add_record_tags {
     use super::*;
 
     fn setup() -> (String, String, String) {
-        let (type_, id) = wallet::get_rand_key();
+        let (type_, id) = get_rand_key();
         (type_, id, r#"{"tag_1": "value_1", "~tag_2": "value_2"}"#.to_string())
     }
 
@@ -289,7 +267,7 @@ mod add_record_tags {
     }
 
     pub fn bench(c: &mut Criterion) {
-        let wallet_handle = wallet::setup();
+        let wallet_handle = init_wallet();
 
         c.bench(
             "wallet_add_record_tags",
@@ -305,7 +283,7 @@ mod delete_record_tags {
     use super::*;
 
     fn setup() -> (String, String, String) {
-        let (type_, id) = wallet::get_rand_key();
+        let (type_, id) = get_rand_key();
         (type_, id, r#"["tag_id_1"]"#.to_string())
     }
 
@@ -314,7 +292,7 @@ mod delete_record_tags {
     }
 
     pub fn bench(c: &mut Criterion) {
-        let wallet_handle = wallet::setup();
+        let wallet_handle = init_wallet();
 
         c.bench(
             "wallet_delete_record_tags",
@@ -330,11 +308,11 @@ mod search_records {
     use super::*;
 
     fn open_search(wallet_handle: i32, query: &str) {
-        NonSecretsUtils::open_wallet_search(wallet_handle, wallet::TYPE_1, query, "{}").unwrap();
+        NonSecretsUtils::open_wallet_search(wallet_handle, TYPE_1, query, "{}").unwrap();
     }
 
     pub fn bench(c: &mut Criterion) {
-        let wallet_handle = wallet::setup();
+        let wallet_handle = init_wallet();
 
         let queries = vec![
             r#"{}"#,
@@ -374,6 +352,58 @@ mod search_records {
     }
 }
 
+pub const COUNT: usize = 1000;
+pub const TYPE_1: &'static str = "type_1";
+pub const TYPE_2: &'static str = "type_2";
+
+fn _type(suffix: usize) -> String {
+    if suffix % 2 != 0 { TYPE_1.to_string() } else { TYPE_2.to_string() }
+}
+
+fn _id(suffix: usize) -> String { format!("id_{}", suffix) }
+
+fn _value(suffix: usize) -> String {
+    format!("value_{}", suffix)
+}
+
+fn _tags(suffix: usize) -> String {
+    json!({
+            "tag_id_1":  format!("tag_value_{}_1", suffix),
+            "tag_id_2":  format!("tag_value_{}_2", suffix),
+            "~tag_id_3":  format!("{}", suffix),
+        }).to_string()
+}
+
+fn add_records(wallet_handle: i32) {
+    for i in 0..COUNT {
+        NonSecretsUtils::add_wallet_record(wallet_handle,
+                                           &_type(i),
+                                           &_id(i),
+                                           &_value(i),
+                                           Some(&_tags(i))).unwrap();
+    }
+}
+
+fn init_wallet() -> i32 {
+    TestUtils::cleanup_storage();
+
+    let config = json!({
+            "id": format!("default-wallet_id-{}", SequenceUtils::get_next_id())
+        }).to_string();
+
+    WalletUtils::create_wallet(&config, WALLET_CREDENTIALS_RAW).unwrap();
+    let wallet_handle = WalletUtils::open_wallet(&config, WALLET_CREDENTIALS_RAW).unwrap();
+
+    add_records(wallet_handle);
+
+    wallet_handle
+}
+
+fn get_rand_key() -> (String, String) {
+    let i = rand::thread_rng().gen_range(0, COUNT);
+    (_type(i), _id(i))
+}
+
 criterion_group!(benches, create::bench,
                           open::bench,
                           close::bench,
@@ -384,5 +414,4 @@ criterion_group!(benches, create::bench,
                           add_record_tags::bench,
                           delete_record_tags::bench,
                           search_records::bench);
-//criterion_group!(benches,  search_records::bench);
 criterion_main!(benches);
