@@ -94,6 +94,11 @@ def mainUbuntu() {
                     sh 'vcx/wrappers/python3/ci/package.sh'
                 }
             }
+            stage('Package Java Wrapper') {
+                python.inside() {
+                    sh 'vcx/wrappers/java/ci/buildJar.sh'
+                }
+            }
 
             // debug info
             sh 'ls -al output'
@@ -114,6 +119,11 @@ def mainUbuntu() {
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"vcx_*.deb\" https://kraken.corp.evernym.com/repo/agency_dev/upload"
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"vcx_*.deb\" https://kraken.corp.evernym.com/repo/portal_dev/upload"
 
+                            withCredentials([file(credentialsId: 'cloudrepo-artifactory-settings-libvcx', variable: 'settingsFile')]) {
+                                sh 'cp $settingsFile .'
+                                sh "chmod +x vcx/wrappers/java/ci/publishJar.sh"
+                                sh 'vcx/wrappers/java/ci/publishJar.sh'
+                            }
                             // ******** Archive with Jenkins ********
                             archiveArtifacts allowEmptyArchive: true, artifacts: 'output/*'
                         }

@@ -1,1 +1,0 @@
-# VCX library for android
