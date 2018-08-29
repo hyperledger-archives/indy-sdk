@@ -11,6 +11,8 @@ export WHITE=`tput setaf 7`
 export BOLD=`tput bold`
 export RESET=`tput sgr0`
 
+set -e
+
 WORKDIR="$( cd "$(dirname "$0")" ; pwd -P )"
 CI_DIR="${WORKDIR}/../libindy/ci"
 export ANDROID_BUILD_FOLDER="/tmp/android_build"
@@ -48,12 +50,12 @@ setup_dependencies(){
         else
             echo "${BLUE}Not downloading prebuilt dependencies. Dependencies locations have to be passed${RESET}"
             if [ -z "${OPENSSL_DIR}" ]; then
-                OPENSSL_DIR="openssl_${TARGET_ARCH}"
+                OPENSSL_DIR="openssl_${ABSOLUTE_ARCH}"
                 if [ -d "${OPENSSL_DIR}" ] ; then
                     echo "${GREEN}Found ${OPENSSL_DIR}${RESET}"
                 elif [ -z "$3" ]; then
                     echo STDERR "${RED}Missing OPENSSL_DIR argument and environment variable${RESET}"
-                    echo STDERR "${BLUE}e.g. set OPENSSL_DIR=<path> for environment or openssl_${TARGET_ARCH}${RESET}"
+                    echo STDERR "${BLUE}e.g. set OPENSSL_DIR=<path> for environment or openssl_${ABSOLUTE_ARCH}${RESET}"
                     exit 1
                 else
                     OPENSSL_DIR=$3
@@ -61,12 +63,12 @@ setup_dependencies(){
             fi
 
             if [ -z "${SODIUM_DIR}" ]; then
-                SODIUM_DIR="libsodium_${TARGET_ARCH}"
+                SODIUM_DIR="libsodium_${ABSOLUTE_ARCH}"
                 if [ -d "${SODIUM_DIR}" ] ; then
                     echo "${GREEN}Found ${SODIUM_DIR}${RESET}"
                 elif [ -z "$4" ]; then
                     echo STDERR "${RED}Missing SODIUM_DIR argument and environment variable${RESET}"
-                    echo STDERR "${BLUE}e.g. set SODIUM_DIR=<path> for environment or libsodium_${TARGET_ARCH}${RESET}"
+                    echo STDERR "${BLUE}e.g. set SODIUM_DIR=<path> for environment or libsodium_${ABSOLUTE_ARCH}${RESET}"
                     exit 1
                 else
                     SODIUM_DIR=$4
@@ -76,12 +78,12 @@ setup_dependencies(){
     fi
 
     if [ -z "${INDY_DIR}" ] ; then
-            INDY_DIR="libindy_${TARGET_ARCH}"
+            INDY_DIR="libindy_${ABSOLUTE_ARCH}"
             if [ -d "${INDY_DIR}" ] ; then
                 echo "${GREEN}Found ${INDY_DIR}${RESET}"
             elif [ -z "$2" ] ; then
                 echo STDERR "${RED}Missing INDY_DIR argument and environment variable${RESET}"
-                echo STDERR "${BLUE}e.g. set INDY_DIR=<path> for environment or libindy_${TARGET_ARCH}${RESET}"
+                echo STDERR "${BLUE}e.g. set INDY_DIR=<path> for environment or libindy_${ABSOLUTE_ARCH}${RESET}"
                 exit 1
             else
                 INDY_DIR=$2
