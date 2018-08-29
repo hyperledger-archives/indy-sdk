@@ -21,6 +21,7 @@ export const validatePaymentTxn = (paymentTxn: IPaymentTxn) => {
   assert.property(paymentTxn, 'amount')
   assert.equal(typeof paymentTxn.amount, 'number')
   assert.property(paymentTxn, 'inputs')
+  assert.property(paymentTxn, 'credit')
   assert.ok(Array.isArray(paymentTxn.inputs))
   for (const input of paymentTxn.inputs) {
     assert.ok(input)
