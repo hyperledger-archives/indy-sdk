@@ -55,10 +55,12 @@ def mainUbuntu() {
         def libvcxDockerfile = 'vcx/ci/libvcx.dockerfile'
         def pythonDockerfile = 'vcx/wrappers/python3/ci/python.dockerfile'
         def nodeDockerfile = 'vcx/wrappers/node/ci/node.dockerfile'
+        def javaDockerfile = 'vcx/ci/android.dockerfile' // We can reuse the android dockerfile for java
         def uid= sh(returnStdout: true, script: 'id -u').trim()
         def libvcx
         def python
         def node
+        def java
         try {
             stage('Build Libindy Image') {
                 // ******** Build the libindy base image (pulls down dependent debians from sovrin repo, and installs a majority of the dependencies)
@@ -95,7 +97,8 @@ def mainUbuntu() {
                 }
             }
             stage('Package Java Wrapper') {
-                python.inside() {
+                java = docker.build("java", "-f ${javaDockerfile} .")
+                java.inside() {
                     sh 'vcx/wrappers/java/ci/buildJar.sh'
                 }
             }
@@ -119,14 +122,18 @@ def mainUbuntu() {
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"vcx_*.deb\" https://kraken.corp.evernym.com/repo/agency_dev/upload"
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"vcx_*.deb\" https://kraken.corp.evernym.com/repo/portal_dev/upload"
 
-                            withCredentials([file(credentialsId: 'cloudrepo-artifactory-settings-libvcx', variable: 'settingsFile')]) {
+                            
+                            // ******** Archive with Jenkins ********
+                            archiveArtifacts allowEmptyArchive: true, artifacts: 'output/*'
+                        }
+                        withCredentials([file(credentialsId: 'cloudrepo-artifactory-settings-libvcx', variable: 'settingsFile')]) {
+                            java.inside() {
                                 sh 'cp $settingsFile .'
                                 sh "chmod +x vcx/wrappers/java/ci/publishJar.sh"
                                 sh 'vcx/wrappers/java/ci/publishJar.sh'
                             }
-                            // ******** Archive with Jenkins ********
-                            archiveArtifacts allowEmptyArchive: true, artifacts: 'output/*'
                         }
+
                     }
                 }
             }
