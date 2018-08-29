@@ -1,13 +1,15 @@
 extern crate libc;
 
 use api::ErrorCode;
-use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::non_secrets::NonSecretsCommand;
+use domain::wallet::Tags;
+use errors::common::CommonError;
+use errors::ToErrorCode;
 use utils::cstring::CStringUtils;
 
+use serde_json;
 use self::libc::c_char;
-
 
 /// Create a new non-secret record in the wallet
 ///
@@ -17,7 +19,7 @@ use self::libc::c_char;
 /// type_: allows to separate different record types collections
 /// id: the id of record
 /// value: the value of record
-/// tags_json: the record tags used for search and storing meta information as json:
+/// tags_json: (optional) the record tags used for search and storing meta information as json:
 ///   {
 ///     "tagName1": <str>, // string tag (will be stored encrypted)
 ///     "tagName2": <str>, // string tag (will be stored encrypted)
@@ -41,7 +43,7 @@ pub extern fn indy_add_wallet_record(command_handle: i32,
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(value, ErrorCode::CommonInvalidParam5);
-    check_useful_opt_c_str!(tags_json, ErrorCode::CommonInvalidParam6);
+    check_useful_opt_json!(tags_json, ErrorCode::CommonInvalidParam6, Tags);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam7);
 
     trace!("indy_add_wallet_record: entities >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, value: {:?}, tags_json: {:?}", wallet_handle, type_, id, value, tags_json);
@@ -141,7 +143,7 @@ pub extern fn indy_update_wallet_record_tags(command_handle: i32,
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(tags_json, ErrorCode::CommonInvalidParam5);
+    check_useful_json!(tags_json, ErrorCode::CommonInvalidParam5, Tags);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_update_wallet_record_tags: entities >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, tags_json: {:?}", wallet_handle, type_, id, tags_json);
@@ -197,7 +199,7 @@ pub extern fn indy_add_wallet_record_tags(command_handle: i32,
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(tags_json, ErrorCode::CommonInvalidParam5);
+    check_useful_json!(tags_json, ErrorCode::CommonInvalidParam5, Tags);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_add_wallet_record_tags: entities >>> wallet_handle: {:?}, type_: {:?}, id: {:?}, tags_json: {:?}", wallet_handle, type_, id, tags_json);

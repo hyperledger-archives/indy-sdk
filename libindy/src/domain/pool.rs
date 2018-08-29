@@ -3,6 +3,19 @@ pub const POOL_ACK_TIMEOUT: i64 = 20;
 pub const POOL_REPLY_TIMEOUT: i64 = 60;
 pub const MAX_REQ_PER_POOL_CON: usize = 5;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PoolConfig {
+    pub genesis_txn: String
+}
+
+impl PoolConfig {
+    pub fn default_for_name(name: &str) -> PoolConfig {
+        let mut txn = name.to_string();
+        txn += ".txn";
+        PoolConfig { genesis_txn: txn }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PoolOpenConfig {
     #[serde(default="PoolOpenConfig::default_timeout")]

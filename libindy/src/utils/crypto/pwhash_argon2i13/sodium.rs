@@ -21,8 +21,9 @@ pub fn gen_salt() -> Salt {
 pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt, key_derivation_method: &KeyDerivationMethod) -> Result<&'a [u8], CommonError> {
     let (opslimit, memlimit) = unsafe {
         match key_derivation_method {
-            KeyDerivationMethod::ARAGON2I_MOD => (crypto_pwhash_opslimit_moderate(), crypto_pwhash_memlimit_moderate()),
-            KeyDerivationMethod::ARAGON2I_INT => (crypto_pwhash_opslimit_interactive(), crypto_pwhash_memlimit_interactive())
+            KeyDerivationMethod::ARGON2I_MOD => (crypto_pwhash_opslimit_moderate(), crypto_pwhash_memlimit_moderate()),
+            KeyDerivationMethod::ARGON2I_INT => (crypto_pwhash_opslimit_interactive(), crypto_pwhash_memlimit_interactive()),
+            KeyDerivationMethod::RAW => return Err(CommonError::InvalidStructure("RAW key derivation method is not acceptable".to_string()))
         }
     };
 
@@ -91,7 +92,7 @@ mod tests {
         let mut key = [0u8; 64];
 
         let salt = gen_salt();
-        let _key = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::ARAGON2I_MOD).unwrap();
+        let _key = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::ARGON2I_MOD).unwrap();
     }
 
     #[test]
@@ -101,10 +102,10 @@ mod tests {
         let salt = gen_salt();
 
         let mut key = [0u8; 64];
-        let key_moderate = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::ARAGON2I_MOD).unwrap();
+        let key_moderate = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         let mut key = [0u8; 64];
-        let key_interactive = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::ARAGON2I_INT).unwrap();
+        let key_interactive = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::ARGON2I_INT).unwrap();
 
         assert_ne!(key_moderate, key_interactive);
     }

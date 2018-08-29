@@ -420,12 +420,6 @@ pub struct Output {
     amount: u64,
     extra: Option<String>
 }
-//
-//impl PartialEq for Output {
-//    fn eq(&self, other: &Rhs) -> bool {
-//        self.paymentAddress == other.paymentAddress &&
-//    }
-//}
 
 impl From<NulError> for PaymentsError {
     fn from(err: NulError) -> PaymentsError {
