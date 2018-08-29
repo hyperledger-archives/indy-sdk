@@ -17,3 +17,7 @@ pub trait JsonDecodable<'a>: Deserialize<'a> {
         serde_json::from_str(to_stringd)
     }
 }
+
+impl<'a, T: Deserialize<'a> > JsonDecodable<'a> for T { }
+
+impl<T:Serialize> JsonEncodable for T { }

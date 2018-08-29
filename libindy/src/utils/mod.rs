@@ -29,3 +29,5 @@ pub mod test;
 
 #[macro_use]
 pub mod try;
+
+pub mod json;

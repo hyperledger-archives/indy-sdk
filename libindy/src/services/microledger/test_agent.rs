@@ -24,6 +24,7 @@ use services::microledger::constants::{SIGNATURE, IDENTIFIER, KEY_TXN, AUTHZ_ALL
                                        AUTHZ_REM_KEY, AUTHZ_MPROX, VERKEY, AUTHORIZATIONS,
                                        ENDPOINT_TXN, ADDRESS};
 use services::microledger::helpers::gen_random_bytes;
+use services::route::route_table::RouteTable;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub enum MsgTypes {
@@ -109,7 +110,8 @@ struct Agent<'a> {
     pub remote_did: Option<String>,
     pub m_ledgers: HashMap<String, DidMicroledger<'a>>,
     pub did_docs: HashMap<String, Rc<RefCell<DidDoc<'a>>>>,
-    pub peer: Rc<RefCell<Peer<'a>>>
+    pub peer: Rc<RefCell<Peer<'a>>>,
+    // pub route_table: RouteTable
 }
 
 impl<'a> Agent<'a> {
@@ -149,6 +151,8 @@ impl<'a> Agent<'a> {
 
         let peer = Rc::new(RefCell::new(Peer::new(&peer_id)));
 
+        //let route_table = RouteTable::new(Some(wallet_service));
+
         Ok(Agent {
             crypto_service,
             wallet_service: Rc::new(wallet_service),
@@ -158,7 +162,8 @@ impl<'a> Agent<'a> {
             remote_did: None,
             m_ledgers,
             did_docs,
-            peer
+            peer,
+            // route_table
         })
     }
 
