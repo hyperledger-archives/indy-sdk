@@ -2,7 +2,7 @@ extern crate libc;
 extern crate serde_json;
 
 use utils::libindy::wallet::get_wallet_handle;
-use utils::constants::{ SUBMIT_SCHEMA_RESPONSE };
+use utils::constants::{ SUBMIT_SCHEMA_RESPONSE, TRANSFER_TXN_TYPE };
 use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 #[allow(unused_imports)]
 use utils::libindy::ledger::{libindy_submit_request, libindy_sign_and_submit_request, libindy_sign_request};
@@ -18,7 +18,7 @@ use serde_json::Value;
 use settings;
 
 static EMPTY_CONFIG: &str = "{}";
-static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "101":2, "102":42, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
+static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "101":2, "10001":0, "102":42, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":0, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 static PARSED_TXN_PAYMENT_RESPONSE: &str = r#"[{"amount":4,"extra":null,"input":"["pov:null:1","pov:null:2"]"}]"#;
 
 static PAYMENT_INIT: Once = ONCE_INIT;
@@ -266,7 +266,8 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
 pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), PaymentError> {
     info!("sending {} tokens to address {}", price, address);
 
-    let (remainder, input, refund_address) = inputs(price)?;
+    let ledger_cost = get_txn_price(TRANSFER_TXN_TYPE).map_err(|e| PaymentError::CommonError(e))?;
+    let (remainder, input, refund_address) = inputs(price + ledger_cost)?;
     let output = outputs(remainder, &refund_address, Some(address.to_string()), Some(price))?;
 
     let payment = PaymentTxn::from_parts(&input, &output, price, false).map_err(|e|PaymentError::CommonError(e))?;
@@ -432,6 +433,11 @@ pub mod tests {
         let address = create_address(None).unwrap();
         ::utils::libindy::wallet::delete_wallet("throwaway").unwrap();
         address
+    }
+
+    fn get_my_balance() -> u64 {
+        let info:WalletInfo = get_wallet_token_info().unwrap();
+        info.balance
     }
 
     #[test]
@@ -621,10 +627,6 @@ pub mod tests {
     fn test_build_payment_request() {
         use utils::devsetup::tests;
         let address = create_throwaway_address();
-        fn get_my_balance() -> u64 {
-            let info:WalletInfo = get_wallet_token_info().unwrap();
-            info.balance
-        }
 
         let name = "test_build_payment_request";
         tests::setup_ledger_env(name);
@@ -646,6 +648,39 @@ pub mod tests {
         assert_eq!(result_from_paying.err(), Some(PaymentError::InsufficientFunds()));
         assert_eq!(get_my_balance(), 5);
 
+
+        tests::cleanup_dev_env(name);
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_fees_transferring_tokens() {
+        use utils::devsetup::tests;
+        let address = create_throwaway_address();
+
+        let name = "test_fees_transferring_tokens";
+        tests::setup_ledger_env(name);
+
+        let initial_wallet_balance = 100000000000;
+        let transfer_fee = 5;
+        let ledger_fees = json!({"10001": transfer_fee}).to_string();
+        mint_tokens_and_set_fees(None, None, Some(ledger_fees), None).unwrap();
+        assert_eq!(get_my_balance(), initial_wallet_balance);
+        assert_eq!(get_txn_price(TRANSFER_TXN_TYPE).unwrap(), transfer_fee);
+
+        // Transfer everything besides 50. Remaining balance will be 50 - ledger fees
+        let balance_after_transfer = 50;
+        let price = get_my_balance() - balance_after_transfer;
+        let result_from_paying = pay_a_payee(price, &address);
+        assert!(result_from_paying.is_ok());
+        assert_eq!(get_my_balance(), balance_after_transfer - transfer_fee);
+
+        // Has tokens but not enough for ledger fee
+        let not_enough_for_ledger_fee = transfer_fee - 1;
+        let price = get_my_balance() - not_enough_for_ledger_fee;
+        assert!(price > 0);
+        let result_from_paying = pay_a_payee(price, &address);
+        assert_eq!(result_from_paying.err(), Some(PaymentError::CommonError(error::INSUFFICIENT_TOKEN_AMOUNT.code_num)));
 
         tests::cleanup_dev_env(name);
     }
