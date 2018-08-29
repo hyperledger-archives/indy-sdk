@@ -7,7 +7,7 @@ cp -v settings.xml ${JAR_FOLDER}
 pushd ${JAR_FOLDER}
 
     mvn -e deploy:deploy-file \
-        -Durl="https://evernym.mycloudrepo.io/repositories/libvcx-java" \ #Update this repo url after getting the dedicated repo for java
+        -Durl="https://evernym.mycloudrepo.io/repositories/libvcx-java" \
         -DrepositoryId="io.cloudrepo" \
         -Dversion=${JAR_VERSION} \
         -Dfile="com.evernym-vcx_${JAR_VERSION}.jar" \
