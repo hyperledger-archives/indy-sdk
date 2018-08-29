@@ -25,6 +25,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate rand;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;
@@ -34,10 +35,69 @@ use indy::api as api;
 mod utils;
 
 use utils::wallet::WalletUtils;
+use utils::non_secrets::NonSecretsUtils;
 use utils::test::TestUtils;
 use utils::constants::*;
 
-use criterion::{Criterion, Benchmark};
+use criterion::{Criterion, Benchmark, ParameterizedBenchmark};
+
+mod wallet {
+    use super::*;
+    use utils::sequence::SequenceUtils;
+    use rand::Rng;
+
+    pub const COUNT: usize = 1000;
+    pub const TYPE_1: &'static str = "type_1";
+    pub const TYPE_2: &'static str = "type_2";
+
+    pub fn _type(suffix: usize) -> String {
+        if suffix % 2 != 0 { TYPE_1.to_string() } else { TYPE_2.to_string() }
+    }
+
+    pub fn _id(suffix: usize) -> String { format!("id_{}", suffix) }
+
+    pub fn _value(suffix: usize) -> String {
+        format!("value_{}", suffix)
+    }
+
+    pub fn _tags(suffix: usize) -> String {
+        json!({
+            "tag_id_1":  format!("tag_value_{}_1", suffix),
+            "tag_id_2":  format!("tag_value_{}_2", suffix),
+            "~tag_id_3":  format!("{}", suffix),
+        }).to_string()
+    }
+
+    pub fn add_records(wallet_handle: i32) {
+        for i in 0..COUNT {
+            NonSecretsUtils::add_wallet_record(wallet_handle,
+                                               &_type(i),
+                                               &_id(i),
+                                               &_value(i),
+                                               Some(&_tags(i))).unwrap();
+        }
+    }
+
+    pub fn setup() -> i32 {
+        TestUtils::cleanup_storage();
+
+        let config = json!({
+            "id": format!("default-wallet_id-{}", SequenceUtils::get_next_id())
+        }).to_string();
+
+        WalletUtils::create_wallet(&config, WALLET_CREDENTIALS_RAW).unwrap();
+        let wallet_handle = WalletUtils::open_wallet(&config, WALLET_CREDENTIALS_RAW).unwrap();
+
+        add_records(wallet_handle);
+
+        wallet_handle
+    }
+
+    pub fn get_rand_key() -> (String, String) {
+        let i = rand::thread_rng().gen_range(0, COUNT);
+        (_type(i), _id(i))
+    }
+}
 
 mod create {
     use super::*;
@@ -46,35 +106,283 @@ mod create {
         TestUtils::cleanup_storage();
     }
 
-    fn create_argon2i_mod((): ()) {
-        WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS_ARAGON2I_MOD).unwrap();
-    }
-
-    fn create_argon2i_int((): ()) {
-        WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS_ARAGON2I_INT).unwrap();
-    }
-
-    fn create_raw((): ()) {
-        WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS_RAW).unwrap();
+    fn create_wallet(credentials: &str) {
+        WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, credentials).unwrap();
     }
 
     pub fn bench(c: &mut Criterion) {
         c.bench(
             "wallet_create",
-            Benchmark::new("create_argon2i_mod", |b| b.iter_with_setup(setup, create_argon2i_mod))
-                .sample_size(10));
+            ParameterizedBenchmark::new(
+                "wallet_create",
+                |b, credentials| b.iter_with_setup(setup, |()| create_wallet(credentials)),
+                vec![WALLET_CREDENTIALS_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_INT, WALLET_CREDENTIALS_RAW],
+            ).sample_size(10),
+        );
+    }
+}
+
+mod open {
+    use super::*;
+    use utils::sequence::SequenceUtils;
+
+    fn setup(credentials: &str) -> String {
+        TestUtils::cleanup_storage();
+
+        let config = json!({
+            "id": format!("default-wallet_id-{}", SequenceUtils::get_next_id())
+        }).to_string();
+
+        WalletUtils::create_wallet(&config, credentials).unwrap();
+        config
+    }
+
+    fn open_wallet(config: &str, credentials: &str) {
+        WalletUtils::open_wallet(config, credentials).unwrap();
+    }
+
+    pub fn bench(c: &mut Criterion) {
+        c.bench(
+            "wallet_open",
+            ParameterizedBenchmark::new(
+                "wallet_open",
+                |b, credentials| b.iter_with_setup(|| setup(credentials), |config: String| open_wallet(&config, credentials)),
+                vec![WALLET_CREDENTIALS_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_INT, WALLET_CREDENTIALS_RAW],
+            ).sample_size(10),
+        );
+    }
+}
+
+mod close {
+    use super::*;
+
+    fn setup(credentials: &str) -> i32 {
+        TestUtils::cleanup_storage();
+        WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, credentials).unwrap();
+        WalletUtils::open_wallet(DEFAULT_WALLET_CONFIG, credentials).unwrap()
+    }
+
+    fn close_wallet(handle: i32) {
+        WalletUtils::close_wallet(handle).unwrap();
+    }
+
+    pub fn bench(c: &mut Criterion) {
+        c.bench(
+            "wallet_close",
+            ParameterizedBenchmark::new(
+                "wallet_close",
+                |b, credentials| b.iter_with_setup(|| setup(credentials), |handle: i32| close_wallet(handle)),
+                vec![WALLET_CREDENTIALS_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_INT, WALLET_CREDENTIALS_RAW],
+            ).sample_size(10),
+        );
+    }
+}
+
+mod delete {
+    use super::*;
+
+    fn setup(credentials: &str) {
+        TestUtils::cleanup_storage();
+        WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, credentials).unwrap();
+    }
+
+    fn delete_wallet(credentials: &str) {
+        WalletUtils::delete_wallet(DEFAULT_WALLET_CONFIG, credentials).unwrap();
+    }
+
+    pub fn bench(c: &mut Criterion) {
+        c.bench(
+            "wallet_delete",
+            ParameterizedBenchmark::new(
+                "wallet_delete",
+                |b, credentials| b.iter_with_setup(|| setup(credentials), |()| delete_wallet(credentials)),
+                vec![WALLET_CREDENTIALS_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_INT, WALLET_CREDENTIALS_RAW],
+            ).sample_size(10),
+        );
+    }
+}
+
+mod get_record {
+    use super::*;
+
+    fn get_record(wallet_handle: i32, type_: &str, id: &str) {
+        NonSecretsUtils::get_wallet_record(wallet_handle, type_, id, "{}").unwrap();
+    }
+
+    pub fn bench(c: &mut Criterion) {
+        let wallet_handle = wallet::setup();
 
         c.bench(
-            "wallet_create",
-            Benchmark::new("create_argon2i_int", |b| b.iter_with_setup(setup, create_argon2i_int))
-                .sample_size(20));
-
-        c.bench(
-            "wallet_create",
-            Benchmark::new("create_raw", |b| b.iter_with_setup(setup, create_raw))
+            "wallet_get_record",
+            Benchmark::new("wallet_get_record", move |b|
+                b.iter_with_setup(wallet::get_rand_key, |(type_, id): (String, String)| get_record(wallet_handle, &type_, &id)))
                 .sample_size(50));
     }
 }
 
-criterion_group!(benches, create::bench);
+mod delete_record {
+    use super::*;
+
+    static mut INDEX: usize = 0;
+
+    fn setup() -> (String, String) {
+        unsafe {
+            INDEX = INDEX + 1 + 5;//TODO
+            (wallet::_type(INDEX), wallet::_id(INDEX))
+        }
+    }
+
+    fn delete_record(wallet_handle: i32, type_: &str, id: &str) {
+        NonSecretsUtils::delete_wallet_record(wallet_handle, type_, id).unwrap();
+    }
+
+    pub fn bench(c: &mut Criterion) {
+        let wallet_handle = wallet::setup();
+
+        c.bench(
+            "wallet_delete_record",
+            Benchmark::new("wallet_delete_record", move |b|
+                b.iter_with_setup(setup, |(type_, id): (String, String)| delete_record(wallet_handle, &type_, &id)))
+                .sample_size(10));
+    }
+}
+
+mod add_record {
+    use super::*;
+
+    static mut INDEX: usize = wallet::COUNT;
+
+    fn setup() -> (String, String, String, String) {
+        unsafe {
+            INDEX = INDEX + 1;
+            (wallet::_type(INDEX), wallet::_id(INDEX), wallet::_value(INDEX), wallet::_tags(INDEX))
+        }
+    }
+
+    fn add_record(wallet_handle: i32, type_: &str, id: &str, value: &str, tags: &str) {
+        NonSecretsUtils::add_wallet_record(wallet_handle, type_, id, value, Some(tags)).unwrap();
+    }
+
+    pub fn bench(c: &mut Criterion) {
+        let wallet_handle = wallet::setup();
+
+        c.bench(
+            "wallet_add_record",
+            Benchmark::new("wallet_add_record", move |b|
+                b.iter_with_setup(
+                    setup, |(type_, id, value, tags): (String, String, String, String)|
+                        add_record(wallet_handle, &type_, &id, &value, &tags)))
+                .sample_size(10));
+    }
+}
+
+mod add_record_tags {
+    use super::*;
+
+    fn setup() -> (String, String, String) {
+        let (type_, id) = wallet::get_rand_key();
+        (type_, id, r#"{"tag_1": "value_1", "~tag_2": "value_2"}"#.to_string())
+    }
+
+    fn add_record_tags(wallet_handle: i32, type_: &str, id: &str, tags: &str) {
+        NonSecretsUtils::add_wallet_record_tags(wallet_handle, type_, id, tags).unwrap();
+    }
+
+    pub fn bench(c: &mut Criterion) {
+        let wallet_handle = wallet::setup();
+
+        c.bench(
+            "wallet_add_record_tags",
+            Benchmark::new("wallet_add_record_tags", move |b|
+                b.iter_with_setup(
+                    setup,
+                    |(type_, id, tags): (String, String, String)| add_record_tags(wallet_handle, &type_, &id, &tags)))
+                .sample_size(10));
+    }
+}
+
+mod delete_record_tags {
+    use super::*;
+
+    fn setup() -> (String, String, String) {
+        let (type_, id) = wallet::get_rand_key();
+        (type_, id, r#"["tag_id_1"]"#.to_string())
+    }
+
+    fn delete_record_tags(wallet_handle: i32, type_: &str, id: &str, tag_names: &str) {
+        NonSecretsUtils::delete_wallet_record_tags(wallet_handle, type_, id, tag_names).unwrap();
+    }
+
+    pub fn bench(c: &mut Criterion) {
+        let wallet_handle = wallet::setup();
+
+        c.bench(
+            "wallet_delete_record_tags",
+            Benchmark::new("wallet_delete_record_tags", move |b|
+                b.iter_with_setup(
+                    setup,
+                    |(type_, id, tag_names): (String, String, String)| delete_record_tags(wallet_handle, &type_, &id, &tag_names)))
+                .sample_size(10));
+    }
+}
+
+mod search_records {
+    use super::*;
+
+    fn open_search(wallet_handle: i32, query: &str) {
+        NonSecretsUtils::open_wallet_search(wallet_handle, wallet::TYPE_1, query, "{}").unwrap();
+    }
+
+    pub fn bench(c: &mut Criterion) {
+        let wallet_handle = wallet::setup();
+
+        let queries = vec![
+            r#"{}"#,
+            r#"{
+                "tag_id_1": "tag_value_10_1"
+            }"#,
+            r#"{
+                "~tag_id_3": {
+                    "$gt": "30"
+                }
+            }"#,
+            r#"{
+                "tag_id_1": {
+                    "$in": ["tag_value_10_1", "tag_value_11_1", "tag_value_70_1", "tag_value_71_1"]
+                }
+            }"#,
+            r#"{
+                "tag_id_1": "tag_value_11_1",
+                "~tag_id_3": "10"
+            }"#,
+            r#"{
+                "$or": [
+                    {"tag_id_1": "tag_value_11_1"},
+                    {"tag_id_3": "90"}
+                ]
+            }"#
+        ];
+
+        c.bench(
+            "wallet_search",
+            ParameterizedBenchmark::new(
+                "wallet_search",
+                move |b, query| b.iter(|| open_search(wallet_handle, query)),
+                queries,
+            ).sample_size(10),
+        );
+    }
+}
+
+criterion_group!(benches, create::bench,
+                          open::bench,
+                          close::bench,
+                          delete::bench,
+                          get_record::bench,
+                          delete_record::bench,
+                          add_record::bench,
+                          add_record_tags::bench,
+                          delete_record_tags::bench,
+                          search_records::bench);
+//criterion_group!(benches,  search_records::bench);
 criterion_main!(benches);
