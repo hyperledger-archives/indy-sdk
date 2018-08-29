@@ -13,3 +13,4 @@ Podfile.lock
 
 
 /wrappers/python/venv/
+.vscode/settings.json
