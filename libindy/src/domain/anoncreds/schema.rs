@@ -11,7 +11,7 @@ pub struct SchemaV1 {
     pub name: String,
     pub version: String,
     #[serde(rename = "attrNames")]
-    pub attr_names: HashSet<String>,
+    pub attr_names: AttributeNames,
     pub seq_no: Option<u32>,
 }
 
@@ -45,3 +45,5 @@ pub fn schemas_map_to_schemas_v1_map(schemas: HashMap<String, Schema>) -> HashMa
 
     schemas_v1
 }
+
+pub type AttributeNames = HashSet<String>;

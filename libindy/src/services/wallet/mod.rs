@@ -15,7 +15,7 @@ use named_type::NamedType;
 use std::rc::Rc;
 
 use api::wallet::*;
-use domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, KeyDerivationMethod};
+use domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, KeyDerivationMethod, Tags};
 use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::sequence::SequenceUtils;
@@ -96,15 +96,9 @@ impl WalletService {
     }
 
     pub fn create_wallet(&self,
-                         config: &str,
-                         credentials: &str) -> Result<(), WalletError> {
+                         config: &Config,
+                         credentials: &Credentials) -> Result<(), WalletError> {
         trace!("create_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
-
-        let config: Config = serde_json::from_str(config)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
-
-        let credentials: Credentials = serde_json::from_str(credentials)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize credentials: {:?}", err)))?;
 
         if config.id.is_empty() {
             Err(CommonError::InvalidStructure("Wallet id is empty".to_string()))?
@@ -127,10 +121,12 @@ impl WalletService {
 
         storage_type.create_storage(&config.id,
                                     config.storage_config
+                                        .as_ref()
                                         .map(|value| value.to_string())
                                         .as_ref()
                                         .map(String::as_str),
                                     credentials.storage_credentials
+                                        .as_ref()
                                         .map(|value| value.to_string())
                                         .as_ref()
                                         .map(String::as_str),
@@ -139,14 +135,8 @@ impl WalletService {
         Ok(())
     }
 
-    pub fn delete_wallet(&self, config: &str, credentials: &str) -> Result<(), WalletError> {
+    pub fn delete_wallet(&self, config: &Config, credentials: &Credentials) -> Result<(), WalletError> {
         trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
-
-        let config: Config = serde_json::from_str(config)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
-
-        let credentials: Credentials = serde_json::from_str(credentials)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize credentials: {:?}", err)))?;
 
         if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == config.id) {
             Err(CommonError::InvalidState(format!("Wallet has to be closed before deleting: {:?}", config.id)))?
@@ -165,8 +155,8 @@ impl WalletService {
                 .ok_or(WalletError::UnknownType(storage_type.to_string()))?
         };
 
-        let storage_config = config.storage_config.map(|value| value.to_string());
-        let storage_credentials = credentials.storage_credentials.map(|value| value.to_string());
+        let storage_config = config.storage_config.as_ref().map(|value| value.to_string());
+        let storage_credentials = credentials.storage_credentials.as_ref().map(|value| value.to_string());
 
         // check credentials and close connection before deleting wallet
         {
@@ -199,14 +189,8 @@ impl WalletService {
         Ok(())
     }
 
-    pub fn open_wallet(&self, config: &str, credentials: &str) -> Result<i32, WalletError> {
+    pub fn open_wallet(&self, config: &Config, credentials: &Credentials) -> Result<i32, WalletError> {
         trace!("open_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
-
-        let config: Config = serde_json::from_str(config)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize config: {:?}", err)))?;
-
-        let credentials: Credentials = serde_json::from_str(credentials)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize credentials: {:?}", err)))?;
 
         if config.id.is_empty() {
             Err(CommonError::InvalidStructure("Wallet id is empty".to_string()))?
@@ -229,8 +213,8 @@ impl WalletService {
                 .ok_or(WalletError::UnknownType(storage_type.to_string()))?
         };
 
-        let storage_config = config.storage_config.map(|value| value.to_string());
-        let storage_credentials = credentials.storage_credentials.map(|value| value.to_string());
+        let storage_config = config.storage_config.as_ref().map(|value| value.to_string());
+        let storage_credentials = credentials.storage_credentials.as_ref().map(|value| value.to_string());
         let storage = storage_type.open_storage(&config.id,
                                                 storage_config
                                                     .as_ref()
@@ -248,12 +232,12 @@ impl WalletService {
         let keys = self._restore_keys(&metadata, &credentials.key, &credentials.key_derivation_method)?;
 
         // Rotate master key
-        if let Some(rekey) = credentials.rekey {
+        if let Some(ref rekey) = credentials.rekey {
             let metadata = self._prepare_metadata(&rekey, &credentials.rekey_derivation_method, &keys)?;
             storage.set_storage_metadata(&metadata)?;
         }
 
-        let wallet = Wallet::new(config.id, storage, Rc::new(keys));
+        let wallet = Wallet::new(config.id.clone(), storage, Rc::new(keys));
 
         let wallet_handle = SequenceUtils::get_next_id();
         let mut wallets = self.wallets.borrow_mut();
@@ -275,14 +259,14 @@ impl WalletService {
         Ok(())
     }
 
-    pub fn add_record(&self, wallet_handle: i32, type_: &str, name: &str, value: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
+    pub fn add_record(&self, wallet_handle: i32, type_: &str, name: &str, value: &str, tags: &Tags) -> Result<(), WalletError> {
         match self.wallets.borrow_mut().get_mut(&wallet_handle) {
             Some(wallet) => wallet.add(type_, name, value, tags),
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
     }
 
-    pub fn add_indy_object<T>(&self, wallet_handle: i32, name: &str, object: &T, tags: &HashMap<String, String>)
+    pub fn add_indy_object<T>(&self, wallet_handle: i32, name: &str, object: &T, tags: &Tags)
                               -> Result<String, WalletError> where T: ::serde::Serialize + Sized, T: NamedType {
         let type_ = T::short_type_name();
         let object_json = serde_json::to_string(object)
@@ -313,14 +297,14 @@ impl WalletService {
         }
     }
 
-    pub fn add_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
+    pub fn add_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags: &Tags) -> Result<(), WalletError> {
         match self.wallets.borrow_mut().get_mut(&wallet_handle) {
             Some(wallet) => wallet.add_tags(type_, name, tags),
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }
     }
 
-    pub fn update_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags: &HashMap<String, String>) -> Result<(), WalletError> {
+    pub fn update_record_tags(&self, wallet_handle: i32, type_: &str, name: &str, tags: &Tags) -> Result<(), WalletError> {
         match self.wallets.borrow_mut().get_mut(&wallet_handle) {
             Some(wallet) => wallet.update_tags(type_, name, tags),
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
@@ -357,7 +341,7 @@ impl WalletService {
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_object<'a, T>(&self, wallet_handle: i32, name: &str, options_json: &str, json: &'a mut String) -> Result<T, WalletError> where T: ::serde::Deserialize<'a>, T: NamedType {
+    pub fn get_indy_object<T>(&self, wallet_handle: i32, name: &str, options_json: &str) -> Result<T, WalletError> where T: ::serde::de::DeserializeOwned, T: NamedType {
         let type_ = T::short_type_name();
 
         let record: WalletRecord = match self.wallets.borrow().get(&wallet_handle) {
@@ -365,18 +349,18 @@ impl WalletService {
             None => Err(WalletError::InvalidHandle(wallet_handle.to_string()))
         }?;
 
-        *json = record.get_value()
+        let record_value = record.get_value()
             .ok_or(CommonError::InvalidStructure(format!("{} not found for id: {:?}", type_, name)))?.to_string();
 
-        serde_json::from_str(json)
+        serde_json::from_str(&record_value)
             .map_err(map_err_trace!())
             .map_err(|err|
                 WalletError::CommonError(CommonError::InvalidState(format!("Cannot deserialize {:?}: {:?}", type_, err))))
     }
 
     // Dirty hack. json must live longer then result T
-    pub fn get_indy_opt_object<'a, T>(&self, wallet_handle: i32, name: &str, options_json: &str, json: &'a mut String) -> Result<Option<T>, WalletError> where T: ::serde::Deserialize<'a>, T: NamedType {
-        match self.get_indy_object::<T>(wallet_handle, name, options_json, json) {
+    pub fn get_indy_opt_object<T>(&self, wallet_handle: i32, name: &str, options_json: &str) -> Result<Option<T>, WalletError> where T: ::serde::de::DeserializeOwned, T: NamedType {
+        match self.get_indy_object::<T>(wallet_handle, name, options_json) {
             Ok(res) => Ok(Some(res)),
             Err(WalletError::ItemNotFound) => Ok(None),
             Err(err) => Err(err)
@@ -431,16 +415,13 @@ impl WalletService {
         }
     }
 
-    pub fn export_wallet(&self, wallet_handle: i32, export_config: &str, version: u32) -> Result<(), WalletError> {
+    pub fn export_wallet(&self, wallet_handle: i32, export_config: &ExportConfig, version: u32) -> Result<(), WalletError> {
         trace!("export_wallet >>> wallet_handle: {:?}, export_config: {:?}, version: {:?}", wallet_handle, secret!(export_config), version);
 
         let wallets = self.wallets.borrow();
         let wallet = wallets
             .get(&wallet_handle)
             .ok_or(WalletError::InvalidHandle(wallet_handle.to_string()))?;
-
-        let export_config: ExportConfig = serde_json::from_str(export_config)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize export config: {:?}", err)))?;
 
         let path = PathBuf::from(&export_config.path);
 
@@ -454,7 +435,7 @@ impl WalletService {
             fs::OpenOptions::new()
                 .write(true)
                 .create_new(true)
-                .open(export_config.path)?;
+                .open(export_config.path.clone())?;
 
         let res = export(wallet, &mut export_file, &export_config.key, version, &export_config.key_derivation_method);
 
@@ -464,13 +445,10 @@ impl WalletService {
     }
 
     pub fn import_wallet(&self,
-                         config: &str,
-                         credentials: &str,
-                         export_config: &str) -> Result<(), WalletError> {
+                         config: &Config,
+                         credentials: &Credentials,
+                         export_config: &ExportConfig) -> Result<(), WalletError> {
         trace!("import_wallet >>> config: {:?}, credentials: {:?}, export_config: {:?}", config, secret!(export_config), secret!(export_config));
-
-        let export_config: ExportConfig = serde_json::from_str(export_config)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize export config: {:?}", err)))?;
 
         let mut export_file =
             fs::OpenOptions::new()
@@ -512,7 +490,7 @@ impl WalletService {
                     MetadataRaw { keys: keys.serialize_encrypted(&master_key)? }
                 )
             }
-            KeyDerivationMethod::ARAGON2I_INT | KeyDerivationMethod::ARAGON2I_MOD => {
+            KeyDerivationMethod::ARGON2I_INT | KeyDerivationMethod::ARGON2I_MOD => {
                 let master_key_salt = encryption::gen_master_key_salt()?;
                 let master_key = encryption::derive_master_key(key, &master_key_salt, key_derivation_method)?;
                 Metadata::MetadataArgon(
@@ -534,8 +512,8 @@ impl WalletService {
         let (metadata_keys, master_key) = match (key_derivation_method, metadata) {
             (KeyDerivationMethod::RAW, Metadata::MetadataRaw(metadata)) =>
                 (metadata.keys.as_ref(), encryption::raw_master_key(key)?),
-            (KeyDerivationMethod::ARAGON2I_INT, Metadata::MetadataArgon(metadata)) |
-            (KeyDerivationMethod::ARAGON2I_MOD, Metadata::MetadataArgon(metadata)) => {
+            (KeyDerivationMethod::ARGON2I_INT, Metadata::MetadataArgon(metadata)) |
+            (KeyDerivationMethod::ARGON2I_MOD, Metadata::MetadataArgon(metadata)) => {
                 let master_key_salt = encryption::master_key_salt_from_slice(&metadata.master_key_salt)?;
                 let master_key = encryption::derive_master_key(key, &master_key_salt, key_derivation_method)?;
                 ((metadata.keys.as_ref(), master_key))
@@ -562,7 +540,7 @@ pub struct WalletRecord {
     type_: Option<String>,
     id: String,
     value: Option<String>,
-    tags: Option<HashMap<String, String>>
+    tags: Option<Tags>
 }
 
 impl Ord for WalletRecord {
@@ -578,7 +556,7 @@ impl PartialOrd for WalletRecord {
 }
 
 impl WalletRecord {
-    pub fn new(name: String, type_: Option<String>, value: Option<String>, tags: Option<HashMap<String, String>>) -> WalletRecord {
+    pub fn new(name: String, type_: Option<String>, value: Option<String>, tags: Option<Tags>) -> WalletRecord {
         WalletRecord {
             id: name,
             type_,
@@ -601,7 +579,7 @@ impl WalletRecord {
     }
 
     #[allow(dead_code)]
-    pub fn get_tags(&self) -> Option<&HashMap<String, String>> {
+    pub fn get_tags(&self) -> Option<&Tags> {
         self.tags.as_ref()
     }
 }
@@ -951,15 +929,15 @@ mod tests {
         wallet_service.open_wallet(&_config_inmem(), &_credentials()).unwrap();
     }
 
-    #[test]
-    fn wallet_service_open_wallet_without_master_key_in_credentials_returns_error() {
-        _cleanup();
-
-        let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
-        let res = wallet_service.open_wallet(&_config(), "{}");
-        assert_match!(Err(WalletError::CommonError(_)), res);
-    }
+//    #[test]
+//    fn wallet_service_open_wallet_without_master_key_in_credentials_returns_error() {
+//        _cleanup();
+//
+//        let wallet_service = WalletService::new();
+//        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
+//        let res = wallet_service.open_wallet(&_config(), "{}");
+//        assert_match!(Err(WalletError::CommonError(_)), res);
+//    }
 
     #[test]
     fn wallet_service_open_wallet_returns_error_if_used_different_methods_for_creating_and_opening() {
@@ -1293,7 +1271,7 @@ mod tests {
 
         let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
 
-        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+        let expected_tags: Tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(expected_tags, retrieved_tags);
     }
@@ -1320,7 +1298,7 @@ mod tests {
 
         let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
 
-        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
+        let expected_tags: Tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(expected_tags, retrieved_tags);
     }
@@ -1401,7 +1379,7 @@ mod tests {
 
         let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
 
-        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_2":"new_tag_value_2"}"#).unwrap();
+        let expected_tags: Tags = serde_json::from_str(r#"{"tag_name_2":"new_tag_value_2"}"#).unwrap();
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(expected_tags, retrieved_tags);
     }
@@ -1429,7 +1407,7 @@ mod tests {
 
         let item = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(true, true, true)).unwrap();
 
-        let expected_tags: HashMap<String, String> = serde_json::from_str(r#"{"tag_name_2":"new_tag_value_2"}"#).unwrap();
+        let expected_tags: Tags = serde_json::from_str(r#"{"tag_name_2":"new_tag_value_2"}"#).unwrap();
         let retrieved_tags = item.tags.unwrap();
         assert_eq!(expected_tags, retrieved_tags);
     }
@@ -1820,60 +1798,136 @@ mod tests {
         }).to_string()
     }
 
-    fn _config() -> String {
-        json!({"id": "w1"}).to_string()
+    fn _config() -> Config {
+        Config {
+            id: "w1".to_string(),
+            storage_type: None,
+            storage_config: None,
+        }
     }
 
-    fn _config_default() -> String {
-        json!({"id": "w1", "storage_type": "default"}).to_string()
+    fn _config_default() -> Config {
+        Config {
+            id: "w1".to_string(),
+            storage_type: Some("default".to_string()),
+            storage_config: None,
+        }
     }
 
-    fn _config_inmem() -> String {
-        json!({"id": "w1", "storage_type": "inmem"}).to_string()
+    fn _config_inmem() -> Config {
+        Config {
+            id: "w1".to_string(),
+            storage_type: Some("inmem".to_string()),
+            storage_config: None,
+        }
     }
 
-    fn _config_unknown() -> String {
-        json!({"id": "w1", "storage_type": "unknown"}).to_string()
+    fn _config_unknown() -> Config {
+        Config {
+            id: "w1".to_string(),
+            storage_type: Some("unknown".to_string()),
+            storage_config: None,
+        }
     }
 
-    fn _credentials() -> String {
-        json!({"key": "my_key"}).to_string()
+    fn _credentials() -> Credentials {
+        Credentials {
+            key: "my_key".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+        }
     }
 
-    fn _credentials_interactive() -> String {
-        json!({"key": "my_key", "key_derivation_method": "ARAGON2I_INT"}).to_string()
+    fn _credentials_interactive() -> Credentials {
+        Credentials {
+            key: "my_key".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_INT,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_INT,
+        }
     }
 
-    fn _credentials_raw() -> String {
-        json!({"key": "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw", "key_derivation_method": "RAW"}).to_string()
+    fn _credentials_raw() -> Credentials {
+        Credentials {
+            key: "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::RAW,
+            rekey_derivation_method: KeyDerivationMethod::RAW,
+        }
     }
 
-    fn _credentials_invalid_raw() -> String {
-        json!({"key": "key", "key_derivation_method": "RAW"}).to_string()
+    fn _credentials_invalid_raw() -> Credentials {
+        Credentials {
+            key: "key".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::RAW,
+            rekey_derivation_method: KeyDerivationMethod::RAW,
+        }
     }
 
-    fn _rekey_credentials() -> String {
-        json!({"key": "my_key", "rekey": "my_new_key"}).to_string()
+    fn _rekey_credentials() -> Credentials {
+        Credentials {
+            key: "my_key".to_string(),
+            rekey: Some("my_new_key".to_string()),
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+        }
     }
 
-    fn _rekey_credentials_interactive() -> String {
-        json!({"key": "my_key", "rekey": "my_new_key", "rekey_derivation_method": "ARAGON2I_INT"}).to_string()
+    fn _rekey_credentials_interactive() -> Credentials {
+        Credentials {
+            key: "my_key".to_string(),
+            rekey: Some("my_new_key".to_string()),
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_INT,
+        }
     }
 
-    fn _rekey_credentials_raw() -> String {
-        json!({"key": "my_key", "rekey": "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw", "rekey_derivation_method": "RAW"}).to_string()
+    fn _rekey_credentials_raw() -> Credentials {
+        Credentials {
+            key: "my_key".to_string(),
+            rekey: Some("6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string()),
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::RAW,
+        }
     }
 
-    fn _credentials_for_new_key() -> String {
-        json!({"key": "my_new_key"}).to_string()
+    fn _credentials_for_new_key() -> Credentials {
+        Credentials {
+            key: "my_new_key".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+        }
     }
 
-    fn _credentials_for_new_key_interactive() -> String {
-        json!({"key": "my_new_key", "key_derivation_method": "ARAGON2I_INT"}).to_string()
+    fn _credentials_for_new_key_interactive() -> Credentials {
+        Credentials {
+            key: "my_new_key".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_INT,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_INT,
+        }
     }
 
-    fn _credentials_for_new_key_raw() -> String {
-        json!({"key": "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw", "key_derivation_method": "RAW"}).to_string()
+    fn _credentials_for_new_key_raw() -> Credentials {
+        Credentials {
+            key: "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::RAW,
+            rekey_derivation_method: KeyDerivationMethod::RAW,
+        }
     }
 
     fn _export_file_path() -> PathBuf {
@@ -1882,27 +1936,28 @@ mod tests {
         path
     }
 
-    fn _export_config() -> String {
-        json!({
-            "path": _export_file_path().to_str().unwrap(),
-            "key": "export_key",
-        }).to_string()
+    fn _export_config() -> ExportConfig {
+        ExportConfig {
+            key: "export_key".to_string(),
+            path: _export_file_path().to_str().unwrap().to_string(),
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+        }
     }
 
-    fn _export_config_interactive() -> String {
-        json!({
-            "path": _export_file_path().to_str().unwrap(),
-            "key": "export_key",
-            "key_derivation_method": "ARAGON2I_INT"
-        }).to_string()
+    fn _export_config_interactive() -> ExportConfig {
+        ExportConfig {
+            key: "export_key".to_string(),
+            path: _export_file_path().to_str().unwrap().to_string(),
+            key_derivation_method: KeyDerivationMethod::ARGON2I_INT,
+        }
     }
 
-    fn _export_config_raw() -> String {
-        json!({
-            "path": _export_file_path().to_str().unwrap(),
-            "key": "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw",
-            "key_derivation_method": "RAW"
-        }).to_string()
+    fn _export_config_raw() -> ExportConfig {
+        ExportConfig {
+            key: "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string(),
+            path: _export_file_path().to_str().unwrap().to_string(),
+            key_derivation_method: KeyDerivationMethod::RAW,
+        }
     }
 
     fn _cleanup() {

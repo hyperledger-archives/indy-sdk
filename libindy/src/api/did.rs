@@ -1,19 +1,19 @@
 extern crate libc;
 
-use errors::common::CommonError;
-
 use api::ErrorCode;
-use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::did::DidCommand;
+use domain::crypto::did::{MyDidInfo, TheirDidInfo};
+use domain::crypto::key::KeyInfo;
+use errors::common::CommonError;
+use errors::ToErrorCode;
 use utils::cstring::CStringUtils;
 
 use serde_json;
 use self::libc::c_char;
+
 use std::ptr;
 
-use domain::crypto::did::MyDidInfo;
-use domain::crypto::key::KeyInfo;
 
 /// Creates keys (signing and encryption keys) for a new
 /// DID (owned by the caller of the library).
@@ -91,6 +91,7 @@ pub  extern fn indy_create_and_store_my_did(command_handle: i32,
 /// #Params
 /// wallet_handle: wallet handler (created by open_wallet).
 /// command_handle: command handle to map callback to user context.
+/// did: target did to rotate keys.
 /// key_info: key information as json. Example:
 /// {
 ///     "seed": string, (optional; if not provide then a random one will be created)
@@ -121,8 +122,8 @@ pub  extern fn indy_replace_keys_start(command_handle: i32,
                                                             verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_replace_keys_start: >>> wallet_handle: {:?}, did: {:?}, identity_json: {:?}", wallet_handle, did, key_info);
 
-    check_useful_json!(key_info, ErrorCode::CommonInvalidParam3, KeyInfo);
-    check_useful_c_str!(did, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(did, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(key_info, ErrorCode::CommonInvalidParam4, KeyInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_replace_keys_start: entities>>> wallet_handle: {:?}, did: {:?}, key_info: {:?}", wallet_handle, did, secret!(&key_info));
@@ -227,7 +228,7 @@ pub  extern fn indy_store_their_did(command_handle: i32,
                                                          err: ErrorCode)>) -> ErrorCode {
     trace!("indy_store_their_did: >>> wallet_handle: {:?}, identity_json: {:?}", wallet_handle, identity_json);
 
-    check_useful_c_str!(identity_json, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(identity_json, ErrorCode::CommonInvalidParam3, TheirDidInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_store_their_did: entities >>> wallet_handle: {:?}, identity_json: {:?}", wallet_handle, identity_json);
