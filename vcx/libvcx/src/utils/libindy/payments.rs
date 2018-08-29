@@ -105,12 +105,13 @@ pub fn init_payments() -> Result<(), u32> {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct PaymentTxn {
     pub amount: u64,
+    pub credit: bool,
     pub inputs: Vec<String>,
     pub outputs: Vec<Output>,
 }
 
 impl PaymentTxn {
-    pub fn from_parts(inputs: &str, outputs: &str, amount: u64) -> Result<PaymentTxn, u32> {
+    pub fn from_parts(inputs: &str, outputs: &str, amount: u64, credit: bool) -> Result<PaymentTxn, u32> {
         let inputs: Vec<String> = serde_json::from_str(&inputs)
             .map_err(|err| {error::INVALID_JSON.code_num})?;
 
@@ -119,6 +120,7 @@ impl PaymentTxn {
 
         Ok(PaymentTxn {
             amount,
+            credit,
             inputs,
             outputs,
         })
@@ -216,7 +218,7 @@ pub fn get_ledger_fees() -> Result<String, u32> {
 
 pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(Option<PaymentTxn>, String), u32> {
     debug!("pay_for_txn(req: {}, txn_type: {})", req, txn_type);
-    if settings::test_indy_mode_enabled() { return Ok((Some(PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap()), SUBMIT_SCHEMA_RESPONSE.to_string())); }
+    if settings::test_indy_mode_enabled() { return Ok((Some(PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1, false).unwrap()), SUBMIT_SCHEMA_RESPONSE.to_string())); }
 
     let txn_price = get_txn_price(txn_type)?;
 
@@ -231,7 +233,7 @@ pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(Option<PaymentTxn>, Str
 
         let (fee_response, txn_response) = _submit_fees_request(req, &inputs, &output)?;
 
-        let payment = PaymentTxn::from_parts(&inputs, &output, txn_price)?;
+        let payment = PaymentTxn::from_parts(&inputs, &output, txn_price, false)?;
         Ok((Some(payment), txn_response))
     }
 }
@@ -267,10 +269,10 @@ pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), Pa
     let (remainder, input, refund_address) = inputs(price)?;
     let output = outputs(remainder, &refund_address, Some(address.to_string()), Some(price))?;
 
-    let payment = PaymentTxn::from_parts(&input, &output, price).map_err(|e|PaymentError::CommonError(e))?;
+    let payment = PaymentTxn::from_parts(&input, &output, price, false).map_err(|e|PaymentError::CommonError(e))?;
     let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
-    if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
+    if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1, false).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
 
     match Payment::build_payment_req(get_wallet_handle(), &my_did, &input, &output, None) {
         Ok((request, payment_method)) => {
@@ -306,7 +308,7 @@ pub fn inputs(cost: u64) -> Result<(u64, String, String), PaymentError> {
     let mut refund_address = String::new();
 
     if wallet_info.balance < cost {
-        warn!("not enough tokens in wallet to pay");
+        warn!("not enough tokens in wallet to pay: balance: {}, cost: {}", wallet_info.balance, cost);
         return Err(PaymentError::InsufficientFunds());
     }
 

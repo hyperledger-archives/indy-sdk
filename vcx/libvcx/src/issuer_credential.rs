@@ -334,6 +334,7 @@ impl IssuerCredential {
 
         Ok(payments::PaymentTxn {
             amount: self.price,
+            credit: true,
             inputs: vec![payment_address],
             outputs: Vec::new(),
         })
