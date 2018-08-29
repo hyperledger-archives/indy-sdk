@@ -1835,8 +1835,8 @@ mod tests {
             key: "my_key".to_string(),
             rekey: None,
             storage_credentials: None,
-            key_derivation_method: KeyDerivationMethod::ARAGON2I_MOD,
-            rekey_derivation_method: KeyDerivationMethod::ARAGON2I_MOD,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
         }
     }
 
@@ -1845,8 +1845,8 @@ mod tests {
             key: "my_key".to_string(),
             rekey: None,
             storage_credentials: None,
-            key_derivation_method: KeyDerivationMethod::ARAGON2I_INT,
-            rekey_derivation_method: KeyDerivationMethod::ARAGON2I_INT,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_INT,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_INT,
         }
     }
 
@@ -1875,8 +1875,8 @@ mod tests {
             key: "my_key".to_string(),
             rekey: Some("my_new_key".to_string()),
             storage_credentials: None,
-            key_derivation_method: KeyDerivationMethod::ARAGON2I_MOD,
-            rekey_derivation_method: KeyDerivationMethod::ARAGON2I_MOD,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
         }
     }
 
@@ -1885,8 +1885,8 @@ mod tests {
             key: "my_key".to_string(),
             rekey: Some("my_new_key".to_string()),
             storage_credentials: None,
-            key_derivation_method: KeyDerivationMethod::ARAGON2I_MOD,
-            rekey_derivation_method: KeyDerivationMethod::ARAGON2I_INT,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_INT,
         }
     }
 
@@ -1895,7 +1895,7 @@ mod tests {
             key: "my_key".to_string(),
             rekey: Some("6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string()),
             storage_credentials: None,
-            key_derivation_method: KeyDerivationMethod::ARAGON2I_MOD,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
             rekey_derivation_method: KeyDerivationMethod::RAW,
         }
     }
@@ -1905,13 +1905,19 @@ mod tests {
             key: "my_new_key".to_string(),
             rekey: None,
             storage_credentials: None,
-            key_derivation_method: KeyDerivationMethod::ARAGON2I_MOD,
-            rekey_derivation_method: KeyDerivationMethod::ARAGON2I_MOD,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
         }
     }
 
-    fn _credentials_for_new_key_interactive() -> String {
-        json!({"key": "my_new_key", "key_derivation_method": "ARGON2I_INT"}).to_string()
+    fn _credentials_for_new_key_interactive() -> Credentials {
+        Credentials {
+            key: "my_new_key".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_INT,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_INT,
+        }
     }
 
     fn _credentials_for_new_key_raw() -> Credentials {
@@ -1934,7 +1940,7 @@ mod tests {
         ExportConfig {
             key: "export_key".to_string(),
             path: _export_file_path().to_str().unwrap().to_string(),
-            key_derivation_method: KeyDerivationMethod::ARAGON2I_MOD,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
         }
     }
 
@@ -1942,7 +1948,7 @@ mod tests {
         ExportConfig {
             key: "export_key".to_string(),
             path: _export_file_path().to_str().unwrap().to_string(),
-            key_derivation_method: KeyDerivationMethod::ARAGON2I_INT,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_INT,
         }
     }
 
