@@ -164,8 +164,4 @@
     [[IndyCallbacks sharedInstance] completeStr:completion forHandle:handle ifError:ret];
 }
 
-- (void)cleanupIndyKeychainWallet {
-    [[IndyKeychainWallet sharedInstance] cleanup];
-}
-
 @end
