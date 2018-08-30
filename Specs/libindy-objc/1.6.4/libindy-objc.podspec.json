@@ -1,6 +1,6 @@
 {
     "name": "libindy-objc",
-    "version": "1.6.2",
+    "version": "1.6.4",
     "summary": "Summary TODO.",
     "homepage": "TODO",
     "license": {
@@ -11,7 +11,7 @@
         "Daniel Hardman": "daniel.hardman@evernym.com"
     },
     "source": {
-        "http": "https://repo.sovrin.org/ios/libindy/stable/indy-objc/1.6.2/libindy-objc.zip"
+        "http": "https://repo.sovrin.org/ios/libindy/stable/indy-objc/1.6.4/libindy-objc.zip"
     },
     "platforms": {
         "ios": "10.0"

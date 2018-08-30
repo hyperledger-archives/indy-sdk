@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.4
+* Early API types checks
+* Workaround for OS permissions on Android
+* Fix Android build ARMv7
+
 ## 1.6.3
 * Performed the following changes related to Libindy Wallet API:
     * Added separate API function `indy_generate_wallet_key` to generate a random wallet master key.

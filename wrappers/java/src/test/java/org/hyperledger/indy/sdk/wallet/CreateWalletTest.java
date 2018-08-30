@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutionException;
 import org.hyperledger.indy.sdk.IndyIntegrationTest;
 import org.hyperledger.indy.sdk.InvalidStructureException;
 import org.json.JSONObject;
-import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -16,12 +15,6 @@ public class CreateWalletTest extends IndyIntegrationTest {
 	@Test
 	public void testCreateWalletWorks() throws Exception {
 		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-	}
-
-	@Test
-	@Ignore
-	public void testCreateWalletWorksForPlugged() throws Exception {
-		Wallet.createWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
 	}
 
 	@Test

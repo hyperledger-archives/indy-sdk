@@ -1,6 +1,6 @@
 [package]
 name = "indy"
-version = "1.6.3"
+version = "1.6.4"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
   "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
@@ -84,3 +84,10 @@ features = ["v4"]
 android_logger = "0.5"
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 rusqlite = { version = "0.13.0", features=["bundled"] }
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "wallet"
+harness = false
