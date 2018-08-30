@@ -2,6 +2,7 @@ pub mod did;
 pub mod pool;
 pub mod wallet;
 pub mod ledger;
+pub mod logger;
 pub mod payment;
 mod callbacks;
 mod results;
