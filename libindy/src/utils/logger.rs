@@ -203,8 +203,8 @@ impl LibindyDefaultLogger {
                 .args(format_args!("{}", args))
                 .level(level)
                 .target(&target)
-                .module_path(module_path.as_ref().map(String::as_str))
-                .file(file.as_ref().map(String::as_str))
+                .module_path(module_path)
+                .file(file)
                 .line(Some(line))
                 .build(),
         );

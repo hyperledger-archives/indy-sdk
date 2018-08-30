@@ -456,7 +456,7 @@ mod high_cases {
 
         #[test]
         fn indy_set_did_metadata_works_for_their_did() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -467,7 +467,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
@@ -575,7 +575,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_did_metadata_works_for_their_did() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -589,7 +589,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
