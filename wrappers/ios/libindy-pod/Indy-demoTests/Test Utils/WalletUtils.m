@@ -14,7 +14,7 @@
 
 @implementation WalletUtils
 
-NSString *credentials = @"{\"key\":\"key\"}";
+NSString *credentials = @"{\"key\":\"6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw\", \"key_derivation_method\": \"RAW\"}";
 
 + (WalletUtils *)sharedInstance {
     static WalletUtils *instance = nil;
@@ -192,6 +192,23 @@ NSString *credentials = @"{\"key\":\"key\"}";
                                              }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+    return err;
+}
+
+- (NSError *)generateWalletKeyForConfig:(NSString *)configJson
+                                    key:(NSString **)key {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyWallet generateWalletKeyForConfig:configJson
+                                completion:^(NSError *error, NSString *res) {
+                                    err = error;
+                                    if (key) *key = res;
+                                    [completionExpectation fulfill];
+                                }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
     return err;
 }
 

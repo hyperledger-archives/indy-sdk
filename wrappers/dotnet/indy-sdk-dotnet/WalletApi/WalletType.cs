@@ -2,7 +2,6 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
-using static Hyperledger.Indy.Consts;
 using static Hyperledger.Indy.WalletApi.NativeMethods;
 
 namespace Hyperledger.Indy.WalletApi

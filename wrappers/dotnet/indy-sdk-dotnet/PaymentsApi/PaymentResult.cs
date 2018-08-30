@@ -1,5 +1,4 @@
-﻿using System;
-namespace Hyperledger.Indy.PaymentsApi
+﻿namespace Hyperledger.Indy.PaymentsApi
 {
     /// <summary>
     /// Payment result.

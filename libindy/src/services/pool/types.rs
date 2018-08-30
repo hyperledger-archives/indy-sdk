@@ -437,19 +437,6 @@ pub struct KeyValuesSubTrieData {
     pub kvs: Vec<(String /* b64-encoded key_suffix */, Option<String /* val */>)>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct PoolConfig {
-    pub genesis_txn: String
-}
-
-impl PoolConfig {
-    pub fn default_for_name(name: &str) -> PoolConfig {
-        let mut txn = name.to_string();
-        txn += ".txn";
-        PoolConfig { genesis_txn: txn }
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RemoteNode {
     pub name: String,

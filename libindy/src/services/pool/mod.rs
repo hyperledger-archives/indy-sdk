@@ -24,14 +24,13 @@ use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs;
+use std::{fs, io};
 use std::io::Write;
 
 use api::ledger::{CustomFree, CustomTransactionParser};
-use domain::pool::PoolOpenConfig;
+use domain::pool::{PoolConfig, PoolOpenConfig};
 use errors::pool::PoolError;
 use errors::common::CommonError;
-use self::types::*;
 use utils::environment::EnvironmentUtils;
 use utils::sequence::SequenceUtils;
 use std::sync::Mutex;
@@ -56,17 +55,12 @@ impl PoolService {
         }
     }
 
-    pub fn create(&self, name: &str, config: Option<&str>) -> Result<(), PoolError> {
+    pub fn create(&self, name: &str, config: Option<PoolConfig>) -> Result<(), PoolError> {
         //TODO: initialize all state machines
         trace!("PoolService::create {} with config {:?}", name, config);
 
         let mut path = EnvironmentUtils::pool_path(name);
-        let pool_config: PoolConfig = match config {
-            Some(config) => serde_json::from_str(config)
-                .map_err(|err|
-                    CommonError::InvalidStructure(format!("Invalid pool config format: {}", err.description())))?,
-            None => PoolConfig::default_for_name(name)
-        };
+        let pool_config = config.unwrap_or(PoolConfig::default_for_name(name));
 
         if path.as_path().exists() {
             return Err(PoolError::AlreadyExists(format!("Pool ledger config file with name \"{}\" already exists", name)));
@@ -84,14 +78,23 @@ impl PoolService {
 
         path.push(name);
         path.set_extension("txn");
-        fs::copy(&pool_config.genesis_txn, path.as_path()).map_err(map_err_trace!())?;
+        {
+            // fs::copy also copies attributes of the file
+            // and copying permissions can be problem for some cases
+            let mut gt_fin = fs::File::open(&pool_config.genesis_txn)
+                .map_err(map_err_trace!())?;
+            let mut gt_fout = fs::File::create(path.as_path())
+                .map_err(map_err_trace!())?;
+            io::copy(&mut gt_fin, &mut gt_fout)
+                .map_err(map_err_trace!())?;
+        }
         path.pop();
 
         path.push("config");
         path.set_extension("json");
         let mut f: fs::File = fs::File::create(path.as_path()).map_err(map_err_trace!())?;
 
-        f.write(serde_json::to_string(&pool_config)
+        f.write_all(serde_json::to_string(&pool_config)
             .map_err(|err|
                 CommonError::InvalidState(format!("Can't serialize pool config: {}", err.description()))).map_err(map_err_trace!())?
             .as_bytes()).map_err(map_err_trace!())?;
@@ -113,7 +116,7 @@ impl PoolService {
         fs::remove_dir_all(path).map_err(PoolError::from)
     }
 
-    pub fn open(&self, name: &str, config: Option<&str>) -> Result<i32, PoolError> {
+    pub fn open(&self, name: &str, config: Option<PoolOpenConfig>) -> Result<i32, PoolError> {
         for ref pool in self.open_pools.try_borrow().map_err(CommonError::from)?.values() {
             if name.eq(pool.pool.get_name()) {
                 //TODO change error
@@ -121,12 +124,7 @@ impl PoolService {
             }
         }
 
-        let config: PoolOpenConfig = if let Some(config) = config {
-            serde_json::from_str(config)
-                .map_err(|err| CommonError::InvalidStructure(format!("Invalid Pool config: {}", err)))?
-        } else {
-            PoolOpenConfig::default()
-        };
+        let config = config.unwrap_or(PoolOpenConfig::default() );
 
         let pool_handle: i32 = SequenceUtils::get_next_id();
         let mut new_pool = Pool::new(name, pool_handle, config);
@@ -263,8 +261,8 @@ mod tests {
     use utils::test::TestUtils;
     use domain::ledger::request::ProtocolVersion;
     use std::thread;
+    use services::pool::types::*;
 
-    pub const NODE1: &'static str = r#"{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","client_ip":"10.0.0.2","client_port":9702,"node_ip":"10.0.0.2","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"},"metadata":{"from":"Th7MpTaRZVRYnPiabds81Y"},"type":"0"},"txnMetadata":{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"},"ver":"1"}"#;
     const TEST_PROTOCOL_VERSION: usize = 2;
 
     fn _set_protocol_version(version: usize) {
@@ -511,7 +509,7 @@ mod tests {
             let ps = PoolService::new();
 
             let pool_name = "pool_drop_works";
-            let gen_txn = NODE1;
+            let gen_txn = TestUtils::gen_txns()[0].clone();
 
             let zmq_ctx = zmq::Context::new();
             let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();

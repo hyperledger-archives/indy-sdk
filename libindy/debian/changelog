@@ -1,12 +1,12 @@
-libindy (1.6.2) unstable; urgency=medium
+libindy (1.6.3) unstable; urgency=medium
 
 [ Hyperledger ]
 
-* 1.6.2
-    * Performed the following changes related to Libindy Ledger API:
-        * Added `indy_submit_action` endpoint that provides the ability to send either GET_VALIDATOR_INFO or
-          POOL_RESTART request to specific nodes and to specify custom timeout for a response from a node.
-        * Updated `indy_build_pool_upgrade_request` API function to accept the additional parameter `package` that allow specify package to be upgraded.
-    * Updated wallet `credentials` to accept the additional parameter `key_derivation_method`.
-      This parameter provides the ability to use different crypto algorithms for master key derivation.
+* 1.6.3
+    * Performed the following changes related to Libindy Wallet API:
+        * Added separate API function `indy_generate_wallet_key` to generate a random wallet master key.
+        * Updated `key_derivation_method` parameter of wallet `credentials` to accept the addition type - `RAW`.
+          By using this type, the result of `indy_generate_wallet_key` can be passed as a wallet master key (key derivation will be skipped).
+        * Updated Indy CLI wallet related commands to accept the addition parameter `key_derivation_method`.
+    * Updated `data` parameter of `indy_build_node_request` API function to accept `blskey_pop` (Proof of possession for BLS key).
     * Bugfixes

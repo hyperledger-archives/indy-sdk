@@ -29,3 +29,8 @@ pub struct KeyInfo {
     pub seed: Option<String>,
     pub crypto_type: Option<String>
 }
+
+#[derive(Serialize, Deserialize, Debug, NamedType)]
+pub struct KeyMetadata {
+    pub value: String
+}
