@@ -46,7 +46,7 @@ Indy SDK provides libindy wrappers for the following programming languages and p
 
 ### Indy CLI
 
-[Indy CLI](cli/README.md) is the official command line interface that helps Indy developers and administrator.
+[Indy CLI](cli/README.md) is the official command line interface that helps Indy developers and administrators.
 
 
 ### Libnullpay
