@@ -33,10 +33,9 @@ use indy::api as api;
 mod utils;
 
 #[cfg(feature = "local_nodes_pool")]
-use utils::callback::CallbackUtils;
+use utils::callback;
 use utils::constants::{WALLET_CREDENTIALS, PROTOCOL_VERSION};
-use utils::pool::PoolUtils;
-use utils::timeout::TimeoutUtils;
+use utils::{pool, timeout};
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
 use utils::domain::anoncreds::proof::Proof;
@@ -45,7 +44,7 @@ use utils::domain::anoncreds::revocation_registry::RevocationRegistry;
 use utils::domain::anoncreds::revocation_state::RevocationState;
 use utils::domain::anoncreds::schema::Schema;
 
-use utils::environment::EnvironmentUtils;
+use utils::environment;
 
 use indy::api::ErrorCode;
 use indy::api::anoncreds::*;
@@ -68,23 +67,23 @@ use std::thread;
 fn anoncreds_demo_works() {
     utils::setup();
 
-    let (issuer_create_schema_receiver, issuer_create_schema_command_handle, issuer_create_schema_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
-    let (issuer_create_credential_definition_receiver, issuer_create_credential_definition_command_handle, issuer_create_credential_definition_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
-    let (issuer_create_credential_offer_receiver, issuer_create_credential_offer_command_handle, issuer_create_credential_offer_callback) = CallbackUtils::_closure_to_cb_ec_string();
-    let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
-    let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
-    let (prover_create_master_secret_receiver, prover_create_master_secret_command_handle, prover_create_master_secret_callback) = CallbackUtils::_closure_to_cb_ec_string();
-    let (prover_create_credential_req_receiver, prover_create_credential_req_command_handle, prover_create_credential_req_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
-    let (issuer_create_credential_receiver, issuer_create_credential_command_handle, issuer_create_credential_callback) = CallbackUtils::_closure_to_cb_ec_string_opt_string_opt_string();
-    let (prover_store_credential_receiver, prover_store_credential_command_handle, prover_store_credential_callback) = CallbackUtils::_closure_to_cb_ec_string();
-    let (prover_get_credentials_for_proof_req_receiver, prover_get_credentials_for_proof_req_command_handle, prover_get_credentials_for_proof_req_callback) = CallbackUtils::_closure_to_cb_ec_string();
-    let (prover_create_proof_receiver, prover_create_proof_command_handle, prover_create_proof_callback) = CallbackUtils::_closure_to_cb_ec_string();
-    let (verifier_verify_proof_receiver, verifier_verify_proof_command_handle, verifier_verify_proof_callback) = CallbackUtils::_closure_to_cb_ec_bool();
-    let (close_wallet_receiver, close_wallet_command_handle, close_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
-    let (bs_writer_receiver, bs_writer_command_handle, bs_writer_cb) = CallbackUtils::_closure_to_cb_ec_i32();
-    let (bs_reader_receiver, bs_reader_command_handle, bs_reader_cb) = CallbackUtils::_closure_to_cb_ec_i32();
-    let (cs_rev_reg_receiver, cs_rev_reg_command_handle, cs_rev_reg_cb) = CallbackUtils::_closure_to_cb_ec_string_string_string();
-    let (create_rev_state_receiver, create_rev_state_command_handle, create_rev_state_cb) = CallbackUtils::_closure_to_cb_ec_string();
+    let (issuer_create_schema_receiver, issuer_create_schema_command_handle, issuer_create_schema_callback) = callback::_closure_to_cb_ec_string_string();
+    let (issuer_create_credential_definition_receiver, issuer_create_credential_definition_command_handle, issuer_create_credential_definition_callback) = callback::_closure_to_cb_ec_string_string();
+    let (issuer_create_credential_offer_receiver, issuer_create_credential_offer_command_handle, issuer_create_credential_offer_callback) = callback::_closure_to_cb_ec_string();
+    let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = callback::_closure_to_cb_ec();
+    let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = callback::_closure_to_cb_ec_i32();
+    let (prover_create_master_secret_receiver, prover_create_master_secret_command_handle, prover_create_master_secret_callback) = callback::_closure_to_cb_ec_string();
+    let (prover_create_credential_req_receiver, prover_create_credential_req_command_handle, prover_create_credential_req_callback) = callback::_closure_to_cb_ec_string_string();
+    let (issuer_create_credential_receiver, issuer_create_credential_command_handle, issuer_create_credential_callback) = callback::_closure_to_cb_ec_string_opt_string_opt_string();
+    let (prover_store_credential_receiver, prover_store_credential_command_handle, prover_store_credential_callback) = callback::_closure_to_cb_ec_string();
+    let (prover_get_credentials_for_proof_req_receiver, prover_get_credentials_for_proof_req_command_handle, prover_get_credentials_for_proof_req_callback) = callback::_closure_to_cb_ec_string();
+    let (prover_create_proof_receiver, prover_create_proof_command_handle, prover_create_proof_callback) = callback::_closure_to_cb_ec_string();
+    let (verifier_verify_proof_receiver, verifier_verify_proof_command_handle, verifier_verify_proof_callback) = callback::_closure_to_cb_ec_bool();
+    let (close_wallet_receiver, close_wallet_command_handle, close_wallet_callback) = callback::_closure_to_cb_ec();
+    let (bs_writer_receiver, bs_writer_command_handle, bs_writer_cb) = callback::_closure_to_cb_ec_i32();
+    let (bs_reader_receiver, bs_reader_command_handle, bs_reader_cb) = callback::_closure_to_cb_ec_i32();
+    let (cs_rev_reg_receiver, cs_rev_reg_command_handle, cs_rev_reg_cb) = callback::_closure_to_cb_ec_string_string_string();
+    let (create_rev_state_receiver, create_rev_state_command_handle, create_rev_state_cb) = callback::_closure_to_cb_ec_string();
 
     let wallet_config = json!({"id": "issuer_wallet1"}).to_string();
 
@@ -97,7 +96,7 @@ fn anoncreds_demo_works() {
                            create_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let err = create_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let err = create_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     //2. Opens Wallet
@@ -108,7 +107,7 @@ fn anoncreds_demo_works() {
                          open_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, wallet_handle) = open_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, wallet_handle) = open_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     let issuer_did = "NcYxiDXkpYi6ov5FcYDi1e";
@@ -127,7 +126,7 @@ fn anoncreds_demo_works() {
                                   issuer_create_schema_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, schema_id, schema_json) = issuer_create_schema_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, schema_id, schema_json) = issuer_create_schema_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 4. Issuer create Credential Definition for Schema
@@ -145,12 +144,12 @@ fn anoncreds_demo_works() {
                                                     issuer_create_credential_definition_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, credential_def_id, credential_def_json) = issuer_create_credential_definition_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, credential_def_id, credential_def_json) = issuer_create_credential_definition_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 4.1 Issuer configure blob storage for Tails then create and store RevocationRegistry
     let tails_writer_config = json!({
-        "base_dir": EnvironmentUtils::tmp_file_path("tails").to_str().unwrap(),
+        "base_dir": environment::tmp_file_path("tails").to_str().unwrap(),
         "uri_pattern":"",
     }).to_string();
 
@@ -159,7 +158,7 @@ fn anoncreds_demo_works() {
                                             CString::new(tails_writer_config).unwrap().as_ptr(),
                                             bs_writer_cb);
     assert_eq!(ErrorCode::Success, err);
-    let (err, tails_writer_handle) = bs_writer_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    let (err, tails_writer_handle) = bs_writer_receiver.recv_timeout(timeout::short_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     let err = indy_issuer_create_and_store_revoc_reg(cs_rev_reg_command_handle,
@@ -185,7 +184,7 @@ fn anoncreds_demo_works() {
                                          prover_create_master_secret_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, _) = prover_create_master_secret_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, _) = prover_create_master_secret_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 6. Issuer create Credential Offer
@@ -196,7 +195,7 @@ fn anoncreds_demo_works() {
                                             issuer_create_credential_offer_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, credential_offer_json) = issuer_create_credential_offer_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, credential_offer_json) = issuer_create_credential_offer_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Prover create Credential Request
@@ -210,7 +209,7 @@ fn anoncreds_demo_works() {
                                           prover_create_credential_req_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, credential_req_json, credential_req_metadata_json) = prover_create_credential_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, credential_req_json, credential_req_metadata_json) = prover_create_credential_req_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 8. Issuer create Credential for Credential Request
@@ -224,7 +223,7 @@ fn anoncreds_demo_works() {
 
     // 8.1 Creating credential requires access to Tails: Issuer configure blob storage to read
     let tails_reader_config = json!({
-        "base_dir": EnvironmentUtils::tmp_file_path("tails").to_str().unwrap(),
+        "base_dir": environment::tmp_file_path("tails").to_str().unwrap(),
     }).to_string();
     let err = indy_open_blob_storage_reader(bs_reader_command_handle,
                                             CString::new("default").unwrap().as_ptr(),
@@ -232,7 +231,7 @@ fn anoncreds_demo_works() {
                                             bs_reader_cb);
     assert_eq!(ErrorCode::Success, err);
     let (err, blob_storage_reader_handle) =
-        bs_reader_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+        bs_reader_receiver.recv_timeout(timeout::short_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     let err =
@@ -247,7 +246,7 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, credential_json, cred_rev_id, rreg_issue_delta_json) =
-        issuer_create_credential_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+        issuer_create_credential_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
     let rreg_issue_delta_json = rreg_issue_delta_json.unwrap();
     let cred_rev_id = cred_rev_id.unwrap();
@@ -265,7 +264,7 @@ fn anoncreds_demo_works() {
                                      prover_store_credential_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, _) = prover_store_credential_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, _) = prover_store_credential_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     let proof_req_json = r#"{
@@ -296,7 +295,7 @@ fn anoncreds_demo_works() {
                                                   prover_get_credentials_for_proof_req_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, credentials_json) = prover_get_credentials_for_proof_req_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, credentials_json) = prover_get_credentials_for_proof_req_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     let credentials: CredentialsForProofRequest = serde_json::from_str(&credentials_json).unwrap();
@@ -370,7 +369,7 @@ fn anoncreds_demo_works() {
                                  prover_create_proof_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, proof_json) = prover_create_proof_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, proof_json) = prover_create_proof_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 12. Verifier verify proof
@@ -400,14 +399,14 @@ fn anoncreds_demo_works() {
                                    verifier_verify_proof_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, valid) = verifier_verify_proof_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, valid) = verifier_verify_proof_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
     assert!(valid);
 
     // 13. Close wallet
     let res = indy_close_wallet(close_wallet_command_handle, wallet_handle, close_wallet_callback);
     assert_eq!(res, ErrorCode::Success);
-    let res = close_wallet_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let res = close_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(res, ErrorCode::Success);
 
     utils::tear_down();
@@ -423,33 +422,33 @@ fn ledger_demo_works() {
     let pool_name = "pool_1";
     let c_pool_name = CString::new(pool_name).unwrap();
 
-    let (set_protocol_version_receiver, set_protocol_version_command_handle, set_protocol_version_callback) = CallbackUtils::_closure_to_cb_ec();
-    let (open_receiver, open_command_handle, open_callback) = CallbackUtils::_closure_to_cb_ec_i32();
-    let (create_receiver, create_command_handle, create_callback) = CallbackUtils::_closure_to_cb_ec();
-    let (send_receiver, send_command_handle, send_callback) = CallbackUtils::_closure_to_cb_ec_string();
-    let (get_nym_receiver, get_nym_command_handle, get_nym_callback) = CallbackUtils::_closure_to_cb_ec_string();
-    let (create_my_wallet_receiver, create_my_wallet_command_handle, create_my_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
-    let (create_their_wallet_receiver, create_their_wallet_command_handle, create_their_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
-    let (open_my_wallet_receiver, open_my_wallet_command_handle, open_my_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
-    let (open_their_wallet_receiver, open_their_wallet_command_handle, open_their_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
-    let (create_and_store_my_did_receiver, create_and_store_my_did_command_handle, create_and_store_my_did_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
-    let (create_and_store_their_did_receiver, create_and_store_their_did_command_handle, create_and_store_their_did_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
-    let (store_their_did_receiver, store_their_did_command_handle, store_their_did_callback) = CallbackUtils::_closure_to_cb_ec();
-    let (close_pool_receiver, close_pool_command_handle, close_pool_callback) = CallbackUtils::_closure_to_cb_ec();
-    let (close_my_wallet_receiver, close_my_wallet_command_handle, close_my_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
-    let (close_their_wallet_receiver, close_their_wallet_command_handle, close_their_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (set_protocol_version_receiver, set_protocol_version_command_handle, set_protocol_version_callback) = callback::_closure_to_cb_ec();
+    let (open_receiver, open_command_handle, open_callback) = callback::_closure_to_cb_ec_i32();
+    let (create_receiver, create_command_handle, create_callback) = callback::_closure_to_cb_ec();
+    let (send_receiver, send_command_handle, send_callback) = callback::_closure_to_cb_ec_string();
+    let (get_nym_receiver, get_nym_command_handle, get_nym_callback) = callback::_closure_to_cb_ec_string();
+    let (create_my_wallet_receiver, create_my_wallet_command_handle, create_my_wallet_callback) = callback::_closure_to_cb_ec();
+    let (create_their_wallet_receiver, create_their_wallet_command_handle, create_their_wallet_callback) = callback::_closure_to_cb_ec();
+    let (open_my_wallet_receiver, open_my_wallet_command_handle, open_my_wallet_callback) = callback::_closure_to_cb_ec_i32();
+    let (open_their_wallet_receiver, open_their_wallet_command_handle, open_their_wallet_callback) = callback::_closure_to_cb_ec_i32();
+    let (create_and_store_my_did_receiver, create_and_store_my_did_command_handle, create_and_store_my_did_callback) = callback::_closure_to_cb_ec_string_string();
+    let (create_and_store_their_did_receiver, create_and_store_their_did_command_handle, create_and_store_their_did_callback) = callback::_closure_to_cb_ec_string_string();
+    let (store_their_did_receiver, store_their_did_command_handle, store_their_did_callback) = callback::_closure_to_cb_ec();
+    let (close_pool_receiver, close_pool_command_handle, close_pool_callback) = callback::_closure_to_cb_ec();
+    let (close_my_wallet_receiver, close_my_wallet_command_handle, close_my_wallet_callback) = callback::_closure_to_cb_ec();
+    let (close_their_wallet_receiver, close_their_wallet_command_handle, close_their_wallet_callback) = callback::_closure_to_cb_ec();
 
     // Set protocol version
     let err = indy_set_protocol_version(set_protocol_version_command_handle,
                                         PROTOCOL_VERSION,
                                         set_protocol_version_callback);
     assert_eq!(err, ErrorCode::Success);
-    let err = set_protocol_version_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    let err = set_protocol_version_receiver.recv_timeout(timeout::short_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
 
     // 1. Create ledger config from genesis txn file
-    let txn_file_path = PoolUtils::create_genesis_txn_file_for_test_pool(pool_name, None, None);
-    let pool_config = PoolUtils::pool_config_json(txn_file_path.as_path());
+    let txn_file_path = pool::create_genesis_txn_file_for_test_pool(pool_name, None, None);
+    let pool_config = pool::pool_config_json(txn_file_path.as_path());
     let c_pool_config = CString::new(pool_config).unwrap();
 
     let err = indy_create_pool_ledger_config(create_command_handle,
@@ -457,7 +456,7 @@ fn ledger_demo_works() {
                                              c_pool_config.as_ptr(),
                                              create_callback);
     assert_eq!(err, ErrorCode::Success);
-    let err = create_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    let err = create_receiver.recv_timeout(timeout::short_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
 
     // 2. Open pool ledger
@@ -466,9 +465,9 @@ fn ledger_demo_works() {
                                     null(),
                                     open_callback);
     assert_eq!(err, ErrorCode::Success);
-    let (err, pool_handle) = open_receiver.recv_timeout(TimeoutUtils::short_timeout()).unwrap();
+    let (err, pool_handle) = open_receiver.recv_timeout(timeout::short_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
-    thread::sleep(TimeoutUtils::short_timeout());
+    thread::sleep(timeout::short_timeout());
 
     // 3. Create My Wallet
     let err =
@@ -478,7 +477,7 @@ fn ledger_demo_works() {
                            create_my_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let err = create_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let err = create_my_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 4. Open My Wallet. Gets My wallet handle
@@ -489,7 +488,7 @@ fn ledger_demo_works() {
                          open_my_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, my_wallet_handle) = open_my_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, my_wallet_handle) = open_my_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
 
@@ -501,7 +500,7 @@ fn ledger_demo_works() {
                            create_their_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let err = create_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let err = create_their_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 6. Open Their Wallet. Gets Their wallet handle
@@ -512,7 +511,7 @@ fn ledger_demo_works() {
                          open_their_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, their_wallet_handle) = open_their_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, their_wallet_handle) = open_their_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 7. Create My DID
@@ -524,7 +523,7 @@ fn ledger_demo_works() {
                                      create_and_store_my_did_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, my_did, my_verkey) = create_and_store_my_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, my_did, my_verkey) = create_and_store_my_did_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     info!("did {:?}", my_did);
     info!("verkey {:?}", my_verkey);
     assert_eq!(ErrorCode::Success, err);
@@ -538,7 +537,7 @@ fn ledger_demo_works() {
                                      create_and_store_their_did_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, their_did, their_verkey) = create_and_store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, their_did, their_verkey) = create_and_store_their_did_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     info!("their_did {:?}", their_did);
     info!("their_verkey {:?}", their_verkey);
     assert_eq!(ErrorCode::Success, err);
@@ -555,11 +554,11 @@ fn ledger_demo_works() {
                              store_their_did_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let err = store_their_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let err = store_their_did_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 10. Prepare NYM transaction
-    let nym_req_id = PoolUtils::get_req_id();
+    let nym_req_id = pool::get_req_id();
     let nym_txn_req = Request {
         identifier: their_did.clone(),
         operation: Operation {
@@ -582,17 +581,17 @@ fn ledger_demo_works() {
                                            req.as_ptr(),
                                            send_callback);
     assert_eq!(err, ErrorCode::Success);
-    let (err, resp) = send_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let (err, resp) = send_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
     let nym_resp = serde_json::from_str::<serde_json::Value>(&resp).unwrap();
     info!("nym_resp_raw : {:?}", resp);
     info!("nym_resp     : {:?}", nym_resp);
 
     // pause for synchronization of all nodes in the ledger
-    ::std::thread::sleep(TimeoutUtils::short_timeout());
+    ::std::thread::sleep(timeout::short_timeout());
 
     // 12. Prepare and send GET_NYM request
-    let get_nym_req_id = PoolUtils::get_req_id();
+    let get_nym_req_id = pool::get_req_id();
     let get_nym_txn = Request {
         req_id: get_nym_req_id,
         signature: None,
@@ -611,7 +610,7 @@ fn ledger_demo_works() {
                                   req.as_ptr(),
                                   get_nym_callback);
     assert_eq!(err, ErrorCode::Success);
-    let (err, resp) = get_nym_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let (err, resp) = get_nym_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(err, ErrorCode::Success);
     let get_nym_resp: Reply = serde_json::from_str(&resp).unwrap();
     let get_nym_resp_data: ReplyResultData = serde_json::from_str(&get_nym_resp.result.data.as_ref().unwrap()).unwrap();
@@ -622,19 +621,19 @@ fn ledger_demo_works() {
     // 13. Close pool
     let res = indy_close_pool_ledger(close_pool_command_handle, pool_handle, close_pool_callback);
     assert_eq!(res, ErrorCode::Success);
-    let res = close_pool_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let res = close_pool_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(res, ErrorCode::Success);
 
     // 14. Close my wallet
     let res = indy_close_wallet(close_my_wallet_command_handle, my_wallet_handle, close_my_wallet_callback);
     assert_eq!(res, ErrorCode::Success);
-    let res = close_my_wallet_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let res = close_my_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(res, ErrorCode::Success);
 
     // 15. Close their wallet
     let res = indy_close_wallet(close_their_wallet_command_handle, their_wallet_handle, close_their_wallet_callback);
     assert_eq!(res, ErrorCode::Success);
-    let res = close_their_wallet_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let res = close_their_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(res, ErrorCode::Success);
 
     utils::tear_down();
@@ -684,12 +683,12 @@ fn ledger_demo_works() {
 fn crypto_demo_works() {
     utils::setup();
 
-    let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
-    let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
-    let (create_and_store_did_receiver, create_and_store_did_command_handle, create_and_store_did_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
-    let (sign_receiver, sign_command_handle, sign_callback) = CallbackUtils::_closure_to_cb_ec_vec_u8();
-    let (verify_receiver, verify_command_handle, verify_callback) = CallbackUtils::_closure_to_cb_ec_bool();
-    let (close_wallet_receiver, close_wallet_command_handle, close_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
+    let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = callback::_closure_to_cb_ec();
+    let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = callback::_closure_to_cb_ec_i32();
+    let (create_and_store_did_receiver, create_and_store_did_command_handle, create_and_store_did_callback) = callback::_closure_to_cb_ec_string_string();
+    let (sign_receiver, sign_command_handle, sign_callback) = callback::_closure_to_cb_ec_vec_u8();
+    let (verify_receiver, verify_command_handle, verify_callback) = callback::_closure_to_cb_ec_bool();
+    let (close_wallet_receiver, close_wallet_command_handle, close_wallet_callback) = callback::_closure_to_cb_ec();
 
     let wallet_config = json!({"id": "wallet_1"}).to_string();
 
@@ -701,7 +700,7 @@ fn crypto_demo_works() {
                            create_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let err = create_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let err = create_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 2. Open Wallet. Gets wallet handle
@@ -712,7 +711,7 @@ fn crypto_demo_works() {
                          open_wallet_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, wallet_handle) = open_wallet_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, wallet_handle) = open_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 3. Create DID
@@ -724,7 +723,7 @@ fn crypto_demo_works() {
                                      create_and_store_did_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, _, verkey) = create_and_store_did_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, _, verkey) = create_and_store_did_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 4. Sign message
@@ -749,7 +748,7 @@ fn crypto_demo_works() {
                          sign_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, signature) = sign_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, signature) = sign_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
 
     // 5. Verify message
@@ -763,14 +762,14 @@ fn crypto_demo_works() {
                            verify_callback);
 
     assert_eq!(ErrorCode::Success, err);
-    let (err, valid) = verify_receiver.recv_timeout(TimeoutUtils::long_timeout()).unwrap();
+    let (err, valid) = verify_receiver.recv_timeout(timeout::long_timeout()).unwrap();
     assert!(valid);
     assert_eq!(ErrorCode::Success, err);
 
     // 6. Close Wallet
     let res = indy_close_wallet(close_wallet_command_handle, wallet_handle, close_wallet_callback);
     assert_eq!(res, ErrorCode::Success);
-    let res = close_wallet_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
+    let res = close_wallet_receiver.recv_timeout(timeout::medium_timeout()).unwrap();
     assert_eq!(res, ErrorCode::Success);
 
     utils::tear_down();

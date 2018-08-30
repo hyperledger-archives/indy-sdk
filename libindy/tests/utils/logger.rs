@@ -12,9 +12,6 @@ use utils::cstring::CStringUtils;
 
 use self::log::Level;
 
-pub struct LoggerUtils {}
-
-impl LoggerUtils {
     pub extern fn log(_context: *const c_void,
                       level: u32,
                       target: *const c_char,
@@ -51,12 +48,11 @@ impl LoggerUtils {
         indy_set_logger(
             null(),
             None,
-            Some(LoggerUtils::log),
-            Some(LoggerUtils::flush),
+            Some(log),
+            Some(flush),
         );
     }
 
     pub fn set_default_logger() {
         indy_set_default_logger(null());
     }
-}
