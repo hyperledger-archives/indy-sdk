@@ -234,7 +234,7 @@ mod tests {
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::language::*;
-    use utils::test::TestUtils;
+    use utils::test;
 
     macro_rules! jsonstr {
         ($($x:tt)+) => {
@@ -1764,7 +1764,7 @@ mod tests {
     }
 
     fn _cleanup() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
     }
 
     fn _type1() -> &'static str {

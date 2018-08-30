@@ -5,14 +5,11 @@ use std::ffi::CString;
 use indy::api::pairwise::*;
 use indy::api::ErrorCode;
 
-use utils::callback::CallbackUtils;
+use utils::callback;
 use std::ptr::null;
 
-pub struct PairwiseUtils {}
-
-impl PairwiseUtils {
     pub fn pairwise_exists(wallet_handle: i32, their_did: &str) -> Result<bool, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_bool();
+        let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_bool();
 
         let their_did = CString::new(their_did).unwrap();
 
@@ -22,7 +19,7 @@ impl PairwiseUtils {
     }
 
     pub fn create_pairwise(wallet_handle: i32, their_did: &str, my_did: &str, metadata: Option<&str>) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+        let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
         let their_did = CString::new(their_did).unwrap();
         let my_did = CString::new(my_did).unwrap();
@@ -40,7 +37,7 @@ impl PairwiseUtils {
     }
 
     pub fn list_pairwise(wallet_handle: i32) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
         let err = indy_list_pairwise(command_handle, wallet_handle, cb);
 
@@ -48,7 +45,7 @@ impl PairwiseUtils {
     }
 
     pub fn get_pairwise(wallet_handle: i32, their_did: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+        let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
         let their_did = CString::new(their_did).unwrap();
 
@@ -58,7 +55,7 @@ impl PairwiseUtils {
     }
 
     pub fn set_pairwise_metadata(wallet_handle: i32, their_did: &str, metadata: Option<&str>) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+        let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
         let their_did = CString::new(their_did).unwrap();
         let metadata_str = metadata.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
@@ -72,4 +69,3 @@ impl PairwiseUtils {
 
         super::results::result_to_empty(err, receiver)
     }
-}

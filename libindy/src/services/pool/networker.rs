@@ -11,7 +11,7 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use super::time::Duration;
 use time::Tm;
-use utils::sequence::SequenceUtils;
+use utils::sequence;
 use rand::{thread_rng, Rng};
 
 pub trait Networker {
@@ -81,7 +81,7 @@ impl Networker for ZMQNetworker {
                     }
                     None => {
                         trace!("send request in new conn");
-                        let pc_id = SequenceUtils::get_next_id();
+                        let pc_id = sequence::get_next_id();
                         let mut pc = PoolConnection::new(self.nodes.clone(), self.active_timeout, self.preordered_nodes.clone());
                         pc.send_request(pe).expect("FIXME");
                         self.pool_connections.insert(pc_id, pc);

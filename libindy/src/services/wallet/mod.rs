@@ -18,7 +18,7 @@ use api::wallet::*;
 use domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, KeyDerivationMethod, Tags};
 use errors::wallet::WalletError;
 use errors::common::CommonError;
-use utils::sequence::SequenceUtils;
+use utils::sequence;
 
 use self::export_import::{export, import};
 use self::storage::WalletStorageType;
@@ -239,7 +239,7 @@ impl WalletService {
 
         let wallet = Wallet::new(config.id.clone(), storage, Rc::new(keys));
 
-        let wallet_handle = SequenceUtils::get_next_id();
+        let wallet_handle = sequence::get_next_id();
         let mut wallets = self.wallets.borrow_mut();
         wallets.insert(wallet_handle, Box::new(wallet));
 
@@ -695,9 +695,9 @@ mod tests {
     use std::path::Path;
 
     use errors::wallet::WalletError;
-    use utils::environment::EnvironmentUtils;
+    use utils::environment;
     use utils::inmem_wallet::InmemWallet;
-    use utils::test::TestUtils;
+    use utils::test;
 
     #[test]
     fn wallet_service_new_works() {
@@ -1022,7 +1022,7 @@ mod tests {
 
     #[test]
     fn wallet_service_get_record_works_for_plugged_for_id_only() {
-        TestUtils::cleanup_indy_home();
+        test::cleanup_indy_home();
         InmemWallet::cleanup();
 
         let wallet_service = WalletService::new();
@@ -1931,7 +1931,7 @@ mod tests {
     }
 
     fn _export_file_path() -> PathBuf {
-        let mut path = EnvironmentUtils::tmp_file_path("export_tests");
+        let mut path = environment::tmp_file_path("export_tests");
         path.push("export_test");
         path
     }
@@ -1961,7 +1961,7 @@ mod tests {
     }
 
     fn _cleanup() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
         InmemWallet::cleanup();
     }
 
