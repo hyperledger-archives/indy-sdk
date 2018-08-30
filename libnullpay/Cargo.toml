@@ -1,6 +1,6 @@
 [package]
 name = "null-payment-method"
-version = "1.6.2"
+version = "1.6.4"
 authors = ["Nikita Khateev <nikita.khateev@dsr-corporation.com>"]
 build = "build.rs"
 

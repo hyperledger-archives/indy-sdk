@@ -45,10 +45,7 @@ public class SetDidMetadataTest extends IndyIntegrationTestWithSingleWallet {
 	}
 
 	@Test
-	public void testSetDidMetadataWorksForNotFoundDid() throws Exception {
-		thrown.expect(ExecutionException.class);
-		thrown.expectCause(isA(WalletItemNotFoundException.class));
-
+	public void testSetDidMetadataWorksForUnknownDid() throws Exception {
 		Did.setDidMetadata(wallet, DID, METADATA).get();
 	}
 

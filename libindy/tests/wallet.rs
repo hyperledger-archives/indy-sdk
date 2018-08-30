@@ -340,6 +340,45 @@ mod high_cases {
             TestUtils::cleanup_storage();
         }
     }
+
+    mod generate_wallet_key {
+        use super::*;
+        use rust_base58::FromBase58;
+
+        #[test]
+        fn indy_generate_wallet_key_works() {
+            TestUtils::cleanup_storage();
+
+            let key = WalletUtils::generate_wallet_key(None).unwrap();
+
+            let credentials = json!({"key": key, "key_derivation_method": "RAW"}).to_string();
+            WalletUtils::create_wallet(WALLET_CONFIG, &credentials).unwrap();
+
+            let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, &credentials).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::delete_wallet(WALLET_CONFIG, &credentials).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_generate_wallet_key_works_for_seed() {
+            TestUtils::cleanup_storage();
+
+            let config = json!({"seed": MY1_SEED}).to_string();
+            let key = WalletUtils::generate_wallet_key(Some(config.as_str())).unwrap();
+            assert_eq!(key.from_base58().unwrap(), vec![177, 92, 220, 199, 104, 203, 161, 4, 218, 78, 105, 13, 7, 50, 66, 107, 154, 155, 108, 133, 1, 30, 87, 149, 233, 76, 39, 156, 178, 46, 230, 124]);
+
+            let credentials = json!({"key": key, "key_derivation_method": "RAW"}).to_string();
+            WalletUtils::create_wallet(WALLET_CONFIG, &credentials).unwrap();
+
+            let wallet_handle = WalletUtils::open_wallet(WALLET_CONFIG, &credentials).unwrap();
+            WalletUtils::close_wallet(wallet_handle).unwrap();
+            WalletUtils::delete_wallet(WALLET_CONFIG, &credentials).unwrap();
+
+            TestUtils::cleanup_storage();
+        }
+    }
 }
 
 mod medium_cases {
@@ -412,6 +451,17 @@ mod medium_cases {
             TestUtils::cleanup_storage();
 
             let res = WalletUtils::create_wallet(r#"{"id": ""}"#, WALLET_CREDENTIALS);
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        fn indy_create_wallet_works_for_raw_key_invalid_length() {
+            TestUtils::cleanup_storage();
+
+            let credentials = json!({"key": "key", "key_derivation_method": "RAW"}).to_string();
+            let res = WalletUtils::create_wallet(WALLET_CONFIG, &credentials);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             TestUtils::cleanup_storage();
