@@ -62,7 +62,7 @@ mod create {
             ParameterizedBenchmark::new(
                 "wallet_create",
                 |b, credentials| b.iter_with_setup(setup, |()| create_wallet(credentials)),
-                vec![WALLET_CREDENTIALS_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_INT, WALLET_CREDENTIALS_RAW],
+                vec![WALLET_CREDENTIALS_ARGON2I_MOD, WALLET_CREDENTIALS_ARGON2I_INT, WALLET_CREDENTIALS_RAW],
             ).sample_size(10),
         );
     }
@@ -74,15 +74,15 @@ mod open {
 
     pub static mut WALLET_HANDLE: i32 = 0;
 
-    pub const WALLET_CONFIG_ARAGON2I_MOD: &'static str = r#"{"id":"wallet_open_ARAGON2I_MOD"}"#;
-    pub const WALLET_CONFIG_ARAGON2I_INT: &'static str = r#"{"id":"wallet_open_ARAGON2I_INT"}"#;
+    pub const WALLET_CONFIG_ARGON2I_MOD: &'static str = r#"{"id":"wallet_open_ARGON2I_MOD"}"#;
+    pub const WALLET_CONFIG_ARGON2I_INT: &'static str = r#"{"id":"wallet_open_ARGON2I_INT"}"#;
     pub const WALLET_CONFIG_RAW: &'static str = r#"{"id":"wallet_open_RAW"}"#;
 
     fn pre_setup() {
         TestUtils::cleanup_storage();
 
-        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD).unwrap();
-        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARGON2I_MOD, WALLET_CREDENTIALS_ARGON2I_MOD).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARGON2I_INT, WALLET_CREDENTIALS_ARGON2I_INT).unwrap();
         WalletUtils::create_wallet(WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW).unwrap();
     }
 
@@ -103,8 +103,8 @@ mod open {
             ParameterizedBenchmark::new(
                 "wallet_open",
                 |b, params| b.iter_with_setup(|| setup(params), |(config, credentials)| open_wallet(config, credentials)),
-                vec![(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD),
-                     (WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT),
+                vec![(WALLET_CONFIG_ARGON2I_MOD, WALLET_CREDENTIALS_ARGON2I_MOD),
+                     (WALLET_CONFIG_ARGON2I_INT, WALLET_CREDENTIALS_ARGON2I_INT),
                      (WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW)],
             ).sample_size(10),
         );
@@ -114,15 +114,15 @@ mod open {
 mod close {
     use super::*;
 
-    pub const WALLET_CONFIG_ARAGON2I_MOD: &'static str = r#"{"id":"wallet_close_ARAGON2I_MOD"}"#;
-    pub const WALLET_CONFIG_ARAGON2I_INT: &'static str = r#"{"id":"wallet_close_ARAGON2I_INT"}"#;
+    pub const WALLET_CONFIG_ARGON2I_MOD: &'static str = r#"{"id":"wallet_close_ARGON2I_MOD"}"#;
+    pub const WALLET_CONFIG_ARGON2I_INT: &'static str = r#"{"id":"wallet_close_ARGON2I_INT"}"#;
     pub const WALLET_CONFIG_RAW: &'static str = r#"{"id":"wallet_close_RAW"}"#;
 
     fn pre_setup() {
         TestUtils::cleanup_storage();
 
-        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD).unwrap();
-        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARGON2I_MOD, WALLET_CREDENTIALS_ARGON2I_MOD).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARGON2I_INT, WALLET_CREDENTIALS_ARGON2I_INT).unwrap();
         WalletUtils::create_wallet(WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW).unwrap();
     }
 
@@ -143,8 +143,8 @@ mod close {
             ParameterizedBenchmark::new(
                 "wallet_close",
                 |b, params| b.iter_with_setup(|| setup(params), |handle| close_wallet(handle)),
-                vec![(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD),
-                     (WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT),
+                vec![(WALLET_CONFIG_ARGON2I_MOD, WALLET_CREDENTIALS_ARGON2I_MOD),
+                     (WALLET_CONFIG_ARGON2I_INT, WALLET_CREDENTIALS_ARGON2I_INT),
                      (WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW)],
             ).sample_size(10),
         );
@@ -174,7 +174,7 @@ mod delete {
             ParameterizedBenchmark::new(
                 "wallet_delete",
                 |b, credentials| b.iter_with_setup(|| setup(credentials), |()| delete_wallet(credentials)),
-                vec![WALLET_CREDENTIALS_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_INT, WALLET_CREDENTIALS_RAW],
+                vec![WALLET_CREDENTIALS_ARGON2I_MOD, WALLET_CREDENTIALS_ARGON2I_INT, WALLET_CREDENTIALS_RAW],
             ).sample_size(10),
         );
     }
