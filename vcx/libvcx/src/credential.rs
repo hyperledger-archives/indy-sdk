@@ -111,6 +111,7 @@ impl Credential {
             from_did: String::from(my_did),
             mid: String::new(),
             version: String::from("0.1"),
+            msg_ref_id: None,
         })
     }
 
@@ -178,42 +179,27 @@ impl Credential {
         let my_vk = self.my_vk.as_ref().ok_or(e_code)?;
         let msg_uid = self.msg_uid.as_ref().ok_or(e_code)?;
 
-        let payload = messages::get_message::get_connection_messages(my_did,
-                                                                     my_vk,
-                                                                     agent_did,
-                                                                     agent_vk,
-                                                                     None)?;
+        let (_, payload) = messages::get_message::get_ref_msg(msg_uid, my_did, my_vk, agent_did, agent_vk)?;
 
-        for msg in payload {
-            if msg.msg_type.eq("cred") {
-                match msg.payload {
-                    Some(ref data) => {
-                        let data = to_u8(data);
-                        let (_, data) = crypto::parse_msg(&my_vk, data.as_slice())?;
+        let credential = extract_json_payload(&payload)?;
 
-                        let credential = extract_json_payload(&data)?;
+        let credential_msg: CredentialMessage = serde_json::from_str(&credential)
+            .or(Err(error::INVALID_CREDENTIAL_JSON.code_num)).unwrap();
 
-                        let credential_msg: CredentialMessage = serde_json::from_str(&credential)
-                            .or(Err(error::INVALID_CREDENTIAL_JSON.code_num)).unwrap();
+        let cred_req: &CredentialRequest = self.credential_request.as_ref()
+            .ok_or(CredentialError::InvalidCredentialJson().to_error_code())?;
 
-                        let cred_req: &CredentialRequest = self.credential_request.as_ref()
-                            .ok_or(CredentialError::InvalidCredentialJson().to_error_code())?;
+        let (_, cred_def_json) = ::credential_def::retrieve_credential_def(&cred_req.cred_def_id)
+            .map_err(|err| CredentialError::CommonError(err.to_error_code()).to_error_code())?;
 
-                        let (_, cred_def_json) = ::credential_def::retrieve_credential_def(&cred_req.cred_def_id)
-                            .map_err(|err| CredentialError::CommonError(err.to_error_code()).to_error_code())?;
+        self.credential = Some(credential);
+        self.cred_id = Some(libindy_prover_store_credential(None,
+                                                            &cred_req.libindy_cred_req_meta,
+                                                            &credential_msg.libindy_cred,
+                                                            &cred_def_json,
+                                                            None)?);
+        self.state = VcxStateType::VcxStateAccepted;
 
-                        self.credential = Some(credential);
-                        self.cred_id = Some(libindy_prover_store_credential(None,
-                                                                      &cred_req.libindy_cred_req_meta,
-                                                                      &credential_msg.libindy_cred,
-                                                                      &cred_def_json,
-                                                                      None)?);
-                        self.state = VcxStateType::VcxStateAccepted;
-                    },
-                    None => return Err(error::INVALID_HTTP_RESPONSE.code_num)
-                };
-            }
-        }
         Ok(())
     }
 
@@ -668,6 +654,7 @@ pub mod tests {
 
         assert_eq!(get_credential_id(c_h).unwrap(), "");
         httpclient::set_next_u8_response(::utils::constants::CREDENTIAL_RESPONSE.to_vec());
+        httpclient::set_next_u8_response(::utils::constants::UPDATE_CREDENTIAL_RESPONSE.to_vec());
         update_state(c_h).unwrap();
         assert_eq!(get_state(c_h).unwrap(), VcxStateType::VcxStateAccepted as u32);
         assert_eq!(get_credential_id(c_h).unwrap(), "cred_id"); // this is set in test mode

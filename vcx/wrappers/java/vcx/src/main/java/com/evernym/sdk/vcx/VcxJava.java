@@ -42,9 +42,9 @@ public class VcxJava {
 		 * 
 		 * @return The new command handle.
 		 */
-		protected static int newCommandHandle() {
+		static int newCommandHandle() {
 
-			return Integer.valueOf(atomicInteger.incrementAndGet());
+			return atomicInteger.incrementAndGet();
 		}
 
 		/**
@@ -56,8 +56,8 @@ public class VcxJava {
 		protected static int addFuture(CompletableFuture<?> future) {
 
 			int commandHandle = newCommandHandle();
-			assert(! futures.containsKey(Integer.valueOf(commandHandle)));
-			futures.put(Integer.valueOf(commandHandle), future);
+			assert(! futures.containsKey(commandHandle));
+			futures.put(commandHandle, future);
 
 			return commandHandle;
 		}
@@ -65,12 +65,12 @@ public class VcxJava {
 		/**
 		 * Stops tracking the future associated with the provided command handle and returns it.
 		 * 
-		 * @param xcommand_handle The command handle for the future to stop tracking.
+		 * @param commandHandle The command handle for the future to stop tracking.
 		 * @return The future associated with the command handle.
 		 */
-		protected static CompletableFuture<?> removeFuture(int xcommand_handle) {
+		protected static CompletableFuture<?> removeFuture(int commandHandle) {
 
-			CompletableFuture<?> future = futures.remove(Integer.valueOf(xcommand_handle));
+			CompletableFuture<?> future = futures.remove(commandHandle);
 			assert(future != null);
 
 			return future;
@@ -95,7 +95,9 @@ public class VcxJava {
 				if (errorCode == null) {
 					errorCode = ErrorCode.UNKNOWN_ERROR;
 				}
-			} catch(Exception e) {}
+			} catch(Exception e) {
+				//TODO Log exception to the logger
+			}
 
 			if (! ErrorCode.SUCCESS.equals(errorCode)) {
 				future.completeExceptionally(VcxException.fromSdkError(err));
@@ -163,7 +165,7 @@ public class VcxJava {
 	 */
 	public abstract static class JsonParameter {
 
-		protected Map<String, Object> map = new HashMap<String, Object>();
+		Map<String, Object> map = new HashMap<String, Object>();
 
 		/*
 		 * JSON CREATION
@@ -174,7 +176,7 @@ public class VcxJava {
 		 * 
 		 * @return The JSON string.
 		 */
-		public final String toJson() {
+		final String toJson() {
 
 			StringBuilder builder = new StringBuilder();
 			builder.append("{");
@@ -184,8 +186,8 @@ public class VcxJava {
 				Map.Entry<String, Object> entry = iterator.next();
 				String key = entry.getKey();
 				Object value = entry.getValue();
-				builder.append("\"" + key + "\":");
-				if (value instanceof String) builder.append("\"" + escapeJson(value.toString()) + "\"");
+				builder.append("\"").append(key).append("\":");
+				if (value instanceof String) builder.append("\"").append(escapeJson(value.toString())).append("\"");
 				else if (value instanceof Boolean) builder.append(value.toString());
 				else if (value instanceof Number) builder.append(value.toString());
 				else if (value == null) builder.append("null");

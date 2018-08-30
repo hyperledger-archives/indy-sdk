@@ -141,6 +141,8 @@ async def run():
     logger.info("\"Government\" -> Send \"Transcript\" Schema to Ledger")
     await send_schema(pool_handle, government_wallet, government_did, transcript_schema)
 
+    time.sleep(1)  # sleep 1 second before getting schema
+
     logger.info("==============================")
     logger.info("=== Faber Credential Definition Setup ==")
     logger.info("------------------------------")

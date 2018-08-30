@@ -4,17 +4,15 @@
 //
 
 #import "WalletUtils.h"
-#import <Indy/Indy.h>
 #import "TestUtils.h"
 
 @interface WalletUtils ()
 
-@property(strong, readwrite) NSMutableArray *registeredWalletTypes;
 @end
 
 @implementation WalletUtils
 
-NSString *credentials = @"{\"key\":\"key\"}";
+NSString *credentials = @"{\"key\":\"6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw\", \"key_derivation_method\": \"RAW\"}";
 
 + (WalletUtils *)sharedInstance {
     static WalletUtils *instance = nil;
@@ -22,32 +20,9 @@ NSString *credentials = @"{\"key\":\"key\"}";
 
     dispatch_once(&dispatch_once_block, ^{
         instance = [WalletUtils new];
-        instance.registeredWalletTypes = [NSMutableArray new];
     });
 
     return instance;
-}
-
-- (NSError *)registerWalletType:(NSString *)xtype {
-    if ([self.registeredWalletTypes containsObject:xtype]) {
-        return [NSError errorWithDomain:@"IndyErrorDomain" code:WalletTypeAlreadyRegisteredError userInfo:nil];;
-    }
-
-    __block NSError *err = nil;
-    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
-
-
-    [[IndyWallet sharedInstance] registerIndyKeychainWalletType:xtype
-                                                     completion:^(NSError *error) {
-                                                         err = error;
-                                                         [completionExpectation fulfill];
-                                                     }];
-
-    [self.registeredWalletTypes addObject:xtype];
-
-    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
-
-    return err;
 }
 
 - (NSError *)createAndOpenWalletWithHandle:(IndyHandle *)handle {
@@ -192,6 +167,23 @@ NSString *credentials = @"{\"key\":\"key\"}";
                                              }];
 
     [self waitForExpectations:@[completionExpectation] timeout:[TestUtils longTimeout]];
+    return err;
+}
+
+- (NSError *)generateWalletKeyForConfig:(NSString *)configJson
+                                    key:(NSString **)key {
+    XCTestExpectation *completionExpectation = [[XCTestExpectation alloc] initWithDescription:@"completion finished"];
+    __block NSError *err = nil;
+
+    [IndyWallet generateWalletKeyForConfig:configJson
+                                completion:^(NSError *error, NSString *res) {
+                                    err = error;
+                                    if (key) *key = res;
+                                    [completionExpectation fulfill];
+                                }];
+
+    [self waitForExpectations:@[completionExpectation] timeout:[TestUtils defaultTimeout]];
+
     return err;
 }
 

@@ -1,12 +1,15 @@
 extern crate libc;
 
 use api::ErrorCode;
-use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::crypto::CryptoCommand;
+use domain::crypto::key::KeyInfo;
+use errors::common::CommonError;
+use errors::ToErrorCode;
 use utils::cstring::CStringUtils;
 use utils::byte_array::vec_to_pointer;
 
+use serde_json;
 use self::libc::c_char;
 
 
@@ -42,10 +45,10 @@ pub  extern fn indy_create_key(command_handle: i32,
                                                     verkey: *const c_char)>) -> ErrorCode {
     trace!("indy_create_key: >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, key_json);
 
-    check_useful_c_str!(key_json, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(key_json, ErrorCode::CommonInvalidParam3, KeyInfo);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_create_key: entities >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, secret!(key_json.as_str()));
+    trace!("indy_create_key: entities >>> wallet_handle: {:?}, key_json: {:?}", wallet_handle, secret!(&key_json));
 
     let result = CommandExecutor::instance()
         .send(Command::Crypto(CryptoCommand::CreateKey(

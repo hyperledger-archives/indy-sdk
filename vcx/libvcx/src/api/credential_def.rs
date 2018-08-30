@@ -70,7 +70,7 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
           tag,
           config);
 
-    thread::spawn( move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
         let ( rc, handle) = match credential_def::create_new_credentialdef(source_id,
                                                                  credentialdef_name,
                                                                  issuer_did,
@@ -89,8 +89,10 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
             },
         };
         cb(command_handle, rc, handle);
-    });
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Takes the credentialdef object and returns a json string of all its attributes
@@ -119,7 +121,7 @@ pub extern fn vcx_credentialdef_serialize(command_handle: u32,
         return error::INVALID_CREDENTIAL_DEF_HANDLE.code_num;
     };
 
-    thread::spawn( move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
         match credential_def::to_string(credentialdef_handle) {
             Ok(x) => {
                 info!("vcx_credentialdef_serialize_cb(command_handle: {}, credentialdef_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -134,9 +136,10 @@ pub extern fn vcx_credentialdef_serialize(command_handle: u32,
             },
         };
 
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Takes a json string representing a credentialdef object and recreates an object matching the json
@@ -160,7 +163,7 @@ pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
 
     info!("vcx_credentialdef_deserialize(command_handle: {}, credentialdef_data: {})", command_handle, credentialdef_data);
 
-    thread::spawn( move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
         let (rc, handle) = match credential_def::from_string(&credentialdef_data) {
             Ok(x) => {
                 info!("vcx_credentialdef_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
@@ -175,9 +178,10 @@ pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
             },
         };
         cb(command_handle, rc, handle);
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Retrieves credential definition's id
@@ -198,7 +202,7 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32, cred_def_ha
         return error::INVALID_CREDENTIAL_DEF_HANDLE.code_num;
     }
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential_def::get_cred_def_id(cred_def_handle) {
             Ok(x) => {
                 info!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}, rc: {}, cred_def_id: {})",
@@ -212,9 +216,10 @@ pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32, cred_def_ha
                 cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Retrieve the txn associated with paying for the credential_def
@@ -244,7 +249,7 @@ pub extern fn vcx_credentialdef_get_payment_txn(command_handle: u32,
 
     info!("vcx_credentialdef_get_payment_txn(command_handle: {})", command_handle);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         match credential_def::get_payment_txn(handle) {
             Ok(x) => {
                 match serde_json::to_string(&x) {
@@ -268,9 +273,10 @@ pub extern fn vcx_credentialdef_get_payment_txn(command_handle: u32,
                 cb(command_handle, x.to_error_code(), ptr::null());
             },
         };
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 /// Releases the credentialdef object by de-allocating memory

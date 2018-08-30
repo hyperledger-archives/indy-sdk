@@ -12,11 +12,18 @@ version you can check migration guides history:
 ## Table of contents
 
 * [Notes](#notes)
-* [Wallet API](#wallet-api)
-* [Anoncreds API](#anoncreds-api)
-* [Payments API](#payments-api)
-* [Pool API](#payments-api)
-* [Ledger API](#ledger-api)
+* [Libindy 1.5 to 1.6.0 migration](#libindy-15-to-160-migration-guide)
+    * [Wallet API](#wallet-api)
+    * [Anoncreds API](#anoncreds-api)
+    * [Payments API](#payments-api)
+    * [Pool API](#payments-api)
+* [Libindy 1.6.0 to 1.6.1 migration](#libindy-160-to-161-migration-guide)
+* [Libindy 1.6.1 to 1.6.2 migration](#libindy-161-to-162-migration-guide)
+    * [Wallet API 1.6.2](#wallet-api-162)
+    * [Ledger API 1.6.2](#ledger-api-162)
+* [Libindy 1.6.2 to 1.6.3 migration](#libindy-162-to-163-migration-guide)
+    * [Wallet API 1.6.3](#wallet-api-163)
+    * [Ledger API 1.6.3](#ledger-api-163)
 
 ## Notes
 
@@ -31,6 +38,8 @@ Functions from older version are listed in the left column, and the equivalent n
 * To get more details about current format of a function click on the description above it.
 * Bellow are signatures of functions in Libindy C API.
   The params of ```cb``` (except command_handle and err) will be result values of the similar function in any Libindy wrapper.
+
+## Libindy 1.5 to 1.6.0 migration Guide
 
 ### Wallet API
 
@@ -65,20 +74,6 @@ This wallet configuration json has the following format:
    }
  }
 ```
-* Updated wallet `credentials` to accept the additional parameter `key_derivation_method`.
-  This parameter provides the ability to use different crypto algorithms for master key derivation.
-Wallet credentials json has the following format:
-```
- {
-   "key": string, Passphrase used to derive wallet master key
-   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
-                          Can be optional if storage supports default configuration.
-                          For 'default' storage type should be empty.
-   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                          ARAGON2I_MOD (used by default)
-                          ARAGON2I_INT - less secured but faster 
- }
-```
 
 *WARNING* Wallet format of libindy v1.6 isn't compatible with a wallet format of libindy v1.5.
 
@@ -89,7 +84,7 @@ Wallet credentials json has the following format:
   </tr>
     <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L142">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/wallet.rs#L142">
             Create a new secure wallet
         </a>
     </th>
@@ -114,13 +109,12 @@ indy_create_wallet(command_handle: i32,
                                         err: ErrorCode)>)
       </pre>
       <b>Note:</b> Format of <i>config</i> parameter was changed. Current format is described above.
-      <b>Note:</b> Format of <i>credentials</i> parameter was changed. Current format is described above.
     </td>
   </tr>
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L208">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/wallet.rs#L208">
             Open the wallet
         </a>
     </th>
@@ -150,7 +144,7 @@ indy_open_wallet(command_handle: i32,
   </tr>
     <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L443">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/wallet.rs#L443">
             Deletes created wallet
         </a>
     </th>
@@ -175,7 +169,7 @@ indy_delete_wallet(command_handle: i32,
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/wallet.rs#L328">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/wallet.rs#L328">
             Import wallet
         </a>
     </th>
@@ -278,7 +272,7 @@ References:
   </tr>  
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/anoncreds.rs#L798">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/anoncreds.rs#L798">
             Gets human readable credential by the given id
         </a>
     </th>
@@ -299,7 +293,7 @@ indy_prover_get_credential(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/anoncreds.rs#L855">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/anoncreds.rs#L855">
             Gets human readable credentials according to the filter
         </a>
     </th>
@@ -320,7 +314,7 @@ indy_prover_get_credentials(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/anoncreds.rs#L925">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/anoncreds.rs#L925">
             Search for credentials stored in wallet
         </a>
     </th>
@@ -342,7 +336,7 @@ indy_prover_search_credentials(
   </tr>  
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/anoncreds.rs#L980">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/anoncreds.rs#L980">
             Fetch next credentials for search
         </a>
     </th>
@@ -363,7 +357,7 @@ indy_prover_fetch_credentials(
   </tr> 
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/anoncreds.rs#L1036">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/anoncreds.rs#L1036">
             Close credentials search
         </a>
     </th>
@@ -382,7 +376,7 @@ indy_prover_close_credentials_search(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/anoncreds.rs#L1074">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/anoncreds.rs#L1074">
             Gets human readable credentials matching the given proof request
         </a>
     </th>
@@ -403,7 +397,7 @@ indy_prover_get_credentials_for_proof_req(
   </tr>
   <tr>
     <th colspan="2">
-      <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/anoncreds.rs#L1191">
+      <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/anoncreds.rs#L1191">
         Search for credentials matching the given proof request.
       </a>
     </th>
@@ -428,7 +422,7 @@ indy_prover_search_credentials_for_proof_req(
   </tr>
   <tr>
     <th colspan="2">
-      <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/anoncreds.rs#L1270">
+      <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/anoncreds.rs#L1270">
         Fetch next credentials for the requested item using proof request search handle
       </a>
     </th>
@@ -450,7 +444,7 @@ indy_prover_fetch_credentials_for_proof_req(
   </tr>
   <tr>
     <th colspan="2">
-      <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/anoncreds.rs#L1343">
+      <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/anoncreds.rs#L1343">
         Close credentials search for proof request
       </a>
     </th>
@@ -490,7 +484,7 @@ The following changes have been performed:
   </tr>  
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L505">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/payments.rs#L505">
             Modifies Indy request by adding information how to pay fees for this transaction
             according to selected payment method
         </a>
@@ -526,7 +520,7 @@ changed to:
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L585">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/payments.rs#L585">
             Parses response for Indy request with fees
         </a>
     </th>
@@ -565,7 +559,7 @@ indy_parse_response_with_fees(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L632">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/payments.rs#L632">
              Builds Indy request for getting sources list for payment address
              according to this payment method
         </a>
@@ -602,7 +596,7 @@ indy_build_get_sources_request(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L683">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/payments.rs#L683">
              Parses response for Indy request for getting sources list
         </a>
     </th>
@@ -641,7 +635,7 @@ indy_parse_get_sources_response(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L733">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/payments.rs#L733">
              Builds Indy request for doing payment according to this payment method
         </a>
     </th>
@@ -675,7 +669,7 @@ changed to:
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L805">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/payments.rs#L805">
              Builds Indy request for doing payment according to this payment method
         </a>
     </th>
@@ -714,7 +708,7 @@ indy_parse_payment_response(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L855">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/payments.rs#L855">
              Builds Indy request for doing tokens minting according to this payment method
         </a>
     </th>
@@ -747,7 +741,7 @@ changed to:
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L1065">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/payments.rs#L1065">
              Builds Indy request for information to verify the payment receipt
         </a>
     </th>
@@ -770,7 +764,7 @@ indy_build_verify_payment_req(
   </tr>
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/payments.rs#L1114">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/payments.rs#L1114">
              Parses Indy response with information to verify receipt
         </a>
     </th>
@@ -801,7 +795,7 @@ indy_parse_verify_payment_response(
   </tr>  
   <tr>
     <th colspan="2">
-        <a href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/pool.rs#L59">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.0/libindy/src/api/pool.rs#L59">
             Opens pool ledger and performs connecting to pool nodes
         </a>
     </th>
@@ -833,16 +827,169 @@ Left the same but the format of config has been changed to:
   </tr>
 </table>
 
-### Ledger API
+## Libindy 1.6.0 to 1.6.1 migration Guide
+
+The Libindy 1.6.1 release contains fixes that don't affect API functions. 
+Most of them relate to pool connection performance.
+
+## Libindy 1.6.1 to 1.6.2 migration Guide
+
+### Wallet API 1.6.2
+
+Updated wallet `credentials` to accept the additional parameter `key_derivation_method`.
+
+This parameter provides the ability to use different crypto algorithms for wallet master key derivation.
+
+Wallet credentials json has the following format:
+```
+ {
+   "key": string, Passphrase used to derive wallet master key
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
+   "key_derivation_method": optional<string> algorithm to use for master key derivation:
+                          ARGON2I_MOD (used by default)
+                          ARGON2I_INT - less secured but faster 
+ }
+```
+
+<table>
+  <tr>  
+    <th>v1.6.1 - Wallet API</th>
+    <th>v1.6.2 - Wallet API</th>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.2/libindy/src/api/wallet.rs#L142">
+            Create a new secure wallet
+        </a>
+    </th>
+  <tr>
+    <td>
+      <pre>
+indy_create_wallet(command_handle: i32,
+                   config: *const c_char,
+                   credentials: *const c_char,
+                   cb: fn(xcommand_handle: i32,
+                          err: ErrorCode))
+      </pre>
+    </td>
+    <td>
+      <b>Note:</b> Left the same but format of <i>credentials</i> parameter was changed. 
+      The current format is described above.
+    </td>
+  </tr>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.2/libindy/src/api/wallet.rs#L208">
+            Open the wallet
+        </a>
+    </th>
+  <tr>
+    <td>
+      <pre>
+indy_open_wallet(command_handle: i32,
+                 config: *const c_char,
+                 credentials: *const c_char,
+                 cb: fn(xcommand_handle: i32,
+                                      err: ErrorCode,
+                                      handle: i32))
+      </pre>
+    </td>
+    <td>
+      <b>Note:</b> Left the same but format of <i>credentials</i> parameter was changed. 
+      The current format is described above.
+    </td>
+  </tr>
+    <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.2/libindy/src/api/wallet.rs#L443">
+            Deletes created wallet
+        </a>
+    </th>
+  <tr>
+    <td>
+      <pre>
+indy_delete_wallet(command_handle: i32,
+                   config: *const c_char,
+                   credentials: *const c_char,
+                   cb: fn(xcommand_handle: i32, 
+                          err: ErrorCode))
+      </pre>
+    </td>
+    <td>
+      <b>Note:</b> Left the same but format of <i>credentials</i> parameter was changed. 
+      The current format is described above.
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.2/libindy/src/api/wallet.rs#L296">
+            Exports opened wallet
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_export_wallet(
+                command_handle: i32,
+                wallet_handle: i32,
+                export_config: *const c_char,
+                cb: fn(xcommand_handle: i32,
+                       err: ErrorCode))
+        </pre>
+    </td>
+    <td>
+      <b>Note:</b> Format of <i>export_config</i> parameter was changed to.
+      <pre>
+{
+ "path": <string>, Path of the file that contains exported wallet content
+ "key": <string>, Key or passphrase used for wallet export key derivation.
+ "key_derivation_method": optional<string> Algorithm to use for wallet export key derivation:
+                          ARGON2I_MOD - derive secured export key (used by default)
+                          ARGON2I_INT - derive secured export key (less secured but faster)
+}
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.2/libindy/src/api/wallet.rs#L328">
+            Import wallet
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_import_wallet(
+            command_handle: i32,
+            config: *const c_char,
+            credentials: *const c_char,
+            import_config_json: *const c_char,
+            cb: fn(xcommand_handle: i32, 
+                   err: ErrorCode)
+        </pre>
+    </td>
+    <td>
+      <b>Note:</b> Left the same but format of <i>credentials</i> parameter was changed. 
+      The current format is described above.
+    </td>
+  </tr>
+</table>
+
+### Ledger API 1.6.2
 
 <table>
   <tr>
-    <th>v1.5.0 - Ledger API</th>
+    <th>v1.6.1 - Ledger API</th>
     <th>v1.6.2 - Ledger API</th>
   </tr>  
   <tr>
     <th colspan="2">
-        <a https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/ledger.rs#L122">
+        <a https://github.com/hyperledger/indy-sdk/blob/v1.6.2/libindy/src/api/ledger.rs#L122">
             Send action to particular nodes of validator pool
         </a>
     </th>
@@ -851,60 +998,272 @@ Left the same but the format of config has been changed to:
     <td><b>NEW</b></td>
     <td>
       <pre>
-indy_submit_action(command_handle: i32,
-                   pool_handle: i32,
-                   request_json: *const c_char,
-                   nodes: *const c_char,
-                   timeout: i32,
-                   cb: fn(xcommand_handle: i32,
-                          err: ErrorCode,
-                          request_result_json: *const c_char))
+indy_submit_action(
+               command_handle: i32,
+               pool_handle: i32,
+               request_json: *const c_char,
+               nodes: *const c_char,
+               timeout: i32,
+               cb: fn(xcommand_handle: i32,
+                      err: ErrorCode,
+                      request_result_json: *const c_char))
       </pre>
     </td>
   </tr>
   <tr>
     <th colspan="2">
-        <a https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/ledger.rs#L1148">
+        <a https://github.com/hyperledger/indy-sdk/blob/v1.6.2/libindy/src/api/ledger.rs#L1148">
             Builds a POOL_UPGRADE request
         </a>
     </th>
   </tr>
   <tr>
-      <pre>
-indy_build_pool_upgrade_request(command_handle: i32,
-                                submitter_did: *const c_char,
-                                name: *const c_char,
-                                version: *const c_char,
-                                action: *const c_char,
-                                sha256: *const c_char,
-                                timeout: i32,
-                                schedule: *const c_char,
-                                justification: *const c_char,
-                                reinstall: bool,
-                                force: bool,
-                                cb: fn(xcommand_handle: i32,
-                                       err: ErrorCode,
-                                       request_json: *const c_char))
-      </pre>
     <td>
       <pre>
-indy_build_pool_upgrade_request(command_handle: i32,
-                                submitter_did: *const c_char,
-                                name: *const c_char,
-                                version: *const c_char,
-                                action: *const c_char,
-                                sha256: *const c_char,
-                                timeout: i32,
-                                schedule: *const c_char,
-                                justification: *const c_char,
-                                reinstall: bool,
-                                force: bool,
-                                package: *const c_char,
-                                cb: fn(xcommand_handle: i32,
-                                       err: ErrorCode,
-                                       request_json: *const c_char))
+indy_build_pool_upgrade_request(
+            command_handle: i32,
+            submitter_did: *const c_char,
+            name: *const c_char,
+            version: *const c_char,
+            action: *const c_char,
+            sha256: *const c_char,
+            timeout: i32,
+            schedule: *const c_char,
+            justification: *const c_char,
+            reinstall: bool,
+            force: bool,
+            cb: fn(xcommand_handle: i32,
+                   err: ErrorCode,
+                   request_json: *const c_char))
+      </pre>
+    </td>
+    <td>
+      <pre>
+indy_build_pool_upgrade_request(
+                command_handle: i32,
+                submitter_did: *const c_char,
+                name: *const c_char,
+                version: *const c_char,
+                action: *const c_char,
+                sha256: *const c_char,
+                timeout: i32,
+                schedule: *const c_char,
+                justification: *const c_char,
+                reinstall: bool,
+                force: bool,
+                package: *const c_char,
+                cb: fn(xcommand_handle: i32,
+                       err: ErrorCode,
+                       request_json: *const c_char))
       </pre>
       <b>Note:</b> Added <i>package</i> parameter that allows to specify package to be upgraded
+    </td>
+  </tr>
+</table>
+
+## Libindy 1.6.2 to 1.6.3 migration Guide
+
+### Wallet API 1.6.3
+
+* Added separate API function `indy_generate_wallet_key` to generate a random wallet master key.
+* Updated `key_derivation_method` parameter of wallet `credentials` to accept the addition type - `RAW`. 
+  By using this type, the result of `indy_generate_wallet_key` can be passed as a wallet master key (key derivation will be skipped).
+* Fixed **typo** in the naming of key derivation methods - **ARGON** instead of **ARAGON**. 
+
+Wallet credentials json has the following format:
+```
+ {
+   "key": string, Key or passphrase used for wallet key derivation.
+                  Look to key_derivation_method param for information about supported key derivation methods.
+   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
+                          Can be optional if storage supports default configuration.
+                          For 'default' storage type should be empty.
+   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                          ARGON2I_MOD - derive secured wallet master key (used by default)
+                          ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                          RAW - raw wallet key master provided (skip derivation).
+                                RAW keys can be generated with indy_generate_wallet_key call 
+ }
+```
+
+<table>
+  <tr>  
+    <th>v1.6.2 - Wallet API</th>
+    <th>v1.6.3 - Wallet API</th>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.3/libindy/src/api/wallet.rs#L538">
+            Generate wallet master key.
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <b>NEW</b>
+    </td>
+    <td>
+      <pre>
+indy_generate_wallet_key(command_handle: i32,
+                         config: *const c_char,
+                         cb: fn(xcommand_handle: i32,
+                                err: ErrorCode,
+                                key: *const c_char))
+        </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.3/libindy/src/api/wallet.rs#L142">
+            Create a new secure wallet
+        </a>
+    </th>
+  <tr>
+    <td>
+      <pre>
+indy_create_wallet(command_handle: i32,
+                   config: *const c_char,
+                   credentials: *const c_char,
+                   cb: fn(xcommand_handle: i32,
+                          err: ErrorCode))
+      </pre>
+    </td>
+    <td>
+      <b>Note:</b> Left the same but format of <i>credentials</i> parameter was changed. 
+      The current format is described above.
+    </td>
+  </tr>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.3/libindy/src/api/wallet.rs#L208">
+            Open the wallet
+        </a>
+    </th>
+  <tr>
+    <td>
+      <pre>
+indy_open_wallet(command_handle: i32,
+                 config: *const c_char,
+                 credentials: *const c_char,
+                 cb: fn(xcommand_handle: i32,
+                                      err: ErrorCode,
+                                      handle: i32))
+      </pre>
+    </td>
+    <td>
+      <b>Note:</b> Left the same but format of <i>credentials</i> parameter was changed. 
+      The current format is described above.
+    </td>
+  </tr>
+    <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.3/libindy/src/api/wallet.rs#L443">
+            Deletes created wallet
+        </a>
+    </th>
+  <tr>
+    <td>
+      <pre>
+indy_delete_wallet(command_handle: i32,
+                   config: *const c_char,
+                   credentials: *const c_char,
+                   cb: fn(xcommand_handle: i32, 
+                          err: ErrorCode))
+      </pre>
+    </td>
+    <td>
+      <b>Note:</b> Left the same but format of <i>credentials</i> parameter was changed. 
+      The current format is described above.
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.3/libindy/src/api/wallet.rs#L296">
+            Exports opened wallet
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_export_wallet(
+                command_handle: i32,
+                wallet_handle: i32,
+                export_config: *const c_char,
+                cb: fn(xcommand_handle: i32,
+                       err: ErrorCode))
+        </pre>
+    </td>
+    <td>
+      <b>Note:</b> Format of <i>export_config</i> parameter was changed to.
+      <pre>
+{
+ "path": <string>, Path of the file that contains exported wallet content
+ "key": <string>, Key or passphrase used for wallet export key derivation.
+ "key_derivation_method": optional<string> Algorithm to use for wallet export key derivation:
+                          ARGON2I_MOD - derive secured export key (used by default)
+                          ARGON2I_INT - derive secured export key (less secured but faster)
+                          RAW - raw wallet key master provided (skip derivation).
+}
+      </pre>
+    </td>
+  </tr>
+  <tr>
+    <th colspan="2">
+        <a href="https://github.com/hyperledger/indy-sdk/blob/v1.6.3/libindy/src/api/wallet.rs#L328">
+            Import wallet
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_import_wallet(
+            command_handle: i32,
+            config: *const c_char,
+            credentials: *const c_char,
+            import_config_json: *const c_char,
+            cb: fn(xcommand_handle: i32, 
+                   err: ErrorCode)
+        </pre>
+    </td>
+    <td>
+      <b>Note:</b> Left the same but format of <i>credentials</i> parameter was changed. 
+      The current format is described above.
+    </td>
+  </tr>
+</table>
+
+### Ledger API 1.6.3
+
+<table>
+  <tr>
+    <th>v1.6.2 - Ledger API</th>
+    <th>v1.6.3 - Ledger API</th>
+  </tr>  
+  <tr>
+    <th colspan="2">
+        <a https://github.com/hyperledger/indy-sdk/blob/v1.6.3/libindy/src/api/ledger.rs#L898">
+            Builds a NODE request
+        </a>
+    </th>
+  </tr>
+  <tr>
+    <td>
+      <pre>
+indy_build_node_request(
+            command_handle: i32,
+            submitter_did: *const c_char,
+            target_did: *const c_char,
+            data: *const c_char,
+            cb: fn(xcommand_handle: i32,
+                   err: ErrorCode,
+                   request_json: *const c_char))
+      </pre>
+    </td>
+    <td>
+Left the same but the additional optional field <b>blskey_pop</b> has been added in data json.
     </td>
   </tr>
 </table>

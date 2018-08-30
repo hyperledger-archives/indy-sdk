@@ -175,6 +175,16 @@ withSelectedCredentials:(NSString *)selectedCredentials
 withConnectionHandle:(vcx_connection_handle_t)connection_handle
     withCompletion:(void (^)(NSError *error))completion;
 
+- (void) proofCreateWithRequest:(NSString *) source_id
+               withProofRequest:(NSString *) proofRequest
+                 withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle))completion;
+
+- (void) proofSerialize:(vcx_proof_handle_t) proofHandle
+         withCompletion:(void (^)(NSError *error, NSString *proof_request))completion;
+
+- (void) proofDeserialize:(NSString *) serializedProof
+           withCompletion:(void (^)(NSError *error, vcx_proof_handle_t proofHandle)) completion;
+
 - (int)vcxShutdown:(BOOL *)deleteWallet;
 
 - (void)createPaymentAddress:(NSString *)seed

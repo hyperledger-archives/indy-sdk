@@ -17,7 +17,7 @@ export class VCXMock {
     rustAPI().vcx_set_next_agency_response(message)
   }
 
-  public static mintTokens (numberOfAddresses: number, tokensPerAddress: number): void {
-    rustAPI().vcx_mint_tokens(numberOfAddresses, tokensPerAddress)
+  public static mintTokens (): void {
+    rustAPI().vcx_mint_tokens(null, null)
   }
 }

@@ -31,18 +31,13 @@ public abstract class LibIndy {
 
 		// wallet.rs
 
-		public int indy_register_wallet_storage(int command_handle, String type, Callback create, Callback open, Callback close,
-		                                        Callback delete, Callback add_record, Callback update_record_value, Callback update_record_tags,
-		                                        Callback add_record_tags, Callback delete_record_tags, Callback delete_record,
-		                                        Callback get_record, Callback get_record_id, Callback get_record_type, Callback get_record_value,
-		                                        Callback get_record_tags, Callback free_record, Callback search_records, Callback search_all_records,
-		                                        Callback get_search_total_count, Callback fetch_search_next_record, Callback free_search, Callback cb);
 		public int indy_create_wallet(int command_handle, String config, String credentials, Callback cb);
 		public int indy_open_wallet(int command_handle, String config, String credentials, Callback cb);
 		public int indy_close_wallet(int command_handle, int handle, Callback cb);
 		public int indy_delete_wallet(int command_handle, String config, String credentials, Callback cb);
 		public int indy_export_wallet(int command_handle, int handle, String exportConfigJson, Callback cb);
 		public int indy_import_wallet(int command_handle, String config, String credentials, String importConfigJson, Callback cb);
+		public int indy_generate_wallet_key(int command_handle, String config, Callback cb);
 
 		// ledger.rs
 

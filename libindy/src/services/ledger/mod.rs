@@ -118,9 +118,9 @@ impl LedgerService {
         }
 
         let operation = AttribOperation::new(dest.to_string(),
-                                             hash.as_ref().map(|s| s.to_string()),
-                                             raw.as_ref().map(|s| s.to_string()),
-                                             enc.as_ref().map(|s| s.to_string()));
+                                             hash.map(String::from),
+                                             raw.map(String::from),
+                                             enc.map(String::from));
 
         let request = Request::build_request(identifier, operation)
             .map_err(|err| CommonError::InvalidState(format!("ATTRIB request json is invalid {:?}.", err)))?;
@@ -147,12 +147,8 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_schema_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        info!("build_schema_request >>> identifier: {:?}, data: {:?}", identifier, data);
-
-        let schema = serde_json::from_str::<Schema>(data)
-            .map(SchemaV1::from)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Schema: {:?}", err)))?;
+    pub fn build_schema_request(&self, identifier: &str, schema: SchemaV1) -> Result<String, CommonError> {
+        info!("build_schema_request >>> identifier: {:?}, schema: {:?}", identifier, schema);
 
         let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
 
@@ -188,12 +184,8 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_cred_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        info!("build_cred_def_request >>> identifier: {:?}, data: {:?}", identifier, data);
-
-        let cred_def = serde_json::from_str::<CredentialDefinition>(data)
-            .map(CredentialDefinitionV1::from)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize CredentialDefinition: {:?}", err)))?;
+    pub fn build_cred_def_request(&self, identifier: &str, cred_def: CredentialDefinitionV1) -> Result<String, CommonError> {
+        info!("build_cred_def_request >>> identifier: {:?}, cred_def: {:?}", identifier, cred_def);
 
         let operation = CredDefOperation::new(cred_def);
 
@@ -232,11 +224,8 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_node_request(&self, identifier: &str, dest: &str, data: &str) -> Result<String, CommonError> {
+    pub fn build_node_request(&self, identifier: &str, dest: &str, data: NodeOperationData) -> Result<String, CommonError> {
         info!("build_node_request >>> identifier: {:?}, dest {:?}, data {:?}", identifier, dest, data);
-
-        let data: NodeOperationData = serde_json::from_str(data)
-            .map_err(|err| CommonError::InvalidStructure(format!("Invalid data json: {:?}", err)))?;
 
         if data.node_ip.is_none() && data.node_port.is_none()
             && data.client_ip.is_none() && data.client_port.is_none()
@@ -354,12 +343,8 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_revoc_reg_def_request(&self, identifier: &str, data: &str) -> Result<String, CommonError> {
-        info!("build_revoc_reg_def_request >>> identifier: {:?}, data {:?}", identifier, data);
-
-        let rev_reg_def = serde_json::from_str::<RevocationRegistryDefinition>(data)
-            .map(RevocationRegistryDefinitionV1::from)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDefinition: {:?}", err)))?;
+    pub fn build_revoc_reg_def_request(&self, identifier: &str, rev_reg_def: RevocationRegistryDefinitionV1) -> Result<String, CommonError> {
+        info!("build_revoc_reg_def_request >>> identifier: {:?}, rev_reg_def {:?}", identifier, rev_reg_def);
 
         let rev_reg_def_operation = RevRegDefOperation::new(rev_reg_def);
 
@@ -385,13 +370,9 @@ impl LedgerService {
     }
 
     pub fn build_revoc_reg_entry_request(&self, identifier: &str, revoc_reg_def_id: &str,
-                                         revoc_def_type: &str, value: &str) -> Result<String, CommonError> {
-        info!("build_revoc_reg_entry_request >>> identifier: {:?}, revoc_reg_def_id {:?}, revoc_def_type {:?}, value {:?}",
-              identifier, revoc_reg_def_id, revoc_def_type, value);
-
-        let rev_reg_entry = serde_json::from_str::<RevocationRegistryDelta>(value)
-            .map(RevocationRegistryDeltaV1::from)
-            .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize RevocationRegistryDelta: {:?}", err)))?;
+                                         revoc_def_type: &str, rev_reg_entry: RevocationRegistryDeltaV1) -> Result<String, CommonError> {
+        info!("build_revoc_reg_entry_request >>> identifier: {:?}, revoc_reg_def_id {:?}, revoc_def_type {:?}, rev_reg_entry {:?}",
+              identifier, revoc_reg_def_id, revoc_def_type, rev_reg_entry);
 
         let operation = RevRegEntryOperation::new(revoc_def_type, revoc_reg_def_id, rev_reg_entry);
 
@@ -598,6 +579,8 @@ impl LedgerService {
 mod tests {
     use super::*;
     use domain::ledger::request::ProtocolVersion;
+    use domain::anoncreds::schema::AttributeNames;
+    use domain::ledger::node::Services;
 
     const IDENTIFIER: &'static str = "NcYxiDXkpYi6ov5FcYDi1e";
 
@@ -739,20 +722,19 @@ mod tests {
     }
 
     #[test]
-    fn build_schema_request_works_for_wrong_data() {
+    fn build_schema_request_works() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
-        let data = r#"{"name":"name"}"#;
+        let mut attr_names: AttributeNames = AttributeNames::new();
+        attr_names.insert("male".to_string());
 
-        let get_attrib_request = ledger_service.build_schema_request(identifier, data);
-        assert!(get_attrib_request.is_err());
-    }
-
-    #[test]
-    fn build_schema_request_works_for_correct_data() {
-        let ledger_service = LedgerService::new();
-        let identifier = "identifier";
-        let data = r#"{"name":"name", "version":"1.0", "attrNames":["male"], "id":"id", "ver":"1.0"}"#;
+        let data = SchemaV1 {
+            id: Schema::schema_id("identifier", "name", "1.0"),
+            name: "name".to_string(),
+            version: "1.0".to_string(),
+            attr_names,
+            seq_no: None,
+        };
 
         let expected_result = r#""operation":{"type":"101","data":{"name":"name","version":"1.0","attr_names":["male"]}}"#;
 
@@ -761,7 +743,7 @@ mod tests {
     }
 
     #[test]
-    fn build_get_schema_request_works_for_wrong_data() {
+    fn build_get_schema_request_works_for_invalid_id() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
         let id = "wrong_schema_id";
@@ -771,7 +753,7 @@ mod tests {
     }
 
     #[test]
-    fn build_get_schema_request_works_for_correct_data() {
+    fn build_get_schema_request_works_for_valid_id() {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
         let id = Schema::schema_id("identifier", "name", "1.0");
@@ -801,27 +783,21 @@ mod tests {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
         let dest = "dest";
-        let data = r#"{"node_ip":"ip", "node_port": 1, "client_ip": "ip", "client_port": 1, "alias":"some", "services": ["VALIDATOR"], "blskey":"blskey"}"#;
+        let data = NodeOperationData{
+            node_ip: Some("ip".to_string()),
+            node_port: Some(1),
+            client_ip: Some("ip".to_string()),
+            client_port: Some(1),
+            alias: "some".to_string(),
+            services: Some(vec![Services::VALIDATOR]),
+            blskey: Some("blskey".to_string()),
+            blskey_pop: Some("pop".to_string()),
+        };
 
-        let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"blskey"}}"#;
+        let expected_result = r#""identifier":"identifier","operation":{"type":"0","dest":"dest","data":{"node_ip":"ip","node_port":1,"client_ip":"ip","client_port":1,"alias":"some","services":["VALIDATOR"],"blskey":"blskey","blskey_pop":"pop"}}"#;
 
         let node_request = ledger_service.build_node_request(identifier, dest, data).unwrap();
         assert!(node_request.contains(expected_result));
-    }
-
-    #[test]
-    fn build_node_request_works_for_wrong_data() {
-        let ledger_service = LedgerService::new();
-        let identifier = "identifier";
-        let dest = "dest";
-
-        let data = r#"{ }"#;
-        let node_request = ledger_service.build_node_request(identifier, dest, data);
-        assert!(node_request.is_err());
-
-        let data = r#"{ "unexpected_param": 1 }"#;
-        let node_request = ledger_service.build_node_request(identifier, dest, data);
-        assert!(node_request.is_err());
     }
 
     #[test]

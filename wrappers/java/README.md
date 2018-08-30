@@ -41,3 +41,14 @@ Then run
     
 #### Troubleshooting
 Use environment variable `RUST_LOG={info|debug|trace}` to output logs of Libindy.
+
+If your application that uses libindy crashes with a Null Pointer Exception then probably the libindy shared library could 
+not be loaded properly. If you have build libindy from source then either put the resulting shared library where your
+operating system searches for shared libraries or set appropriate environment variables to help the OS's loader to find them.
+
+On Ubuntu either copy libindy.so to /usr/local/lib or set LD_LIBRARY_PATH to the directory that contains libindy.so.
+
+```
+export LD_LIBRARY_PATH=<path to libindy.so>
+```
+

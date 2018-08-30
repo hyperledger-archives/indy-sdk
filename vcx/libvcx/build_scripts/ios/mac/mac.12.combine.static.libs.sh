@@ -3,7 +3,7 @@
 # Combined all static libaries in the current directory into a single static library
 # It is hardcoded to use the i386, armv7, and armv7s architectures; this can easily be changed via the 'archs' variable at the top
 # The script takes a single argument, which is the name of the final, combined library to be created.
-# If libvcxpartial is passed in as the parameter, only armv7 and arm64 are packaged 
+# If libvcxpartial is passed in as the parameter, only armv7 and arm64 are packaged
 #
 #   For example:
 #  =>    combine_static_libraries.sh combined-library
@@ -27,17 +27,18 @@ VCX_SDK=$(abspath "$VCX_SDK")
 
 cd $VCX_SDK/vcx/wrappers/ios/vcx/lib
 
-if [ "$1" = "" ] || [ "$1" = "libvcx" ]; then
+COMBINED_LIB=$1
+if [ "${COMBINED_LIB}" = "" ] || [ "${COMBINED_LIB}" = "libvcx" ]; then
     echo "You must provide a name for the resultant library, the name libvcx is ALREADY used!"
     exit 1
 fi
 
 if [ "$2" = "delete" ]; then
-    rm $1.a
+    rm ${COMBINED_LIB}.a
 fi
 
-if [ -f $1.a ]; then
-    echo "The library $1.a already exists!!!"
+if [ -f ${COMBINED_LIB}.a ]; then
+    echo "The library ${COMBINED_LIB}.a already exists!!!"
     exit 1
 fi
 
@@ -55,25 +56,31 @@ IFS=',()][' read -r -a archs <<<"${IOS_ARCHS}"
 echo "Combining architectures: ${archs[@]}"    ##Or printf "%s\n" ${array[@]}
 IFS="$bkpIFS"
 
-# if [ "$1" = "libvcxpartial" ]; then
+# if [ "${COMBINED_LIB}" = "libvcxpartial" ]; then
 #     archs=(armv7 arm64)
 #else
 #    archs=(armv7 armv7s arm64 i386 x86_64)
 # fi
 
-libraries=(*.a)
+libraries=(*.a.tocombine)
 libtool="/usr/bin/libtool"
+mkdir -p ${BUILD_CACHE}/arch_libs
 
 echo "Combining ${libraries[*]}..."
 
 for library in ${libraries[*]}
 do
     lipo -info $library
-    
+
     # Extract individual architectures for this library
     for arch in ${archs[*]}
     do
-        lipo -extract $arch $library -o ${library}_${arch}.a
+        if [ "${library}" = "libvcx.a.tocombine" ]; then
+            rm ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
+            lipo -extract $arch $library -o ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
+        elif [ ! -f ${BUILD_CACHE}/arch_libs/${library}_${arch}.a ]; then
+            lipo -extract $arch $library -o ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
+        fi
     done
 done
 
@@ -82,29 +89,39 @@ source_combined=""
 for arch in ${archs[*]}
 do
     source_libraries=""
-    
+
     for library in ${libraries[*]}
     do
         if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
-            strip -S -x -o ${library}-$arch-stripped.a -r ${library}_${arch}.a
-            mv ${library}-$arch-stripped.a ${library}_${arch}.a
+            if [ "${library}" = "libvcx.a.tocombine" ]; then
+                rm ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a
+                strip -S -x -o ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a -r ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
+            elif [ ! -f ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a ]; then
+                strip -S -x -o ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a -r ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
+            fi
+            #mv ${library}-$arch-stripped.a ${library}_${arch}.a
+            source_libraries="${source_libraries} ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a"
+        else
+            source_libraries="${source_libraries} ${BUILD_CACHE}/arch_libs/${library}_${arch}.a"
         fi
-        source_libraries="${source_libraries} ${library}_${arch}.a"
     done
-    
-    $libtool -static ${source_libraries} -o "${1}_${arch}.a"
-    source_combined="${source_combined} ${1}_${arch}.a"
-    
+
+    echo "Using source_libraries: ${source_libraries} to create ${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
+    rm "${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
+    $libtool -static ${source_libraries} -o "${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
+    source_combined="${source_combined} ${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
+
     # Delete intermediate files
-    rm ${source_libraries}
+    #rm ${source_libraries}
 done
 
+echo "Using source_combined: ${source_combined} to create ${COMBINED_LIB}.a"
 # Merge the combined library for each architecture into a single fat binary
-lipo -create $source_combined -o $1.a
+lipo -create $source_combined -o ${COMBINED_LIB}.a
 
 # Delete intermediate files
 rm ${source_combined}
 
 # Show info on the output library as confirmation
 echo "Combination complete."
-lipo -info $1.a
+lipo -info ${COMBINED_LIB}.a

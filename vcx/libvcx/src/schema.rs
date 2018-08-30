@@ -332,8 +332,6 @@ pub mod tests {
     use rand::Rng;
     use settings;
     use utils::error::INVALID_JSON;
-    #[allow(unused_imports)]
-    use utils::libindy::payments::tests::token_setup;
 
     #[test]
     fn test_ledger_schema_to_string(){
@@ -422,7 +420,6 @@ pub mod tests {
     fn test_create_schema_with_pool(){
         let wallet_name = "test_create_schema";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        token_setup(None, None);
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
@@ -444,7 +441,7 @@ pub mod tests {
     fn test_create_schema_no_fees_with_pool(){
         let wallet_name = "test_create_schema";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        ::utils::libindy::payments::mint_tokens_and_set_fees(Some(0),Some(0),Some(r#"{"101":0, "102":0}"#), false).unwrap();
+        ::utils::libindy::payments::mint_tokens_and_set_fees(Some(0),Some(0),Some(r#"{"101":0, "102":0}"#.to_string()), None).unwrap();
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
@@ -464,7 +461,6 @@ pub mod tests {
     fn test_create_duplicate_fails(){
         let wallet_name = "test_create_duplicate_schema_fails";
         ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        token_setup(None, None);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();

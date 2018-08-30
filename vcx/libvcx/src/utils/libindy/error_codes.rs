@@ -34,8 +34,11 @@ pub fn map_rust_indy_sdk_error_code(error_code: ErrorCode) -> u32 {
         212 => error::WALLET_RECORD_NOT_FOUND.code_num,
         213 => error::DUPLICATE_WALLET_RECORD.code_num,
         306 =>  error::CREATE_POOL_CONFIG.code_num,
+        404 => error::DUPLICATE_MASTER_SECRET.code_num,
         407 =>  error::CREDENTIAL_DEF_ALREADY_CREATED.code_num,
+        600 => error::DID_ALREADY_EXISTS_IN_WALLET.code_num,
         702 =>  error::INSUFFICIENT_TOKEN_AMOUNT.code_num,
+
         _ =>    error::UNKNOWN_LIBINDY_ERROR.code_num
     }
 }
@@ -63,7 +66,9 @@ pub fn map_indy_error_code<C: PrimInt>(error_code: C) -> u32 {
         212 => error::WALLET_RECORD_NOT_FOUND.code_num,
         213 => error::DUPLICATE_WALLET_RECORD.code_num,
         306 =>  error::CREATE_POOL_CONFIG.code_num,
+        404 => error::DUPLICATE_MASTER_SECRET.code_num,
         407 =>  error::CREDENTIAL_DEF_ALREADY_CREATED.code_num,
+        600 => error::DID_ALREADY_EXISTS_IN_WALLET.code_num,
         702 =>  error::INSUFFICIENT_TOKEN_AMOUNT.code_num,
         _ =>    error::UNKNOWN_LIBINDY_ERROR.code_num
     }

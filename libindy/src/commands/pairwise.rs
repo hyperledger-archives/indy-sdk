@@ -145,7 +145,7 @@ impl PairwiseCommandExecutor {
 
         let pairwise_info =
             PairwiseInfo::from(
-                self.wallet_service.get_indy_object::<Pairwise>(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())?);
+                self.wallet_service.get_indy_object::<Pairwise>(wallet_handle, &their_did, &RecordOptions::id_value())?);
 
         let res = serde_json::to_string(&pairwise_info)
             .map_err(|e|
@@ -164,9 +164,9 @@ impl PairwiseCommandExecutor {
         debug!("set_pairwise_metadata >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);
 
         let mut pairwise: Pairwise =
-            self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())?;
+            self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value())?;
 
-        pairwise.metadata = metadata.as_ref().map(|m| m.to_string());
+        pairwise.metadata = metadata.map(str::to_string);
 
         self.wallet_service.update_indy_object(wallet_handle, &their_did, &pairwise)?;
 

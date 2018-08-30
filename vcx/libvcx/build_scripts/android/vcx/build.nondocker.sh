@@ -38,6 +38,7 @@ if [ -z "${OPENSSL_DIR}" ]; then
     else
         OPENSSL_DIR=$4
     fi
+    export OPENSSL_DIR=${OPENSSL_DIR}
 fi
 
 if [ -z "${SODIUM_DIR}" ] ; then
@@ -51,7 +52,10 @@ if [ -z "${SODIUM_DIR}" ] ; then
     else
         SODIUM_DIR=$5
     fi
+
+
 fi
+
 
 if [ -z "${LIBZMQ_DIR}" ] ; then
     LIBZMQ_DIR="libzmq_${TARGET_ARCH}"
@@ -64,7 +68,9 @@ if [ -z "${LIBZMQ_DIR}" ] ; then
     else
         LIBZMQ_DIR=$6
     fi
+
 fi
+
 
 if [ -z "${LIBINDY_DIR}" ] ; then
     LIBINDY_DIR="libindy_${TARGET_ARCH}"
@@ -77,15 +83,15 @@ if [ -z "${LIBINDY_DIR}" ] ; then
     else
         LIBINDY_DIR=$7
     fi
+    export LIBINDY_DIR=${LIBINDY_DIR}
+fi
 
-    if [ -d "${LIBINDY_DIR}/lib" ] ; then
+if [ -d "${LIBINDY_DIR}/lib" ] ; then
             LIBINDY_DIR="${LIBINDY_DIR}/lib"
-    fi
 fi
 
 if [ -z "${LIBSOVTOKEN_DIR}" ] ; then
     LIBSOVTOKEN_DIR="libsovtoken"
-    PAYMENT_PLUGIN="sovtoken"
     if [ -d "${LIBSOVTOKEN_DIR}" ] ; then
         echo "Found ${LIBSOVTOKEN_DIR}"
     elif [ -z "$8" ] ; then
@@ -98,7 +104,12 @@ if [ -z "${LIBSOVTOKEN_DIR}" ] ; then
     if [ -d "${LIBSOVTOKEN_DIR}/${CROSS_COMPILE}" ] ; then
         LIBSOVTOKEN_DIR=${LIBSOVTOKEN_DIR}/${CROSS_COMPILE}
     fi
+    export LIBSOVTOKEN_DIR=${LIBSOVTOKEN_DIR}
 fi
+if [ -d "${LIBSOVTOKEN_DIR}/lib" ] ; then
+            LIBSOVTOKEN_DIR="${LIBSOVTOKEN_DIR}/lib"
+fi
+
 
 
 
@@ -140,18 +151,16 @@ fi
 #cp -rf ./../../../../../vcx/libvcx/Cargo.toml ${LIBVCX}
 LIBVCX=../../../
 
+export PAYMENT_PLUGIN="sovtoken"
+export SODIUM_LIB_DIR=${SODIUM_DIR}/lib
+export SODIUM_INCLUDE_DIR=${SODIUM_DIR}/include
+export LIBZMQ_LIB_DIR=${LIBZMQ_DIR}/lib
+export LIBZMQ_INCLUDE_DIR=${LIBZMQ_DIR}/include
 export PKG_CONFIG_ALLOW_CROSS=1
 export CARGO_INCREMENTAL=1
 export RUST_LOG=indy=trace
 export RUST_TEST_THREADS=1
 export RUST_BACKTRACE=1
-export OPENSSL_DIR=${WORKDIR}/${OPENSSL_DIR}
-export SODIUM_LIB_DIR=${WORKDIR}/${SODIUM_DIR}/lib
-export SODIUM_INCLUDE_DIR=${WORKDIR}/${SODIUM_DIR}/include
-export LIBZMQ_LIB_DIR=${WORKDIR}/${LIBZMQ_DIR}/lib
-export LIBZMQ_INCLUDE_DIR=${WORKDIR}/${LIBZMQ_DIR}/include
-export LIBINDY_DIR=${WORKDIR}/${LIBINDY_DIR}
-export LIBSOVTOKEN_DIR=${WORKDIR}/${LIBSOVTOKEN_DIR}
 export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH}
 export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
 export PKG_CONFIG_ALLOW_CROSS=1
@@ -175,7 +184,7 @@ rustup target add ${CROSS_COMPILE}
 
 pushd $LIBVCX
 export OPENSSL_STATIC=1
-cargo clean
+#cargo clean
 cargo build --release --no-default-features --features "ci ${PAYMENT_PLUGIN}" --target=${CROSS_COMPILE}
 popd
 

@@ -8,8 +8,6 @@ mkdir -p $WORK_DIR
 WORK_DIR=$(abspath "$WORK_DIR")
 SHA_HASH_DIR=$START_DIR/../..
 SHA_HASH_DIR=$(abspath "$SHA_HASH_DIR")
-LIBSOVTOKEN_IOS_BUILD_URL="https://repo.corp.evernym.com/filely/ios/libsovtoken_0.8.1-201807262135-cbb1520_all.zip"
-LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/stable/libindy-core/1.6.2/libindy.tar.gz"
 
 source ./mac.02.libindy.env.sh
 
@@ -60,6 +58,8 @@ if [ "$#" -gt 0 ]; then
 
     #if [ "$DEBUG_SYMBOLS" = "debuginfo" ]; then
         cat $START_DIR/cargo.toml.add.debug.txt >> Cargo.toml
+    #else
+    #    cat $START_DIR/cargo.toml.reduce.size.txt >> Cargo.toml
     #fi
     if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
         sed -i .bak 's/debug = true/debug = false/' Cargo.toml
@@ -77,33 +77,39 @@ if [ "$#" -gt 0 ]; then
     # cargo lipo --release --verbose --targets="${IOS_TARGETS}"
     cargo lipo --release --targets="${IOS_TARGETS}"
     #cargo lipo
+    mkdir -p ${BUILD_CACHE}/libindy/${LIBINDY_VERSION}
+    cp $WORK_DIR/vcx-indy-sdk/libindy/target/universal/release/libindy.a ${BUILD_CACHE}/libindy/${LIBINDY_VERSION}/libindy.a
+    for hfile in $(find ${WORK_DIR}/vcx-indy-sdk/libindy -name "*.h")
+    do
+        cp ${hfile} ${BUILD_CACHE}/libindy/${LIBINDY_VERSION}
+    done
 else
 
-    if [ -d $WORK_DIR/libindy ]; then
+    if [ -e ${BUILD_CACHE}/libindy/${LIBINDY_VERSION}/libindy.a ]; then
         echo "libindy build for ios already exist"
     else
-        mkdir -p $WORK_DIR/libindy
-        cd $WORK_DIR/libindy
-        curl -o libindy.tar.gz $LIBINDY_IOS_BUILD_URL
-        tar -xvzf libindy.tar.gz
+        mkdir -p ${BUILD_CACHE}/libindy/${LIBINDY_VERSION}
+        cd ${BUILD_CACHE}/libindy/${LIBINDY_VERSION}
+        curl -o ${LIBINDY_VERSION}-${LIBINDY_FILE} $LIBINDY_IOS_BUILD_URL
+        tar -xvzf ${LIBINDY_VERSION}-${LIBINDY_FILE}
         # Deletes extra folders that we don't need
         rm -rf __MACOSX
-        rm libindy.tar.gz 
+        rm ${LIBINDY_VERSION}-${LIBINDY_FILE}
     fi
 
     #########################################################################################################################
     # Now setup libsovtoken
     #########################################################################################################################
 
-    if [ -d $WORK_DIR/libsovtoken-ios ]; then
+    if [ -e ${BUILD_CACHE}/libsovtoken-ios/${LIBSOVTOKEN_VERSION}/libsovtoken/universal/libsovtoken.a ]; then
         echo "libsovtoken build for ios already exist"
     else
-        mkdir -p $WORK_DIR/libsovtoken-ios
-        cd $WORK_DIR/libsovtoken-ios
-        curl -o libsovtoken-ios.zip $LIBSOVTOKEN_IOS_BUILD_URL
-        unzip libsovtoken-ios.zip
+        mkdir -p ${BUILD_CACHE}/libsovtoken-ios/${LIBSOVTOKEN_VERSION}
+        cd ${BUILD_CACHE}/libsovtoken-ios/${LIBSOVTOKEN_VERSION}
+        curl --insecure -o ${LIBSOVTOKEN_VERSION}-${LIBSOVTOKEN_FILE} ${LIBSOVTOKEN_IOS_BUILD_URL}
+        unzip ${LIBSOVTOKEN_VERSION}-${LIBSOVTOKEN_FILE}
         # Deletes extra folders that we don't need
         rm -rf __MACOSX
-        rm libsovtoken-ios.zip
+        rm ${LIBSOVTOKEN_VERSION}-${LIBSOVTOKEN_FILE}
     fi
 fi

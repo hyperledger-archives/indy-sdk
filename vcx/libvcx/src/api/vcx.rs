@@ -100,23 +100,23 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
 
     settings::log_settings();
 
-   if wallet::get_wallet_handle() > 0 {
-       error!("Library was already initialized");
-       return error::ALREADY_INITIALIZED.code_num;
-   }
+    if wallet::get_wallet_handle() > 0 {
+        error!("Library was already initialized");
+        return error::ALREADY_INITIALIZED.code_num;
+    }
     // Wallet name was already validated
-   let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
-       Ok(x) => x,
-       Err(_) => {
-           info!("Using default wallet: {}", settings::DEFAULT_WALLET_NAME.to_string());
-           settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
-           settings::DEFAULT_WALLET_NAME.to_string()
-       }
-   };
+    let wallet_name = match settings::get_config_value(settings::CONFIG_WALLET_NAME) {
+        Ok(x) => x,
+        Err(_) => {
+            info!("Using default wallet: {}", settings::DEFAULT_WALLET_NAME.to_string());
+            settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
+            settings::DEFAULT_WALLET_NAME.to_string()
+        }
+    };
 
     info!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
-    thread::spawn(move|| {
+    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
         if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
             match ::utils::libindy::init_pool() {
                 Ok(_) => (),
@@ -137,9 +137,10 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
                 cb(command_handle, e);
             }
         }
-    });
-
-    error::SUCCESS.code_num
+    }) {
+        Ok(_) => error::SUCCESS.code_num,
+        Err(x) => error::THREAD_ERROR.code_num,
+    }
 }
 
 lazy_static!{
@@ -223,10 +224,25 @@ pub extern fn vcx_update_institution_info(name: *const c_char, logo_url: *const 
 }
 
 #[no_mangle]
-pub extern fn vcx_mint_tokens(number_of_addresses: u32, tokens_per_address: u32) {
-    let ledger_fees = r#"{"101":2, "102":3}"#;
-    info!("vcx_mint_tokens(number_of_addresses: {}, tokens_per_address: {})", number_of_addresses, tokens_per_address);
-    ::utils::libindy::payments::mint_tokens_and_set_fees(Some(number_of_addresses), Some(tokens_per_address), Some(ledger_fees), false).unwrap_or_default();
+pub extern fn vcx_mint_tokens(seed: *const c_char, fees: *const c_char) {
+
+    let seed = if !seed.is_null() {
+        check_useful_opt_c_str!(seed, ());
+        seed.to_owned()
+    }
+    else {
+        None
+    };
+
+    let fees = if !fees.is_null() {
+        check_useful_opt_c_str!(fees, ());
+        fees.to_owned()
+    }
+    else {
+        None
+    };
+
+    ::utils::libindy::payments::mint_tokens_and_set_fees(None, None, fees, seed).unwrap_or_default();
 }
 
 #[cfg(test)]
@@ -235,8 +251,6 @@ mod tests {
     use super::*;
     use std::time::Duration;
     use std::ptr;
-    use std::fs;
-    use std::io::Write;
     use utils::libindy::wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path};
     use utils::libindy::{ pool::get_pool_handle, return_types_u32 };
 
@@ -253,6 +267,7 @@ mod tests {
                         "wallet_key": wallet_key}).to_string()
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_file() {
@@ -276,6 +291,7 @@ mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_with_config() {
@@ -300,6 +316,8 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_fails_when_open_pool_fails() {
+        use std::fs;
+        use std::io::Write;
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY,settings::TEST_WALLET_KEY);
 
@@ -413,6 +431,7 @@ mod tests {
         wallet::delete_wallet(wallet_name).unwrap();
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_called_twice_fails() {
@@ -440,6 +459,7 @@ mod tests {
         wallet::delete_wallet(wallet_name).unwrap();
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_init_called_twice_passes_after_shutdown() {
@@ -478,6 +498,7 @@ mod tests {
         vcx_shutdown(true);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_init_fails_with_open_wallet() {

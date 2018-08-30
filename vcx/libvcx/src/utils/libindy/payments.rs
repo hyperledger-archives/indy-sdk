@@ -225,9 +225,9 @@ pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(Option<PaymentTxn>, Str
         let txn_response = libindy_sign_and_submit_request(&did, req)?;
         Ok((None, txn_response))
     } else {
-        let (refund, inputs) = inputs(txn_price).map_err(|e| e.to_error_code())?;
+        let (refund, inputs, refund_address) = inputs(txn_price).map_err(|e| e.to_error_code())?;
 
-        let output = outputs(refund, None, None).map_err(|e| e.to_error_code())?;
+        let output = outputs(refund, &refund_address, None, None).map_err(|e| e.to_error_code())?;
 
         let (fee_response, txn_response) = _submit_fees_request(req, &inputs, &output)?;
 
@@ -264,8 +264,8 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
 pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), PaymentError> {
     info!("sending {} tokens to address {}", price, address);
 
-    let (remainder, input) = inputs(price)?;
-    let output = outputs(remainder, Some(address.to_string()), Some(price))?;
+    let (remainder, input, refund_address) = inputs(price)?;
+    let output = outputs(remainder, &refund_address, Some(address.to_string()), Some(price))?;
 
     let payment = PaymentTxn::from_parts(&input, &output, price).map_err(|e|PaymentError::CommonError(e))?;
     let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -299,10 +299,11 @@ fn _address_balance(address: &Vec<UTXO>) -> u64 {
     address.iter().fold(0, |balance, utxo| balance + utxo.amount)
 }
 
-pub fn inputs(cost: u64) -> Result<(u64, String), PaymentError> {
+pub fn inputs(cost: u64) -> Result<(u64, String, String), PaymentError> {
     let mut inputs: Vec<String> = Vec::new();
     let mut balance = 0;
     let wallet_info: WalletInfo = get_wallet_token_info().map_err(|ec| PaymentError::CommonError(ec))?;
+    let mut refund_address = String::new();
 
     if wallet_info.balance < cost {
         warn!("not enough tokens in wallet to pay");
@@ -311,6 +312,7 @@ pub fn inputs(cost: u64) -> Result<(u64, String), PaymentError> {
 
     // Todo: explore 'smarter' ways of selecting utxos ie bitcoin algorithms etc
     'outer: for address in wallet_info.addresses.iter() {
+        refund_address = address.address.clone();
         'inner: for utxo in address.utxo.iter() {
             if balance < cost {
                 inputs.push(utxo.source.clone().unwrap().to_string());
@@ -320,17 +322,18 @@ pub fn inputs(cost: u64) -> Result<(u64, String), PaymentError> {
     }
 
     let remainder = balance - cost;
+    let inputs = serde_json::to_string(&inputs).or(Err(PaymentError::InvalidWalletJson()))?;
 
-    Ok((remainder, serde_json::to_string(&inputs).or(Err(PaymentError::InvalidWalletJson()))?))
+    Ok((remainder, inputs, refund_address))
 }
 
-pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Option<u64>) -> Result<String, PaymentError> {
+pub fn outputs(remainder: u64, refund_address: &str, payee_address: Option<String>, payee_amount: Option<u64>) -> Result<String, PaymentError> {
     // In the future we might provide a way for users to specify multiple output address for their remainder tokens
     // As of now, we only handle one output address which we create
 
     let mut outputs = Vec::new();
     if remainder > 0 {
-        outputs.push(json!({ "recipient": create_address(None).map_err(|ec| PaymentError::CommonError(ec))?, "amount": remainder }));
+        outputs.push(json!({ "recipient": refund_address, "amount": remainder }));
     }
 
     if let Some(address) = payee_address {
@@ -344,22 +347,27 @@ pub fn outputs(remainder: u64, payee_address: Option<String>, payee_amount: Opti
 }
 
 // This is used for testing purposes only!!!
-pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>, fees: Option<&str>, use_seed: bool) -> Result<(), u32> {
+pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>, fees: Option<String>, seed: Option<String>) -> Result<(), u32> {
     let did_1 = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+
+    let fees = if fees.is_some() {
+        fees.as_ref().map(String::as_str)
+    } else {
+        None
+    };
 
     let (did_2, _) = add_new_trustee_did()?;
     let (did_3, _) = add_new_trustee_did()?;
     let (did_4, _) = add_new_trustee_did()?;
 
-    let number_of_addresses = number_of_addresses.unwrap_or(3);
+    let number_of_addresses = number_of_addresses.unwrap_or(1);
 
     if number_of_addresses > 0 {
-        let tokens_per_address = tokens_per_address.unwrap_or(15);
+        let tokens_per_address: u64 = tokens_per_address.unwrap_or(50000000000);
         let mut addresses = Vec::new();
 
         for n in 0..number_of_addresses {
-            //let seed = format!("000000000000000000000000Issuer{:02}", n);
-            addresses.push(create_address(None).unwrap())
+            addresses.push(create_address(seed.clone()).unwrap())
         }
 
         let mint: Vec<Value> = addresses.clone().into_iter().enumerate().map(|(i, payment_address)|
@@ -380,15 +388,17 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         };
     }
 
-    let txn = Payment::build_set_txn_fees_req(get_wallet_handle() as i32, &did_1, PAYMENT_METHOD_NAME, fees.unwrap_or(DEFAULT_FEES))
-        .map_err(map_rust_indy_sdk_error_code)?;
+    if fees.is_some() {
+        let txn = Payment::build_set_txn_fees_req(get_wallet_handle() as i32, &did_1, PAYMENT_METHOD_NAME, fees.unwrap())
+            .map_err(map_rust_indy_sdk_error_code)?;
 
-    let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &txn).unwrap();
-    let sign2 = ::utils::libindy::ledger::multisign_request(&did_2, &sign1).unwrap();
-    let sign3 = ::utils::libindy::ledger::multisign_request(&did_3, &sign2).unwrap();
-    let sign4 = ::utils::libindy::ledger::multisign_request(&did_4, &sign3).unwrap();
+        let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &txn).unwrap();
+        let sign2 = ::utils::libindy::ledger::multisign_request(&did_2, &sign1).unwrap();
+        let sign3 = ::utils::libindy::ledger::multisign_request(&did_3, &sign2).unwrap();
+        let sign4 = ::utils::libindy::ledger::multisign_request(&did_4, &sign3).unwrap();
 
-    ::utils::libindy::ledger::libindy_submit_request(&sign4).unwrap();
+        ::utils::libindy::ledger::libindy_submit_request(&sign4).unwrap();
+    }
 
     Ok(())
 }
@@ -409,9 +419,9 @@ pub mod tests {
     use super::*;
     use settings;
 
-    pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u32>) {
+    pub fn token_setup(number_of_addresses: Option<u32>, tokens_per_address: Option<u64>) {
         init_payments().unwrap();
-        mint_tokens_and_set_fees(number_of_addresses, tokens_per_address, None, false).unwrap();
+        mint_tokens_and_set_fees(number_of_addresses, tokens_per_address, Some(DEFAULT_FEES.to_string()), None).unwrap();
     }
 
     pub fn create_throwaway_address() -> String {
@@ -462,7 +472,7 @@ pub mod tests {
         let name = "test_get_wallet_info_real";
         ::utils::devsetup::tests::setup_ledger_env(name);
         let wallet_info = get_wallet_token_info().unwrap();
-        assert_eq!(wallet_info.balance, 45);
+        assert_eq!(wallet_info.balance, 50000000000);
         ::utils::devsetup::tests::cleanup_dev_env(name);
     }
 
@@ -503,13 +513,13 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         // Success - Exact amount
-        assert_eq!(inputs(6).unwrap(), (0, r#"["pov:null:1","pov:null:2","pov:null:1","pov:null:2"]"#.to_string()));
+        assert_eq!(inputs(6).unwrap(), (0, r#"["pov:null:1","pov:null:2","pov:null:1","pov:null:2"]"#.to_string(), "pay:null:zR3GN9lfbCVtHjp".to_string()));
 
         // Success - utxo with remainder tokens
-        assert_eq!(inputs(5).unwrap(), (1, r#"["pov:null:1","pov:null:2","pov:null:1","pov:null:2"]"#.to_string()));
+        assert_eq!(inputs(5).unwrap(), (1, r#"["pov:null:1","pov:null:2","pov:null:1","pov:null:2"]"#.to_string(), "pay:null:zR3GN9lfbCVtHjp".to_string()));
 
         // Success - requesting amount that partial address (1 of 2 utxos) can satisfy
-        assert_eq!(inputs(1).unwrap(), (0, r#"["pov:null:1"]"#.to_string()));
+        assert_eq!(inputs(1).unwrap(), (0, r#"["pov:null:1"]"#.to_string(), "pay:null:9UFgyjuJxi1i1HD".to_string()));
 
         // Err - request more than wallet contains
         assert_eq!(inputs(7).err(), Some(PaymentError::InsufficientFunds()));
@@ -521,16 +531,16 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         let mut cost = 5;
-        let mut expected_output = r#"[{"amount":1,"recipient":"pay:null:J81AxU9hVHYFtJc"}]"#;
-        let (remainder, _) = inputs(cost).unwrap();
-        assert_eq!(&outputs(remainder, None, None).unwrap(), expected_output);
+        let (remainder, _, refund_address) = inputs(cost).unwrap();
+        let mut expected_output = format!(r#"[{{"amount":1,"recipient":"{}"}}]"#, refund_address);
+        assert_eq!(outputs(remainder, &refund_address, None, None).unwrap(), expected_output);
 
         // No remainder so don't create an address in outputs
         cost = 6;
-        expected_output = r#"[]"#;
-        let (remainder, _) = inputs(cost).unwrap();
+        expected_output = r#"[]"#.to_string();
+        let (remainder, _, refund_address) = inputs(cost).unwrap();
         assert_eq!(remainder, 0);
-        assert_eq!(&outputs(remainder, None, None).unwrap(), expected_output);
+        assert_eq!(outputs(remainder, &refund_address, None, None).unwrap(), expected_output);
     }
 
     #[test]
@@ -538,10 +548,11 @@ pub mod tests {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
-        let expected_output = r#"[{"amount":4,"recipient":"pay:null:J81AxU9hVHYFtJc"},{"amount":11,"recipient":"pay:null:payee_address"}]"#;
         let payee_amount = 11;
         let payee_address = r#"pay:null:payee_address"#.to_string();
-        assert_eq!(&outputs(4, Some(payee_address), Some(payee_amount)).unwrap(), expected_output);
+        let refund_address = r#"pay:null:refund_address"#;
+        let expected_output = format!(r#"[{{"amount":4,"recipient":"{}"}},{{"amount":11,"recipient":"{}"}}]"#, refund_address, payee_address);
+        assert_eq!(outputs(4, refund_address, Some(payee_address), Some(payee_amount)).unwrap(), expected_output);
     }
 
     #[test]
@@ -592,7 +603,7 @@ pub mod tests {
     fn test_pay_for_txn_fails_with_insufficient_tokens_in_wallet() {
         let name = "test_pay_for_txn_real";
         ::utils::devsetup::tests::setup_ledger_env(name);
-        mint_tokens_and_set_fees(Some(0), Some(0), Some(r#"{"101":100000000}"#), false).unwrap();
+        mint_tokens_and_set_fees(Some(0), Some(0), Some(r#"{"101":50000000001}"#.to_string()), None).unwrap();
 
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
         let create_schema_req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
@@ -620,8 +631,8 @@ pub mod tests {
         let result_from_paying = pay_a_payee(price, &address);
         assert!(result_from_paying.is_ok());
         assert_eq!(get_my_balance(), 0);
-        mint_tokens_and_set_fees(None, None, None, false).unwrap();
-        assert_eq!(get_my_balance(), 45);
+        mint_tokens_and_set_fees(None, None, None, None).unwrap();
+        assert_eq!(get_my_balance(), 50000000000);
 
         let price = get_my_balance() - 5;
         let result_from_paying = pay_a_payee(price, &address);
@@ -646,8 +657,8 @@ pub mod tests {
 
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
         let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
-        let (remainder, inputs) = inputs(2).unwrap();
-        let output = outputs(remainder, None, None).unwrap();
+        let (remainder, inputs, refund_address) = inputs(2).unwrap();
+        let output = outputs(remainder, &refund_address, None, None).unwrap();
         let start_wallet = get_wallet_token_info().unwrap();
 
         _submit_fees_request(&req, &inputs, &output).unwrap();
@@ -671,17 +682,19 @@ pub mod tests {
         let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
         let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
 
-        let (remainder, inputs) = inputs(45).unwrap();
-        assert_eq!(remainder, 0);
-
-        let output = outputs(remainder, None, None).unwrap();
-        assert_eq!(output, "[]");
-
+        let cost = 45;
         let start_wallet = get_wallet_token_info().unwrap();
+        let remaining_balance = start_wallet.balance - cost;
+        let (remainder, inputs, refund_address) = inputs(cost).unwrap();
+        assert_eq!(remainder, remaining_balance);
+
+        let output = outputs(remainder, &refund_address, None, None).unwrap();
+        assert_eq!(output, format!(r#"[{{"amount":{},"recipient":"{}"}}]"#, remaining_balance, refund_address));
+
         let rc = _submit_fees_request(&req, &inputs, &output).unwrap();
         let end_wallet = get_wallet_token_info().unwrap();
 
-        assert_eq!(end_wallet.balance, 0);
+        assert_eq!(end_wallet.balance, remaining_balance);
 
         ::utils::devsetup::tests::cleanup_dev_env(name);
     }
@@ -700,12 +713,13 @@ pub mod tests {
     #[test]
     fn test_custom_mint_tokens() {
         let name = "test_custom_mint_tokens";
+        //50000000000 comes from setup_ledger_env
         ::utils::devsetup::tests::setup_ledger_env(name);
         token_setup(Some(4), Some(1430000));
 
         let start_wallet = get_wallet_token_info().unwrap();
         ::utils::devsetup::tests::cleanup_dev_env(name);
-        assert_eq!(start_wallet.balance, 5720045);
+        assert_eq!(start_wallet.balance, 50005720000);
     }
 
     #[ignore] // Test only works when fees are null
@@ -731,7 +745,7 @@ pub mod tests {
         ::utils::libindy::wallet::init_wallet(wallet_name).unwrap();
         ::utils::devsetup::tests::set_trustee_did();
         ::utils::libindy::pool::tests::open_sandbox_pool();
-        mint_tokens_and_set_fees(Some(0), Some(0), Some("{\"101\":0, \"102\":0}"), false).unwrap();
+        mint_tokens_and_set_fees(Some(0), Some(0), Some("{\"101\":0, \"102\":0}".to_string()), None).unwrap();
         let fees = get_ledger_fees().unwrap();
         println!("fees: {}", fees);
         ::utils::libindy::anoncreds::tests::create_and_write_test_schema();

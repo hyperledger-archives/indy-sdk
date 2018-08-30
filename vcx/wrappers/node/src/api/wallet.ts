@@ -375,7 +375,7 @@ export class Wallet {
    * })
    *
    * addRecordTags({  id: 'RecordId',
-   *     tags: { 
+   *     tags: {
    *          "tagName1": "tag value 1",
    *          "~tagName2": "tag value 2 unencrypted",
    *           "tagName3", 1
@@ -422,7 +422,7 @@ export class Wallet {
    * ```
    * await Wallet.addRecord({
    *    id: 'RecordId',
-   *    tags: { 
+   *    tags: {
    *        "foo": "bar",
    *        "~fizz": "buzz",
    *        "unencyrptedStringTag": "tag value 1",
@@ -433,7 +433,7 @@ export class Wallet {
    *    value: 'RecordValue'
    * })
    *
-   * deleteRecordTags({ 
+   * deleteRecordTags({
    *     id: 'RecordId',
    *     tags: { tagList: [ "foo", "buzz", "~encryptedStringTag" ] }
    *     type_: 'TestType',
@@ -531,7 +531,7 @@ export class Wallet {
    * ```
    * await Wallet.addRecord({
    *    id: 'RecordId',
-   *    tags: { 
+   *    tags: {
    *        "foo": "bar",
    *        "~fizz": "buzz",
    *        "unencyrptedStringTag": "tag value 1",

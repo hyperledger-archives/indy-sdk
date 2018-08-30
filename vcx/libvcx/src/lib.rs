@@ -56,8 +56,9 @@ mod tests {
     use rand::Rng;
     use std::thread;
     use std::time::Duration;
-    use ::utils::devsetup::tests::{setup_local_env, set_institution, set_consumer, cleanup_dev_env};
+    use ::utils::devsetup::tests::{set_institution, set_consumer, cleanup_dev_env};
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_delete_connection() {
@@ -70,9 +71,11 @@ mod tests {
         ::utils::devsetup::tests::cleanup_dev_env(test_name);
     }
 
+    #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_real_proof() {
+        use ::utils::devsetup::tests::setup_local_env;
         settings::set_defaults();
 	    setup_local_env("test_real_proof");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -110,16 +113,21 @@ mod tests {
         // AS CONSUMER STORE CREDENTIAL
         tests::set_consumer();
         credential::update_state(credential).unwrap();
+        thread::sleep(Duration::from_millis(2000));
         println!("storing credential");
         let cred_id = credential::get_credential_id(credential).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, credential::get_state(credential).unwrap());
         // AS INSTITUTION SEND PROOF REQUEST
         tests::set_institution();
+        let address1 = "Address1";
+        let address2 = "address2";
+        let city = "CITY";
+        let state = "State";
+        let zip = "zip";
         let requested_attrs = json!([
            {
-              "name":"address1",
+              "name":address1,
               "restrictions": [{
-                "schema_name":"Home Address",
                 "issuer_did": institution_did,
                 "schema_id": schema_id,
                 "cred_def_id": cred_def_id,
@@ -127,9 +135,8 @@ mod tests {
               }]
            },
            {
-              "name":"address2",
+              "name":address2,
               "restrictions": [{
-                "schema_name":"Home Address",
                 "issuer_did": institution_did,
                 "schema_id": schema_id,
                 "cred_def_id": cred_def_id,
@@ -137,9 +144,8 @@ mod tests {
               }]
            },
            {
-              "name":"city",
+              "name":city,
               "restrictions": [{
-                "schema_name":"Home Address",
                 "issuer_did": institution_did,
                 "schema_id": schema_id,
                 "cred_def_id": cred_def_id,
@@ -147,9 +153,8 @@ mod tests {
               }]
            },
            {
-              "name":"state",
+              "name":state,
               "restrictions": [{
-                "schema_name":"Home Address",
                 "issuer_did": institution_did,
                 "schema_id": schema_id,
                 "cred_def_id": cred_def_id,
@@ -157,9 +162,8 @@ mod tests {
               }]
            },
            {
-              "name":"zip",
+              "name":zip,
               "restrictions": [{
-                "schema_name":"Home Address",
                 "issuer_did": institution_did,
                 "schema_id": schema_id,
                 "cred_def_id": cred_def_id,
@@ -178,98 +182,20 @@ mod tests {
         let requests: Value = serde_json::from_str(&requests).unwrap();
         let requests = serde_json::to_string(&requests[0]).unwrap();
         let proof_handle = disclosed_proof::create_proof(::utils::constants::DEFAULT_PROOF_NAME.to_string(), requests).unwrap();
+        println!("retrieving matching credentials");
+        let retrieved_credentials = disclosed_proof::retrieve_credentials(proof_handle).unwrap();
+        let matching_credentials: Value = serde_json::from_str(&retrieved_credentials).unwrap();
         let selected_credentials : Value = json!({
                "attrs":{
-                  "address1":{
-                    "cred_info":{
-                       "referent": cred_id,
-                       "attrs":{
-                          "address1":"101 Tela Lane",
-                          "address2":"101 Wilson Lane",
-                          "zip":"87121",
-                          "state":"UT",
-                          "city":"SLC"
-                       },
-                       "schema_id": schema_id,
-                       "cred_def_id": cred_def_id,
-                       "rev_reg_id":null,
-                       "cred_rev_id":null
-                    },
-                    "interval":null
-                 },
-                  "address2":{
-                    "cred_info":{
-                       "referent": cred_id,
-                       "attrs":{
-                          "address1":"101 Tela Lane",
-                          "address2":"101 Wilson Lane",
-                          "zip":"87121",
-                          "state":"UT",
-                          "city":"SLC"
-                       },
-                       "schema_id": schema_id,
-                       "cred_def_id": cred_def_id,
-                       "rev_reg_id":null,
-                       "cred_rev_id":null
-                    },
-                    "interval":null
-                 },
-                  "city":{
-                    "cred_info":{
-                       "referent": cred_id,
-                       "attrs":{
-                          "address1":"101 Tela Lane",
-                          "address2":"101 Wilson Lane",
-                          "zip":"87121",
-                          "state":"UT",
-                          "city":"SLC"
-                       },
-                       "schema_id": schema_id,
-                       "cred_def_id": cred_def_id,
-                       "rev_reg_id":null,
-                       "cred_rev_id":null
-                    },
-                    "interval":null
-                 },
-                  "state":{
-                    "cred_info":{
-                       "referent": cred_id,
-                       "attrs":{
-                          "address1":"101 Tela Lane",
-                          "address2":"101 Wilson Lane",
-                          "zip":"87121",
-                          "state":"UT",
-                          "city":"SLC"
-                       },
-                       "schema_id": schema_id,
-                       "cred_def_id": cred_def_id,
-                       "rev_reg_id":null,
-                       "cred_rev_id":null
-                    },
-                    "interval":null
-                 },
-                  "zip":{
-                    "cred_info":{
-                       "referent": cred_id,
-                       "attrs":{
-                          "address1":"101 Tela Lane",
-                          "address2":"101 Wilson Lane",
-                          "zip":"87121",
-                          "state":"UT",
-                          "city":"SLC"
-                       },
-                       "schema_id": schema_id,
-                       "cred_def_id": cred_def_id,
-                       "rev_reg_id":null,
-                       "cred_rev_id":null
-                    },
-                    "interval":null
-                 }
+                  address1:matching_credentials["attrs"][address1][0],
+                  address2:matching_credentials["attrs"][address2][0],
+                  city:matching_credentials["attrs"][city][0],
+                  state:matching_credentials["attrs"][state][0],
+                  zip:matching_credentials["attrs"][zip][0]
                },
                "predicates":{
                }
             });
-
         disclosed_proof::generate_proof(proof_handle, selected_credentials.to_string(), "{}".to_string()).unwrap();
         println!("sending proof");
         disclosed_proof::send_proof(proof_handle, faber).unwrap();

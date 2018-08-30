@@ -135,24 +135,26 @@ def mainUbuntu() {
 
 
 def android() {
-    node('ubuntu') {
         stage('Android Build') {
+            parallel([
+                "x86" : { buildAndroid('x86') },
+                "arm" : { buildAndroid('arm') },
+                "arm64" : { buildAndroid('arm64') }
+            ])
+        }
+        node('ubuntu') {
             try {
                 checkout scm
-
-                //Build android docker image
-                sh 'ls'
                 android = build('android', 'vcx/ci/android.dockerfile', 'vcx')
-                
-                //Build .so files for arm64, x86, and arm
-                buildAndroid(android)
-
-                //Package .so files into .aar 
-                packageAndroid(android)
-
-                if (env.BRANCH_NAME == "master") {
-                    //Publish package on aptly
-                    publishAndroid(android)
+                stage('Android Packaging') {
+                    //Package .so files into .aar 
+                    packageAndroid(android)
+                }
+                stage('Android Publishing') {
+                    if (env.BRANCH_NAME == "master") {
+                        //Publish package on aptly
+                        publishAndroid(android)
+                    }
                 }
             } catch (Exception ex) {
                 currentBuild.result = "FAILED"
@@ -161,13 +163,12 @@ def android() {
                 }
                 echo "$ex error"
             } finally {
-				sh 'docker system df'
+                sh 'docker system df'
                 step([$class: 'WsCleanup'])
             }
-
         }
-    }
 }
+
 
 def ios() {
     node('macos-vcx') {
@@ -209,22 +210,47 @@ def fail() {
     slackSend message
 }
 
-def buildAndroid(envn) {    
-    envn.inside {
-        ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
-        LIBINDY_BRANCH="stable"
-        LIBINDY_VERSION="1.6.2"
-        LIBINDY_TAG=""
+def buildAndroid(arch) {    
+    node('ubuntu') {
+        try {
+            checkout scm
+            android = build('android', 'vcx/ci/android.dockerfile', 'vcx')
 
-        sh 'sudo ./vcx/ci/scripts/installCert.sh'
-        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBINDY_TAG=${LIBINDY_TAG} ./${ANDROID_SCRIPT_PATH} arm64"
-        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBINDY_TAG=${LIBINDY_TAG} ./${ANDROID_SCRIPT_PATH} arm"
-        sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBINDY_TAG=${LIBINDY_TAG} ./${ANDROID_SCRIPT_PATH} x86"
+            android.inside {
+                ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
+                LIBINDY_BRANCH="stable"
+                LIBINDY_VERSION="1.6.2"
+                LIBINDY_TAG=""
+
+                sh 'sudo ./vcx/ci/scripts/installCert.sh'
+                sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBINDY_TAG=${LIBINDY_TAG} ./${ANDROID_SCRIPT_PATH} ${arch}"
+
+            }
+
+            dir("runtime_android_build/libvcx_${arch}") {
+                stash includes: "libvcx.so", name: "libvcx_${arch}"
+            }
+        } catch (Exception ex) {
+            currentBuild.result = "FAILED"
+            if (env.BRANCH_NAME == "master") {
+                fail()
+            }
+            echo "$ex error" 
+        } finally {
+            sh 'docker system df'
+            step([$class: 'WsCleanup'])
+        }
    }
 }
 
-def packageAndroid(envn) {
-    envn.inside {
+def packageAndroid(android) {
+    all_archs = ["arm", "arm64", "x86"]
+    for (arch in all_archs) {
+        dir("runtime_android_build/libvcx_${arch}") {
+            unstash name: "libvcx_${arch}"
+        }
+    }
+    android.inside {
         ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidPackage.sh'
         sh "chmod +x ${ANDROID_SCRIPT_PATH}"
         sh "./${ANDROID_SCRIPT_PATH}"

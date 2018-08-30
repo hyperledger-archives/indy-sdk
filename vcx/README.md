@@ -7,8 +7,9 @@ This library is currently in experimental state.
 ## Linux
 1) Install rust and rustup (https://www.rust-lang.org/install.html).
 2) Install libindy_1.6.1 (https://repo.sovrin.org/sdk/deb/pool/xenial/stable/libi/libindy/)
+2) Install libnullpay_1.6.1 (https://repo.sovrin.org/sdk/deb/pool/xenial/stable/libn/libnullpay/)
 3) Clone this repo to your local machine.
-4) From the local repository run the following commands to verify everything works:
+4) From the sdk/vcx/libvcx folder inside this local repository run the following commands to verify everything works:
     ```
     $ cargo build
     $ cargo test
@@ -21,7 +22,6 @@ This library is currently in experimental state.
 
 **`libvcx_<ver>_amd.deb`**
 - a debian that will install the .so library into /usr/lib, update `ldconfig`, and install provision script to `/usr/share/libvcx/`.
-- Published to https://repo.corp.evernym.com/deb/pool/main/libc/libvcx/
 
 **`vcx_<ver>.deb`**
 - an unintelligent debian package that puts the nodejs package contents into a global node_modules location.

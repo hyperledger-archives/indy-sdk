@@ -1,3 +1,34 @@
+Build android libvcx.a from source code
+===============================================================
+download https://gradle.org/next-steps/?version=3.4.1&format=bin
+extract the zip to /Users/norm/forge/tools/
+sudo mkdir /opt/gradle
+sudo ln -s /Users/norm/forge/tools/gradle-3.4.1 /opt/gradle/gradle-3.4.1
+cd /Users/norm/forge/work/code/evernym/sdk-evernym
+vi ./vcx/ci/scripts/androidBuild.sh
+and then change "wget" to "wget --no-check-certificate" and save the file
+also you may need to change "curl" to "curl --insecure" and save the file
+OR
+run sudo ./vcx/ci/scripts/installCert.sh
+LIBINDY_VERSION="1.6.2" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh x86
+LIBINDY_VERSION="1.6.2" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh arm
+LIBINDY_VERSION="1.6.2" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh arm64
+chmod a+x ./vcx/ci/scripts/androidPackage.sh
+vi ./vcx/ci/scripts/androidPackage.sh
+and then change /home/vcx/android-sdk-linux
+to /Users/norm/Library/Android/sdk and save the file
+./vcx/ci/scripts/androidPackage.sh
+When it is successful then the .aar file is located at ./vcx/wrappers/java/vcx/build/outputs/aar
+cd ./vcx/wrappers/java/vcx/build/outputs/aar
+mvn install:install-file -Dfile=com.evernym-vcx_[new_version]_x86-armv7-release.aar -DgroupId=com.evernym -DartifactId=vcx -Dversion=[new_version] -Dpackaging=aar
+change new_version to something like, i.e. 1.0.0-20-08-2018T19-32
+now you can cd to the checked out connectme source code and change the android/app/build.gradle
+to have the line -- compile 'com.evernym:vcx:[new_version]@aar'
+Now do a make clean;make cleancache;make pre-run
+Now do a make run-android to launch the connectme app in the android emulator
+
+
+
 Steps to build libindy.so and libvcx.so for android
 when you have NOT built them before on this machine
 ---------------------------------------------------------------------------
