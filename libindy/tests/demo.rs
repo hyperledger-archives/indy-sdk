@@ -36,7 +36,6 @@ mod utils;
 use utils::callback::CallbackUtils;
 use utils::constants::{WALLET_CREDENTIALS, PROTOCOL_VERSION};
 use utils::pool::PoolUtils;
-use utils::test::TestUtils;
 use utils::timeout::TimeoutUtils;
 use utils::domain::anoncreds::credential_definition::CredentialDefinition;
 use utils::domain::anoncreds::credential_for_proof_request::CredentialsForProofRequest;
@@ -67,7 +66,7 @@ use std::thread;
 
 #[test]
 fn anoncreds_demo_works() {
-    TestUtils::cleanup_storage();
+    utils::setup();
 
     let (issuer_create_schema_receiver, issuer_create_schema_command_handle, issuer_create_schema_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
     let (issuer_create_credential_definition_receiver, issuer_create_credential_definition_command_handle, issuer_create_credential_definition_callback) = CallbackUtils::_closure_to_cb_ec_string_string();
@@ -411,13 +410,13 @@ fn anoncreds_demo_works() {
     let res = close_wallet_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(res, ErrorCode::Success);
 
-    TestUtils::cleanup_storage();
+    utils::tear_down();
 }
 
 #[test]
 #[cfg(feature = "local_nodes_pool")]
 fn ledger_demo_works() {
-    TestUtils::cleanup_storage();
+    utils::setup();
     let my_wallet_config = json!({"id": "my_wallet"}).to_string();
     let their_wallet_config = json!({"id": "their_wallet"}).to_string();
 
@@ -638,7 +637,7 @@ fn ledger_demo_works() {
     let res = close_their_wallet_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(res, ErrorCode::Success);
 
-    TestUtils::cleanup_storage();
+    utils::tear_down();
 
     #[derive(Serialize, Eq, PartialEq, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -683,7 +682,7 @@ fn ledger_demo_works() {
 
 #[test]
 fn crypto_demo_works() {
-    TestUtils::cleanup_storage();
+    utils::setup();
 
     let (create_wallet_receiver, create_wallet_command_handle, create_wallet_callback) = CallbackUtils::_closure_to_cb_ec();
     let (open_wallet_receiver, open_wallet_command_handle, open_wallet_callback) = CallbackUtils::_closure_to_cb_ec_i32();
@@ -774,5 +773,5 @@ fn crypto_demo_works() {
     let res = close_wallet_receiver.recv_timeout(TimeoutUtils::medium_timeout()).unwrap();
     assert_eq!(res, ErrorCode::Success);
 
-    TestUtils::cleanup_storage();
+    utils::tear_down();
 }

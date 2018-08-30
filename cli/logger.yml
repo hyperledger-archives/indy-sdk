@@ -1,0 +1,16 @@
+# Scan this file for changes every 30 seconds
+refresh_rate: 30 seconds
+
+appenders:
+  # An appender named "requests" that writes to a file with a custom pattern encoder
+  indy_cli:
+    kind: file
+    path: "log/indy_cli.log"
+    encoder:
+      pattern: "{d} [{t}] {l} {M}:{m}{n}"
+
+# Set the default logging level to "warn" and attach the "stdout" appender to the root
+root:
+  level: trace
+  appenders:
+    - indy_cli

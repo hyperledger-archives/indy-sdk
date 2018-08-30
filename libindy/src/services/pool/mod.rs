@@ -498,12 +498,10 @@ mod tests {
 
     #[test]
     fn pool_drop_works_for_after_close() {
-        use utils::logger::LoggerUtils;
         use utils::test::TestUtils;
         use std::time;
 
         TestUtils::cleanup_storage();
-        LoggerUtils::init();
 
         fn drop_test() {
             TestUtils::cleanup_storage();
