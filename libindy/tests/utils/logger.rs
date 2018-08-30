@@ -40,7 +40,7 @@ impl LoggerUtils {
             time::strftime("%Y-%m-%d %H:%M:%S", &time::now()).unwrap(),
             level.to_string(),
             target.to_string(),
-            file.unwrap_or(String::new()),
+            file.unwrap_or(""),
             line,
             args);
     }
