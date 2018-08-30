@@ -1282,12 +1282,13 @@ fn parse_payment_outputs(outputs: &Vec<String>) -> Result<String, ()> {
 
 fn parse_response_with_fees(response: &str, payment_method: Option<String>) -> Result<Option<Vec<serde_json::Value>>, ()> {
     let receipts = if let Some(method) = payment_method {
-        Some(Payment::parse_response_with_fees(&method, &response)
-            .map_err(|err| handle_payment_error(err, Some(&method)))
-            .and_then(|fees| serde_json::from_str::<Vec<serde_json::Value>>(&fees)
-                .map_err(|err| println_err!("Invalid data has been received: {:?}", err)))?)
+        match Payment::parse_response_with_fees(&method, &response) {
+            Ok(fees) => Some(serde_json::from_str::<Vec<serde_json::Value>>(&fees)
+                .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?),
+            Err(ErrorCode::CommonInvalidStructure) => None, // can't parse response because occurred error related to Node validation
+            Err(err) => return Err(handle_payment_error(err, Some(&method)))
+        }
     } else { None };
-
     Ok(receipts)
 }
 
