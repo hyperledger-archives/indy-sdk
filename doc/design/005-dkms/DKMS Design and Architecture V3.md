@@ -55,9 +55,9 @@ DKMS architecture and DPKI provides the following major benefits:
 
 1. **No single point of failure.** With DKMS, there is no central CA or other registration authority whose failure can jeopardize large swaths of users.
 
-2. **Interoperability. **DKMS will enable any two identity owners and their applications to perform key exchange and create encrypted P2P connections without reliance on proprietary software, service providers, or federations.
+2. **Interoperability.** DKMS will enable any two identity owners and their applications to perform key exchange and create encrypted P2P connections without reliance on proprietary software, service providers, or federations.
 
-3. **Resilient trust infrastructure****. **DKMS incorporates all the advantages of distributed ledger technology for decentralized access to cryptographically verifiable data. It then adds on top of it a distributed web of trust where any peer can exchange keys, form connections, and issue/accept verifiable credentials from any other peer.
+3. **Resilient trust infrastructure.** DKMS incorporates all the advantages of distributed ledger technology for decentralized access to cryptographically verifiable data. It then adds on top of it a distributed web of trust where any peer can exchange keys, form connections, and issue/accept verifiable credentials from any other peer.
 
 4. **Key recovery.** Rather than app-specific or domain-specific key recovery solutions, DKMS can build robust key recovery directly into the infrastructure, including agent-automated encrypted backup, DKMS key escrow services, and social recovery of keys, for example by backing up or sharding keys across trusted DKMS connections and agents.
 
@@ -95,7 +95,7 @@ DIDs and DKMS components intended to be used by individual identity owners MUST 
 
 In many ways this follows from decentralization: in a DKMS, there is no central authority to teach everyone how to use it or require specific user training. It must be automated and intuitive to a very high degree, similar to the usability achieved by modern encrypted OTT messaging products like Whatsapp, iMessage, and Signal.
 
-According to the BYU Internet Security Research Lab, this level of usability is a necessary property of any successfully deployed system. "We spent the 1990s building and deploying security that wasn’t really needed, and now that it’s actually desirable, we’re finding that nobody can use it" [Guttman and Grigg, IEEE Security and Privacy, 2005]. The DKMS needs to be able to support a broad spectrum of applications, with both manual and automatic key management, in order to satisfy the numerous security and usability requirements of those applications.
+According to the BYU Internet Security Research Lab, this level of usability is a necessary property of any successfully deployed system. "We spent the 1990s building and deploying security that wasn’t really needed, and now that it’s actually desirable, we’re finding that nobody can use it" [[Guttman and Grigg, IEEE Security and Privacy, 2005](https://researchspace.auckland.ac.nz/bitstream/handle/2292/262/262.pdf)]. The DKMS needs to be able to support a broad spectrum of applications, with both manual and automatic key management, in order to satisfy the numerous security and usability requirements of those applications.
 
 Again, this requirement is particularly acute when it comes to key recovery. Because there is no central authority to fall back on, the key recovery options must not only be anticipated and implemented in advance, but they must be easy enough for a non-technical user to employ while still preventing exploitation by an attacker.
 
