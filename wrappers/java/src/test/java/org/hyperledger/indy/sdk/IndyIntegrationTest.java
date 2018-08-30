@@ -1,5 +1,6 @@
 package org.hyperledger.indy.sdk;
 
+import org.apache.log4j.Logger;
 import org.hyperledger.indy.sdk.crypto.CryptoJSONParameters;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;

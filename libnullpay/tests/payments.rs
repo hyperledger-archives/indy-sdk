@@ -40,7 +40,8 @@ mod high_cases {
 
         #[test]
         pub fn create_payment_address_works() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
+
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
 
@@ -48,7 +49,7 @@ mod high_cases {
             assert!(payment_address.starts_with("pay:null:"));
 
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 
@@ -57,7 +58,7 @@ mod high_cases {
 
         #[test]
         pub fn list_payment_addresses_works() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
 
@@ -71,7 +72,7 @@ mod high_cases {
             assert!(payment_addresses_list.contains(&payment_address));
 
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 
@@ -80,7 +81,7 @@ mod high_cases {
 
         #[test]
         pub fn get_payment_sources_works() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -112,12 +113,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn get_payment_sources_works_for_no_sources() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -130,7 +131,7 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 
@@ -139,7 +140,7 @@ mod high_cases {
 
         #[test]
         pub fn mint_works() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -172,12 +173,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn mint_works_for_extra() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -210,7 +211,7 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 
@@ -219,7 +220,7 @@ mod high_cases {
 
         #[test]
         pub fn add_request_fees_works() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -277,12 +278,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn add_request_fees_works_for_extra() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -332,12 +333,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn add_request_works_for_insufficient_funds() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -376,12 +377,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn add_request_works_for_spent_source() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -425,12 +426,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn add_request_fees_works_for_source_not_correspond_to_wallet() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
 
             let wallet_handle_1 = wallet::create_and_open_wallet().unwrap();
@@ -474,7 +475,7 @@ mod high_cases {
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle_1).unwrap();
             wallet::close_wallet(wallet_handle_2).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 
@@ -483,7 +484,7 @@ mod high_cases {
 
         #[test]
         pub fn payment_request_works() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -545,12 +546,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn payment_request_works_for_extra() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -601,12 +602,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn payments_work_for_insufficient_funds() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -641,12 +642,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn payments_work_for_spent_source() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -683,12 +684,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn payment_request_works_for_source_not_correspond_to_wallet() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let wallet_handle_2 = wallet::create_and_open_wallet().unwrap();
@@ -721,7 +722,7 @@ mod high_cases {
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
             wallet::close_wallet(wallet_handle_2).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 
@@ -730,7 +731,7 @@ mod high_cases {
 
         #[test]
         pub fn set_request_fees_works() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -747,12 +748,12 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn get_request_fees_works() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -771,7 +772,7 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 
@@ -780,7 +781,7 @@ mod high_cases {
 
         #[test]
         pub fn verify_payment_works() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -855,7 +856,7 @@ mod high_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 }
@@ -868,7 +869,7 @@ mod medium_cases {
 
         #[test]
         pub fn add_request_fees_works_for_request_without_operation() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -903,12 +904,12 @@ mod medium_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
 
         #[test]
         pub fn add_request_fees_works_for_request_without_req_id() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -943,7 +944,7 @@ mod medium_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 
@@ -952,7 +953,7 @@ mod medium_cases {
 
         #[test]
         pub fn build_set_txn_fees_works_for_invalid_json() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -962,7 +963,7 @@ mod medium_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 
@@ -971,7 +972,7 @@ mod medium_cases {
 
         #[test]
         pub fn verify_payment_works_for_not_found_receipt() {
-            test_utils::cleanup_storage();
+            test_utils::setup();
             plugin::init_plugin();
             let wallet_handle = wallet::create_and_open_wallet().unwrap();
             let pool_handle = pool::create_and_open_pool_ledger(POOL_NAME).unwrap();
@@ -985,7 +986,7 @@ mod medium_cases {
 
             pool::close(pool_handle).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
-            test_utils::cleanup_storage();
+            test_utils::tear_down();
         }
     }
 }

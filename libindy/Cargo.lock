@@ -409,7 +409,7 @@ dependencies = [
 
 [[package]]
 name = "indy"
-version = "1.6.3"
+version = "1.6.4"
 dependencies = [
  "android_logger 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
