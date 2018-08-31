@@ -6,8 +6,7 @@ use commands::crypto::CryptoCommand;
 use domain::crypto::key::KeyInfo;
 use errors::common::CommonError;
 use errors::ToErrorCode;
-use utils::cstring::CStringUtils;
-use utils::byte_array::vec_to_pointer;
+use utils::ctypes;
 
 use serde_json;
 use self::libc::c_char;
@@ -57,7 +56,7 @@ pub  extern fn indy_create_key(command_handle: i32,
             Box::new(move |result| {
                 let (err, verkey) = result_to_err_code_1!(result, String::new());
                 trace!("indy_create_key: verkey: {:?}", verkey);
-                let verkey = CStringUtils::string_to_cstring(verkey);
+                let verkey = ctypes::string_to_cstring(verkey);
                 cb(command_handle, err, verkey.as_ptr())
             })
         )));
@@ -162,7 +161,7 @@ pub  extern fn indy_get_key_metadata(command_handle: i32,
             Box::new(move |result| {
                 let (err, metadata) = result_to_err_code_1!(result, String::new());
                 trace!("indy_get_key_metadata: metadata: {:?}", metadata);
-                let metadata = CStringUtils::string_to_cstring(metadata);
+                let metadata = ctypes::string_to_cstring(metadata);
                 cb(command_handle, err, metadata.as_ptr())
             })
         )));
@@ -222,7 +221,7 @@ pub  extern fn indy_crypto_sign(command_handle: i32,
             Box::new(move |result| {
                 let (err, signature) = result_to_err_code_1!(result, Vec::new());
                 trace!("indy_crypto_sign: signature: {:?}", signature);
-                let (signature_raw, signature_len) = vec_to_pointer(&signature);
+                let (signature_raw, signature_len) = ctypes::vec_to_pointer(&signature);
                 cb(command_handle, err, signature_raw, signature_len)
             })
         )));
@@ -355,7 +354,7 @@ pub  extern fn indy_crypto_auth_crypt(command_handle: i32,
             Box::new(move |result| {
                 let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
                 trace!("indy_crypto_auth_crypt: encrypted_msg: {:?}", encrypted_msg);
-                let (encrypted_msg_raw, encrypted_msg_len) = vec_to_pointer(&encrypted_msg);
+                let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
                 cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
             })
         )));
@@ -422,8 +421,8 @@ pub  extern fn indy_crypto_auth_decrypt(command_handle: i32,
             Box::new(move |result| {
                 let (err, sender_vk, msg) = result_to_err_code_2!(result, String::new(), Vec::new());
                 trace!("indy_crypto_auth_decrypt: sender_vk: {:?}, msg: {:?}", sender_vk, msg);
-                let (msg_data, msg_len) = vec_to_pointer(&msg);
-                let sender_vk = CStringUtils::string_to_cstring(sender_vk);
+                let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
+                let sender_vk = ctypes::string_to_cstring(sender_vk);
                 cb(command_handle, err, sender_vk.as_ptr(), msg_data, msg_len)
             })
         )));
@@ -483,7 +482,7 @@ pub  extern fn indy_crypto_anon_crypt(command_handle: i32,
             Box::new(move |result| {
                 let (err, encrypted_msg) = result_to_err_code_1!(result, Vec::new());
                 trace!("indy_crypto_anon_crypt: encrypted_msg: {:?}", encrypted_msg);
-                let (encrypted_msg_raw, encrypted_msg_len) = vec_to_pointer(&encrypted_msg);
+                let (encrypted_msg_raw, encrypted_msg_len) = ctypes::vec_to_pointer(&encrypted_msg);
                 cb(command_handle, err, encrypted_msg_raw, encrypted_msg_len)
             })
         )));
@@ -547,7 +546,7 @@ pub  extern fn indy_crypto_anon_decrypt(command_handle: i32,
             Box::new(move |result| {
                 let (err, msg) = result_to_err_code_1!(result, Vec::new());
                 trace!("indy_crypto_anon_decrypt: msg: {:?}", msg);
-                let (msg_data, msg_len) = vec_to_pointer(&msg);
+                let (msg_data, msg_len) = ctypes::vec_to_pointer(&msg);
                 cb(command_handle, err, msg_data, msg_len)
             })
         )));

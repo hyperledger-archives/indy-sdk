@@ -33,13 +33,8 @@ pub mod sequence;
 
 #[macro_use]
 #[allow(unused_macros)]
-#[path = "../../src/utils/cstring.rs"]
-pub mod cstring;
-
-#[macro_use]
-#[allow(unused_macros)]
-#[path = "../../src/utils/byte_array.rs"]
-pub mod byte_array;
+#[path = "../../src/utils/ctypes.rs"]
+pub mod ctypes;
 
 #[path = "../../src/utils/inmem_wallet.rs"]
 pub mod inmem_wallet;

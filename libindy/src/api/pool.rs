@@ -6,7 +6,7 @@ use commands::pool::PoolCommand;
 use domain::pool::{PoolConfig, PoolOpenConfig};
 use errors::common::CommonError;
 use errors::ToErrorCode;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 use serde_json;
 use self::libc::c_char;
@@ -178,7 +178,7 @@ pub extern fn indy_list_pools(command_handle: i32,
             Box::new(move |result| {
                 let (err, pools) = result_to_err_code_1!(result, String::new());
                 trace!("indy_list_pools: pools: {:?}", pools);
-                let pools = CStringUtils::string_to_cstring(pools);
+                let pools = ctypes::string_to_cstring(pools);
                 cb(command_handle, err, pools.as_ptr())
             })
         )));
