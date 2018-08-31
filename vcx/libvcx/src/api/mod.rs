@@ -1,0 +1,118 @@
+extern crate libc;
+
+pub mod vcx;
+pub mod connection;
+pub mod issuer_credential;
+pub mod utils;
+pub mod proof;
+pub mod credential_def;
+pub mod schema;
+pub mod credential;
+pub mod disclosed_proof;
+pub mod wallet;
+
+use std::fmt;
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
+pub enum Errorcode
+{
+    Success = 0,
+    Failure = 1,
+    Waiting = 2,
+}
+/// This macro allows the VcxStateType to be
+/// serialized within serde as an integer (represented as
+/// a string, because its still JSON).
+macro_rules! enum_number {
+    ($name:ident { $($variant:ident = $value:expr, )* }) => {
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        pub enum $name {
+            $($variant = $value,)*
+        }
+
+        impl ::serde::Serialize for $name {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where S: ::serde::Serializer
+            {
+                // Serialize the enum as a u64.
+                serializer.serialize_u64(*self as u64)
+            }
+        }
+
+        impl<'de> ::serde::Deserialize<'de> for $name {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where D: ::serde::Deserializer<'de>
+            {
+                struct Visitor;
+
+                impl<'de> ::serde::de::Visitor<'de> for Visitor {
+                    type Value = $name;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("positive integer")
+                    }
+
+                    fn visit_u64<E>(self, value: u64) -> Result<$name, E>
+                        where E: ::serde::de::Error
+                    {
+                        // Rust does not come with a simple way of converting a
+                        // number to an enum, so use a big `match`.
+                        match value {
+                            $( $value => Ok($name::$variant), )*
+                            _ => Err(E::custom(
+                                format!("unknown {} value: {}",
+                                stringify!($name), value))),
+                        }
+                    }
+                }
+
+                // Deserialize the enum from a u64.
+                deserializer.deserialize_u64(Visitor)
+            }
+        }
+    }
+}
+
+enum_number!(VcxStateType
+{
+    VcxStateNone = 0,
+    VcxStateInitialized = 1,
+    VcxStateOfferSent = 2,
+    VcxStateRequestReceived = 3,
+    VcxStateAccepted = 4,
+    VcxStateUnfulfilled = 5,
+    VcxStateExpired = 6,
+    VcxStateRevoked = 7,
+});
+
+// undefined is correlated with VcxStateNon -> Haven't received Proof
+// Validated is both validated by indy-sdk and by comparing proof-request
+// Invalid is that it failed one or both of validation processes
+enum_number!(ProofStateType
+{
+    ProofUndefined = 0,
+    ProofValidated = 1,
+    ProofInvalid = 2,
+});
+
+#[repr(C)]
+pub struct VcxStatus {
+    pub handle: ::std::os::raw::c_int,
+    pub status: ::std::os::raw::c_int,
+    pub msg: *mut ::std::os::raw::c_char,
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+    use self::VcxStateType::*;
+
+    #[test]
+    fn test_serialize_vcx_state_type(){
+        let z = VcxStateNone;
+        let y = serde_json::to_string(&z).unwrap();
+        assert_eq!(y,"0");
+    }
+}
