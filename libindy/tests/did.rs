@@ -73,10 +73,7 @@ mod high_cases {
 
         #[test]
         fn indy_key_for_did_works_for_get_key_from_ledger() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
-            let trustee_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
-
-            let (trustee_did, _) = did::create_and_store_my_did(trustee_wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (trustee_wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
             let (did, verkey) = did::create_and_store_my_did(trustee_wallet_handle, None).unwrap();
 
             let nym_request = ledger::build_nym_request(&trustee_did, &did, Some(&verkey), None, None).unwrap();
@@ -85,6 +82,7 @@ mod high_cases {
             let get_nym_request = ledger::build_get_nym_request(&did, &did).unwrap();
             ledger::submit_request_with_retries(pool_handle, &get_nym_request, &nym_resp).unwrap();
 
+            let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
             let received_verkey = did::key_for_did(pool_handle, wallet_handle, &did).unwrap();
             assert_eq!(verkey, received_verkey);
 
@@ -114,9 +112,7 @@ mod high_cases {
 
         #[test]
         fn indy_key_for_did_works_for_invalid_wallet_handle() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             let res = did::key_for_did(-1, wallet_handle + 1, &did);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
@@ -164,9 +160,7 @@ mod high_cases {
 
         #[test]
         fn indy_key_for_local_did_works_for_invalid_wallet_handle() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             let res = did::key_for_local_did(wallet_handle + 1, &did);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
@@ -257,18 +251,11 @@ mod high_cases {
 
         #[test]
         fn indy_get_endpoint_for_did_works_from_ledger() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
-            let (trustee_did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-
-            let attrib_data = format!(r#"{{"endpoint":{{"ha":"{}", "verkey":"{}"}}}}"#, ENDPOINT, VERKEY_TRUSTEE);
-            let attrib_request = ledger::build_attrib_request(&trustee_did, &trustee_did,
-                                                                   None, Some(&attrib_data), None).unwrap();
-
-            let attrib_req_resp = ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
-
-            let get_attrib_req = ledger::build_get_attrib_request(&trustee_did, &trustee_did, Some("endpoint"), None, None).unwrap();
-            ledger::submit_request_with_retries(pool_handle, &get_attrib_req, &attrib_req_resp).unwrap();
+            let attrib_data = json!({"endpoint": {"ha": ENDPOINT, "verkey": VERKEY_TRUSTEE}}).to_string();
+            let attrib_request = ledger::build_attrib_request(&trustee_did, &trustee_did, None, Some(&attrib_data), None).unwrap();
+            ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
             thread::sleep(std::time::Duration::from_millis(1000));
 
@@ -281,14 +268,10 @@ mod high_cases {
 
         #[test]
         fn indy_get_endpoint_for_did_works_from_ledger_for_address_only() {
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
-            let (trustee_did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
-
-            let attrib_data = format!(r#"{{"endpoint":{{"ha":"{}"}}}}"#, ENDPOINT);
-            let attrib_request = ledger::build_attrib_request(&trustee_did, &trustee_did,
-                                                                   None, Some(&attrib_data), None).unwrap();
-
+            let attrib_data = json!({"endpoint": {"ha": ENDPOINT}}).to_string();
+            let attrib_request = ledger::build_attrib_request(&trustee_did, &trustee_did, None, Some(&attrib_data), None).unwrap();
             ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
             thread::sleep(std::time::Duration::from_millis(1000));
@@ -338,9 +321,7 @@ mod high_cases {
 
         #[test]
         fn indy_set_did_metadata_works() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
@@ -351,8 +332,7 @@ mod high_cases {
         fn indy_set_did_metadata_works_for_their_did() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
-            did::store_their_did(wallet_handle, &identity_json).unwrap();
+            did::store_their_did_from_parts(wallet_handle, DID, VERKEY).unwrap();
 
             did::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
 
@@ -361,9 +341,7 @@ mod high_cases {
 
         #[test]
         fn indy_set_did_metadata_works_for_replace() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
             let metadata = did::get_did_metadata(wallet_handle, &did).unwrap();
@@ -379,9 +357,7 @@ mod high_cases {
 
         #[test]
         fn indy_set_did_metadata_works_for_empty_string() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             did::set_did_metadata(wallet_handle, &did, "").unwrap();
 
@@ -409,9 +385,7 @@ mod high_cases {
 
         #[test]
         fn indy_set_did_metadata_works_for_invalid_handle() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             let res = did::set_did_metadata(wallet_handle + 1, &did, METADATA);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
@@ -425,9 +399,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_did_metadata_works() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
@@ -439,14 +411,13 @@ mod high_cases {
 
         #[test]
         fn indy_get_did_metadata_works_for_their_did() {
-            let wallet_handle = utils::setup_with_wallet();
+            let (wallet_handle, did) = utils::setup_did();
 
-            let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
-            did::store_their_did(wallet_handle, &identity_json).unwrap();
+            did::store_their_did_from_parts(wallet_handle, &did, VERKEY).unwrap();
 
-            did::set_did_metadata(wallet_handle, DID, METADATA).unwrap();
+            did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
-            let metadata = did::get_did_metadata(wallet_handle, DID).unwrap();
+            let metadata = did::get_did_metadata(wallet_handle, &did).unwrap();
             assert_eq!(METADATA.to_string(), metadata);
 
             utils::tear_down_with_wallet(wallet_handle);
@@ -454,9 +425,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_did_metadata_works_for_empty_string() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             did::set_did_metadata(wallet_handle, &did, "").unwrap();
 
@@ -468,9 +437,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_did_metadata_works_for_no_metadata() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             let res = did::get_did_metadata(wallet_handle, &did);
             assert_eq!(ErrorCode::WalletItemNotFound, res.unwrap_err());
@@ -490,9 +457,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_did_metadata_works_for_invalid_handle() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
@@ -508,9 +473,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_my_did_metadata_works() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
 
@@ -522,9 +485,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_my_did_metadata_works_for_no_metadata() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+            let (wallet_handle, did) = utils::setup_did();
 
             did::get_my_did_with_metadata(wallet_handle, &did).unwrap();
 
@@ -631,7 +592,7 @@ mod high_cases {
         fn indy_replace_keys_start_works() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let (my_did, my_verkey) = did::create_my_did(wallet_handle, "{}").unwrap();
+            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let new_verkey = did::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
@@ -644,7 +605,7 @@ mod high_cases {
         fn indy_replace_keys_start_works_for_invalid_wallet_handle() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let (my_did, _) = did::create_my_did(wallet_handle, "{}").unwrap();
+            let (my_did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let res = did::replace_keys_start(wallet_handle + 1, &my_did, "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
@@ -656,7 +617,7 @@ mod high_cases {
         fn indy_replace_keys_start_works_for_seed() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let (my_did, my_verkey) = did::create_my_did(wallet_handle, "{}").unwrap();
+            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let new_verkey = did::replace_keys_start(wallet_handle, &my_did, r#"{"seed":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}"#).unwrap();
             assert_eq!(new_verkey, VERKEY);
@@ -673,7 +634,7 @@ mod high_cases {
         fn indy_replace_keys_apply_works() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let (my_did, my_verkey) = did::create_my_did(wallet_handle, "{}").unwrap();
+            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, None).unwrap();
 
             let new_verkey = did::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
 
@@ -686,9 +647,7 @@ mod high_cases {
 
         #[test]
         fn indy_replace_keys_apply_works_without_calling_replace_start() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_my_did(wallet_handle, "{}").unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             assert_eq!(did::replace_keys_apply(wallet_handle, &my_did).unwrap_err(), ErrorCode::WalletItemNotFound);
 
@@ -699,10 +658,6 @@ mod high_cases {
         fn indy_replace_keys_apply_works_for_unknown_did() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let (my_did, _) = did::create_my_did(wallet_handle, "{}").unwrap();
-
-            did::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
-
             assert_eq!(did::replace_keys_apply(wallet_handle, DID).unwrap_err(), ErrorCode::WalletItemNotFound);
 
             utils::tear_down_with_wallet(wallet_handle);
@@ -712,11 +667,7 @@ mod high_cases {
         fn indy_replace_keys_apply_works_for_invalid_wallet_handle() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let (my_did, _) = did::create_my_did(wallet_handle, "{}").unwrap();
-
-            did::replace_keys_start(wallet_handle, &my_did, "{}").unwrap();
-
-            assert_eq!(did::replace_keys_apply(wallet_handle + 1, &my_did).unwrap_err(), ErrorCode::WalletInvalidHandle);
+            assert_eq!(did::replace_keys_apply(wallet_handle + 1, DID).unwrap_err(), ErrorCode::WalletInvalidHandle);
 
             utils::tear_down_with_wallet(wallet_handle);
         }
@@ -729,7 +680,7 @@ mod high_cases {
         fn indy_store_their_did_works_for_did_only() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let identity_json = format!(r#"{{"did":"{}"}}"#, DID);
+            let identity_json = json!({"did": DID}).to_string();
             did::store_their_did(wallet_handle, &identity_json).unwrap();
 
             utils::tear_down_with_wallet(wallet_handle);
@@ -739,7 +690,7 @@ mod high_cases {
         fn indy_store_their_did_works_for_verkey() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, VERKEY);
+            let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
             did::store_their_did(wallet_handle, &identity_json).unwrap();
 
             utils::tear_down_with_wallet(wallet_handle);
@@ -749,8 +700,7 @@ mod high_cases {
         fn indy_store_their_did_works_for_verkey_with_crypto_type() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let verkey = VERKEY.to_owned() + ":ed25519";
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, verkey);
+            let identity_json = json!({"did": DID, "verkey": VERKEY.to_owned() + ":ed25519"}).to_string();
             did::store_their_did(wallet_handle, &identity_json).unwrap();
 
             utils::tear_down_with_wallet(wallet_handle);
@@ -770,7 +720,7 @@ mod high_cases {
         fn indy_store_their_did_works_for_invalid_wallet_handle() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let identity_json = format!(r#"{{"did":"{}"}}"#, DID);
+            let identity_json = json!({"did": DID}).to_string();
             let res = did::store_their_did(wallet_handle + 1, &identity_json);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
@@ -801,7 +751,8 @@ mod high_cases {
         fn indy_store_their_did_works_for_invalid_did() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let res = did::store_their_did(wallet_handle, &format!(r#"{{"did":"{:?}"}}"#, INVALID_BASE58_DID));
+            let identity_json = json!({"did": INVALID_BASE58_DID}).to_string();
+            let res = did::store_their_did(wallet_handle, &identity_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             utils::tear_down_with_wallet(wallet_handle);
@@ -811,9 +762,8 @@ mod high_cases {
         fn indy_store_their_did_works_for_invalid_verkey() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let identity_json = r#"{"did":"did", "verkey":"invalid_base58string"}"#;
-
-            let res = did::store_their_did(wallet_handle, identity_json);
+            let identity_json = json!({"did": "did", "verkey":"invalid_base58string"}).to_string();
+            let res = did::store_their_did(wallet_handle, &identity_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
             utils::tear_down_with_wallet(wallet_handle);
@@ -824,8 +774,7 @@ mod high_cases {
         fn indy_store_their_did_works_for_verkey_with_invalid_crypto_type() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let verkey = VERKEY.to_owned() + ":crypto_type";
-            let identity_json = format!(r#"{{"did":"{}", "verkey":"{}"}}"#, DID, verkey);
+            let identity_json = json!({"did": DID, "verkey": VERKEY.to_owned() + ":crypto_type"}).to_string();
             let res = did::store_their_did(wallet_handle, &identity_json);
             assert_eq!(ErrorCode::UnknownCryptoTypeError, res.unwrap_err());
 
@@ -836,7 +785,7 @@ mod high_cases {
         fn indy_store_their_did_works_twice() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let identity_json = format!(r#"{{"did":"{}"}}"#, DID);
+            let identity_json = json!({"did": DID}).to_string();
             did::store_their_did(wallet_handle, &identity_json).unwrap();
 
             let res = did::store_their_did(wallet_handle, &identity_json);
@@ -849,10 +798,7 @@ mod high_cases {
         fn indy_store_their_did_works_for_is_802() {
             let wallet_handle = utils::setup_with_wallet();
 
-            let identity_json = json!({
-                "did": DID,
-                "verkey": VERKEY,
-            }).to_string();
+            let identity_json = json!({"did": DID, "verkey": VERKEY}).to_string();
 
             // 1. Try 'storeTheirDid' operation with say did1 and verkey1
             did::store_their_did(wallet_handle, &identity_json).unwrap();
@@ -879,10 +825,9 @@ mod high_cases {
         fn indy_replace_keys_demo() {
             // 1. Create and open pool
             // 2. Create and open wallet
-            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
-
             // 3. Generate did from Trustee seed
-            let (trustee_did, _) = did::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
+            let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
+
             // 4. Generate my did
             let (my_did, my_verkey) = did::create_my_did(wallet_handle, "{}").unwrap();
 

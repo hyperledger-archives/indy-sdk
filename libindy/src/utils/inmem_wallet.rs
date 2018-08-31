@@ -4,7 +4,7 @@ extern crate indy_crypto;
 extern crate serde_json;
 
 use api::ErrorCode;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 use utils::sequence;
 
 use self::libc::c_char;

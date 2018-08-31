@@ -8,7 +8,7 @@ use std::ptr::null;
 
 use self::libc::{c_void, c_char};
 
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 use self::log::Level;
 
@@ -19,9 +19,9 @@ use self::log::Level;
                       _module_path: *const c_char,
                       file: *const c_char,
                       line: u32) {
-        let target = CStringUtils::c_str_to_string(target).unwrap().unwrap();
-        let args = CStringUtils::c_str_to_string(args).unwrap().unwrap();
-        let file = CStringUtils::c_str_to_string(file).unwrap();
+        let target = ctypes::c_str_to_string(target).unwrap().unwrap();
+        let args = ctypes::c_str_to_string(args).unwrap().unwrap();
+        let file = ctypes::c_str_to_string(file).unwrap();
 
         let level = match level {
             1 => Level::Error,
