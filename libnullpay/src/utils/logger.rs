@@ -1,49 +1,87 @@
-extern crate env_logger;
 extern crate log;
-extern crate log_panics;
-#[cfg(target_os = "android")]
-extern crate android_logger;
 
-use self::env_logger::Builder;
 use self::log::LevelFilter;
-use std::env;
-use std::io::Write;
-#[cfg(target_os = "android")]
-use self::android_logger::Filter;
+use libindy;
+use libindy::logger::{EnabledCB, LogCB, FlushCB};
 
-pub struct LoggerUtils {}
+use std::ffi::CString;
+use std::ptr;
+use log::{Record, Metadata};
+use libc::c_void;
+use ErrorCode;
 
-impl LoggerUtils {
-    pub fn init() {
-        log_panics::init(); //Logging of panics is essential for android. As android does not log to stdout for native code
-        if cfg!(target_os = "android") {
-            #[cfg(target_os = "android")]
-            let log_filter = match env::var("RUST_LOG") {
-                Ok(val) => match val.to_lowercase().as_ref(){
-                    "error" => Filter::default().with_min_level(log::Level::Error),
-                    "warn" => Filter::default().with_min_level(log::Level::Warn),
-                    "info" => Filter::default().with_min_level(log::Level::Info),
-                    "debug" => Filter::default().with_min_level(log::Level::Debug),
-                    "trace" => Filter::default().with_min_level(log::Level::Trace),
-                    _ => Filter::default().with_min_level(log::Level::Error),
-                },
-                Err(..) => Filter::default().with_min_level(log::Level::Error)
-            };
+pub struct LibnullpayLogger {
+    context: *const c_void,
+    enabled: Option<EnabledCB>,
+    log: LogCB,
+    flush: Option<FlushCB>,
+}
 
-            //Set logging to off when deploying production android app.
-            #[cfg(target_os = "android")]
-                android_logger::init_once(log_filter);
-            info!("Logging for Android");
-        } else {
-            Builder::new()
-                .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
-                .filter(None, LevelFilter::Off)
-                .parse(env::var("RUST_LOG").as_ref().map(String::as_str).unwrap_or(""))
-                .try_init()
-                .ok();
+impl LibnullpayLogger {
+    fn new(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Self {
+        LibnullpayLogger { context, enabled, log, flush }
+    }
+
+    pub fn init() -> Result<(), ErrorCode> {
+        let (context, enabled, log, flush) = libindy::logger::get_logger()?;
+
+        let log = match log {
+            Some(log) => log,
+            None => return Err(ErrorCode::CommonInvalidState)
+        };
+
+        let logger = LibnullpayLogger::new(context, enabled, log, flush);
+
+        log::set_boxed_logger(Box::new(logger)).ok();
+        log::set_max_level(LevelFilter::Trace);
+        Ok(())
+    }
+}
+
+impl log::Log for LibnullpayLogger {
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        if let Some(enabled_cb) = self.enabled {
+            let level = metadata.level() as u32;
+            let target = CString::new(metadata.target()).unwrap();
+
+            enabled_cb(self.context,
+                       level,
+                       target.as_ptr(),
+            )
+        } else { true }
+    }
+
+    fn log(&self, record: &Record) {
+        let log_cb = self.log;
+
+        let level = record.level() as u32;
+        let target = CString::new(record.target()).unwrap();
+        let message = CString::new(record.args().to_string()).unwrap();
+
+        let module_path = record.module_path().map(|a| CString::new(a).unwrap());
+        let file = record.file().map(|a| CString::new(a).unwrap());
+        let line = record.line().unwrap_or(0);
+
+        log_cb(self.context,
+               level,
+               target.as_ptr(),
+               message.as_ptr(),
+               module_path.as_ref().map(|p| p.as_ptr()).unwrap_or(ptr::null()),
+               file.as_ref().map(|p| p.as_ptr()).unwrap_or(ptr::null()),
+               line,
+        )
+    }
+
+    fn flush(&self) {
+        if let Some(flush_cb) = self.flush {
+            flush_cb(self.context)
         }
     }
 }
+
+unsafe impl Sync for LibnullpayLogger {}
+
+unsafe impl Send for LibnullpayLogger {}
 
 #[macro_export]
 macro_rules! try_log {

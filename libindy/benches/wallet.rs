@@ -39,7 +39,7 @@ use utils::non_secrets::NonSecretsUtils;
 use utils::test::TestUtils;
 use utils::constants::*;
 
-use criterion::{Criterion, Benchmark, ParameterizedBenchmark};
+use criterion::{Criterion, Benchmark};
 
 use utils::sequence::SequenceUtils;
 use rand::Rng;
@@ -59,36 +59,49 @@ mod create {
     pub fn bench(c: &mut Criterion) {
         c.bench(
             "wallet_create",
-            ParameterizedBenchmark::new(
-                "wallet_create",
-                |b, credentials| b.iter_with_setup(setup, |()| create_wallet(credentials)),
-                vec![WALLET_CREDENTIALS_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_INT, WALLET_CREDENTIALS_RAW],
+            Benchmark::new(
+                "wallet_create_argon2i_mod",
+                |b| b.iter_with_setup(setup, |()| create_wallet(WALLET_CREDENTIALS_ARGON2I_MOD))
             ).sample_size(10),
+        );
+
+        c.bench(
+            "wallet_create",
+            Benchmark::new(
+                "wallet_create_argon2i_int",
+                |b| b.iter_with_setup(setup, |()| create_wallet(WALLET_CREDENTIALS_ARGON2I_INT))
+            ).sample_size(20),
+        );
+
+        c.bench(
+            "wallet_create",
+            Benchmark::new(
+                "wallet_create_raw",
+                |b| b.iter_with_setup(setup, |()| create_wallet(WALLET_CREDENTIALS_RAW))
+            ).sample_size(30),
         );
     }
 }
 
 mod open {
     use super::*;
-    use utils::sequence::SequenceUtils;
 
     pub static mut WALLET_HANDLE: i32 = 0;
 
-    pub const WALLET_CONFIG_ARAGON2I_MOD: &'static str = r#"{"id":"wallet_open_ARAGON2I_MOD"}"#;
-    pub const WALLET_CONFIG_ARAGON2I_INT: &'static str = r#"{"id":"wallet_open_ARAGON2I_INT"}"#;
+    pub const WALLET_CONFIG_ARGON2I_MOD: &'static str = r#"{"id":"wallet_open_ARGON2I_MOD"}"#;
+    pub const WALLET_CONFIG_ARGON2I_INT: &'static str = r#"{"id":"wallet_open_ARGON2I_INT"}"#;
     pub const WALLET_CONFIG_RAW: &'static str = r#"{"id":"wallet_open_RAW"}"#;
 
     fn pre_setup() {
         TestUtils::cleanup_storage();
 
-        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD).unwrap();
-        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARGON2I_MOD, WALLET_CREDENTIALS_ARGON2I_MOD).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARGON2I_INT, WALLET_CREDENTIALS_ARGON2I_INT).unwrap();
         WalletUtils::create_wallet(WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW).unwrap();
     }
 
-    fn setup<'a>(params: &'a (&'a str, &'a str)) -> &'a (&'a str, &'a str) {
+    fn setup() {
         unsafe { if WALLET_HANDLE != 0 { WalletUtils::close_wallet(WALLET_HANDLE).unwrap(); } }
-        params
     }
 
     fn open_wallet(config: &str, credentials: &str) {
@@ -100,13 +113,26 @@ mod open {
 
         c.bench(
             "wallet_open",
-            ParameterizedBenchmark::new(
-                "wallet_open",
-                |b, params| b.iter_with_setup(|| setup(params), |(config, credentials)| open_wallet(config, credentials)),
-                vec![(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD),
-                     (WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT),
-                     (WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW)],
+            Benchmark::new(
+                "wallet_open_argon2i_mod",
+                |b| b.iter_with_setup(|| setup(), |()| open_wallet(WALLET_CONFIG_ARGON2I_MOD, WALLET_CREDENTIALS_ARGON2I_MOD))
             ).sample_size(10),
+        );
+
+        c.bench(
+            "wallet_open",
+            Benchmark::new(
+                "wallet_open_argon2i_int",
+                |b| b.iter_with_setup(|| setup(), |()| open_wallet(WALLET_CONFIG_ARGON2I_INT, WALLET_CREDENTIALS_ARGON2I_INT))
+            ).sample_size(20),
+        );
+
+        c.bench(
+            "wallet_open",
+            Benchmark::new(
+                "wallet_open_raw",
+                |b| b.iter_with_setup(|| setup(), |()| open_wallet(WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW))
+            ).sample_size(30),
         );
     }
 }
@@ -114,20 +140,19 @@ mod open {
 mod close {
     use super::*;
 
-    pub const WALLET_CONFIG_ARAGON2I_MOD: &'static str = r#"{"id":"wallet_close_ARAGON2I_MOD"}"#;
-    pub const WALLET_CONFIG_ARAGON2I_INT: &'static str = r#"{"id":"wallet_close_ARAGON2I_INT"}"#;
+    pub const WALLET_CONFIG_ARGON2I_MOD: &'static str = r#"{"id":"wallet_close_ARGON2I_MOD"}"#;
+    pub const WALLET_CONFIG_ARGON2I_INT: &'static str = r#"{"id":"wallet_close_ARGON2I_INT"}"#;
     pub const WALLET_CONFIG_RAW: &'static str = r#"{"id":"wallet_close_RAW"}"#;
 
     fn pre_setup() {
         TestUtils::cleanup_storage();
 
-        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD).unwrap();
-        WalletUtils::create_wallet(WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARGON2I_MOD, WALLET_CREDENTIALS_ARGON2I_MOD).unwrap();
+        WalletUtils::create_wallet(WALLET_CONFIG_ARGON2I_INT, WALLET_CREDENTIALS_ARGON2I_INT).unwrap();
         WalletUtils::create_wallet(WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW).unwrap();
     }
 
-    fn setup<'a>(params: &'a (&'a str, &'a str)) -> i32 {
-        let (config, credentials) = params;
+    fn setup(config: &str, credentials: &str) -> i32 {
         WalletUtils::open_wallet(config, credentials).unwrap()
     }
 
@@ -140,13 +165,26 @@ mod close {
 
         c.bench(
             "wallet_close",
-            ParameterizedBenchmark::new(
-                "wallet_close",
-                |b, params| b.iter_with_setup(|| setup(params), |handle| close_wallet(handle)),
-                vec![(WALLET_CONFIG_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_MOD),
-                     (WALLET_CONFIG_ARAGON2I_INT, WALLET_CREDENTIALS_ARAGON2I_INT),
-                     (WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW)],
+            Benchmark::new(
+                "wallet_close_argon2i_mod",
+                |b| b.iter_with_setup(|| setup(WALLET_CONFIG_ARGON2I_MOD, WALLET_CREDENTIALS_ARGON2I_MOD), |handle| close_wallet(handle)),
             ).sample_size(10),
+        );
+
+        c.bench(
+            "wallet_close",
+            Benchmark::new(
+                "wallet_close_argon2i_int",
+                |b| b.iter_with_setup(|| setup(WALLET_CONFIG_ARGON2I_INT, WALLET_CREDENTIALS_ARGON2I_INT), |handle| close_wallet(handle)),
+            ).sample_size(20),
+        );
+
+        c.bench(
+            "wallet_close",
+            Benchmark::new(
+                "wallet_close_raw",
+                |b| b.iter_with_setup(|| setup(WALLET_CONFIG_RAW, WALLET_CREDENTIALS_RAW), |handle| close_wallet(handle)),
+            ).sample_size(30),
         );
     }
 }
@@ -171,11 +209,26 @@ mod delete {
 
         c.bench(
             "wallet_delete",
-            ParameterizedBenchmark::new(
-                "wallet_delete",
-                |b, credentials| b.iter_with_setup(|| setup(credentials), |()| delete_wallet(credentials)),
-                vec![WALLET_CREDENTIALS_ARAGON2I_MOD, WALLET_CREDENTIALS_ARAGON2I_INT, WALLET_CREDENTIALS_RAW],
+            Benchmark::new(
+                "wallet_delete_argon2i_mod",
+                |b| b.iter_with_setup(|| setup(WALLET_CREDENTIALS_ARGON2I_MOD), |()| delete_wallet(WALLET_CREDENTIALS_ARGON2I_MOD)),
             ).sample_size(10),
+        );
+
+        c.bench(
+            "wallet_delete",
+            Benchmark::new(
+                "wallet_delete_argon2i_int",
+                |b| b.iter_with_setup(|| setup(WALLET_CREDENTIALS_ARGON2I_INT), |()| delete_wallet(WALLET_CREDENTIALS_ARGON2I_INT)),
+            ).sample_size(20),
+        );
+
+        c.bench(
+            "wallet_delete",
+            Benchmark::new(
+                "wallet_delete_raw",
+                |b| b.iter_with_setup(|| setup(WALLET_CREDENTIALS_RAW), |()| delete_wallet(WALLET_CREDENTIALS_RAW)),
+            ).sample_size(30),
         );
     }
 }
@@ -314,40 +367,82 @@ mod search_records {
     pub fn bench(c: &mut Criterion) {
         let wallet_handle = init_wallet();
 
-        let queries = vec![
-            r#"{}"#,
-            r#"{
-                "tag_id_1": "tag_value_10_1"
-            }"#,
-            r#"{
-                "~tag_id_3": {
-                    "$gt": "30"
-                }
-            }"#,
-            r#"{
-                "tag_id_1": {
-                    "$in": ["tag_value_10_1", "tag_value_11_1", "tag_value_70_1", "tag_value_71_1"]
-                }
-            }"#,
-            r#"{
-                "tag_id_1": "tag_value_11_1",
-                "~tag_id_3": "10"
-            }"#,
-            r#"{
-                "$or": [
-                    {"tag_id_1": "tag_value_11_1"},
-                    {"tag_id_3": "90"}
-                ]
-            }"#
-        ];
+        let query = r#"{}"#;
 
         c.bench(
             "wallet_search",
-            ParameterizedBenchmark::new(
-                "wallet_search",
-                move |b, query| b.iter(|| open_search(wallet_handle, query)),
-                queries,
-            ).sample_size(10),
+            Benchmark::new(
+                "wallet_search_empty",
+                move |b| b.iter(|| open_search(wallet_handle, query)),
+            ).sample_size(20),
+        );
+
+        let query = r#"{
+            "tag_id_1": "tag_value_10_1"
+        }"#;
+
+        c.bench(
+            "wallet_search",
+            Benchmark::new(
+                "wallet_search_eq",
+                move |b| b.iter(|| open_search(wallet_handle, query)),
+            ).sample_size(20),
+        );
+
+        let query = r#"{
+            "~tag_id_3": {
+                "$gt": "30"
+            }
+        }"#;
+
+        c.bench(
+            "wallet_search",
+            Benchmark::new(
+                "wallet_search_gt",
+                move |b| b.iter(|| open_search(wallet_handle, query)),
+            ).sample_size(20),
+        );
+
+        let query = r#"{
+                    "tag_id_1": {
+                        "$in": ["tag_value_10_1", "tag_value_11_1", "tag_value_70_1", "tag_value_71_1"]
+                    }
+                }"#;
+
+        c.bench(
+            "wallet_search",
+            Benchmark::new(
+                "wallet_search_in",
+                move |b| b.iter(|| open_search(wallet_handle, query)),
+            ).sample_size(20),
+        );
+
+        let query = r#"{
+            "tag_id_1": "tag_value_11_1",
+            "~tag_id_3": "10"
+        }"#;
+
+        c.bench(
+            "wallet_search",
+            Benchmark::new(
+                "wallet_search_and",
+                move |b| b.iter(|| open_search(wallet_handle, query)),
+            ).sample_size(20),
+        );
+
+        let query = r#"{
+            "$or": [
+                {"tag_id_1": "tag_value_11_1"},
+                {"tag_id_3": "90"}
+            ]
+        }"#;
+
+        c.bench(
+            "wallet_search",
+            Benchmark::new(
+                "wallet_search_or",
+                move |b| b.iter(|| open_search(wallet_handle, query)),
+            ).sample_size(20),
         );
     }
 }

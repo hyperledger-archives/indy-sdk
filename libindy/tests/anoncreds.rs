@@ -33,7 +33,6 @@ use utils::wallet::WalletUtils;
 use utils::anoncreds::AnoncredsUtils;
 use utils::blob_storage::BlobStorageUtils;
 use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID, ANONCREDS_WALLET_CONFIG};
-use utils::test::TestUtils;
 
 use indy::api::ErrorCode;
 use utils::inmem_wallet::InmemWallet;
@@ -3703,7 +3702,7 @@ mod demos {
 
     #[test]
     fn anoncreds_works_for_single_issuer_single_prover() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Create Issuer wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -3798,12 +3797,12 @@ mod demos {
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[test]
     fn anoncreds_works_for_plugged_wallet() {
-        TestUtils::cleanup_storage();
+        utils::setup();
         InmemWallet::cleanup();
 
         //1. Registers new wallet type
@@ -3903,12 +3902,12 @@ mod demos {
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         InmemWallet::cleanup();
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[test]
     fn anoncreds_works_for_multiple_issuer_single_prover() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer1 creates wallet, gets wallet handles
         let issuer_gvt_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -4035,12 +4034,12 @@ mod demos {
         WalletUtils::close_wallet(issuer_gvt_wallet_handle).unwrap();
         WalletUtils::close_wallet(issuer_xyz_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[test]
     fn anoncreds_works_for_single_issuer_multiple_credentials_single_prover() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handles
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -4163,13 +4162,13 @@ mod demos {
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_revocation_proof_issuance_by_demand() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -4292,13 +4291,13 @@ mod demos {
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_revocation_proof_issuance_by_default() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -4419,12 +4418,12 @@ mod demos {
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[test]
     fn verifier_verify_proof_works_for_proof_does_not_correspond_proof_request_attr_and_predicate() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         // 1. Creates wallet, gets wallet handle
         let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -4492,12 +4491,12 @@ mod demos {
 
         WalletUtils::close_wallet(wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[test]
     fn anoncreds_works_for_requested_attribute_in_upper_case() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Create Issuer wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -4589,13 +4588,13 @@ mod demos {
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_revocation_proof_for_issuance_and_proving_three_credential() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         // Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -4912,12 +4911,12 @@ mod demos {
         WalletUtils::close_wallet(prover2_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover3_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[test]
     fn anoncreds_works_for_twice_entry_of_attribute_from_different_credential() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer1 creates wallet, gets wallet handles
         let issuer_gvt_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -5040,12 +5039,12 @@ mod demos {
         WalletUtils::close_wallet(issuer_gvt_wallet_handle).unwrap();
         WalletUtils::close_wallet(issuer_abc_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[test]
     fn anoncreds_works_for_twice_entry_of_credential_for_different_witness() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         // Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -5223,7 +5222,7 @@ mod demos {
         WalletUtils::close_wallet(prover1_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover2_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[test]
@@ -5239,7 +5238,7 @@ mod demos {
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_issuance_on_demand_revocation_strategy_revoke_credential() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -5382,13 +5381,13 @@ mod demos {
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_issuance_by_default_revocation_strategy_revoke_credential() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -5529,13 +5528,13 @@ mod demos {
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_issuance_by_demand_revocation_strategy_for_full_revocation_registry() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -5616,14 +5615,14 @@ mod demos {
         WalletUtils::close_wallet(prover_2_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_3_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
 
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_issuance_by_default_revocation_strategy_for_full_revocation_registry() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -5703,13 +5702,13 @@ mod demos {
         WalletUtils::close_wallet(prover_2_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_3_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_issuance_by_demand_revocation_strategy_for_revoke_not_issued_credential_id() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -5750,13 +5749,13 @@ mod demos {
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
     #[cfg(feature = "revocation_tests")]
     #[test]
     fn anoncreds_works_for_issuance_by_default_revocation_strategy_for_revoke_not_issued_credential_id() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Issuer creates wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -5778,13 +5777,13 @@ mod demos {
 
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 
 
     #[test]
     fn anoncreds_works_for_multiple_requested_predicates_from_one_credential() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         //1. Create Issuer wallet, gets wallet handle
         let issuer_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -5910,6 +5909,6 @@ mod demos {
         WalletUtils::close_wallet(issuer_wallet_handle).unwrap();
         WalletUtils::close_wallet(prover_wallet_handle).unwrap();
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 }

@@ -19,6 +19,7 @@ pub mod non_secrets;
 pub mod results;
 pub mod payments;
 pub mod rand_utils;
+pub mod logger;
 
 #[macro_use]
 #[allow(unused_macros)]
@@ -45,3 +46,12 @@ pub mod inmem_wallet;
 
 #[path = "../../src/domain/mod.rs"]
 pub mod domain;
+
+pub fn setup(){
+    test::TestUtils::cleanup_storage();
+    logger::LoggerUtils::set_default_logger();
+}
+
+pub fn tear_down(){
+    test::TestUtils::cleanup_storage();
+}

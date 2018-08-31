@@ -35,7 +35,6 @@ mod utils;
 use utils::wallet::WalletUtils;
 use utils::crypto::CryptoUtils;
 use utils::did::DidUtils;
-use utils::test::TestUtils;
 use utils::constants::*;
 
 use indy::api::ErrorCode;
@@ -52,7 +51,7 @@ mod high_cases {
 
         #[test]
         fn indy_create_key_works_for_seed() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -61,12 +60,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_create_key_works_without_seed() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -75,12 +74,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_create_key_works_for_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -89,7 +88,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
     }
 
@@ -98,7 +97,7 @@ mod high_cases {
 
         #[test]
         fn indy_set_key_metadata_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -108,12 +107,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_set_key_metadata_works_for_replace() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -130,12 +129,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_set_key_metadata_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -146,12 +145,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_set_key_metadata_works_for_empty_string() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -161,13 +160,13 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
 
         #[test]
         fn indy_set_key_metadata_works_for_invalid_key() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -176,7 +175,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
     }
 
@@ -185,7 +184,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_key_metadata_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -198,12 +197,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_get_key_metadata_works_for_empty_string() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -216,12 +215,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_get_key_metadata_works_for_no_metadata() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -232,12 +231,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_get_key_metadata_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -250,7 +249,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
     }
 
@@ -259,7 +258,7 @@ mod high_cases {
 
         #[test]
         fn indy_crypto_sign_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -270,12 +269,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_sign_works_for_unknown_signer() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -284,12 +283,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_sign_works_for_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -300,7 +299,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
     }
 
@@ -347,7 +346,7 @@ mod high_cases {
 
         #[test]
         fn indy_crypto_auth_crypt_works_for_created_key() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -357,12 +356,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(sender_wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_auth_crypt_works_for_created_did() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -372,12 +371,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(sender_wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_auth_crypt_works_for_created_did_as_cid() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -387,12 +386,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(sender_wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_auth_crypt_works_for_unknown_sender_verkey() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -401,12 +400,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_auth_crypt_works_for_invalid_wallet_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -418,12 +417,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_auth_crypt_works_for_invalid_recipient_vk() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -434,7 +433,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
     }
 
@@ -443,7 +442,7 @@ mod high_cases {
 
         #[test]
         fn indy_crypto_auth_decrypt_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
             let recipient_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -460,12 +459,12 @@ mod high_cases {
             WalletUtils::close_wallet(sender_wallet_handle).unwrap();
             WalletUtils::close_wallet(recipient_wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_auth_decrypt_works_for_invalid_msg() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
             let recipient_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -481,12 +480,12 @@ mod high_cases {
             WalletUtils::close_wallet(sender_wallet_handle).unwrap();
             WalletUtils::close_wallet(recipient_wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_auth_decrypt_works_for_unknown_recipient_vk() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -499,12 +498,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_auth_decrypt_works_invalid_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -518,7 +517,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
     }
 
@@ -527,16 +526,16 @@ mod high_cases {
 
         #[test]
         fn indy_anon_crypt_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             CryptoUtils::anon_crypt(VERKEY_MY2, &MESSAGE.as_bytes()).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_anon_crypt_works_for_invalid_their_vk() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let res = CryptoUtils::anon_crypt(INVALID_VERKEY_LENGTH, &MESSAGE.as_bytes());
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
@@ -544,7 +543,7 @@ mod high_cases {
             let res = CryptoUtils::anon_crypt(INVALID_BASE58_VERKEY, &MESSAGE.as_bytes());
             assert_eq!(ErrorCode::CommonInvalidStructure, res.unwrap_err());
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
     }
 
@@ -553,7 +552,7 @@ mod high_cases {
 
         #[test]
         fn indy_crypto_anon_decrypt_works() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let sender_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
             let recipient_wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
@@ -568,12 +567,12 @@ mod high_cases {
             WalletUtils::close_wallet(sender_wallet_handle).unwrap();
             WalletUtils::close_wallet(recipient_wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_anon_decrypt_works_for_invalid_msg() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -585,12 +584,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_anon_decrypt_works_for_unknown_verkey() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -601,12 +600,12 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
 
         #[test]
         fn indy_crypto_anon_decrypt_works_invalid_handle() {
-            TestUtils::cleanup_storage();
+            utils::setup();
 
             let wallet_handle = WalletUtils::create_and_open_default_wallet().unwrap();
 
@@ -619,7 +618,7 @@ mod high_cases {
 
             WalletUtils::close_wallet(wallet_handle).unwrap();
 
-            TestUtils::cleanup_storage();
+            utils::tear_down();
         }
     }
 }
@@ -647,7 +646,7 @@ mod load {
     */
     #[test]
     fn parallel_auth_encrypt() {
-        TestUtils::cleanup_storage();
+        utils::setup();
 
         let agent_cnt = std::env::var("AGENTS_CNT").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(AGENT_CNT);
         let data_sz = std::env::var("DATA_SZ").ok().and_then(|s| s.parse::<usize>().ok()).unwrap_or(DATA_SZ);
@@ -710,6 +709,6 @@ mod load {
         Total duration:\t{:?}",
               time_diff_max, agent_cnt * operations_cnt, time_sum_diff, total_duration);
 
-        TestUtils::cleanup_storage();
+        utils::tear_down();
     }
 }
