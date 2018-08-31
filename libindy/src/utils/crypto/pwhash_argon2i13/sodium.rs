@@ -21,8 +21,8 @@ pub fn gen_salt() -> Salt {
 pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt, key_derivation_method: &KeyDerivationMethod) -> Result<&'a [u8], CommonError> {
     let (opslimit, memlimit) = unsafe {
         match key_derivation_method {
-            KeyDerivationMethod::ARGON2I_MOD => (crypto_pwhash_opslimit_moderate(), crypto_pwhash_memlimit_moderate()),
-            KeyDerivationMethod::ARGON2I_INT => (crypto_pwhash_opslimit_interactive(), crypto_pwhash_memlimit_interactive()),
+            KeyDerivationMethod::ARGON2I_MOD => (crypto_pwhash_argon2i_opslimit_moderate(), crypto_pwhash_argon2i_memlimit_moderate()),
+            KeyDerivationMethod::ARGON2I_INT => (crypto_pwhash_argon2i_opslimit_interactive(), crypto_pwhash_argon2i_memlimit_interactive()),
             KeyDerivationMethod::RAW => return Err(CommonError::InvalidStructure("RAW key derivation method is not acceptable".to_string()))
         }
     };
@@ -49,10 +49,10 @@ pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt, key_derivation_
 
 extern {
     fn crypto_pwhash_alg_argon2i13() -> c_int;
-    fn crypto_pwhash_opslimit_moderate() -> size_t;
-    fn crypto_pwhash_memlimit_moderate() -> size_t;
-    fn crypto_pwhash_opslimit_interactive() -> size_t;
-    fn crypto_pwhash_memlimit_interactive() -> size_t;
+    fn crypto_pwhash_argon2i_opslimit_moderate() -> size_t;
+    fn crypto_pwhash_argon2i_memlimit_moderate() -> size_t;
+    fn crypto_pwhash_argon2i_opslimit_interactive() -> size_t;
+    fn crypto_pwhash_argon2i_memlimit_interactive() -> size_t;
 
     fn crypto_pwhash(out: *mut u8,
                      outlen: c_ulonglong,
