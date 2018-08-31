@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 export SCRIPTS_PATH="vcx/libvcx/build_scripts/ios/mac"
 export BASE_DIR="../../../../.."
 export WRAPPER_LIBS="vcx/wrappers/ios/vcx/lib"
@@ -17,14 +18,6 @@ cp -rf ~/OpenSSL-for-iPhone ${BASE_DIR}/.macosbuild
 cp -rf ~/libzmq-ios ${BASE_DIR}/.macosbuild
 cp -rf ~/combine-libs ${BASE_DIR}/.macosbuild
 ./mac.06.libvcx.build.sh nodebug "${IOS_TARGETS}" noclean
-# Package for all architectures (simulator architectures included)
-./mac.11.copy.static.libs.to.app.sh
-./mac.12.combine.static.libs.sh libvcxall delete nodebug "${IOS_ARCHS}"
-
-# Package for armv7 and arm64
-IOS_ARCHS="arm64,armv7"
-./mac.11.copy.static.libs.to.app.sh
-./mac.12.combine.static.libs.sh libvcxpartial delete nodebug "${IOS_ARCHS}"
 
 # clear previous builds from jenkins machine
 if [ ! -z "$(ls -A /Users/jenkins/IOSBuilds/libvcxpartial/)" ]; then
@@ -36,5 +29,14 @@ if [ ! -z "$(ls -A /Users/jenkins/IOSBuilds/libvcxall/)" ]; then
    rm /Users/jenkins/IOSBuilds/libvcxall/*
 fi
 
-./mac.13.build.cocoapod.sh libvcxpartial "${IOS_ARCHS}"
+# Package for all architectures (simulator architectures included)
+./mac.11.copy.static.libs.to.app.sh
+./mac.12.combine.static.libs.sh libvcxall delete nodebug "${IOS_ARCHS}"
 ./mac.13.build.cocoapod.sh libvcxall
+
+# Package for armv7 and arm64
+IOS_ARCHS="arm64,armv7"
+./mac.11.copy.static.libs.to.app.sh
+./mac.12.combine.static.libs.sh libvcxpartial delete nodebug "${IOS_ARCHS}"
+./mac.13.build.cocoapod.sh libvcxpartial "${IOS_ARCHS}"
+

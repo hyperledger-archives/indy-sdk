@@ -14,6 +14,7 @@
 # $1 = Name of output archive
 #####
 
+set -e
 source ./shared.functions.sh
 
 START_DIR=$PWD
@@ -34,7 +35,7 @@ if [ "${COMBINED_LIB}" = "" ] || [ "${COMBINED_LIB}" = "libvcx" ]; then
 fi
 
 if [ "$2" = "delete" ]; then
-    rm ${COMBINED_LIB}.a
+    rm -rf ${COMBINED_LIB}.a
 fi
 
 if [ -f ${COMBINED_LIB}.a ]; then
@@ -76,7 +77,7 @@ do
     for arch in ${archs[*]}
     do
         if [ "${library}" = "libvcx.a.tocombine" ]; then
-            rm ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
+            rm -rf ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
             lipo -extract $arch $library -o ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
         elif [ ! -f ${BUILD_CACHE}/arch_libs/${library}_${arch}.a ]; then
             lipo -extract $arch $library -o ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
@@ -94,7 +95,7 @@ do
     do
         if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
             if [ "${library}" = "libvcx.a.tocombine" ]; then
-                rm ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a
+                rm -rf ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a
                 strip -S -x -o ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a -r ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
             elif [ ! -f ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a ]; then
                 strip -S -x -o ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a -r ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
@@ -107,7 +108,7 @@ do
     done
 
     echo "Using source_libraries: ${source_libraries} to create ${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
-    rm "${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
+    rm -rf "${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
     $libtool -static ${source_libraries} -o "${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
     source_combined="${source_combined} ${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
 
@@ -120,7 +121,7 @@ echo "Using source_combined: ${source_combined} to create ${COMBINED_LIB}.a"
 lipo -create $source_combined -o ${COMBINED_LIB}.a
 
 # Delete intermediate files
-rm ${source_combined}
+rm -rf ${source_combined}
 
 # Show info on the output library as confirmation
 echo "Combination complete."
