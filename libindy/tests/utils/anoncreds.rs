@@ -239,11 +239,13 @@ impl AnoncredsUtils {
         super::results::result_to_string(err, receiver)
     }
 
+    //TODO mark as depricated and use only in target tests
     pub fn prover_get_credentials(wallet_handle: i32, filter_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let filter_json = CString::new(filter_json).unwrap();
 
+        #[allow(deprecated)]
         let err = indy_prover_get_credentials(command_handle,
                                               wallet_handle,
                                               filter_json.as_ptr(),
@@ -299,11 +301,13 @@ impl AnoncredsUtils {
         super::results::result_to_empty(err, receiver)
     }
 
+    //TODO mark as depricated and use only in target tests
     pub fn prover_get_credentials_for_proof_req(wallet_handle: i32, proof_request_json: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
         let proof_request_json = CString::new(proof_request_json).unwrap();
 
+        #[allow(deprecated)]
         let err = indy_prover_get_credentials_for_proof_req(command_handle,
                                                             wallet_handle,
                                                             proof_request_json.as_ptr(),
