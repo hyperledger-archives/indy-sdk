@@ -140,21 +140,21 @@ pub fn build_get_ddo_request(submitter_did: &str, target_did: &str) -> Result<St
 }
 
 pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>,
-                         data: Option<&str>, role: Option<&str>) -> Result<String, ErrorCode> {
+                         alias: Option<&str>, role: Option<&str>) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
     let submitter_did = CString::new(submitter_did).unwrap();
     let target_did = CString::new(target_did).unwrap();
 
     let verkey_str = verkey.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-    let data_str = data.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let alias_str = alias.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let role_str = role.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let err =
         indy_build_nym_request(command_handle,
                                submitter_did.as_ptr(),
                                target_did.as_ptr(),
                                if verkey.is_some() { verkey_str.as_ptr() } else { null() },
-                               if data.is_some() { data_str.as_ptr() } else { null() },
+                               if alias.is_some() { alias_str.as_ptr() } else { null() },
                                if role.is_some() { role_str.as_ptr() } else { null() },
                                cb);
 

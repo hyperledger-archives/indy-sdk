@@ -30,8 +30,7 @@ use utils::types::ResponseType;
     pub fn create_and_store_my_did(wallet_handle: i32, seed: Option<&str>) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string_string();
 
-        let my_did_json = seed.map_or("{}".to_string(), |seed| format!("{{\"seed\":\"{}\" }}", seed));
-        let my_did_json = CString::new(my_did_json).unwrap();
+        let my_did_json = CString::new(json!({"seed": seed}).to_string()).unwrap();
 
         let err = indy_create_and_store_my_did(command_handle, wallet_handle, my_did_json.as_ptr(), cb);
 
@@ -61,7 +60,7 @@ use utils::types::ResponseType;
     pub fn store_their_did_from_parts(wallet_handle: i32, their_did: &str, their_verkey: &str) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
-        let their_identity_json = format!("{{\"did\":\"{}\",\"verkey\":\"{}\"}}", their_did, their_verkey);
+        let their_identity_json = json!({"did": their_did, "verkey": their_verkey}).to_string();
         let their_identity_json = CString::new(their_identity_json).unwrap();
 
         let err = indy_store_their_did(command_handle, wallet_handle, their_identity_json.as_ptr(), cb);

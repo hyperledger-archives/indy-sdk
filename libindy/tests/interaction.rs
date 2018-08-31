@@ -179,7 +179,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
                                             &cred_def_json,
                                             Some(&revoc_reg_def_json)).unwrap();
 
-    let credentials = anoncreds::prover_get_credentials(prover_wallet_handle, &format!(r#"{{"schema_name":"{}"}}"#, GVT_SCHEMA_NAME)).unwrap();
+    let credentials = anoncreds::prover_get_credentials(prover_wallet_handle, &json!({"schema_name": GVT_SCHEMA_NAME}).to_string()).unwrap();
     let credentials: Vec<serde_json::Value> = serde_json::from_str(&credentials).unwrap();
     assert_eq!(credentials.len(), 1);
 

@@ -10,7 +10,7 @@ use utils::callback;
 pub fn create_key(wallet_handle: i32, seed: Option<&str>) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let key_json = seed.map_or("{}".to_string(), |seed| format!(r#"{{"seed":"{}"}}"#, seed));
+    let key_json = json!({"seed": seed}).to_string();
     let key_json = CString::new(key_json).unwrap();
 
     let err = indy_create_key(command_handle,

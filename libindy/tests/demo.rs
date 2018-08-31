@@ -544,10 +544,7 @@ fn ledger_demo_works() {
     assert_eq!(ErrorCode::Success, err);
 
     // 9. Store Their DID
-    let their_identity_json = format!(r#"{{"did":"{}",
-                                        "verkey":"{}"
-                                      }}"#,
-                                      their_did, their_verkey);
+    let their_identity_json = json!({"did": their_did, "verkey": their_verkey}).to_string();
     let err =
         indy_store_their_did(store_their_did_command_handle,
                              my_wallet_handle,

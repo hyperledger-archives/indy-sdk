@@ -3683,12 +3683,10 @@ mod medium_cases {
 
         #[test]
         fn verifier_verify_proof_works_for_invalid_credential_defs() {
-            let credential_defs_json = format!("{{}}");
-
             let res = anoncreds::verifier_verify_proof(&anoncreds::proof_request_attr_and_predicate(),
                                                        &anoncreds::proof_json(),
                                                        &anoncreds::schemas_for_proof(),
-                                                       &credential_defs_json,
+                                                       "{}",
                                                        "{}",
                                                        "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);

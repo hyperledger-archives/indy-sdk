@@ -233,13 +233,11 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_refresh_pool_ledger_works() {
-            utils::setup();
+            let pool_handle = utils::setup_with_pool();
 
-            let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
             pool::refresh(pool_handle).unwrap();
-            pool::close(pool_handle).unwrap();
 
-            utils::tear_down();
+            utils::tear_down_with_pool(pool_handle);
         }
     }
 
@@ -249,9 +247,8 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works() {
-            utils::setup();
+            let pool_handle = utils::setup_with_pool();
 
-            let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
             pool::close(pool_handle).unwrap();
 
             utils::tear_down();
@@ -260,9 +257,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_twice() {
-            utils::setup();
-
-            let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
+            let pool_handle = utils::setup_with_pool();
 
             pool::close(pool_handle).unwrap();
             assert_eq!(pool::close(pool_handle).unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
@@ -273,9 +268,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_reopen_after_close() {
-            utils::setup();
-
-            let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
+            let pool_handle = utils::setup_with_pool();
 
             pool::close(pool_handle).unwrap();
             let pool_handle = pool::open_pool_ledger(POOL, None).unwrap();
@@ -287,9 +280,7 @@ mod high_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_pending_request() {
-            utils::setup();
-
-            let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
+            let pool_handle = utils::setup_with_pool();
 
             let get_nym_req = ledger::build_get_nym_request(DID_MY1, DID_MY1).unwrap();
 
@@ -547,16 +538,12 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_close_pool_ledger_works_for_invalid_handle() {
-            utils::setup();
+            let pool_handle = utils::setup_with_pool();
 
-            let pool_name = "indy_close_pool_ledger_works_for_invalid_handle";
-            let pool_handle = pool::create_and_open_pool_ledger(pool_name).unwrap();
-
-            let pool_handle = pool_handle + 1;
-            let res = pool::close(pool_handle);
+            let res = pool::close(pool_handle + 1);
             assert_eq!(res.unwrap_err(), ErrorCode::PoolLedgerInvalidPoolHandle);
 
-            utils::tear_down();
+            utils::tear_down_with_pool(pool_handle);
         }
     }
 
