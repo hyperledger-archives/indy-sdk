@@ -43,9 +43,7 @@ mod high_cases {
 
         #[test]
         fn indy_create_pairwise_works() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -56,9 +54,7 @@ mod high_cases {
 
         #[test]
         fn indy_create_pairwise_works_for_empty_metadata() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -91,9 +87,7 @@ mod high_cases {
 
         #[test]
         fn indy_create_pairwise_works_for_invalid_wallet_handle() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -104,9 +98,7 @@ mod high_cases {
 
         #[test]
         fn indy_create_pairwise_works_for_twice() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -124,9 +116,7 @@ mod high_cases {
 
         #[test]
         fn indy_list_pairwise_works() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -155,9 +145,7 @@ mod high_cases {
 
         #[test]
         fn indy_list_pairwise_works_for_invalid_handle() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -174,9 +162,7 @@ mod high_cases {
 
         #[test]
         fn indy_is_pairwise_exists_works() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -198,9 +184,7 @@ mod high_cases {
 
         #[test]
         fn indy_is_pairwise_exists_works_for_invalid_handle() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -217,9 +201,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_pairwise_works() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -242,9 +224,7 @@ mod high_cases {
 
         #[test]
         fn indy_get_pairwise_works_for_invalid_handle() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -261,9 +241,7 @@ mod high_cases {
 
         #[test]
         fn indy_set_pairwise_metadata_works() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -283,9 +261,7 @@ mod high_cases {
 
         #[test]
         fn indy_set_pairwise_metadata_works_for_reset() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 
@@ -314,9 +290,7 @@ mod high_cases {
 
         #[test]
         fn indy_set_pairwise_metadata_works_for_invalid_wallet_handle() {
-            let wallet_handle = utils::setup_with_wallet();
-
-            let (my_did, _) = did::create_and_store_my_did(wallet_handle, Some(MY1_SEED)).unwrap();
+            let (wallet_handle, my_did) = utils::setup_did();
 
             did::store_their_did_from_parts(wallet_handle, DID_TRUSTEE, VERKEY_TRUSTEE).unwrap();
 

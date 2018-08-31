@@ -257,9 +257,8 @@ mod high_cases {
             wallet::close_wallet(wallet_handle).unwrap();
 
             let wallet_handle = wallet::open_wallet(WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            wallet::close_wallet(wallet_handle).unwrap();
 
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
@@ -286,22 +285,19 @@ mod high_cases {
 
         #[test]
         fn indy_export_wallet_works() {
-            utils::setup();
+            let wallet_handle = utils::setup_with_wallet();
 
             let path = wallet::export_wallet_path();
             let config_json = wallet::prepare_export_wallet_config(&path);
 
-            let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
-
+            did::create_my_did(wallet_handle, "{}").unwrap();
             did::create_my_did(wallet_handle, "{}").unwrap();
 
             wallet::export_wallet(wallet_handle, &config_json).unwrap();
 
             assert!(path.exists());
 
-            wallet::close_wallet(wallet_handle).unwrap();
-
-            utils::tear_down();
+//            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -336,9 +332,7 @@ mod high_cases {
 
             assert_eq!(did_with_meta, did_with_meta_after_import);
 
-            wallet::close_wallet(wallet_handle).unwrap();
-
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
@@ -597,19 +591,17 @@ mod medium_cases {
 
         #[test]
         fn indy_close_wallet_works_for_invalid_handle() {
-            utils::setup();
+            let wallet_handle = utils::setup_with_wallet();
 
-            let res = wallet::close_wallet(1);
+            let res = wallet::close_wallet(wallet_handle + 1);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_close_wallet_works_for_twice() {
-            utils::setup();
-
-            let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let wallet_handle = utils::setup_with_wallet();
 
             wallet::close_wallet(wallet_handle).unwrap();
             let res = wallet::close_wallet(wallet_handle);
@@ -625,7 +617,7 @@ mod medium_cases {
 
         #[test]
         fn indy_export_wallet_returns_error_if_path_exists() {
-            utils::setup();
+            let wallet_handle = utils::setup_with_wallet();
 
             let path = wallet::export_wallet_path();
             let config_json = wallet::prepare_export_wallet_config(&path);
@@ -634,42 +626,33 @@ mod medium_cases {
                 .recursive(true)
                 .create(path).unwrap();
 
-            let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
-
             let res = wallet::export_wallet(wallet_handle, &config_json);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonIOError);
 
-            wallet::close_wallet(wallet_handle).unwrap();
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_export_wallet_returns_error_if_invalid_config() {
-            utils::setup();
-
-            let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let wallet_handle = utils::setup_with_wallet();
 
             let res = wallet::export_wallet(wallet_handle, "{}");
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
-            wallet::close_wallet(wallet_handle).unwrap();
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]
         fn indy_export_wallet_returns_error_if_invalid_handle() {
-            utils::setup();
+            let wallet_handle = utils::setup_with_wallet();
 
             let path = wallet::export_wallet_path();
             let config_json = wallet::prepare_export_wallet_config(&path);
 
-            let wallet_handle = wallet::create_and_open_default_wallet().unwrap();
-
             let res = wallet::export_wallet(wallet_handle + 1, &config_json);
             assert_eq!(res.unwrap_err(), ErrorCode::WalletInvalidHandle);
 
-            wallet::close_wallet(wallet_handle).unwrap();
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
