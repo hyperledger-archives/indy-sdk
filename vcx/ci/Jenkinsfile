@@ -45,7 +45,7 @@ def getCurDir() {
 
 def mainUbuntu() {
     node('ubuntu') {
- 
+
         checkout scm
 
         def volumeInternalDir = "/sdk/vcx/output"
@@ -68,7 +68,7 @@ def mainUbuntu() {
             }
             sh 'mkdir output'
             stage('Build Libvcx Image, Tests Rust Code') {
-                
+
                 libvcx = docker.build("libvcx", "--build-arg uid=${uid} -f ${libvcxDockerfile} .")
                 libvcx.inside() {
                     sh 'vcx/ci/scripts/package.sh'
@@ -105,7 +105,7 @@ def mainUbuntu() {
 
             // debug info
             sh 'ls -al output'
-            
+
             if (env.BRANCH_NAME == "master") {
                 stage('Publish') {
                     // ******** PUBLISHING (artifacts are in a Docker Volume) ********
@@ -114,15 +114,15 @@ def mainUbuntu() {
                             // ******** Publish Libvcx Debian to repo ********
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"libvcx*.deb\" https://kraken.corp.evernym.com/repo/portal_dev/upload"
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"libvcx*.deb\" https://kraken.corp.evernym.com/repo/agency_dev/upload"
-                            
+
                             // ******** Publish Npm Package to filely repo ********
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"*.tgz\" https://kraken.corp.evernym.com/repo/npm/upload"
-                
-                            // ******** Publish vcx Debian To Repo (NPM PACKAGES) 
+
+                            // ******** Publish vcx Debian To Repo (NPM PACKAGES)
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"vcx_*.deb\" https://kraken.corp.evernym.com/repo/agency_dev/upload"
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"vcx_*.deb\" https://kraken.corp.evernym.com/repo/portal_dev/upload"
 
-                            
+
                             // ******** Archive with Jenkins ********
                             archiveArtifacts allowEmptyArchive: true, artifacts: 'output/*'
                         }
@@ -146,7 +146,7 @@ def mainUbuntu() {
         } finally {
             sh 'docker system df'
             step([$class: 'WsCleanup'])
-        }   
+        }
     }
 }
 
@@ -164,7 +164,7 @@ def android() {
                 checkout scm
                 android = build('android', 'vcx/ci/android.dockerfile', 'vcx')
                 stage('Android Packaging') {
-                    //Package .so files into .aar 
+                    //Package .so files into .aar
                     packageAndroid(android)
                 }
                 stage('Android Publishing') {
@@ -227,7 +227,7 @@ def fail() {
     slackSend message
 }
 
-def buildAndroid(arch) {    
+def buildAndroid(arch) {
     node('ubuntu') {
         try {
             checkout scm
@@ -236,7 +236,7 @@ def buildAndroid(arch) {
             android.inside {
                 ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
                 LIBINDY_BRANCH="stable"
-                LIBINDY_VERSION="1.6.3"
+                LIBINDY_VERSION="1.6.4"
                 LIBINDY_TAG=""
 
                 sh 'sudo ./vcx/ci/scripts/installCert.sh'
@@ -252,7 +252,7 @@ def buildAndroid(arch) {
             if (env.BRANCH_NAME == "master") {
                 fail()
             }
-            echo "$ex error" 
+            echo "$ex error"
         } finally {
             sh 'docker system df'
             step([$class: 'WsCleanup'])
