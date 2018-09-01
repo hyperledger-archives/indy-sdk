@@ -97,7 +97,7 @@ mod high_cases {
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &did, Some(&verkey), None, None).unwrap();
             let nym_resp = LedgerUtils::sign_and_submit_request(pool_handle, trustee_wallet_handle, &trustee_did, &nym_request).unwrap();
 
-            let get_nym_request = LedgerUtils::build_get_nym_request(&did, &did).unwrap();
+            let get_nym_request = LedgerUtils::build_get_nym_request(Some(&did), &did).unwrap();
             LedgerUtils::submit_request_with_retries(pool_handle, &get_nym_request, &nym_resp).unwrap();
 
             let received_verkey = DidUtils::key_for_did(pool_handle, wallet_handle, &did).unwrap();
@@ -346,7 +346,7 @@ mod high_cases {
 
             let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
-            let get_attrib_req = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, Some("endpoint"), None, None).unwrap();
+            let get_attrib_req = LedgerUtils::build_get_attrib_request(Some(&trustee_did), &trustee_did, Some("endpoint"), None, None).unwrap();
             LedgerUtils::submit_request_with_retries(pool_handle, &get_attrib_req, &attrib_req_resp).unwrap();
 
             thread::sleep(std::time::Duration::from_millis(1000));

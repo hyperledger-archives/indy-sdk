@@ -76,7 +76,7 @@ mod high_cases {
 
             let (my_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-            let get_nym_request = LedgerUtils::build_get_nym_request(&my_did, &my_did).unwrap();
+            let get_nym_request = LedgerUtils::build_get_nym_request(Some(&my_did), &my_did).unwrap();
 
             let invalid_pool_handle = pool_handle + 1;
             let res = LedgerUtils::submit_request(invalid_pool_handle, &get_nym_request);
@@ -98,7 +98,7 @@ mod high_cases {
 
             let (my_did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-            let get_nym_request = LedgerUtils::build_get_nym_request(&my_did, &my_did).unwrap();
+            let get_nym_request = LedgerUtils::build_get_nym_request(Some(&my_did), &my_did).unwrap();
 
             let invalid_pool_handle = pool_handle + 1;
             let res = LedgerUtils::sign_and_submit_request(invalid_pool_handle, wallet_handle, &my_did, &get_nym_request);
@@ -244,7 +244,7 @@ mod high_cases {
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let get_nym_request = LedgerUtils::build_get_nym_request(DID_TRUSTEE, DID_MY1).unwrap();
+            let get_nym_request = LedgerUtils::build_get_nym_request(Some(DID_TRUSTEE), DID_MY1).unwrap();
             let res = LedgerUtils::submit_action(pool_handle, &get_nym_request, None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
 
@@ -514,7 +514,7 @@ mod high_cases {
                     \"dest\":\"{}\"\
                 }}", IDENTIFIER, DEST);
 
-            let get_nym_request = LedgerUtils::build_get_nym_request(&IDENTIFIER, &DEST).unwrap();
+            let get_nym_request = LedgerUtils::build_get_nym_request(Some(IDENTIFIER), &DEST).unwrap();
             assert!(get_nym_request.contains(&expected_result));
         }
 
@@ -549,7 +549,7 @@ mod high_cases {
 
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-            let get_nym_request = LedgerUtils::build_get_nym_request(&did, &did).unwrap();
+            let get_nym_request = LedgerUtils::build_get_nym_request(Some(&did), &did).unwrap();
 
             let get_nym_response = LedgerUtils::submit_request(pool_handle, &get_nym_request).unwrap();
             let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
@@ -575,7 +575,7 @@ mod high_cases {
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, Some(&my_verkey), None, None).unwrap();
             let nym_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
-            let get_nym_request = LedgerUtils::build_get_nym_request(&my_did, &my_did).unwrap();
+            let get_nym_request = LedgerUtils::build_get_nym_request(Some(&my_did), &my_did).unwrap();
             let get_nym_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_nym_request, &nym_resp).unwrap();
 
             let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
@@ -658,7 +658,7 @@ mod high_cases {
                     \"raw\":\"{}\"\
                 }}", IDENTIFIER, DEST, raw);
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&IDENTIFIER, &DEST, Some(raw), None, None).unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(Some(IDENTIFIER), &DEST, Some(raw), None, None).unwrap();
             assert!(get_attrib_request.contains(&expected_result));
         }
 
@@ -673,7 +673,7 @@ mod high_cases {
                     \"hash\":\"{}\"\
                 }}", IDENTIFIER, DEST, ATTRIB_HASH_DATA);
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&IDENTIFIER, &DEST, None, Some(ATTRIB_HASH_DATA), None).unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(Some(IDENTIFIER), &DEST, None, Some(ATTRIB_HASH_DATA), None).unwrap();
             assert!(get_attrib_request.contains(&expected_result));
         }
 
@@ -688,7 +688,7 @@ mod high_cases {
                     \"enc\":\"{}\"\
                 }}", IDENTIFIER, DEST, ATTRIB_ENC_DATA);
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&IDENTIFIER, &DEST, None, None, Some(ATTRIB_ENC_DATA)).unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(Some(IDENTIFIER), &DEST, None, None, Some(ATTRIB_ENC_DATA)).unwrap();
             assert!(get_attrib_request.contains(&expected_result));
         }
 
@@ -730,7 +730,7 @@ mod high_cases {
                                                                    None).unwrap();
             let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, Some("endpoint"), None, None).unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(Some(&trustee_did), &trustee_did, Some("endpoint"), None, None).unwrap();
             let get_attrib_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
 
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
@@ -763,7 +763,7 @@ mod high_cases {
                                                                    None).unwrap();
             let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, None, Some(&hashed_attr), None).unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(Some(&trustee_did), &trustee_did, None, Some(&hashed_attr), None).unwrap();
             let get_attrib_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
 
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
@@ -796,7 +796,7 @@ mod high_cases {
                                                                    Some(&encryted_attr)).unwrap();
             let attrib_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &attrib_request).unwrap();
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&trustee_did, &trustee_did, None, None, Some(&encryted_attr)).unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(Some(&trustee_did), &trustee_did, None, None, Some(&encryted_attr)).unwrap();
             let get_attrib_response = LedgerUtils::submit_request_with_retries(pool_handle, &get_attrib_request, &attrib_req_resp).unwrap();
 
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
@@ -1833,7 +1833,7 @@ mod medium_cases {
             let nym_request = LedgerUtils::build_nym_request(&trustee_did, &my_did, None, None, None).unwrap();
             let nym_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
-            let get_nym_request = LedgerUtils::build_get_nym_request(&trustee_did, &my_did).unwrap();
+            let get_nym_request = LedgerUtils::build_get_nym_request(Some(&trustee_did), &my_did).unwrap();
             LedgerUtils::submit_request_with_retries(pool_handle, &get_nym_request, &nym_req_resp).unwrap();
 
             let (my_did2, _) = DidUtils::create_my_did(wallet_handle, "{}").unwrap();
@@ -1878,7 +1878,7 @@ mod medium_cases {
 
             let (did, _) = DidUtils::create_my_did(wallet_handle, r#"{"seed":"00000000000000000000000000000My3"}"#).unwrap();
 
-            let get_nym_request = LedgerUtils::build_get_nym_request(&did, &did).unwrap();
+            let get_nym_request = LedgerUtils::build_get_nym_request(Some(&did), &did).unwrap();
 
             let get_nym_response = LedgerUtils::submit_request(pool_handle, &get_nym_request).unwrap();
             let get_nym_response: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response).unwrap();
@@ -1907,14 +1907,14 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_nym_request_works_for_invalid_submitter_identifier() {
-            let res = LedgerUtils::build_get_nym_request(INVALID_IDENTIFIER, IDENTIFIER);
+            let res = LedgerUtils::build_get_nym_request(Some(INVALID_IDENTIFIER), IDENTIFIER);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_nym_request_works_for_invalid_target_identifier() {
-            let res = LedgerUtils::build_get_nym_request(IDENTIFIER, INVALID_IDENTIFIER);
+            let res = LedgerUtils::build_get_nym_request(Some(IDENTIFIER), INVALID_IDENTIFIER);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
@@ -1933,7 +1933,7 @@ mod medium_cases {
                                                                  Some(&my_verkey), None, Some("TRUSTEE")).unwrap();
             let nym_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &nym_request).unwrap();
 
-            let mut get_nym_request = LedgerUtils::build_get_nym_request(&my_did, &my_did).unwrap();
+            let mut get_nym_request = LedgerUtils::build_get_nym_request(Some(&my_did), &my_did).unwrap();
             let get_nym_response_with_role = LedgerUtils::submit_request_with_retries(pool_handle, &get_nym_request, &nym_req_resp).unwrap();
 
             let get_nym_response_with_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_with_role).unwrap();
@@ -1943,7 +1943,7 @@ mod medium_cases {
                                                          Some(&my_verkey), None, Some("")).unwrap();
             let nym_req_resp = LedgerUtils::sign_and_submit_request(pool_handle, wallet_handle, &my_did, &nym_request).unwrap();
 
-            get_nym_request = LedgerUtils::build_get_nym_request(&my_did, &my_did).unwrap();
+            get_nym_request = LedgerUtils::build_get_nym_request(Some(&my_did), &my_did).unwrap();
             let get_nym_response_without_role = LedgerUtils::submit_request_with_retries(pool_handle, &get_nym_request, &nym_req_resp).unwrap();
 
             let get_nym_response_without_role: Reply<GetNymReplyResult> = serde_json::from_str(&get_nym_response_without_role).unwrap();
@@ -1993,7 +1993,7 @@ mod medium_cases {
 
             let (did, _) = DidUtils::create_my_did(wallet_handle, r#"{}"#).unwrap();
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&did, &did, Some("endpoint"), None, None).unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(Some(&did), &did, Some("endpoint"), None, None).unwrap();
             let get_attrib_response = LedgerUtils::submit_request(pool_handle, &get_attrib_request).unwrap();
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert!(get_attrib_response.result.data.is_none());
@@ -2014,7 +2014,7 @@ mod medium_cases {
 
             let (did, _) = DidUtils::create_and_store_my_did(wallet_handle, Some(TRUSTEE_SEED)).unwrap();
 
-            let get_attrib_request = LedgerUtils::build_get_attrib_request(&did, &did, Some("some_attribute"), None, None).unwrap();
+            let get_attrib_request = LedgerUtils::build_get_attrib_request(Some(&did), &did, Some("some_attribute"), None, None).unwrap();
             let get_attrib_response = LedgerUtils::submit_request(pool_handle, &get_attrib_request).unwrap();
             let get_attrib_response: Reply<GetAttribReplyResult> = serde_json::from_str(&get_attrib_response).unwrap();
             assert!(get_attrib_response.result.data.is_none());
@@ -2045,14 +2045,14 @@ mod medium_cases {
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_request_works_for_invalid_submitter_identifier() {
-            let res = LedgerUtils::build_get_attrib_request(INVALID_IDENTIFIER, IDENTIFIER, Some("endpoint"), None, None);
+            let res = LedgerUtils::build_get_attrib_request(Some(INVALID_IDENTIFIER), IDENTIFIER, Some("endpoint"), None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
         fn indy_build_get_attrib_request_works_for_invalid_target_identifier() {
-            let res = LedgerUtils::build_get_attrib_request(IDENTIFIER, INVALID_IDENTIFIER, Some("endpoint"), None, None);
+            let res = LedgerUtils::build_get_attrib_request(Some(IDENTIFIER), INVALID_IDENTIFIER, Some("endpoint"), None, None);
             assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
         }
     }

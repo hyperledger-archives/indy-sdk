@@ -4,6 +4,8 @@ use time;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+const DEFAULT_LIBIDY_DID: &'static str = "0000000000000000Libindy";
+
 pub struct ProtocolVersion {}
 
 lazy_static! {
@@ -47,8 +49,9 @@ impl<T: serde::Serialize> Request<T> {
         }
     }
 
-    pub fn build_request(identifier: &str, operation: T) -> Result<String, serde_json::Error> {
+    pub fn build_request(identifier: Option<&str>, operation: T) -> Result<String, serde_json::Error> {
         let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
+        let identifier = identifier.unwrap_or(DEFAULT_LIBIDY_DID);
         serde_json::to_string(&Request::new(req_id, identifier, operation, ProtocolVersion::get()))
     }
 }
