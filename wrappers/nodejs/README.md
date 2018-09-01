@@ -1250,7 +1250,7 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
 Builds a request to get a DDO.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Id of Identity stored in secured Wallet.
 * __->__ `requestResult`: Json
 
@@ -1291,7 +1291,7 @@ Errors: `Common*`
 
 Builds a GET\_ATTRIB request. Request to get information about an Attribute for the specified DID.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * `hash`: String - \(Optional\) Requested attribute hash.
 * `raw`: String - \(Optional\) Requested attribute name.
@@ -1304,7 +1304,7 @@ Errors: `Common*`
 
 Builds a GET\_NYM request. Request to get information about a DID \(NYM\).
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * __->__ `request`: Json
 
@@ -1333,7 +1333,7 @@ Errors: `Common*`
 
 Builds a GET\_SCHEMA request. Request to get Credential's Schema.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `id`: String - Schema ID in ledger
 * __->__ `request`: Json
 
@@ -1387,7 +1387,7 @@ Errors: `Common*`
 Builds a GET\_CRED\_DEF request. Request to get a Credential Definition \(in particular, public key\),
 that Issuer creates for a particular Credential Schema.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `id`: String - Credential Definition ID in ledger.
 * __->__ `request`: Json
 
@@ -1451,7 +1451,7 @@ Errors: `Common*`
 
 Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
-* `submitterDid`: String - DID of the request submitter.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `ledgerType`: String - \(Optional\) type of the ledger the requested transaction belongs to:
     * DOMAIN - used default,
     * POOL,
@@ -1540,7 +1540,7 @@ Errors: `Common*`
 Builds a GET\_REVOC\_REG\_DEF request. Request to get a revocation registry definition,
 that Issuer creates for a particular Credential Definition.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `id`: String - ID of Revocation Registry Definition in ledger.
 * __->__ `request`: Json
 
@@ -1604,7 +1604,7 @@ Errors: `Common*`
 Builds a GET\_REVOC\_REG request. Request to get the accumulated state of the Revocation Registry
 by ID. The state is defined by the given timestamp.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `revocRegDefId`: String - ID of the corresponding Revocation Registry Definition in ledger.
 * `timestamp`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
 * __->__ `request`: Json
@@ -1634,7 +1634,7 @@ Builds a GET\_REVOC\_REG\_DELTA request. Request to get the delta of the accumul
 The Delta is defined by from and to timestamp fields.
 If from is not specified, then the whole state till to will be returned.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `revocRegDefId`: String - ID of the corresponding Revocation Registry Definition in ledger.
 * `from`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
 * `to`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
@@ -2250,7 +2250,7 @@ By default PROTOCOL\_VERSION=1.
 
 * `protocolVersion`: Number - Protocol version will be used:
 1 - for Indy Node 1.3
-2 - for Indy Node 1.4
+2 - for Indy Node 1.4 and greater
 * __->__ void
 
 Errors: `Common*`

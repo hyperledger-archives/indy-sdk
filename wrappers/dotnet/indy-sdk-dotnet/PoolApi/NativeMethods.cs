@@ -87,7 +87,7 @@ namespace Hyperledger.Indy.PoolApi
         /// <param name="command_handle">Command handle.</param> 
         /// <param name="protocol_version">Protocol version will be used: 
         ///     1 - for Indy Node 1.3 
-        ///     2 - for Indy Node 1.4</param> 
+        ///     2 - for Indy Node 1.4 and greater</param>
         /// <param name="cb">Cb.</param> 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_set_protocol_version(int command_handle, int protocol_version, IndyMethodCompletedDelegate cb);

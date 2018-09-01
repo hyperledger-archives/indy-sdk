@@ -33,7 +33,7 @@ pub enum PaymentsCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     AddRequestFees(
         i32, //wallet handle
-        String, //submitter did
+        Option<String>, //submitter did
         String, //req
         String, //inputs
         String, //outputs
@@ -51,7 +51,7 @@ pub enum PaymentsCommand {
         Result<String, PaymentsError>),
     BuildGetPaymentSourcesRequest(
         i32, //wallet_handle
-        String, //submitter did
+        Option<String>, //submitter did
         String, //payment address
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     BuildGetPaymentSourcesRequestAck(
@@ -66,7 +66,7 @@ pub enum PaymentsCommand {
         Result<String, PaymentsError>),
     BuildPaymentReq(
         i32, //wallet_handle
-        String, //submitter did
+        Option<String>, //submitter did
         String, //inputs
         String, //outputs
         Option<String>, //extra
@@ -83,7 +83,7 @@ pub enum PaymentsCommand {
         Result<String, PaymentsError>),
     BuildMintReq(
         i32, //wallet_handle
-        String, //submitter did
+        Option<String>, //submitter did
         String, //outputs
         Option<String>, //extra
         Box<Fn(Result<(String, String), IndyError>) + Send>),
@@ -92,7 +92,7 @@ pub enum PaymentsCommand {
         Result<String, PaymentsError>),
     BuildSetTxnFeesReq(
         i32, //wallet_handle
-        String, //submitter did
+        Option<String>, //submitter did
         String, //method
         String, //fees
         Box<Fn(Result<String, IndyError>) + Send>),
@@ -101,7 +101,7 @@ pub enum PaymentsCommand {
         Result<String, PaymentsError>),
     BuildGetTxnFeesReq(
         i32, //wallet_handle
-        String, //submitter did
+        Option<String>, //submitter did
         String, //method
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetTxnFeesReqAck(
@@ -116,7 +116,7 @@ pub enum PaymentsCommand {
         Result<String, PaymentsError>),
     BuildVerifyPaymentReq(
         i32, //wallet_handle
-        String, //submitter_did
+        Option<String>, //submitter_did
         String, //receipt
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     BuildVerifyPaymentReqAck(
@@ -168,7 +168,7 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::AddRequestFees(wallet_handle, submitter_did, req, inputs, outputs, extra, cb) => {
                 info!(target: "payments_command_executor", "AddRequestFees command received");
-                self.add_request_fees(wallet_handle, &submitter_did, &req, &inputs, &outputs, extra.as_ref().map(String::as_str), cb);
+                self.add_request_fees(wallet_handle, submitter_did.as_ref().map(String::as_str), &req, &inputs, &outputs, extra.as_ref().map(String::as_str), cb);
             }
             PaymentsCommand::AddRequestFeesAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "AddRequestFeesAck command received");
@@ -184,7 +184,7 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::BuildGetPaymentSourcesRequest(wallet_handle, submitter_did, payment_address, cb) => {
                 info!(target: "payments_command_executor", "BuildGetPaymentSourcesRequest command received");
-                self.build_get_payment_sources_request(wallet_handle, &submitter_did, &payment_address, cb);
+                self.build_get_payment_sources_request(wallet_handle, submitter_did.as_ref().map(String::as_str), &payment_address, cb);
             }
             PaymentsCommand::BuildGetPaymentSourcesRequestAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "BuildGetPaymentSourcesRequestAck command received");
@@ -200,7 +200,7 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::BuildPaymentReq(wallet_handle, submitter_did, inputs, outputs, extra, cb) => {
                 info!(target: "payments_command_executor", "BuildPaymentReq command received");
-                self.build_payment_req(wallet_handle, &submitter_did, &inputs, &outputs, extra.as_ref().map(String::as_str), cb);
+                self.build_payment_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &inputs, &outputs, extra.as_ref().map(String::as_str), cb);
             }
             PaymentsCommand::BuildPaymentReqAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "BuildPaymentReqAck command received");
@@ -216,7 +216,7 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::BuildMintReq(wallet_handle, submitter_did, outputs, extra, cb) => {
                 info!(target: "payments_command_executor", "BuildMintReq command received");
-                self.build_mint_req(wallet_handle, &submitter_did, &outputs, extra.as_ref().map(String::as_str), cb);
+                self.build_mint_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &outputs, extra.as_ref().map(String::as_str), cb);
             }
             PaymentsCommand::BuildMintReqAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "BuildMintReqAck command received");
@@ -224,7 +224,7 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::BuildSetTxnFeesReq(wallet_handle, submitter_did, type_, fees, cb) => {
                 info!(target: "payments_command_executor", "BuildSetTxnFeesReq command received");
-                self.build_set_txn_fees_req(wallet_handle, &submitter_did, &type_, &fees, cb);
+                self.build_set_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &type_, &fees, cb);
             }
             PaymentsCommand::BuildSetTxnFeesReqAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "BuildSetTxnFeesReqAck command received");
@@ -232,7 +232,7 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::BuildGetTxnFeesReq(wallet_handle, submitter_did, type_, cb) => {
                 info!(target: "payments_command_executor", "BuildGetTxnFeesReq command received");
-                self.build_get_txn_fees_req(wallet_handle, &submitter_did, &type_, cb);
+                self.build_get_txn_fees_req(wallet_handle, submitter_did.as_ref().map(String::as_str), &type_, cb);
             }
             PaymentsCommand::BuildGetTxnFeesReqAck(cmd_handle, result) => {
                 info!(target: "payments_command_executor", "BuildGetTxnFeesReqAck command received");
@@ -248,7 +248,7 @@ impl PaymentsCommandExecutor {
             }
             PaymentsCommand::BuildVerifyPaymentReq(wallet_handle, submitter_did, receipt, cb) => {
                 info!(target: "payments_command_executor", "BuildVerifyPaymentReq command received");
-                self.build_verify_payment_request(wallet_handle, &submitter_did, &receipt, cb);
+                self.build_verify_payment_request(wallet_handle, submitter_did.as_ref().map(String::as_str), &receipt, cb);
             }
             PaymentsCommand::BuildVerifyPaymentReqAck(command_handle, result) => {
                 info!(target: "payments_command_executor", "BuildVerifyReqAck command received");
@@ -332,12 +332,14 @@ impl PaymentsCommandExecutor {
         trace!("list_addresses <<<");
     }
 
-    fn add_request_fees(&self, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn add_request_fees(&self, wallet_handle: i32, submitter_did: Option<&str>, req: &str, inputs: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         trace!("add_request_fees >>> wallet_handle: {:?}, submitter_did: {:?}, req: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}",
                wallet_handle, submitter_did, req, inputs, outputs, extra);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => ()
+        if let Some(did) = submitter_did {
+            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
+                Err(err) => return cb(Err(IndyError::from(err))),
+                _ => ()
+            }
         }
         match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
@@ -363,7 +365,7 @@ impl PaymentsCommandExecutor {
             }
             Err(error) => {
                 cb(Err(IndyError::from(error)))
-            },
+            }
         };
         trace!("add_request_fees <<<");
     }
@@ -386,11 +388,13 @@ impl PaymentsCommandExecutor {
         trace!("parse_response_with_fees_ack <<<");
     }
 
-    fn build_get_payment_sources_request(&self, wallet_handle: i32, submitter_did: &str, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn build_get_payment_sources_request(&self, wallet_handle: i32, submitter_did: Option<&str>, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         trace!("build_get_payment_sources_request >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => ()
+        if let Some(did) = submitter_did {
+            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
+                Err(err) => return cb(Err(IndyError::from(err))),
+                _ => ()
+            }
         }
         match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
@@ -408,7 +412,7 @@ impl PaymentsCommandExecutor {
 
         self._process_method(
             Box::new(move |get_sources_txn_json| cb(get_sources_txn_json.map(|s| (s, method.to_string())))),
-            &|i| self.payments_service.build_get_payment_sources_request(i, &method_copy, wallet_handle, &submitter_did, payment_address)
+            &|i| self.payments_service.build_get_payment_sources_request(i, &method_copy, wallet_handle, submitter_did, payment_address)
         );
         trace!("build_get_payment_sources_request <<<");
     }
@@ -431,11 +435,13 @@ impl PaymentsCommandExecutor {
         trace!("parse_get_payment_sources_response_ack <<<");
     }
 
-    fn build_payment_req(&self, wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn build_payment_req(&self, wallet_handle: i32, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         trace!("build_payment_req >>> wallet_handle: {:?}, submitter_did: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, inputs, outputs, extra);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => ()
+        if let Some(did) = submitter_did {
+            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
+                Err(err) => return cb(Err(IndyError::from(err))),
+                _ => ()
+            }
         }
 
         match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
@@ -480,11 +486,13 @@ impl PaymentsCommandExecutor {
         trace!("parse_payment_response_ack <<<");
     }
 
-    fn build_mint_req(&self, wallet_handle: i32, submitter_did: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn build_mint_req(&self, wallet_handle: i32, submitter_did: Option<&str>, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         trace!("build_mint_req >>> wallet_handle: {:?}, submitter_did: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs, extra);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => ()
+        if let Some(did) = submitter_did {
+            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
+                Err(err) => return cb(Err(IndyError::from(err))),
+                _ => ()
+            }
         }
 
         match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
@@ -512,11 +520,13 @@ impl PaymentsCommandExecutor {
         trace!("build_mint_req_ack <<<");
     }
 
-    fn build_set_txn_fees_req(&self, wallet_handle: i32, submitter_did: &str, type_: &str, fees: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+    fn build_set_txn_fees_req(&self, wallet_handle: i32, submitter_did: Option<&str>, type_: &str, fees: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         trace!("build_set_txn_fees_req >>> wallet_handle: {:?}, submitter_did: {:?}, type_: {:?}, fees: {:?}", wallet_handle, submitter_did, type_, fees);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => ()
+        if let Some(did) = submitter_did {
+            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
+                Err(err) => return cb(Err(IndyError::from(err))),
+                _ => ()
+            }
         }
         match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
@@ -527,7 +537,7 @@ impl PaymentsCommandExecutor {
             Err(err) => {
                 error!("Cannot deserialize Fees: {:?}", err);
                 cb(Err(IndyError::CommonError(CommonError::InvalidStructure(format!("Cannot deserialize Fees: {:?}", err)))))
-            },
+            }
             _ => self._process_method(cb, &|i| self.payments_service.build_set_txn_fees_req(i, type_, wallet_handle, submitter_did, fees)),
         };
         trace!("build_set_txn_fees_req <<<");
@@ -539,11 +549,13 @@ impl PaymentsCommandExecutor {
         trace!("build_set_txn_fees_req_ack <<<");
     }
 
-    fn build_get_txn_fees_req(&self, wallet_handle: i32, submitter_did: &str, type_: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
+    fn build_get_txn_fees_req(&self, wallet_handle: i32, submitter_did: Option<&str>, type_: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         trace!("build_get_txn_fees_req >>> wallet_handle: {:?}, submitter_did: {:?}, type_: {:?}", wallet_handle, submitter_did, type_);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => ()
+        if let Some(did) = submitter_did {
+            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
+                Err(err) => return cb(Err(IndyError::from(err))),
+                _ => ()
+            }
         }
         match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
@@ -572,11 +584,13 @@ impl PaymentsCommandExecutor {
         trace!("parse_get_txn_fees_response_ack <<<");
     }
 
-    fn build_verify_payment_request(&self, wallet_handle: i32, submitter_did: &str, receipt: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
+    fn build_verify_payment_request(&self, wallet_handle: i32, submitter_did: Option<&str>, receipt: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         trace!("build_verify_payment_request >>> wallet_handle: {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
-            Err(err) => return cb(Err(IndyError::from(err))),
-            _ => ()
+        if let Some(did) = submitter_did {
+            match self.crypto_service.validate_did(did).map_err(map_err_err!()) {
+                Err(err) => return cb(Err(IndyError::from(err))),
+                _ => ()
+            }
         }
         match self.wallet_service.check(wallet_handle).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
@@ -593,7 +607,7 @@ impl PaymentsCommandExecutor {
         let method_copy = method.to_string();
         self._process_method(
             Box::new(move |result| cb(result.map(|s| (s, method.to_string())))),
-            &|i| self.payments_service.build_verify_payment_req(i, &method_copy, wallet_handle, &submitter_did, receipt)
+            &|i| self.payments_service.build_verify_payment_req(i, &method_copy, wallet_handle, submitter_did, receipt)
         );
         trace!("build_verify_payment_request <<<");
     }
@@ -637,7 +651,7 @@ impl PaymentsCommandExecutor {
         match self.pending_callbacks.borrow_mut().remove(&cmd_handle) {
             Some(cb) => {
                 cb(result)
-            },
+            }
             None => error!("Can't process PaymentsCommand::{} for handle {} with result {:?} - appropriate callback not found!",
                            name, cmd_handle, result),
         }
@@ -649,7 +663,7 @@ impl PaymentsCommandExecutor {
             (Ok(ref mth1), Ok(ref mth2)) if mth1 != mth2 => {
                 error!("Different payment method in inputs and outputs");
                 Err(PaymentsError::IncompatiblePaymentError("Different payment method in inputs and outputs".to_string()))
-            },
+            }
             (Ok(mth1), Ok(_)) => Ok(mth1)
         }
     }

@@ -79,7 +79,7 @@ mod high_cases {
             let nym_request = ledger::build_nym_request(&trustee_did, &did, Some(&verkey), None, None).unwrap();
             let nym_resp = ledger::sign_and_submit_request(pool_handle, trustee_wallet_handle, &trustee_did, &nym_request).unwrap();
 
-            let get_nym_request = ledger::build_get_nym_request(&did, &did).unwrap();
+            let get_nym_request = ledger::build_get_nym_request(Some(&did), &did).unwrap();
             ledger::submit_request_with_retries(pool_handle, &get_nym_request, &nym_resp).unwrap();
 
             let wallet_handle = wallet::create_and_open_default_wallet().unwrap();

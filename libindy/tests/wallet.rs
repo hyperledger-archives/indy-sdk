@@ -297,7 +297,7 @@ mod high_cases {
 
             assert!(path.exists());
 
-//            utils::tear_down_with_wallet(wallet_handle);
+            utils::tear_down_with_wallet(wallet_handle);
         }
     }
 
