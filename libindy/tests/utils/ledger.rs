@@ -128,13 +128,15 @@ fn _submit_retry<F>(minimal_timestamp: u64, submit_action: F) -> Result<String, 
     Ok(action_result)
 }
 
-pub fn build_get_ddo_request(submitter_did: &str, target_did: &str) -> Result<String, ErrorCode> {
+pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let submitter_did = CString::new(submitter_did).unwrap();
+    let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let target_did = CString::new(target_did).unwrap();
 
-    let err = indy_build_get_ddo_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), cb);
+    let err = indy_build_get_ddo_request(command_handle,
+                                         if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
+                                         target_did.as_ptr(), cb);
 
     super::results::result_to_string(err, receiver)
 }
@@ -183,10 +185,10 @@ pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<
     super::results::result_to_string(err, receiver)
 }
 
-pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
+pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let submitter_did = CString::new(submitter_did).unwrap();
+    let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let target_did = CString::new(target_did).unwrap();
     let raw_str = raw.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let hash_str = hash.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
@@ -194,7 +196,7 @@ pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, raw: Opti
 
     let err =
         indy_build_get_attrib_request(command_handle,
-                                      submitter_did.as_ptr(),
+                                      if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                       target_did.as_ptr(),
                                       if raw.is_some() { raw_str.as_ptr() } else { null() },
                                       if hash.is_some() { hash_str.as_ptr() } else { null() },
@@ -204,13 +206,15 @@ pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, raw: Opti
     super::results::result_to_string(err, receiver)
 }
 
-pub fn build_get_nym_request(submitter_did: &str, target_did: &str) -> Result<String, ErrorCode> {
+pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let submitter_did = CString::new(submitter_did).unwrap();
+    let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let target_did = CString::new(target_did).unwrap();
 
-    let err = indy_build_get_nym_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), cb);
+    let err = indy_build_get_nym_request(command_handle,
+                                         if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
+                                         target_did.as_ptr(), cb);
 
     super::results::result_to_string(err, receiver)
 }
@@ -226,15 +230,15 @@ pub fn build_schema_request(submitter_did: &str, data: &str) -> Result<String, E
     super::results::result_to_string(err, receiver)
 }
 
-pub fn build_get_schema_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
+pub fn build_get_schema_request(submitter_did:  Option<&str>, id: &str) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let submitter_did = CString::new(submitter_did).unwrap();
+    let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let id = CString::new(id).unwrap();
 
     let err =
         indy_build_get_schema_request(command_handle,
-                                      submitter_did.as_ptr(),
+                                      if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                       id.as_ptr(),
                                       cb);
 
@@ -256,15 +260,15 @@ pub fn build_cred_def_txn(submitter_did: &str, cred_def_json: &str) -> Result<St
     super::results::result_to_string(err, receiver)
 }
 
-pub fn build_get_cred_def_txn(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
+pub fn build_get_cred_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let submitter_did = CString::new(submitter_did).unwrap();
+    let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let id = CString::new(id).unwrap();
 
     let err =
         indy_build_get_cred_def_request(command_handle,
-                                        submitter_did.as_ptr(),
+                                        if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                         id.as_ptr(),
                                         cb);
 
@@ -298,14 +302,14 @@ pub fn build_get_validator_info_request(submitter_did: &str) -> Result<String, E
     super::results::result_to_string(err, receiver)
 }
 
-pub fn build_get_txn_request(submitter_did: &str, data: i32, ledger_type: Option<&str>) -> Result<String, ErrorCode> {
+pub fn build_get_txn_request(submitter_did: Option<&str>, data: i32, ledger_type: Option<&str>) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let submitter_did = CString::new(submitter_did).unwrap();
+    let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let ledger_type_str = ledger_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
 
     let err = indy_build_get_txn_request(command_handle,
-                                         submitter_did.as_ptr(),
+                                         if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                          if ledger_type.is_some() { ledger_type_str.as_ptr() } else { null() },
                                          data, cb);
 
@@ -407,30 +411,30 @@ pub fn build_revoc_reg_entry_request(submitter_did: &str, rev_reg_def_id: &str, 
     super::results::result_to_string(err, receiver)
 }
 
-pub fn build_get_revoc_reg_def_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
+pub fn build_get_revoc_reg_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let submitter_did = CString::new(submitter_did).unwrap();
+    let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let id = CString::new(id).unwrap();
 
     let err =
         indy_build_get_revoc_reg_def_request(command_handle,
-                                             submitter_did.as_ptr(),
+                                             if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                              id.as_ptr(),
                                              cb);
 
     super::results::result_to_string(err, receiver)
 }
 
-pub fn build_get_revoc_reg_request(submitter_did: &str, rev_reg_def_id: &str, timestamp: u64) -> Result<String, ErrorCode> {
+pub fn build_get_revoc_reg_request(submitter_did: Option<&str>, rev_reg_def_id: &str, timestamp: u64) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let submitter_did = CString::new(submitter_did).unwrap();
+    let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let rev_reg_def_id = CString::new(rev_reg_def_id).unwrap();
 
     let err =
         indy_build_get_revoc_reg_request(command_handle,
-                                         submitter_did.as_ptr(),
+                                         if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                          rev_reg_def_id.as_ptr(),
                                          timestamp as i64,
                                          cb);
@@ -438,17 +442,17 @@ pub fn build_get_revoc_reg_request(submitter_did: &str, rev_reg_def_id: &str, ti
     super::results::result_to_string(err, receiver)
 }
 
-pub fn build_get_revoc_reg_delta_request(submitter_did: &str, rev_reg_def_id: &str, from: Option<u64>, to: u64) -> Result<String, ErrorCode> {
+pub fn build_get_revoc_reg_delta_request(submitter_did: Option<&str>, rev_reg_def_id: &str, from: Option<u64>, to: u64) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let submitter_did = CString::new(submitter_did).unwrap();
+    let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
     let rev_reg_def_id = CString::new(rev_reg_def_id).unwrap();
 
     let from = if from.is_some() { from.unwrap() as i64 } else { -1 };
 
     let err =
         indy_build_get_revoc_reg_delta_request(command_handle,
-                                               submitter_did.as_ptr(),
+                                               if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                                rev_reg_def_id.as_ptr(),
                                                from,
                                                to as i64,
@@ -560,7 +564,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
             let schema_request = build_schema_request(&issuer_did, &schema_json).unwrap();
             let schema_response = sign_and_submit_request(pool_handle, wallet_handle, &issuer_did, &schema_request).unwrap();
 
-            let get_schema_request = build_get_schema_request(&issuer_did, &schema_id).unwrap();
+            let get_schema_request = build_get_schema_request(Some(&issuer_did), &schema_id).unwrap();
             let get_schema_response = submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
             let (schema_id, schema_json) = parse_get_schema_response(&get_schema_response).unwrap();
 

@@ -39,9 +39,9 @@ pub mod add_request_fees {
         check_useful_c_str!(req_json, ErrorCode::CommonInvalidState);
         check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidState);
         check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidState);
-        check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
+        check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::add_request_fees::handle << req_json: {}, inputs_json: {}, outputs_json: {}, submitter_did: {}, extra: {:?}", req_json, inputs_json, outputs_json, submitter_did, extra);
+        trace!("libnullpay::add_request_fees::handle << req_json: {}, inputs_json: {}, outputs_json: {}, submitter_did: {:?}, extra: {:?}", req_json, inputs_json, outputs_json, submitter_did, extra);
 
         trace!("parsing_json");
         parse_json!(inputs_json, Vec<String>, ErrorCode::CommonInvalidStructure);
@@ -72,7 +72,7 @@ pub mod add_request_fees {
         let ec = _check_inputs_existance(&inputs_json);
         if ec != ErrorCode::Success {
             ledger::build_get_txn_request(
-                submitter_did.as_str(),
+                submitter_did.as_ref().map(String::as_str),
                 None,
                 1,
                 Box::new(move |ec, res| {
@@ -117,7 +117,7 @@ pub mod add_request_fees {
         } else {
             //we don't have enough money, send GET_TXN transaction to callback and in response PaymentsInsufficientFundsError will be returned
             ledger::build_get_txn_request(
-                submitter_did.as_str(),
+                submitter_did.as_ref().map(String::as_str),
                 None,
                 1,
                 Box::new(move |ec, res| {
@@ -146,12 +146,12 @@ pub mod build_get_payment_sources_request {
     use super::*;
 
     pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, payment_address: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-        check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
+        check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(payment_address, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_get_payment_sources_request::handle << payment_address: {}, submitter_did: {}", payment_address, submitter_did);
+        trace!("libnullpay::build_get_payment_sources_request::handle << payment_address: {}, submitter_did: {:?}", payment_address, submitter_did);
 
         ledger::build_get_txn_request(
-            submitter_did.as_str(),
+            submitter_did.as_ref().map(String::as_str),
             None,
             1,
             Box::new(move |ec, res| {
@@ -181,11 +181,11 @@ pub mod build_payment_req {
     use super::*;
 
     pub extern fn handle(cmd_handle: i32, wallet_handle: i32, submitter_did: *const c_char, inputs_json: *const c_char, outputs_json: *const c_char, extra: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-        check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
+        check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidState);
         check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidState);
         check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_payment_req::handle << inputs_json: {}, outputs_json: {}, submitter_did: {}, extra: {:?}", inputs_json, outputs_json, submitter_did, extra);
+        trace!("libnullpay::build_payment_req::handle << inputs_json: {}, outputs_json: {}, submitter_did: {:?}, extra: {:?}", inputs_json, outputs_json, submitter_did, extra);
 
         parse_json!(inputs_json, Vec<String>, ErrorCode::CommonInvalidStructure);
         parse_json!(outputs_json, Vec<Output>, ErrorCode::CommonInvalidStructure);
@@ -217,7 +217,7 @@ pub mod build_payment_req {
 
                 thread::spawn(move || {
                     ledger::build_get_txn_request(
-                        submitter_did.as_str(),
+                        submitter_did.as_ref().map(String::as_str),
                         None,
                         1,
                         Box::new(move |ec, res| {
@@ -256,14 +256,14 @@ pub mod build_mint_req {
     use super::*;
 
     pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, outputs_json: *const c_char, extra: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-        check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
+        check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidState);
         check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_mint_req::handle << outputs_json: {}, submitter_did: {}, extra: {:?}", outputs_json, submitter_did, extra);
+        trace!("libnullpay::build_mint_req::handle << outputs_json: {}, submitter_did: {:?}, extra: {:?}", outputs_json, submitter_did, extra);
 
         parse_json!(outputs_json, Vec<Output>, ErrorCode::CommonInvalidStructure);
 
-        ledger::build_get_txn_request(submitter_did.as_str(),
+        ledger::build_get_txn_request(submitter_did.as_ref().map(String::as_str),
                                       None,
                                       1,
                                       Box::new(move |ec, res| {
@@ -286,13 +286,13 @@ pub mod build_set_txn_fees_req {
     use super::*;
 
     pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, fees_json: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-        check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
+        check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(fees_json, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_set_txn_fees_req::handle << fees_json: {}, submitter_did: {}", fees_json, submitter_did);
+        trace!("libnullpay::build_set_txn_fees_req::handle << fees_json: {}, submitter_did: {:?}", fees_json, submitter_did);
 
         parse_json!(fees_json, HashMap<String, u64>, ErrorCode::CommonInvalidStructure);
 
-        ledger::build_get_txn_request(submitter_did.as_str(),
+        ledger::build_get_txn_request(submitter_did.as_ref().map(String::as_str),
                                       None,
                                       1,
                                       Box::new(move |ec, res| {
@@ -311,10 +311,10 @@ pub mod build_get_txn_fees_req {
     use super::*;
 
     pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-        check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_get_txn_fees_req::handle << submitter_did: {}", submitter_did);
+        check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidState);
+        trace!("libnullpay::build_get_txn_fees_req::handle << submitter_did: {:?}", submitter_did);
 
-        ledger::build_get_txn_request(submitter_did.as_str(),
+        ledger::build_get_txn_request(submitter_did.as_ref().map(String::as_str),
                                       None,
                                       1,
                                       Box::new(move |ec, res| {
@@ -347,12 +347,12 @@ pub mod build_verify_payment_req {
     use super::*;
 
     pub extern fn handle(cmd_handle: i32, _wallet_handle: i32, submitter_did: *const c_char, receipt: *const c_char, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-        check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidState);
+        check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidState);
         check_useful_c_str!(receipt, ErrorCode::CommonInvalidState);
-        trace!("libnullpay::build_verify_payment_req::handle << submitter_did: {}, receipt: {}", submitter_did, receipt);
+        trace!("libnullpay::build_verify_payment_req::handle << submitter_did: {:?}, receipt: {}", submitter_did, receipt);
 
         ledger::build_get_txn_request(
-            submitter_did.as_str(),
+            submitter_did.as_ref().map(String::as_str),
             None,
             1,
             Box::new(move |ec, res| {
@@ -364,7 +364,7 @@ pub mod build_verify_payment_req {
                                 Err(ec) => ec
                             }
                         }
-                        None =>  _add_response(&res, "NO_SOURCE")
+                        None => _add_response(&res, "NO_SOURCE")
                     }
                 } else { ec };
                 trace!("libnullpay::build_verify_payment_req::handle >>");

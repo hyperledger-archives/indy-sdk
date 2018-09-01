@@ -48,7 +48,7 @@ pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// req_json: initial transaction request as json
 /// inputs_json: The list of payment sources as json array:
 ///   ["source1", ...]
@@ -99,7 +99,7 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// payment_address: target payment address
 ///
 /// #Returns
@@ -143,7 +143,7 @@ pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// inputs_json: The list of payment sources as json array:
 ///   ["source1", ...]
 ///   Note that each source should reference payment address
@@ -192,7 +192,7 @@ pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// outputs_json: The list of outputs as json array:
 ///   [{
 ///     recipient: <str>, // payment address of recipient
@@ -216,7 +216,7 @@ pub type BuildMintReqCB = extern fn(command_handle: i32,
 /// # Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// fees_json {
 ///   txnType1: amount1,
 ///   txnType2: amount2,
@@ -239,7 +239,7 @@ pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
 /// # Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 ///
 /// # Return
 /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
@@ -274,7 +274,7 @@ pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
 /// # Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// receipt: payment receipt to verify
 ///
 /// # Return
@@ -516,7 +516,7 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// req_json: initial transaction request as json
 /// inputs_json: The list of payment sources as json array:
 ///   ["source1", ...]
@@ -546,7 +546,7 @@ pub extern fn indy_add_request_fees(command_handle: i32,
                                                          payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_add_request_fees: >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(req_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam6);
@@ -635,7 +635,7 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// payment_address: target payment address
 ///
 /// #Returns
@@ -651,7 +651,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: i32,
                                                                           get_sources_txn_json: *const c_char,
                                                                           payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_payment_sources_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -741,7 +741,7 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: i32,
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// inputs_json: The list of payment sources as json array:
 ///   ["source1", ...]
 ///   Note that each source should reference payment address
@@ -768,7 +768,7 @@ pub extern fn indy_build_payment_req(command_handle: i32,
                                                           payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_payment_req: >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, inputs_json, outputs_json, extra);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam6);
@@ -858,7 +858,7 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// outputs_json: The list of outputs as json array:
 ///   [{
 ///     recipient: <str>, // payment address of recipient
@@ -880,7 +880,7 @@ pub extern fn indy_build_mint_req(command_handle: i32,
                                                        mint_req_json: *const c_char,
                                                        payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_mint_req: >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -916,7 +916,7 @@ pub extern fn indy_build_mint_req(command_handle: i32,
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// payment_method: payment method to use
 /// fees_json {
 ///   txnType1: amount1,
@@ -936,7 +936,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
                                                                err: ErrorCode,
                                                                set_txn_fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_set_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(fees_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -971,7 +971,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// payment_method: payment method to use
 ///
 /// # Return
@@ -985,7 +985,7 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
                                                                err: ErrorCode,
                                                                get_txn_fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}", wallet_handle, submitter_did, payment_method);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1067,7 +1067,7 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: i32,
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// receipt: payment receipt to verify
 ///
 /// # Return
@@ -1083,7 +1083,7 @@ pub extern fn indy_build_verify_payment_req(command_handle: i32,
                                                          verify_txn_json: *const c_char,
                                                          payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_verify_payment_req: >>> wallet_handle {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(receipt, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 

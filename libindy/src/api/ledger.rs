@@ -307,7 +307,7 @@ pub extern fn indy_multi_sign_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender (if not provide then default Libindy DID will be used).
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -421,7 +421,7 @@ pub extern fn indy_build_nym_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender (if not provide then default Libindy DID will be used).
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -529,7 +529,7 @@ pub extern fn indy_build_attrib_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender (if not provide then default Libindy DID will be used).
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// raw: (Optional) Requested attribute name.
 /// hash: (Optional) Requested attribute hash.
@@ -644,7 +644,7 @@ pub extern fn indy_build_schema_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender (if not provide then default Libindy DID will be used).
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// id: Schema ID in ledger
 /// cb: Callback that takes command result as parameter.
 ///
@@ -803,7 +803,7 @@ pub extern fn indy_build_cred_def_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender (if not provide then default Libindy DID will be used).
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// id: Credential Definition ID in ledger.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -999,7 +999,7 @@ pub extern fn indy_build_get_validator_info_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender (if not provide then default Libindy DID will be used).
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// ledger_type: (Optional) type of the ledger the requested transaction belongs to:
 ///     DOMAIN - used default,
 ///     POOL,
@@ -1309,7 +1309,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender (if not provide then default Libindy DID will be used).
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// id:  ID of Revocation Registry Definition in ledger.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1487,7 +1487,7 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender (if not provide then default Libindy DID will be used).
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
 /// timestamp: Requested time represented as a total number of seconds from Unix Epoch
 /// cb: Callback that takes command result as parameter.
@@ -1593,7 +1593,7 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: (Optional) DID of the read request sender (if not provide then default Libindy DID will be used).
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
 /// from: Requested time represented as a total number of seconds from Unix Epoch
 /// to: Requested time represented as a total number of seconds from Unix Epoch

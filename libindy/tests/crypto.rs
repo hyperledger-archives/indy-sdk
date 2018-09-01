@@ -338,7 +338,9 @@ mod high_cases {
         #[test]
         fn indy_crypto_auth_decrypt_works() {
             let (sender_wallet_handle, sender_vk) = setup_with_key();
-            let (recipient_wallet_handle, recipient_vk) = setup_with_key();
+
+            let recipient_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let recipient_vk = crypto::create_key(recipient_wallet_handle, None).unwrap();
 
             let encrypted_msg = crypto::auth_crypt(sender_wallet_handle, &sender_vk, &recipient_vk, MESSAGE.as_bytes()).unwrap();
 
@@ -346,8 +348,8 @@ mod high_cases {
             assert_eq!(MESSAGE.as_bytes().to_vec(), msg);
             assert_eq!(sender_vk, vk);
 
+            wallet::close_wallet(recipient_wallet_handle).unwrap();
             utils::tear_down_with_wallet(sender_wallet_handle);
-            utils::tear_down_with_wallet(recipient_wallet_handle);
         }
 
         #[test]
@@ -382,15 +384,16 @@ mod high_cases {
         #[test]
         fn indy_crypto_auth_decrypt_works_invalid_handle() {
             let (sender_wallet_handle, sender_vk) = setup_with_key();
-            let (recipient_wallet_handle, recipient_vk) = setup_with_key();
+            let recipient_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let recipient_vk = crypto::create_key(recipient_wallet_handle, None).unwrap();
 
             let encrypted_msg = crypto::auth_crypt(sender_wallet_handle, &sender_vk, &recipient_vk, MESSAGE.as_bytes()).unwrap();
 
             let res = crypto::auth_decrypt(recipient_wallet_handle + 1, &recipient_vk, &encrypted_msg);
             assert_eq!(ErrorCode::WalletInvalidHandle, res.unwrap_err());
 
+            wallet::close_wallet(recipient_wallet_handle).unwrap();
             utils::tear_down_with_wallet(sender_wallet_handle);
-            utils::tear_down_with_wallet(recipient_wallet_handle);
         }
     }
 
@@ -426,14 +429,15 @@ mod high_cases {
         #[test]
         fn indy_crypto_anon_decrypt_works() {
             let (sender_wallet_handle, _) = setup_with_key();
-            let (recipient_wallet_handle, recipient_vk) = setup_with_key();
+            let recipient_wallet_handle = wallet::create_and_open_default_wallet().unwrap();
+            let recipient_vk = crypto::create_key(recipient_wallet_handle, None).unwrap();
 
             let encrypted_msg = crypto::anon_crypt(&recipient_vk, MESSAGE.as_bytes()).unwrap();
 
             let msg = crypto::anon_decrypt(recipient_wallet_handle, &recipient_vk, &encrypted_msg).unwrap();
             assert_eq!(MESSAGE.as_bytes().to_vec(), msg);
 
-            utils::tear_down_with_wallet(recipient_wallet_handle);
+            wallet::close_wallet(recipient_wallet_handle).unwrap();
             utils::tear_down_with_wallet(sender_wallet_handle);
         }
 
