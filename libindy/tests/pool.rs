@@ -295,7 +295,7 @@ mod high_cases {
 
             let pool_handle = PoolUtils::create_and_open_pool_ledger(POOL).unwrap();
 
-            let get_nym_req = LedgerUtils::build_get_nym_request(DID_MY1, DID_MY1).unwrap();
+            let get_nym_req = LedgerUtils::build_get_nym_request(Some(DID_MY1), DID_MY1).unwrap();
 
             let get_nym_req = CString::new(get_nym_req).unwrap();
 

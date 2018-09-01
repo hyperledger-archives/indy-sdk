@@ -191,10 +191,10 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
+        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let target_did = CString::new(target_did).unwrap();
         let raw_str = raw.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let hash_str = hash.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
@@ -202,7 +202,7 @@ impl LedgerUtils {
 
         let err =
             indy_build_get_attrib_request(command_handle,
-                                          submitter_did.as_ptr(),
+                                          if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                           target_did.as_ptr(),
                                           if raw.is_some() { raw_str.as_ptr() } else { null() },
                                           if hash.is_some() { hash_str.as_ptr() } else { null() },
@@ -212,13 +212,15 @@ impl LedgerUtils {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_nym_request(submitter_did: &str, target_did: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
+        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let target_did = CString::new(target_did).unwrap();
 
-        let err = indy_build_get_nym_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), cb);
+        let err = indy_build_get_nym_request(command_handle,
+                                             if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
+                                             target_did.as_ptr(), cb);
 
         super::results::result_to_string(err, receiver)
     }

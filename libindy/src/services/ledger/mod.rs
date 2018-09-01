@@ -71,7 +71,7 @@ impl LedgerService {
             }
         }
 
-        let request = Request::build_request(identifier, operation)
+        let request = Request::build_request(Some(identifier), operation)
             .map_err(|err| CommonError::InvalidState(format!("NYM request json is invalid {:?}.", err)))?;
 
         info!("build_nym_request <<< request: {:?}", request);
@@ -79,7 +79,7 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_nym_request(&self, identifier: &str, dest: &str) -> Result<String, CommonError> {
+    pub fn build_get_nym_request(&self, identifier: Option<&str>, dest: &str) -> Result<String, CommonError> {
         info!("build_get_nym_request >>> identifier: {:?}, dest: {:?}", identifier, dest);
 
         let operation = GetNymOperation::new(dest.to_string());
@@ -92,7 +92,7 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_ddo_request(&self, identifier: &str, dest: &str) -> Result<String, CommonError> {
+    pub fn build_get_ddo_request(&self, identifier: Option<&str>, dest: &str) -> Result<String, CommonError> {
         info!("build_get_ddo_request >>> identifier: {:?}, dest: {:?}", identifier, dest);
 
         let operation = GetDdoOperation::new(dest.to_string());
@@ -122,7 +122,7 @@ impl LedgerService {
                                              raw.map(String::from),
                                              enc.map(String::from));
 
-        let request = Request::build_request(identifier, operation)
+        let request = Request::build_request(Some(identifier), operation)
             .map_err(|err| CommonError::InvalidState(format!("ATTRIB request json is invalid {:?}.", err)))?;
 
         info!("build_attrib_request <<< request: {:?}", request);
@@ -130,7 +130,7 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_attrib_request(&self, identifier: &str, dest: &str, raw: Option<&str>, hash: Option<&str>,
+    pub fn build_get_attrib_request(&self, identifier: Option<&str>, dest: &str, raw: Option<&str>, hash: Option<&str>,
                                     enc: Option<&str>) -> Result<String, CommonError> {
         info!("build_get_attrib_request >>> identifier: {:?}, dest: {:?}, hash: {:?}, raw: {:?}, enc: {:?}", identifier, dest, hash, raw, enc);
 
@@ -154,7 +154,7 @@ impl LedgerService {
 
         let operation = SchemaOperation::new(schema_data);
 
-        let request = Request::build_request(identifier, operation)
+        let request = Request::build_request(Some(identifier), operation)
             .map_err(|err| CommonError::InvalidState(format!("SCHEMA request json is invalid {:?}.", err)))?;
 
         info!("build_schema_request <<< request: {:?}", request);
@@ -162,7 +162,7 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_schema_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
+    pub fn build_get_schema_request(&self, identifier: Option<&str>, id: &str) -> Result<String, CommonError> {
         info!("build_get_schema_request >>> identifier: {:?}, id: {:?}", identifier, id);
 
         let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
@@ -189,7 +189,7 @@ impl LedgerService {
 
         let operation = CredDefOperation::new(cred_def);
 
-        let request = Request::build_request(identifier, operation)
+        let request = Request::build_request(Some(identifier), operation)
             .map_err(|err| CommonError::InvalidState(format!("CRED_DEF request json is invalid {:?}.", err)))?;
 
         info!("build_cred_def_request <<< request: {:?}", request);
@@ -197,7 +197,7 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_cred_def_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
+    pub fn build_get_cred_def_request(&self, identifier: Option<&str>, id: &str) -> Result<String, CommonError> {
         info!("build_get_cred_def_request >>> identifier: {:?}, id {:?}", identifier, id);
 
         let parts: Vec<&str> = id.split_terminator(DELIMITER).collect::<Vec<&str>>();
@@ -240,7 +240,7 @@ impl LedgerService {
 
         let operation = NodeOperation::new(dest.to_string(), data);
 
-        let request = Request::build_request(identifier, operation)
+        let request = Request::build_request(Some(identifier), operation)
             .map_err(|err| CommonError::InvalidState(format!("NODE request json is invalid {:?}.", err)))?;
 
         info!("build_node_request <<< request: {:?}", request);
@@ -253,7 +253,7 @@ impl LedgerService {
 
         let operation = GetValidatorInfoOperation::new();
 
-        let request = Request::build_request(identifier, operation)
+        let request = Request::build_request(Some(identifier), operation)
             .map_err(|err| CommonError::InvalidState(format!("GET_TXN request json is invalid {:?}.", err)))?;
 
         info!("build_get_validator_info_request <<< request: {:?}", request);
@@ -261,7 +261,7 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_txn_request(&self, identifier: &str, ledger_type: Option<&str>, seq_no: i32) -> Result<String, CommonError> {
+    pub fn build_get_txn_request(&self, identifier: Option<&str>, ledger_type: Option<&str>, seq_no: i32) -> Result<String, CommonError> {
         info!("build_get_txn_request >>> identifier: {:?}, seq_no {:?}, ledger_type {:?}", identifier, ledger_type, seq_no);
 
         let ledger_id = match ledger_type {
@@ -288,7 +288,7 @@ impl LedgerService {
 
         let operation = PoolConfigOperation::new(writes, force);
 
-        let request = Request::build_request(identifier, operation)
+        let request = Request::build_request(Some(identifier), operation)
             .map_err(|err| CommonError::InvalidState(format!("POOL_CONFIG request json is invalid {:?}.", err)))?;
 
         info!("build_pool_config <<< request: {:?}", request);
@@ -305,7 +305,7 @@ impl LedgerService {
 
         let operation = PoolRestartOperation::new(action, datetime.map(String::from));
 
-        let request = Request::build_request(identifier, operation)
+        let request = Request::build_request(Some(identifier), operation)
             .map_err(|err| CommonError::InvalidState(format!("Invalid pool_restart request json: {:?}", err)))?;
 
         info!("build_pool_restart <<< request: {:?}", request);
@@ -335,7 +335,7 @@ impl LedgerService {
 
         let operation = PoolUpgradeOperation::new(name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
 
-        let request = Request::build_request(identifier, operation)
+        let request = Request::build_request(Some(identifier), operation)
             .map_err(|err| CommonError::InvalidState(format!("POOL_UPGRADE request json is invalid {:?}.", err)))?;
 
         info!("build_pool_upgrade <<< request: {:?}", request);
@@ -348,7 +348,7 @@ impl LedgerService {
 
         let rev_reg_def_operation = RevRegDefOperation::new(rev_reg_def);
 
-        let request = Request::build_request(identifier, rev_reg_def_operation)
+        let request = Request::build_request(Some(identifier), rev_reg_def_operation)
             .map_err(|err| CommonError::InvalidState(format!("REVOC_REG_DEF request json is invalid {:?}.", err)))?;
 
         info!("build_revoc_reg_def_request <<< request: {:?}", request);
@@ -356,7 +356,7 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_revoc_reg_def_request(&self, identifier: &str, id: &str) -> Result<String, CommonError> {
+    pub fn build_get_revoc_reg_def_request(&self, identifier: Option<&str>, id: &str) -> Result<String, CommonError> {
         info!("build_get_revoc_reg_def_request >>> identifier: {:?}, id {:?}", identifier, id);
 
         let operation = GetRevRegDefOperation::new(id);
@@ -376,7 +376,7 @@ impl LedgerService {
 
         let operation = RevRegEntryOperation::new(revoc_def_type, revoc_reg_def_id, rev_reg_entry);
 
-        let request = Request::build_request(identifier, operation)
+        let request = Request::build_request(Some(identifier), operation)
             .map_err(|err| CommonError::InvalidState(format!("REVOC_REG_ENTRY request json is invalid {:?}.", err)))?;
 
         info!("build_revoc_reg_entry_request <<< request: {:?}", request);
@@ -384,7 +384,7 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_revoc_reg_request(&self, identifier: &str, revoc_reg_def_id: &str, timestamp: i64) -> Result<String, CommonError> {
+    pub fn build_get_revoc_reg_request(&self, identifier: Option<&str>, revoc_reg_def_id: &str, timestamp: i64) -> Result<String, CommonError> {
         info!("build_get_revoc_reg_request >>> identifier: {:?}, revoc_reg_def_id {:?}, timestamp {:?}", identifier, revoc_reg_def_id, timestamp);
 
         let operation = GetRevRegOperation::new(revoc_reg_def_id, timestamp);
@@ -397,7 +397,7 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn build_get_revoc_reg_delta_request(&self, identifier: &str, revoc_reg_def_id: &str, from: Option<i64>, to: i64) -> Result<String, CommonError> {
+    pub fn build_get_revoc_reg_delta_request(&self, identifier: Option<&str>, revoc_reg_def_id: &str, from: Option<i64>, to: i64) -> Result<String, CommonError> {
         info!("build_get_revoc_reg_delta_request >>> identifier: {:?}, revoc_reg_def_id {:?}, from {:?}, to: {:?}", identifier, revoc_reg_def_id, from, to);
 
         let operation = GetRevRegDeltaOperation::new(revoc_reg_def_id, from, to);
@@ -630,7 +630,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"105","dest":"dest"}"#;
 
-        let get_nym_request = ledger_service.build_get_nym_request(identifier, dest).unwrap();
+        let get_nym_request = ledger_service.build_get_nym_request(Some(identifier), dest).unwrap();
         assert!(get_nym_request.contains(expected_result));
     }
 
@@ -642,7 +642,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"120","dest":"dest"}"#;
 
-        let get_ddo_request = ledger_service.build_get_ddo_request(identifier, dest).unwrap();
+        let get_ddo_request = ledger_service.build_get_ddo_request(Some(identifier), dest).unwrap();
         assert!(get_ddo_request.contains(expected_result));
     }
 
@@ -678,7 +678,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"}"#;
 
-        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, Some(raw), None, None).unwrap();
+        let get_attrib_request = ledger_service.build_get_attrib_request(Some(identifier), dest, Some(raw), None, None).unwrap();
         assert!(get_attrib_request.contains(expected_result));
     }
 
@@ -691,7 +691,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","hash":"hash"}"#;
 
-        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, None, Some(hash), None).unwrap();
+        let get_attrib_request = ledger_service.build_get_attrib_request(Some(identifier), dest, None, Some(hash), None).unwrap();
         assert!(get_attrib_request.contains(expected_result));
     }
 
@@ -704,7 +704,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","enc":"enc"}"#;
 
-        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, None, None, Some(enc)).unwrap();
+        let get_attrib_request = ledger_service.build_get_attrib_request(Some(identifier), dest, None, None, Some(enc)).unwrap();
         assert!(get_attrib_request.contains(expected_result));
     }
 
@@ -717,7 +717,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"104","dest":"dest","raw":"raw"}"#;
 
-        let get_attrib_request = ledger_service.build_get_attrib_request(identifier, dest, Some(raw), None, None).unwrap();
+        let get_attrib_request = ledger_service.build_get_attrib_request(Some(identifier), dest, Some(raw), None, None).unwrap();
         assert!(get_attrib_request.contains(expected_result));
     }
 
@@ -748,7 +748,7 @@ mod tests {
         let identifier = "identifier";
         let id = "wrong_schema_id";
 
-        let get_schema_request = ledger_service.build_get_schema_request(identifier, id);
+        let get_schema_request = ledger_service.build_get_schema_request(Some(identifier), id);
         assert!(get_schema_request.is_err());
     }
 
@@ -760,7 +760,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"107","dest":"identifier","data":{"name":"name","version":"1.0"}}"#;
 
-        let get_schema_request = ledger_service.build_get_schema_request(identifier, &id).unwrap();
+        let get_schema_request = ledger_service.build_get_schema_request(Some(identifier), &id).unwrap();
         assert!(get_schema_request.contains(expected_result));
     }
 
@@ -774,7 +774,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"108","ref":1,"signature_type":"signature_type","origin":"origin","tag":"tag"}"#;
 
-        let get_cred_def_request = ledger_service.build_get_cred_def_request(identifier, &id).unwrap();
+        let get_cred_def_request = ledger_service.build_get_cred_def_request(Some(identifier), &id).unwrap();
         assert!(get_cred_def_request.contains(expected_result));
     }
 
@@ -807,7 +807,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1,"ledgerId":1}"#;
 
-        let get_txn_request = ledger_service.build_get_txn_request(identifier, None, 1).unwrap();
+        let get_txn_request = ledger_service.build_get_txn_request(Some(identifier), None, 1).unwrap();
         assert!(get_txn_request.contains(expected_result));
     }
 
@@ -818,7 +818,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1,"ledgerId":0}"#;
 
-        let get_txn_request = ledger_service.build_get_txn_request(identifier, Some("POOL"), 1).unwrap();
+        let get_txn_request = ledger_service.build_get_txn_request(Some(identifier), Some("POOL"), 1).unwrap();
         assert!(get_txn_request.contains(expected_result));
     }
 
@@ -829,7 +829,7 @@ mod tests {
 
         let expected_result = r#""identifier":"identifier","operation":{"type":"3","data":1,"ledgerId":10}"#;
 
-        let get_txn_request = ledger_service.build_get_txn_request(identifier, Some("10"), 1).unwrap();
+        let get_txn_request = ledger_service.build_get_txn_request(Some(identifier), Some("10"), 1).unwrap();
         assert!(get_txn_request.contains(expected_result));
     }
 
@@ -838,7 +838,7 @@ mod tests {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
 
-        let res = ledger_service.build_get_txn_request(identifier, Some("type"), 1);
+        let res = ledger_service.build_get_txn_request(Some(identifier), Some("type"), 1);
         assert_match!(Err(CommonError::InvalidStructure(_)), res);
     }
 
