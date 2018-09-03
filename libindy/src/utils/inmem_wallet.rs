@@ -4,8 +4,8 @@ extern crate indy_crypto;
 extern crate serde_json;
 
 use api::ErrorCode;
-use utils::cstring::CStringUtils;
-use utils::sequence::SequenceUtils;
+use utils::ctypes;
+use utils::sequence;
 
 use self::libc::c_char;
 
@@ -85,7 +85,7 @@ impl InmemWallet {
         }
 
         let mut handles = INMEM_OPEN_WALLETS.lock().unwrap();
-        let xhandle = SequenceUtils::get_next_id();
+        let xhandle = sequence::get_next_id();
         handles.insert(xhandle, InmemWalletContext {
             id,
         });
@@ -200,7 +200,7 @@ impl InmemWallet {
 
         let record = wallet.records.get(&key).unwrap();
 
-        let record_handle = SequenceUtils::get_next_id();
+        let record_handle = sequence::get_next_id();
 
         let mut handles = ACTIVE_RECORDS.lock().unwrap();
         handles.insert(record_handle, record.clone());
@@ -501,7 +501,7 @@ impl InmemWallet {
         let metadata = wallet.metadata.clone();
         let metadata_pointer = metadata.as_ptr();
 
-        let handle = SequenceUtils::get_next_id();
+        let handle = sequence::get_next_id();
 
         let mut metadatas = ACTIVE_METADATAS.lock().unwrap();
         metadatas.insert(handle, metadata);
@@ -578,7 +578,7 @@ impl InmemWallet {
             .map(|(_, value)| value.clone())
             .collect::<Vec<InmemWalletRecord>>();
 
-        let search_handle = SequenceUtils::get_next_id();
+        let search_handle = sequence::get_next_id();
 
         let mut searches = ACTIVE_SEARCHES.lock().unwrap();
 
@@ -611,7 +611,7 @@ impl InmemWallet {
             .cloned()
             .collect::<Vec<InmemWalletRecord>>();
 
-        let search_handle = SequenceUtils::get_next_id();
+        let search_handle = sequence::get_next_id();
 
         let mut searches = ACTIVE_SEARCHES.lock().unwrap();
 
@@ -654,7 +654,7 @@ impl InmemWallet {
             Some(records) => {
                 match records.pop() {
                     Some(record) => {
-                        let handle = SequenceUtils::get_next_id();
+                        let handle = sequence::get_next_id();
 
                         let mut handles = ACTIVE_RECORDS.lock().unwrap();
                         handles.insert(handle, record.clone());

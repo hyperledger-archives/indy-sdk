@@ -18,7 +18,7 @@ use std::ffi::CString;
 use std::ptr;
 
 use errors::common::CommonError;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
 
@@ -174,7 +174,7 @@ impl LibindyDefaultLogger {
                           level: u32,
                           target: *const c_char) -> bool {
         let level = get_level(level);
-        let target = CStringUtils::c_str_to_string(target).unwrap().unwrap();
+        let target = ctypes::c_str_to_string(target).unwrap().unwrap();
 
         let metadata: Metadata = Metadata::builder()
             .level(level)
@@ -191,10 +191,10 @@ impl LibindyDefaultLogger {
                       module_path: *const c_char,
                       file: *const c_char,
                       line: u32) {
-        let target = CStringUtils::c_str_to_string(target).unwrap().unwrap();
-        let args = CStringUtils::c_str_to_string(args).unwrap().unwrap();
-        let module_path = CStringUtils::c_str_to_string(module_path).unwrap();
-        let file = CStringUtils::c_str_to_string(file).unwrap();
+        let target = ctypes::c_str_to_string(target).unwrap().unwrap();
+        let args = ctypes::c_str_to_string(args).unwrap().unwrap();
+        let module_path = ctypes::c_str_to_string(module_path).unwrap();
+        let file = ctypes::c_str_to_string(file).unwrap();
 
         let level = get_level(level);
 

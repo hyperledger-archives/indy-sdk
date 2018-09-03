@@ -29,36 +29,34 @@ use indy::api as api;
 #[macro_use]
 mod utils;
 
-use utils::wallet::WalletUtils;
-use utils::test::TestUtils;
-use utils::logger::LoggerUtils;
+use utils::{wallet, test, logger};
 use utils::constants::*;
 
 #[test]
 fn indy_set_logger_works() {
-    TestUtils::cleanup_storage();
+    test::cleanup_storage();
 
-    WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+    wallet::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-    LoggerUtils::set_logger();
+    logger::set_logger();
 
-    let wallet_handle = WalletUtils::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+    let wallet_handle = wallet::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-    WalletUtils::close_wallet(wallet_handle).unwrap();
-    TestUtils::cleanup_storage();
+    wallet::close_wallet(wallet_handle).unwrap();
+    test::cleanup_storage();
 }
 
 #[test]
 fn indy_set_default_logger_works() {
-    TestUtils::cleanup_storage();
+    test::cleanup_storage();
 
-    WalletUtils::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+    wallet::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-    LoggerUtils::set_default_logger();
+    logger::set_default_logger();
 
-    let wallet_handle = WalletUtils::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+    let wallet_handle = wallet::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-    WalletUtils::close_wallet(wallet_handle).unwrap();
-    TestUtils::cleanup_storage();
+    wallet::close_wallet(wallet_handle).unwrap();
+    test::cleanup_storage();
 }
 

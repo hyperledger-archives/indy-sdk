@@ -20,7 +20,7 @@ use std::cell::RefCell;
 use commands::ledger::LedgerCommand;
 use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
-use utils::sequence::SequenceUtils;
+use utils::sequence;
 use utils::crypto::base58;
 
 pub enum DidCommand {
@@ -566,7 +566,7 @@ impl DidCommandExecutor {
     }
 
     fn _defer_command(&self, cmd: DidCommand) -> i32 {
-        let deferred_cmd_id = SequenceUtils::get_next_id();
+        let deferred_cmd_id = sequence::get_next_id();
         self.deferred_commands.borrow_mut().insert(deferred_cmd_id, cmd);
         deferred_cmd_id
     }

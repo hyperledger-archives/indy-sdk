@@ -620,7 +620,7 @@ impl PaymentsCommandExecutor {
 
     fn _process_method(&self, cb: Box<Fn(Result<String, IndyError>) + Send>,
                        method: &Fn(i32) -> Result<(), PaymentsError>) {
-        let cmd_handle = ::utils::sequence::SequenceUtils::get_next_id();
+        let cmd_handle = ::utils::sequence::get_next_id();
         match method(cmd_handle) {
             Ok(()) => {
                 self.pending_callbacks.borrow_mut().insert(cmd_handle, cb);

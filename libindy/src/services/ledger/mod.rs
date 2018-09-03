@@ -229,7 +229,8 @@ impl LedgerService {
 
         if data.node_ip.is_none() && data.node_port.is_none()
             && data.client_ip.is_none() && data.client_port.is_none()
-            && data.services.is_none() && data.blskey.is_none() {
+            && data.services.is_none() && data.blskey.is_none()
+            && data.blskey_pop.is_none() {
             return Err(CommonError::InvalidStructure("Invalid data json: all fields missed at once".to_string()));
         }
 
@@ -783,7 +784,7 @@ mod tests {
         let ledger_service = LedgerService::new();
         let identifier = "identifier";
         let dest = "dest";
-        let data = NodeOperationData{
+        let data = NodeOperationData {
             node_ip: Some("ip".to_string()),
             node_port: Some(1),
             client_ip: Some("ip".to_string()),
