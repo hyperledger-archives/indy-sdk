@@ -31,7 +31,6 @@ mod utils;
 
 use utils::{wallet, anoncreds, blob_storage, pool, ledger, did};
 use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID};
-use utils::test::TestUtils;
 
 use utils::constants::*;
 
@@ -49,7 +48,7 @@ use std::thread;
 #[cfg(feature = "revocation_tests")]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand() {
-    TestUtils::cleanup_storage();
+    utils::setup();
 
     // Open Pool
     let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
@@ -389,13 +388,13 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
 
     pool::close(pool_handle).unwrap();
 
-    TestUtils::cleanup_storage();
+    utils::tear_down();
 }
 
 #[cfg(feature = "revocation_tests")]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_default() {
-    TestUtils::cleanup_storage();
+    utils::setup();
 
     // Open Pool
     let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
@@ -695,13 +694,13 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
 
     pool::close(pool_handle).unwrap();
 
-    TestUtils::cleanup_storage();
+    utils::tear_down();
 }
 
 #[cfg(feature = "revocation_tests")]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first() {
-    TestUtils::cleanup_storage();
+    utils::setup();
 
     // Open Pool
     let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
@@ -969,13 +968,13 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     pool::close(pool_handle).unwrap();
 
-    TestUtils::cleanup_storage();
+    utils::tear_down();
 }
 
 #[cfg(feature = "revocation_tests")]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all() {
-    TestUtils::cleanup_storage();
+    utils::setup();
 
     // Open Pool
     let pool_handle = pool::create_and_open_pool_ledger(POOL).unwrap();
@@ -1351,5 +1350,5 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 
     pool::close(pool_handle).unwrap();
 
-    TestUtils::cleanup_storage();
+    utils::tear_down();
 }
