@@ -910,6 +910,7 @@ pub extern fn indy_prover_get_credential(command_handle: i32,
 /// Common*
 /// Wallet*
 #[no_mangle]
+#[deprecated(since="1.6.1", note="Please use indy_prover_search_credentials instead!")]
 pub extern fn indy_prover_get_credentials(command_handle: i32,
                                           wallet_handle: i32,
                                           filter_json: *const c_char,
@@ -1174,6 +1175,7 @@ pub  extern fn indy_prover_close_credentials_search(command_handle: i32,
 /// Annoncreds*
 /// Common*
 /// Wallet*
+#[deprecated(since="1.6.1", note="Please use indy_prover_search_credentials_for_proof_req instead!")]
 #[no_mangle]
 pub extern fn indy_prover_get_credentials_for_proof_req(command_handle: i32,
                                                         wallet_handle: i32,
