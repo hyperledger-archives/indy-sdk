@@ -261,7 +261,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
         dir('vcx/libvcx') {
             testEnv.inside {
                 echo "${env_name} Libvcx Test: Build"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
 
                 echo "${env_name} Libvcx Test: Build Tests"
                 sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run'
