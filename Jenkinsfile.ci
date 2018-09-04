@@ -311,6 +311,7 @@ def linuxTesting(file, env_name, network_name) {
         sh "cp libindy/target/debug/libindy.so wrappers/nodejs"
         sh "cp libindy/target/debug/libindy.so cli"
         sh "cp libindy/target/debug/libindy.so libnullpay"
+        sh "cp libindy/target/debug/libindy.so vcx/libvcx"
 
         dir('libnullpay') {
             echo "${env_name} Libnullpay Test: Build docker image"
@@ -322,6 +323,7 @@ def linuxTesting(file, env_name, network_name) {
         }
 
         sh "cp libnullpay/target/debug/libnullpay.so cli"
+        sh "cp libnullpay/target/debug/libnullpay.so vcx/libvcx"
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
@@ -353,6 +355,19 @@ def linuxTesting(file, env_name, network_name) {
 
                             echo "${env_name} Libnullpay Test: Run tests"
                             sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
+                        }
+                    }
+                },
+                "${env_name}-libvcx-test": {
+                    dir('vcx/libvcx') {
+                        testEnv.inside {
+                            echo "${env_name} Libvcx Test: Test"
+
+                            echo "${env_name} Libvcx Test: Build Test"
+                            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
+
+                            echo "${env_name} Libvcx Test: Run tests"
+                            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 cargo test'
                         }
                     }
                 },
