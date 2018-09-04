@@ -1,7 +1,9 @@
 [package]
 name = "rust-indy-sdk-wrapper"
 version = "0.2.11"
-authors = ["Mike Lodder <redmike7@gmail.com>"]
+authors = ["Mike Lodder <redmike7@gmail.com>",
+           "Matt Raffel <matt.raffel@evernyn.com>",
+           "Darien Hess <darien.hess@evernym.com>"]
 readme = "README.md"
 
 [dependencies]
