@@ -7,8 +7,8 @@ use std::time::Duration;
 use utils::results::ResultHandler;
 use utils::callbacks::ClosureHandler;
 
-use ffi::pool;
-use ffi::{ResponseEmptyCB,
+use native::pool;
+use native::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseI32CB};
 

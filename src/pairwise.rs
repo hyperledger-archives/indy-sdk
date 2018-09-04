@@ -7,8 +7,8 @@ use std::ptr::null;
 use utils::callbacks::ClosureHandler;
 use utils::results::ResultHandler;
 
-use ffi::pairwise;
-use ffi::{ResponseEmptyCB,
+use native::pairwise;
+use native::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseBoolCB};
 

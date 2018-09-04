@@ -1,6 +1,6 @@
 [package]
-name = "rust-indy-sdk"
-version = "0.2.10"
+name = "rust-indy-sdk-wrapper"
+version = "0.2.11"
 authors = ["Mike Lodder <redmike7@gmail.com>"]
 readme = "README.md"
 
@@ -9,7 +9,6 @@ lazy_static = "0.2"
 log = "0.4"
 num-traits = "0.2"
 num-derive = "0.2"
-libindy-sys = { path ="libindy-sys", version = "0.1" }
 
 [dev-dependencies]
 serde_json = "1.0.22"
