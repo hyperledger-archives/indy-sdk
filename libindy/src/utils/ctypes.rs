@@ -24,6 +24,8 @@ pub fn string_to_cstring(s: String) -> CString {
     CString::new(s).unwrap()
 }
 
+pub fn str_to_cstring(s: &str) -> CString { CString::new(s).unwrap() }
+
 
 macro_rules! check_useful_c_str {
     ($x:ident, $e:expr) => {

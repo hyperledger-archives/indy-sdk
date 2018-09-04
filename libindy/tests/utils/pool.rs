@@ -13,7 +13,7 @@ use indy::api::ErrorCode;
 use indy::api::pool::*;
 use utils::types::{Response, ResponseType};
 use utils::constants::PROTOCOL_VERSION;
-use utils::{callback, environment, test};
+use utils::{callback, environment, test, ctypes};
 
 #[derive(Serialize, Deserialize)]
 struct PoolConfig {
@@ -111,11 +111,11 @@ pub fn create_pool_ledger_config(pool_name: &str, pool_config: Option<&str>) -> 
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
     let pool_name = CString::new(pool_name).unwrap();
-    let pool_config_str = pool_config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let pool_config = pool_config.map(ctypes::str_to_cstring);
 
     let err = indy_create_pool_ledger_config(command_handle,
                                              pool_name.as_ptr(),
-                                             if pool_config.is_some() { pool_config_str.as_ptr() } else { null() },
+                                             pool_config.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                              cb);
 
     super::results::result_to_empty(err, receiver)
@@ -126,11 +126,11 @@ pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<i32, Er
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_i32();
 
     let pool_name = CString::new(pool_name).unwrap();
-    let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let config = config.map(ctypes::str_to_cstring);
 
     let err = indy_open_pool_ledger(command_handle,
                                     pool_name.as_ptr(),
-                                    if config.is_some() { config_str.as_ptr() } else { null() },
+                                    config.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                     cb);
 
     super::results::result_to_int(err, receiver)

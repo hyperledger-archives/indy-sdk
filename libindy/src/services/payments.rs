@@ -10,6 +10,7 @@ use std::error::Error;
 use std::ffi::{CString, NulError};
 use std::collections::HashSet;
 use std::ptr::null;
+use utils::ctypes;
 
 
 pub struct PaymentsService {
@@ -105,19 +106,19 @@ impl PaymentsService {
         let add_request_fees: AddRequestFeesCB = self.methods.borrow().get(method_type)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", method_type)))?.add_request_fees;
 
-        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let submitter_did = submitter_did.map(ctypes::str_to_cstring);
         let req = CString::new(req)?;
         let inputs = CString::new(inputs)?;
         let outputs = CString::new(outputs)?;
-        let extra_str = extra.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let extra = extra.map(ctypes::str_to_cstring);
 
         let err = add_request_fees(cmd_handle,
                                    wallet_handle,
-                                   if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
+                                   submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                    req.as_ptr(),
                                    inputs.as_ptr(),
                                    outputs.as_ptr(),
-                                   if extra.is_some() { extra_str.as_ptr() } else { null() },
+                                   extra.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                    cbs::add_request_fees_cb(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
@@ -147,12 +148,12 @@ impl PaymentsService {
         let build_get_payment_sources_request: BuildGetPaymentSourcesRequestCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_payment_sources_request;
 
-        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let submitter_did = submitter_did.map(ctypes::str_to_cstring);
         let address = CString::new(address)?;
 
         let err = build_get_payment_sources_request(cmd_handle,
                                                     wallet_handle,
-                                                    if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
+                                                    submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                                     address.as_ptr(),
                                                     cbs::build_get_payment_sources_request_cb(cmd_handle));
 
@@ -184,17 +185,17 @@ impl PaymentsService {
         let build_payment_req: BuildPaymentReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_payment_req;
 
-        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let submitter_did = submitter_did.map(ctypes::str_to_cstring);
         let inputs = CString::new(inputs)?;
         let outputs = CString::new(outputs)?;
-        let extra_str = extra.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let extra = extra.map(ctypes::str_to_cstring);
 
         let err = build_payment_req(cmd_handle,
                                     wallet_handle,
-                                    if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
+                                    submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                     inputs.as_ptr(),
                                     outputs.as_ptr(),
-                                    if extra.is_some() { extra_str.as_ptr() } else { null() },
+                                    extra.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                     cbs::build_payment_req_cb(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
@@ -225,15 +226,15 @@ impl PaymentsService {
         let build_mint_req: BuildMintReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_mint_req;
 
-        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let submitter_did = submitter_did.map(ctypes::str_to_cstring);
         let outputs = CString::new(outputs)?;
-        let extra_str = extra.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let extra = extra.map(ctypes::str_to_cstring);
 
         let err = build_mint_req(cmd_handle,
                                  wallet_handle,
-                                 if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
+                                 submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                  outputs.as_ptr(),
-                                 if extra.is_some() { extra_str.as_ptr() } else { null() },
+                                 extra.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                  cbs::build_mint_req_cb(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
@@ -248,12 +249,12 @@ impl PaymentsService {
         let build_set_txn_fees_req: BuildSetTxnFeesReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_set_txn_fees_req;
 
-        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let submitter_did = submitter_did.map(ctypes::str_to_cstring);
         let fees = CString::new(fees)?;
 
         let err = build_set_txn_fees_req(cmd_handle,
                                          wallet_handle,
-                                         if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
+                                         submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                          fees.as_ptr(),
                                          cbs::build_set_txn_fees_req_cb(cmd_handle));
 
@@ -269,11 +270,11 @@ impl PaymentsService {
         let build_get_txn_fees_req: BuildGetTxnFeesReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_get_txn_fees_req;
 
-        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let submitter_did = submitter_did.map(ctypes::str_to_cstring);
 
         let err = build_get_txn_fees_req(cmd_handle,
                                          wallet_handle,
-                                         if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
+                                         submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                          cbs::build_get_txn_fees_req(cmd_handle));
 
         let res = PaymentsService::consume_result(err);
@@ -304,12 +305,12 @@ impl PaymentsService {
         let build_verify_payment_req: BuildVerifyPaymentReqCB = self.methods.borrow().get(type_)
             .ok_or(PaymentsError::UnknownType(format!("Unknown payment method {}", type_)))?.build_verify_payment_req;
 
-        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+        let submitter_did = submitter_did.map(ctypes::str_to_cstring);
         let receipt = CString::new(receipt)?;
 
         let err = build_verify_payment_req(cmd_handle,
                                            wallet_handle,
-                                           if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
+                                           submitter_did.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                            receipt.as_ptr(),
                                            cbs::build_verify_payment_req(cmd_handle));
 
