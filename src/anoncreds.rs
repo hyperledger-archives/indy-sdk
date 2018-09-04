@@ -7,8 +7,8 @@ use std::ptr::null;
 use utils::callbacks::ClosureHandler;
 use utils::results::ResultHandler;
 
-use ffi::anoncreds;
-use ffi::{ResponseStringStringCB,
+use native::anoncreds;
+use native::{ResponseStringStringCB,
           ResponseI32UsizeCB,
           ResponseStringStringStringCB,
           ResponseStringCB,

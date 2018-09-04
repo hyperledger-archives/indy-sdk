@@ -1,4 +1,4 @@
-use {Error, Handle, CString};
+use native::{Error, Handle, CString};
 use super::*;
 
 extern {
