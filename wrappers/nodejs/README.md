@@ -1961,7 +1961,7 @@ Format of inputs is specific for payment method. Usually it should reference pay
 with at least one output that corresponds to payment address that user owns.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `req`: Json - initial transaction request as json
 * `inputs`: Json - The list of payment sources as json array:
 \["source1", ...\]
@@ -2002,7 +2002,7 @@ Builds Indy request for getting sources list for payment address
 according to this payment method.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `paymentAddress`: String - target payment address
 * __->__ [ `getSourcesTxn`: Json, `paymentMethod`: String ] - get\_sources\_txn\_json - Indy request for getting sources list for payment address
 payment\_method - used payment method
@@ -2036,7 +2036,7 @@ Format of inputs is specific for payment method. Usually it should reference pay
 with at least one output that corresponds to payment address that user owns.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `inputs`: Json - The list of payment sources as json array:
 \["source1", ...\]
 Note that each source should reference payment address
@@ -2075,7 +2075,7 @@ Builds Indy request for doing minting
 according to this payment method.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `outputs`: Json - The list of outputs as json array:
 ```
   [{
@@ -2093,7 +2093,7 @@ payment\_method - used payment method
 Builds Indy request for setting fees for transactions in the ledger
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `paymentMethod`: String - payment method to use
 fees\_json {
 txnType1: amount1,
@@ -2110,7 +2110,7 @@ txnTypeN: amountN,
 Builds Indy get request for getting fees for transactions in the ledger
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `paymentMethod`: String - payment method to use
 * __->__ `getTxnFees`: Json - get\_txn\_fees\_json - Indy request for getting fees for transactions in the ledger
 
@@ -2134,7 +2134,7 @@ txnTypeN: amountN,
 Builds Indy request for information to verify the payment receipt
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `receipt`: String - payment receipt to verify
 * __->__ [ `verifyTxn`: Json, `paymentMethod`: String ] - verify\_txn\_json: Indy request for verification receipt
 payment\_method: used payment method

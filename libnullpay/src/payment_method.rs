@@ -8,7 +8,7 @@ use services::response_storage::*;
 use utils::types::*;
 use utils::rand;
 use utils::json_helper::parse_operation_from_request;
-use utils::cstring::CStringUtils;
+use utils::cstring;
 
 use serde_json::{from_str, to_string};
 use std::collections::HashMap;
@@ -395,7 +395,7 @@ fn _process_parse_response(cmd_handle: i32, response: *const c_char, cb: Option<
 }
 
 fn _process_callback(cmd_handle: i32, err: ErrorCode, response: String, cb: Option<IndyPaymentCallback>) -> ErrorCode {
-    let response = CStringUtils::string_to_cstring(response);
+    let response = cstring::string_to_cstring(response);
     match cb {
         Some(cb) => cb(cmd_handle, err, response.as_ptr()),
         None => err

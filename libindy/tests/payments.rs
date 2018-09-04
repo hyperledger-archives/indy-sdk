@@ -188,7 +188,7 @@ mod high_cases {
             assert_eq!(req, TEST_RES_STRING.to_string());
             assert_eq!(payment_method, PAYMENT_METHOD_NAME);
 
-            utils::tear_down();
+            utils::tear_down_with_wallet(wallet_handle);
         }
 
         #[test]

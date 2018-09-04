@@ -3301,7 +3301,7 @@ pub mod tests {
                 let cmd = get_payment_sources_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_address", PAYMENT_ADDRESS.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
@@ -3832,7 +3832,7 @@ pub mod tests {
                 let cmd = get_fees_command::new();
                 let mut params = CommandParams::new();
                 params.insert("payment_method", NULL_PAYMENT_METHOD.to_string());
-                cmd.execute(&ctx, &params).unwrap_err();
+                cmd.execute(&ctx, &params).unwrap();
             }
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
@@ -4217,6 +4217,35 @@ pub mod tests {
         }
 
         #[test]
+        pub fn verify_payment_receipts_works_for_no_active_did() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_connect_pool(&ctx);
+            create_and_open_wallet(&ctx);
+            load_null_payment_plugin(&ctx);
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
+
+            // to reset active did
+            close_wallet(&ctx);
+            open_wallet(&ctx);
+
+            {
+                let cmd = verify_payment_receipt_command::new();
+                let mut params = CommandParams::new();
+                params.insert("receipt", input);
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
         pub fn verify_payment_receipts_works_for_not_found() {
             TestUtils::cleanup_storage();
             let ctx = CommandContext::new();
@@ -4371,7 +4400,7 @@ pub mod tests {
         let payment_address = create_payment_address(&ctx);
 
         Payment::build_mint_req(wallet_handle,
-                                &submitter_did,
+                                Some(&submitter_did),
                                 &parse_payment_outputs(&vec![format!("{},{}", payment_address, AMOUNT)]).unwrap(),
                                 None).unwrap();
         payment_address
@@ -4383,7 +4412,7 @@ pub mod tests {
         let (wallet_handle, _) = get_opened_wallet(ctx).unwrap();
         let submitter_did = ensure_active_did(&ctx).unwrap();
 
-        let (get_sources_txn_json, _) = Payment::build_get_payment_sources_request(wallet_handle, &submitter_did, payment_address).unwrap();
+        let (get_sources_txn_json, _) = Payment::build_get_payment_sources_request(wallet_handle, Some(&submitter_did), payment_address).unwrap();
         let response = Ledger::submit_request(pool_handle, &get_sources_txn_json).unwrap();
 
         let sources_json = Payment::parse_get_payment_sources_response(NULL_PAYMENT_METHOD, &response).unwrap();
