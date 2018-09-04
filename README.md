@@ -19,5 +19,14 @@ rust-indy-sdk-wrapper = "0.2.11"
 ```
 
 ### Step 2
+setup an environment variable that points to IndySDK library.
+eg:
+```
+LIBINDY_DIR="/Users/developer/indy-sdk/libindy/target/release"
+```
+
+### Step 3
 Use **rust-indy-sdk-wrapper**.   For now, best recommendation is to check out the tests.
 
+# License
+Released under Apache 2.0 and MIT.  See license files in git repo.
