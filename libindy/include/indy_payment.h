@@ -71,7 +71,7 @@ extern "C" {
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// req_json: initial transaction request as json
     /// inputs_json: The list of payment sources as json array:
     ///   ["source1", ...]
@@ -134,7 +134,7 @@ extern "C" {
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// payment_address: target payment address
     ///
     /// #Returns
@@ -189,7 +189,7 @@ extern "C" {
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// inputs_json: The list of payment sources as json array:
     ///   ["source1", ...]
     ///   Note that each source should reference payment address
@@ -249,7 +249,7 @@ extern "C" {
     /// #Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// outputs_json: The list of outputs as json array:
     ///   [{
     ///     recipient: <str>, // payment address of recipient
@@ -278,7 +278,7 @@ extern "C" {
     /// # Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// payment_method: payment method to use
     /// fees_json {
     ///   txnType1: amount1,
@@ -305,7 +305,7 @@ extern "C" {
     /// # Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// payment_method: payment method to use
     ///
     /// # Return
@@ -350,7 +350,7 @@ extern "C" {
     /// # Params
     /// command_handle: Command handle to map callback to caller context.
     /// wallet_handle: wallet handle
-    /// submitter_did : DID of request sender
+    /// submitter_did: (Optional) DID of request sender
     /// receipt: payment receipt to verify
     ///
     /// # Return
