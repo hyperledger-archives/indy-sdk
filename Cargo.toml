@@ -1,10 +1,18 @@
 [package]
 name = "rust-indy-sdk-wrapper"
 version = "0.2.11"
+description = "A library for assisting developers using IndySDK API"
 authors = ["Mike Lodder <redmike7@gmail.com>",
            "Matt Raffel <matt.raffel@evernyn.com>",
            "Darien Hess <darien.hess@evernym.com>"]
+homepage = "https://github.com/evernym/rust-libindy-wrapper"
+repository = "https://github.com/evernym/rust-libindy-wrapper"
+categories = ["api-bindings", "development-tools"]
+license = "MIT/Apache"
 readme = "README.md"
+exclude = [
+    "tests/*",
+    ]
 
 [dependencies]
 lazy_static = "0.2"
