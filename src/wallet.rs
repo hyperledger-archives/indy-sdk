@@ -7,8 +7,8 @@ use std::time::Duration;
 use utils::callbacks::ClosureHandler;
 use utils::results::ResultHandler;
 
-use ffi::{wallet, non_secrets};
-use ffi::{ResponseEmptyCB,
+use native::{wallet, non_secrets};
+use native::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseI32CB};
 

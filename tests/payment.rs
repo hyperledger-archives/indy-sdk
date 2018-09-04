@@ -1,4 +1,4 @@
-extern crate rust_indy_sdk as indy;
+extern crate rust_indy_sdk_wrapper as indy;
 #[macro_use]
 mod utils;
 

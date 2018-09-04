@@ -7,8 +7,6 @@ extern crate num_traits;
 #[macro_use]
 extern crate num_derive;
 
-extern crate libindy_sys as ffi;
-
 #[macro_use]
 mod macros;
 
@@ -22,6 +20,7 @@ pub mod pairwise;
 pub mod pool;
 pub mod wallet;
 pub mod utils;
+pub mod native;
 
 use std::sync::mpsc;
 

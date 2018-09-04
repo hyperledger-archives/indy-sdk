@@ -1,6 +1,6 @@
 use super::*;
 
-use {BString, CString, Error, Handle};
+use native::{BString, CString, Error, Handle};
 
 extern {
     #[no_mangle]
