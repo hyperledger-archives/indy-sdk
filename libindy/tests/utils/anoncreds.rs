@@ -4,7 +4,7 @@ extern crate indy_crypto;
 use indy::api::ErrorCode;
 use indy::api::anoncreds::*;
 
-use utils::{callback, environment, wallet, blob_storage, test, pool};
+use utils::{callback, environment, wallet, blob_storage, test, pool, ctypes};
 use utils::types::CredentialOfferInfo;
 
 use std::ffi::CString;
@@ -72,8 +72,8 @@ pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str,
     let schema = CString::new(schema).unwrap();
     let tag = CString::new(tag).unwrap();
     let issuer_did = CString::new(issuer_did).unwrap();
-    let signature_type_str = signature_type.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
-    let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let signature_type = signature_type.map(ctypes::str_to_cstring);
+    let config = config.map(ctypes::str_to_cstring);
 
     let err =
         indy_issuer_create_and_store_credential_def(command_handle,
@@ -81,8 +81,8 @@ pub fn issuer_create_credential_definition(wallet_handle: i32, issuer_did: &str,
                                                     issuer_did.as_ptr(),
                                                     schema.as_ptr(),
                                                     tag.as_ptr(),
-                                                    if signature_type.is_some() { signature_type_str.as_ptr() } else { null() },
-                                                    if config.is_some() { config_str.as_ptr() } else { null() },
+                                                    signature_type.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
+                                                    config.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                                     cb);
 
     super::results::result_to_string_string(err, receiver)
@@ -95,7 +95,7 @@ pub fn issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, t
         callback::_closure_to_cb_ec_string_string_string();
 
     let issuer_did = CString::new(issuer_did).unwrap();
-    let type_str = type_.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let type_ = type_.map(ctypes::str_to_cstring);
     let tag = CString::new(tag).unwrap();
     let cred_def_id = CString::new(cred_def_id).unwrap();
     let config_json = CString::new(config_json).unwrap();
@@ -103,7 +103,7 @@ pub fn issuer_create_and_store_revoc_reg(wallet_handle: i32, issuer_did: &str, t
     let err = indy_issuer_create_and_store_revoc_reg(command_handle,
                                                      wallet_handle,
                                                      issuer_did.as_ptr(),
-                                                     if type_.is_some() { type_str.as_ptr() } else { null() },
+                                                     type_.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                                      tag.as_ptr(),
                                                      cred_def_id.as_ptr(),
                                                      config_json.as_ptr(),
@@ -135,14 +135,14 @@ pub fn issuer_create_credential(wallet_handle: i32, cred_offer_json: &str, cred_
     let cred_offer_json = CString::new(cred_offer_json).unwrap();
     let cred_req_json = CString::new(cred_req_json).unwrap();
     let cred_values_json = CString::new(cred_values_json).unwrap();
-    let rev_reg_id_str = rev_reg_id.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let rev_reg_id = rev_reg_id.map(ctypes::str_to_cstring);
 
     let err = indy_issuer_create_credential(command_handle,
                                             wallet_handle,
                                             cred_offer_json.as_ptr(),
                                             cred_req_json.as_ptr(),
                                             cred_values_json.as_ptr(),
-                                            if rev_reg_id.is_some() { rev_reg_id_str.as_ptr() } else { null() },
+                                            rev_reg_id.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                             blob_storage_reader_handle.unwrap_or(-1),
                                             cb);
 
@@ -217,7 +217,7 @@ pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_metad
     let cred_req_metadata_json = CString::new(cred_req_metadata_json).unwrap();
     let cred_json = CString::new(cred_json).unwrap();
     let cred_def_json = CString::new(cred_def_json).unwrap();
-    let rev_reg_def_json_str = rev_reg_def_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let rev_reg_def_json = rev_reg_def_json.map(ctypes::str_to_cstring);
 
     let err = indy_prover_store_credential(command_handle,
                                            wallet_handle,
@@ -225,7 +225,7 @@ pub fn prover_store_credential(wallet_handle: i32, cred_id: &str, cred_req_metad
                                            cred_req_metadata_json.as_ptr(),
                                            cred_json.as_ptr(),
                                            cred_def_json.as_ptr(),
-                                           if rev_reg_def_json.is_some() { rev_reg_def_json_str.as_ptr() } else { null() },
+                                           rev_reg_def_json.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                            cb);
 
     super::results::result_to_string(err, receiver)
@@ -312,12 +312,12 @@ pub fn prover_search_credentials_for_proof_req(wallet_handle: i32, proof_request
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_i32();
 
     let proof_request_json = CString::new(proof_request_json).unwrap();
-    let extra_query_json_str = extra_query_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let extra_query_json = extra_query_json.map(ctypes::str_to_cstring);
 
     let err = indy_prover_search_credentials_for_proof_req(command_handle,
                                                            wallet_handle,
                                                            proof_request_json.as_ptr(),
-                                                           if extra_query_json.is_some() { extra_query_json_str.as_ptr() } else { null() },
+                                                           extra_query_json.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                                            cb);
 
     super::results::result_to_int(err, receiver)

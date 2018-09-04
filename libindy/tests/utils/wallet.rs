@@ -1,7 +1,7 @@
 use indy::api::ErrorCode;
 use indy::api::wallet::*;
 
-use utils::{callback, sequence, environment};
+use utils::{callback, sequence, environment, ctypes};
 use utils::inmem_wallet::InmemWallet;
 
 use std::collections::HashSet;
@@ -186,11 +186,11 @@ pub fn prepare_export_wallet_config(path: &Path) -> String {
 pub fn generate_wallet_key(config: Option<&str>) -> Result<String, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    let config_str = config.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let config = config.map(ctypes::str_to_cstring);
 
     let err =
         indy_generate_wallet_key(command_handle,
-                                 if config.is_some() { config_str.as_ptr() } else { null() },
+                                 config.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                  cb);
 
     super::results::result_to_string(err, receiver)

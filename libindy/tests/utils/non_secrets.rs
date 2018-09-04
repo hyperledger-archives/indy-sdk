@@ -3,7 +3,7 @@ extern crate serde_json;
 use indy::api::ErrorCode;
 use indy::api::non_secrets::*;
 
-use utils::{callback, wallet, test};
+use utils::{callback, wallet, test, ctypes};
 use utils::constants::WALLET_CREDENTIALS;
 use utils::types::WalletRecord;
 
@@ -42,7 +42,7 @@ pub fn add_wallet_record(wallet_handle: i32, type_: &str, id: &str, value: &str,
     let type_ = CString::new(type_).unwrap();
     let id = CString::new(id).unwrap();
     let value = CString::new(value).unwrap();
-    let tags_json_str = tags_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let tags_json = tags_json.map(ctypes::str_to_cstring);
 
     let err =
         indy_add_wallet_record(command_handle,
@@ -50,7 +50,7 @@ pub fn add_wallet_record(wallet_handle: i32, type_: &str, id: &str, value: &str,
                                type_.as_ptr(),
                                id.as_ptr(),
                                value.as_ptr(),
-                               if tags_json.is_some() { tags_json_str.as_ptr() } else { null() },
+                               tags_json.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
                                cb);
 
     super::results::result_to_empty(err, receiver)
