@@ -31,7 +31,7 @@ mod utils;
 
 use utils::wallet;
 use utils::test;
-use utils::logger::LoggerUtils;
+use utils::logger;
 use utils::constants::*;
 
 #[test]
@@ -40,7 +40,7 @@ fn indy_set_logger_works() {
 
     wallet::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-    LoggerUtils::set_logger();
+    logger::set_logger();
 
     let wallet_handle = wallet::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
@@ -54,7 +54,7 @@ fn indy_set_default_logger_works() {
 
     wallet::create_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-    LoggerUtils::set_default_logger();
+    logger::set_default_logger();
 
     let wallet_handle = wallet::open_wallet(DEFAULT_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
