@@ -15,7 +15,7 @@ impl PoolList {
         serde_json::from_str(&json_pools).unwrap()
     }
 
-    pub fn pool_exists(&self, name: String) -> bool {
-       self.0.iter().find(|p| p.pool == name).is_some()
+    pub fn pool_exists(&self, name: &str) -> bool {
+       self.0.iter().find(|p| &p.pool == name).is_some()
     }
 }
