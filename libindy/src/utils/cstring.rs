@@ -58,6 +58,27 @@ macro_rules! check_useful_opt_json {
     }
 }
 
+macro_rules! check_request {
+    ($x:ident) => {
+        let $x: Value = match serde_json::from_str(&$x) {
+            Ok(Some(val)) => val,
+            _ => {
+                trace!("indy_sign_and_submit_request: could not parse request as valid json: {:?}", $x);
+                return ErrorCode::CommonInvalidParam4;
+            }
+        };
+        if !$x.is_object() {
+        trace!("indy_sign_and_submit_request: request json is not an object: {:?}", $x);
+        return ErrorCode::CommonInvalidParam4;
+        }
+        if !$x["req_id"].is_null() {
+            trace!("indy_sign_and_submit_request: request json is not an object: {:?}", $x);
+            return ErrorCode::CommonInvalidParam4;
+        }
+    }
+}
+
+
 macro_rules! check_useful_json {
     ($x:ident, $e:expr, $t:ty) => {
         let $x = match CStringUtils::c_str_to_string($x) {

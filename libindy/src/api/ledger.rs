@@ -14,6 +14,8 @@ use utils::cstring::CStringUtils;
 
 use serde_json;
 use self::libc::c_char;
+use serde_json::Value;
+use std::string::String;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -26,7 +28,7 @@ use self::libc::c_char;
 /// pool_handle: pool handle (created by open_pool_ledger).
 /// wallet_handle: wallet handle (created by open_wallet).
 /// submitter_did: Id of Identity stored in secured Wallet.
-/// request_json: Request data json.
+/// request_json: Request data json. domain::ledger::request::Request
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -42,26 +44,28 @@ pub extern fn indy_sign_and_submit_request(command_handle: i32,
                                            pool_handle: i32,
                                            wallet_handle: i32,
                                            submitter_did: *const c_char,
-                                           request_json: *const c_char,
+                                           request: *const c_char,
                                            cb: Option<extern fn(xcommand_handle: i32,
                                                                 err: ErrorCode,
                                                                 request_result_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_sign_and_submit_request: >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
-           pool_handle, wallet_handle, submitter_did, request_json);
+    trace!("indy_sign_and_submit_request: >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request: {:?}",
+           pool_handle, wallet_handle, submitter_did, request);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam4);
+    check_useful_c_str!(request, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
-    trace!("indy_sign_and_submit_request: entities >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
-           pool_handle, wallet_handle, submitter_did, request_json);
+    trace!("indy_sign_and_submit_request: entities >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request: {:?}",
+           pool_handle, wallet_handle, submitter_did, request);
+
+    check_request!(request);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::SignAndSubmitRequest(
             pool_handle,
             wallet_handle,
             submitter_did,
-            request_json,
+            request,
             Box::new(move |result| {
                 let (err, request_result_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_sign_and_submit_request: request_result_json: {:?}", request_result_json);
@@ -84,7 +88,7 @@ pub extern fn indy_sign_and_submit_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// pool_handle: pool handle (created by open_pool_ledger).
-/// request_json: Request data json.
+/// request: Request data json.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -96,21 +100,23 @@ pub extern fn indy_sign_and_submit_request(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_submit_request(command_handle: i32,
                                   pool_handle: i32,
-                                  request_json: *const c_char,
+                                  request: *const c_char,
                                   cb: Option<extern fn(xcommand_handle: i32,
                                                        err: ErrorCode,
                                                        request_result_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_submit_request: >>> pool_handle: {:?}, request_json: {:?}", pool_handle, request_json);
+    trace!("indy_submit_request: >>> pool_handle: {:?}, request: {:?}", pool_handle, request);
 
-    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(request, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_submit_request: entities >>> pool_handle: {:?}, request_json: {:?}", pool_handle, request_json);
+    trace!("indy_submit_request: entities >>> pool_handle: {:?}, request: {:?}", pool_handle, request);
+
+    // check_request!(request); SubmitRequest just sends the bytes
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::SubmitRequest(
             pool_handle,
-            request_json,
+            request,
             Box::new(move |result| {
                 let (err, request_result_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_submit_request: request_result_json: {:?}", request_result_json);
@@ -137,7 +143,7 @@ pub extern fn indy_submit_request(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to caller context.
 /// pool_handle: pool handle (created by open_pool_ledger).
-/// request_json: Request data json.
+/// request: Request data json. domain::ledger::request::Request
 /// nodes: (Optional) List of node names to send the request.
 ///        ["Node1", "Node2",...."NodeN"]
 /// timeout: (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
@@ -153,27 +159,27 @@ pub extern fn indy_submit_request(command_handle: i32,
 #[no_mangle]
 pub extern fn indy_submit_action(command_handle: i32,
                                  pool_handle: i32,
-                                 request_json: *const c_char,
+                                 request: *const c_char,
                                  nodes: *const c_char,
                                  timeout: i32,
                                  cb: Option<extern fn(xcommand_handle: i32,
                                                       err: ErrorCode,
                                                       request_result_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_submit_action: >>> pool_handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", pool_handle, request_json, nodes, timeout);
+    trace!("indy_submit_action: >>> pool_handle: {:?}, request: {:?}, nodes: {:?}, timeout: {:?}", pool_handle, request, nodes, timeout);
 
-    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(request, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(nodes, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     let timeout = if timeout != -1 { Some(timeout) } else { None };
 
-    trace!("indy_submit_action: entities >>> pool_handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", pool_handle, request_json, nodes, timeout);
+    trace!("indy_submit_action: entities >>> pool_handle: {:?}, request: {:?}, nodes: {:?}, timeout: {:?}", pool_handle, request, nodes, timeout);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(
             LedgerCommand::SubmitAction(
                 pool_handle,
-                request_json,
+                request,
                 nodes,
                 timeout,
                 Box::new(move |result| {
@@ -200,7 +206,7 @@ pub extern fn indy_submit_action(command_handle: i32,
 /// command_handle: command handle to map callback to caller context.
 /// wallet_handle: wallet handle (created by open_wallet).
 /// submitter_did: Id of Identity stored in secured Wallet.
-/// request_json: Request data json.
+/// request: Request data json.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -215,23 +221,25 @@ pub extern fn indy_submit_action(command_handle: i32,
 pub extern fn indy_sign_request(command_handle: i32,
                                 wallet_handle: i32,
                                 submitter_did: *const c_char,
-                                request_json: *const c_char,
+                                request: *const c_char,
                                 cb: Option<extern fn(xcommand_handle: i32,
                                                      err: ErrorCode,
                                                      signed_request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+    trace!("indy_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request: {:?}", wallet_handle, submitter_did, request);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(request, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_sign_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+    trace!("indy_sign_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, request: {:?}", wallet_handle, submitter_did, request);
+
+    check_request!(request);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::SignRequest(
             wallet_handle,
             submitter_did,
-            request_json,
+            request,
             Box::new(move |result| {
                 let (err, signed_request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_sign_request: signed_request_json: {:?}", signed_request_json);
@@ -256,7 +264,7 @@ pub extern fn indy_sign_request(command_handle: i32,
 /// command_handle: command handle to map callback to caller context.
 /// wallet_handle: wallet handle (created by open_wallet).
 /// submitter_did: Id of Identity stored in secured Wallet.
-/// request_json: Request data json.
+/// request: Request data json.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -271,22 +279,24 @@ pub extern fn indy_sign_request(command_handle: i32,
 pub extern fn indy_multi_sign_request(command_handle: i32,
                                       wallet_handle: i32,
                                       submitter_did: *const c_char,
-                                      request_json: *const c_char,
+                                      request: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
                                                            signed_request_json: *const c_char)>) -> ErrorCode {
-    trace!("indy_multi_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+    trace!("indy_multi_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request: {:?}", wallet_handle, submitter_did, request);
 
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(request_json, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(request, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_multi_sign_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+    trace!("indy_multi_sign_request: entities >>> wallet_handle: {:?}, submitter_did: {:?}, request: {:?}", wallet_handle, submitter_did, request);
+
+    check_request!(request);
 
     let result = CommandExecutor::instance()
         .send(Command::Ledger(LedgerCommand::MultiSignRequest(
             wallet_handle,
             submitter_did,
-            request_json,
+            request,
             Box::new(move |result| {
                 let (err, signed_request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_multi_sign_request: signed_request_json: {:?}", signed_request_json);
