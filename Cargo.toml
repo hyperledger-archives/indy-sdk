@@ -1,6 +1,6 @@
 [package]
 name = "rust-libindy-wrapper"
-version = "0.2.12"
+version = "0.2.13"
 description = "A library for assisting developers using LibIndy API"
 authors = ["Mike Lodder <redmike7@gmail.com>",
            "Matt Raffel <matt.raffel@evernyn.com>",
