@@ -178,6 +178,7 @@ export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
 export PKG_CONFIG_ALLOW_CROSS=1
 export CC=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-clang
 export AR=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-ar
+export STRIP=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-strip
 export CXX=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-clang++
 export CXXLD=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-ld
 export RANLIB=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-ranlib
@@ -198,6 +199,18 @@ pushd $LIBVCX
 export OPENSSL_STATIC=1
 #cargo clean
 cargo build --release --no-default-features --features "ci ${PAYMENT_PLUGIN}" --target=${CROSS_COMPILE}
+# TEMPORARY HACK (need to build libvcx without duplicate .o object files):
+# There are duplicate .o object files inside the libvcx.a file and these
+# lines of logic remove those duplicate .o object files
+rm -rf target/${CROSS_COMPILE}/release/tmpobjs
+mkdir target/${CROSS_COMPILE}/release/tmpobjs
+pushd target/${CROSS_COMPILE}/release/tmpobjs
+    ${AR} -x ../libvcx.a
+    ls > ../objfiles
+    xargs ${AR} cr ../libvcx.a.new < ../objfiles
+    ${STRIP} -S -x -o ../libvcx.a.stripped ../libvcx.a.new
+    mv ../libvcx.a.stripped ../libvcx.a
+popd
 popd
 
 LIBVCX_BUILDS=${WORKDIR}/libvcx_${TARGET_ARCH}
@@ -215,4 +228,8 @@ ${OPENSSL_DIR}/lib/libcrypto.a \
 ${SODIUM_LIB_DIR}/libsodium.a \
 ${LIBZMQ_LIB_DIR}/libzmq.a \
 ${TOOLCHAIN_DIR}/${CROSS_COMPILE_DIR}/${NDK_LIB_DIR}/libgnustl_shared.so -Wl,--no-whole-archive -z muldefs
+
+${STRIP} -S -x -o ${LIBVCX_BUILDS}/libvcx.so.new ${LIBVCX_BUILDS}/libvcx.so
+mv ${LIBVCX_BUILDS}/libvcx.so.new ${LIBVCX_BUILDS}/libvcx.so
+
 cp "${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a" ${LIBVCX_BUILDS}/
