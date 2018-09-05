@@ -73,23 +73,6 @@ for library in ${libraries[*]}
 do
     lipo -info $library
 
-    # TEMPORARY HACK (build libvcx without duplicate .o object files):
-    # There are duplicate .o object files inside the libvcx.a file and these
-    # lines of logic remove those duplicate .o object files
-    rm -rf ./tmpobjs
-    mkdir ./tmpobjs
-    pushd ./tmpobjs
-        ar -x ../${library}
-        ls > ../objfiles
-        xargs ar cr ../${library}.new < ../objfiles
-        if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
-            ${STRIP} -S -x -o ../${library}.stripped -r ../${library}.new
-            mv ../${library}.stripped ../${library}
-        else
-            mv ../${library}.new ../${library}
-        fi
-    popd
-
     # Extract individual architectures for this library
     for arch in ${archs[*]}
     do
@@ -110,18 +93,18 @@ do
 
     for library in ${libraries[*]}
     do
-        # if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
-        #     if [ "${library}" = "libvcx.a.tocombine" ]; then
-        #         rm -rf ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a
-        #         strip -S -x -o ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a -r ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
-        #     elif [ ! -f ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a ]; then
-        #         strip -S -x -o ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a -r ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
-        #     fi
-        #     #mv ${library}-$arch-stripped.a ${library}_${arch}.a
-        #     source_libraries="${source_libraries} ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a"
-        # else
+        if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
+            if [ "${library}" = "libvcx.a.tocombine" ]; then
+                rm -rf ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a
+                strip -S -x -o ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a -r ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
+            elif [ ! -f ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a ]; then
+                strip -S -x -o ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a -r ${BUILD_CACHE}/arch_libs/${library}_${arch}.a
+            fi
+            #mv ${library}-$arch-stripped.a ${library}_${arch}.a
+            source_libraries="${source_libraries} ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a"
+        else
             source_libraries="${source_libraries} ${BUILD_CACHE}/arch_libs/${library}_${arch}.a"
-        # fi
+        fi
     done
 
     echo "Using source_libraries: ${source_libraries} to create ${BUILD_CACHE}/arch_libs/${COMBINED_LIB}_${arch}.a"
@@ -131,6 +114,24 @@ do
 
     # Delete intermediate files
     #rm ${source_libraries}
+
+    # TEMPORARY HACK (build libvcx without duplicate .o object files):
+    # There are duplicate .o object files inside the libvcx.a file and these
+    # lines of logic remove those duplicate .o object files
+    rm -rf ${BUILD_CACHE}/arch_libs/tmpobjs
+    mkdir ${BUILD_CACHE}/arch_libs/tmpobjs
+    pushd ${BUILD_CACHE}/arch_libs/tmpobjs
+        ar -x ../${COMBINED_LIB}_${arch}.a
+        ls > ../objfiles
+        xargs ar cr ../${COMBINED_LIB}_${arch}.a.new < ../objfiles
+        if [ "$DEBUG_SYMBOLS" = "nodebug" ]; then
+            strip -S -x -o ../${COMBINED_LIB}_${arch}.a.stripped -r ../${COMBINED_LIB}_${arch}.a.new
+            mv ../${COMBINED_LIB}_${arch}.a.stripped ../${COMBINED_LIB}_${arch}.a
+        else
+            mv ../${COMBINED_LIB}_${arch}.a.new ../${COMBINED_LIB}_${arch}.a
+        fi
+    popd
+
 done
 
 echo "Using source_combined: ${source_combined} to create ${COMBINED_LIB}.a"
