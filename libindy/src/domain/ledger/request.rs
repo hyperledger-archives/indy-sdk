@@ -1,5 +1,4 @@
 use serde;
-use serde_json;
 use time;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -37,7 +36,9 @@ pub struct Request<T: serde::Serialize> {
 }
 
 impl<T: serde::Serialize> Request<T> {
-    pub fn new(req_id: u64, identifier: &str, operation: T, protocol_version: usize) -> Request<T> {
+    pub fn new(identifier: &str, operation: T) -> Request<T> {
+        let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
+        let protocol_version: usize = ProtocolVersion::get();
         Request {
             req_id,
             identifier: identifier.to_string(),
@@ -45,10 +46,5 @@ impl<T: serde::Serialize> Request<T> {
             protocol_version,
             signature: None
         }
-    }
-
-    pub fn build_request(identifier: &str, operation: T) -> Result<String, serde_json::Error> {
-        let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
-        serde_json::to_string(&Request::new(req_id, identifier, operation, ProtocolVersion::get()))
     }
 }

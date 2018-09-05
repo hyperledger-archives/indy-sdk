@@ -22,6 +22,8 @@ use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
 use utils::sequence::SequenceUtils;
 use utils::crypto::base58;
+use domain::ledger::nym::GetNymOperation;
+use domain::ledger::request::Request;
 
 pub enum DidCommand {
     CreateAndStoreMyDid(
@@ -614,12 +616,24 @@ impl DidCommandExecutor {
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 
         // TODO we need passing of my_did as identifier
-        let get_nym_request = self.ledger_service.build_get_nym_request(did, did)
+
+        let operation = GetNymOperation::new(did.to_string());
+        let request = Request::new(did, operation);
+        let get_nym_request= serde_json::to_string(&request)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidState(
                     // TODO: FIXME: Remove this unwrap by sending GetNymAck with the error.
                     format!("Invalid Get Nym Request: {}", err.description()))).unwrap();
+
+        /*
+                let get_nym_request = self.ledger_service.build_get_nym_request(did, did)
+                    .map_err(map_err_trace!())
+                    .map_err(|err|
+                        CommonError::InvalidState(
+                            // TODO: FIXME: Remove this unwrap by sending GetNymAck with the error.
+                            format!("Invalid Get Nym Request: {}", err.description()))).unwrap();
+        */
 
         CommandExecutor::instance()
             .send(Command::Ledger(LedgerCommand::SubmitRequest(

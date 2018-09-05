@@ -31,7 +31,7 @@ pub enum LedgerCommand {
         i32, // pool handle
         i32, // wallet handle
         String, // submitter did
-        String, // request json
+        Value, // request
         Box<Fn(Result<String, IndyError>) + Send>),
     SubmitRequest(
         i32, // pool handle
@@ -50,12 +50,12 @@ pub enum LedgerCommand {
     SignRequest(
         i32, // wallet handle
         String, // submitter did
-        String, // request json
+        Value, // request
         Box<Fn(Result<String, IndyError>) + Send>),
     MultiSignRequest(
         i32, // wallet handle
         String, // submitter did
-        String, // request json
+        Value, // request
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetDdoRequest(
         String, // submitter did
@@ -210,9 +210,9 @@ impl LedgerCommandExecutor {
 
     pub fn execute(&self, command: LedgerCommand) {
         match command {
-            LedgerCommand::SignAndSubmitRequest(pool_handle, wallet_handle, submitter_did, request_json, cb) => {
+            LedgerCommand::SignAndSubmitRequest(pool_handle, wallet_handle, submitter_did, request, cb) => {
                 info!(target: "ledger_command_executor", "SignAndSubmitRequest command received");
-                self.sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request_json, cb);
+                self.sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request, cb);
             }
             LedgerCommand::SubmitRequest(handle, request_json, cb) => {
                 info!(target: "ledger_command_executor", "SubmitRequest command received");
@@ -236,9 +236,9 @@ impl LedgerCommandExecutor {
                 info!(target: "ledger_command_executor", "RegisterSPParser command received");
                 cb(self.register_sp_parser(&txn_type, parser, free));
             }
-            LedgerCommand::SignRequest(wallet_handle, submitter_did, request_json, cb) => {
+            LedgerCommand::SignRequest(wallet_handle, submitter_did, request, cb) => {
                 info!(target: "ledger_command_executor", "SignRequest command received");
-                cb(self.sign_request(wallet_handle, &submitter_did, &request_json));
+                cb(self.sign_request(wallet_handle, &submitter_did, &request));
             }
             LedgerCommand::MultiSignRequest(wallet_handle, submitter_did, request_json, cb) => {
                 info!(target: "ledger_command_executor", "MultiSignRequest command received");
@@ -372,12 +372,12 @@ impl LedgerCommandExecutor {
                                pool_handle: i32,
                                wallet_handle: i32,
                                submitter_did: &str,
-                               request_json: &str,
+                               request: &Value,
                                cb: Box<Fn(Result<String, IndyError>) + Send>) {
-        debug!("sign_and_submit_request >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
-               pool_handle, wallet_handle, submitter_did, request_json);
+        debug!("sign_and_submit_request >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request: {:?}",
+               pool_handle, wallet_handle, submitter_did, request);
 
-        match self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Single) {
+        match self._sign_request(wallet_handle, submitter_did, request, SignatureType::Single) {
             Ok(signed_request) => self.submit_request(pool_handle, signed_request.as_str(), cb),
             Err(err) => cb(Err(err))
         }
@@ -386,41 +386,33 @@ impl LedgerCommandExecutor {
     fn _sign_request(&self,
                      wallet_handle: i32,
                      submitter_did: &str,
-                     request_json: &str,
+                     request: &Value,
                      signature_type: SignatureType) -> Result<String, IndyError> {
-        debug!("_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+        debug!("_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request: {:?}", wallet_handle, submitter_did, request);
 
         let my_did: Did = self.wallet_service.get_indy_object(wallet_handle, &submitter_did, &RecordOptions::id_value())?;
 
         let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_did.verkey, &RecordOptions::id_value())?;
 
-        let mut request: Value = serde_json::from_str(request_json)
-            .map_err(|err|
-                CryptoError::CommonError(
-                    CommonError::InvalidStructure(format!("Message is invalid json: {:?}", err))))?;
-
-        if !request.is_object() {
-            return Err(IndyError::CryptoError(CryptoError::CommonError(
-                CommonError::InvalidStructure(format!("Message is invalid json: {}", request)))));
-        }
-
         let serialized_request = serialize_signature(request.clone())?;
         let signature = self.crypto_service.sign(&my_key, &serialized_request.as_bytes().to_vec())?;
 
+        let mut request_with_signature = request.clone();
+
         match signature_type {
-            SignatureType::Single => { request["signature"] = Value::String(base58::encode(&signature)); }
+            SignatureType::Single => { request_with_signature["signature"] = Value::String(base58::encode(&signature)); }
             SignatureType::Multi => {
-                request.as_object_mut()
-                    .map(|request| {
-                        if !request.contains_key("signatures") {
-                            request.insert("signatures".to_string(), Value::Object(serde_json::Map::new()));
+                request_with_signature.as_object_mut()
+                    .map(|request_with_signature| {
+                        if !request_with_signature.contains_key("signatures") {
+                            request_with_signature.insert("signatures".to_string(), Value::Object(serde_json::Map::new()));
                         }
-                        request["signatures"].as_object_mut().unwrap().insert(submitter_did.to_string(), Value::String(base58::encode(&signature)));
+                        request_with_signature["signatures"].as_object_mut().unwrap().insert(submitter_did.to_string(), Value::String(base58::encode(&signature)));
                     });
             }
         }
 
-        let res: String = serde_json::to_string(&request)
+        let res: String = serde_json::to_string(&request_with_signature)
             .map_err(|err|
                 CryptoError::CommonError(
                     CommonError::InvalidState(format!("Can't serialize message after signing: {}", err.description()))))?;
@@ -465,10 +457,10 @@ impl LedgerCommandExecutor {
     fn sign_request(&self,
                     wallet_handle: i32,
                     submitter_did: &str,
-                    request_json: &str) -> Result<String, IndyError> {
-        debug!("sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+                    request: &Value) -> Result<String, IndyError> {
+        debug!("sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request: {:?}", wallet_handle, submitter_did, request);
 
-        let res = self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Single)?;
+        let res = self._sign_request(wallet_handle, submitter_did, request, SignatureType::Single)?;
 
         debug!("sign_request <<< res: {:?}", res);
 
@@ -478,10 +470,10 @@ impl LedgerCommandExecutor {
     fn multi_sign_request(&self,
                           wallet_handle: i32,
                           submitter_did: &str,
-                          request_json: &str) -> Result<String, IndyError> {
-        debug!("multi_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
+                          request: &Value) -> Result<String, IndyError> {
+        debug!("multi_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request: {:?}", wallet_handle, submitter_did, request);
 
-        let res = self._sign_request(wallet_handle, submitter_did, request_json, SignatureType::Multi)?;
+        let res = self._sign_request(wallet_handle, submitter_did, request, SignatureType::Multi)?;
 
         debug!("multi_sign_request <<< res: {:?}", res);
 
