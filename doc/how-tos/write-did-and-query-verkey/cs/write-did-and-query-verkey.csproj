@@ -8,4 +8,7 @@
   <ItemGroup>
     <None Remove="template.java" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Hyperledger.Indy.Sdk" Version="1.4.0" />
+  </ItemGroup>
 </Project>
