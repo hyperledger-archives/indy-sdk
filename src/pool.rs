@@ -410,19 +410,19 @@ mod test_pool_create_config {
     use utils::test::pool::PoolList;
     use utils::test::rand;
 
-    const VALID_TIMEOUT: Duration = Duration::from_millis(500);
+    const VALID_TIMEOUT: Duration = Duration::from_millis(250);
 
     fn pool_name() -> String {
         format!("TestPool{}", rand::random_string(10))
     }
 
     fn assert_pool_exists_delete(name: String) {
-        assert!(PoolList::new().pool_exists(name.clone()));
+        assert!(PoolList::new().pool_exists(&name));
         Pool::delete(&name).unwrap();
     }
 
     fn assert_pool_not_exists(name: String) {
-        assert!(! PoolList::new().pool_exists(name));
+        assert!(! PoolList::new().pool_exists(&name));
     }
 
     fn sample_genesis_config() -> String {
@@ -433,8 +433,10 @@ mod test_pool_create_config {
         json!({"genesis_txn": sample_file}).to_string()
     }
 
-    // Returns the file, otherwise the file would be deleted
-    // when it goes out of scope.rustc_lsan
+    /*
+    Returns the file, otherwise the file would be deleted
+    when it goes out of scope.rustc_lsan
+    */
     fn invalid_temporary_genesis_config() -> (String, TempFile) {
         let file = TempFile::new(None).unwrap();
         fs::write(&file, b"Some nonsensical data").unwrap();
@@ -525,6 +527,7 @@ mod test_pool_create_config {
             &config,
             move |ec| sender.send(ec).unwrap()
         );
+
         assert_eq!(ErrorCode::Success, result);
 
         let result = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
