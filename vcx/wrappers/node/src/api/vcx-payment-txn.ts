@@ -5,6 +5,7 @@ import { IPaymentOutput } from './common'
 
 export interface IPaymentTxn {
   amount: number,
+  credit: boolean,
   inputs: string[],
   outputs: IPaymentOutput[]
 }
