@@ -433,6 +433,16 @@ mod test_pool_create_config {
         json!({"genesis_txn": sample_file}).to_string()
     }
 
+    // Returns the file, otherwise the file would be deleted
+    // when it goes out of scope.rustc_lsan
+    fn invalid_temporary_genesis_config() -> (String, TempFile) {
+        let file = TempFile::new(None).unwrap();
+        fs::write(&file, b"Some nonsensical data").unwrap();
+        let config = json!({"genesis_txn": file.as_ref()}).to_string();
+
+        (config, file)
+    }
+
     #[test]
     /* Create a valid config with custom genesis txn. */
     fn config_with_genesis_txn() {
@@ -469,9 +479,7 @@ mod test_pool_create_config {
     /* Error with an incorrectly formed gensis txn. */
     fn config_with_bad_genesis_txn() {
         let name = pool_name();
-        let file = TempFile::new(None).unwrap();
-        fs::write(&file, b"Some nonsensical data").unwrap();
-        let config = json!({"genesis_txn": file.as_ref()}).to_string();
+        let (config, _file) = invalid_temporary_genesis_config();
 
         let result = Pool::create_ledger_config(&name, &config);
 
@@ -544,7 +552,21 @@ mod test_pool_create_config {
     #[test]
     /* Create a config async resulting in a late error: callback is called. */
     fn config_async_with_late_error() {
-        unimplemented!();
+        let name = pool_name();
+        let (config, _file) = invalid_temporary_genesis_config();
+        let (sender, receiver) = channel();
+        let result = Pool::create_ledger_config_async(
+            &name,
+            &config,
+            move |ec| sender.send(ec).unwrap()
+        );
+
+        assert_eq!(ErrorCode::Success, result);
+
+        let result = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        assert_eq!(ErrorCode::CommonInvalidStructure, result);
+
+        assert_pool_not_exists(name);
     }
 
     #[test]
