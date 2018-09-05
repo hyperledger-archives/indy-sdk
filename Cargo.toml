@@ -7,7 +7,6 @@ authors = ["Mike Lodder <redmike7@gmail.com>",
            "Darien Hess <darien.hess@evernym.com>",
            "Stephen Felt <stephen.felt@evernym.com>",
            "Cam Parra <camilo.parra@evernym.com>",
-           "Darien Hess <darien.hess@evernym.com>",
            "Brent Zundel <brent.zundel@evernym.com>"]
 homepage = "https://github.com/evernym/rust-libindy-wrapper"
 repository = "https://github.com/evernym/rust-libindy-wrapper"
