@@ -4,7 +4,7 @@ use api::ErrorCode;
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::pairwise::PairwiseCommand;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 use self::libc::c_char;
 
@@ -139,7 +139,7 @@ pub  extern fn indy_list_pairwise(command_handle: i32,
             Box::new(move |result| {
                 let (err, list_pairwise) = result_to_err_code_1!(result, String::new());
                 trace!("indy_list_pairwise: list_pairwise: {:?}", list_pairwise);
-                let list_pairwise = CStringUtils::string_to_cstring(list_pairwise);
+                let list_pairwise = ctypes::string_to_cstring(list_pairwise);
                 cb(command_handle, err, list_pairwise.as_ptr())
             })
         )));
@@ -186,7 +186,7 @@ pub  extern fn indy_get_pairwise(command_handle: i32,
             Box::new(move |result| {
                 let (err, pairwise_info_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_get_pairwise: pairwise_info_json: {:?}", pairwise_info_json);
-                let pairwise_info_json = CStringUtils::string_to_cstring(pairwise_info_json);
+                let pairwise_info_json = ctypes::string_to_cstring(pairwise_info_json);
                 cb(command_handle, err, pairwise_info_json.as_ptr())
             })
         )));

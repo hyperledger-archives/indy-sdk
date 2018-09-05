@@ -20,7 +20,7 @@ use std::cell::RefCell;
 use commands::ledger::LedgerCommand;
 use commands::{Command, CommandExecutor};
 use std::collections::HashMap;
-use utils::sequence::SequenceUtils;
+use utils::sequence;
 use utils::crypto::base58;
 
 pub enum DidCommand {
@@ -566,7 +566,7 @@ impl DidCommandExecutor {
     }
 
     fn _defer_command(&self, cmd: DidCommand) -> i32 {
-        let deferred_cmd_id = SequenceUtils::get_next_id();
+        let deferred_cmd_id = sequence::get_next_id();
         self.deferred_commands.borrow_mut().insert(deferred_cmd_id, cmd);
         deferred_cmd_id
     }
@@ -614,7 +614,7 @@ impl DidCommandExecutor {
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 
         // TODO we need passing of my_did as identifier
-        let get_nym_request = self.ledger_service.build_get_nym_request(did, did)
+        let get_nym_request = self.ledger_service.build_get_nym_request(None, did)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidState(
@@ -643,7 +643,7 @@ impl DidCommandExecutor {
         let deferred_cmd_id = self._defer_command(deferred_cmd);
 
         // TODO we need passing of my_did as identifier
-        let get_attrib_request = self.ledger_service.build_get_attrib_request(did, did, Some("endpoint"), None, None)
+        let get_attrib_request = self.ledger_service.build_get_attrib_request(None, did, Some("endpoint"), None, None)
             .map_err(map_err_trace!())
             .map_err(|err|
                 CommonError::InvalidState(
