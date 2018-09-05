@@ -756,3 +756,45 @@ mod test_delete_config {
         assert_pool_not_exists(&pool_name)
     }
 }
+
+#[cfg(test)]
+mod test_set_protocol_version {
+    use super::*;
+
+    use ledger::Ledger;
+    use serde_json;
+
+    const VALID_VERSIONS: [usize; 2] = [1, 2];
+
+    fn assert_protocol_version_set(version: usize) {
+        let did = "5UBVMdSADMjGzuJMQwJ6yyzYV1krTcKRp6EqRAz8tiDP";
+        let request = Ledger::build_get_nym_request(did, did).unwrap();
+        let request: serde_json::Value = serde_json::from_str(&request).unwrap();
+        assert_eq!(json!(version), *request.get("protocolVersion").unwrap());
+    }
+
+    #[test]
+    /* Set all available protocol versions. */
+    fn set_all_valid_versions() {
+        for &version in VALID_VERSIONS.into_iter() {
+            let result = Pool::set_protocol_version(version);
+            assert_eq!((), result.unwrap());
+            assert_protocol_version_set(version);
+        }
+    }
+
+    #[test]
+    /* Error setting invalid protocol version. */
+    fn set_invalid_versions() {
+        Pool::set_protocol_version(1).unwrap();
+        
+        let result = Pool::set_protocol_version(0);
+        assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err());
+        assert_protocol_version_set(1);
+
+        let next_protocol_version = *VALID_VERSIONS.last().unwrap() + 1;
+        let result = Pool::set_protocol_version(next_protocol_version);
+        assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err());
+        assert_protocol_version_set(1);
+    }
+}
