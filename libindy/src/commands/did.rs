@@ -217,7 +217,7 @@ impl DidCommandExecutor {
                           my_did: &str) -> Result<String, IndyError> {
         debug!("replace_keys_start >>> wallet_handle: {:?}, key_info_json: {:?}, my_did: {:?}", wallet_handle, secret!(key_info), my_did);
 
-        self.crypto_service.validate_did(my_did)?;
+        CryptoService::validate_did(my_did)?;
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
 
@@ -239,7 +239,7 @@ impl DidCommandExecutor {
                           my_did: &str) -> Result<(), IndyError> {
         debug!("replace_keys_apply >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
-        self.crypto_service.validate_did(my_did)?;
+        CryptoService::validate_did(my_did)?;
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
         let my_temporary_did: TemporaryDid =
@@ -272,7 +272,7 @@ impl DidCommandExecutor {
     fn get_my_did_with_meta(&self, wallet_handle: i32, my_did: &str) -> Result<String, IndyError> {
         debug!("get_my_did_with_meta >>> wallet_handle: {:?}, my_did: {:?}", wallet_handle, my_did);
 
-        self.crypto_service.validate_did(&my_did)?;
+        CryptoService::validate_did(&my_did)?;
 
         let did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &my_did, &RecordOptions::id_value())?;
         let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did, &RecordOptions::id_value())?;
@@ -334,7 +334,7 @@ impl DidCommandExecutor {
                    cb: Box<Fn(Result<String, IndyError>) + Send>) {
         debug!("key_for_did >>> pool_handle: {:?}, wallet_handle: {:?}, did: {:?}", pool_handle, wallet_handle, did);
 
-        try_cb!(self.crypto_service.validate_did(&did), cb);
+        try_cb!(CryptoService::validate_did(&did), cb);
 
         // Look to my did
         match self._wallet_get_my_did(wallet_handle, &did) {
@@ -367,7 +367,7 @@ impl DidCommandExecutor {
                          did: &str) -> Result<String, IndyError> {
         info!("key_for_local_did >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-        self.crypto_service.validate_did(&did)?;
+        CryptoService::validate_did(&did)?;
 
         // Look to my did
         match self._wallet_get_my_did(wallet_handle, did) {
@@ -393,7 +393,7 @@ impl DidCommandExecutor {
                             transport_key: &str) -> Result<(), IndyError> {
         debug!("set_endpoint_for_did >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}", wallet_handle, did, address, transport_key);
 
-        self.crypto_service.validate_did(did)?;
+        CryptoService::validate_did(did)?;
         self.crypto_service.validate_key(transport_key)?;
 
         let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
@@ -411,7 +411,7 @@ impl DidCommandExecutor {
                             cb: Box<Fn(Result<(String, Option<String>), IndyError>) + Send>) {
         debug!("get_endpoint_for_did >>> wallet_handle: {:?}, pool_handle: {:?}, did: {:?}", wallet_handle, pool_handle, did);
 
-        try_cb!(self.crypto_service.validate_did(&did), cb);
+        try_cb!(CryptoService::validate_did(&did), cb);
 
         let endpoint =
             self.wallet_service.get_indy_object::<Endpoint>(wallet_handle, &did, &RecordOptions::id_value());
@@ -438,7 +438,7 @@ impl DidCommandExecutor {
                         metadata: String) -> Result<(), IndyError> {
         debug!("set_did_metadata >>> wallet_handle: {:?}, did: {:?}, metadata: {:?}", wallet_handle, did, metadata);
 
-        self.crypto_service.validate_did(did)?;
+        CryptoService::validate_did(did)?;
 
         let metadata = DidMetadata { value: metadata };
 
@@ -454,7 +454,7 @@ impl DidCommandExecutor {
                         did: &str) -> Result<String, IndyError> {
         debug!("get_did_metadata >>> wallet_handle: {:?}, did: {:?}", wallet_handle, did);
 
-        self.crypto_service.validate_did(did)?;
+        CryptoService::validate_did(did)?;
 
         let metadata = self.wallet_service.get_indy_object::<DidMetadata>(wallet_handle, did, &RecordOptions::id_value())?;
 
@@ -470,7 +470,7 @@ impl DidCommandExecutor {
                          verkey: String) -> Result<String, IndyError> {
         info!("abbreviate_verkey >>> did: {:?}, verkey: {:?}", did, verkey);
 
-        self.crypto_service.validate_did(&did)?;
+        CryptoService::validate_did(&did)?;
         self.crypto_service.validate_key(&verkey)?;
 
         let did = base58::decode(&did)?;

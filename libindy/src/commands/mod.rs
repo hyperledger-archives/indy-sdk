@@ -81,7 +81,7 @@ impl CommandExecutor {
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
 
-                let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone(), crypto_service.clone());
+                let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone());
                 let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
                 let ledger_command_executor = LedgerCommandExecutor::new(pool_service.clone(), crypto_service.clone(), wallet_service.clone(), ledger_service.clone());
                 let pool_command_executor = PoolCommandExecutor::new(pool_service.clone());
@@ -90,7 +90,7 @@ impl CommandExecutor {
                 let pairwise_command_executor = PairwiseCommandExecutor::new(wallet_service.clone());
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
-                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone());
+                let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone());
 
                 loop {
                     match receiver.recv() {

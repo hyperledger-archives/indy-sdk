@@ -134,7 +134,6 @@ impl SearchForProofRequest {
 pub struct ProverCommandExecutor {
     anoncreds_service: Rc<AnoncredsService>,
     wallet_service: Rc<WalletService>,
-    crypto_service: Rc<CryptoService>,
     blob_storage_service: Rc<BlobStorageService>,
     searches: RefCell<HashMap<i32, Box<WalletSearch>>>,
     searches_for_proof_requests: RefCell<HashMap<i32, Box<HashMap<String, SearchForProofRequest>>>>,
@@ -143,12 +142,10 @@ pub struct ProverCommandExecutor {
 impl ProverCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                wallet_service: Rc<WalletService>,
-               crypto_service: Rc<CryptoService>,
                blob_storage_service: Rc<BlobStorageService>) -> ProverCommandExecutor {
         ProverCommandExecutor {
             anoncreds_service,
             wallet_service,
-            crypto_service,
             blob_storage_service,
             searches: RefCell::new(HashMap::new()),
             searches_for_proof_requests: RefCell::new(HashMap::new()),
@@ -263,7 +260,7 @@ impl ProverCommandExecutor {
         debug!("create_credential_request >>> wallet_handle: {:?}, prover_did: {:?}, cred_offer: {:?}, cred_def: {:?}, master_secret_id: {:?}",
                wallet_handle, prover_did, cred_offer, cred_def, master_secret_id);
 
-        self.crypto_service.validate_did(&prover_did)?;
+        CryptoService::validate_did(&prover_did)?;
 
         let master_secret: MasterSecret = self._wallet_get_master_secret(wallet_handle, &master_secret_id)?;
 

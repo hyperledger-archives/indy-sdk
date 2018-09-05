@@ -134,16 +134,14 @@ pub enum PaymentsCommand {
 pub struct PaymentsCommandExecutor {
     payments_service: Rc<PaymentsService>,
     wallet_service: Rc<WalletService>,
-    crypto_service: Rc<CryptoService>,
     pending_callbacks: RefCell<HashMap<i32, Box<Fn(Result<String, IndyError>) + Send>>>,
 }
 
 impl PaymentsCommandExecutor {
-    pub fn new(payments_service: Rc<PaymentsService>, wallet_service: Rc<WalletService>, crypto_service: Rc<CryptoService>) -> PaymentsCommandExecutor {
+    pub fn new(payments_service: Rc<PaymentsService>, wallet_service: Rc<WalletService>) -> PaymentsCommandExecutor {
         PaymentsCommandExecutor {
             payments_service,
             wallet_service,
-            crypto_service,
             pending_callbacks: RefCell::new(HashMap::new()),
         }
     }
@@ -335,7 +333,7 @@ impl PaymentsCommandExecutor {
     fn add_request_fees(&self, wallet_handle: i32, submitter_did: &str, req: &str, inputs: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         trace!("add_request_fees >>> wallet_handle: {:?}, submitter_did: {:?}, req: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}",
                wallet_handle, submitter_did, req, inputs, outputs, extra);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
+        match CryptoService::validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
         }
@@ -388,7 +386,7 @@ impl PaymentsCommandExecutor {
 
     fn build_get_payment_sources_request(&self, wallet_handle: i32, submitter_did: &str, payment_address: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         trace!("build_get_payment_sources_request >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
+        match CryptoService::validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
         }
@@ -433,7 +431,7 @@ impl PaymentsCommandExecutor {
 
     fn build_payment_req(&self, wallet_handle: i32, submitter_did: &str, inputs: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         trace!("build_payment_req >>> wallet_handle: {:?}, submitter_did: {:?}, inputs: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, inputs, outputs, extra);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
+        match CryptoService::validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
         }
@@ -482,7 +480,7 @@ impl PaymentsCommandExecutor {
 
     fn build_mint_req(&self, wallet_handle: i32, submitter_did: &str, outputs: &str, extra: Option<&str>, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         trace!("build_mint_req >>> wallet_handle: {:?}, submitter_did: {:?}, outputs: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs, extra);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
+        match CryptoService::validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
         }
@@ -514,7 +512,7 @@ impl PaymentsCommandExecutor {
 
     fn build_set_txn_fees_req(&self, wallet_handle: i32, submitter_did: &str, type_: &str, fees: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         trace!("build_set_txn_fees_req >>> wallet_handle: {:?}, submitter_did: {:?}, type_: {:?}, fees: {:?}", wallet_handle, submitter_did, type_, fees);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
+        match CryptoService::validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
         }
@@ -541,7 +539,7 @@ impl PaymentsCommandExecutor {
 
     fn build_get_txn_fees_req(&self, wallet_handle: i32, submitter_did: &str, type_: &str, cb: Box<Fn(Result<String, IndyError>) + Send>) {
         trace!("build_get_txn_fees_req >>> wallet_handle: {:?}, submitter_did: {:?}, type_: {:?}", wallet_handle, submitter_did, type_);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
+        match CryptoService::validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
         }
@@ -574,7 +572,7 @@ impl PaymentsCommandExecutor {
 
     fn build_verify_payment_request(&self, wallet_handle: i32, submitter_did: &str, receipt: &str, cb: Box<Fn(Result<(String, String), IndyError>) + Send>) {
         trace!("build_verify_payment_request >>> wallet_handle: {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
-        match self.crypto_service.validate_did(submitter_did).map_err(map_err_err!()) {
+        match CryptoService::validate_did(submitter_did).map_err(map_err_err!()) {
             Err(err) => return cb(Err(IndyError::from(err))),
             _ => ()
         }

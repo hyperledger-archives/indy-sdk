@@ -112,21 +112,18 @@ pub struct IssuerCommandExecutor {
     pub blob_storage_service: Rc<BlobStorageService>,
     pub pool_service: Rc<PoolService>,
     pub wallet_service: Rc<WalletService>,
-    pub crypto_service: Rc<CryptoService>
 }
 
 impl IssuerCommandExecutor {
     pub fn new(anoncreds_service: Rc<AnoncredsService>,
                pool_service: Rc<PoolService>,
                blob_storage_service: Rc<BlobStorageService>,
-               wallet_service: Rc<WalletService>,
-               crypto_service: Rc<CryptoService>) -> IssuerCommandExecutor {
+               wallet_service: Rc<WalletService>) -> IssuerCommandExecutor {
         IssuerCommandExecutor {
             anoncreds_service,
             pool_service,
             blob_storage_service,
             wallet_service,
-            crypto_service,
         }
     }
 
@@ -183,7 +180,7 @@ impl IssuerCommandExecutor {
                      attrs: AttributeNames) -> Result<(String, String), IndyError> {
         debug!("create_schema >>> issuer_did: {:?}, name: {:?}, version: {:?}, attrs: {:?}", issuer_did, name, version, attrs);
 
-        self.crypto_service.validate_did(issuer_did)?;
+        CryptoService::validate_did(issuer_did)?;
 
         let schema_id = Schema::schema_id(issuer_did, name, version);
 
@@ -213,7 +210,7 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema: {:?}, tag: {:?}, \
               type_: {:?}, config: {:?}", wallet_handle, issuer_did, schema, tag, type_, config);
 
-        self.crypto_service.validate_did(issuer_did)?;
+        CryptoService::validate_did(issuer_did)?;
 
         let default_cred_def_config = CredentialDefinitionConfig::default();
         let cred_def_config = config.unwrap_or(&default_cred_def_config);

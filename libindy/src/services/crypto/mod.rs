@@ -97,7 +97,7 @@ impl CryptoService {
         let (vk, sk) = crypto_type.create_key(seed.as_ref())?;
         let did = match my_did_info.did {
             Some(ref did) => {
-                self.validate_did(did)?;
+                CryptoService::validate_did(did)?;
                 base58::decode(did)?
             }
             _ if my_did_info.cid == Some(true) => vk[..].to_vec(),
@@ -394,7 +394,7 @@ impl CryptoService {
         Ok(())
     }
 
-    pub fn validate_did(&self, did: &str) -> Result<(), CryptoError> {
+    pub fn validate_did(did: &str) -> Result<(), CryptoError> {
         trace!("validate_did >>> did: {:?}", did);
 
         let did = base58::decode(did)?;

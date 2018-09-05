@@ -509,8 +509,8 @@ impl LedgerCommandExecutor {
         debug!("build_nym_request >>> submitter_did: {:?}, target_did: {:?}, verkey: {:?}, alias: {:?}, role: {:?}",
                submitter_did, target_did, verkey, alias, role);
 
-        self.crypto_service.validate_did(submitter_did)?;
-        self.crypto_service.validate_did(target_did)?;
+        CryptoService::validate_did(submitter_did)?;
+        CryptoService::validate_did(target_did)?;
         if let Some(vk) = verkey {
             self.crypto_service.validate_key(vk)?;
         }
@@ -535,8 +535,8 @@ impl LedgerCommandExecutor {
         debug!("build_attrib_request >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
                submitter_did, target_did, hash, raw, enc);
 
-        self.crypto_service.validate_did(submitter_did)?;
-        self.crypto_service.validate_did(target_did)?;
+        CryptoService::validate_did(submitter_did)?;
+        CryptoService::validate_did(target_did)?;
 
         let res = self.ledger_service.build_attrib_request(submitter_did,
                                                            target_did,
@@ -558,8 +558,8 @@ impl LedgerCommandExecutor {
         debug!("build_get_attrib_request >>> submitter_did: {:?}, target_did: {:?}, raw: {:?}, hash: {:?}, enc: {:?}",
                submitter_did, target_did, raw, hash, enc);
 
-        self.crypto_service.validate_did(submitter_did)?;
-        self.crypto_service.validate_did(target_did)?;
+        CryptoService::validate_did(submitter_did)?;
+        CryptoService::validate_did(target_did)?;
 
         let res = self.ledger_service.build_get_attrib_request(submitter_did,
                                                                target_did,
@@ -577,8 +577,8 @@ impl LedgerCommandExecutor {
                              target_did: &str) -> Result<String, IndyError> {
         debug!("build_get_nym_request >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
-        self.crypto_service.validate_did(submitter_did)?;
-        self.crypto_service.validate_did(target_did)?;
+        CryptoService::validate_did(submitter_did)?;
+        CryptoService::validate_did(target_did)?;
 
         let res = self.ledger_service.build_get_nym_request(submitter_did,
                                                             target_did)?;
@@ -593,7 +593,7 @@ impl LedgerCommandExecutor {
                             schema: SchemaV1) -> Result<String, IndyError> {
         debug!("build_schema_request >>> submitter_did: {:?}, schema: {:?}", submitter_did, schema);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_schema_request(submitter_did, schema)?;
 
@@ -607,7 +607,7 @@ impl LedgerCommandExecutor {
                                 id: &str) -> Result<String, IndyError> {
         debug!("build_get_schema_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_schema_request(submitter_did, id)?;
 
@@ -633,7 +633,7 @@ impl LedgerCommandExecutor {
         debug!("build_cred_def_request >>> submitter_did: {:?}, cred_def: {:?}",
                submitter_did, cred_def);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_cred_def_request(submitter_did, cred_def)?;
 
@@ -647,7 +647,7 @@ impl LedgerCommandExecutor {
                                   id: &str) -> Result<String, IndyError> {
         debug!("build_get_cred_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_cred_def_request(submitter_did, id)?;
 
@@ -674,7 +674,7 @@ impl LedgerCommandExecutor {
         debug!("build_node_request >>> submitter_did: {:?}, target_did: {:?}, data: {:?}",
                submitter_did, target_did, data);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_node_request(submitter_did, target_did, data)?;
 
@@ -687,7 +687,7 @@ impl LedgerCommandExecutor {
                                         submitter_did: &str) -> Result<String, IndyError> {
         info!("build_get_validator_info_request >>> submitter_did: {:?}", submitter_did);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_validator_info_request(submitter_did)?;
 
@@ -703,7 +703,7 @@ impl LedgerCommandExecutor {
         debug!("build_get_txn_request >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}",
                submitter_did, ledger_type, seq_no);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_txn_request(submitter_did, ledger_type, seq_no)?;
 
@@ -719,7 +719,7 @@ impl LedgerCommandExecutor {
         debug!("build_pool_config_request >>> submitter_did: {:?}, writes: {:?}, force: {:?}",
                submitter_did, writes, force);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_pool_config(submitter_did, writes, force)?;
 
@@ -732,7 +732,7 @@ impl LedgerCommandExecutor {
                                   datetime: Option<&str>) -> Result<String, IndyError> {
         debug!("build_pool_restart_request >>> submitter_did: {:?}, action: {:?}, datetime: {:?}", submitter_did, action, datetime);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_pool_restart(submitter_did, action, datetime)?;
 
@@ -757,7 +757,7 @@ impl LedgerCommandExecutor {
          timeout: {:?}, schedule: {:?}, justification: {:?}, reinstall: {:?}, force: {:?}, package: {:?}",
                submitter_did, name, version, action, sha256, timeout, schedule, justification, reinstall, force, package);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_pool_upgrade(submitter_did, name, version, action, sha256,
                                                          timeout, schedule, justification, reinstall, force, package)?;
@@ -772,7 +772,7 @@ impl LedgerCommandExecutor {
                                    data: RevocationRegistryDefinitionV1) -> Result<String, IndyError> {
         debug!("build_revoc_reg_def_request >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_revoc_reg_def_request(submitter_did, data)?;
 
@@ -786,7 +786,7 @@ impl LedgerCommandExecutor {
                                        id: &str) -> Result<String, IndyError> {
         debug!("build_get_revoc_reg_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_revoc_reg_def_request(submitter_did, id)?;
 
@@ -814,7 +814,7 @@ impl LedgerCommandExecutor {
         debug!("build_revoc_reg_entry_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, revoc_def_type: {:?}, value: {:?}",
                submitter_did, revoc_reg_def_id, revoc_def_type, value);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_revoc_reg_entry_request(submitter_did, revoc_reg_def_id, revoc_def_type, value)?;
 
@@ -829,7 +829,7 @@ impl LedgerCommandExecutor {
                                    timestamp: i64) -> Result<String, IndyError> {
         debug!("build_get_revoc_reg_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_revoc_reg_request(submitter_did, revoc_reg_def_id, timestamp)?;
 
@@ -856,7 +856,7 @@ impl LedgerCommandExecutor {
                                          to: i64) -> Result<String, IndyError> {
         debug!("build_get_revoc_reg_delta_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, from: {:?}, to: {:?}", submitter_did, revoc_reg_def_id, from, to);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        CryptoService::validate_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_revoc_reg_delta_request(submitter_did, revoc_reg_def_id, from, to)?;
 
