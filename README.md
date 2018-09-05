@@ -24,6 +24,57 @@ functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-St
 that explored the ecosystem via command line. That material is being
 rewritten but still contains some useful ideas.
 
+## Items included in this SDK
+
+### libindy
+
+The major artifact of the SDK is a C-callable library that provides the basic building blocks for 
+the creation of applications on the top of [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy).
+It is available for most popular desktop, mobile and server platfrorms.
+
+### Libindy wrappers
+
+A set of libindy wrappers for developing Indy-based applications in your favorite programming language.
+Indy SDK provides libindy wrappers for the following programming languages and platforms:
+
+* [Java](wrappers/java/README.md)
+* [Python](wrappers/python/README.md)
+* [iOS](wrappers/ios/README.md)
+* [NodeJS](wrappers/nodejs/README.md)
+* [.Net](wrappers/dotnet/README.md)
+
+
+### Indy CLI
+
+[Indy CLI](cli/README.md) is the official command line interface that helps Indy developers and administrators.
+
+
+### Libnullpay
+
+[Libnullpay](/libnullpay/README.md) is a libindy plugin that can be used for development of applications that use the Payments API of Indy SDK.
+
+### Libvcx
+
+[Libvcx](/vcx/README.md) is a c-callable library built on top of libindy that provides a high-level
+credential exchange protocol. It simplifies creation of agent applications and provides
+better agent-2-agent interoperability for [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy)
+infrastructure.
+
+This library is currently in an **experimental** state and is not part of official releases.
+
+### Libvcx wrappers
+
+A set of libvcx wrappers for developing vcx-based applications in your favorite programming language.
+
+Indy SDK provides libvcx wrappers for the following programming languages and platforms:
+
+* [Java](/vcx/wrappers/java/vcx/README.md)
+* [Python](/vcx/wrappers/python3/README.md)
+* [iOS](vcx/wrappers/ios/README.md)
+* [NodeJS](/vcx/wrappers/node/README.md)
+
+These wrappers are currently in **experimental** state and it is not part of official releases.
+
 ## How-To Tutorials
 
 Short, simple tutorials that demonstrate how to accomplish common tasks

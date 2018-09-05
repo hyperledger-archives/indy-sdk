@@ -19,6 +19,7 @@ pub mod non_secrets;
 pub mod results;
 pub mod payments;
 pub mod rand_utils;
+pub mod logger;
 
 #[macro_use]
 #[allow(unused_macros)]
@@ -43,6 +44,7 @@ pub mod domain;
 
 pub fn setup() {
     test::cleanup_storage();
+    logger::LoggerUtils::set_default_logger();
 }
 
 pub fn tear_down() {
