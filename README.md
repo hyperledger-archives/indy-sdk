@@ -1,6 +1,6 @@
 # rust-libindy-wrapper
 
-[LibIndy](https://github.com/hyperledger/indy-sdk/tree/master/libindy) major artifact of the SDK is a C-callable library that provides the basic building blocks for the creation of applications on the top of Hyperledger Indy, which provides a distributed-ledger-based foundation for self-sovereign identity. 
+[LibIndy](https://github.com/hyperledger/indy-sdk/tree/master/libindy) major artifact of the SDK is a C-callable library that provides the basic building blocks for the creation of applications on the top of Hyperledger Indy, which provides a distributed-ledger-based foundation for self-sovereign identity.
 
 **rust-libindy-wrapper** is a library for assisting developers using LibIndy API.   
 
@@ -15,7 +15,7 @@ Add rust-libindy-wrapper to Cargo.toml
 
 ```
 [dependencies]
-rust-libindy-wrapper = "0.2.11"
+rust-libindy-wrapper = "0.2.12"
 ```
 
 ### Step 2
