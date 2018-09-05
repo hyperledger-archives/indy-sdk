@@ -15,6 +15,7 @@ would be used and DIDs would be exchanged using some channel of communication
 */
 
 using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.WalletApi;
 
@@ -78,7 +79,7 @@ public class WriteDIDAndQueryVerkey
         // We submit this transaction under the authority of the steward DID that the ledger already recognizes.
         // This call will look up the private key of the steward DID in our wallet, and use it to sign the transaction.
         Console.WriteLine("Step 4 -- Build NYM request to add Trust Anchor to the ledger");
-        string nymRequest = BuildNymRequest(defaultStewardDid, trustAnchorDID, trustAnchorVerkey, null, "TRUST_ANCHOR").Result();
+        string nymRequest = Ledger.BuildNymRequestAsync(defaultStewardDid, trustAnchorDID, trustAnchorVerkey, null, "TRUST_ANCHOR").Result;
         Console.WriteLine("          Nym Request JSON : {0}", nymRequest);
 
         // Now that we have the transaction ready, send it. The building and the sending are separate steps because some
@@ -86,7 +87,7 @@ public class WriteDIDAndQueryVerkey
         // and communicate with the ledger in a different piece of code (e.g., that lives outside the safe internal
         // network).
         Console.WriteLine("          Build NYM request to add Trust Anchor to the ledger");
-        String nymResponseJson = SignAndSubmitRequest(pool, wallet, defaultStewardDid, nymRequest).Result;
+        String nymResponseJson = Ledger.SignAndSubmitRequestAsync(pool, wallet, defaultStewardDid, nymRequest).Result;
         Console.WriteLine("          NYM transaction response : {0}", nymResponseJson);
 
         // At this point, we have successfully written a new identity to the ledger. Our next step will be to query it.
@@ -104,11 +105,11 @@ public class WriteDIDAndQueryVerkey
         Console.WriteLine("          Client VerKey : {0}", clientVerkey);
 
         Console.WriteLine("          Building the GET_NYM request to query Trust Anchor's Verkey as the Client");
-        string getNymRequest = BuildGetNymRequest(clientDID, trustAnchorDID).Result();
+        string getNymRequest = Ledger.BuildGetNymRequestAsync(clientDID, trustAnchorDID).Result;
         Console.WriteLine("          GET_NYM request json : {0}", getNymRequest);
 
         Console.WriteLine("          Sending the GET_NYM request to the ledger");
-        string getNymResponse = SubmitRequest(pool, getNymRequest).Result;
+        string getNymResponse = Ledger.SubmitRequestAsync(pool, getNymRequest).Result;
         Console.WriteLine("          GET_NYM result json : {0}", getNymResponse);
 
         // See whether we received the same info that we wrote the ledger in step 4.
