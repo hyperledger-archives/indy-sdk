@@ -22,7 +22,11 @@ num-traits = "0.2"
 num-derive = "0.2"
 
 [dev-dependencies]
+rand = "0.5.5"
 serde_json = "1.0.22"
+serde_derive = "1.0.76"
+serde = "1.0.76"
+
 
 [build-dependencies]
 pkg-config = "0.3.9"
