@@ -44,7 +44,7 @@ pub mod domain;
 
 pub fn setup() {
     test::cleanup_storage();
-    logger::LoggerUtils::set_default_logger();
+    logger::set_default_logger();
 }
 
 pub fn tear_down() {
