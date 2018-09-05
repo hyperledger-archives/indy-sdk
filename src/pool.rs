@@ -399,39 +399,54 @@ impl Pool {
 
 
 #[cfg(test)]
-mod test_pool_create_config {
+mod testing_helpers {
     use super::*;
 
     use std::env;
-    use std::fs;
-    use std::time::Duration;
-    use std::sync::mpsc::channel;
-    use utils::test::file::TempFile;
-    use utils::test::pool::PoolList;
     use utils::test::rand;
+    use utils::test::pool::PoolList;
 
-    const VALID_TIMEOUT: Duration = Duration::from_millis(250);
-
-    fn pool_name() -> String {
+    pub fn pool_name() -> String {
         format!("TestPool{}", rand::random_string(10))
     }
 
-    fn assert_pool_exists_delete(name: String) {
-        assert!(PoolList::new().pool_exists(&name));
-        Pool::delete(&name).unwrap();
-    }
-
-    fn assert_pool_not_exists(name: String) {
-        assert!(! PoolList::new().pool_exists(&name));
-    }
-
-    fn sample_genesis_config() -> String {
+    pub fn sample_genesis_config() -> String {
         let mut sample_file = env::current_dir().unwrap();
         sample_file.push("storage/sample_genesis_txn.txn");
         assert!(sample_file.exists());
 
         json!({"genesis_txn": sample_file}).to_string()
     }
+
+    pub fn create_default_pool_config() -> String {
+        let name = pool_name();
+        let config = sample_genesis_config();
+        Pool::create_ledger_config(&name, &config).unwrap();
+
+        name
+    }
+
+    pub fn assert_pool_exists(name: &str) {
+        assert!(PoolList::new().pool_exists(name));
+    }
+
+    pub fn assert_pool_not_exists(name: &str) {
+        assert!(! PoolList::new().pool_exists(name));
+    }
+}
+
+
+#[cfg(test)]
+mod test_pool_create_config {
+    use super::*;
+    use super::testing_helpers::*;
+
+    use std::fs;
+    use std::time::Duration;
+    use std::sync::mpsc::channel;
+    use utils::test::file::TempFile;
+
+    const VALID_TIMEOUT: Duration = Duration::from_millis(250);
 
     /*
     Returns the file, otherwise the file would be deleted
@@ -453,7 +468,8 @@ mod test_pool_create_config {
         let result = Pool::create_ledger_config(&name, &config);
 
         assert_eq!((), result.unwrap());
-        assert_pool_exists_delete(name);
+        assert_pool_exists(&name);
+        Pool::delete(&name).unwrap();
     }
 
     #[test]
@@ -463,7 +479,7 @@ mod test_pool_create_config {
         let result = Pool::create_ledger_config(&name, "{}");
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
-        assert_pool_not_exists(name);
+        assert_pool_not_exists(&name);
     }
 
     #[test]
@@ -474,7 +490,7 @@ mod test_pool_create_config {
         let result = Pool::create_ledger_config(&name, &config);
 
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
-        assert_pool_not_exists(name);
+        assert_pool_not_exists(&name);
     }
 
     #[test]
@@ -486,7 +502,7 @@ mod test_pool_create_config {
         let result = Pool::create_ledger_config(&name, &config);
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
-        assert_pool_not_exists(name);
+        assert_pool_not_exists(&name);
     }
 
     #[test]
@@ -497,7 +513,7 @@ mod test_pool_create_config {
         let result = Pool::create_ledger_config("", &config);
     
         assert_eq!(ErrorCode::CommonInvalidParam2, result.unwrap_err());
-        assert_pool_not_exists(name);
+        assert_pool_not_exists(&name);
     }
 
     #[test]
@@ -512,7 +528,8 @@ mod test_pool_create_config {
         let result = Pool::create_ledger_config(&name, &config);
         assert_eq!(ErrorCode::PoolLedgerConfigAlreadyExistsError, result.unwrap_err());
     
-        assert_pool_exists_delete(name);
+        assert_pool_exists(&name);
+        Pool::delete(&name).unwrap();
     }
 
     #[test]
@@ -533,7 +550,8 @@ mod test_pool_create_config {
         let result = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
         assert_eq!(ErrorCode::Success, result);
 
-        assert_pool_exists_delete(name);
+        assert_pool_exists(&name);
+        Pool::delete(&name).unwrap();
     }
 
     #[test]
@@ -549,7 +567,7 @@ mod test_pool_create_config {
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result);
         assert!(receiver.recv_timeout(VALID_TIMEOUT).is_err());
-        assert_pool_not_exists(name);
+        assert_pool_not_exists(&name);
     }
 
     #[test]
@@ -569,7 +587,7 @@ mod test_pool_create_config {
         let result = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
         assert_eq!(ErrorCode::CommonInvalidStructure, result);
 
-        assert_pool_not_exists(name);
+        assert_pool_not_exists(&name);
     }
 
     #[test]
@@ -584,7 +602,8 @@ mod test_pool_create_config {
         );
 
         assert_eq!((), result.unwrap());
-        assert_pool_exists_delete(name);
+        assert_pool_exists(&name);
+        Pool::delete(&name).unwrap();
     }
 
     #[test]
@@ -598,7 +617,7 @@ mod test_pool_create_config {
         );
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
-        assert_pool_not_exists(name);
+        assert_pool_not_exists(&name);
     }
 
     #[test]
@@ -613,6 +632,127 @@ mod test_pool_create_config {
         );
 
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
-        assert_pool_exists_delete(name);
+        assert_pool_exists(&name);
+        Pool::delete(&name).unwrap();
+    }
+}
+
+
+#[cfg(test)]
+mod test_delete_config {
+    use super::*;
+    use super::testing_helpers::*;
+
+    use std::sync::mpsc::channel;
+
+    const VALID_TIMEOUT: Duration = Duration::from_millis(250);
+    const NON_EXISTENT_NAME: &str = "a_pool_name_which_does_not_exist";
+
+    #[test]
+    /* Delete a pool_config. */
+    fn delete_pool() {
+        let pool_name = create_default_pool_config();
+        assert_pool_exists(&pool_name);
+
+        let result = Pool::delete(&pool_name);
+        assert_eq!((), result.unwrap());
+
+        assert_pool_not_exists(&pool_name);
+    }
+
+    #[test]
+    /* Error deleting non existent pool_config. */
+    fn delete_pool_not_exist() {
+        let result = Pool::delete(NON_EXISTENT_NAME);
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+    }
+
+    #[test]
+    /* Error deleting an open pool_config. */
+    fn delete_pool_open() {
+        let pool_name = create_default_pool_config();
+        let config = json!({
+            "refresh_on_open": false,
+            "auto_refresh_time": 0,
+        }).to_string();
+
+        Pool::set_protocol_version(2).unwrap();
+        let pool_handle = Pool::open_ledger(&pool_name, Some(&config)).unwrap();
+
+        let result = Pool::delete(&pool_name);
+        assert_eq!(ErrorCode::CommonInvalidState, result.unwrap_err());
+        assert_pool_exists(&pool_name);
+        
+        Pool::close(pool_handle).unwrap();
+        Pool::delete(&pool_name).unwrap();
+    }
+
+    #[test]
+    /* Delete pool async. */
+    fn delete_pool_async() {
+        let pool_name = create_default_pool_config();
+        let (sender, receiver) = channel();
+
+        let result = Pool::delete_async(&pool_name, move |ec| sender.send(ec).unwrap());
+        assert_eq!(ErrorCode::Success, result);
+
+        let result = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        assert_eq!(ErrorCode::Success, result);
+
+        assert_pool_not_exists(&pool_name);
+    }
+
+
+    #[test]
+    /* Delete pool async resuting in a late error: callback is called. */
+    fn delete_pool_async_late_error() {
+        let (sender, receiver) = channel();
+
+        let result = Pool::delete_async(
+            NON_EXISTENT_NAME,
+            move |ec| sender.send(ec).unwrap()
+        );
+
+        assert_eq!(ErrorCode::Success, result);
+
+        let result = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        assert_eq!(ErrorCode::CommonIOError, result);
+    }
+
+    #[test]
+    /* Delete a pool with a timeout. */ 
+    fn delete_pool_timeout() {
+        let pool_name = create_default_pool_config();
+
+        let result = Pool::delete_timeout(&pool_name, VALID_TIMEOUT);
+        assert_eq!((), result.unwrap());
+
+        assert_pool_not_exists(&pool_name)
+    }
+
+    #[test]
+    /* Error deleting a pool with a timeout. */
+    fn delete_pool_timeout_error() {
+        let result = Pool::delete_timeout(
+            NON_EXISTENT_NAME,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+    }
+
+    #[test]
+    /* Delete a pool with timeout that timeouts. */
+    fn delete_pool_timeout_timeouts() {
+        let pool_name = create_default_pool_config();
+
+        let result = Pool::delete_timeout(
+            &pool_name,
+            Duration::from_micros(1)
+        );
+
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+
+        assert_pool_not_exists(&pool_name)
     }
 }
