@@ -16,7 +16,7 @@ Additionally (and depending on your environment), you will need .NET installed. 
 ### Step 1
 
 In your normal workstation operating system (not the VM), open a java editor of your
-choice and paste the code from [template.cs](template.cs)
+choice and paste the code from [template.partial](template.partial)
 into a new doc. We will be modifying this code in later steps.
 
 Save the doc as `WriteDIDAndQueryVerkey.cs`
@@ -37,7 +37,7 @@ material generated during the tutorial.
 
 ![more info on wallets](../wallet-slide.png)
 
-Copy the contents of [step2.cs](step2.cs) into
+Copy the contents of [step2.partial](step2.partial) into
 `WriteDIDAndQueryVerkey.cs` on top of the `Step 2 code goes here` placeholder comment.
 
 Save the updated version of `WriteDIDAndQueryVerkey.cs`.
@@ -48,7 +48,7 @@ that uses indy.
 ### Step 3
 
 Now we need to put some DIDs and keys in our identity
-wallet. Copy the contents of [step3.cs](step3.cs) into
+wallet. Copy the contents of [step3.partial](step3.partial) into
 `WriteDIDAndQueryVerkey.cs` on top of the `Step 3 code goes here` placeholder comment.
 
 Save the updated version of `WriteDIDAndQueryVerkey.cs`.
@@ -83,7 +83,7 @@ would not have known the seeds.
 Now that preparations are complete, we can finally write the DID and verkey
 for our trust anchor identity to the ledger.
 
-Copy the contents of [step4.cs](step4.cs) into
+Copy the contents of [step4.partial](step4.partial) into
 `WriteDIDAndQueryVerkey.cs` on top of the `Step 4 code goes here` placeholder comment.
 
 Save the updated version of `WriteDIDAndQueryVerkey.cs`.
@@ -92,7 +92,7 @@ Save the updated version of `WriteDIDAndQueryVerkey.cs`.
 
 Once we have an identity on the ledger, we can query it.
 
-Copy the contents of [step5.cs](step5.cs) into
+Copy the contents of [step5.partial](step5.partial) into
 `WriteDIDAndQueryVerkey.cs` on top of the `Step 5 code goes here` placeholder comment.
 
 Save the updated version of `WriteDIDAndQueryVerkey.cs`.
