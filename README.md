@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Indy SDK
 ![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
 This is the official SDK for [Hyperledger Indy](https://www.hyperledger.org/projects),
@@ -212,6 +213,31 @@ If you use VMWare Fusion to run Docker locally, follow the instructions from
 [this article](https://medium.com/@tuweizhong/how-to-setup-port-forward-at-vmware-fusion-8-for-os-x-742ad6ca1344)
 and add the following lines to _/Library/Preferences/VMware Fusion/vmnet8/nat.conf_:
 
+=======
+# rust-libindy-wrapper
+
+[LibIndy](https://github.com/hyperledger/indy-sdk/tree/master/libindy) major artifact of the SDK is a C-callable library that provides the basic building blocks for the creation of applications on the top of Hyperledger Indy, which provides a distributed-ledger-based foundation for self-sovereign identity. 
+
+**rust-libindy-wrapper** is a library for assisting developers using LibIndy API.   
+
+**rust-libindy-wrapper** does not include LibIndy.  This will need to be built separately.  See [IndySDK github](https://github.com/hyperledger/indy-sdk)
+
+## using rust-libindy-wrapper
+
+*Assumptions*: LibIndy is installed.  And, you understand the basics.
+
+### Step 1
+Add rust-libindy-wrapper to Cargo.toml
+
+```
+[dependencies]
+rust-libindy-wrapper = "0.2.11"
+```
+
+### Step 2
+setup an environment variable that points to LibIndy library.
+eg:
+>>>>>>> b924fddb3... TOK-390 updates the crate name per review
 ```
 # Use these with care - anyone can enter into your VM through these...
 # The format and example are as follows:
@@ -255,7 +281,6 @@ to simplify their transition to API of Libindy 1.4.0.
 * [v1.5.0 → v1.6.x](doc/migration-guide-1.5.0-1.6.0.md)
 
 ## How to Contribute
-
 * We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
 * You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,
