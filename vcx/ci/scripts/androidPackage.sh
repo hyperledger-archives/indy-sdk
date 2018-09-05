@@ -10,9 +10,7 @@ do
         arch_folder="armeabi-v7a"
     fi
     mkdir -p ${ANDROID_JNI_LIB}/${arch_folder}
-    if [ -e runtime_android_build/libvcx_${arch}/libvcx.so ]; then
-        cp -v runtime_android_build/libvcx_${arch}/libvcx.so ${ANDROID_JNI_LIB}/${arch_folder}/libvcx.so
-    fi
+    cp -v runtime_android_build/libvcx_${arch}/libvcx.so ${ANDROID_JNI_LIB}/${arch_folder}/libvcx.so
 done
 
 pushd vcx/wrappers/java/android
