@@ -1,4 +1,4 @@
-
+using System;
 
 /*
 Example demonstrating how to add DID with the role of Trust Anchor as Steward.
@@ -17,8 +17,21 @@ would be used and DIDs would be exchanged using some channel of communication
 
 public class WriteDIDAndQueryVerkey
 {
-    public static void Main(string[] args)
+    public static void Demo()
     {
 
+        Console.WriteLine("Hello World!");
+
+        string walletName = "myWallet";
+        string poolName = "pool";
+        string stewardSeed = "000000000000000000000000Steward1";
+        string poolConfig = "{\"genesis_txn\": \"/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis\"}";
+
+
+        // Step 2
+
+        // Step 3
+
+        // Step 4
     }
 }
