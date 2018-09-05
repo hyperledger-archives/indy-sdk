@@ -1,4 +1,7 @@
+
+// these are packages from .NET Core and other Nuget packages
 using System;
+using Newtonsoft.Json.Linq;
 
 /*
 Example demonstrating how to add DID with the role of Trust Anchor as Steward.
@@ -14,6 +17,7 @@ For the sake of simplicity, a single wallet is used. In the real world scenario,
 would be used and DIDs would be exchanged using some channel of communication
 */
 
+// These packages are from the Hyperledger Nuget package
 using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.PoolApi;
@@ -24,7 +28,7 @@ public class WriteDIDAndQueryVerkey
     public static void Demo()
     {
 
-        Console.WriteLine("Step 1");
+        Console.WriteLine("Step 1 -- set up some constants");
 
         string walletName = "myWallet";
         string poolName = "pool";
@@ -46,6 +50,7 @@ public class WriteDIDAndQueryVerkey
 
         Console.WriteLine("          Open identity wallet and get the wallet handle from libindy.");
         Wallet wallet = Wallet.OpenWalletAsync(walletName, string.Empty, string.Empty).Result;
+
 
         // Step 3
         // First, put a steward DID and its keypair in the wallet. This doesn't write anything to the ledger,
@@ -74,6 +79,7 @@ public class WriteDIDAndQueryVerkey
         Console.WriteLine("          Trust Anchor VerKey : {0}", trustAnchorVerkey);
 
 
+
         // Step 4
         // Here, we are building the transaction payload that we'll send to write the Trust Anchor identity to the ledger.
         // We submit this transaction under the authority of the steward DID that the ledger already recognizes.
@@ -91,6 +97,8 @@ public class WriteDIDAndQueryVerkey
         Console.WriteLine("          NYM transaction response : {0}", nymResponseJson);
 
         // At this point, we have successfully written a new identity to the ledger. Our next step will be to query it.
+
+
 
         // Step 5
         // Here we are creating a third DID. This one is never written to the ledger, but we do have to have it in the
@@ -114,10 +122,11 @@ public class WriteDIDAndQueryVerkey
 
         // See whether we received the same info that we wrote the ledger in step 4.
         Console.WriteLine("          Comparing Trust Anchor Verkey as written by Steward and as retrieved in Client's query");
-        // TODO:
-        Console.WriteLine("          Written by Steward  : ");
-        Console.WriteLine("          Queried from Ledger : ");
-        Console.WriteLine("          Matching            : ");
+        var getNymResponseObj = JObject.Parse(getNymResponse);
+        string getNymVerKey = getNymResponseObj["verKey"].ToString();
+        Console.WriteLine("          Written by Steward  : {0}", trustAnchorVerkey);
+        Console.WriteLine("          Queried from Ledger : {0}", getNymVerKey);
+        Console.WriteLine("          Matching            : {0}", (string.Compare(getNymVerKey, trustAnchorVerkey) == 0, true, false));
 
         // Do some cleanup.
         Console.WriteLine("          Close and delete wallet");
