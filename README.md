@@ -15,7 +15,7 @@ Add rust-libindy-wrapper to Cargo.toml
 
 ```
 [dependencies]
-rust-libindy-wrapper = "0.2.12"
+rust-libindy-wrapper = "0.2.13"
 ```
 
 ### Step 2
