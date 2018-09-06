@@ -8,8 +8,9 @@ use serde_json;
 pub mod constants;
 pub mod did;
 pub mod environment;
+pub mod file;
 pub mod pool;
-mod rand;
+pub mod rand;
 pub mod setup;
 pub mod wallet;
 
