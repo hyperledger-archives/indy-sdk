@@ -392,7 +392,6 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
 
         let json = to_json(&GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
-        println!("{}", json);
         let result = parse_get_connection_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 1)
     }

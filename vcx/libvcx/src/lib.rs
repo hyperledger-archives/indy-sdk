@@ -74,6 +74,7 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
+    #[cfg(feature = "sovtoken")]
     #[test]
     fn test_real_proof() {
         use ::utils::devsetup::tests::setup_local_env;
@@ -178,7 +179,6 @@ mod tests {
         println!("sending proof request");
         proof::send_proof_request(proof_req_handle, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
-        // AS CONSUMER SEND PROOF
         set_consumer();
         let requests = disclosed_proof::get_proof_request_messages(faber, None).unwrap();
         let requests: Value = serde_json::from_str(&requests).unwrap();
@@ -211,4 +211,5 @@ mod tests {
         let wallet = ::utils::libindy::payments::get_wallet_token_info().unwrap();
         cleanup_local_env(wallet_name);
     }
+
 }

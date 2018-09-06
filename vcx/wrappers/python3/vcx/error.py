@@ -90,7 +90,8 @@ class ErrorCode(IntEnum):
     InvalidLedgerResponse = 1082,
     DidAlreadyExistsInWallet = 1083,
     DuplicateMasterSecret = 1084,
-    ThreadError = 1085
+    ThreadError = 1085,
+    InvalidProofRequest = 1086,
 
 
 class VcxError(Exception):
