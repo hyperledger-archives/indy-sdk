@@ -66,7 +66,7 @@ impl CommandExecutor {
     }
 
     fn new() -> CommandExecutor {
-        ::utils::logger::LoggerUtils::init();
+        ::utils::logger::init();
         let (sender, receiver) = channel();
 
         CommandExecutor {

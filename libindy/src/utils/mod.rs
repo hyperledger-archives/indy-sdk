@@ -1,13 +1,10 @@
 pub mod environment;
 
 #[macro_use]
-pub mod cstring;
+pub mod ctypes;
 
 #[macro_use]
 pub mod ccallback;
-
-#[macro_use]
-pub mod byte_array;
 
 pub mod crypto;
 #[macro_use]

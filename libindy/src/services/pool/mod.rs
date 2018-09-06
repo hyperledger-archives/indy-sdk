@@ -31,8 +31,8 @@ use api::ledger::{CustomFree, CustomTransactionParser};
 use domain::pool::{PoolConfig, PoolOpenConfig};
 use errors::pool::PoolError;
 use errors::common::CommonError;
-use utils::environment::EnvironmentUtils;
-use utils::sequence::SequenceUtils;
+use utils::environment;
+use utils::sequence;
 use std::sync::Mutex;
 
 use services::pool::pool::{Pool, ZMQPool};
@@ -59,7 +59,7 @@ impl PoolService {
         //TODO: initialize all state machines
         trace!("PoolService::create {} with config {:?}", name, config);
 
-        let mut path = EnvironmentUtils::pool_path(name);
+        let mut path = environment::pool_path(name);
         let pool_config = config.unwrap_or(PoolConfig::default_for_name(name));
 
         if path.as_path().exists() {
@@ -112,7 +112,7 @@ impl PoolService {
                 return Err(PoolError::CommonError(CommonError::InvalidState("Can't delete pool config - pool is open now".to_string())));
             }
         }
-        let path = EnvironmentUtils::pool_path(name);
+        let path = environment::pool_path(name);
         fs::remove_dir_all(path).map_err(PoolError::from)
     }
 
@@ -126,7 +126,7 @@ impl PoolService {
 
         let config = config.unwrap_or(PoolOpenConfig::default() );
 
-        let pool_handle: i32 = SequenceUtils::get_next_id();
+        let pool_handle: i32 = sequence::get_next_id();
         let mut new_pool = Pool::new(name, pool_handle, config);
 
         let zmq_ctx = zmq::Context::new();
@@ -157,7 +157,7 @@ impl PoolService {
     }
 
     pub fn send_tx(&self, handle: i32, msg: &str) -> Result<i32, PoolError> {
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
 
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
         match pools.get(&handle) {
@@ -169,7 +169,7 @@ impl PoolService {
     }
 
     pub fn send_action(&self, handle: i32, msg: &str, nodes: Option<&str>, timeout: Option<i32>) -> Result<i32, PoolError> {
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
 
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
         match pools.get(&handle) {
@@ -201,7 +201,7 @@ impl PoolService {
     }
 
     pub fn close(&self, handle: i32) -> Result<i32, PoolError> {
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
 
         let mut pools = self.open_pools.try_borrow_mut().map_err(CommonError::from)?;
         match pools.remove(&handle) {
@@ -213,7 +213,7 @@ impl PoolService {
     }
 
     pub fn refresh(&self, handle: i32) -> Result<i32, PoolError> {
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
 
         let pools = self.open_pools.try_borrow().map_err(CommonError::from)?;
         match pools.get(&handle) {
@@ -239,7 +239,7 @@ impl PoolService {
 
     pub fn list(&self) -> Result<Vec<serde_json::Value>, PoolError> {
         let mut pool = Vec::new();
-        let pool_home_path = EnvironmentUtils::pool_home_path();
+        let pool_home_path = environment::pool_home_path();
 
         if let Ok(entries) = fs::read_dir(pool_home_path) {
             for entry in entries {
@@ -258,7 +258,7 @@ impl PoolService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::test::TestUtils;
+    use utils::test;
     use domain::ledger::request::ProtocolVersion;
     use std::thread;
     use services::pool::types::*;
@@ -293,10 +293,10 @@ mod tests {
 
         #[test]
         fn pool_service_close_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             let ps = PoolService::new();
-            let pool_id = SequenceUtils::get_next_id();
+            let pool_id = sequence::get_next_id();
             let ctx = zmq::Context::new();
             let send_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
@@ -312,10 +312,10 @@ mod tests {
 
         #[test]
         fn pool_service_refresh_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             let ps = PoolService::new();
-            let pool_id = SequenceUtils::get_next_id();
+            let pool_id = sequence::get_next_id();
             let ctx = zmq::Context::new();
             let send_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
             let recv_soc = ctx.socket(zmq::SocketType::PAIR).unwrap();
@@ -331,11 +331,11 @@ mod tests {
 
         #[test]
         fn pool_service_delete_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             let ps = PoolService::new();
             let pool_name = "pool_service_delete_works";
-            let path: path::PathBuf = EnvironmentUtils::pool_path(pool_name);
+            let path: path::PathBuf = environment::pool_path(pool_name);
             fs::create_dir_all(path.as_path()).unwrap();
             assert!(path.exists());
             ps.delete(pool_name).unwrap();
@@ -344,15 +344,15 @@ mod tests {
 
         #[test]
         fn pool_service_delete_works_for_opened() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             let zmq_ctx = zmq::Context::new();
             let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
             let recv_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
             let ps = PoolService::new();
             let pool_name = "pool_service_delete_works";
-            let path: path::PathBuf = EnvironmentUtils::pool_path(pool_name);
-            let pool_id = SequenceUtils::get_next_id();
+            let path: path::PathBuf = environment::pool_path(pool_name);
+            let pool_id = sequence::get_next_id();
 
             let inproc_sock_name: String = format!("inproc://pool_{}", pool_name);
             recv_cmd_sock.bind(inproc_sock_name.as_str()).unwrap();
@@ -370,7 +370,7 @@ mod tests {
 
         #[test]
         fn pool_send_tx_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             let name = "test";
             let zmq_ctx = zmq::Context::new();
@@ -389,7 +389,7 @@ mod tests {
 
         #[test]
         fn pool_send_tx_works_for_closed_socket() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             let name = "test";
             let zmq_ctx = zmq::Context::new();
@@ -404,14 +404,14 @@ mod tests {
 
         #[test]
         fn pool_send_tx_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
             let ps = PoolService::new();
             assert_match!(Err(PoolError::InvalidHandle(_)), ps.send_tx(-1, "txn"));
         }
 
         #[test]
         fn pool_send_action_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             let name = "test";
             let zmq_ctx = zmq::Context::new();
@@ -430,21 +430,21 @@ mod tests {
 
         #[test]
         fn pool_close_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
             let ps = PoolService::new();
             assert_match!(Err(PoolError::InvalidHandle(_)), ps.close(-1));
         }
 
         #[test]
         fn pool_refresh_works_for_invalid_handle() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
             let ps = PoolService::new();
             assert_match!(Err(PoolError::InvalidHandle(_)), ps.refresh(-1));
         }
 
         #[test]
         fn pool_register_sp_parser_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
             REGISTERED_SP_PARSERS.lock().unwrap().clear();
             extern fn test_sp(_reply_from_node: *const c_char, _parsed_sp: *mut *const c_char) -> ErrorCode {
                 ErrorCode::Success
@@ -457,7 +457,7 @@ mod tests {
 
         #[test]
         fn pool_get_sp_parser_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
             REGISTERED_SP_PARSERS.lock().unwrap().clear();
             extern fn test_sp(_reply_from_node: *const c_char, _parsed_sp: *mut *const c_char) -> ErrorCode {
                 ErrorCode::Success
@@ -471,14 +471,14 @@ mod tests {
 
         #[test]
         fn pool_get_sp_parser_works_for_invalid_name() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
             REGISTERED_SP_PARSERS.lock().unwrap().clear();
             assert_eq!(None, PoolService::get_sp_parser("test"));
         }
 
         #[test]
         pub fn pool_add_open_pool_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
             let name = "test";
             let ps = PoolService::new();
             let zmq_ctx = zmq::Context::new();
@@ -490,7 +490,7 @@ mod tests {
 
         #[test]
         pub fn pool_add_open_pool_works_for_no_pending_pool() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
             let ps = PoolService::new();
             assert_match!(Err(PoolError::InvalidHandle(_)), ps.add_open_pool(-1));
         }
@@ -498,20 +498,18 @@ mod tests {
 
     #[test]
     fn pool_drop_works_for_after_close() {
-        use utils::logger::LoggerUtils;
-        use utils::test::TestUtils;
+        use utils::test;
         use std::time;
 
-        TestUtils::cleanup_storage();
-        LoggerUtils::init();
+        test::cleanup_storage();
 
         fn drop_test() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
             _set_protocol_version(TEST_PROTOCOL_VERSION);
             let ps = PoolService::new();
 
             let pool_name = "pool_drop_works";
-            let gen_txn = TestUtils::gen_txns()[0].clone();
+            let gen_txn = test::gen_txns()[0].clone();
 
             let zmq_ctx = zmq::Context::new();
             let send_cmd_sock = zmq_ctx.socket(zmq::SocketType::PAIR).unwrap();
@@ -521,7 +519,7 @@ mod tests {
             send_cmd_sock.connect(inproc_sock_name.as_str()).unwrap();
 
             // create minimal fs config stub before Pool::new()
-            let mut pool_path = EnvironmentUtils::pool_path(pool_name);
+            let mut pool_path = environment::pool_path(pool_name);
             fs::create_dir_all(&pool_path).unwrap();
             pool_path.push(pool_name);
             pool_path.set_extension("txn");
@@ -537,7 +535,7 @@ mod tests {
         }
 
         drop_test();
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
     }
 
     pub mod nodes_emulator {

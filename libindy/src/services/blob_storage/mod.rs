@@ -6,7 +6,7 @@ extern crate indy_crypto;
 extern crate sha2;
 
 use errors::common::CommonError;
-use utils::sequence::SequenceUtils;
+use utils::sequence;
 
 use self::digest::{FixedOutput, Input};
 use self::sha2::Sha256;
@@ -77,14 +77,14 @@ impl BlobStorageService {
             .get(type_).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Writer type".to_string()))?
             .open(config)?;
 
-        let config_handle = SequenceUtils::get_next_id();
+        let config_handle = sequence::get_next_id();
         self.writer_configs.try_borrow_mut()?.insert(config_handle, writer_config);
 
         Ok(config_handle)
     }
 
     pub fn create_blob(&self, config_handle: i32) -> Result<i32, CommonError> {
-        let blob_handle = SequenceUtils::get_next_id();
+        let blob_handle = sequence::get_next_id();
         let writer = self.writer_configs.try_borrow()?
             .get(&config_handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Writer".to_owned()))?
             .create(blob_handle)?;
@@ -122,7 +122,7 @@ impl BlobStorageService {
             .get(type_).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Reader type".to_string()))?
             .open(config)?;
 
-        let config_handle = SequenceUtils::get_next_id();
+        let config_handle = sequence::get_next_id();
         self.reader_configs.try_borrow_mut()?.insert(config_handle, reader_config);
 
         Ok(config_handle)
@@ -133,7 +133,7 @@ impl BlobStorageService {
             .get(&config_handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Reader".to_string()))?
             .open(hash, location)?;
 
-        let reader_handle = SequenceUtils::get_next_id();
+        let reader_handle = sequence::get_next_id();
         self.reader_blobs.try_borrow_mut()?.insert(reader_handle, reader);
 
         Ok(reader_handle)

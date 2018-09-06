@@ -6,7 +6,7 @@ use commands::non_secrets::NonSecretsCommand;
 use domain::wallet::Tags;
 use errors::common::CommonError;
 use errors::ToErrorCode;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 use serde_json;
 use self::libc::c_char;
@@ -360,7 +360,7 @@ pub  extern fn indy_get_wallet_record(command_handle: i32,
                 Box::new(move |result| {
                     let (err, record_json) = result_to_err_code_1!(result, String::new());
                     trace!("indy_get_wallet_record: record_json: {:?}", record_json);
-                    let record_json = CStringUtils::string_to_cstring(record_json);
+                    let record_json = ctypes::string_to_cstring(record_json);
                     cb(command_handle, err, record_json.as_ptr())
                 })
             )));
@@ -480,7 +480,7 @@ pub  extern fn indy_fetch_wallet_search_next_records(command_handle: i32,
                 Box::new(move |result| {
                     let (err, records_json) = result_to_err_code_1!(result, String::new());
                     trace!("indy_fetch_wallet_search_next_records: records_json: {:?}", records_json);
-                    let records_json = CStringUtils::string_to_cstring(records_json);
+                    let records_json = ctypes::string_to_cstring(records_json);
                     cb(command_handle, err, records_json.as_ptr())
                 })
             )));

@@ -10,7 +10,7 @@ use domain::anoncreds::schema::Schema;
 use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinition;
 use domain::anoncreds::revocation_registry_delta::RevocationRegistryDelta;
 use domain::ledger::node::NodeOperationData;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 use serde_json;
 use self::libc::c_char;
@@ -65,7 +65,7 @@ pub extern fn indy_sign_and_submit_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_result_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_sign_and_submit_request: request_result_json: {:?}", request_result_json);
-                let request_result_json = CStringUtils::string_to_cstring(request_result_json);
+                let request_result_json = ctypes::string_to_cstring(request_result_json);
                 cb(command_handle, err, request_result_json.as_ptr())
             })
         )));
@@ -114,7 +114,7 @@ pub extern fn indy_submit_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_result_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_submit_request: request_result_json: {:?}", request_result_json);
-                let request_result_json = CStringUtils::string_to_cstring(request_result_json);
+                let request_result_json = ctypes::string_to_cstring(request_result_json);
                 cb(command_handle, err, request_result_json.as_ptr())
             })
         )));
@@ -179,7 +179,7 @@ pub extern fn indy_submit_action(command_handle: i32,
                 Box::new(move |result| {
                     let (err, request_result_json) = result_to_err_code_1!(result, String::new());
                     trace!("indy_submit_action: request_result_json: {:?}", request_result_json);
-                    let request_result_json = CStringUtils::string_to_cstring(request_result_json);
+                    let request_result_json = ctypes::string_to_cstring(request_result_json);
                     cb(command_handle, err, request_result_json.as_ptr())
                 })
             )));
@@ -235,7 +235,7 @@ pub extern fn indy_sign_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, signed_request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_sign_request: signed_request_json: {:?}", signed_request_json);
-                let signed_request_json = CStringUtils::string_to_cstring(signed_request_json);
+                let signed_request_json = ctypes::string_to_cstring(signed_request_json);
                 cb(command_handle, err, signed_request_json.as_ptr())
             })
         )));
@@ -290,7 +290,7 @@ pub extern fn indy_multi_sign_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, signed_request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_multi_sign_request: signed_request_json: {:?}", signed_request_json);
-                let signed_request_json = CStringUtils::string_to_cstring(signed_request_json);
+                let signed_request_json = ctypes::string_to_cstring(signed_request_json);
                 cb(command_handle, err, signed_request_json.as_ptr())
             })
         )));
@@ -307,8 +307,8 @@ pub extern fn indy_multi_sign_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: Id of Identity stored in secured Wallet.
-/// target_did: Id of Identity stored in secured Wallet.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
+/// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -325,7 +325,7 @@ pub extern fn indy_build_get_ddo_request(command_handle: i32,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_ddo_request: >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -338,7 +338,7 @@ pub extern fn indy_build_get_ddo_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_get_ddo_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -405,7 +405,7 @@ pub extern fn indy_build_nym_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_nym_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -421,7 +421,7 @@ pub extern fn indy_build_nym_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the read request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -439,7 +439,7 @@ pub extern fn indy_build_get_nym_request(command_handle: i32,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_nym_request: >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -452,7 +452,7 @@ pub extern fn indy_build_get_nym_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_get_nym_request: >>> request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -513,7 +513,7 @@ pub extern fn indy_build_attrib_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_attrib_request: >>> request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -529,7 +529,7 @@ pub extern fn indy_build_attrib_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the read request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
 /// raw: (Optional) Requested attribute name.
 /// hash: (Optional) Requested attribute hash.
@@ -554,7 +554,7 @@ pub extern fn indy_build_get_attrib_request(command_handle: i32,
     trace!("indy_build_get_attrib_request: >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
            submitter_did, target_did, hash, raw, enc);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(target_did, ErrorCode::CommonInvalidParam3);
     check_useful_opt_c_str!(raw, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(hash, ErrorCode::CommonInvalidParam5);
@@ -574,7 +574,7 @@ pub extern fn indy_build_get_attrib_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_get_attrib_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -628,7 +628,7 @@ pub extern fn indy_build_schema_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_schema_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -644,7 +644,7 @@ pub extern fn indy_build_schema_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the read request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// id: Schema ID in ledger
 /// cb: Callback that takes command result as parameter.
 ///
@@ -662,7 +662,7 @@ pub extern fn indy_build_get_schema_request(command_handle: i32,
                                                                  request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_schema_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -675,7 +675,7 @@ pub extern fn indy_build_get_schema_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_get_schema_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -726,8 +726,8 @@ pub extern fn indy_parse_get_schema_response(command_handle: i32,
             Box::new(move |result| {
                 let (err, schema_id, schema_json) = result_to_err_code_2!(result, String::new(), String::new());
                 trace!("indy_parse_get_schema_response: schema_id: {:?}, schema_json: {:?}", schema_id, schema_json);
-                let schema_id = CStringUtils::string_to_cstring(schema_id);
-                let schema_json = CStringUtils::string_to_cstring(schema_json);
+                let schema_id = ctypes::string_to_cstring(schema_id);
+                let schema_json = ctypes::string_to_cstring(schema_json);
                 cb(command_handle, err, schema_id.as_ptr(), schema_json.as_ptr())
             })
         )));
@@ -786,7 +786,7 @@ pub extern fn indy_build_cred_def_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_cred_def_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -803,7 +803,7 @@ pub extern fn indy_build_cred_def_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the read request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// id: Credential Definition ID in ledger.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -821,7 +821,7 @@ pub extern fn indy_build_get_cred_def_request(command_handle: i32,
                                                                    request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_cred_def_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -834,7 +834,7 @@ pub extern fn indy_build_get_cred_def_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_get_cred_def_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -889,8 +889,8 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: i32,
             Box::new(move |result| {
                 let (err, cred_def_id, cred_def_json) = result_to_err_code_2!(result, String::new(), String::new());
                 trace!("indy_parse_get_cred_def_response: cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
-                let cred_def_id = CStringUtils::string_to_cstring(cred_def_id);
-                let cred_def_json = CStringUtils::string_to_cstring(cred_def_json);
+                let cred_def_id = ctypes::string_to_cstring(cred_def_id);
+                let cred_def_json = ctypes::string_to_cstring(cred_def_json);
                 cb(command_handle, err, cred_def_id.as_ptr(), cred_def_json.as_ptr())
             })
         )));
@@ -950,7 +950,7 @@ pub extern fn indy_build_node_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_node_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -966,7 +966,7 @@ pub extern fn indy_build_node_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: Id of Identity stored in secured Wallet.
+/// submitter_did: DID of the read request sender.
 /// cb: Callback that takes command result as parameter.
 ///
 /// #Returns
@@ -987,7 +987,7 @@ pub extern fn indy_build_get_validator_info_request(command_handle: i32,
             submitter_did,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -999,7 +999,7 @@ pub extern fn indy_build_get_validator_info_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the request submitter.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// ledger_type: (Optional) type of the ledger the requested transaction belongs to:
 ///     DOMAIN - used default,
 ///     POOL,
@@ -1023,7 +1023,7 @@ pub extern fn indy_build_get_txn_request(command_handle: i32,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_txn_request: >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}", submitter_did, ledger_type, seq_no);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_opt_c_str!(ledger_type, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1037,7 +1037,7 @@ pub extern fn indy_build_get_txn_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_get_txn_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -1088,7 +1088,7 @@ pub extern fn indy_build_pool_config_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_pool_config_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -1140,7 +1140,7 @@ pub extern fn indy_build_pool_restart_request(command_handle: i32,
                 Box::new(move |result| {
                     let (err, request_json) = result_to_err_code_1!(result, String::new());
                     trace!("indy_build_pool_restart_request: request_json: {:?}", request_json);
-                    let request_json = CStringUtils::string_to_cstring(request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
                     cb(command_handle, err, request_json.as_ptr())
                 }))));
 
@@ -1230,7 +1230,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
                 Box::new(move |result| {
                     let (err, request_json) = result_to_err_code_1!(result, String::new());
                     trace!("indy_build_pool_upgrade_request: request_json: {:?}", request_json);
-                    let request_json = CStringUtils::string_to_cstring(request_json);
+                    let request_json = ctypes::string_to_cstring(request_json);
                     cb(command_handle, err, request_json.as_ptr())
                 })
             )));
@@ -1292,7 +1292,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, rev_reg_def_req) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_revoc_reg_def_request: rev_reg_def_req: {:?}", rev_reg_def_req);
-                let rev_reg_def_req = CStringUtils::string_to_cstring(rev_reg_def_req);
+                let rev_reg_def_req = ctypes::string_to_cstring(rev_reg_def_req);
                 cb(command_handle, err, rev_reg_def_req.as_ptr())
             })
         )));
@@ -1309,7 +1309,7 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the read request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// id:  ID of Revocation Registry Definition in ledger.
 /// cb: Callback that takes command result as parameter.
 ///
@@ -1327,7 +1327,7 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
                                                                         request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_revoc_reg_def_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
@@ -1340,7 +1340,7 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_get_revoc_reg_def_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -1400,8 +1400,8 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: i32,
                 let (err, revoc_reg_def_id, revoc_reg_def_json) = result_to_err_code_2!(result, String::new(), String::new());
                 trace!("indy_parse_get_revoc_reg_def_response: revoc_reg_def_id: {:?}, revoc_reg_def_json: {:?}", revoc_reg_def_id, revoc_reg_def_json);
 
-                let revoc_reg_def_id = CStringUtils::string_to_cstring(revoc_reg_def_id);
-                let revoc_reg_def_json = CStringUtils::string_to_cstring(revoc_reg_def_json);
+                let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
+                let revoc_reg_def_json = ctypes::string_to_cstring(revoc_reg_def_json);
                 cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_def_json.as_ptr())
             })
         )));
@@ -1470,7 +1470,7 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_revoc_reg_entry_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -1487,7 +1487,7 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the read request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
 /// timestamp: Requested time represented as a total number of seconds from Unix Epoch
 /// cb: Callback that takes command result as parameter.
@@ -1507,7 +1507,7 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: i32,
                                                                     request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_revoc_reg_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1521,7 +1521,7 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_get_revoc_reg_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -1574,8 +1574,8 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: i32,
                 trace!("indy_parse_get_revoc_reg_response: revoc_reg_def_id: {:?}, revoc_reg_json: {:?}, timestamp: {:?}",
                        revoc_reg_def_id, revoc_reg_json, timestamp);
 
-                let revoc_reg_def_id = CStringUtils::string_to_cstring(revoc_reg_def_id);
-                let revoc_reg_json = CStringUtils::string_to_cstring(revoc_reg_json);
+                let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
+                let revoc_reg_json = ctypes::string_to_cstring(revoc_reg_json);
                 cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_json.as_ptr(), timestamp)
             })
         )));
@@ -1593,7 +1593,7 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: i32,
 ///
 /// #Params
 /// command_handle: command handle to map callback to caller context.
-/// submitter_did: DID of the read request sender.
+/// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
 /// revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
 /// from: Requested time represented as a total number of seconds from Unix Epoch
 /// to: Requested time represented as a total number of seconds from Unix Epoch
@@ -1616,7 +1616,7 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: i32,
     trace!("indy_build_get_revoc_reg_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, from: {:?}, to: {:?}",
            submitter_did, revoc_reg_def_id, from, to);
 
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_str!(revoc_reg_def_id, ErrorCode::CommonInvalidParam3);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1634,7 +1634,7 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: i32,
             Box::new(move |result| {
                 let (err, request_json) = result_to_err_code_1!(result, String::new());
                 trace!("indy_build_get_revoc_reg_request: request_json: {:?}", request_json);
-                let request_json = CStringUtils::string_to_cstring(request_json);
+                let request_json = ctypes::string_to_cstring(request_json);
                 cb(command_handle, err, request_json.as_ptr())
             })
         )));
@@ -1690,8 +1690,8 @@ pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: i32,
                 trace!("indy_parse_get_revoc_reg_delta_response: revoc_reg_def_id: {:?}, revoc_reg_delta_json: {:?}, timestamp: {:?}",
                        revoc_reg_def_id, revoc_reg_delta_json, timestamp);
 
-                let revoc_reg_def_id = CStringUtils::string_to_cstring(revoc_reg_def_id);
-                let revoc_reg_delta_json = CStringUtils::string_to_cstring(revoc_reg_delta_json);
+                let revoc_reg_def_id = ctypes::string_to_cstring(revoc_reg_def_id);
+                let revoc_reg_delta_json = ctypes::string_to_cstring(revoc_reg_delta_json);
                 cb(command_handle, err, revoc_reg_def_id.as_ptr(), revoc_reg_delta_json.as_ptr(), timestamp)
             })
         )));

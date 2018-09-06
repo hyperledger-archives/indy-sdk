@@ -727,7 +727,7 @@ mod tests {
     use services::pool::request_handler::tests::MockRequestHandler;
     use services::pool::types::{Message, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, ResponseMetadata};
     use super::*;
-    use utils::test::TestUtils;
+    use utils::test;
 
     mod pool {
         use super::*;
@@ -760,7 +760,7 @@ mod tests {
         use std::fs;
         use std::io::Write;
 
-        use utils::environment::EnvironmentUtils;
+        use utils::environment;
 
         const POOL: &'static str = "pool";
 
@@ -771,7 +771,7 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_check_cache_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -780,7 +780,7 @@ mod tests {
             let p = p.handle_event(PoolEvent::CheckCache(1));
             assert_match!(PoolState::GettingCatchupTarget(_), p.state);
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
@@ -843,7 +843,7 @@ mod tests {
 
         #[test]
         pub fn pool_wrapper_close_works_from_getting_catchup_target() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -853,12 +853,12 @@ mod tests {
             let p = p.handle_event(PoolEvent::Close(2));
             assert_match!(PoolState::Closed(_), p.state);
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_catchup_target_not_found_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -868,12 +868,12 @@ mod tests {
             let p = p.handle_event(PoolEvent::CatchupTargetNotFound(PoolError::Timeout));
             assert_match!(PoolState::Terminated(_), p.state);
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_getting_catchup_target_synced_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -883,12 +883,12 @@ mod tests {
             let p = p.handle_event(PoolEvent::Synced(MerkleTree::from_vec(vec![]).unwrap()));
             assert_match!(PoolState::Active(_), p.state);
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_getting_catchup_target_synced_works_for_node_state_error() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -899,12 +899,12 @@ mod tests {
             let p = p.handle_event(PoolEvent::Synced(merkle_tree_factory::create(POOL).unwrap()));
             assert_match!(PoolState::Terminated(_), p.state);
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_getting_catchup_target_catchup_target_found_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -916,12 +916,12 @@ mod tests {
             let p = p.handle_event(PoolEvent::CatchupTargetFound(mt.root_hash().to_vec(), mt.count, mt));
             assert_match!(PoolState::SyncCatchup(_), p.state);
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_getting_catchup_target_catchup_target_found_works_for_node_state_error() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -934,12 +934,12 @@ mod tests {
             let p = p.handle_event(PoolEvent::CatchupTargetFound(mt.root_hash().to_vec(), mt.count, mt));
             assert_match!(PoolState::Terminated(_), p.state);
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_sync_catchup_close_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -952,12 +952,12 @@ mod tests {
             let p = p.handle_event(PoolEvent::Close(2));
             assert_match!(PoolState::Closed(_), p.state);
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_sync_catchup_synced_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -970,12 +970,12 @@ mod tests {
             let p = p.handle_event(PoolEvent::Synced(merkle_tree_factory::create(POOL).unwrap()));
             assert_match!(PoolState::Active(_), p.state);
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_sync_catchup_synced_works_for_node_state_error() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -989,12 +989,12 @@ mod tests {
             let p = p.handle_event(PoolEvent::Synced(merkle_tree_factory::create(POOL).unwrap()));
             assert_match!(PoolState::Terminated(_), p.state);
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_active_send_request_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -1019,12 +1019,12 @@ mod tests {
                 _ => assert!(false)
             };
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_active_send_request_works_for_no_req_id() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -1047,12 +1047,12 @@ mod tests {
                 _ => assert!(false)
             };
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_active_node_reply_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -1091,12 +1091,12 @@ mod tests {
                 _ => assert!(false)
             };
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_active_node_reply_works_for_no_request() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -1136,12 +1136,12 @@ mod tests {
                 _ => assert!(false)
             };
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         #[test]
         pub fn pool_wrapper_active_node_reply_works_for_invalid_reply() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             ProtocolVersion::set(2);
             _write_genesis_txns();
@@ -1168,13 +1168,13 @@ mod tests {
                 _ => assert!(false)
             };
 
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
         }
 
         fn _write_genesis_txns() {
-            let txns = TestUtils::gen_txns().join("\n");
+            let txns = test::gen_txns().join("\n");
 
-            let mut path = EnvironmentUtils::pool_path(POOL);
+            let mut path = environment::pool_path(POOL);
             fs::create_dir_all(path.as_path()).unwrap();
             path.push(POOL);
             path.set_extension("txn");
@@ -1190,7 +1190,7 @@ mod tests {
 
         #[test]
         fn get_f_works() {
-            TestUtils::cleanup_storage();
+            test::cleanup_storage();
 
             assert_eq!(_get_f(0), 0);
             assert_eq!(_get_f(3), 0);
