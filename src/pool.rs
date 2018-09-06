@@ -852,3 +852,49 @@ mod test_set_protocol_version {
         assert_protocol_version_set(1);
     }
 }
+
+#[cfg(test)]
+/*
+The sync Pool::list is already tested by the create tests.
+There aren't tests for failure because I'm not sure how it would fail.
+*/
+mod test_pool_list {
+    use super::*;
+    use super::testing_helpers::*;
+
+    use std::sync::mpsc::channel;
+    use utils::test::pool::PoolList;
+
+    const VALID_TIMEOUT: Duration = Duration::from_millis(250);
+
+    #[test]
+    fn list_pool_async() {
+        let name = create_default_pool_config();
+        let (sender, receiver) = channel();
+
+        Pool::list_async(move |ec, result| sender.send(result).unwrap());
+
+        let pool_json = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        assert!(PoolList::from_json(&pool_json).pool_exists(&name));
+
+        Pool::delete(&name).unwrap();
+    }
+
+    #[test]
+    /* List pools with timeout. */
+    fn list_pool_timeout() {
+        let name = create_default_pool_config();
+
+        let pool_json = Pool::list_timeout(VALID_TIMEOUT).unwrap();
+        assert!(PoolList::from_json(&pool_json).pool_exists(&name));
+
+        Pool::delete(&name).unwrap();
+    }
+
+    #[test]
+    /* List pools with timeout, timeouts. */
+    fn list_pool_timeout_timeouts() {
+        let result = Pool::list_timeout(Duration::from_micros(1));
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+    }
+}
