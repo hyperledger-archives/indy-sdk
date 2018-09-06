@@ -22,13 +22,10 @@ mod open_pool {
     pub fn open_pool_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -40,13 +37,10 @@ mod open_pool {
     pub fn open_pool_timeout_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap();
@@ -58,13 +52,10 @@ mod open_pool {
     pub fn open_pool_async_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let (sender, receiver) = channel();
@@ -86,13 +77,10 @@ mod open_pool {
     pub fn open_pool_works_for_config() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let config = Some(r#"{"timeout": 20}"#);
@@ -106,13 +94,10 @@ mod open_pool {
     pub fn open_pool_timeout_works_for_config() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let config = Some(r#"{"timeout": 20}"#);
@@ -126,13 +111,10 @@ mod open_pool {
     pub fn open_pool_async_works_for_config() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let (sender, receiver) = channel();
@@ -156,13 +138,10 @@ mod open_pool {
     pub fn open_pool_works_for_twice() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -177,13 +156,10 @@ mod open_pool {
     pub fn open_pool_timeout_works_for_twice() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap();
@@ -197,13 +173,10 @@ mod open_pool {
     pub fn open_pool_async_works_for_twice() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let (sender, receiver) = channel();
@@ -237,13 +210,10 @@ mod open_pool {
     pub fn open_pool_works_for_two_nodes() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 2,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 2,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -255,13 +225,10 @@ mod open_pool {
     pub fn open_pool_timeout_works_for_two_nodes() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 2,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 2,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap();
@@ -273,13 +240,10 @@ mod open_pool {
     pub fn open_pool_async_works_for_two_nodes() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 2,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 2,
             num_users: 0,
-            fees: None,
         });
 
         let (sender, receiver) = channel();
@@ -301,13 +265,10 @@ mod open_pool {
     pub fn open_pool_works_for_three_nodes() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 3,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 3,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -319,13 +280,10 @@ mod open_pool {
     pub fn open_pool_timeout_works_for_three_nodes() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 3,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 3,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap();
@@ -337,13 +295,10 @@ mod open_pool {
     pub fn open_pool_async_works_for_three_nodes() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 3,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 3,
             num_users: 0,
-            fees: None,
         });
 
         let (sender, receiver) = channel();
@@ -365,13 +320,10 @@ mod open_pool {
     pub fn open_pool_works_for_cached_txns() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
         utils::pool::dump_correct_genesis_txns_to_cache(&setup.pool_name).unwrap();
 
@@ -384,13 +336,10 @@ mod open_pool {
     pub fn open_pool_timeout_works_for_cached_txns() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
         utils::pool::dump_correct_genesis_txns_to_cache(&setup.pool_name).unwrap();
 
@@ -403,13 +352,10 @@ mod open_pool {
     pub fn open_pool_async_works_for_cached_txns() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
         utils::pool::dump_correct_genesis_txns_to_cache(&setup.pool_name).unwrap();
 
@@ -432,13 +378,10 @@ mod open_pool {
     pub fn open_pool_works_for_corrupted_cached_txns() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
         utils::pool::dump_incorrect_genesis_txns_to_cache(&setup.pool_name).unwrap();
 
@@ -451,13 +394,10 @@ mod open_pool {
     pub fn open_pool_timeout_works_for_corrupted_cached_txns() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
         utils::pool::dump_incorrect_genesis_txns_to_cache(&setup.pool_name).unwrap();
 
@@ -470,13 +410,10 @@ mod open_pool {
     pub fn open_pool_async_works_for_corrupted_cached_txns() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
         utils::pool::dump_incorrect_genesis_txns_to_cache(&setup.pool_name).unwrap();
 
@@ -504,13 +441,10 @@ mod close_pool {
     pub fn close_pool_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -522,13 +456,10 @@ mod close_pool {
     pub fn close_pool_timeout_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -540,13 +471,10 @@ mod close_pool {
     pub fn close_pool_async_works() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let (sender, receiver) = channel();
@@ -568,13 +496,10 @@ mod close_pool {
     pub fn close_pool_works_for_twice() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -588,13 +513,10 @@ mod close_pool {
     pub fn close_pool_timeout_works_for_twice() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -608,13 +530,10 @@ mod close_pool {
     pub fn close_pool_async_works_for_twice() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -650,13 +569,10 @@ mod close_pool {
     pub fn close_pool_works_for_reopen_after_close() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -670,13 +586,10 @@ mod close_pool {
     pub fn close_pool_timeout_works_for_reopen_after_close() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -691,13 +604,10 @@ mod close_pool {
     pub fn close_pool_async_works_for_reopen_after_close() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let (sender, receiver) = channel();
@@ -722,13 +632,10 @@ mod close_pool {
     pub fn close_pool_works_for_pending_request() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -754,13 +661,10 @@ mod close_pool {
     pub fn close_pool_timeout_works_for_pending_request() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
@@ -786,13 +690,10 @@ mod close_pool {
     pub fn close_pool_async_works_for_pending_request() {
         let wallet = utils::wallet::Wallet::new();
         let setup = Setup::new(&wallet, SetupConfig {
-            num_trustees: 0,
-            num_addresses: 0,
             connect_to_pool: false,
-            number_of_nodes: 4,
-            mint_tokens: None,
+            num_trustees: 0,
+            num_nodes: 4,
             num_users: 0,
-            fees: None,
         });
 
         let (sender, receiver_close) = channel();
