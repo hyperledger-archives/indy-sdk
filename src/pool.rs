@@ -511,7 +511,7 @@ mod test_pool_create_config {
         let name = pool_name();
         let config = sample_genesis_config();
         let result = Pool::create_ledger_config("", Some(&config));
-    
+
         assert_eq!(ErrorCode::CommonInvalidParam2, result.unwrap_err());
         assert_pool_not_exists(&name);
     }
@@ -524,10 +524,10 @@ mod test_pool_create_config {
 
         let result = Pool::create_ledger_config(&name, Some(&config));
         assert_eq!((), result.unwrap());
-    
+
         let result = Pool::create_ledger_config(&name, Some(&config));
         assert_eq!(ErrorCode::PoolLedgerConfigAlreadyExistsError, result.unwrap_err());
-    
+
         assert_pool_exists(&name);
         Pool::delete(&name).unwrap();
     }
@@ -566,7 +566,8 @@ mod test_pool_create_config {
         );
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result);
-        assert!(receiver.recv_timeout(VALID_TIMEOUT).is_err());
+        let result = receiver.recv_timeout(VALID_TIMEOUT);
+        assert!(result.is_err());
         assert_pool_not_exists(&name);
     }
 
@@ -627,7 +628,7 @@ mod test_pool_create_config {
         let config = sample_genesis_config();
         let result = Pool::create_ledger_config_timeout(
             &name,
-            Some(&config), 
+            Some(&config),
             Duration::from_micros(1)
         );
 
@@ -682,9 +683,10 @@ mod test_delete_config {
         let result = Pool::delete(&pool_name);
         assert_eq!(ErrorCode::CommonInvalidState, result.unwrap_err());
         assert_pool_exists(&pool_name);
-        
+
         Pool::close(pool_handle).unwrap();
         Pool::delete(&pool_name).unwrap();
+        Pool::set_protocol_version(1).unwrap();
     }
 
     #[test]
@@ -720,7 +722,7 @@ mod test_delete_config {
     }
 
     #[test]
-    /* Delete a pool with a timeout. */ 
+    /* Delete a pool with a timeout. */
     fn delete_pool_timeout() {
         let pool_name = create_default_pool_config();
 
@@ -763,8 +765,11 @@ mod test_set_protocol_version {
 
     use ledger::Ledger;
     use serde_json;
+    use std::time::Duration;
+    use std::sync::mpsc::channel;
 
     const VALID_VERSIONS: [usize; 2] = [1, 2];
+    const VALID_TIMEOUT: Duration = Duration::from_millis(250);
 
     fn assert_protocol_version_set(version: usize) {
         let did = "5UBVMdSADMjGzuJMQwJ6yyzYV1krTcKRp6EqRAz8tiDP";
@@ -781,13 +786,13 @@ mod test_set_protocol_version {
             assert_eq!((), result.unwrap());
             assert_protocol_version_set(version);
         }
+
+        Pool::set_protocol_version(1).unwrap();
     }
 
     #[test]
     /* Error setting invalid protocol version. */
     fn set_invalid_versions() {
-        Pool::set_protocol_version(1).unwrap();
-        
         let result = Pool::set_protocol_version(0);
         assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err());
         assert_protocol_version_set(1);
@@ -795,6 +800,55 @@ mod test_set_protocol_version {
         let next_protocol_version = *VALID_VERSIONS.last().unwrap() + 1;
         let result = Pool::set_protocol_version(next_protocol_version);
         assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err());
+        assert_protocol_version_set(1);
+    }
+
+    #[test]
+    /* Set protocol version async. */
+    fn set_protocol_version_async() {
+        let (sender, receiver) = channel();
+        Pool::set_protocol_version_async(2, move |ec| sender.send(ec).unwrap());
+        let result = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        assert_eq!(ErrorCode::Success, result);
+        assert_protocol_version_set(2);
+
+        Pool::set_protocol_version(1).unwrap();
+    }
+
+    #[test]
+    /* Error setting protocol version async. */
+    fn set_invalid_version_async() {
+        let (sender, receiver) = channel();
+        Pool::set_protocol_version_async(0, move |ec| sender.send(ec).unwrap());
+        let result = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result);
+        assert_protocol_version_set(1);
+    }
+
+    #[test]
+    /* Set protocol version with timeout. */
+    fn set_protocol_version_timeout() {
+        let result = Pool::set_protocol_version_timeout(2, VALID_TIMEOUT);
+        assert_eq!((), result.unwrap());
+        assert_protocol_version_set(2);
+
+        Pool::set_protocol_version(1).unwrap();
+    }
+
+    #[test]
+    /* Error setting protocol version with timeout. */
+    fn set_invalid_version_timeout() {
+        let result = Pool::set_protocol_version_timeout(0, VALID_TIMEOUT);
+        assert_eq!(ErrorCode::PoolIncompatibleProtocolVersion, result.unwrap_err());
+        assert_protocol_version_set(1);
+    }
+
+    #[test]
+    /* Setting protcol version with timeout timeouts. */
+    fn set_protocol_version_timeout_timeouts() {
+        let result = Pool::set_protocol_version_timeout(0, Duration::from_micros(1));
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
         assert_protocol_version_set(1);
     }
 }
