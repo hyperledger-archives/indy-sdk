@@ -10,7 +10,7 @@
         /// <summary>
         /// Initializes a new UnknownCryptoException.
         /// </summary>
-        internal UnknownCryptoException() : base(message, (int)ErrorCode.SignusUnknownCryptoError)
+        internal UnknownCryptoException() : base(message, (int)ErrorCode.UnknownCryptoTypeError)
         {
 
         }
