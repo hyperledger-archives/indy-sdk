@@ -1,20 +1,20 @@
-use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
+use super::environment;
+use super::indy;
+
+use byteorder::{LittleEndian, WriteBytesExt};
 use indy::ErrorCode;
+use indy::pool::Pool;
 use rmp_serde;
 use serde_json;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use super::environment;
-use super::indy;
+use utils::rand::random_string;
+use utils::file::TempFile;
 
-use utils::rand::rand_string;
 
-pub fn create_genesis_txn_file_for_test_pool(pool_name: &str,
-                                             nodes_count: Option<u8>,
-                                             txn_file_path: Option<&Path>) -> PathBuf {
+pub fn create_genesis_txn_file_for_test_pool(nodes_count: Option<u8>) -> TempFile {
     let nodes_count = nodes_count.unwrap_or(4);
-
     let test_pool_ip = environment::test_pool_ip();
 
     let node_txns = vec![
@@ -25,40 +25,22 @@ pub fn create_genesis_txn_file_for_test_pool(pool_name: &str,
 
     let txn_file_data = node_txns[0..(nodes_count as usize)].join("\n");
 
-    create_genesis_txn_file(pool_name, txn_file_data.as_str(), txn_file_path)
+    create_genesis_txn_file(&txn_file_data)
 }
 
-pub fn create_genesis_txn_file(pool_name: &str,
-                               txn_file_data: &str,
-                               txn_file_path: Option<&Path>) -> PathBuf {
-    let txn_file_path = txn_file_path.map_or(
-        environment::tmp_file_path(format!("{}.txn", pool_name).as_str()),
-        |path| path.to_path_buf());
-
-    if !txn_file_path.parent().unwrap().exists() {
-        fs::DirBuilder::new()
-            .recursive(true)
-            .create(txn_file_path.parent().unwrap()).unwrap();
-    }
-
-    let mut f = fs::File::create(txn_file_path.as_path()).unwrap();
-    f.write_all(txn_file_data.as_bytes()).unwrap();
-    f.flush().unwrap();
-    f.sync_all().unwrap();
-
-    txn_file_path
+pub fn create_genesis_txn_file(txn_file_data: &str) -> TempFile {
+    let txn_file = TempFile::new(None).unwrap();
+    fs::write(&txn_file, txn_file_data).unwrap();
+    txn_file
 }
 
-pub fn create_pool_config() -> String {
-    let path = create_genesis_txn_file_for_test_pool("p1", None, None);
-    json!({
-        "genesis_txn": path.to_string_lossy().to_string()
-    }).to_string()
-}
+pub fn create_default_pool() -> String {
+    let name = format!("TestPool{}", random_string(10));
+    let genesis_path = create_genesis_txn_file_for_test_pool(None);
+    let config = json!({"genesis_txn": genesis_path.as_ref()}).to_string();
 
-pub fn create_pool_ledger(pool_cfg: &str) -> String {
-    let name = rand_string(10);
-    indy::pool::Pool::create_ledger_config(&name, Some(pool_cfg)).unwrap();
+    Pool::create_ledger_config(&name, Some(&config)).unwrap();
+
     name
 }
 
@@ -113,4 +95,28 @@ fn _dump_genesis_txns_to_cache(pool_name: &str, node_txns: &Vec<String>) -> Resu
     });
 
     Ok(())
+}
+
+
+#[derive(Deserialize)]
+struct PoolItem {
+    pool: String
+}
+
+#[derive(Deserialize)]
+pub struct PoolList(Vec<PoolItem>);
+
+impl PoolList {
+    pub fn new() -> Self {
+        let json_pools = Pool::list().unwrap();
+        Self::from_json(&json_pools)
+    }
+
+    pub fn from_json(json: &str) -> Self {
+        serde_json::from_str(&json).unwrap()
+    }
+
+    pub fn pool_exists(&self, name: &str) -> bool {
+       self.0.iter().find(|p| &p.pool == name).is_some()
+    }
 }
