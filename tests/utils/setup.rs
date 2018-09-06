@@ -12,20 +12,15 @@ use utils::did;
 
 pub struct SetupConfig
 {
+    pub connect_to_pool: bool,
     pub num_trustees: u8,
     pub num_users: u8,
-    pub num_addresses: usize,
-    pub connect_to_pool: bool,
-    pub number_of_nodes: u8,
-    pub mint_tokens: Option<Vec<u64>>,
-    pub fees: Option<serde_json::Value>,
+    pub num_nodes: u8,
 }
 
 
 pub struct Setup<'a>
 {
-    pub addresses: Option<Vec<String>>,
-    pub fees: Option<serde_json::Value>,
     pub node_count: u8,
     pub pool_handle: Option<i32>,
     pub pool_name: String,
@@ -40,37 +35,23 @@ impl<'a> Setup<'a>
     /**
     Create a new Setup.
 
-    Configures the pool, generates trustees and users, generate addresses, sets
-    fees and mints tokens according to the [`SetupConfig`].
+    Configures the pool, generates trustees and users, abd generate addresses
+    according to the [`SetupConfig`].
 
     [`SetupConfig`]: SetupConfig
     */
     pub fn new(wallet: &Wallet, config: SetupConfig) -> Setup
     {
-//        sovtoken::api::sovtoken_init();
         let (pool_name, pool_handle) = Setup::setup_pool(config.connect_to_pool);
-        let mut addresses = None;
-        let mut fees = None;
         let mut trustees = None;
         let mut users = None;
+
         match pool_handle {
             Some(pool_handle) => {
-//                addresses = Setup::create_addresses(wallet, config.num_addresses);
                 trustees = Some(Setup::create_trustees(wallet, pool_handle, config.num_trustees));
 
                 {
                     let trustee_dids = trustees.as_ref().unwrap().dids();
-
-            //    if let Some(token_vec) = config.mint_tokens {
-            //        assert!(token_vec.len() <= config.num_addresses, "You are minting to more addresses than are available.");
-            //        Setup::mint(wallet, pool_handle, &trustee_dids, &addresses, token_vec);
-            //    }
-
-            //    if let Some(f) = config.fees {
-            //        fees_utils::set_fees(pool_handle, wallet.handle, PAYMENT_METHOD_NAME, &f.to_string(), &trustee_dids);
-            //        fees = Some(f);
-            //    }
-
                     users = Some(Setup::create_users(wallet, pool_handle, trustee_dids[0], config.num_users));
                 };
             }
@@ -78,9 +59,7 @@ impl<'a> Setup<'a>
         }
 
         Setup {
-            addresses,
-            fees,
-            node_count: config.number_of_nodes,
+            node_count: config.num_nodes,
             pool_handle,
             pool_name,
             trustees,
@@ -120,55 +99,11 @@ impl<'a> Setup<'a>
             .map(Entity::new)
             .collect()
     }
-
-//    fn create_addresses(wallet: &Wallet, num_addresses: usize) -> Vec<String>
-//    {
-//        gen_address::generate_n(wallet, num_addresses)
-//    }
-
-//    fn mint(wallet: &Wallet, pool_handle: i32, dids: &Vec<&str>, addresses: &Vec<String>, token_vec: Vec<u64>)
-//    {
-//        let map: HashMap<String, u64> = addresses
-//            .clone()
-//            .into_iter()
-//            .zip(token_vec.into_iter())
-//            .collect();
-//
-//        let mint_rep = mint::mint_tokens(map, pool_handle, wallet.handle, dids).unwrap();
-//        assert_eq!(mint_rep.op, ResponseOperations::REPLY);
-//    }
-
-    fn fees_reset_json(fees: Option<serde_json::Value>) -> Option<String>
-    {
-        if fees.is_some() {
-            type FeesMap = HashMap<String, u64>;
-            let fees: FeesMap = serde_json::from_value(fees.unwrap()).unwrap();
-            let mut map = HashMap::new();
-
-            for k in fees.keys() {
-                map.insert(k, 0);
-            }
-
-            Some(serde_json::to_string(&map).unwrap())
-        } else {
-            None
-        }
-    }
 }
 
 impl<'a> Drop for Setup<'a> {
     fn drop(&mut self) {
         indy::pool::Pool::delete(self.pool_name.as_str()).unwrap();
-        if let Some(reset_fees) = Setup::fees_reset_json(self.fees.take()) {
-//            let dids = self.trustees.dids();
-//            fees_utils::set_fees(
-//                self.pool_handle,
-//                self.wallet.handle,
-//                PAYMENT_METHOD_NAME,
-//                &reset_fees,
-//                &dids
-//            );
-        }
     }
 }
 
