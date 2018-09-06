@@ -1,4 +1,4 @@
-extern crate rust_indy_sdk_wrapper as indy;
+extern crate rust_libindy_wrapper as indy;
 
 use std::env;
 use std::path::PathBuf;
