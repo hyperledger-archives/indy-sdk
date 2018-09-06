@@ -12,7 +12,11 @@ pub struct PoolList(Vec<PoolItem>);
 impl PoolList {
     pub fn new() -> Self {
         let json_pools = Pool::list().unwrap();
-        serde_json::from_str(&json_pools).unwrap()
+        Self::from_json(&json_pools)
+    }
+
+    pub fn from_json(json: &str) -> Self {
+        serde_json::from_str(&json).unwrap()
     }
 
     pub fn pool_exists(&self, name: &str) -> bool {
