@@ -1,5 +1,8 @@
 extern crate rust_indy_sdk_wrapper as indy;
-extern crate rust_indy_sdk_wrapper;
+#[macro_use] extern crate serde_json;
+#[macro_use] extern crate serde_derive;
+extern crate rmp_serde;
+extern crate byteorder;
 
 use indy::did::Did;
 use indy::wallet::Wallet;
