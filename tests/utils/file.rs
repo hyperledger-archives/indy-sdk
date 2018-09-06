@@ -3,7 +3,7 @@ use std::fs;
 use std::fs::File;
 use std::io;
 use std::path::{Path, PathBuf};
-use utils::test::rand;
+use utils::rand;
 
 
 pub struct TempFile {
