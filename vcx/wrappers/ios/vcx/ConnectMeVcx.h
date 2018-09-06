@@ -207,6 +207,8 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
             pwdidsJson:(NSString *)pwdidsJson
             completion:(void (^)(NSError *error))completion;
 
+- (void) getLedgerFees:(void(^)(NSError *error, NSString *fees)) completion;
+
 @end
 
 #endif /* init_h */
