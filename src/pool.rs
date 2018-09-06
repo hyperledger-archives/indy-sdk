@@ -23,7 +23,7 @@ impl Pool {
     /// {
     ///     "genesis_txn": string (required), A path to genesis transaction file.
     /// }
-    pub fn create_ledger_config(pool_name: &str, pool_config: &str) -> Result<(), ErrorCode> {
+    pub fn create_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_create_ledger_config(command_handle, pool_name, pool_config, cb);
@@ -40,7 +40,7 @@ impl Pool {
     ///     "genesis_txn": string (required), A path to genesis transaction file.
     /// }
     /// * `timeout` - the maximum time this function waits for a response
-    pub fn create_ledger_config_timeout(pool_name: &str, pool_config: &str, timeout: Duration) -> Result<(), ErrorCode> {
+    pub fn create_ledger_config_timeout(pool_name: &str, pool_config: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_create_ledger_config(command_handle, pool_name, pool_config, cb);
@@ -57,17 +57,17 @@ impl Pool {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn create_ledger_config_async<F: 'static>(pool_name: &str, pool_config: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+    pub fn create_ledger_config_async<F: 'static>(pool_name: &str, pool_config: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Pool::_create_ledger_config(command_handle, pool_name, pool_config, cb)
     }
 
-    fn _create_ledger_config(command_handle: IndyHandle, pool_name: &str, pool_config: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _create_ledger_config(command_handle: IndyHandle, pool_name: &str, pool_config: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let pool_name = c_str!(pool_name);
-        let pool_config = c_str!(pool_config);
+        let pool_config_str = opt_c_str!(pool_config);
 
-        ErrorCode::from(unsafe { pool::indy_create_pool_ledger_config(command_handle, pool_name.as_ptr(), pool_config.as_ptr(), cb) })
+        ErrorCode::from(unsafe { pool::indy_create_pool_ledger_config(command_handle, pool_name.as_ptr(), opt_c_ptr!(pool_config, pool_config_str), cb) })
     }
 
     /// Opens pool ledger and performs connecting to pool nodes.
@@ -421,7 +421,7 @@ mod testing_helpers {
     pub fn create_default_pool_config() -> String {
         let name = pool_name();
         let config = sample_genesis_config();
-        Pool::create_ledger_config(&name, &config).unwrap();
+        Pool::create_ledger_config(&name, Some(&config)).unwrap();
 
         name
     }
@@ -465,7 +465,7 @@ mod test_pool_create_config {
     fn config_with_genesis_txn() {
         let name = pool_name();
         let config = sample_genesis_config();
-        let result = Pool::create_ledger_config(&name, &config);
+        let result = Pool::create_ledger_config(&name, Some(&config));
 
         assert_eq!((), result.unwrap());
         assert_pool_exists(&name);
@@ -476,7 +476,7 @@ mod test_pool_create_config {
     /* Config options missing genesis_txn */
     fn config_missing_genesis_txn() {
         let name = pool_name();
-        let result = Pool::create_ledger_config(&name, "{}");
+        let result = Pool::create_ledger_config(&name, Some("{}"));
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
         assert_pool_not_exists(&name);
@@ -487,7 +487,7 @@ mod test_pool_create_config {
     fn config_with_unknown_path_genesis_txn() {
         let name = pool_name();
         let config = json!({"genesis_txn": "/nonexist15794345"}).to_string();
-        let result = Pool::create_ledger_config(&name, &config);
+        let result = Pool::create_ledger_config(&name, Some(&config));
 
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
         assert_pool_not_exists(&name);
@@ -499,7 +499,7 @@ mod test_pool_create_config {
         let name = pool_name();
         let (config, _file) = invalid_temporary_genesis_config();
 
-        let result = Pool::create_ledger_config(&name, &config);
+        let result = Pool::create_ledger_config(&name, Some(&config));
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
         assert_pool_not_exists(&name);
@@ -510,7 +510,7 @@ mod test_pool_create_config {
     fn config_with_empty_pool_name() {
         let name = pool_name();
         let config = sample_genesis_config();
-        let result = Pool::create_ledger_config("", &config);
+        let result = Pool::create_ledger_config("", Some(&config));
     
         assert_eq!(ErrorCode::CommonInvalidParam2, result.unwrap_err());
         assert_pool_not_exists(&name);
@@ -522,10 +522,10 @@ mod test_pool_create_config {
         let name = pool_name();
         let config = sample_genesis_config();
 
-        let result = Pool::create_ledger_config(&name, &config);
+        let result = Pool::create_ledger_config(&name, Some(&config));
         assert_eq!((), result.unwrap());
     
-        let result = Pool::create_ledger_config(&name, &config);
+        let result = Pool::create_ledger_config(&name, Some(&config));
         assert_eq!(ErrorCode::PoolLedgerConfigAlreadyExistsError, result.unwrap_err());
     
         assert_pool_exists(&name);
@@ -541,7 +541,7 @@ mod test_pool_create_config {
         let (sender, receiver) = channel();
         let result = Pool::create_ledger_config_async(
             &name,
-            &config,
+            Some(&config),
             move |ec| sender.send(ec).unwrap()
         );
 
@@ -561,7 +561,7 @@ mod test_pool_create_config {
         let (sender, receiver) = channel();
         let result = Pool::create_ledger_config_async(
             &name,
-            "{}",
+            Some("{}"),
             move |ec| sender.send(ec).unwrap()
         );
 
@@ -578,7 +578,7 @@ mod test_pool_create_config {
         let (sender, receiver) = channel();
         let result = Pool::create_ledger_config_async(
             &name,
-            &config,
+            Some(&config),
             move |ec| sender.send(ec).unwrap()
         );
 
@@ -597,7 +597,7 @@ mod test_pool_create_config {
         let config = sample_genesis_config();
         let result = Pool::create_ledger_config_timeout(
             &name,
-            &config,
+            Some(&config),
             VALID_TIMEOUT
         );
 
@@ -612,7 +612,7 @@ mod test_pool_create_config {
         let name = pool_name();
         let result = Pool::create_ledger_config_timeout(
             &name,
-            "{}",
+            Some("{}"),
             VALID_TIMEOUT
         );
 
@@ -627,7 +627,7 @@ mod test_pool_create_config {
         let config = sample_genesis_config();
         let result = Pool::create_ledger_config_timeout(
             &name,
-            &config, 
+            Some(&config), 
             Duration::from_micros(1)
         );
 
