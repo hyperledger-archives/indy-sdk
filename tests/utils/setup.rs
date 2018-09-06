@@ -1,6 +1,15 @@
 use serde_json;
 use super::indy;
 
+use std::ops::{Index, IndexMut};
+use std::iter::FromIterator;
+use std::collections::HashMap;
+use utils::constants::PROTOCOL_VERSION;
+use utils::wallet::Wallet;
+use utils::pool;
+use utils::did;
+
+
 pub struct SetupConfig
 {
     pub num_trustees: u8,
@@ -52,15 +61,15 @@ impl<'a> Setup<'a>
                 {
                     let trustee_dids = trustees.as_ref().unwrap().dids();
 
-//                if let Some(token_vec) = config.mint_tokens {
-//                    assert!(token_vec.len() <= config.num_addresses, "You are minting to more addresses than are available.");
-//                    Setup::mint(wallet, pool_handle, &trustee_dids, &addresses, token_vec);
-//                }
-//
-//                if let Some(f) = config.fees {
-//                    fees_utils::set_fees(pool_handle, wallet.handle, PAYMENT_METHOD_NAME, &f.to_string(), &trustee_dids);
-//                    fees = Some(f);
-//                }
+            //    if let Some(token_vec) = config.mint_tokens {
+            //        assert!(token_vec.len() <= config.num_addresses, "You are minting to more addresses than are available.");
+            //        Setup::mint(wallet, pool_handle, &trustee_dids, &addresses, token_vec);
+            //    }
+
+            //    if let Some(f) = config.fees {
+            //        fees_utils::set_fees(pool_handle, wallet.handle, PAYMENT_METHOD_NAME, &f.to_string(), &trustee_dids);
+            //        fees = Some(f);
+            //    }
 
                     users = Some(Setup::create_users(wallet, pool_handle, trustee_dids[0], config.num_users));
                 };
@@ -186,14 +195,6 @@ impl Entity {
     }
 }
 
-
-use std::ops::{Index, IndexMut};
-use std::iter::FromIterator;
-use std::collections::HashMap;
-use utils::constants::PROTOCOL_VERSION;
-use utils::wallet::Wallet;
-use utils::pool;
-use utils::did;
 
 /**
 Contain a vector of [`Entity`].
