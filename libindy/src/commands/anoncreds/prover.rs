@@ -29,7 +29,7 @@ use domain::anoncreds::proof_request::{ProofRequest, ProofRequestExtraQuery, Pre
 use domain::anoncreds::requested_credential::RequestedCredentials;
 use domain::anoncreds::revocation_state::RevocationState;
 use domain::anoncreds::master_secret::MasterSecret;
-use utils::sequence::SequenceUtils;
+use utils::sequence;
 
 pub enum ProverCommand {
     CreateMasterSecret(
@@ -381,7 +381,7 @@ impl ProverCommandExecutor {
 
         let total_count = credentials_search.get_total_count()?.unwrap_or(0);
 
-        let handle = SequenceUtils::get_next_id();
+        let handle = sequence::get_next_id();
 
         self.searches.borrow_mut().insert(handle, Box::new(credentials_search));
 
@@ -514,7 +514,7 @@ impl ProverCommandExecutor {
                                                             credentials_search, interval, Some(requested_predicate.clone())));
         }
 
-        let search_handle = SequenceUtils::get_next_id();
+        let search_handle = sequence::get_next_id();
         self.searches_for_proof_requests.borrow_mut().insert(search_handle, Box::new(credentials_for_proof_request_search));
 
         debug!("search_credentials_for_proof_req <<< credentials_for_proof_request_json: {:?}", search_handle);

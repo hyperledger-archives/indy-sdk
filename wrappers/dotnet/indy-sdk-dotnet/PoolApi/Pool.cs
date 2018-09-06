@@ -259,7 +259,7 @@ namespace Hyperledger.Indy.PoolApi
         /// <param name="protocolVersion">Protocol version will be used: 
         /// <c> 
         ///     1 - for Indy Node 1.3 
-        ///     2 - for Indy Node 1.4 
+        ///     2 - for Indy Node 1.4 and greater
         /// </c></param> 
         public static Task SetProtocolVersionAsync(int protocolVersion)
         {

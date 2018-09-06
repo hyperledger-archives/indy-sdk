@@ -33,13 +33,8 @@ pub mod sequence;
 
 #[macro_use]
 #[allow(unused_macros)]
-#[path = "../../src/utils/cstring.rs"]
-pub mod cstring;
-
-#[macro_use]
-#[allow(unused_macros)]
-#[path = "../../src/utils/byte_array.rs"]
-pub mod byte_array;
+#[path = "../../src/utils/ctypes.rs"]
+pub mod ctypes;
 
 #[path = "../../src/utils/inmem_wallet.rs"]
 pub mod inmem_wallet;
@@ -47,11 +42,65 @@ pub mod inmem_wallet;
 #[path = "../../src/domain/mod.rs"]
 pub mod domain;
 
-pub fn setup(){
-    test::TestUtils::cleanup_storage();
-    logger::LoggerUtils::set_default_logger();
+pub fn setup() {
+    test::cleanup_storage();
+    logger::set_default_logger();
 }
 
-pub fn tear_down(){
-    test::TestUtils::cleanup_storage();
+pub fn tear_down() {
+    test::cleanup_storage();
+}
+
+pub fn setup_with_wallet() -> i32 {
+    setup();
+    wallet::create_and_open_default_wallet().unwrap()
+}
+
+pub fn setup_with_plugged_wallet() -> i32 {
+    setup();
+    wallet::create_and_open_plugged_wallet().unwrap()
+}
+
+pub fn tear_down_with_wallet(wallet_handle: i32) {
+    wallet::close_wallet(wallet_handle).unwrap();
+    tear_down();
+}
+
+pub fn setup_with_pool() -> i32 {
+    setup();
+    pool::create_and_open_pool_ledger(constants::POOL).unwrap()
+}
+
+pub fn tear_down_with_pool(pool_handle: i32) {
+    pool::close(pool_handle).unwrap();
+    tear_down();
+}
+
+pub fn setup_with_wallet_and_pool() -> (i32, i32) {
+    let wallet_handle = setup_with_wallet();
+    let pool_handle = pool::create_and_open_pool_ledger(constants::POOL).unwrap();
+    (wallet_handle, pool_handle)
+}
+
+pub fn tear_down_with_wallet_and_pool(wallet_handle: i32, pool_handle: i32) {
+    pool::close(pool_handle).unwrap();
+    tear_down_with_wallet(wallet_handle);
+}
+
+pub fn setup_trustee() -> (i32, i32, String) {
+    let (wallet_handle, pool_handle) = setup_with_wallet_and_pool();
+    let (did, _) = did::create_and_store_my_did(wallet_handle, Some(constants::TRUSTEE_SEED)).unwrap();
+    (wallet_handle, pool_handle, did)
+}
+
+pub fn setup_steward() -> (i32, i32, String) {
+    let (wallet_handle, pool_handle) = setup_with_wallet_and_pool();
+    let (did, _) = did::create_and_store_my_did(wallet_handle, Some(constants::STEWARD_SEED)).unwrap();
+    (wallet_handle, pool_handle, did)
+}
+
+pub fn setup_did() -> (i32, String) {
+    let wallet_handle = setup_with_wallet();
+    let (did, _) = did::create_and_store_my_did(wallet_handle, None).unwrap();
+    (wallet_handle, did)
 }

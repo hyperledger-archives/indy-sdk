@@ -14,10 +14,10 @@ use std::collections::HashMap;
 use std::io::{BufRead, Read, Write};
 use std::path::PathBuf;
 use std::str::from_utf8;
-use utils::environment::EnvironmentUtils;
+use utils::environment;
 
 pub fn create(pool_name: &str) -> Result<MerkleTree, PoolError> {
-    let mut p = EnvironmentUtils::pool_path(pool_name);
+    let mut p = environment::pool_path(pool_name);
 
     let mut p_stored = p.clone();
     p_stored.push("stored");
@@ -41,7 +41,7 @@ pub fn create(pool_name: &str) -> Result<MerkleTree, PoolError> {
 }
 
 pub fn drop_cache(pool_name: &str) -> Result<(), PoolError> {
-    let mut p = EnvironmentUtils::pool_path(pool_name);
+    let mut p = environment::pool_path(pool_name);
 
     p.push("stored");
     p.set_extension("btxn");
@@ -91,7 +91,7 @@ fn _from_genesis(file_name: &PathBuf) -> Result<MerkleTree, PoolError> {
 }
 
 pub fn dump_new_txns(pool_name: &str, txns: &Vec<Vec<u8>>) -> Result<(), PoolError> {
-    let mut p = EnvironmentUtils::pool_path(pool_name);
+    let mut p = environment::pool_path(pool_name);
 
     p.push("stored");
     p.set_extension("btxn");
@@ -111,7 +111,7 @@ fn _dump_genesis_to_stored(p: &PathBuf, pool_name: &str) -> Result<(), PoolError
         .map_err(|e| CommonError::IOError(e))
         .map_err(map_err_err!())?;
 
-    let mut p_genesis = EnvironmentUtils::pool_path(pool_name);
+    let mut p_genesis = environment::pool_path(pool_name);
     p_genesis.push(pool_name);
     p_genesis.set_extension("txn");
 
@@ -223,7 +223,7 @@ mod tests {
     use domain::ledger::request::ProtocolVersion;
     use std::fs;
     use super::*;
-    use utils::test::TestUtils;
+    use utils::test;
 
     fn _set_protocol_version(version: usize) {
         ProtocolVersion::set(version);
@@ -235,7 +235,7 @@ mod tests {
 
     fn _write_genesis_txns(txns: &str) {
         let pool_name = "test";
-        let mut path = EnvironmentUtils::pool_path(pool_name);
+        let mut path = environment::pool_path(pool_name);
         fs::create_dir_all(path.as_path()).unwrap();
         path.push(pool_name);
         path.set_extension("txn");
@@ -247,11 +247,11 @@ mod tests {
 
     #[test]
     fn pool_worker_build_node_state_works_for_new_txns_format_and_1_protocol_version() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
 
         _set_protocol_version(1);
 
-        let node_txns = TestUtils::gen_txns();
+        let node_txns = test::gen_txns();
         let txns_src = node_txns[0..(2 as usize)].join("\n");
 
         _write_genesis_txns(&txns_src);
@@ -263,11 +263,11 @@ mod tests {
 
     #[test]
     pub fn pool_worker_works_for_deserialize_cache() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
 
         _set_protocol_version(TEST_PROTOCOL_VERSION);
 
-        let node_txns = TestUtils::gen_txns();
+        let node_txns = test::gen_txns();
 
         let txn1_json: serde_json::Value = serde_json::from_str(&node_txns[0]).unwrap();
         let txn2_json: serde_json::Value = serde_json::from_str(&node_txns[1]).unwrap();
@@ -280,7 +280,7 @@ mod tests {
                               rmp_serde::to_vec_named(&txn4_json).unwrap()];
 
         let pool_name = "test";
-        let mut path = EnvironmentUtils::pool_path(pool_name);
+        let mut path = environment::pool_path(pool_name);
         fs::create_dir_all(path.as_path()).unwrap();
         path.push("stored");
         path.set_extension("btxn");
@@ -296,12 +296,12 @@ mod tests {
 
     #[test]
     fn pool_worker_restore_merkle_tree_works_from_genesis_txns() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
         
-        let node_txns = TestUtils::gen_txns();
+        let node_txns = test::gen_txns();
         let txns_src = format!("{}\n{}",
-                               node_txns[0].replace(EnvironmentUtils::test_pool_ip().as_str(), "10.0.0.2"),
-                               node_txns[1].replace(EnvironmentUtils::test_pool_ip().as_str(), "10.0.0.2"));
+                               node_txns[0].replace(environment::test_pool_ip().as_str(), "10.0.0.2"),
+                               node_txns[1].replace(environment::test_pool_ip().as_str(), "10.0.0.2"));
         _write_genesis_txns(&txns_src);
 
         let merkle_tree = super::create("test").unwrap();
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn pool_worker_build_node_state_works_for_old_format() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
 
         _set_protocol_version(1);
 
@@ -338,11 +338,11 @@ mod tests {
 
     #[test]
     fn pool_worker_build_node_state_works_for_new_format() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
 
         _set_protocol_version(TEST_PROTOCOL_VERSION);
 
-        let node_txns = TestUtils::gen_txns();
+        let node_txns = test::gen_txns();
 
         let node1: NodeTransactionV1 = serde_json::from_str(&node_txns[0]).unwrap();
         let node2: NodeTransactionV1 = serde_json::from_str(&node_txns[1]).unwrap();
@@ -366,7 +366,7 @@ mod tests {
 
     #[test]
     fn pool_worker_build_node_state_works_for_old_txns_format_and_2_protocol_version() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
 
         _set_protocol_version(TEST_PROTOCOL_VERSION);
 
