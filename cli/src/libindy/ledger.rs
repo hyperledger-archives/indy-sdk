@@ -116,15 +116,15 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_nym_request(submitter_did: &str, target_did: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
+        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let target_did = CString::new(target_did).unwrap();
 
         let err = unsafe {
             indy_build_get_nym_request(command_handle,
-                                       submitter_did.as_ptr(),
+                                       if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                        target_did.as_ptr(),
                                        cb)
         };
@@ -155,10 +155,10 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_attrib_request(submitter_did: &str, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
+        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let target_did = CString::new(target_did).unwrap();
 
         let raw_str = raw.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
@@ -167,7 +167,7 @@ impl Ledger {
 
         let err = unsafe {
             indy_build_get_attrib_request(command_handle,
-                                          submitter_did.as_ptr(),
+                                          if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                           target_did.as_ptr(),
                                           if raw.is_some() { raw_str.as_ptr() } else { null() },
                                           if hash.is_some() { hash_str.as_ptr() } else { null() },
@@ -194,15 +194,15 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_schema_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_schema_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
+        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let id = CString::new(id).unwrap();
 
         let err = unsafe {
             indy_build_get_schema_request(command_handle,
-                                          submitter_did.as_ptr(),
+                                          if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                           id.as_ptr(),
                                           cb)
         };
@@ -240,15 +240,15 @@ impl Ledger {
         super::results::result_to_string(err, receiver)
     }
 
-    pub fn build_get_cred_def_request(submitter_did: &str, id: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_cred_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec_string();
 
-        let submitter_did = CString::new(submitter_did).unwrap();
+        let submitter_did_str = submitter_did.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
         let id = CString::new(id).unwrap();
 
         let err = unsafe {
             indy_build_get_cred_def_request(command_handle,
-                                            submitter_did.as_ptr(),
+                                            if submitter_did.is_some() { submitter_did_str.as_ptr() } else { null() },
                                             id.as_ptr(),
                                             cb)
         };

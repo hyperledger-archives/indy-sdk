@@ -3,10 +3,8 @@ extern crate serde_json;
 use indy::api::ErrorCode;
 use indy::api::non_secrets::*;
 
-use utils::callback::CallbackUtils;
-use utils::wallet::WalletUtils;
+use utils::{callback, wallet, test, ctypes};
 use utils::constants::WALLET_CREDENTIALS;
-use utils::test::TestUtils;
 use utils::types::WalletRecord;
 
 use std::ffi::CString;
@@ -38,266 +36,262 @@ pub const TAGS_3: &'static str = r#"{"tagName1":"str1","tagName2":"str2","tagNam
 pub const TAGS_4: &'static str = r#"{"tagName1":"somestr","~tagName2":"4","~tagName3":"5"}"#;
 pub const TAGS_5: &'static str = r#"{"tagName1":"prefix_str2","~tagName2":"str3","~tagName3":"6"}"#;
 
-pub struct NonSecretsUtils {}
+pub fn add_wallet_record(wallet_handle: i32, type_: &str, id: &str, value: &str, tags_json: Option<&str>) -> Result<(), ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
-impl NonSecretsUtils {
-    pub fn add_wallet_record(wallet_handle: i32, type_: &str, id: &str, value: &str, tags_json: Option<&str>) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+    let type_ = CString::new(type_).unwrap();
+    let id = CString::new(id).unwrap();
+    let value = CString::new(value).unwrap();
+    let tags_json = tags_json.map(ctypes::str_to_cstring);
 
-        let type_ = CString::new(type_).unwrap();
-        let id = CString::new(id).unwrap();
-        let value = CString::new(value).unwrap();
-        let tags_json_str = tags_json.map(|s| CString::new(s).unwrap()).unwrap_or(CString::new("").unwrap());
+    let err =
+        indy_add_wallet_record(command_handle,
+                               wallet_handle,
+                               type_.as_ptr(),
+                               id.as_ptr(),
+                               value.as_ptr(),
+                               tags_json.as_ref().map(|s| s.as_ptr()).unwrap_or(null()),
+                               cb);
 
-        let err =
-            indy_add_wallet_record(command_handle,
-                                   wallet_handle,
-                                   type_.as_ptr(),
-                                   id.as_ptr(),
-                                   value.as_ptr(),
-                                   if tags_json.is_some() { tags_json_str.as_ptr() } else { null() },
-                                   cb);
+    super::results::result_to_empty(err, receiver)
+}
 
-        super::results::result_to_empty(err, receiver)
-    }
+pub fn update_wallet_record_value(wallet_handle: i32, type_: &str, id: &str, value: &str) -> Result<(), ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
-    pub fn update_wallet_record_value(wallet_handle: i32, type_: &str, id: &str, value: &str) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+    let type_ = CString::new(type_).unwrap();
+    let id = CString::new(id).unwrap();
+    let value = CString::new(value).unwrap();
 
-        let type_ = CString::new(type_).unwrap();
-        let id = CString::new(id).unwrap();
-        let value = CString::new(value).unwrap();
-
-        let err =
-            indy_update_wallet_record_value(command_handle,
-                                            wallet_handle,
-                                            type_.as_ptr(),
-                                            id.as_ptr(),
-                                            value.as_ptr(),
-                                            cb);
-
-        super::results::result_to_empty(err, receiver)
-    }
-
-    pub fn update_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
-
-        let type_ = CString::new(type_).unwrap();
-        let id = CString::new(id).unwrap();
-        let tags_json = CString::new(tags_json).unwrap();
-
-        let err =
-            indy_update_wallet_record_tags(command_handle,
-                                           wallet_handle,
-                                           type_.as_ptr(),
-                                           id.as_ptr(),
-                                           tags_json.as_ptr(),
-                                           cb);
-
-        super::results::result_to_empty(err, receiver)
-    }
-
-    pub fn add_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
-
-        let type_ = CString::new(type_).unwrap();
-        let id = CString::new(id).unwrap();
-        let tags_json = CString::new(tags_json).unwrap();
-
-        let err =
-            indy_add_wallet_record_tags(command_handle,
+    let err =
+        indy_update_wallet_record_value(command_handle,
                                         wallet_handle,
                                         type_.as_ptr(),
                                         id.as_ptr(),
-                                        tags_json.as_ptr(),
+                                        value.as_ptr(),
                                         cb);
 
-        super::results::result_to_empty(err, receiver)
-    }
+    super::results::result_to_empty(err, receiver)
+}
 
-    pub fn delete_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tag_names_json: &str) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+pub fn update_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
-        let type_ = CString::new(type_).unwrap();
-        let id = CString::new(id).unwrap();
-        let tag_names_json = CString::new(tag_names_json).unwrap();
+    let type_ = CString::new(type_).unwrap();
+    let id = CString::new(id).unwrap();
+    let tags_json = CString::new(tags_json).unwrap();
 
-        let err =
-            indy_delete_wallet_record_tags(command_handle,
-                                           wallet_handle,
-                                           type_.as_ptr(),
-                                           id.as_ptr(),
-                                           tag_names_json.as_ptr(),
-                                           cb);
+    let err =
+        indy_update_wallet_record_tags(command_handle,
+                                       wallet_handle,
+                                       type_.as_ptr(),
+                                       id.as_ptr(),
+                                       tags_json.as_ptr(),
+                                       cb);
 
-        super::results::result_to_empty(err, receiver)
-    }
+    super::results::result_to_empty(err, receiver)
+}
 
-    pub fn delete_wallet_record(wallet_handle: i32, type_: &str, id: &str) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+pub fn add_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tags_json: &str) -> Result<(), ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
-        let type_ = CString::new(type_).unwrap();
-        let id = CString::new(id).unwrap();
+    let type_ = CString::new(type_).unwrap();
+    let id = CString::new(id).unwrap();
+    let tags_json = CString::new(tags_json).unwrap();
 
-        let err =
-            indy_delete_wallet_record(command_handle,
-                                      wallet_handle,
-                                      type_.as_ptr(),
-                                      id.as_ptr(),
-                                      cb);
-
-        super::results::result_to_empty(err, receiver)
-    }
-
-    pub fn get_wallet_record(wallet_handle: i32, type_: &str, id: &str, options_json: &str) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
-
-        let type_ = CString::new(type_).unwrap();
-        let id = CString::new(id).unwrap();
-        let options_json = CString::new(options_json).unwrap();
-
-        let err =
-            indy_get_wallet_record(command_handle,
-                                   wallet_handle,
-                                   type_.as_ptr(),
-                                   id.as_ptr(),
-                                   options_json.as_ptr(),
-                                   cb);
-
-        super::results::result_to_string(err, receiver)
-    }
-
-    pub fn open_wallet_search(wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<i32, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_i32();
-
-        let type_ = CString::new(type_).unwrap();
-        let query_json = CString::new(query_json).unwrap();
-        let options_json = CString::new(options_json).unwrap();
-
-        let err =
-            indy_open_wallet_search(command_handle,
+    let err =
+        indy_add_wallet_record_tags(command_handle,
                                     wallet_handle,
                                     type_.as_ptr(),
-                                    query_json.as_ptr(),
-                                    options_json.as_ptr(),
+                                    id.as_ptr(),
+                                    tags_json.as_ptr(),
                                     cb);
 
-        super::results::result_to_int(err, receiver)
-    }
+    super::results::result_to_empty(err, receiver)
+}
 
-    pub fn fetch_wallet_search_next_records(wallet_handle: i32, wallet_search_handle: i32, count: usize) -> Result<String, ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec_string();
+pub fn delete_wallet_record_tags(wallet_handle: i32, type_: &str, id: &str, tag_names_json: &str) -> Result<(), ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
-        let err =
-            indy_fetch_wallet_search_next_records(command_handle,
-                                                  wallet_handle,
-                                                  wallet_search_handle,
-                                                  count,
-                                                  cb);
+    let type_ = CString::new(type_).unwrap();
+    let id = CString::new(id).unwrap();
+    let tag_names_json = CString::new(tag_names_json).unwrap();
 
-        super::results::result_to_string(err, receiver)
-    }
+    let err =
+        indy_delete_wallet_record_tags(command_handle,
+                                       wallet_handle,
+                                       type_.as_ptr(),
+                                       id.as_ptr(),
+                                       tag_names_json.as_ptr(),
+                                       cb);
 
-    pub fn close_wallet_search(wallet_search_handle: i32) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = CallbackUtils::_closure_to_cb_ec();
+    super::results::result_to_empty(err, receiver)
+}
 
-        let err =
-            indy_close_wallet_search(command_handle,
-                                     wallet_search_handle,
-                                     cb);
+pub fn delete_wallet_record(wallet_handle: i32, type_: &str, id: &str) -> Result<(), ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
-        super::results::result_to_empty(err, receiver)
-    }
+    let type_ = CString::new(type_).unwrap();
+    let id = CString::new(id).unwrap();
 
-    pub fn tags_1() -> HashMap<String, String> {
-        serde_json::from_str(TAGS).unwrap()
-    }
+    let err =
+        indy_delete_wallet_record(command_handle,
+                                  wallet_handle,
+                                  type_.as_ptr(),
+                                  id.as_ptr(),
+                                  cb);
 
-    pub fn tags_2() -> HashMap<String, String> {
-        serde_json::from_str(TAGS_2).unwrap()
-    }
+    super::results::result_to_empty(err, receiver)
+}
 
-    pub fn tags_3() -> HashMap<String, String> {
-        serde_json::from_str(TAGS_3).unwrap()
-    }
+pub fn get_wallet_record(wallet_handle: i32, type_: &str, id: &str, options_json: &str) -> Result<String, ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
 
-    pub fn tags_4() -> HashMap<String, String> {
-        serde_json::from_str(TAGS_4).unwrap()
-    }
+    let type_ = CString::new(type_).unwrap();
+    let id = CString::new(id).unwrap();
+    let options_json = CString::new(options_json).unwrap();
 
-    pub fn tags_5() -> HashMap<String, String> {
-        serde_json::from_str(TAGS_5).unwrap()
-    }
+    let err =
+        indy_get_wallet_record(command_handle,
+                               wallet_handle,
+                               type_.as_ptr(),
+                               id.as_ptr(),
+                               options_json.as_ptr(),
+                               cb);
 
-    pub fn record_1() -> WalletRecord {
-        WalletRecord { id: ID.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE.to_string()), tags: Some(NonSecretsUtils::tags_1()) }
-    }
+    super::results::result_to_string(err, receiver)
+}
 
-    pub fn record_2() -> WalletRecord {
-        WalletRecord { id: ID_2.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_2.to_string()), tags: Some(NonSecretsUtils::tags_2()) }
-    }
+pub fn open_wallet_search(wallet_handle: i32, type_: &str, query_json: &str, options_json: &str) -> Result<i32, ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_i32();
 
-    pub fn record_3() -> WalletRecord {
-        WalletRecord { id: ID_3.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_3.to_string()), tags: Some(NonSecretsUtils::tags_3()) }
-    }
+    let type_ = CString::new(type_).unwrap();
+    let query_json = CString::new(query_json).unwrap();
+    let options_json = CString::new(options_json).unwrap();
 
-    pub fn record_4() -> WalletRecord {
-        WalletRecord { id: ID_4.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_4.to_string()), tags: Some(NonSecretsUtils::tags_4()) }
-    }
+    let err =
+        indy_open_wallet_search(command_handle,
+                                wallet_handle,
+                                type_.as_ptr(),
+                                query_json.as_ptr(),
+                                options_json.as_ptr(),
+                                cb);
 
-    pub fn record_5() -> WalletRecord {
-        WalletRecord { id: ID_5.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_5.to_string()), tags: Some(NonSecretsUtils::tags_5()) }
-    }
+    super::results::result_to_int(err, receiver)
+}
 
-    pub fn populate_wallet_for_search() {
-        lazy_static! {
+pub fn fetch_wallet_search_next_records(wallet_handle: i32, wallet_search_handle: i32, count: usize) -> Result<String, ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string();
+
+    let err =
+        indy_fetch_wallet_search_next_records(command_handle,
+                                              wallet_handle,
+                                              wallet_search_handle,
+                                              count,
+                                              cb);
+
+    super::results::result_to_string(err, receiver)
+}
+
+pub fn close_wallet_search(wallet_search_handle: i32) -> Result<(), ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
+
+    let err =
+        indy_close_wallet_search(command_handle,
+                                 wallet_search_handle,
+                                 cb);
+
+    super::results::result_to_empty(err, receiver)
+}
+
+pub fn tags_1() -> HashMap<String, String> {
+    serde_json::from_str(TAGS).unwrap()
+}
+
+pub fn tags_2() -> HashMap<String, String> {
+    serde_json::from_str(TAGS_2).unwrap()
+}
+
+pub fn tags_3() -> HashMap<String, String> {
+    serde_json::from_str(TAGS_3).unwrap()
+}
+
+pub fn tags_4() -> HashMap<String, String> {
+    serde_json::from_str(TAGS_4).unwrap()
+}
+
+pub fn tags_5() -> HashMap<String, String> {
+    serde_json::from_str(TAGS_5).unwrap()
+}
+
+pub fn record_1() -> WalletRecord {
+    WalletRecord { id: ID.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE.to_string()), tags: Some(tags_1()) }
+}
+
+pub fn record_2() -> WalletRecord {
+    WalletRecord { id: ID_2.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_2.to_string()), tags: Some(tags_2()) }
+}
+
+pub fn record_3() -> WalletRecord {
+    WalletRecord { id: ID_3.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_3.to_string()), tags: Some(tags_3()) }
+}
+
+pub fn record_4() -> WalletRecord {
+    WalletRecord { id: ID_4.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_4.to_string()), tags: Some(tags_4()) }
+}
+
+pub fn record_5() -> WalletRecord {
+    WalletRecord { id: ID_5.to_string(), type_: Some(TYPE.to_string()), value: Some(VALUE_5.to_string()), tags: Some(tags_5()) }
+}
+
+pub fn populate_wallet_for_search() {
+    lazy_static! {
                     static ref COMMON_WALLET_INIT: Once = ONCE_INIT;
 
                 }
 
-        COMMON_WALLET_INIT.call_once(|| {
-            TestUtils::cleanup_storage();
+    COMMON_WALLET_INIT.call_once(|| {
+        test::cleanup_storage();
 
-            //1. Create and Open wallet
-            WalletUtils::create_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
-            let wallet_handle = WalletUtils::open_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+        //1. Create and Open wallet
+        wallet::create_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+        let wallet_handle = wallet::open_wallet(SEARCH_COMMON_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
 
-            let record_1 = NonSecretsUtils::record_1();
-            NonSecretsUtils::add_wallet_record(wallet_handle,
-                                               TYPE,
-                                               &record_1.id,
-                                               &record_1.value.clone().unwrap(),
-                                               Some(TAGS)).unwrap();
+        let record_1 = record_1();
+        add_wallet_record(wallet_handle,
+                                           TYPE,
+                                           &record_1.id,
+                                           &record_1.value.clone().unwrap(),
+                                           Some(TAGS)).unwrap();
 
-            let record_2 = NonSecretsUtils::record_2();
-            NonSecretsUtils::add_wallet_record(wallet_handle,
-                                               TYPE,
-                                               &record_2.id,
-                                               &record_2.value.clone().unwrap(),
-                                               Some(TAGS_2)).unwrap();
+        let record_2 = record_2();
+        add_wallet_record(wallet_handle,
+                                           TYPE,
+                                           &record_2.id,
+                                           &record_2.value.clone().unwrap(),
+                                           Some(TAGS_2)).unwrap();
 
-            let record_3 = NonSecretsUtils::record_3();
-            NonSecretsUtils::add_wallet_record(wallet_handle,
-                                               TYPE,
-                                               &record_3.id,
-                                               &record_3.value.clone().unwrap(),
-                                               Some(TAGS_3)).unwrap();
+        let record_3 = record_3();
+        add_wallet_record(wallet_handle,
+                                           TYPE,
+                                           &record_3.id,
+                                           &record_3.value.clone().unwrap(),
+                                           Some(TAGS_3)).unwrap();
 
-            let record_4 = NonSecretsUtils::record_4();
-            NonSecretsUtils::add_wallet_record(wallet_handle,
-                                               TYPE,
-                                               &record_4.id,
-                                               &record_4.value.clone().unwrap(),
-                                               Some(TAGS_4)).unwrap();
+        let record_4 = record_4();
+        add_wallet_record(wallet_handle,
+                                           TYPE,
+                                           &record_4.id,
+                                           &record_4.value.clone().unwrap(),
+                                           Some(TAGS_4)).unwrap();
 
-            let record_5 = NonSecretsUtils::record_5();
-            NonSecretsUtils::add_wallet_record(wallet_handle,
-                                               TYPE,
-                                               &record_5.id,
-                                               &record_5.value.clone().unwrap(),
-                                               Some(TAGS_5)).unwrap();
+        let record_5 = record_5();
+        add_wallet_record(wallet_handle,
+                                           TYPE,
+                                           &record_5.id,
+                                           &record_5.value.clone().unwrap(),
+                                           Some(TAGS_5)).unwrap();
 
-            WalletUtils::close_wallet(wallet_handle).unwrap();
-        });
-    }
+        wallet::close_wallet(wallet_handle).unwrap();
+    });
 }

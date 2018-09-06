@@ -711,7 +711,7 @@ pub mod tests {
     use services::pool::networker::MockNetworker;
     use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
     use super::*;
-    use utils::test::TestUtils;
+    use utils::test;
 
     const MESSAGE: &'static str = "message";
     const REQ_ID: &'static str = "1";
@@ -821,12 +821,12 @@ pub mod tests {
 
     // required because of dumping txns to cache
     fn _create_pool(content: Option<String>) {
-        use utils::environment::EnvironmentUtils;
+        use utils::environment;
         use std::fs;
         use std::fs::File;
         use std::io::Write;
 
-        let mut path = EnvironmentUtils::pool_path(POOL);
+        let mut path = environment::pool_path(POOL);
 
         path.push(POOL);
         path.set_extension("txn");
@@ -1279,7 +1279,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_catchup_reply_event_from_catchup_single_state_works() {
-            TestUtils::cleanup_indy_home();
+            test::cleanup_indy_home();
             _create_pool(None);
 
             let mut request_handler = _request_handler(0, 1);
@@ -1303,7 +1303,7 @@ pub mod tests {
 
             request_handler.process_event(Some(RequestEvent::CatchupRep(cr, "Node1".to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
-            TestUtils::cleanup_indy_home();
+            test::cleanup_indy_home();
         }
 
         #[test]

@@ -6,7 +6,7 @@ use commands::wallet::WalletCommand;
 use domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
 use errors::common::CommonError;
 use errors::ToErrorCode;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 use serde_json;
 use self::libc::c_char;
@@ -575,7 +575,7 @@ pub extern fn indy_generate_wallet_key(command_handle: i32,
             Box::new(move |result| {
                 let (err, key) = result_to_err_code_1!(result, String::new());
                 trace!("indy_generate_wallet_key: key: {:?}", key);
-                let key = CStringUtils::string_to_cstring(key);
+                let key = ctypes::string_to_cstring(key);
                 cb(command_handle, err, key.as_ptr())
             })
         )));
