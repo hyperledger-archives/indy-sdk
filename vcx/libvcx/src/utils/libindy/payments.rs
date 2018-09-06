@@ -499,7 +499,6 @@ pub mod tests {
         let name = "test_get_ledger_fees_real";
         ::utils::devsetup::tests::setup_ledger_env(name);
         let fees = get_ledger_fees().unwrap();
-        println!("{}", fees);
         assert!(fees.contains(r#""101":2"#));
         assert!(fees.contains(r#""1":0"#));
         ::utils::devsetup::tests::cleanup_dev_env(name);

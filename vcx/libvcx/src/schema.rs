@@ -409,7 +409,6 @@ pub mod tests {
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
         let (_, schema_attrs ) = get_schema_attrs("id".to_string(), schema_id.clone()).unwrap();
 
-        println!("{}", schema_attrs);
         assert!(schema_attrs.contains(&schema_id));
 
         ::utils::devsetup::tests::cleanup_dev_env(wallet_name);

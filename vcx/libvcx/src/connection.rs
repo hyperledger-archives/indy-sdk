@@ -888,7 +888,6 @@ pub mod tests {
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
         update_state(handle).unwrap();
         let details = get_invite_details(handle, true).unwrap();
-        println!("{}",details);
         assert!(details.contains("\"dp\":"));
         assert_eq!(get_invite_details(12345, true).err(),
                    Some(ConnectionError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num)));
@@ -905,8 +904,6 @@ pub mod tests {
         let handle = from_string(&first_string).unwrap();
         let second_string = to_string(handle).unwrap();
         assert!(release(handle).is_ok());
-        println!("{}",first_string);
-        println!("{}",second_string);
         assert_eq!(first_string,second_string);
     }
 
@@ -919,8 +916,6 @@ pub mod tests {
         let first_string = to_string(handle).unwrap();
         let handle = from_string(&first_string).unwrap();
         let second_string = to_string(handle).unwrap();
-        println!("{}",first_string);
-        println!("{}",second_string);
         assert_eq!(first_string,second_string);
     }
 
