@@ -34,10 +34,20 @@ pub fn create_genesis_txn_file(txn_file_data: &str) -> TempFile {
     txn_file
 }
 
+pub fn test_genesis_config() -> (String, TempFile) {
+    let genesis_file = create_genesis_txn_file_for_test_pool(None);
+    let config = json!({"genesis_txn": genesis_file.as_ref()}).to_string();
+
+    (config, genesis_file)
+}
+
+pub fn test_pool_name() -> String {
+    format!("TestPool{}", random_string(10))
+}
+
 pub fn create_default_pool() -> String {
-    let name = format!("TestPool{}", random_string(10));
-    let genesis_path = create_genesis_txn_file_for_test_pool(None);
-    let config = json!({"genesis_txn": genesis_path.as_ref()}).to_string();
+    let name = test_pool_name();
+    let (config, _genesis_file) = test_genesis_config();
 
     Pool::create_ledger_config(&name, Some(&config)).unwrap();
 

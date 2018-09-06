@@ -13,6 +13,7 @@ use std::time::Duration;
 use std::sync::mpsc::channel;
 use indy::ErrorCode;
 use indy::pool::Pool;
+use utils::pool;
 
 mod open_pool {
     use super::*;
@@ -825,53 +826,26 @@ mod close_pool {
 }
 
 #[cfg(test)]
-mod testing_helpers {
-    use super::*;
-
-    use std::env;
-    use utils::rand;
-    use utils::pool::PoolList;
-
-    pub fn pool_name() -> String {
-        format!("TestPool{}", rand::random_string(10))
-    }
-
-    pub fn sample_genesis_config() -> String {
-        let mut sample_file = env::current_dir().unwrap();
-        sample_file.push("storage/sample_genesis_txn.txn");
-        assert!(sample_file.exists());
-
-        json!({"genesis_txn": sample_file}).to_string()
-    }
-
-    pub fn create_default_pool_config() -> String {
-        let name = pool_name();
-        let config = sample_genesis_config();
-        Pool::create_ledger_config(&name, Some(&config)).unwrap();
-
-        name
-    }
-
-    pub fn assert_pool_exists(name: &str) {
-        assert!(PoolList::new().pool_exists(name));
-    }
-
-    pub fn assert_pool_not_exists(name: &str) {
-        assert!(! PoolList::new().pool_exists(name));
-    }
-}
-
-#[cfg(test)]
 mod test_pool_create_config {
     use super::*;
-    use super::testing_helpers::*;
 
     use std::fs;
     use std::time::Duration;
     use std::sync::mpsc::channel;
     use utils::file::TempFile;
+    use utils::pool::{PoolList, test_pool_name, test_genesis_config};
 
     const VALID_TIMEOUT: Duration = Duration::from_millis(250);
+
+    #[inline]
+    pub fn assert_pool_exists(name: &str) {
+        assert!(PoolList::new().pool_exists(name));
+    }
+
+    #[inline]
+    pub fn assert_pool_not_exists(name: &str) {
+        assert!(! PoolList::new().pool_exists(name));
+    }
 
     /*
     Returns the file, otherwise the file would be deleted
@@ -888,8 +862,8 @@ mod test_pool_create_config {
     #[test]
     /* Create a valid config with custom genesis txn. */
     fn config_with_genesis_txn() {
-        let name = pool_name();
-        let config = sample_genesis_config();
+        let name = test_pool_name();
+        let (config, _file) = test_genesis_config();
         let result = Pool::create_ledger_config(&name, Some(&config));
 
         assert_eq!((), result.unwrap());
@@ -900,7 +874,7 @@ mod test_pool_create_config {
     #[test]
     /* Config options missing genesis_txn */
     fn config_missing_genesis_txn() {
-        let name = pool_name();
+        let name = test_pool_name();
         let result = Pool::create_ledger_config(&name, Some("{}"));
 
         assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
@@ -910,7 +884,7 @@ mod test_pool_create_config {
     #[test]
     /* A path which doesn't exists results in error. */
     fn config_with_unknown_path_genesis_txn() {
-        let name = pool_name();
+        let name = test_pool_name();
         let config = json!({"genesis_txn": "/nonexist15794345"}).to_string();
         let result = Pool::create_ledger_config(&name, Some(&config));
 
@@ -921,7 +895,7 @@ mod test_pool_create_config {
     #[test]
     /* Error with an incorrectly formed gensis txn. */
     fn config_with_bad_genesis_txn() {
-        let name = pool_name();
+        let name = test_pool_name();
         let (config, _file) = invalid_temporary_genesis_config();
 
         let result = Pool::create_ledger_config(&name, Some(&config));
@@ -933,8 +907,8 @@ mod test_pool_create_config {
     #[test]
     /* Must specify pool name when config is created. */
     fn config_with_empty_pool_name() {
-        let name = pool_name();
-        let config = sample_genesis_config();
+        let name = test_pool_name();
+        let (config, _file) = test_genesis_config();
         let result = Pool::create_ledger_config("", Some(&config));
 
         assert_eq!(ErrorCode::CommonInvalidParam2, result.unwrap_err());
@@ -944,8 +918,8 @@ mod test_pool_create_config {
     #[test]
     /* Error when creating a pool that already exists */
     fn config_already_exists() {
-        let name = pool_name();
-        let config = sample_genesis_config();
+        let name = test_pool_name();
+        let (config, _file) = test_genesis_config();
 
         let result = Pool::create_ledger_config(&name, Some(&config));
         assert_eq!((), result.unwrap());
@@ -960,8 +934,8 @@ mod test_pool_create_config {
     #[test]
     /* Create a config async. */
     fn config_async() {
-        let name = pool_name();
-        let config = sample_genesis_config();
+        let name = test_pool_name();
+        let (config, _file) = test_genesis_config();
 
         let (sender, receiver) = channel();
         let result = Pool::create_ledger_config_async(
@@ -982,7 +956,7 @@ mod test_pool_create_config {
     #[test]
     /* Create a config async resulting in an early error: callback isn't called. */
     fn config_async_with_early_error() {
-        let name = pool_name();
+        let name = test_pool_name();
         let (sender, receiver) = channel();
         let result = Pool::create_ledger_config_async(
             &name,
@@ -999,7 +973,7 @@ mod test_pool_create_config {
     #[test]
     /* Create a config async resulting in a late error: callback is called. */
     fn config_async_with_late_error() {
-        let name = pool_name();
+        let name = test_pool_name();
         let (config, _file) = invalid_temporary_genesis_config();
         let (sender, receiver) = channel();
         let result = Pool::create_ledger_config_async(
@@ -1019,8 +993,8 @@ mod test_pool_create_config {
     #[test]
     /* Create a config with timeout. */
     fn config_timeout() {
-        let name = pool_name();
-        let config = sample_genesis_config();
+        let name = test_pool_name();
+        let (config, _file) = test_genesis_config();
         let result = Pool::create_ledger_config_timeout(
             &name,
             Some(&config),
@@ -1035,7 +1009,7 @@ mod test_pool_create_config {
     #[test]
     /* Create a config timeout resulting in an error. */
     fn config_timeout_with_error() {
-        let name = pool_name();
+        let name = test_pool_name();
         let result = Pool::create_ledger_config_timeout(
             &name,
             Some("{}"),
@@ -1049,8 +1023,8 @@ mod test_pool_create_config {
     #[test]
     /* Timeout occurs while creating config. Pool is still created. */
     fn config_timeout_timeouts() {
-        let name = pool_name();
-        let config = sample_genesis_config();
+        let name = test_pool_name();
+        let (config, _file) = test_genesis_config();
         let result = Pool::create_ledger_config_timeout(
             &name,
             Some(&config),
@@ -1066,17 +1040,27 @@ mod test_pool_create_config {
 #[cfg(test)]
 mod test_delete_config {
     use super::*;
-    use super::testing_helpers::*;
 
     use std::sync::mpsc::channel;
+    use utils::pool::{PoolList, test_pool_name, create_default_pool};
 
     const VALID_TIMEOUT: Duration = Duration::from_millis(250);
     const NON_EXISTENT_NAME: &str = "a_pool_name_which_does_not_exist";
 
+    #[inline]
+    pub fn assert_pool_exists(name: &str) {
+        assert!(PoolList::new().pool_exists(name));
+    }
+
+    #[inline]
+    pub fn assert_pool_not_exists(name: &str) {
+        assert!(! PoolList::new().pool_exists(name));
+    }
+
     #[test]
     /* Delete a pool_config. */
     fn delete_pool() {
-        let pool_name = create_default_pool_config();
+        let pool_name = create_default_pool();
         assert_pool_exists(&pool_name);
 
         let result = Pool::delete(&pool_name);
@@ -1095,7 +1079,7 @@ mod test_delete_config {
     #[test]
     /* Error deleting an open pool_config. */
     fn delete_pool_open() {
-        let pool_name = create_default_pool_config();
+        let pool_name = create_default_pool();
         let config = json!({
             "refresh_on_open": false,
             "auto_refresh_time": 0,
@@ -1116,7 +1100,7 @@ mod test_delete_config {
     #[test]
     /* Delete pool async. */
     fn delete_pool_async() {
-        let pool_name = create_default_pool_config();
+        let pool_name = create_default_pool();
         let (sender, receiver) = channel();
 
         let result = Pool::delete_async(&pool_name, move |ec| sender.send(ec).unwrap());
@@ -1148,7 +1132,7 @@ mod test_delete_config {
     #[test]
     /* Delete a pool with a timeout. */
     fn delete_pool_timeout() {
-        let pool_name = create_default_pool_config();
+        let pool_name = create_default_pool();
 
         let result = Pool::delete_timeout(&pool_name, VALID_TIMEOUT);
         assert_eq!((), result.unwrap());
@@ -1170,7 +1154,7 @@ mod test_delete_config {
     #[test]
     /* Delete a pool with timeout that timeouts. */
     fn delete_pool_timeout_timeouts() {
-        let pool_name = create_default_pool_config();
+        let pool_name = create_default_pool();
 
         let result = Pool::delete_timeout(
             &pool_name,
@@ -1285,16 +1269,15 @@ There aren't tests for failure because I'm not sure how it would fail.
 */
 mod test_pool_list {
     use super::*;
-    use super::testing_helpers::*;
 
     use std::sync::mpsc::channel;
-    use utils::pool::PoolList;
+    use utils::pool::{PoolList, create_default_pool};
 
     const VALID_TIMEOUT: Duration = Duration::from_millis(250);
 
     #[test]
     fn list_pool_async() {
-        let name = create_default_pool_config();
+        let name = create_default_pool();
         let (sender, receiver) = channel();
 
         Pool::list_async(move |ec, result| sender.send(result).unwrap());
@@ -1308,7 +1291,7 @@ mod test_pool_list {
     #[test]
     /* List pools with timeout. */
     fn list_pool_timeout() {
-        let name = create_default_pool_config();
+        let name = create_default_pool();
 
         let pool_json = Pool::list_timeout(VALID_TIMEOUT).unwrap();
         assert!(PoolList::from_json(&pool_json).pool_exists(&name));
