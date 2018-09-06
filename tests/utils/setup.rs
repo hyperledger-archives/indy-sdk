@@ -91,20 +91,16 @@ impl<'a> Setup<'a>
 
     fn setup_pool(connect_to_pool: bool) -> (String, Option<i32>)
     {
-        let pc_string = pool::create_pool_config();
-        let pool_config = pc_string.as_str();
         indy::pool::Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
-        let pool_name = pool::create_pool_ledger(pool_config);
-        (
-            pool_name.clone(),
-            if connect_to_pool {
-                let pool_handle = indy::pool::Pool::open_ledger(&pool_name, None).unwrap();
-                Some(pool_handle)
-            } else {
-                None
-            }
-        )
+        let pool_name = pool::create_default_pool();
+
+        if connect_to_pool {
+            let pool_handle = indy::pool::Pool::open_ledger(&pool_name, None).unwrap();
+            (pool_name, Some(pool_handle))
+        } else {
+            (pool_name, None)
+        }
     }
 
     fn create_users(wallet: &Wallet, pool_handle: i32, did_trustee: &str, num_users: u8) -> Entities

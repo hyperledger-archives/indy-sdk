@@ -1,17 +1,15 @@
 //! Contains functions for random data generation
 
 extern crate rand;
+use self::rand::distributions::{Distribution, Alphanumeric};
 
-use self::rand::Rng;
-use self::rand::random;
 /**
    Builds a string of random numbers of the inputted length
 */
-pub fn rand_string(length : usize) -> String {
-    let s = rand::thread_rng()
-        .gen_ascii_chars()
-        .take(length)
-        .collect::<String>();
-
-    return s;
+pub fn random_string(n: usize) -> String {
+    let mut range = rand::thread_rng();
+    Alphanumeric
+        .sample_iter(&mut range)
+        .take(n)
+        .collect()
 }

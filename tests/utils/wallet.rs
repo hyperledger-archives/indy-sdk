@@ -1,6 +1,6 @@
 use super::indy;
 use indy::ErrorCode;
-use utils::rand::rand_string;
+use utils::rand::random_string;
 
 static USEFUL_CREDENTIALS : &'static str = r#"
    {
@@ -35,7 +35,7 @@ pub struct Wallet {
 impl Wallet {
     /* constructors */
     pub fn new() -> Wallet {
-        let wallet_name : String = rand_string(20);
+        let wallet_name : String = random_string(20);
         let mut wallet = Wallet { name : wallet_name , handle: -1 };
         wallet.create().unwrap();
         wallet.open().unwrap();
