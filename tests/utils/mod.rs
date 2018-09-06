@@ -1,10 +1,17 @@
-extern crate serde_json;
+extern crate rust_indy_sdk_wrapper as indy;
 
 use std::env;
 use std::path::PathBuf;
 use std::fs;
+use serde_json;
 
 pub mod constants;
+pub mod did;
+pub mod environment;
+pub mod pool;
+mod rand;
+pub mod setup;
+pub mod wallet;
 
 macro_rules! safe_wallet_create {
     ($x:ident) => {
