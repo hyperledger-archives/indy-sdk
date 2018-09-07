@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::fs;
 use serde_json;
 
+pub mod b58;
 pub mod constants;
 pub mod did;
 pub mod environment;

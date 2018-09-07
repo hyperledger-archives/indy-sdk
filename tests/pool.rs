@@ -7,7 +7,7 @@ extern crate rust_libindy_wrapper as indy;
 mod utils;
 
 use indy::wallet::Wallet;
-use utils::constants::{DEFAULT_CREDENTIALS, DID};
+use utils::constants::{DEFAULT_CREDENTIALS, DID_1};
 use utils::setup::{Setup, SetupConfig};
 use std::time::Duration;
 use std::sync::mpsc::channel;
@@ -640,7 +640,7 @@ mod close_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
 
-        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(DID, DID).unwrap();
+        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(DID_1, DID_1).unwrap();
 
         let (sender, receiver) = channel();
 
@@ -669,7 +669,7 @@ mod close_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
 
-        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(DID, DID).unwrap();
+        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(DID_1, DID_1).unwrap();
 
         let (sender, receiver) = channel();
 
@@ -704,7 +704,7 @@ mod close_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
 
-        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(DID, DID).unwrap();
+        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(DID_1, DID_1).unwrap();
 
         let (sender, receiver) = channel();
 
