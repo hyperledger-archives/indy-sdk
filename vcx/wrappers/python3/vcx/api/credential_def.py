@@ -113,7 +113,7 @@ class CredentialDef(VcxBase):
                                                               data['data']['id'])
             return credential_def
         except KeyError:
-            raise VcxError(ErrorCode.InvalidCredentialDef, error_message(ErrorCode.InvalidCredentialDef))
+            raise VcxError(ErrorCode.InvalidCredentialDef)
 
 
     async def get_cred_def_id(self):

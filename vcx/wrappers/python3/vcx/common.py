@@ -5,8 +5,8 @@ import itertools
 import logging
 import os
 from .error import VcxError, ErrorCode
+from vcx.cdll import _cdll, LIBRARY
 
-LIBRARY = "libvcx.so"
 _futures = {}
 _futures_counter = itertools.count()
 
@@ -28,7 +28,7 @@ def do_call(name: str, *args):
 
     if err != ErrorCode.Success:
         logger.warning("_do_call: Function %s returned error %i", name, err)
-        future.set_exception(VcxError(ErrorCode(err), error_message(err)))
+        future.set_exception(VcxError(ErrorCode(err)))
 
     logger.debug("do_call: <<< %s", future)
     return future
@@ -43,8 +43,7 @@ def release(name, handle):
 
     if err != ErrorCode.Success:
         logger.warning("release: Function %s returned error %i", name, err)
-        raise VcxError(ErrorCode(err), error_message(err))
-
+        raise VcxError(ErrorCode(err))
 
 def error_message(error_code: int) -> str:
     logger = logging.getLogger(__name__)
@@ -57,6 +56,7 @@ def error_message(error_code: int) -> str:
     logger.debug("error_message: Function %s returned error_message: %s", name, err_msg)
 
     return err_msg
+
 
 
 def get_version() -> str:
@@ -121,7 +121,7 @@ def _cxs_loop_callback(command_handle: int, err, *args):
         print("_indy_loop_callback: Future was cancelled earlier")
     else:
         if err != ErrorCode.Success:
-            future.set_exception(VcxError(ErrorCode(err), error_message(err)))
+            future.set_exception(VcxError(ErrorCode(err)))
         else:
             if len(args) == 0:
                 res = None
@@ -133,19 +133,5 @@ def _cxs_loop_callback(command_handle: int, err, *args):
             future.set_result(res)
 
 
-def _cdll() -> CDLL:
-    if not hasattr(_cdll, "cdll"):
-        _cdll.cdll = _load_cdll()
 
-    return _cdll.cdll
-
-
-def _load_cdll() -> CDLL:
-    file_dir = '/usr'
-    path = os.path.join(file_dir, "lib", LIBRARY)
-    try:
-        res = CDLL(path)
-        return res
-    except OSError as e:
-        raise e
 
