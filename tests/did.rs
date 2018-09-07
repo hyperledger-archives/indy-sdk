@@ -8,6 +8,7 @@ mod utils;
 
 use indy::did::Did;
 use indy::ErrorCode;
+use std::sync::mpsc::channel;
 use utils::b58::{FromBase58, IntoBase58};
 use utils::constants::{DID_1, SEED_1, VERKEY_1};
 use utils::wallet::Wallet;
@@ -15,12 +16,9 @@ use utils::wallet::Wallet;
 #[cfg(test)]
 mod create_new_did {
     use super::*;
+    use std::time::Duration;
 
-    fn seed_config(seed: &str) -> String {
-        json!({
-            "seed": seed
-        }).to_string()
-    }
+    const VALID_TIMEOUT: Duration = Duration::from_secs(5);
 
     #[test]
     fn create_did_with_empty_json() {
@@ -36,7 +34,10 @@ mod create_new_did {
     fn create_did_with_seed() {
         let wallet = Wallet::new();
 
-        let config = seed_config(SEED_1);
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
         let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
 
         assert_eq!(DID_1, did);
@@ -99,5 +100,80 @@ mod create_new_did {
         let result = Did::new(wallet.handle, "");
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn create_did_async_no_config() {
+        let wallet = Wallet::new();
+        let (sender, receiver) = channel();
+
+        Did::new_async(
+            wallet.handle,
+            "{}",
+            move |ec, did, verkey| { sender.send((ec, did, verkey)).unwrap(); }
+        );
+
+        let (ec, did, verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        
+        assert_eq!(ErrorCode::Success, ec);
+        assert_eq!(16, did.from_base58().unwrap().len());
+        assert_eq!(32, verkey.from_base58().unwrap().len());
+    }
+    
+    #[test]
+    fn create_did_async_with_seed() {
+        let wallet = Wallet::new();
+        let (sender, receiver) = channel();
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        Did::new_async(
+            wallet.handle,
+            &config,
+            move |ec, did, key| { sender.send((ec, did, key)).unwrap(); }
+        );
+
+        let (ec, did, verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::Success, ec);
+        assert_eq!(DID_1, did);
+        assert_eq!(VERKEY_1, verkey);
+    }
+
+    #[test]
+    fn create_did_async_invalid_wallet() {
+        let (sender, receiver) = channel();
+
+        Did::new_async(
+            583741,
+            "{}",
+            move |ec, did, key| sender.send((ec, did, key)).unwrap()
+        );
+
+        let result = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        let expected = (ErrorCode::WalletInvalidHandle, String::new(), String::new());
+        assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn create_did_timeout_no_config() {
+        unimplemented!();
+    }
+
+    #[test]
+    fn create_did_timeout_with_seed() {
+        unimplemented!();
+    }
+
+    #[test]
+    fn create_did_timeout_invalid_wallet() {
+        unimplemented!();
+    }
+
+    #[test]
+    fn create_did_timeout_timeouts() {
+        unimplemented!();
     }
 }
