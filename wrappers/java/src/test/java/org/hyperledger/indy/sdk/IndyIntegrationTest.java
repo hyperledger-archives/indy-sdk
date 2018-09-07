@@ -1,5 +1,6 @@
 package org.hyperledger.indy.sdk;
 
+import org.apache.log4j.Logger;
 import org.hyperledger.indy.sdk.crypto.CryptoJSONParameters;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
@@ -69,8 +70,6 @@ public class IndyIntegrationTest {
 	protected static final String WALLET_CONFIG = "{ \"id\":\"" + WALLET + "\", \"storage_type\":\"" + TYPE + "\"}";
 
 	protected static final String WALLET_CREDENTIALS = "{ \"key\":\"key\", \"key_derivation_method\": \"ARGON2I_INT\"}";
-
-	protected static final String PLUGGED_WALLET_CONFIG = "{ \"id\":\"" + WALLET + "\", \"storage_type\":\"unknown_type\"}";
 
 	protected int PROTOCOL_VERSION = 2;
 
