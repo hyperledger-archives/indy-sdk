@@ -313,11 +313,10 @@ mod tests {
     use settings;
     use utils::libindy::return_types_u32;
     use utils::constants::{SCHEMA_ID};
-    use settings::tests::test_init;
 
     #[test]
     fn test_vcx_create_credentialdef_success() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -333,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_vcx_create_credentialdef_fails() {
-        test_init("false");
+        init!("false");
         settings::set_defaults();
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
@@ -350,7 +349,7 @@ mod tests {
 
     #[test]
     fn test_vcx_credentialdef_serialize() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -370,7 +369,7 @@ mod tests {
 
     #[test]
     fn test_vcx_credentialdef_deserialize_succeeds() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let original = r#"{"version":"1.0", "data": {"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:1697","tag":"tag","name":"Test Credential Definition","source_id":"SourceId"}}"#;
         assert_eq!(vcx_credentialdef_deserialize(cb.command_handle,
@@ -384,7 +383,7 @@ mod tests {
 
     #[test]
     fn test_vcx_creddef_get_id(){
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -403,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_get_payment_txn() {
-        test_init("true");
+        init!("true");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let handle = credential_def::create_new_credentialdef("sid".to_string(),
                                                               "name".to_string(),

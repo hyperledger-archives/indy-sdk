@@ -484,19 +484,15 @@ pub fn parse_invitation_acceptance_details(payload: Vec<u8>) -> Result<SenderDet
 mod tests {
     use super::*;
     use messages::send_invite;
-    use utils::libindy::wallet;
     use utils::libindy::signus::create_and_store_my_did;
 
     #[test]
     fn test_send_invite_set_values_and_post(){
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let my_wallet = wallet::init_wallet("test_send_invite_set_values_and_serialize_mine").unwrap();
-
-        let (user_did, user_vk) = create_and_store_my_did(my_wallet,None).unwrap();
-        let (agent_did, agent_vk) = create_and_store_my_did(my_wallet, Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(my_wallet, Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(my_wallet, Some(MY3_SEED)).unwrap();
+        init!("false");
+        let (user_did, user_vk) = create_and_store_my_did(None).unwrap();
+        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
+        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
+        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
@@ -512,15 +508,11 @@ mod tests {
             .msgpack().unwrap();
 
         assert!(msg.len() > 0);
-
-        wallet::delete_wallet("test_send_invite_set_values_and_serialize_mine").unwrap();
     }
 
     #[test]
     fn test_parse_send_invite_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
-
+        init!("indy");
         let result = parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
 
         assert_eq!(result, INVITE_DETAIL_STRING);

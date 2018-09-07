@@ -630,11 +630,6 @@ pub mod tests {
         libindy_create_and_store_credential_def(&issuer_did, SCHEMAS_JSON, tag, None, config).unwrap();
     }
 
-    fn set_default_and_enable_test_mode() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-    }
-
     pub fn create_standard_issuer_credential() -> IssuerCredential {
         let credential_req:CredentialRequest = CredentialRequest::from_str(CREDENTIAL_REQ_STRING).unwrap();
         let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
@@ -723,8 +718,7 @@ pub mod tests {
 
     #[test]
     fn test_issuer_credential_create_succeeds() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
         match issuer_credential_create(CRED_DEF_ID.to_string(),
                                   "1".to_string(),
                                   "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
@@ -738,7 +732,7 @@ pub mod tests {
 
     #[test]
     fn test_to_string_succeeds() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let handle = issuer_credential_create(CRED_DEF_ID.to_string(),
                                          "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
@@ -751,8 +745,7 @@ pub mod tests {
 
     #[test]
     fn test_send_credential_offer() {
-        set_default_and_enable_test_mode();
-
+        init!("true");
         let connection_handle = build_connection("test_send_credential_offer").unwrap();
 
         let credential_id = DEFAULT_CREDENTIAL_ID;
@@ -773,17 +766,13 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_cred_offer() {
-        settings::set_defaults();
-        let wallet_name = "test_create_cred_offer";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         let issuer = create_full_issuer_credential().0.generate_credential_offer(&settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap()).unwrap();
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
     fn test_retry_send_credential_offer() {
-        set_default_and_enable_test_mode();
-
+        init!("true");
         let connection_handle = build_connection("test_send_credential_offer").unwrap();
 
         let credential_id = DEFAULT_CREDENTIAL_ID;
@@ -808,8 +797,7 @@ pub mod tests {
 
     #[test]
     fn test_credential_can_be_resent_after_failure() {
-        let test_name = "test_send_a_credential";
-        set_default_and_enable_test_mode();
+        init!("true");
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "QTrbV4raAcND4DWWzBmdsh");
 
         let mut credential = create_standard_issuer_credential();
@@ -830,7 +818,7 @@ pub mod tests {
 
     #[test]
     fn test_from_string_succeeds() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let handle = issuer_credential_create(CRED_DEF_ID.to_string(),
                                          "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
@@ -849,9 +837,7 @@ pub mod tests {
 
     #[test]
     fn test_update_state_with_pending_credential_request() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-
+        init!("true");
         let connection_handle = build_connection("test_update_state_with_pending_credential_request").unwrap();
         let credential_req:CredentialRequest = CredentialRequest::from_str(CREDENTIAL_REQ_STRING).unwrap();
         let (credential_offer, _) = ::credential::parse_json_offer(CREDENTIAL_OFFER_JSON).unwrap();
@@ -887,7 +873,7 @@ pub mod tests {
 
     #[test]
     fn test_issuer_credential_changes_state_after_being_validated() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let handle = issuer_credential_create(CRED_DEF_ID.to_string(),
                                          "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
@@ -927,11 +913,7 @@ pub mod tests {
 
     #[test]
     fn test_that_test_mode_enabled_bypasses_libindy_create_credential(){
-        let test_name = "test_that_TEST_MODE_ENABLED_bypasses_libindy_create_credential";
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "QTrbV4raAcND4DWWzBmdsh");
-
+        init!("true");
         let mut credential = create_standard_issuer_credential();
         credential.state = VcxStateType::VcxStateRequestReceived;
 
@@ -944,8 +926,7 @@ pub mod tests {
 
     #[test]
     fn test_release_all() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
         let h1 = issuer_credential_create(CRED_DEF_ID.to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
         let h2 = issuer_credential_create(CRED_DEF_ID.to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
         let h3 = issuer_credential_create(CRED_DEF_ID.to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
@@ -961,8 +942,7 @@ pub mod tests {
 
     #[test]
     fn test_errors(){
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        init!("false");
         let invalid_handle = 478620;
         assert_eq!(to_string(invalid_handle).err(), Some(IssuerCredError::CommonError(error::INVALID_OBJ_HANDLE.code_num)));
         assert_eq!(release(invalid_handle).err(), Some(IssuerCredError::InvalidHandle()));
@@ -999,9 +979,7 @@ pub mod tests {
 
     #[test]
     fn test_verify_payment() {
-        let test_name = "test_verify_payment";
-        set_default_and_enable_test_mode();
-
+        init!("true");
         let mut credential = create_standard_issuer_credential();
 
         // Success
@@ -1020,10 +998,7 @@ pub mod tests {
 
     #[test]
     fn test_send_credential_with_payments() {
-        let test_name = "test_send_a_credential";
-        set_default_and_enable_test_mode();
-        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, "QTrbV4raAcND4DWWzBmdsh");
-
+        init!("true");
         let mut credential = create_standard_issuer_credential();
         credential.state = VcxStateType::VcxStateRequestReceived;
         credential.price = 3;

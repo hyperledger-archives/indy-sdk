@@ -177,36 +177,30 @@ pub mod tests {
         assert!(!Path::new(&dir).exists());
     }
 
+    pub fn delete_test_wallet(name: &str) {
+        match close_wallet() {
+            Ok(_) => (),
+            Err(_) => (),
+        };
+
+        match delete_wallet(name) {
+            Ok(_) => (),
+            Err(_) => (),
+        };
+    }
+
     #[test]
     fn test_wallet() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
-        let wallet_name = String::from("walletUnique");
-        let mut wallet_handle = init_wallet(&wallet_name).unwrap();
-        assert!( wallet_handle > 0);
+        init!("false");
+        assert!( get_wallet_handle() > 0);
         assert_eq!(error::INVALID_WALLET_CREATION.code_num, init_wallet(&String::from("")).unwrap_err());
-
-        thread::sleep(Duration::from_secs(1));
-        delete_wallet("walletUnique").unwrap();
-        let handle = get_wallet_handle();
-        let wallet_name2 = String::from("wallet2");
-        wallet_handle = init_wallet(&wallet_name2).unwrap();
-        assert!(wallet_handle > 0);
-
-        thread::sleep(Duration::from_secs(1));
-        assert_ne!(handle, get_wallet_handle());
-        delete_wallet("wallet2").unwrap();
     }
 
     #[test]
     fn test_wallet_import_export() {
-
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
-        let exported_path = format!(r#"/tmp/{}"#, wallet_name);
-        let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();
-        let backup_key = settings::get_config_value(settings::CONFIG_WALLET_BACKUP_KEY).unwrap();
+        teardown!("false");
+        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
 
         let dir = export_test_wallet();
         let xtype = "type1";
@@ -217,13 +211,13 @@ pub mod tests {
         ::api::vcx::vcx_shutdown(true);
 
         let import_config = json!({
-            settings::CONFIG_WALLET_NAME: wallet_name,
-            settings::CONFIG_WALLET_KEY: wallet_key,
+            settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
+            settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
             settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
-            settings::CONFIG_WALLET_BACKUP_KEY: backup_key,
+            settings::CONFIG_WALLET_BACKUP_KEY: settings::DEFAULT_WALLET_BACKUP_KEY,
         }).to_string();
         import(&import_config).unwrap();
-        open_wallet(&wallet_name).unwrap();
+        open_wallet(&settings::DEFAULT_WALLET_NAME).unwrap();
 
         // If wallet was successfully imported, there will be an error trying to add this duplicate record
         assert_eq!(add_record(xtype, id, value, "{}"), Err(error::DUPLICATE_WALLET_RECORD.code_num));
@@ -255,7 +249,6 @@ pub mod tests {
 
         // Missing backup_key
         assert_eq!(import(&config.to_string()), Err(WalletError::CommonError(error::MISSING_BACKUP_KEY.code_num)));
-
     }
 
     #[test]
@@ -308,23 +301,19 @@ pub mod tests {
     fn test_import_wallet_fails_with_invalid_backup_key() {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_defaults();
+        teardown!("false");
 
-        let wallet_name = "test_import_wallet_fails_with_invalid_backup_key";
-        let exported_path = format!(r#"/tmp/{}"#, wallet_name);
-        let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();
-        let backup_key1 = "123";
-        let backup_key2 = "456";
-        settings::set_config_value(settings::CONFIG_WALLET_NAME, wallet_name);
-        settings::set_config_value(settings::CONFIG_WALLET_BACKUP_KEY, backup_key1);
+        let exported_path = format!(r#"/tmp/{}"#, settings::DEFAULT_WALLET_NAME);
+        let bad_backup = "456";
 
         let dir = export_test_wallet();
         ::api::vcx::vcx_shutdown(true);
 
         let import_config = json!({
-            settings::CONFIG_WALLET_NAME: wallet_name,
-            settings::CONFIG_WALLET_KEY: wallet_key,
+            settings::CONFIG_WALLET_NAME: settings::DEFAULT_WALLET_NAME,
+            settings::CONFIG_WALLET_KEY: settings::DEFAULT_WALLET_KEY,
             settings::CONFIG_EXPORTED_WALLET_PATH: exported_path,
-            settings::CONFIG_WALLET_BACKUP_KEY: backup_key2,
+            settings::CONFIG_WALLET_BACKUP_KEY: bad_backup,
         }).to_string();
         assert_eq!(import(&import_config), Err(WalletError::CommonError(error::LIBINDY_INVALID_STRUCTURE.code_num)));
 
@@ -334,41 +323,33 @@ pub mod tests {
 
     #[test]
     fn test_add_new_record_with_no_tag() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
 
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
         let wallet_n = "test_add_new_record_with_no_tag";
 
-        init_wallet(wallet_n).unwrap();
         add_record(record_type, id, record, "{}").unwrap();
-        delete_wallet(wallet_n).unwrap();
     }
 
     #[test]
     fn test_add_duplicate_record_fails() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
 
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
         let wallet_n = "test_add_duplicate_record_fails";
 
-        init_wallet(wallet_n).unwrap();
         add_record(record_type, id, record, "{}").unwrap();
         let rc = add_record(record_type, id, record, "{}");
         assert_eq!(rc, Err(error::DUPLICATE_WALLET_RECORD.code_num));
-        delete_wallet(wallet_n).unwrap();
-
     }
 
     #[test]
     fn test_add_record_with_same_id_but_different_type_success() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
 
         let record = "Record Value";
         let record_type = "Type";
@@ -376,17 +357,13 @@ pub mod tests {
         let id = "123";
         let wallet_n = "test_add_duplicate_record_fails";
 
-        init_wallet(wallet_n).unwrap();
         add_record(record_type, id, record, "{}").unwrap();
         add_record(record_type2, id, record, "{}").unwrap();
-        delete_wallet(wallet_n).unwrap();
-
     }
 
     #[test]
     fn test_retrieve_missing_record_fails() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
 
         let record_type = "Type";
         let id = "123";
@@ -397,17 +374,13 @@ pub mod tests {
         }).to_string();
         let wallet_n = "test_retrieve_missing_record_fails";
 
-        init_wallet(wallet_n).unwrap();
         let rc = get_record(record_type, id, &options);
         assert_eq!(rc, Err(error::WALLET_RECORD_NOT_FOUND.code_num));
-        delete_wallet(wallet_n).unwrap();
-
     }
 
     #[test]
     fn test_retrieve_record_success() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
 
         let record = "Record Value";
         let record_type = "Type";
@@ -420,32 +393,26 @@ pub mod tests {
         }).to_string();
         let expected_retrieved_record = format!(r#"{{"type":"{}","id":"{}","value":"{}","tags":null}}"#, record_type, id, record);
 
-        init_wallet(wallet_n).unwrap();
         add_record(record_type, id, record, "{}").unwrap();
         let retrieved_record = get_record(record_type, id, &options).unwrap();
-        delete_wallet(wallet_n).unwrap();
 
         assert_eq!(retrieved_record, expected_retrieved_record);
     }
 
     #[test]
     fn test_delete_record_fails_with_no_record() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
         let wallet_n = "test_delete_record_fails_with_no_record";
         let record_type = "Type";
         let id = "123";
 
-        init_wallet(wallet_n).unwrap();
         let rc = delete_record(record_type, id);
         assert_eq!(rc, Err(error::WALLET_RECORD_NOT_FOUND.code_num));
-
     }
 
     #[test]
     fn test_delete_record_success() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
 
         let record = "Record Value";
         let record_type = "Type";
@@ -457,35 +424,28 @@ pub mod tests {
             "retrieveTags": false
         }).to_string();
 
-        init_wallet(wallet_n).unwrap();
         add_record(record_type, id, record, "{}").unwrap();
         delete_record(record_type, id).unwrap();
         let rc = get_record(record_type, id, &options);
         assert_eq!(rc, Err(error::WALLET_RECORD_NOT_FOUND.code_num));
-        delete_wallet(wallet_n).unwrap();
-
     }
 
     #[test]
     fn test_update_record_value_fails_with_no_initial_record() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
 
         let record = "Record Value";
         let record_type = "Type";
         let id = "123";
         let wallet_n = "test_update_record_value_fails_with_no_initial_record";
 
-        init_wallet(wallet_n).unwrap();
         let rc = update_record_value(record_type, id, record);
         assert_eq!(rc, Err(error::WALLET_RECORD_NOT_FOUND.code_num));
-        delete_wallet(wallet_n).unwrap();
     }
 
     #[test]
     fn test_update_record_value_success() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
 
         let initial_record = "Record1";
         let changed_record = "Record2";
@@ -500,12 +460,10 @@ pub mod tests {
         let expected_initial_record = format!(r#"{{"type":"{}","id":"{}","value":"{}","tags":null}}"#, record_type, id, initial_record);
         let expected_updated_record = format!(r#"{{"type":"{}","id":"{}","value":"{}","tags":null}}"#, record_type, id, changed_record);
 
-        init_wallet(wallet_n).unwrap();
         add_record(record_type, id, initial_record, "{}").unwrap();
         let initial_record = get_record(record_type, id, &options).unwrap();
         update_record_value(record_type, id, changed_record).unwrap();
         let changed_record = get_record(record_type, id, &options).unwrap();
-        delete_wallet(wallet_n).unwrap();
 
         assert_eq!(initial_record, expected_initial_record);
         assert_eq!(changed_record, expected_updated_record);

@@ -474,7 +474,6 @@ mod tests {
     use api::VcxStateType;
     use utils::constants::{CRED_DEF_ID, DEFAULT_SERIALIZED_ISSUER_CREDENTIAL};
     use utils::libindy::return_types_u32;
-    use settings::tests::test_init;
 
     static DEFAULT_CREDENTIAL_NAME: &str = "Credential Name Default";
     static DEFAULT_DID: &str = "8XFh8yBzrpJQmNyZzgoTqB";
@@ -484,7 +483,7 @@ mod tests {
 
     #[test]
     fn test_vcx_issuer_create_credential_success() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
                                            CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
@@ -499,7 +498,7 @@ mod tests {
 
     #[test]
     fn test_vcx_issuer_create_credential_fails() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
@@ -516,7 +515,7 @@ mod tests {
 
     #[test]
     fn test_vcx_issuer_credential_serialize_deserialize() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
                                            CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
@@ -544,7 +543,7 @@ mod tests {
 
     #[test]
     fn test_vcx_issuer_send_credential_offer() {
-        test_init("true");
+        init!("true");
         let handle = issuer_credential::from_string(DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
         assert_eq!(issuer_credential::get_state(handle).unwrap(),VcxStateType::VcxStateInitialized as u32);
 
@@ -561,7 +560,7 @@ mod tests {
 
     #[test]
     fn test_vcx_issuer_send_a_credential() {
-        test_init("true");
+        init!("true");
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
         let serialized_credential = ISSUER_CREDENTIAL_STATE_ACCEPTED;
         let test_name = "test_vcx_issuer_send_a_credential";
@@ -582,7 +581,7 @@ mod tests {
 
     #[test]
     fn test_create_credential_arguments_correct(){
-        test_init("true");
+        init!("true");
         settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
@@ -606,7 +605,7 @@ mod tests {
 
     #[test]
     fn test_vcx_issuer_credential_get_state() {
-        test_init("true");
+        init!("true");
         let handle = issuer_credential::from_string(DEFAULT_SERIALIZED_ISSUER_CREDENTIAL).unwrap();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
@@ -620,7 +619,7 @@ mod tests {
 
     #[test]
     fn test_get_payment_txn() {
-        test_init("false");
+        init!("false");
         //settings::set_defaults();
         let credential = issuer_credential::tests::create_standard_issuer_credential();
         let s = credential.to_string();

@@ -461,11 +461,10 @@ mod tests {
     use utils::constants::GET_MESSAGES_RESPONSE;
     use utils::libindy::return_types_u32;
     use utils::error::SUCCESS;
-    use settings::tests::test_init;
 
     #[test]
     fn test_vcx_connection_create() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let rc = vcx_connection_create(cb.command_handle,
                                        CString::new("test_create").unwrap().into_raw(),
@@ -476,7 +475,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_create_fails() {
-        test_init("true");
+        init!("true");
         let rc = vcx_connection_create(0,
                                        CString::new("test_create_fails").unwrap().into_raw(),
                                        None);
@@ -490,7 +489,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_connect() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let rc = vcx_connection_connect(cb.command_handle, 0, CString::new("{}").unwrap().into_raw(),Some(cb.get_callback()));
         assert_eq!(rc, error::INVALID_CONNECTION_HANDLE.code_num);
@@ -505,7 +504,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_update_state() {
-        test_init("true");
+        init!("true");
         let handle = build_connection("test_vcx_connection_update_state").unwrap();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
@@ -517,14 +516,14 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_update_state_fails() {
-        test_init("true");
+        init!("true");
         let rc = vcx_connection_update_state(0,0,None);
         assert_eq!(rc, error::INVALID_OPTION.code_num);
     }
 
     #[test]
     fn test_vcx_connection_serialize() {
-        test_init("true");
+        init!("true");
         let handle = build_connection("test_vcx_connection_get_data").unwrap();
         assert!(handle > 0);
 
@@ -538,7 +537,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_release() {
-        test_init("true");
+        init!("true");
         let handle = build_connection("test_vcx_connection_release").unwrap();
         assert!(handle > 0);
 
@@ -551,7 +550,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_deserialize_succeeds() {
-        test_init("true");
+        init!("true");
         let string = ::utils::constants::DEFAULT_CONNECTION;
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let err = vcx_connection_deserialize(cb.command_handle,
@@ -564,7 +563,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_get_state() {
-        test_init("true");
+        init!("true");
         let handle = build_connection("test_vcx_connection_get_state").unwrap();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
@@ -579,7 +578,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_delete_connection() {
-        test_init("true");
+        init!("true");
         let test_name = "test_vcx_connection_delete_connection";
         let connection_handle = build_connection(test_name).unwrap();
         let command_handle = 0;

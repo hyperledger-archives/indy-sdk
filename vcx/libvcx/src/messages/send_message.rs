@@ -254,8 +254,7 @@ mod tests {
 
     #[test]
     fn test_parse_send_message_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
         let result = parse_send_message_response(SEND_MESSAGE_RESPONSE.to_vec()).unwrap();
 
         assert_eq!("{\"@type\":{\"name\":\"MSG_SENT\",\"ver\":\"1.0\"},\"uids\":[\"ntc2ytb\"]}", result);
@@ -263,8 +262,7 @@ mod tests {
 
     #[test]
     fn test_parse_send_message_bad_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
         let result = parse_send_message_response(::utils::constants::UPDATE_PROFILE_RESPONSE.to_vec());
         assert!(result.is_err());
     }

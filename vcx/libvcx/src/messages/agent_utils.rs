@@ -115,7 +115,7 @@ pub fn connect_register_provision(endpoint: &str,
     };
 
     let seed_opt = if seed.len() > 0 {Some(seed.as_ref())} else {None};
-    let (my_did, my_vk) = create_and_store_my_did(wallet::get_wallet_handle(), seed_opt)?;
+    let (my_did, my_vk) = create_and_store_my_did(seed_opt)?;
 
     let issuer_seed = match issuer_seed {
         Some(x) => x,
@@ -123,7 +123,7 @@ pub fn connect_register_provision(endpoint: &str,
     };
 
     let issuer_seed_opt = if issuer_seed.len() > 0 {Some(issuer_seed.as_ref())} else {None};
-    let (issuer_did, issuer_vk) = create_and_store_my_did(wallet::get_wallet_handle(), issuer_seed_opt)?;
+    let (issuer_did, issuer_vk) = create_and_store_my_did(issuer_seed_opt)?;
 
     settings::set_config_value(settings::CONFIG_INSTITUTION_DID,&my_did);
     settings::set_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY,&my_vk);
@@ -251,8 +251,7 @@ mod tests {
 
     #[test]
     fn test_connect_register_provision() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
 
         let agency_did = "Ab8TvZa3Q19VNkQVzAWVL7";
         let agency_vk = "5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf";
@@ -270,37 +269,35 @@ mod tests {
                                                 None,
                                                 None).unwrap();
         assert!(result.len() > 0);
-        wallet::delete_wallet("test_connect_register_provision").unwrap();
     }
 
     #[ignore]
     #[test]
     fn test_real_connect_register_provision() {
-        let config_path = "/tmp/test_real_agency_connect.json";
+        settings::set_defaults();
 
+        let config_path = "/tmp/test_real_agency_connect.json";
         let agency_did = "YRuVCckY6vfZfX9kcQZe3u";
         let agency_vk = "J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v";
         let host = "https://enym-eagency.pdev.evernym.com";
-        let wallet_name = "test_real_connect_register_provision";
 
         let result = connect_register_provision(&host,
                                                 &agency_did,
                                                 &agency_vk,
-                                                Some(wallet_name.to_string()),
+                                                None,
                                                 None,
                                                 Some(DEMO_ISSUER_PW_SEED.to_string()),
-                                                "key",
+                                                settings::DEFAULT_WALLET_KEY,
                                                 None,
                                                 None,
                                                 None).unwrap();
         assert!(result.len() > 0);
         println!("result: {}", result);
-
-        wallet::delete_wallet(&wallet_name).unwrap();
     }
 
     #[test]
     fn test_update_agent_info() {
+        init!("true");
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
 

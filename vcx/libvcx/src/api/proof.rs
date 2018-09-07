@@ -379,7 +379,6 @@ mod tests {
     use api::{ ProofStateType };
     use utils::constants::*;
     use utils::libindy::return_types_u32;
-    use settings::tests::test_init;
 
     static DEFAULT_PROOF_NAME: &'static str = "PROOF_NAME";
 
@@ -396,7 +395,7 @@ mod tests {
 
     #[test]
     fn test_vcx_create_proof_success() {
-        test_init("true");
+        init!("true");
         let (cb, rc) = create_proof_util();
         assert_eq!(rc, error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
@@ -404,7 +403,7 @@ mod tests {
 
     #[test]
     fn test_vcx_create_proof_fails() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_proof_create(cb.command_handle,
                                     ptr::null(),
@@ -417,7 +416,7 @@ mod tests {
 
     #[test]
     fn test_vcx_proof_serialize() {
-        test_init("true");
+        init!("true");
         let (cb, rc) = create_proof_util();
         assert_eq!(rc, error::SUCCESS.code_num);
         let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
@@ -431,7 +430,7 @@ mod tests {
 
     #[test]
     fn test_vcx_proof_deserialize_succeeds() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let original = r#"{"nonce":"123456","version":"1.0","handle":1,"msg_uid":"","ref_msg_id":"","name":"Name Data","prover_vk":"","agent_did":"","agent_vk":"","remote_did":"","remote_vk":"","prover_did":"8XFh8yBzrpJQmNyZzgoTqB","requested_attrs":"{\"attrs\":[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"ISSUER_DID2\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]}","requested_predicates":"{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"DID1\"}","source_id":"source id","state":2,"proof_state":0,"proof":null,"proof_request":null}"#;
         assert_eq!(vcx_proof_deserialize(cb.command_handle,
@@ -444,7 +443,7 @@ mod tests {
 
     #[test]
     fn test_proof_update_state() {
-        test_init("true");
+        init!("true");
 
         let (cb, rc) = create_proof_util();
         assert_eq!(rc, error::SUCCESS.code_num);
@@ -461,7 +460,7 @@ mod tests {
 
     #[test]
     fn test_vcx_proof_send_request() {
-        test_init("true");
+        init!("true");
 
         let (cb, rc) = create_proof_util();
         assert_eq!(rc, error::SUCCESS.code_num);
@@ -482,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_get_proof_fails_when_not_ready_with_proof() {
-        test_init("true");
+        init!("true");
         let (cb, rc) = create_proof_util();
         assert_eq!(rc, error::SUCCESS.code_num);
         let proof_handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
@@ -501,7 +500,7 @@ mod tests {
 
     #[test]
     fn test_get_proof_returns_proof_with_proof_state_invalid() {
-        test_init("true");
+        init!("true");
         let connection_handle = connection::build_connection("test_get_proof_returns_proof_with_proof_state_invalid").unwrap();
         connection::set_pw_did(connection_handle, "XXFh7yBzrpJQmNyZzgoTqB").unwrap();
         let proof_handle = proof::from_string(PROOF_WITH_INVALID_STATE).unwrap();
@@ -518,7 +517,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_get_state() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let handle = proof::from_string(PROOF_OFFER_SENT).unwrap();
         assert!(handle > 0);

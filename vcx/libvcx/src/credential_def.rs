@@ -217,21 +217,15 @@ pub fn release_all() {
 
 #[cfg(test)]
 pub mod tests {
-    use utils::libindy::wallet::{ init_wallet, delete_wallet, get_wallet_handle };
     use utils::constants::{SCHEMA_ID, SCHEMAS_JSON};
     use super::*;
 
     static CREDENTIAL_DEF_NAME: &str = "Test Credential Definition";
     static ISSUER_DID: &str = "4fUDR9R7fjwELRvH9JT6HH";
 
-    fn set_default_and_enable_test_mode(){
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-    }
-
     #[test]
     fn test_get_cred_def() {
-        set_default_and_enable_test_mode();
+        init!("true");
 
         let (id, cred_def_json) = retrieve_credential_def(CRED_DEF_ID).unwrap();
         assert_eq!(&id, CRED_DEF_ID);
@@ -249,14 +243,11 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_credential_def() {
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "get_cred_def_test";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         let (_, _, cred_def_id, cred_def_json) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
 
         let (id, r_cred_def_json) = retrieve_credential_def(&cred_def_id).unwrap();
 
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert_eq!(id, cred_def_id);
         let def1: serde_json::Value = serde_json::from_str(&cred_def_json).unwrap();
         let def2: serde_json::Value = serde_json::from_str(&r_cred_def_json).unwrap();
@@ -266,16 +257,14 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_real() {
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_create_credential_def_real";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let rc = create_new_credentialdef("1".to_string(),
-                                          wallet_name.to_string(),
+                                          "name".to_string(),
                                           did,
                                           schema_id,
                                           "tag_1".to_string(),
@@ -283,16 +272,12 @@ pub mod tests {
 
         let payment = serde_json::to_string(&get_payment_txn(rc).unwrap()).unwrap();
         assert!(payment.len() > 0);
-
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_no_fees_real() {
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_create_credential_def_real";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         ::utils::libindy::payments::mint_tokens_and_set_fees(Some(0),Some(0),Some(r#"{"101":0, "102":0}"#.to_string()), None).unwrap();
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
@@ -300,36 +285,25 @@ pub mod tests {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let rc = create_new_credentialdef("1".to_string(),
-                                          wallet_name.to_string(),
+                                          "name".to_string(),
                                           did,
                                           schema_id,
                                           "tag_1".to_string(),
                                           r#"{"support_revocation":false}"#.to_string()).unwrap();
-
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
     fn test_create_credential_def_and_store_in_wallet() {
-        set_default_and_enable_test_mode();
-        assert!(init_wallet("test_credential_def").unwrap() > 0);
-        let wallet_handle = get_wallet_handle();
+        init!("true");
         let config = r#"{"support_revocation":false}"#;
         let (id, _) = _create_and_store_credential_def(SCHEMAS_JSON, ISSUER_DID, "tag_1",None, config).unwrap();
-        delete_wallet("test_credential_def").unwrap();
         assert_eq!(id, CRED_DEF_ID);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_create_credential_def_fails_when_already_created() {
-        let wallet_name = "a_test_wallet";
-        match delete_wallet(wallet_name) {
-            Ok(_) => {},
-            Err(_) => {},
-        };
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        let wallet_handle = get_wallet_handle();
+        init!("ledger");
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
         let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
@@ -347,13 +321,12 @@ pub mod tests {
                                           "tag_1".to_string(),
                                           r#"{"support_revocation":false}"#.to_string());
 
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert_eq!(rc.err(), Some(CredDefError::CredDefAlreadyCreatedError()));
     }
 
     #[test]
     fn test_create_credentialdef_success() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let handle = create_new_credentialdef("SourceId".to_string(),
                                               CREDENTIAL_DEF_NAME.to_string(),
                                               ISSUER_DID.to_string(),
@@ -365,8 +338,7 @@ pub mod tests {
 
     #[test]
     fn test_to_string_succeeds() {
-        set_default_and_enable_test_mode();
-
+        init!("true");
         let handle = create_new_credentialdef("SourceId".to_string(),
                                               CREDENTIAL_DEF_NAME.to_string(),
                                               ISSUER_DID.to_string(),
@@ -380,7 +352,7 @@ pub mod tests {
 
     #[test]
     fn test_from_string_succeeds() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let handle = create_new_credentialdef("SourceId".to_string(),
                                               CREDENTIAL_DEF_NAME.to_string(),
                                               ISSUER_DID.to_string(),
@@ -400,8 +372,7 @@ pub mod tests {
 
     #[test]
     fn test_release_all() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let h1 = create_new_credentialdef("SourceId".to_string(), CREDENTIAL_DEF_NAME.to_string(), ISSUER_DID.to_string(), SCHEMA_ID.to_string(), "tag".to_string(), "{}".to_string()).unwrap();
         let h2 = create_new_credentialdef("SourceId".to_string(), CREDENTIAL_DEF_NAME.to_string(), ISSUER_DID.to_string(), SCHEMA_ID.to_string(), "tag".to_string(), "{}".to_string()).unwrap();
         let h3 = create_new_credentialdef("SourceId".to_string(), CREDENTIAL_DEF_NAME.to_string(), ISSUER_DID.to_string(), SCHEMA_ID.to_string(), "tag".to_string(), "{}".to_string()).unwrap();

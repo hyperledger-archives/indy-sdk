@@ -66,14 +66,11 @@ mod tests {
     fn test_init_pool_and_wallet() {
         use super::*;
 
-        let wallet_name = "test_init_pool_and_wallet";
+        init!("ledger");
         // make sure there's a valid wallet and pool before trying to use them.
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
         init_pool().unwrap();
-        wallet::init_wallet(wallet_name).unwrap();
-
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
+        wallet::init_wallet(settings::DEFAULT_WALLET_NAME).unwrap();
     }
 }

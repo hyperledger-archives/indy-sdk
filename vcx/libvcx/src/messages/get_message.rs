@@ -379,8 +379,7 @@ mod tests {
 
     #[test]
     fn test_parse_get_messages_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let result = parse_get_messages_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 3)
@@ -388,8 +387,7 @@ mod tests {
 
     #[test]
     fn test_parse_get_connection_messages_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let json = to_json(&GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
         let result = parse_get_connection_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
@@ -398,8 +396,7 @@ mod tests {
 
     #[test]
     fn test_build_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
         let delivery_details1 = DeliveryDetails {
             to: "3Xk9vxK9jeiqVaCPrEQ8bg".to_string(),
             status_code: "MDS-101".to_string(),
@@ -453,9 +450,7 @@ mod tests {
         use std::thread;
         use std::time::Duration;
 
-        settings::set_defaults();
-        let wallet_name = "test_download_messages";
-        ::utils::devsetup::tests::setup_local_env(wallet_name);
+        init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
@@ -486,6 +481,6 @@ mod tests {
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);
         assert_eq!(bad_req, Err(error::POST_MSG_FAILURE.code_num));
-        ::utils::devsetup::tests::cleanup_local_env(wallet_name);
+        teardown!("agency");
     }
 }

@@ -172,7 +172,7 @@ mod tests {
     fn test_error_codes() {
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::TEST_WALLET_KEY);
+        settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         delete_indy_client();
         create_genesis_txn_file();
         let vcx_config = provision_agent().unwrap();

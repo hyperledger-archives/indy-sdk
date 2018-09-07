@@ -516,13 +516,12 @@ mod tests {
     use utils::constants::DEFAULT_SERIALIZE_VERSION;
     use utils::libindy::return_types_u32;
     use serde_json::Value;
-    use settings::tests::test_init;
 
     pub const BAD_PROOF_REQUEST: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","claim": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","claim_name": "Account Certificate","claim_id": "3675417066","msg_ref_id": "ymy5nth"}"#;
 
     #[test]
     fn test_vcx_proof_create_with_request_success() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
                                                CString::new("test_create").unwrap().into_raw(),
@@ -533,7 +532,7 @@ mod tests {
 
     #[test]
     fn test_vcx_proof_create_with_request() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_request(
             cb.command_handle,
@@ -545,7 +544,7 @@ mod tests {
 
     #[test]
     fn test_create_with_msgid() {
-        test_init("true");
+        init!("true");
         let cxn = ::connection::build_connection("test_create_with_msgid").unwrap();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
@@ -560,7 +559,7 @@ mod tests {
 
     #[test]
     fn test_vcx_disclosed_proof_serialize_and_deserialize() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
         assert_eq!(vcx_disclosed_proof_serialize(cb.command_handle,
@@ -582,7 +581,7 @@ mod tests {
 
     #[test]
     fn test_vcx_send_proof() {
-        test_init("true");
+        init!("true");
 
         let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
         assert_eq!(disclosed_proof::get_state(handle).unwrap(),VcxStateType::VcxStateRequestReceived as u32);
@@ -596,7 +595,7 @@ mod tests {
 
     #[test]
     fn test_vcx_proof_get_requests(){
-        test_init("true");
+        init!("true");
         let cxn = ::connection::build_connection("test_get_new_requests").unwrap();
         ::utils::httpclient::set_next_u8_response(::utils::constants::NEW_PROOF_REQUEST_RESPONSE.to_vec());
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
@@ -606,7 +605,7 @@ mod tests {
 
     #[test]
     fn test_vcx_proof_get_state() {
-        test_init("true");
+        init!("true");
         let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
@@ -617,7 +616,7 @@ mod tests {
 
     #[test]
     fn test_vcx_disclosed_proof_retrieve_credentials() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
                                                            CString::new("test_create").unwrap().into_raw(),
@@ -634,7 +633,7 @@ mod tests {
 
     #[test]
     fn test_vcx_disclosed_proof_generate_proof() {
-        test_init("true");
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_create_with_request(cb.command_handle,
                                                            CString::new("test_create").unwrap().into_raw(),
