@@ -84,7 +84,7 @@ fn _try_to_catch_up(ledger_status: &(String, usize, Option<Vec<String>>), merkle
             return Ok(CatchupProgress::NotNeeded(merkle_tree.clone()));
         } else {
             return Err(PoolError::CommonError(CommonError::InvalidState(
-                "Ledger merkle tree doesn't acceptable for current tree.".to_string())));
+                "Ledger merkle tree is not acceptable for current tree.".to_string())));
         }
     } else if target_mt_size > cur_mt_size {
         let target_mt_root = target_mt_root.from_base58().map_err(|_|
