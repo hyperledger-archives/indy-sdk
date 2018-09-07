@@ -87,8 +87,8 @@ export enum VCXCode {
     DID_ALREADY_EXISTS_IN_WALLET = 1083,
     DUPLICATE_MASTER_SECRET = 1084,
     THREAD_ERROR = 1085,
-    INVALID_PROOF_REQUEST = 1086,
-    
+    INVALID_PROOF_REQUEST = 1086
+
 }
 export enum StateType {
     None = 0,
