@@ -56,7 +56,8 @@ rm lib/libvcx.a
 rm -rf vcx.framework.previousbuild
 
 mkdir -p vcx.framework/lib
-cp -v lib/${COMBINED_LIB}.a vcx.framework/lib/libvcx.a
+# IMPORTANT: DO NOT PUT THE libvcx.a FILE INSIDE THE cocoapod AT ALL!!!!!
+#cp -v lib/${COMBINED_LIB}.a vcx.framework/lib/libvcx.a
 
 mkdir -p vcx.framework/Headers
 cp -v ConnectMeVcx.h vcx.framework/Headers
