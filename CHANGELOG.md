@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.5
+* Fixed `ARGON2I` constants usage to be compatible with the latest sodium.
+* Parameter `submitter_did` set as the optional field for:
+    * Ledger API `indy_build_get_*` functions (except `indy_build_get_validator_info_request`).
+    * all functions in Payment API.
+* Fixed Android build rustflags for all architectures for libc linking.
+
 ## 1.6.4
 * Early API types checks
 * Workaround for OS permissions on Android

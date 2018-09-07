@@ -1,6 +1,6 @@
 [package]
 name = "indy"
-version = "1.6.4"
+version = "1.6.5"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
   "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
