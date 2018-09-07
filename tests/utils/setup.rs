@@ -48,12 +48,14 @@ impl<'a> Setup<'a>
 
         match pool_handle {
             Some(pool_handle) => {
-                trustees = Some(Setup::create_trustees(wallet, pool_handle, config.num_trustees));
+                if config.num_trustees > 0 {
+                    trustees = Some(Setup::create_trustees(wallet, pool_handle, config.num_trustees));
 
-                {
-                    let trustee_dids = trustees.as_ref().unwrap().dids();
-                    users = Some(Setup::create_users(wallet, pool_handle, trustee_dids[0], config.num_users));
-                };
+                    {
+                        let trustee_dids = trustees.as_ref().unwrap().dids();
+                        users = Some(Setup::create_users(wallet, pool_handle, trustee_dids[0], config.num_users));
+                    };
+                }
             }
             _ => ()
         }
@@ -103,6 +105,9 @@ impl<'a> Setup<'a>
 
 impl<'a> Drop for Setup<'a> {
     fn drop(&mut self) {
+        self.pool_handle.map(|handle| {
+            indy::pool::Pool::close(handle).unwrap()
+        });
         indy::pool::Pool::delete(self.pool_name.as_str()).unwrap();
     }
 }
