@@ -90,7 +90,7 @@ pub mod tests {
 
     #[test]
     fn test_proof_struct(){
-        ::settings::set_defaults();
+        init!("true");
         let offer = create_default_proof();
         assert_eq!(offer.from_did, Some(::settings::get_config_value(::settings::CONFIG_INSTITUTION_DID).unwrap()));
     }
@@ -105,7 +105,7 @@ pub mod tests {
 
     #[test]
     fn test_get_credential_data() {
-        ::settings::set_defaults();
+        init!("true");
         let proof = create_default_proof();
         let credential_data = proof.get_credential_info().unwrap();
         assert_eq!(&credential_data[0].0, "NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0");

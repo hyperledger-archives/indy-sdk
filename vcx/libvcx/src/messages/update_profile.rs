@@ -147,13 +147,11 @@ fn parse_update_profile_response(response: Vec<u8>) -> Result<String, u32> {
 mod tests {
     use super::*;
     use messages::update_data;
-    use utils::libindy::wallet;
     use utils::libindy::signus::create_and_store_my_did;
 
     #[test]
     fn test_update_data_post() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"indy");
+        init!("true");
         let to_did = "8XFh8yBzrpJQmNyZzgoTqB";
         let name = "name";
         let url = "https://random.com";
@@ -166,13 +164,10 @@ mod tests {
 
     #[test]
     fn test_update_data_set_values_and_post() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let my_wallet = wallet::init_wallet("garbage").unwrap();
-
-        let (agent_did, agent_vk) = create_and_store_my_did(my_wallet, Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(my_wallet, Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(my_wallet, Some(MY3_SEED)).unwrap();
+        init!("false");
+        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
+        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
+        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
@@ -184,14 +179,11 @@ mod tests {
             .logo_url("https://random.com")
             .msgpack().unwrap();
         assert!(msg.len() > 0);
-
-        wallet::delete_wallet("garbage").unwrap();
     }
 
     #[test]
     fn test_parse_update_profile_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
+        init!("indy");
 
         let result = parse_update_profile_response(UPDATE_PROFILE_RESPONSE.to_vec()).unwrap();
 

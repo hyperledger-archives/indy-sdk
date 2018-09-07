@@ -421,7 +421,7 @@ fn create_connection(source_id: &str) -> Result<u32, ConnectionError> {
 }
 
 fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
-    let (my_did, my_verkey) = match create_and_store_my_did(wallet::get_wallet_handle(),None) {
+    let (my_did, my_verkey) = match create_and_store_my_did(None) {
         Ok(y) => y,
         Err(x) => {
             error!("could not create DID/VK: {}", x);
@@ -543,8 +543,6 @@ pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
     let pw_vk = get_pw_verkey(handle)?;
     let agent_did = get_agent_did(handle)?;
     let agent_vk = get_agent_verkey(handle)?;
-
-    let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
 
     match messages::get_messages()
         .to(&pw_did)
@@ -798,17 +796,16 @@ pub mod tests {
     }
 
     #[test]
-    fn test_build_connection(){
-        settings::set_defaults();
+    fn test_build_connection_failures(){
+        init!("true");
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         assert_eq!(build_connection("This Should Fail").err(),
                    Some(ConnectionError::CommonError(error::INVALID_WALLET_HANDLE.code_num)));
-       assert!(build_connection_with_invite("This Should Fail", "BadDetailsFoobar").is_err());
+        assert!(build_connection_with_invite("This Should Fail", "BadDetailsFoobar").is_err());
     }
     #[test]
     fn test_create_connection() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let handle = build_connection("test_create_connection").unwrap();
         assert!(handle > 0);
         assert!(!get_pw_did(handle).unwrap().is_empty());
@@ -818,13 +815,11 @@ pub mod tests {
         assert_eq!(delete_connection(handle).unwrap(), 0);
         // This errors b/c we release handle in delete connection
         assert!(release(handle).is_err());
-
     }
 
     #[test]
     fn test_create_drop_create() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let handle = build_connection("test_create_drop_create").unwrap();
         let did1 = get_pw_did(handle).unwrap();
         assert!(release(handle).is_ok());
@@ -865,8 +860,7 @@ pub mod tests {
 
     #[test]
     fn test_get_qr_code_data() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let test_name = "test_get_qr_code_data";
         let c = Connection {
             source_id: test_name.to_string(),
@@ -895,8 +889,7 @@ pub mod tests {
 
     #[test]
     fn test_serialize_deserialize() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let handle = build_connection("test_serialize_deserialize").unwrap();
         assert!(handle > 0);
         let first_string = to_string(handle).unwrap();
@@ -909,8 +902,7 @@ pub mod tests {
 
     #[test]
     fn test_deserialize_existing() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let handle = build_connection("test_serialize_deserialize").unwrap();
         assert!(handle > 0);
         let first_string = to_string(handle).unwrap();
@@ -921,8 +913,7 @@ pub mod tests {
 
     #[test]
     fn test_retry_connection() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let handle = build_connection("test_serialize_deserialize").unwrap();
         assert!(handle > 0);
         assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
@@ -932,15 +923,14 @@ pub mod tests {
 
     #[test]
     fn test_bad_wallet_connection_fails() {
-        settings::set_defaults();
+        init!("true");
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         assert_eq!(build_connection("test_bad_wallet_connection_fails").unwrap_err().to_error_code(),error::INVALID_WALLET_HANDLE.code_num);
     }
 
     #[test]
     fn test_parse_acceptance_details() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let test_name = "test_parse_acceptance_details";
         let handle = rand::thread_rng().gen::<u32>();
 
@@ -1058,8 +1048,7 @@ pub mod tests {
 
     #[test]
     fn test_release_all() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let h1 = build_connection("rel1").unwrap();
         let h2 = build_connection("rel2").unwrap();
         let h3 = build_connection("rel3").unwrap();
@@ -1075,9 +1064,7 @@ pub mod tests {
 
     #[test]
     fn test_create_with_valid_invite_details() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        wallet::init_wallet("create_with_details").unwrap();
+        init!("true");
 
         let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
         let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
@@ -1090,13 +1077,11 @@ pub mod tests {
         let handle_2 = build_connection_with_invite("alice",&details).unwrap();
 
         connect(handle_2,Some("{}".to_string())).unwrap();
-        wallet::delete_wallet("create_with_details").unwrap();
     }
 
     #[test]
     fn test_create_with_invalid_invite_details() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let bad_details = r#"{"id":"mtfjmda","s":{"d":"abc"},"l":"abc","n":"Evernym","v":"avc"},"sa":{"d":"abc","e":"abc","v":"abc"},"sc":"MS-101","sm":"message created","t":"there"}"#;
         match build_connection_with_invite("alice",&bad_details) {
             Ok(_) => panic!("should have failed"),
@@ -1107,8 +1092,7 @@ pub mod tests {
     #[test]
     fn test_connect_with_invalid_details() {
         use error::connection::ConnectionError;
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let test_name = "test_connect_with_invalid_details";
 
         let c = Connection {

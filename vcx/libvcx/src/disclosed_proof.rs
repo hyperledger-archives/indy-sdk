@@ -493,27 +493,25 @@ mod tests {
     extern crate serde_json;
 
     use super::*;
-    use utils::libindy::wallet;
     use utils::constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID, ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID };
     use serde_json::Value;
 
     #[test]
     fn test_create_proof() {
-        settings::set_defaults();
+        init!("true");
         assert!(create_proof("1".to_string(), ::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap() > 0);
     }
 
     #[test]
     fn test_create_fails() {
-        settings::set_defaults();
+        init!("true");
         assert_eq!(create_proof("1".to_string(),"{}".to_string()).err(),
                    Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
     }
 
     #[test]
     fn test_proof_cycle() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let connection_h = connection::build_connection("test_send_credential_offer").unwrap();
 
@@ -529,7 +527,7 @@ mod tests {
 
     #[test]
     fn get_state_test(){
-        settings::set_defaults();
+        init!("true");
         let proof: DisclosedProof =  Default::default();
         assert_eq!(VcxStateType::VcxStateNone as u32, proof.get_state());
         let handle = create_proof("id".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
@@ -538,7 +536,7 @@ mod tests {
 
     #[test]
     fn to_string_test() {
-        settings::set_defaults();
+        init!("true");
         let handle = create_proof("id".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
         let serialized = to_string(handle).unwrap();
         let j:Value = serde_json::from_str(&serialized).unwrap();
@@ -554,8 +552,7 @@ mod tests {
 
     #[test]
     fn test_find_schemas() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
         let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
         let creds = vec![cred1, cred2];
@@ -568,8 +565,7 @@ mod tests {
 
     #[test]
     fn test_find_schemas_fails() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
 
         let mut credential_ids = Vec::new();
         credential_ids.push(("1".to_string(), "2".to_string(), "3".to_string(), "4".to_string()));
@@ -580,8 +576,7 @@ mod tests {
 
     #[test]
     fn test_find_credential_def() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
         let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
         let creds = vec![cred1, cred2];
@@ -594,8 +589,7 @@ mod tests {
 
     #[test]
     fn test_find_credential_def_fails() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
+        init!("false");
 
         let mut credential_ids = Vec::new();
         credential_ids.push(("1".to_string(), "2".to_string(), "3".to_string(), "4".to_string()));
@@ -606,7 +600,7 @@ mod tests {
 
     #[test]
     fn test_build_requested_credentials() {
-        settings::set_defaults();
+        init!("true");
         let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
         let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
         let creds = vec![cred1, cred2];
@@ -634,9 +628,7 @@ mod tests {
 
     #[test]
     fn test_get_proof_request() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-        wallet::init_wallet("test_get_proof_request").unwrap();
+        init!("true");
 
         let connection_h = connection::build_connection("test_get_proof_request").unwrap();
 
@@ -647,11 +639,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_retrieve_credentials() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_retrieve_credentials";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        ::utils::libindy::payments::mint_tokens_and_set_fees(None, Some(10000000), None, None).unwrap();
+        init!("ledger");
         ::utils::libindy::anoncreds::tests::create_and_store_credential();
         let (_, _, req, _) = ::utils::libindy::anoncreds::tests::create_proof();
 
@@ -662,18 +650,12 @@ mod tests {
 
         let retrieved_creds = proof.retrieve_credentials().unwrap();
         assert!(retrieved_creds.len() > 500);
-
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_case_for_proof_req_doesnt_matter_for_retrieve_creds() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_retrieve_credentials";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        ::utils::libindy::payments::mint_tokens_and_set_fees(None, Some(10000000), None, None).unwrap();
+        init!("ledger");
         ::utils::libindy::anoncreds::tests::create_and_store_credential();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let mut req = json!({
@@ -712,14 +694,11 @@ mod tests {
         proof.proof_request = Some(proof_req.clone());
         let retrieved_creds3 = proof.retrieve_credentials().unwrap();
         assert!(retrieved_creds3.contains(r#""zip":"84000""#));
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
-    fn test_fail_retrieve_credentials_with_no_proof_req() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "retrieve_credentials_fails_with_no_proof_req";
+    fn test_retrieve_credentials_fails_with_no_proof_req() {
+        init!("false");
 
         let proof: DisclosedProof = Default::default();
         assert_eq!(proof.retrieve_credentials(), Err(ProofError::ProofNotReadyError()));
@@ -776,14 +755,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_proof() {
-        use utils::libindy::wallet::delete_wallet;
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_generate_proof";
-        match delete_wallet(wallet_name) {
-            Ok(_) => {},
-            Err(_) => {},
-        };
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (schema_id, _, cred_def_id, _, _, _, _, cred_id) = ::utils::libindy::anoncreds::tests::create_and_store_credential();
 
@@ -857,21 +829,13 @@ mod tests {
         proof.link_secret_alias = "main".to_string();
         let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
 
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert!(generated_proof.is_ok());
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_generate_self_attested_proof() {
-        use utils::libindy::wallet::delete_wallet;
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_generate_self_attested_proof";
-        match delete_wallet(wallet_name) {
-            Ok(_) => {},
-            Err(_) => {},
-        };
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let mut proof_req = ProofRequestMessage::create();
@@ -903,7 +867,6 @@ mod tests {
         proof.link_secret_alias = "main".to_string();
         let generated_proof = proof.generate_proof(&selected_credentials.to_string(), &self_attested.to_string());
 
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert!(generated_proof.is_ok());
     }
 }

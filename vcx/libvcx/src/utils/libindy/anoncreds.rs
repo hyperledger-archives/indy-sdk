@@ -379,11 +379,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_prover_verify_proof() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_verify_proof";
-        ::utils::libindy::wallet::delete_wallet(wallet_name).unwrap_or(());
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         let (schemas, cred_defs, proof_req, proof) = create_proof();
 
         let result = libindy_verifier_verify_proof(
@@ -395,7 +391,6 @@ pub mod tests {
             "{}",
         );
 
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert!(result.is_ok());
         let proof_validation = result.unwrap();
         assert!(proof_validation, true);
@@ -404,12 +399,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn tests_libindy_prover_get_credentials() {
-        use utils::error::LIBINDY_INVALID_STRUCTURE;
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "tests_libindy_prover_get_credentials";
-        ::utils::libindy::wallet::delete_wallet(wallet_name).unwrap_or(());
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         let proof_req = "{";
         let result = libindy_prover_get_credentials_for_proof_req(&proof_req);
         assert_eq!(result.err(), Some(INVALID_PROOF_REQUEST.code_num));
@@ -431,7 +421,6 @@ pub mod tests {
         let result_malformed_json = libindy_prover_get_credentials_for_proof_req("{}");
         let wallet_handle = get_wallet_handle();
         let proof_req_str:String = serde_json::to_string(&proof_req).unwrap();
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert!(result.is_ok());
         assert_eq!(result_malformed_json.err(), Some(INVALID_ATTRIBUTES_STRUCTURE.code_num));
     }

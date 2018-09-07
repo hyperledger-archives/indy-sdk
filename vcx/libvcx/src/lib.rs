@@ -57,19 +57,17 @@ mod tests {
     use rand::Rng;
     use std::thread;
     use std::time::Duration;
-    use ::utils::devsetup::tests::{set_institution, set_consumer, cleanup_dev_env, cleanup_local_env};
+    use ::utils::devsetup::tests::{set_institution, set_consumer};
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_delete_connection() {
-        let test_name = "test_delete_connection";
-        settings::set_defaults();
-        ::utils::devsetup::tests::setup_local_env(test_name);
+        init!("agency");
         let alice = connection::build_connection("alice").unwrap();
         connection::delete_connection(alice).unwrap();
         assert!(connection::release(alice).is_err());
-        cleanup_local_env(test_name);
+        teardown!("agency");
     }
 
     #[cfg(feature = "agency")]
@@ -77,10 +75,7 @@ mod tests {
     #[cfg(feature = "sovtoken")]
     #[test]
     fn test_real_proof() {
-        use ::utils::devsetup::tests::setup_local_env;
-        settings::set_defaults();
-        let wallet_name = "test_real_proof";
-	    setup_local_env(wallet_name);
+        init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
         // AS INSTITUTION SEND CREDENTIAL OFFER
@@ -209,7 +204,7 @@ mod tests {
         assert_eq!(proof::get_proof_state(proof_req_handle).unwrap(), ProofStateType::ProofValidated as u32);
         println!("proof validated!");
         let wallet = ::utils::libindy::payments::get_wallet_token_info().unwrap();
-        cleanup_local_env(wallet_name);
+        teardown!("agency");
     }
 
 }

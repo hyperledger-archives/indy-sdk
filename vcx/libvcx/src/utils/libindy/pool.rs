@@ -115,9 +115,7 @@ pub mod tests {
     #[test]
     fn test_open_close_pool() {
         use super::*;
-        let wallet_name = "test_open_close_pool";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         assert!(get_pool_handle().unwrap() > 0);
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 }

@@ -378,11 +378,10 @@ mod tests {
     use std::ffi::CString;
     use std::time::Duration;
     use utils::libindy::return_types_u32;
-    use settings::tests::test_init;
 
     #[test]
     fn test_provision_agent() {
-        test_init("true");
+        init!("true");
 
         let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
@@ -395,7 +394,7 @@ mod tests {
 
     #[test]
     fn test_create_agent() {
-        test_init("true");
+        init!("true");
 
         let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":"key"}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
@@ -409,7 +408,7 @@ mod tests {
 
     #[test]
     fn test_create_agent_fails() {
-        test_init("true");
+        init!("true");
 
         let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
@@ -421,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_update_agent_info() {
-        test_init("true");
+        init!("true");
 
         let json_string = r#"{"id":"123","value":"value"}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
@@ -433,7 +432,7 @@ mod tests {
 
     #[test]
     fn test_update_agent_fails() {
-        test_init("true");
+        init!("true");
 
         httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec()); //set response garbage
         let json_string = r#"{"id":"123"}"#;
@@ -448,7 +447,7 @@ mod tests {
 
     #[test]
     fn test_get_ledger_fees() {
-        test_init("true");
+        init!("true");
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_ledger_get_fees(cb.command_handle,
@@ -458,7 +457,7 @@ mod tests {
 
     #[test]
     fn test_messages_download() {
-        test_init("true");
+        init!("true");
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_messages_download(cb.command_handle, ptr::null_mut(), ptr::null_mut(), ptr::null_mut(), Some(cb.get_callback())), error::SUCCESS.code_num);
@@ -467,7 +466,7 @@ mod tests {
 
     #[test]
     fn test_messages_update_status() {
-        test_init("true");
+        init!("true");
 
         let status = CString::new("MS-103").unwrap().into_raw();
         let json = CString::new(r#"[{"pairwiseDID":"QSrw8hebcvQxiwBETmAaRs","uids":["mgrmngq"]}]"#).unwrap().into_raw();
