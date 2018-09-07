@@ -1207,3 +1207,56 @@ mod test_pool_list {
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
 }
+
+mod test_refresh_works {
+    use super::*;
+
+    #[test]
+    pub fn refresh_pool_works() {
+        let wallet = utils::wallet::Wallet::new();
+        let setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: true,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        indy::pool::Pool::refresh(setup.pool_handle.unwrap()).unwrap();
+    }
+
+    #[test]
+    pub fn refresh_pool_timeout_works() {
+        let wallet = utils::wallet::Wallet::new();
+        let setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: true,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        indy::pool::Pool::refresh_timeout(setup.pool_handle.unwrap(), Duration::from_secs(5)).unwrap();
+    }
+
+    #[test]
+    pub fn refresh_pool_async_works() {
+        let wallet = utils::wallet::Wallet::new();
+        let setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: true,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        let (sender, receiver) = channel();
+
+        let cb = move |ec| {
+            sender.send(ec).unwrap();
+        };
+
+        let ec = indy::pool::Pool::refresh_async(setup.pool_handle.unwrap(), cb);
+        assert_eq!(ec, ErrorCode::Success);
+
+        let ec = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert_eq!(ec, ErrorCode::Success);
+    }
+}
