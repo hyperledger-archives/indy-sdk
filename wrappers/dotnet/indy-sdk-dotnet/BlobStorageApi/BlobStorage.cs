@@ -15,7 +15,7 @@ namespace Hyperledger.Indy.BlobStorageApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(BlobStorageCompletedDelegate))]
 #endif
-        private static void OpenReaderCallback(int xcommand_handle, int err, int handle)
+        private static void OpenReaderCallbackMethod(int xcommand_handle, int err, int handle)
         {
             var taskCompletionSource = PendingCommands.Remove<BlobStorageReader>(xcommand_handle);
 
@@ -24,10 +24,12 @@ namespace Hyperledger.Indy.BlobStorageApi
 
             taskCompletionSource.SetResult(new BlobStorageReader(handle));
         }
+        private static BlobStorageCompletedDelegate OpenReaderCallback = OpenReaderCallbackMethod;
+
 #if __IOS__
         [MonoPInvokeCallback(typeof(BlobStorageCompletedDelegate))]
 #endif
-        private static void OpenWriterCallback(int xcommand_handle, int err, int handle)
+        private static void OpenWriterCallbackMethod(int xcommand_handle, int err, int handle)
         {
             var taskCompletionSource = PendingCommands.Remove<BlobStorageWriter>(xcommand_handle);
 
@@ -36,6 +38,7 @@ namespace Hyperledger.Indy.BlobStorageApi
 
             taskCompletionSource.SetResult(new BlobStorageWriter(handle));
         }
+        private static BlobStorageCompletedDelegate OpenWriterCallback = OpenWriterCallbackMethod;
 
         /// <summary>
         /// Opens the BLOB storage reader async.
