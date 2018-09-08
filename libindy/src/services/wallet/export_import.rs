@@ -4,17 +4,18 @@ use std::io::{Write, Read, BufWriter, BufReader};
 use std::time::{SystemTime, UNIX_EPOCH};
 use rmp_serde;
 
+use domain::wallet::KeyDerivationMethod;
 use domain::wallet::export_import::{Header, EncryptionMethod, Record};
 use errors::common::CommonError;
 use utils::crypto::hash::{hash, HASHBYTES};
 use utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
+use services::wallet::encryption::raw_master_key;
 
 use super::{WalletError, Wallet, WalletRecord};
 
 const CHUNK_SIZE: usize = 1024;
 
-pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32) -> Result<(), WalletError> {
-
+pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> Result<(), WalletError> {
     if version != 0 {
         Err(CommonError::InvalidState("Unsupported version".to_string()))?;
     }
@@ -23,14 +24,27 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
     let nonce = chacha20poly1305_ietf::gen_nonce();
     let chunk_size = CHUNK_SIZE;
 
-    let header = Header {
-        encryption_method: EncryptionMethod::ChaCha20Poly1305IETF {
+    let encryption_method = match key_derivation_method {
+        KeyDerivationMethod::ARGON2I_MOD => EncryptionMethod::ChaCha20Poly1305IETF {
             salt: salt[..].to_vec(),
             nonce: nonce[..].to_vec(),
             chunk_size,
         },
+        KeyDerivationMethod::ARGON2I_INT => EncryptionMethod::ChaCha20Poly1305IETFInteractive {
+            salt: salt[..].to_vec(),
+            nonce: nonce[..].to_vec(),
+            chunk_size,
+        },
+        KeyDerivationMethod::RAW => EncryptionMethod::ChaCha20Poly1305IETFRaw {
+            nonce: nonce[..].to_vec(),
+            chunk_size,
+        }
+    };
+
+    let header = Header {
+        encryption_method,
         time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
-        version,
+        version
     };
 
     let header = rmp_serde::to_vec(&header)
@@ -41,9 +55,14 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
     writer.write_u32::<LittleEndian>(header.len() as u32)?;
     writer.write_all(&header)?;
 
+    let master_key = match key_derivation_method {
+        KeyDerivationMethod::ARGON2I_MOD | KeyDerivationMethod::ARGON2I_INT => chacha20poly1305_ietf::derive_key(passphrase, &salt, key_derivation_method)?,
+        KeyDerivationMethod::RAW => raw_master_key(passphrase)?
+    };
+
     // Write ecnrypted
     let mut writer = chacha20poly1305_ietf::Writer::new(writer,
-                                                        chacha20poly1305_ietf::derive_key(passphrase, &salt)?,
+                                                        master_key,
                                                         nonce,
                                                         chunk_size);
 
@@ -91,20 +110,36 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
         Err(CommonError::InvalidStructure("Unsupported version".to_string()))?;
     }
 
-    // Reads encrypted
-    let mut reader = match header.encryption_method {
-        EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } => {
+    let key_derivation_method = match header.encryption_method {
+        EncryptionMethod::ChaCha20Poly1305IETF { .. } => KeyDerivationMethod::ARGON2I_MOD,
+        EncryptionMethod::ChaCha20Poly1305IETFInteractive { .. } => KeyDerivationMethod::ARGON2I_INT,
+        EncryptionMethod::ChaCha20Poly1305IETFRaw { .. } => KeyDerivationMethod::RAW,
+    };
+
+    let (key, nonce, chunk_size) = match header.encryption_method {
+        EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } | EncryptionMethod::ChaCha20Poly1305IETFInteractive { salt, nonce, chunk_size } => {
             let salt = pwhash_argon2i13::Salt::from_slice(&salt)
                 .map_err(|err| CommonError::InvalidStructure(format!("Invalid salt: {:?}", err)))?;
 
             let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
                 .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
 
-            let key = chacha20poly1305_ietf::derive_key(passphrase, &salt)?;
+            let key = chacha20poly1305_ietf::derive_key(passphrase, &salt, &key_derivation_method)?;
 
-            chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size)
+            (key, nonce, chunk_size)
+        }
+        EncryptionMethod::ChaCha20Poly1305IETFRaw { nonce, chunk_size } => {
+            let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
+                .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
+
+            let key = raw_master_key(passphrase)?;
+
+            (key, nonce, chunk_size)
         }
     };
+
+    // Reads encrypted
+    let mut reader = chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size);
 
     let mut header_hash = vec![0u8; HASHBYTES];
     reader.read_exact(&mut header_hash).map_err(_map_io_err)?;
@@ -148,9 +183,9 @@ mod tests {
     use std::rc::Rc;
     use std::collections::HashMap;
 
-    use domain::wallet::Metadata;
+    use domain::wallet::{Metadata, MetadataArgon};
     use utils::crypto::pwhash_argon2i13;
-    use utils::test::TestUtils;
+    use utils::test;
     use services::wallet::encryption;
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
@@ -161,7 +196,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_wallet1(), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_wallet1(), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         let wallet = _wallet2();
         _assert_is_empty(&wallet);
@@ -175,7 +210,21 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+
+        let wallet = _wallet2();
+        _assert_is_empty(&wallet);
+
+        import(&wallet, &mut output.as_slice(), _passphrase()).unwrap();
+        _assert_has_2_records(&wallet);
+    }
+
+    #[test]
+    fn export_import_works_for_2_items_and_interactive_method() {
+        _cleanup();
+
+        let mut output: Vec<u8> = Vec::new();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_INT).unwrap();
 
         let wallet = _wallet2();
         _assert_is_empty(&wallet);
@@ -189,7 +238,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         let wallet = _wallet2();
         _assert_is_empty(&wallet);
@@ -244,7 +293,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_wallet1(), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_wallet1(), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         // Modifying one of the bytes in the header hash
         let pos = (&mut output.as_slice()).read_u32::<LittleEndian>().unwrap() as usize + 2;
@@ -259,7 +308,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_add_300_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         // Modifying one byte in the middle of encrypted part
         let pos = output.len() / 2;
@@ -274,7 +323,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         output.pop().unwrap();
 
@@ -287,7 +336,7 @@ mod tests {
         _cleanup();
 
         let mut output: Vec<u8> = Vec::new();
-        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1()).unwrap();
+        export(&_add_2_records(_wallet1()), &mut output, _passphrase(), _version1(), &KeyDerivationMethod::ARGON2I_MOD).unwrap();
 
         output.push(10);
 
@@ -296,7 +345,7 @@ mod tests {
     }
 
     fn _cleanup() {
-        TestUtils::cleanup_storage()
+        test::cleanup_storage()
     }
 
     fn _wallet1_id() -> &'static str {
@@ -315,10 +364,10 @@ mod tests {
         let metadata = {
             let master_key_salt = encryption::gen_master_key_salt().unwrap();
 
-            let metadata = Metadata {
+            let metadata = Metadata::MetadataArgon(MetadataArgon {
                 master_key_salt: master_key_salt[..].to_vec(),
                 keys: keys.serialize_encrypted(&master_key).unwrap(),
-            };
+            });
 
             serde_json::to_vec(&metadata)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err))).unwrap()

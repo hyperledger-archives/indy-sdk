@@ -1,10 +1,12 @@
 ﻿using Hyperledger.Indy.BlobStorageApi;
-using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
 using System;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.AnonCredsApi.NativeMethods;
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.AnonCredsApi
 {
@@ -16,7 +18,10 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimDefAsync command completes.
         /// </summary>
-        private static IssuerCreateSchemaCompletedDelegate _issuerCreateSchemaCallback = (xcommand_handle, err, schema_id, schema_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IssuerCreateSchemaCompletedDelegate))]
+#endif
+        private static void IssuerCreateSchemaCallbackMethod(int xcommand_handle, int err, string schema_id, string schema_json)
         {
             var taskCompletionSource = PendingCommands.Remove<IssuerCreateSchemaResult>(xcommand_handle);
 
@@ -24,12 +29,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(new IssuerCreateSchemaResult(schema_id, schema_json));
-        };
+        }
+        private static IssuerCreateSchemaCompletedDelegate IssuerCreateSchemaCallback = IssuerCreateSchemaCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimDefAsync command completes.
         /// </summary>
-        private static IssuerCreateAndStoreCredentialDefCompletedDelegate _issuerCreateAndStoreClaimDefCallback = (xcommand_handle, err, claim_def_id, claim_def_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IssuerCreateAndStoreCredentialDefCompletedDelegate))]
+#endif
+        private static void IssuerCreateAndStoreClaimDefCallbackMethod(int xcommand_handle, int err, string claim_def_id, string claim_def_json)
         {
             var taskCompletionSource = PendingCommands.Remove<IssuerCreateAndStoreCredentialDefResult>(xcommand_handle);
 
@@ -37,12 +46,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(new IssuerCreateAndStoreCredentialDefResult(claim_def_id, claim_def_json));
-        };
+        }
+        private static IssuerCreateAndStoreCredentialDefCompletedDelegate IssuerCreateAndStoreClaimDefCallback = IssuerCreateAndStoreClaimDefCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the IssuerCreateAndStoreClaimRevocRegAsync command completes.
         /// </summary>
-        private static IssuerCreateAndStoreRevocRegCompletedDelegate _issuerCreateAndStoreClaimRevocRegCallback = (xcommand_handle, err, revoc_reg_id, revoc_reg_def_json, revoc_reg_entry_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IssuerCreateAndStoreRevocRegCompletedDelegate))]
+#endif
+        private static void IssuerCreateAndStoreClaimRevocRegCallbackMethod(int xcommand_handle, int err, string revoc_reg_id, string revoc_reg_def_json, string revoc_reg_entry_json)
         {
             var taskCompletionSource = PendingCommands.Remove<IssuerCreateAndStoreRevocRegResult>(xcommand_handle);
 
@@ -50,12 +63,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(new IssuerCreateAndStoreRevocRegResult(revoc_reg_id, revoc_reg_def_json, revoc_reg_entry_json));
-        };
+        }
+        private static IssuerCreateAndStoreRevocRegCompletedDelegate IssuerCreateAndStoreClaimRevocRegCallback = IssuerCreateAndStoreClaimRevocRegCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the IssuerCreateClaimAsync command completes.
         /// </summary>
-        private static IssuerCreateCredentialOfferCompletedDelegate _issuerCreateCredentialOfferCallback = (xcommand_handle, err, cred_offer_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IssuerCreateCredentialOfferCompletedDelegate))]
+#endif
+        private static void IssuerCreateCredentialOfferCallbackMethod(int xcommand_handle, int err, string cred_offer_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -63,12 +80,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(cred_offer_json);
-        };
+        }
+        private static IssuerCreateCredentialOfferCompletedDelegate IssuerCreateCredentialOfferCallback = IssuerCreateCredentialOfferCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the IssuerCreateClaimAsync command completes.
         /// </summary>
-        private static IssuerCreateCredentialCompletedDelegate _issuerCreateCredentialCallback = (xcommand_handle, err, cred_json, cred_revoc_id, revoc_reg_delta_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IssuerCreateCredentialCompletedDelegate))]
+#endif
+        private static void IssuerCreateCredentialCallbackMethod(int xcommand_handle, int err, string cred_json, string cred_revoc_id, string revoc_reg_delta_json)
         {
             var taskCompletionSource = PendingCommands.Remove<IssuerCreateCredentialResult>(xcommand_handle);
 
@@ -78,13 +99,16 @@ namespace Hyperledger.Indy.AnonCredsApi
             var callbackResult = new IssuerCreateCredentialResult(cred_json, cred_revoc_id, revoc_reg_delta_json);
 
             taskCompletionSource.SetResult(callbackResult);
-        };
-
+        }
+        private static IssuerCreateCredentialCompletedDelegate IssuerCreateCredentialCallback = IssuerCreateCredentialCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the IssuerRevokeCredentialAsync command completes.
         /// </summary>
-        private static IssuerRevokeCredentialCompletedDelegate _issuerRevokeCredentialCallback = (xcommand_handle, err, revoc_reg_delta_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IssuerRevokeCredentialCompletedDelegate))]
+#endif
+        private static void IssuerRevokeCredentialCallbackMethod(int xcommand_handle, int err, string revoc_reg_delta_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -92,12 +116,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(revoc_reg_delta_json);
-        };
+        }
+        private static IssuerRevokeCredentialCompletedDelegate IssuerRevokeCredentialCallback = IssuerRevokeCredentialCallbackMethod;
 
         /// <summary>
         /// The issuer merge revocation registry deltas callback.
         /// </summary>
-        private static IssuerMergeRevocationRegistryDeltasCompletedDelegate _issuerMergeRevocationRegistryDeltasCallback = (xcommand_handle, err, merged_rev_reg_delta) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IssuerMergeRevocationRegistryDeltasCompletedDelegate))]
+#endif
+        private static void IssuerMergeRevocationRegistryDeltasCallback(int xcommand_handle, int err, string merged_rev_reg_delta)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -105,12 +133,15 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(merged_rev_reg_delta);
-        };
+        }
 
         /// <summary>
         /// The prover create master secret callback.
         /// </summary>
-        private static ProverCreateMasterSecretCompletedDelegate _proverCreateMasterSecretCallback = (xcommand_handle, err, out_master_secret_id) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverCreateMasterSecretCompletedDelegate))]
+#endif
+        private static void ProverCreateMasterSecretCallbackMethod(int xcommand_handle, int err, string out_master_secret_id)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -118,12 +149,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(out_master_secret_id);
-        };
+        }
+        private static ProverCreateMasterSecretCompletedDelegate ProverCreateMasterSecretCallback = ProverCreateMasterSecretCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the roverCreateAndStoreClaimReqAsync command completes.
         /// </summary>
-        private static ProverCreateCredentialReqCompletedDelegate _proverCreateCredentialReqCallback = (xcommand_handle, err, cred_req_json, cred_req_metadata_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverCreateCredentialReqCompletedDelegate))]
+#endif
+        private static void ProverCreateCredentialReqCallbackMethod(int xcommand_handle, int err, string cred_req_json, string cred_req_metadata_json)
         {
             var taskCompletionSource = PendingCommands.Remove<ProverCreateCredentialRequestResult>(xcommand_handle);
 
@@ -131,12 +166,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(new ProverCreateCredentialRequestResult(cred_req_json, cred_req_metadata_json));
-        };
+        }
+        private static ProverCreateCredentialReqCompletedDelegate ProverCreateCredentialReqCallback = ProverCreateCredentialReqCallbackMethod;
 
         /// <summary>
         /// The prover store credential callback.
         /// </summary>
-        private static ProverStoreCredentialCompletedDelegate _proverStoreCredentialCallback = (xcommand_handle, err, out_cred_id) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverStoreCredentialCompletedDelegate))]
+#endif
+        private static void ProverStoreCredentialCallbackMethod(int xcommand_handle, int err, string out_cred_id)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -144,12 +183,34 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(out_cred_id);
-        };
+        }
+        private static ProverStoreCredentialCompletedDelegate ProverStoreCredentialCallback = ProverStoreCredentialCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the ProverGetClaimsAsync command completes.
         /// </summary>
-        private static ProverGetCredentialsCompletedDelegate _proverGetCredentialsCallback = (xcommand_handle, err, matched_credentials_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverGetCredentialCompletedDelegate))]
+#endif
+        private static void ProverGetCredentialCallbackMethod(int xcommand_handle, int err, string credentials_json)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(credentials_json);
+        }
+        private static ProverGetCredentialCompletedDelegate ProverGetCredentialCallback = ProverGetCredentialCallbackMethod;
+
+
+        /// <summary>
+        /// Gets the callback to use when the ProverGetClaimsAsync command completes.
+        /// </summary>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverGetCredentialsCompletedDelegate))]
+#endif
+        private static void ProverGetCredentialsCallbackMethod(int xcommand_handle, int err, string matched_credentials_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -157,12 +218,74 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(matched_credentials_json);
-        };
+        }
+        private static ProverGetCredentialsCompletedDelegate ProverGetCredentialsCallback = ProverGetCredentialsCallbackMethod;
+
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverSearchCredentialsCompletedDelegate))]
+#endif
+        private static void ProverSearchCredentialsCallbackMethod(int xcommand_handle, int err, IntPtr search_handle, int total_count)
+        {
+            var taskCompletionSource = PendingCommands.Remove<CredentialSearch>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(new CredentialSearch(search_handle, total_count, false));
+        }
+        private static ProverSearchCredentialsCompletedDelegate ProverSearchCredentialsCallback = ProverSearchCredentialsCallbackMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverFetchCredentialsCompletedDelegate))]
+#endif
+        private static void ProverFetchCredentialsCallbackMethod(int xcommand_handle, int err, string credentials_json)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(credentials_json);
+        }
+        private static ProverFetchCredentialsCompletedDelegate ProverFetchCredentialsCallback = ProverFetchCredentialsCallbackMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverSearchCredentialsForProofReqCompletedDelegate))]
+#endif
+        private static void ProverSearchCredentialsForProofRequestCallbackMethod(int xcommand_handle, int err, IntPtr search_handle)
+        {
+            var taskCompletionSource = PendingCommands.Remove<CredentialSearch>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(new CredentialSearch(search_handle, null, false));
+        }
+        private static ProverSearchCredentialsForProofReqCompletedDelegate ProverSearchCredentialsForProofRequestCallback = ProverSearchCredentialsForProofRequestCallbackMethod;
+
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverFetchCredentialsForProofReqCompletedDelegate))]
+#endif
+        private static void ProverFetchCredentialsForProofRequestCallbackMethod(int xcommand_handle, int err, string credentials_json)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
+
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
+
+            taskCompletionSource.SetResult(credentials_json);
+        }
+        private static ProverFetchCredentialsForProofReqCompletedDelegate ProverFetchCredentialsForProofRequestCallback = ProverFetchCredentialsForProofRequestCallbackMethod;
+
 
         /// <summary>
         /// Gets the callback to use when the ProverGetClaimsForProofAsync command completes.
         /// </summary>
-        private static ProverGetCredentialsForProofCompletedDelegate _proverGetClaimsForProofCallback = (xcommand_handle, err, claims_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverGetCredentialsForProofCompletedDelegate))]
+#endif
+        private static void ProverGetClaimsForProofCallbackMethod(int xcommand_handle, int err, string claims_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -170,12 +293,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(claims_json);
-        };
+        }
+        private static ProverGetCredentialsForProofCompletedDelegate ProverGetClaimsForProofCallback = ProverGetClaimsForProofCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the ProverCreateProofAsync command completes.
         /// </summary>
-        private static ProverCreateProofCompletedDelegate _proverCreateProofCallback = (xcommand_handle, err, proof_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ProverCreateProofCompletedDelegate))]
+#endif
+        private static void ProverCreateProofCallbackMethod(int xcommand_handle, int err, string proof_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -183,12 +310,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(proof_json);
-        };
+        }
+        private static ProverCreateProofCompletedDelegate ProverCreateProofCallback = ProverCreateProofCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the VerifierVerifyProofAsync command completes.
         /// </summary>
-        private static VerifierVerifyProofCompletedDelegate _verifierVerifyProofCallback = (xcommand_handle, err, valid) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(VerifierVerifyProofCompletedDelegate))]
+#endif
+        private static void VerifierVerifyProofCallbackMethod(int xcommand_handle, int err, bool valid)
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -196,12 +327,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(valid);
-        };
+        }
+        private static VerifierVerifyProofCompletedDelegate VerifierVerifyProofCallback = VerifierVerifyProofCallbackMethod;
 
         /// <summary>
         /// The create revocation state callback.
         /// </summary>
-        private static CreateRevocationStateCompletedDelegate _createRevocationStateCallback = (xcommand_handle, err, rev_state_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(CreateRevocationStateCompletedDelegate))]
+#endif
+        private static void CreateRevocationStateCallbackMethod(int xcommand_handle, int err, string rev_state_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -209,12 +344,16 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(rev_state_json);
-        };
+        }
+        private static CreateRevocationStateCompletedDelegate CreateRevocationStateCallback = CreateRevocationStateCallbackMethod;
 
         /// <summary>
         /// The update revocation state callback.
         /// </summary>
-        private static UpdateRevocationStateCompletedDelegate _updateRevocationStateCallback = (xcommand_handle, err, updated_rev_state_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(UpdateRevocationStateCompletedDelegate))]
+#endif
+        private static void UpdateRevocationStateCallbackMethod(int xcommand_handle, int err, string updated_rev_state_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -222,7 +361,8 @@ namespace Hyperledger.Indy.AnonCredsApi
                 return;
 
             taskCompletionSource.SetResult(updated_rev_state_json);
-        };
+        }
+        private static UpdateRevocationStateCompletedDelegate UpdateRevocationStateCallback = UpdateRevocationStateCallbackMethod;
 
         /// <summary>
         /// Create credential schema entity that describes credential attributes list and allows credentials
@@ -260,7 +400,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 name,
                 version,
                 attrs,
-                _issuerCreateSchemaCallback
+                IssuerCreateSchemaCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -307,7 +447,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 tag,
                 type,
                 configJson,
-                _issuerCreateAndStoreClaimDefCallback
+                IssuerCreateAndStoreClaimDefCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -373,7 +513,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 credDefId,
                 configJson,
                 tailsWriter.Handle,
-                _issuerCreateAndStoreClaimRevocRegCallback
+                IssuerCreateAndStoreClaimRevocRegCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -410,7 +550,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 commandHandle,
                 wallet.Handle,
                 credDefId,
-                _issuerCreateCredentialOfferCallback
+                IssuerCreateCredentialOfferCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -474,7 +614,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 credValuesJson,
                 revRegId,
                 blobStorageReader?.Handle ?? -1,
-                _issuerCreateCredentialCallback
+                IssuerCreateCredentialCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -512,7 +652,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 blobStorageReader.Handle,
                 revRegId,
                 credRevocId,
-                _issuerRevokeCredentialCallback
+                IssuerRevokeCredentialCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -539,7 +679,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 commandHandle,
                 revRegDelta,
                 otherRevRegDelta,
-                _issuerMergeRevocationRegistryDeltasCallback
+                IssuerMergeRevocationRegistryDeltasCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -567,7 +707,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 commandHandle,
                 wallet.Handle,
                 masterSecretId,
-                _proverCreateMasterSecretCallback
+                ProverCreateMasterSecretCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -617,7 +757,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 credOfferJson,
                 credDefJson,
                 masterSecretId,
-                _proverCreateCredentialReqCallback
+                ProverCreateCredentialReqCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -654,8 +794,41 @@ namespace Hyperledger.Indy.AnonCredsApi
                 credJson,
                 credDefJson,
                 revRegDefJson,
-                _proverStoreCredentialCallback
+                ProverStoreCredentialCallback
                 );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Gets human readable credential by the given id.
+        /// </summary>
+        /// <returns>credential json:
+        ///     {
+        ///         "referent": string, // cred_id in the wallet
+        ///         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+        ///         "schema_id": string,
+        ///         "cred_def_id": string,
+        ///         "rev_reg_id": Optional&lt;string>,
+        ///         "cred_rev_id": Optional&lt;string>
+        ///     }</returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="credentialId">Identifier by which requested credential is stored in the wallet.</param>
+        public static Task<string> ProverGetCredentialAsync(Wallet wallet, string credentialId)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(credentialId, "credentialId");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_get_credential(
+                commandHandle,
+                wallet.Handle,
+                credentialId,
+                ProverGetCredentialCallback);
 
             CallbackHelper.CheckResult(commandResult);
 
@@ -686,6 +859,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         ///            "issuer_did": string, (Optional)
         ///            "cred_def_id": string, (Optional)
         ///        }</param>
+        [Obsolete("This method is obsolete since 1.6.1. Please use ProverSearchCredentialsAsync")]
         public static Task<string> ProverGetCredentialsAsync(Wallet wallet, string filterJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -698,7 +872,101 @@ namespace Hyperledger.Indy.AnonCredsApi
                 commandHandle,
                 wallet.Handle,
                 filterJson,
-                _proverGetCredentialsCallback
+                ProverGetCredentialsCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Search for credentials stored in wallet.
+        /// Credentials can be filtered by tags created during saving of credential.
+        ///
+        /// Instead of immediately returning of fetched credentials
+        /// this call returns search_handle that can be used later
+        /// to fetch records by small batches (with indy_prover_fetch_credentials).
+        /// </summary>
+        /// <returns>The search credentials async.</returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="queryJson">Wql query filter for credentials searching based on tags.
+        /// where query: indy-sdk/doc/design/011-wallet-query-language/README.md
+        /// </param>
+        public static Task<CredentialSearch> ProverSearchCredentialsAsync(Wallet wallet, string queryJson)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(queryJson, "queryJson");
+
+            var taskCompletionSource = new TaskCompletionSource<CredentialSearch>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_search_credentials(
+                commandHandle,
+                wallet.Handle,
+                queryJson,
+                ProverSearchCredentialsCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Fetch next credentials for search.
+        /// </summary>
+        /// <returns>
+        /// credentials_json: List of human readable credentials:
+        /// <code>
+        ///     [{
+        ///         "referent": string, // cred_id in the wallet
+        ///         "attrs": {"key1":"raw_value1", "key2":"raw_value2"},
+        ///         "schema_id": string,
+        ///         "cred_def_id": string,
+        ///         "rev_reg_id": Optional&lt;string>,
+        ///         "cred_rev_id": Optional&lt;string>
+        ///     }]
+        /// NOTE: The list of length less than the requested count means credentials search iterator is completed.
+        /// </code>
+        /// </returns>
+        /// <param name="search">Search.</param>
+        /// <param name="count">Count.</param>
+        public static Task<string> ProverFetchCredentialsAsync(CredentialSearch search, int count)
+        {
+            ParamGuard.NotNull(search, "search");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_fetch_credentials(
+                commandHandle,
+                search.Handle,
+                count,
+                ProverFetchCredentialsCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Close credentials search (make search handle invalid)
+        /// </summary>
+        /// <returns>The close credentials search async.</returns>
+        /// <param name="search">Search.</param>
+        public static Task ProverCloseCredentialsSearchAsync(CredentialSearch search)
+        {
+            ParamGuard.NotNull(search, "search");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_close_credentials_search(
+                commandHandle,
+                search.Handle,
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -782,6 +1050,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         ///     }
         /// filter: see filter_json above
         /// </param>
+        [Obsolete("This methos is obsolete since 1.6.1. Please use ProverSearchCredentialsForProofRequestAsync.")]
         public static Task<string> ProverGetCredentialsForProofReqAsync(Wallet wallet, string proofRequestJson)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -794,7 +1063,138 @@ namespace Hyperledger.Indy.AnonCredsApi
                 commandHandle,
                 wallet.Handle,
                 proofRequestJson,
-                _proverGetClaimsForProofCallback
+                ProverGetClaimsForProofCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Search for credentials matching the given proof request.
+        ///
+        /// Instead of immediately returning of fetched credentials
+        /// this call returns search_handle that can be used later
+        /// to fetch records by small batches (with indy_prover_fetch_credentials_for_proof_req).
+        /// </summary>
+        /// <returns><see cref="CredentialSearch"/> that can be used later to fetch records by small batches (with <see cref="ProverFetchCredentialsForProofRequestCallback"/>).</returns>
+        /// <param name="wallet">Wallet.</param>
+        /// <param name="proofRequestJson">
+        /// proof request json
+        ///     {
+        ///         "name": string,
+        ///         "version": string,
+        ///         "nonce": string,
+        ///         "requested_attributes": { // set of requested attributes
+        ///              "&lt;attr_referent>": &lt;attr_info>, // see below
+        ///              ...,
+        ///         },
+        ///         "requested_predicates": { // set of requested predicates
+        ///              "&lt;predicate_referent>": &lt;predicate_info>, // see below
+        ///              ...,
+        ///          },
+        ///         "non_revoked": Optional&lt;&lt;non_revoc_interval>>, // see below,
+        ///                        // If specified prover must proof non-revocation
+        ///                        // for date in this interval for each attribute
+        ///                        // (can be overridden on attribute level)
+        ///     }.
+        /// </param>
+        /// <param name="extraQueryJson">extra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:
+        ///     {
+        ///         "&lt;attr_referent>": &lt;wql query>,
+        ///         "&lt;predicate_referent>": &lt;wql query>,
+        ///     }
+        /// where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md.</param>
+        public static Task<CredentialSearch> ProverSearchCredentialsForProofRequestAsync(Wallet wallet, string proofRequestJson, string extraQueryJson = "{}")
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(proofRequestJson, "proofRequestJson");
+
+            var taskCompletionSource = new TaskCompletionSource<CredentialSearch>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_search_credentials_for_proof_req(
+                commandHandle,
+                wallet.Handle,
+                proofRequestJson,
+                extraQueryJson,
+                ProverSearchCredentialsForProofRequestCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Fetch next credentials for the requested item using proof request search
+        /// handle (created by indy_prover_search_credentials_for_proof_req).
+        /// </summary>
+        /// <returns>
+        /// credentials_json: List of credentials for the given proof request.
+        ///     [{
+        ///         cred_info: &lt;credential_info>,
+        ///         interval: Optional&lt;non_revoc_interval>
+        ///     }]
+        /// where
+        /// credential_info:
+        ///     {
+        ///         "referent": &lt;string>,
+        ///         "attrs": {"attr_name" : "attr_raw_value"},
+        ///         "schema_id": string,
+        ///         "cred_def_id": string,
+        ///         "rev_reg_id": Optional&lt;int>,
+        ///         "cred_rev_id": Optional&lt;int>,
+        ///     }
+        /// non_revoc_interval:
+        ///     {
+        ///         "from": Optional&lt;int>, // timestamp of interval beginning
+        ///         "to": Optional&lt;int>, // timestamp of interval ending
+        ///     }
+        /// NOTE: The list of length less than the requested count means that search iterator
+        /// correspondent to the requested &lt;item_referent> is completed.
+        /// </returns>
+        /// <param name="search">Search.</param>
+        /// <param name="itemReferent">Referent of attribute/predicate in the proof request.</param>
+        /// <param name="count">Count of credentials to fetch.</param>
+        public static Task<string> ProverFetchCredentialsForProofRequestAsync(CredentialSearch search, string itemReferent, int count)
+        {
+            ParamGuard.NotNull(search, "search");
+            ParamGuard.NotNullOrWhiteSpace(itemReferent, "itemReferent");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_fetch_credentials_for_proof_req(
+                commandHandle,
+                search.Handle,
+                itemReferent,
+                count,
+                ProverFetchCredentialsForProofRequestCallback
+                );
+
+            CallbackHelper.CheckResult(commandResult);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Close credentials search for proof request (make search handle invalid)
+        /// </summary>
+        /// <returns></returns>
+        /// <param name="search">Search.</param>
+        public static Task ProverCloseCredentialsSearchForProofRequestAsync(CredentialSearch search)
+        {
+            ParamGuard.NotNull(search, "search");
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var commandResult = NativeMethods.indy_prover_close_credentials_search_for_proof_req(
+                commandHandle,
+                search.Handle,
+                CallbackHelper.TaskCompletingNoValueCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -960,7 +1360,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 schemas,
                 credentialDefs,
                 revStates,
-                _proverCreateProofCallback);
+                ProverCreateProofCallback);
 
             CallbackHelper.CheckResult(commandResult);
 
@@ -1071,7 +1471,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 credentialDefs,
                 revocRegDefs,
                 revocRegs,
-                _verifierVerifyProofCallback
+                VerifierVerifyProofCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -1111,7 +1511,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 revRegDelta,
                 timestamp,
                 credRevId,
-                _createRevocationStateCallback
+                CreateRevocationStateCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -1155,7 +1555,7 @@ namespace Hyperledger.Indy.AnonCredsApi
                 revRegDelta,
                 timestamp,
                 credRevId,
-                _updateRevocationStateCallback
+                UpdateRevocationStateCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);

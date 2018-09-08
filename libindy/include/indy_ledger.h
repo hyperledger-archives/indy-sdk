@@ -171,7 +171,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: Id of Identity stored in secured Wallet.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// target_did: Id of Identity stored in secured Wallet.
     /// cb: Callback that takes command result as parameter.
     ///
@@ -228,7 +228,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the submitter stored in secured Wallet.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
     /// hash: (Optional) Hash of attribute data.
     /// raw: (Optional) Json, where key is attribute name and value is attribute value.
@@ -257,7 +257,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the read request sender.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
     /// raw: (Optional) Requested attribute name.
     /// hash: (Optional) Requested attribute hash.
@@ -286,7 +286,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the read request sender.
+    /// submitter_did:(Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
     /// cb: Callback that takes command result as parameter.
     ///
@@ -339,7 +339,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the read request sender.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// id: Schema ID in ledger
     /// cb: Callback that takes command result as parameter.
     ///
@@ -427,7 +427,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the read request sender.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// id: Credential Definition ID in ledger.
     /// cb: Callback that takes command result as parameter.
     ///
@@ -537,7 +537,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the request submitter.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// ledger_type: (Optional) type of the ledger the requested transaction belongs to:
     ///     DOMAIN - used default,
     ///     POOL,
@@ -700,7 +700,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the read request sender.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// id:  ID of Revocation Registry Definition in ledger.
     /// cb: Callback that takes command result as parameter.
     ///
@@ -800,7 +800,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the read request sender.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
     /// timestamp: Requested time represented as a total number of seconds from Unix Epoch
     /// cb: Callback that takes command result as parameter.
@@ -856,7 +856,7 @@ extern "C" {
     ///
     /// #Params
     /// command_handle: command handle to map callback to caller context.
-    /// submitter_did: DID of the read request sender.
+    /// submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     /// revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
     /// from: Requested time represented as a total number of seconds from Unix Epoch
     /// to: Requested time represented as a total number of seconds from Unix Epoch

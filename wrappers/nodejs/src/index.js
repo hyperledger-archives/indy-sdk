@@ -333,7 +333,7 @@ indy.submitRequest = function submitRequest (poolHandle, request, cb) {
 
 indy.submitAction = function submitAction (poolHandle, request, nodes, timeout, cb) {
   cb = wrapIndyCallback(cb, fromJson)
-  capi.submitAction(poolHandle, toJson(request), toJson(nodes), nodes == null ? -1 : nodes, cb)
+  capi.submitAction(poolHandle, toJson(request), toJson(nodes), timeout == null ? -1 : timeout, cb)
   return cb.promise
 }
 
@@ -770,6 +770,12 @@ indy.closeWallet = function closeWallet (wh, cb) {
 indy.deleteWallet = function deleteWallet (config, credentials, cb) {
   cb = wrapIndyCallback(cb)
   capi.deleteWallet(toJson(config), toJson(credentials), cb)
+  return cb.promise
+}
+
+indy.generateWalletKey = function generateWalletKey (config, cb) {
+  cb = wrapIndyCallback(cb)
+  capi.generateWalletKey(toJson(config), cb)
   return cb.promise
 }
 

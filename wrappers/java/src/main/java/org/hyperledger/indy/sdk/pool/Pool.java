@@ -49,7 +49,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 		public void callback(int xcommand_handle, int err, int pool_handle) {
 
 			CompletableFuture<Pool> future = (CompletableFuture<Pool>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Pool pool = new Pool(pool_handle);
 
@@ -67,7 +67,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -101,7 +101,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 				config,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -138,7 +138,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 				config, 
 				openPoolLedgerCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -165,7 +165,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 				handle,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -192,7 +192,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 				handle,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -217,7 +217,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 				configName,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -232,7 +232,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 	 *
 	 * @param protocolVersion Protocol version will be used:
 	 *      1 - for Indy Node 1.3
-	 *      2 - for Indy Node 1.4
+	 *      2 - for Indy Node 1.4 and greater
 	 *
 	 * @return A future that does not resolve a value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -248,7 +248,7 @@ public class Pool extends IndyJava.API implements AutoCloseable {
 				protocolVersion,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}

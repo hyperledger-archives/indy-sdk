@@ -9,6 +9,11 @@ use services::pool::PoolService;
 use services::crypto::CryptoService;
 use domain::crypto::key::Key;
 use domain::crypto::did::Did;
+use domain::anoncreds::credential_definition::{CredentialDefinition, CredentialDefinitionV1};
+use domain::anoncreds::schema::{Schema, SchemaV1};
+use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
+use domain::anoncreds::revocation_registry_delta::{RevocationRegistryDelta, RevocationRegistryDeltaV1};
+use domain::ledger::node::NodeOperationData;
 use services::wallet::{WalletService, RecordOptions};
 use services::ledger::LedgerService;
 use utils::crypto::base58;
@@ -53,7 +58,7 @@ pub enum LedgerCommand {
         String, // request json
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetDdoRequest(
-        String, // submitter did
+        Option<String>, // submitter did
         String, // target did
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildNymRequest(
@@ -71,22 +76,22 @@ pub enum LedgerCommand {
         Option<String>, // enc
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetAttribRequest(
-        String, // submitter did
+        Option<String>, // submitter did
         String, // target did
         Option<String>, // raw
         Option<String>, // hash
         Option<String>, // enc
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetNymRequest(
-        String, // submitter did
+        Option<String>, // submitter did
         String, // target did
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildSchemaRequest(
         String, // submitter did
-        String, // data
+        Schema, // data
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetSchemaRequest(
-        String, // submitter did
+        Option<String>, // submitter did
         String, // id
         Box<Fn(Result<String, IndyError>) + Send>),
     ParseGetSchemaResponse(
@@ -94,10 +99,10 @@ pub enum LedgerCommand {
         Box<Fn(Result<(String, String), IndyError>) + Send>),
     BuildCredDefRequest(
         String, // submitter did
-        String, // data
+        CredentialDefinition, // data
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetCredDefRequest(
-        String, // submitter did
+        Option<String>, // submitter did
         String, // id
         Box<Fn(Result<String, IndyError>) + Send>),
     ParseGetCredDefResponse(
@@ -106,13 +111,13 @@ pub enum LedgerCommand {
     BuildNodeRequest(
         String, // submitter did
         String, // target_did
-        String, // data
+        NodeOperationData, // data
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetValidatorInfoRequest(
         String, // submitter did
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetTxnRequest(
-        String, // submitter did
+        Option<String>, // submitter did
         Option<String>, // ledger type
         i32, // data
         Box<Fn(Result<String, IndyError>) + Send>),
@@ -141,10 +146,10 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildRevocRegDefRequest(
         String, // submitter did
-        String, // data
+        RevocationRegistryDefinition, // data
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetRevocRegDefRequest(
-        String, // submitter did
+        Option<String>, // submitter did
         String, // revocation registry definition id
         Box<Fn(Result<String, IndyError>) + Send>),
     ParseGetRevocRegDefResponse(
@@ -154,10 +159,10 @@ pub enum LedgerCommand {
         String, // submitter did
         String, // revocation registry definition id
         String, // revocation registry definition type
-        String, // value
+        RevocationRegistryDelta, // value
         Box<Fn(Result<String, IndyError>) + Send>),
     BuildGetRevocRegRequest(
-        String, // submitter did
+        Option<String>, // submitter did
         String, // revocation registry definition id
         i64, // timestamp
         Box<Fn(Result<String, IndyError>) + Send>),
@@ -165,7 +170,7 @@ pub enum LedgerCommand {
         String, // get revocation registry response
         Box<Fn(Result<(String, String, u64), IndyError>) + Send>),
     BuildGetRevocRegDeltaRequest(
-        String, // submitter did
+        Option<String>, // submitter did
         String, // revocation registry definition id
         Option<i64>, // from
         i64, // to
@@ -241,7 +246,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildGetDdoRequest(submitter_did, target_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetDdoRequest command received");
-                cb(self.build_get_ddo_request(&submitter_did, &target_did));
+                cb(self.build_get_ddo_request(submitter_did.as_ref().map(String::as_str), &target_did));
             }
             LedgerCommand::BuildNymRequest(submitter_did, target_did, verkey, alias, role, cb) => {
                 info!(target: "ledger_command_executor", "BuildNymRequest command received");
@@ -259,22 +264,22 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildGetAttribRequest(submitter_did, target_did, raw, hash, enc, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetAttribRequest command received");
-                cb(self.build_get_attrib_request(&submitter_did, &target_did,
+                cb(self.build_get_attrib_request(submitter_did.as_ref().map(String::as_str), &target_did,
                                                  raw.as_ref().map(String::as_str),
                                                  hash.as_ref().map(String::as_str),
                                                  enc.as_ref().map(String::as_str)));
             }
             LedgerCommand::BuildGetNymRequest(submitter_did, target_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetNymRequest command received");
-                cb(self.build_get_nym_request(&submitter_did, &target_did));
+                cb(self.build_get_nym_request(submitter_did.as_ref().map(String::as_str), &target_did));
             }
             LedgerCommand::BuildSchemaRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildSchemaRequest command received");
-                cb(self.build_schema_request(&submitter_did, &data));
+                cb(self.build_schema_request(&submitter_did, SchemaV1::from(data)));
             }
             LedgerCommand::BuildGetSchemaRequest(submitter_did, id, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetSchemaRequest command received");
-                cb(self.build_get_schema_request(&submitter_did, &id));
+                cb(self.build_get_schema_request(submitter_did.as_ref().map(String::as_str), &id));
             }
             LedgerCommand::ParseGetSchemaResponse(get_schema_response, cb) => {
                 info!(target: "ledger_command_executor", "ParseGetSchemaResponse command received");
@@ -282,11 +287,11 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildCredDefRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildCredDefRequest command received");
-                cb(self.build_cred_def_request(&submitter_did, &data));
+                cb(self.build_cred_def_request(&submitter_did, CredentialDefinitionV1::from(data)));
             }
             LedgerCommand::BuildGetCredDefRequest(submitter_did, id, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetCredDefRequest command received");
-                cb(self.build_get_cred_def_request(&submitter_did, &id));
+                cb(self.build_get_cred_def_request(submitter_did.as_ref().map(String::as_str), &id));
             }
             LedgerCommand::ParseGetCredDefResponse(get_cred_def_response, cb) => {
                 info!(target: "ledger_command_executor", "ParseGetCredDefResponse command received");
@@ -294,7 +299,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildNodeRequest(submitter_did, target_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildNodeRequest command received");
-                cb(self.build_node_request(&submitter_did, &target_did, &data));
+                cb(self.build_node_request(&submitter_did, &target_did, data));
             }
             LedgerCommand::BuildGetValidatorInfoRequest(submitter_did, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetValidatorInfoRequest command received");
@@ -302,7 +307,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildGetTxnRequest(submitter_did, ledger_type, seq_no, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetTxnRequest command received");
-                cb(self.build_get_txn_request(&submitter_did, ledger_type.as_ref().map(String::as_str), seq_no));
+                cb(self.build_get_txn_request(submitter_did.as_ref().map(String::as_str), ledger_type.as_ref().map(String::as_str), seq_no));
             }
             LedgerCommand::BuildPoolConfigRequest(submitter_did, writes, force, cb) => {
                 info!(target: "ledger_command_executor", "BuildPoolConfigRequest command received");
@@ -321,11 +326,11 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildRevocRegDefRequest(submitter_did, data, cb) => {
                 info!(target: "ledger_command_executor", "BuildRevocRegDefRequest command received");
-                cb(self.build_revoc_reg_def_request(&submitter_did, &data));
+                cb(self.build_revoc_reg_def_request(&submitter_did, RevocationRegistryDefinitionV1::from(data)));
             }
             LedgerCommand::BuildGetRevocRegDefRequest(submitter_did, id, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetRevocRegDefRequest command received");
-                cb(self.build_get_revoc_reg_def_request(&submitter_did, &id));
+                cb(self.build_get_revoc_reg_def_request(submitter_did.as_ref().map(String::as_str), &id));
             }
             LedgerCommand::ParseGetRevocRegDefResponse(get_revoc_ref_def_response, cb) => {
                 info!(target: "ledger_command_executor", "ParseGetRevocRegDefDefResponse command received");
@@ -333,11 +338,11 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildRevocRegEntryRequest(submitter_did, revoc_reg_def_id, rev_def_type, value, cb) => {
                 info!(target: "ledger_command_executor", "BuildRevocRegEntryRequest command received");
-                cb(self.build_revoc_reg_entry_request(&submitter_did, &revoc_reg_def_id, &rev_def_type, &value));
+                cb(self.build_revoc_reg_entry_request(&submitter_did, &revoc_reg_def_id, &rev_def_type, RevocationRegistryDeltaV1::from(value)));
             }
             LedgerCommand::BuildGetRevocRegRequest(submitter_did, revoc_reg_def_id, timestamp, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetRevocRegRequest command received");
-                cb(self.build_get_revoc_reg_request(&submitter_did, &revoc_reg_def_id, timestamp));
+                cb(self.build_get_revoc_reg_request(submitter_did.as_ref().map(String::as_str), &revoc_reg_def_id, timestamp));
             }
             LedgerCommand::ParseGetRevocRegResponse(get_revoc_reg_response, cb) => {
                 info!(target: "ledger_command_executor", "ParseGetRevocRegResponse command received");
@@ -345,7 +350,7 @@ impl LedgerCommandExecutor {
             }
             LedgerCommand::BuildGetRevocRegDeltaRequest(submitter_did, revoc_reg_def_id, from, to, cb) => {
                 info!(target: "ledger_command_executor", "BuildGetRevocRegDeltaRequest command received");
-                cb(self.build_get_revoc_reg_delta_request(&submitter_did, &revoc_reg_def_id, from, to));
+                cb(self.build_get_revoc_reg_delta_request(submitter_did.as_ref().map(String::as_str), &revoc_reg_def_id, from, to));
             }
             LedgerCommand::ParseGetRevocRegDeltaResponse(get_revoc_reg_delta_response, cb) => {
                 info!(target: "ledger_command_executor", "ParseGetRevocRegDeltaResponse command received");
@@ -385,9 +390,9 @@ impl LedgerCommandExecutor {
                      signature_type: SignatureType) -> Result<String, IndyError> {
         debug!("_sign_request >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
 
-        let my_did: Did = self.wallet_service.get_indy_object(wallet_handle, &submitter_did, &RecordOptions::id_value(), &mut String::new())?;
+        let my_did: Did = self.wallet_service.get_indy_object(wallet_handle, &submitter_did, &RecordOptions::id_value())?;
 
-        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_did.verkey, &RecordOptions::id_value(), &mut String::new())?;
+        let my_key: Key = self.wallet_service.get_indy_object(wallet_handle, &my_did.verkey, &RecordOptions::id_value())?;
 
         let mut request: Value = serde_json::from_str(request_json)
             .map_err(|err|
@@ -484,7 +489,7 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_ddo_request(&self,
-                             submitter_did: &str,
+                             submitter_did: Option<&str>,
                              target_did: &str) -> Result<String, IndyError> {
         debug!("build_get_ddo_request >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
@@ -545,7 +550,7 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_attrib_request(&self,
-                                submitter_did: &str,
+                                submitter_did: Option<&str>,
                                 target_did: &str,
                                 raw: Option<&str>,
                                 hash: Option<&str>,
@@ -553,7 +558,7 @@ impl LedgerCommandExecutor {
         debug!("build_get_attrib_request >>> submitter_did: {:?}, target_did: {:?}, raw: {:?}, hash: {:?}, enc: {:?}",
                submitter_did, target_did, raw, hash, enc);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        self.validate_opt_did(submitter_did)?;
         self.crypto_service.validate_did(target_did)?;
 
         let res = self.ledger_service.build_get_attrib_request(submitter_did,
@@ -568,11 +573,11 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_nym_request(&self,
-                             submitter_did: &str,
+                             submitter_did: Option<&str>,
                              target_did: &str) -> Result<String, IndyError> {
         debug!("build_get_nym_request >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        self.validate_opt_did(submitter_did)?;
         self.crypto_service.validate_did(target_did)?;
 
         let res = self.ledger_service.build_get_nym_request(submitter_did,
@@ -585,12 +590,12 @@ impl LedgerCommandExecutor {
 
     fn build_schema_request(&self,
                             submitter_did: &str,
-                            data: &str) -> Result<String, IndyError> {
-        debug!("build_schema_request >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
+                            schema: SchemaV1) -> Result<String, IndyError> {
+        debug!("build_schema_request >>> submitter_did: {:?}, schema: {:?}", submitter_did, schema);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_schema_request(submitter_did, data)?;
+        let res = self.ledger_service.build_schema_request(submitter_did, schema)?;
 
         debug!("build_schema_request <<< res: {:?}", res);
 
@@ -598,11 +603,11 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_schema_request(&self,
-                                submitter_did: &str,
+                                submitter_did: Option<&str>,
                                 id: &str) -> Result<String, IndyError> {
         debug!("build_get_schema_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        self.validate_opt_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_schema_request(submitter_did, id)?;
 
@@ -624,13 +629,13 @@ impl LedgerCommandExecutor {
 
     fn build_cred_def_request(&self,
                               submitter_did: &str,
-                              data: &str) -> Result<String, IndyError> {
-        debug!("build_cred_def_request >>> submitter_did: {:?}, data: {:?}",
-               submitter_did, data);
+                              cred_def: CredentialDefinitionV1) -> Result<String, IndyError> {
+        debug!("build_cred_def_request >>> submitter_did: {:?}, cred_def: {:?}",
+               submitter_did, cred_def);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_cred_def_request(submitter_did, data)?;
+        let res = self.ledger_service.build_cred_def_request(submitter_did, cred_def)?;
 
         debug!("build_cred_def_request <<< res: {:?}", res);
 
@@ -638,11 +643,11 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_cred_def_request(&self,
-                                  submitter_did: &str,
+                                  submitter_did: Option<&str>,
                                   id: &str) -> Result<String, IndyError> {
         debug!("build_get_cred_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        self.validate_opt_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_cred_def_request(submitter_did, id)?;
 
@@ -665,15 +670,13 @@ impl LedgerCommandExecutor {
     fn build_node_request(&self,
                           submitter_did: &str,
                           target_did: &str,
-                          data: &str) -> Result<String, IndyError> {
+                          data: NodeOperationData) -> Result<String, IndyError> {
         debug!("build_node_request >>> submitter_did: {:?}, target_did: {:?}, data: {:?}",
                submitter_did, target_did, data);
 
         self.crypto_service.validate_did(submitter_did)?;
 
-        let res = self.ledger_service.build_node_request(submitter_did,
-                                                         target_did,
-                                                         data)?;
+        let res = self.ledger_service.build_node_request(submitter_did, target_did, data)?;
 
         debug!("build_node_request <<< res: {:?}", res);
 
@@ -694,13 +697,13 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_txn_request(&self,
-                             submitter_did: &str,
+                             submitter_did: Option<&str>,
                              ledger_type: Option<&str>,
                              seq_no: i32) -> Result<String, IndyError> {
         debug!("build_get_txn_request >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}",
                submitter_did, ledger_type, seq_no);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        self.validate_opt_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_txn_request(submitter_did, ledger_type, seq_no)?;
 
@@ -766,7 +769,7 @@ impl LedgerCommandExecutor {
 
     fn build_revoc_reg_def_request(&self,
                                    submitter_did: &str,
-                                   data: &str) -> Result<String, IndyError> {
+                                   data: RevocationRegistryDefinitionV1) -> Result<String, IndyError> {
         debug!("build_revoc_reg_def_request >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
 
         self.crypto_service.validate_did(submitter_did)?;
@@ -779,11 +782,11 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_revoc_reg_def_request(&self,
-                                       submitter_did: &str,
+                                       submitter_did: Option<&str>,
                                        id: &str) -> Result<String, IndyError> {
         debug!("build_get_revoc_reg_def_request >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        self.validate_opt_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_revoc_reg_def_request(submitter_did, id)?;
 
@@ -807,7 +810,7 @@ impl LedgerCommandExecutor {
                                      submitter_did: &str,
                                      revoc_reg_def_id: &str,
                                      revoc_def_type: &str,
-                                     value: &str) -> Result<String, IndyError> {
+                                     value: RevocationRegistryDeltaV1) -> Result<String, IndyError> {
         debug!("build_revoc_reg_entry_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, revoc_def_type: {:?}, value: {:?}",
                submitter_did, revoc_reg_def_id, revoc_def_type, value);
 
@@ -821,12 +824,12 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_revoc_reg_request(&self,
-                                   submitter_did: &str,
+                                   submitter_did: Option<&str>,
                                    revoc_reg_def_id: &str,
                                    timestamp: i64) -> Result<String, IndyError> {
         debug!("build_get_revoc_reg_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        self.validate_opt_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_revoc_reg_request(submitter_did, revoc_reg_def_id, timestamp)?;
 
@@ -847,13 +850,13 @@ impl LedgerCommandExecutor {
     }
 
     fn build_get_revoc_reg_delta_request(&self,
-                                         submitter_did: &str,
+                                         submitter_did: Option<&str>,
                                          revoc_reg_def_id: &str,
                                          from: Option<i64>,
                                          to: i64) -> Result<String, IndyError> {
         debug!("build_get_revoc_reg_delta_request >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, from: {:?}, to: {:?}", submitter_did, revoc_reg_def_id, from, to);
 
-        self.crypto_service.validate_did(submitter_did)?;
+        self.validate_opt_did(submitter_did)?;
 
         let res = self.ledger_service.build_get_revoc_reg_delta_request(submitter_did, revoc_reg_def_id, from, to)?;
 
@@ -871,6 +874,13 @@ impl LedgerCommandExecutor {
         debug!("parse_revoc_reg_delta_response <<< res: {:?}", res);
 
         Ok(res)
+    }
+
+    fn validate_opt_did(&self, did: Option<&str>) -> Result<(), IndyError> {
+        match did {
+            Some(did) => Ok(self.crypto_service.validate_did(did)?),
+            None => Ok(())
+        }
     }
 }
 

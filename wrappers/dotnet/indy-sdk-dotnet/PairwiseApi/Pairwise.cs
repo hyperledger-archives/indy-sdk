@@ -1,10 +1,10 @@
 ﻿using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.PairwiseApi.NativeMethods;
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.PairwiseApi
 {
@@ -21,7 +21,10 @@ namespace Hyperledger.Indy.PairwiseApi
         /// <summary>
         /// Gets the callback to use when the IsExistsAsync command completes.
         /// </summary>
-        private static IsPairwiseExistsCompletedDelegate _isPairwiseExistsCallback = (xcommand_handle, err, exists) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(IsPairwiseExistsCompletedDelegate))]
+#endif
+        private static void IsPairwiseExistsCallbackMethod(int xcommand_handle, int err, bool exists)
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -29,12 +32,16 @@ namespace Hyperledger.Indy.PairwiseApi
                 return;
 
             taskCompletionSource.SetResult(exists);
-        };
+        }
+        private static IsPairwiseExistsCompletedDelegate IsPairwiseExistsCallback = IsPairwiseExistsCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the ListAsync command completes.
         /// </summary>
-        private static ListPairwiseCompletedDelegate _listPairwiseCallback = (xcommand_handle, err, list_pairwise) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(ListPairwiseCompletedDelegate))]
+#endif
+        private static void ListPairwiseCallbackMethod(int xcommand_handle, int err, string list_pairwise)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -42,12 +49,16 @@ namespace Hyperledger.Indy.PairwiseApi
                 return;
 
             taskCompletionSource.SetResult(list_pairwise);
-        };
+        }
+        private static ListPairwiseCompletedDelegate ListPairwiseCallback = ListPairwiseCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the GetAsync command completes.
         /// </summary>
-        private static GetPairwiseCompletedDelegate _getPairwiseCallback = (xcommand_handle, err, get_pairwise_json) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(GetPairwiseCompletedDelegate))]
+#endif
+        private static void GetPairwiseCallbackMethod(int xcommand_handle, int err, string get_pairwise_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -55,7 +66,8 @@ namespace Hyperledger.Indy.PairwiseApi
                 return;
 
             taskCompletionSource.SetResult(get_pairwise_json);
-        };
+        }
+        private static GetPairwiseCompletedDelegate GetPairwiseCallback = GetPairwiseCallbackMethod;
 
         /// <summary>
         /// Gets whether or not a pairwise record exists in the provided wallet for the specified DID .
@@ -76,7 +88,7 @@ namespace Hyperledger.Indy.PairwiseApi
                 commandHandle,
                 wallet.Handle,
                 theirDid,
-                _isPairwiseExistsCallback);
+                IsPairwiseExistsCallback);
 
             CallbackHelper.CheckResult(result);
 
@@ -145,7 +157,7 @@ namespace Hyperledger.Indy.PairwiseApi
             int result = NativeMethods.indy_list_pairwise(
                 commandHandle,
                 wallet.Handle,
-                _listPairwiseCallback);
+                ListPairwiseCallback);
 
             CallbackHelper.CheckResult(result);
 
@@ -186,7 +198,7 @@ namespace Hyperledger.Indy.PairwiseApi
                 commandHandle,
                 wallet.Handle,
                 theirDid,
-                _getPairwiseCallback);
+                GetPairwiseCallback);
 
             CallbackHelper.CheckResult(result);
 

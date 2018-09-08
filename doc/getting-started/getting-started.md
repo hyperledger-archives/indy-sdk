@@ -255,7 +255,7 @@ After the connection is established **Faber** must create new DID record that he
     })
     ```
 
-3. **Faber** authenticates and encrypts the message by calling ``crypto.auth_crypt`` using verkeys created for secure communication with **Steward**. The Authenticated-encryption schema is designed for the sending of a confidential message specifically for a Recipient, using the Sender's public key. Using the Recipient's public key, the Sender can compute a shared secret key. Using the Sender's public key and his secret key, the Recipient can compute the exact same shared secret key. That shared secret key can be used to verify that the encrypted message was not tampered with, before eventually decrypting it.
+3. **Faber** authenticates and encrypts the message by calling ``crypto.auth_crypt`` function, which is an implementation of the authenticated-encryption schema. Authenticated encryption is designed for sending of a confidential message specifically for the Recipient. The Sender can compute a shared secret key using the Recipient's public key (verkey) and his secret (signing) key. The Recipient can compute exactly the same shared secret key using the Sender's public key (verkey) and his secret (signing) key. That shared secret key can be used to verify that the encrypted message was not tampered with, before eventually decrypting it.
     ```python        
     # Faber Agent
     authcrypted_faber_did_info_json = \
@@ -456,6 +456,7 @@ Now Alice has everything to create a Credential Request of the issuance of the *
 **Faber** creates the **Transcript** Credential for Alice.
 ```python
   # Faber Agent
+  # note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
   transcript_cred_values = json.dumps({
       "first_name": {"raw": "Alice", "encoded": "1139481716457488690172217916278103335"},
       "last_name": {"raw": "Garcia", "encoded": "5321642780241790123587902456789123452"},

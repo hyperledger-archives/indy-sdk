@@ -1,12 +1,16 @@
 extern crate libc;
 
 use api::ErrorCode;
-use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::wallet::WalletCommand;
-use utils::cstring::CStringUtils;
+use domain::wallet::{Config, Credentials, ExportConfig, KeyConfig};
+use errors::common::CommonError;
+use errors::ToErrorCode;
+use utils::ctypes;
 
+use serde_json;
 use self::libc::c_char;
+
 
 /// Register custom wallet storage implementation.
 ///
@@ -160,11 +164,16 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 /// }
 /// credentials: Wallet credentials json
 /// {
-///   "key": string, Passphrase used to derive wallet master key
+///   "key": string, Key or passphrase used for wallet key derivation.
+///                  Look to key_derivation_method param for information about supported key derivation methods.
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
-///
+///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+///                          ARGON2I_MOD - derive secured wallet master key (used by default)
+///                          ARGON2I_INT - derive secured wallet master key (less secured but faster)
+///                          RAW - raw wallet key master provided (skip derivation).
+///                                RAW keys can be generated with indy_generate_wallet_key call
 /// }
 ///
 /// #Returns
@@ -182,12 +191,12 @@ pub extern fn indy_create_wallet(command_handle: i32,
     trace!("indy_create_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
            command_handle, config, credentials, cb);
 
-    check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(config, ErrorCode::CommonInvalidParam2, Config);
+    check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_create_wallet: params config: {:?}, credentials: {:?}",
-           config, secret!(credentials.as_str()));
+           config, secret!(&credentials));
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Create(
@@ -229,13 +238,22 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///   }
 /// credentials: Wallet credentials json
 ///   {
-///       "key": string, Passphrase used to derive current wallet master key
-///       "rekey": optional<string>, If present than wallet master key will be rotated to a new one
-///                                  derived from this passphrase.
+///       "key": string, Key or passphrase used for wallet key derivation.
+///                      Look to key_derivation_method param for information about supported key derivation methods.
+///       "rekey": optional<string>, If present than wallet master key will be rotated to a new one.
 ///       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                              Can be optional if storage supports default configuration.
 ///                              For 'default' storage type should be empty.
-///
+///       "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+///                          ARGON2I_MOD - derive secured wallet master key (used by default)
+///                          ARGON2I_INT - derive secured wallet master key (less secured but faster)
+///                          RAW - raw wallet key master provided (skip derivation).
+///                                RAW keys can be generated with indy_generate_wallet_key call
+///       "rekey_derivation_method": optional<string> Algorithm to use for wallet rekey derivation:
+///                          ARGON2I_MOD - derive secured wallet master rekey (used by default)
+///                          ARGON2I_INT - derive secured wallet master rekey (less secured but faster)
+///                          RAW - raw wallet rekey master provided (skip derivation).
+///                                RAW keys can be generated with indy_generate_wallet_key call
 ///   }
 ///
 /// #Returns
@@ -255,12 +273,12 @@ pub extern fn indy_open_wallet(command_handle: i32,
     trace!("indy_open_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
            command_handle, config, credentials, cb);
 
-    check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(config, ErrorCode::CommonInvalidParam2, Config);
+    check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
     trace!("indy_open_wallet: params config: {:?}, credentials: {:?}",
-           config, secret!(credentials.as_str()));
+           config, secret!(&credentials));
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Open(
@@ -286,7 +304,13 @@ pub extern fn indy_open_wallet(command_handle: i32,
 /// export_config: JSON containing settings for input operation.
 ///   {
 ///     "path": <string>, Path of the file that contains exported wallet content
-///     "key": <string>, Passphrase used to derive export key
+///     "key": <string>, Key or passphrase used for wallet export key derivation.
+///                     Look to key_derivation_method param for information about supported key derivation methods.
+///     "key_derivation_method": optional<string> Algorithm to use for wallet export key derivation:
+///                              ARGON2I_MOD - derive secured export key (used by default)
+///                              ARGON2I_INT - derive secured export key (less secured but faster)
+///                              RAW - raw export key provided (skip derivation).
+///                                RAW keys can be generated with indy_generate_wallet_key call
 ///   }
 ///
 /// #Returns
@@ -303,10 +327,10 @@ pub extern fn indy_export_wallet(command_handle: i32,
                                                       err: ErrorCode)>) -> ErrorCode {
     trace!("indy_export_wallet: >>> wallet_handle: {:?}, export_config: {:?}", wallet_handle, export_config);
 
-    check_useful_c_str!(export_config, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(export_config, ErrorCode::CommonInvalidParam3, ExportConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_export_wallet: params wallet_handle: {:?}, export_config: {:?}", wallet_handle, secret!(export_config.as_str()));
+    trace!("indy_export_wallet: params wallet_handle: {:?}, export_config: {:?}", wallet_handle, secret!(&export_config));
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Export(
@@ -348,16 +372,21 @@ pub extern fn indy_export_wallet(command_handle: i32,
 /// }
 /// credentials: Wallet credentials json
 /// {
-///   "key": string, Passphrase used to derive wallet master key
+///   "key": string, Key or passphrase used for wallet key derivation.
+///                  Look to key_derivation_method param for information about supported key derivation methods.
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
-///
+///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+///                             ARGON2I_MOD - derive secured wallet master key (used by default)
+///                             ARGON2I_INT - derive secured wallet master key (less secured but faster)
+///                             RAW - raw wallet key master provided (skip derivation).
+///                                RAW keys can be generated with indy_generate_wallet_key call
 /// }
 /// import_config: Import settings json.
 /// {
 ///   "path": <string>, path of the file that contains exported wallet content
-///   "key": <string>, passphrase used to derive export key
+///   "key": <string>, key used for export of the wallet
 /// }
 ///
 /// #Returns
@@ -376,13 +405,13 @@ pub extern fn indy_import_wallet(command_handle: i32,
     trace!("indy_import_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, import_config: {:?}, cb: {:?}",
            command_handle, config, credentials, import_config, cb);
 
-    check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
-    check_useful_c_str!(import_config, ErrorCode::CommonInvalidParam4);
+    check_useful_json!(config, ErrorCode::CommonInvalidParam2, Config);
+    check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
+    check_useful_json!(import_config, ErrorCode::CommonInvalidParam4, ExportConfig);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_import_wallet: params config: {:?}, credentials: {:?}, import_config: {:?}",
-           config, secret!(credentials.as_str()), secret!(import_config.as_str()));
+           config, secret!(&credentials), secret!(&import_config));
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Import(
@@ -461,11 +490,16 @@ pub extern fn indy_close_wallet(command_handle: i32,
 /// }
 /// credentials: Wallet credentials json
 /// {
-///   "key": string, Passphrase used to derive wallet master key
+///   "key": string, Key or passphrase used for wallet key derivation.
+///                  Look to key_derivation_method param for information about supported key derivation methods.
 ///   "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
 ///                          Can be optional if storage supports default configuration.
 ///                          For 'default' storage type should be empty.
-///
+///   "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+///                             ARGON2I_MOD - derive secured wallet master key (used by default)
+///                             ARGON2I_INT - derive secured wallet master key (less secured but faster)
+///                             RAW - raw wallet key master provided (skip derivation).
+///                                RAW keys can be generated with indy_generate_wallet_key call
 /// }
 ///
 /// #Returns
@@ -483,11 +517,11 @@ pub extern fn indy_delete_wallet(command_handle: i32,
     trace!("indy_delete_wallet: >>> command_handle: {:?}, config: {:?}, credentials: {:?}, cb: {:?}",
            command_handle, config, credentials, cb);
 
-    check_useful_c_str!(config, ErrorCode::CommonInvalidParam2);
-    check_useful_c_str!(credentials, ErrorCode::CommonInvalidParam3);
+    check_useful_json!(config, ErrorCode::CommonInvalidParam2, Config);
+    check_useful_json!(credentials, ErrorCode::CommonInvalidParam3, Credentials);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
 
-    trace!("indy_delete_wallet: params config: {:?}, credentials: {:?}", config, secret!(credentials.as_str()));
+    trace!("indy_delete_wallet: params config: {:?}, credentials: {:?}", config, secret!(&credentials));
 
     let result = CommandExecutor::instance()
         .send(Command::Wallet(WalletCommand::Delete(
@@ -502,6 +536,52 @@ pub extern fn indy_delete_wallet(command_handle: i32,
 
     let res = result_to_err_code!(result);
     trace!("indy_delete_wallet: <<< res: {:?}", res);
+    res
+}
+
+/// Generate wallet master key.
+/// Returned key is compatible with "RAW" key derivation method.
+/// It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+///
+/// #Params
+/// config: (optional) key configuration json.
+/// {
+///   "seed": optional<string> Seed that allows deterministic key creation (if not set random one will be used).
+/// }
+///
+/// #Returns
+/// err: Error code
+///
+/// #Errors
+/// Common*
+/// Wallet*
+#[no_mangle]
+pub extern fn indy_generate_wallet_key(command_handle: i32,
+                                       config: *const c_char,
+                                       cb: Option<extern fn(xcommand_handle: i32,
+                                                            err: ErrorCode,
+                                                            key: *const c_char)>) -> ErrorCode {
+    trace!("indy_generate_wallet_key: >>> command_handle: {:?}, config: {:?}, cb: {:?}",
+           command_handle, config, cb);
+
+    check_useful_opt_json!(config, ErrorCode::CommonInvalidParam2, KeyConfig);
+    check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam3);
+
+    trace!("indy_generate_wallet_key: params config: {:?}", secret!(config.as_ref()));
+
+    let result = CommandExecutor::instance()
+        .send(Command::Wallet(WalletCommand::GenerateKey(
+            config,
+            Box::new(move |result| {
+                let (err, key) = result_to_err_code_1!(result, String::new());
+                trace!("indy_generate_wallet_key: key: {:?}", key);
+                let key = ctypes::string_to_cstring(key);
+                cb(command_handle, err, key.as_ptr())
+            })
+        )));
+
+    let res = result_to_err_code!(result);
+    trace!("indy_generate_wallet_key: <<< res: {:?}", res);
     res
 }
 

@@ -57,12 +57,12 @@ create_avd(){
 
         echo "no" |
              avdmanager create avd \
-                --name ${TARGET_ARCH} \
+                --name ${ABSOLUTE_ARCH} \
                 --package "system-images;android-24;default;${ABI}" \
                 -f \
                 -c 1000M
 
-        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd arm -no-audio -no-window &
+        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${ABSOLUTE_ARCH} -no-audio -no-window &
 }
 
 download_sdk(){
@@ -162,6 +162,7 @@ create_standalone_toolchain_and_rust_target(){
     --arch ${TARGET_ARCH} \
     --api ${TARGET_API} \
     --stl=gnustl \
+    --force \
     --install-dir ${TOOLCHAIN_DIR}
 
     # add rust target

@@ -302,7 +302,7 @@ impl Prover {
                        name: &str,
                        referent: &str,
                        restrictions: &Option<serde_json::Value>,
-                       extra_query: &Option<ProofRequestExtraQuery>) -> Result<String, CommonError> {
+                       extra_query: &Option<&ProofRequestExtraQuery>) -> Result<String, CommonError> {
         trace!("build_query >>> name: {:?}, referent: {:?}, restrictions: {:?}, extra_query: {:?}", name, referent, restrictions, extra_query);
 
         let mut sub_queries: Vec<serde_json::Value> = vec![];
@@ -464,6 +464,8 @@ mod tests {
         use super::*;
 
         fn _credential() -> Credential {
+            // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
+            // so Alex -> 12345 is an application choice while 25 -> 25 is not
             let mut attr_values: HashMap<String, AttributeValues> = HashMap::new();
             attr_values.insert("name".to_string(), AttributeValues { raw: "Alex".to_string(), encoded: "12345".to_string() });
             attr_values.insert("age".to_string(), AttributeValues { raw: "25".to_string(), encoded: "25".to_string() });
@@ -585,7 +587,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -614,7 +616,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -708,7 +710,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -743,7 +745,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": [

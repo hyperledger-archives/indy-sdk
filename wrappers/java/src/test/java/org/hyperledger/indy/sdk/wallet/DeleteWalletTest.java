@@ -7,7 +7,6 @@ import static org.junit.Assert.assertNotNull;
 
 import org.hyperledger.indy.sdk.InvalidStateException;
 import org.json.JSONObject;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -37,7 +36,6 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 	}
 
 	@Test
-	@Ignore // TODO: FIXME checking has been lost
 	public void testDeleteWalletWorksForOpened() throws Exception {
 		thrown.expect(ExecutionException.class);
 		thrown.expectCause(isA(InvalidStateException.class));
@@ -64,14 +62,6 @@ public class DeleteWalletTest extends IndyIntegrationTest {
 
 		Wallet.deleteWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 		Wallet.deleteWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
-	}
-
-	@Test
-	@Ignore
-	public void testDeleteWalletWorksForPlugged() throws Exception {
-		Wallet.createWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		Wallet.deleteWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		Wallet.createWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
 	}
 
 	@Test

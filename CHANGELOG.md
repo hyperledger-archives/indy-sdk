@@ -1,7 +1,44 @@
 # Changelog
 
-## 1.6.0, 1.6.1
+## 1.6.5
+* Fixed `ARGON2I` constants usage to be compatible with the latest sodium.
+* Parameter `submitter_did` set as the optional field for:
+    * Ledger API `indy_build_get_*` functions (except `indy_build_get_validator_info_request`).
+    * all functions in Payment API.
+* Fixed Android build rustflags for all architectures for libc linking.
 
+## 1.6.4
+* Early API types checks
+* Workaround for OS permissions on Android
+* Fix Android build ARMv7
+
+## 1.6.3
+* Performed the following changes related to Libindy Wallet API:
+    * Added separate API function `indy_generate_wallet_key` to generate a random wallet master key.
+    * Updated `key_derivation_method` parameter of wallet `credentials` to accept the addition type - `RAW`. 
+      By using this type, the result of `indy_generate_wallet_key` can be passed as a wallet master key (key derivation will be skipped).
+    * Updated Indy CLI wallet related commands to accept the addition parameter `key_derivation_method`.
+* Updated `data` parameter of `indy_build_node_request` API function to accept `blskey_pop` (Proof of possession for BLS key).
+* Bugfixes
+    * Fixed build flags for Android.s
+    * Other minor bugfixes.
+
+## 1.6.2
+* Performed the following changes related to Libindy Ledger API:
+    * Added `indy_submit_action` endpoint that provides the ability to send either GET_VALIDATOR_INFO or 
+      POOL_RESTART request to specific nodes and to specify custom timeout for a response from a node.
+    * Updated `indy_build_pool_upgrade_request` API function to accept the additional parameter `package` that allow specify package to be upgraded.* Bugfixes
+* Added `pool restart` command in Indy CLI.
+* Updated Libindy CD pipeline to run iOS tests and to publish artifacts for Libindy and Libnullpay.
+* Updated wallet `credentials` to accept the additional parameter `key_derivation_method`.
+  This parameter provides the ability to use different crypto algorithms for master key derivation.
+* Bugfixes
+ 
+## 1.6.1 bugfixes
+* Fix connection performance issue
+* Fix Android publishing
+  
+## 1.6.0
 * Integrated tags based search in Anoncreds workflow:
     * Updated `indy_prover_store_credential` API function to create tags for a stored credential object.
     * API functions `indy_prover_get_credentials` and `indy_prover_get_credentials_for_proof_req` marked as `Deprecated`.
@@ -28,11 +65,8 @@ Performed the following changes related to Libindy Payments API:
     * Added `indy_build_verify_payment_req` and `indy_parse_verify_payment_response` API functions.
     * Removed EXPERIMENTAL notice from endpoints.
 * Added `ledger verify-payment-receipt` command in Indy CLI.
+* Implemented experimental support of Android.
 * Bugfixes       
-
-### 1.6.1 bugfixes
-* Fix connection performance issue
-* Fix Android publishing
 
 Notes:
 

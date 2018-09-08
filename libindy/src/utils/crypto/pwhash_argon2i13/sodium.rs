@@ -8,6 +8,8 @@ use errors::common::CommonError;
 use self::sodiumoxide::crypto::pwhash;
 use self::libc::{size_t, c_ulonglong, c_int};
 
+use domain::wallet::KeyDerivationMethod;
+
 pub const SALTBYTES: usize = pwhash::SALTBYTES;
 
 sodium_type!(Salt, pwhash::Salt, SALTBYTES);
@@ -16,9 +18,15 @@ pub fn gen_salt() -> Salt {
     Salt(pwhash::gen_salt())
 }
 
-pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt) -> Result<&'a [u8], CommonError> {
-    let opslimit = unsafe { crypto_pwhash_opslimit_moderate() };
-    let memlimit = unsafe { crypto_pwhash_memlimit_moderate() };
+pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt, key_derivation_method: &KeyDerivationMethod) -> Result<&'a [u8], CommonError> {
+    let (opslimit, memlimit) = unsafe {
+        match key_derivation_method {
+            KeyDerivationMethod::ARGON2I_MOD => (crypto_pwhash_argon2i_opslimit_moderate(), crypto_pwhash_argon2i_memlimit_moderate()),
+            KeyDerivationMethod::ARGON2I_INT => (crypto_pwhash_argon2i_opslimit_interactive(), crypto_pwhash_argon2i_memlimit_interactive()),
+            KeyDerivationMethod::RAW => return Err(CommonError::InvalidStructure("RAW key derivation method is not acceptable".to_string()))
+        }
+    };
+
     let alg = unsafe { crypto_pwhash_alg_argon2i13() };
 
     let res = unsafe {
@@ -41,8 +49,10 @@ pub fn pwhash<'a>(key: &'a mut [u8], passwd: &[u8], salt: &Salt) -> Result<&'a [
 
 extern {
     fn crypto_pwhash_alg_argon2i13() -> c_int;
-    fn crypto_pwhash_opslimit_moderate() -> size_t;
-    fn crypto_pwhash_memlimit_moderate() -> size_t;
+    fn crypto_pwhash_argon2i_opslimit_moderate() -> size_t;
+    fn crypto_pwhash_argon2i_memlimit_moderate() -> size_t;
+    fn crypto_pwhash_argon2i_opslimit_interactive() -> size_t;
+    fn crypto_pwhash_argon2i_memlimit_interactive() -> size_t;
 
     fn crypto_pwhash(out: *mut u8,
                      outlen: c_ulonglong,
@@ -82,6 +92,21 @@ mod tests {
         let mut key = [0u8; 64];
 
         let salt = gen_salt();
-        let _key = pwhash(&mut key, passwd, &salt).unwrap();
+        let _key = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+    }
+
+    #[test]
+    fn pwhash_works_for_interactive_method() {
+        let passwd = b"Correct Horse Battery Staple";
+
+        let salt = gen_salt();
+
+        let mut key = [0u8; 64];
+        let key_moderate = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::ARGON2I_MOD).unwrap();
+
+        let mut key = [0u8; 64];
+        let key_interactive = pwhash(&mut key, passwd, &salt, &KeyDerivationMethod::ARGON2I_INT).unwrap();
+
+        assert_ne!(key_moderate, key_interactive);
     }
 }

@@ -227,14 +227,14 @@ mod tests {
     use std::rc::Rc;
     use std::collections::HashMap;
 
-    use domain::wallet::Metadata;
+    use domain::wallet::{Metadata, MetadataArgon};
     use errors::wallet::WalletError;
     use services::wallet::encryption;
     use services::wallet::wallet::Wallet;
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::language::*;
-    use utils::test::TestUtils;
+    use utils::test;
 
     macro_rules! jsonstr {
         ($($x:tt)+) => {
@@ -1764,7 +1764,7 @@ mod tests {
     }
 
     fn _cleanup() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
     }
 
     fn _type1() -> &'static str {
@@ -1816,10 +1816,10 @@ mod tests {
         let metadata = {
             let master_key_salt = encryption::gen_master_key_salt().unwrap();
 
-            let metadata = Metadata {
+            let metadata = Metadata::MetadataArgon(MetadataArgon {
                 master_key_salt: master_key_salt[..].to_vec(),
                 keys: keys.serialize_encrypted(&master_key).unwrap(),
-            };
+            });
 
             serde_json::to_vec(&metadata)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err))).unwrap()
@@ -1839,9 +1839,9 @@ mod tests {
         let storage_type = SQLiteStorageType::new();
         let storage = storage_type.open_storage(_wallet_id(), None, None).unwrap();
 
-        let metadata: Metadata = {
+        let metadata: MetadataArgon = {
             let metadata = storage.get_storage_metadata().unwrap();
-            serde_json::from_slice(&metadata)
+            serde_json::from_slice::<MetadataArgon>(&metadata)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err))).unwrap()
         };
 

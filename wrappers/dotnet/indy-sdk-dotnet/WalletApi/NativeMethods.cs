@@ -6,6 +6,7 @@ namespace Hyperledger.Indy.WalletApi
 {
     internal static class NativeMethods
     {
+        /*
         /// <summary>
         /// Registers custom wallet implementation.
         /// </summary>
@@ -24,6 +25,7 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_register_wallet_type(int command_handle, string xtype, WalletTypeCreateDelegate create, WalletTypeOpenDelegate open, WalletTypeSetDelegate set, WalletTypeGetDelegate get, WalletTypeGetNotExpiredDelegate get_not_expired, WalletTypeListDelegate list, WalletTypeCloseDelegate close, WalletTypeDeleteDelegate delete, WalletTypeFreeDelegate free, IndyMethodCompletedDelegate cb);
+        */
 
         /// <summary>
         /// Delegate for the function called back to when a wallet of a custom type is created.
@@ -108,13 +110,6 @@ namespace Hyperledger.Indy.WalletApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_import_wallet(int command_handle, string config, string credentials, string import_config, IndyMethodCompletedDelegate cb);
 
-
-        /// <summary>
-        /// Delegate to be used on completion of calls to indy_open_wallet.
-        /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="wallet_handle">The handle for the opened wallet.</param>
         internal delegate void OpenWalletCompletedDelegate(int xcommand_handle, int err, IntPtr wallet_handle);
 
         /// <summary>
@@ -137,5 +132,11 @@ namespace Hyperledger.Indy.WalletApi
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_delete_wallet(int command_handle, string config, string credentials, IndyMethodCompletedDelegate cb);
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_generate_wallet_key(int command_handle, string config, GenerateWalletKeyCompletedDelegate cb);
+
+        internal delegate void GenerateWalletKeyCompletedDelegate(int xcommand_handle, int err, string key);
+
     }
 }

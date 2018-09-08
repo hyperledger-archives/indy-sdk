@@ -3,6 +3,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.WalletApi.NativeMethods;
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.WalletApi
 {
@@ -20,7 +23,10 @@ namespace Hyperledger.Indy.WalletApi
         /// <summary>
         /// Gets the callback to use when a wallet open command has completed.
         /// </summary>
-        private static OpenWalletCompletedDelegate _openWalletCallback = (xcommand_handle, err, wallet_handle) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(OpenWalletCompletedDelegate))]
+#endif
+        private static void OpenWalletCallbackMethod(int xcommand_handle, int err, IntPtr wallet_handle)
         {
             var taskCompletionSource = PendingCommands.Remove<Wallet>(xcommand_handle);
 
@@ -28,54 +34,23 @@ namespace Hyperledger.Indy.WalletApi
                 return;
 
             taskCompletionSource.SetResult(new Wallet(wallet_handle));
-        };
+        }
+        private static OpenWalletCompletedDelegate OpenWalletCallback = OpenWalletCallbackMethod;
 
-        ///// <summary>
-        ///// Registers a custom wallet type implementation.
-        ///// </summary>
-        ///// <remarks>
-        ///// <para>This method allows custom wallet implementations to be registered at runtime so that alternatives
-        ///// to the default wallet type can be used.  Implementing a custom wallet is achieved by
-        ///// deriving from the <see cref="WalletType"/> class - see the <see cref="WalletType"/> and 
-        ///// <see cref="ICustomWallet"/> classes for further detail.
-        ///// </para>
-        ///// <para>Each custom wallet type is registered with a name which can subsequently be used when 
-        ///// creating a new wallet using the <see cref="CreateWalletAsync(string, string, string, string, string)"/> method.
-        ///// </para>
-        ///// </remarks>
-        ///// <param name="typeName">The name of the custom wallet type.</param>
-        ///// <param name="walletType">An instance of a class derived from <see cref="WalletType "/> containing the logic for 
-        ///// the custom wallet type.</param>
-        ///// <returns>An asynchronous <see cref="Task"/> with no return value that completes when
-        ///// the registration is complete.</returns>
-        //public static Task RegisterWalletTypeAsync(string typeName, WalletType walletType)
-        //{
-        //    ParamGuard.NotNullOrWhiteSpace(typeName, "typeName");
-        //    ParamGuard.NotNull(walletType, "walletType");
+#if __IOS__
+        [MonoPInvokeCallback(typeof(GenerateWalletKeyCompletedDelegate))]
+#endif
+        private static void GenerateWalletKeyCallbackMethod(int xcommand_handle, int err, string key)
+        {
+            var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
-        //    var taskCompletionSource = new TaskCompletionSource<bool>();
-        //    var commandHandle = PendingCommands.Add(taskCompletionSource);
+            if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
+                return;
 
-        //    _registeredWalletTypes.Add(walletType);
+            taskCompletionSource.SetResult(key);
+        }
+        private static GenerateWalletKeyCompletedDelegate GenerateWalletKeyCallback = GenerateWalletKeyCallbackMethod;
 
-        //    var result = NativeMethods.indy_register_wallet_type(
-        //        commandHandle,
-        //        typeName,
-        //        walletType.CreateCallback,
-        //        walletType.OpenCallback,
-        //        walletType.SetCallback,
-        //        walletType.GetCallback,
-        //        walletType.GetNotExpiredCallback,
-        //        walletType.ListCallback,
-        //        walletType.CloseCallback,
-        //        walletType.DeleteCallback,
-        //        walletType.FreeCallback,
-        //        CallbackHelper.TaskCompletingNoValueCallback);
-
-        //    CallbackHelper.CheckResult(result);
-
-        //    return taskCompletionSource.Task;
-        //}
 
         /// <summary>
         /// Create a new secure wallet.
@@ -182,7 +157,7 @@ namespace Hyperledger.Indy.WalletApi
                 commandHandle,
                 config,
                 credentials,
-                _openWalletCallback
+                OpenWalletCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -324,6 +299,35 @@ namespace Hyperledger.Indy.WalletApi
                 config,
                 credentials,
                 CallbackHelper.TaskCompletingNoValueCallback
+                );
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Generate wallet master key.
+        /// Returned key is compatible with "RAW" key derivation method.
+        /// It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+        /// </summary>
+        /// <returns>The generated wallet key.</returns>
+        /// <param name="config">
+        /// config: (optional) key configuration json.
+        /// {
+        ///   "seed": optional&lt;string> Seed that allows deterministic key creation (if not set random one will be used).
+        /// }</param>
+        public static Task<string> GenerateWalletKeyAsync(string config)
+        {
+            ParamGuard.NotNullOrWhiteSpace(config, "config");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_generate_wallet_key(
+                commandHandle,
+                config,
+                GenerateWalletKeyCallback
                 );
 
             CallbackHelper.CheckResult(result);

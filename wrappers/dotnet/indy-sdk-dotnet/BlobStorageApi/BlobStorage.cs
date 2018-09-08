@@ -1,7 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Hyperledger.Indy.Utils;
 using static Hyperledger.Indy.BlobStorageApi.NativeMethods;
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.BlobStorageApi
 {
@@ -10,7 +12,10 @@ namespace Hyperledger.Indy.BlobStorageApi
     /// </summary>
     public static class BlobStorage
     {
-        private static BlobStorageCompletedDelegate _openReaderCallback = (xcommand_handle, err, handle) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(BlobStorageCompletedDelegate))]
+#endif
+        private static void OpenReaderCallbackMethod(int xcommand_handle, int err, int handle)
         {
             var taskCompletionSource = PendingCommands.Remove<BlobStorageReader>(xcommand_handle);
 
@@ -18,9 +23,13 @@ namespace Hyperledger.Indy.BlobStorageApi
                 return;
 
             taskCompletionSource.SetResult(new BlobStorageReader(handle));
-        };
+        }
+        private static BlobStorageCompletedDelegate OpenReaderCallback = OpenReaderCallbackMethod;
 
-        private static BlobStorageCompletedDelegate _openWriterCallback = (xcommand_handle, err, handle) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(BlobStorageCompletedDelegate))]
+#endif
+        private static void OpenWriterCallbackMethod(int xcommand_handle, int err, int handle)
         {
             var taskCompletionSource = PendingCommands.Remove<BlobStorageWriter>(xcommand_handle);
 
@@ -28,7 +37,8 @@ namespace Hyperledger.Indy.BlobStorageApi
                 return;
 
             taskCompletionSource.SetResult(new BlobStorageWriter(handle));
-        };
+        }
+        private static BlobStorageCompletedDelegate OpenWriterCallback = OpenWriterCallbackMethod;
 
         /// <summary>
         /// Opens the BLOB storage reader async.
@@ -48,7 +58,7 @@ namespace Hyperledger.Indy.BlobStorageApi
                 commandHandle,
                 type,
                 configJson,
-                _openReaderCallback
+                OpenReaderCallback
                 );
 
             CallbackHelper.CheckResult(result);
@@ -74,7 +84,7 @@ namespace Hyperledger.Indy.BlobStorageApi
                 commandHandle,
                 type,
                 configJson,
-                _openWriterCallback
+                OpenWriterCallback
                 );
 
             CallbackHelper.CheckResult(result);
