@@ -1,0 +1,82 @@
+[package]
+name = "storage-inmem"
+version = "1.6.0"
+authors = [
+  "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
+  "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
+  "Artem Ivanov <artem.ivanov@dsr-company.com>",
+  "Evgeniy Razinkov <evgeniy.razinkov@dsr-company.com.ru>",
+  "Kirill Neznamov <kirill.neznamov@dsr-company.com>",
+  "Sergey Minaev <sergey.minaev@dsr-company.com>",
+  "Ian Costanzo <ian@anon-solutions.ca>"
+]
+
+description = "This is the official SDK for Hyperledger Indy (https://www.hyperledger.org/projects), which provides a distributed-ledger-based foundation for self-sovereign identity (https://sovrin.org). The major artifact of the SDK is a c-callable library."
+license = "MIT/Apache-2.0"
+build = "build.rs"
+
+[lib]
+name = "indystrginmem"
+path = "src/lib.rs"
+crate-type = ["staticlib","rlib", "cdylib"]
+
+[features]
+default = ["bn_openssl", "box_sodium", "sealedbox_sodium", "base58_rust_base58", "base64_rust_base64", "xsalsa20_sodium", "chacha20poly1305_ietf_sodium", "pair_amcl", "hash_openssl", "local_nodes_pool", "revocation_tests", "pwhash_argon2i13_sodium", "hmacsha256_sodium", "memzero_sodium"]
+bn_openssl = ["openssl", "int_traits"]
+box_sodium = ["sodiumoxide"]
+sealedbox_sodium = ["sodiumoxide"]
+base58_rust_base58 = ["rust-base58"]
+base64_rust_base64 = ["base64"]
+xsalsa20_sodium = ["sodiumoxide"]
+chacha20poly1305_ietf_sodium = ["sodiumoxide"]
+pwhash_argon2i13_sodium = ["sodiumoxide"]
+pair_amcl = ["indy-crypto"]
+hash_openssl = ["openssl"]
+local_nodes_pool = []
+revocation_tests = []
+sodium_static = []
+hmacsha256_sodium = ["sodiumoxide"]
+memzero_sodium = ["sodiumoxide"]
+
+# Causes the build to fail on all warnings
+fatal_warnings = []
+
+[dependencies]
+indy-crypto = { version = "=0.4.1-dev-47", optional = true }
+int_traits = { version = "0.1.1", optional = true }
+digest = "0.6.2"
+env_logger = "0.5.10"
+errno = "0.2.3"
+etcommon-rlp = "0.2.3"
+generic-array = "0.8.3"
+hex = "0.2.0"
+libc = "0.2.21"
+log = "0.4.1"
+openssl = { version = "=0.9.24", optional = true }
+owning_ref = "0.3.3"
+rand = "0.3"
+rust-base58 = {version = "0.0.4", optional = true}
+base64 = {version = "0.6.0", optional = true}
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+sha2 = "0.6.0"
+sha3 = "0.6.0"
+rmp-serde = "0.13.6"
+sodiumoxide = {version = "0.0.16", optional = true}
+time = "0.1.36"
+zmq = "0.8.2"
+lazy_static = "1.0"
+named_type = "0.1.3"
+named_type_derive = "0.1.3"
+byteorder = "1.0.0"
+log-panics = "2.0.0"
+
+[dependencies.uuid]
+version = "0.5.0"
+default-features = false
+features = ["v4"]
+
+[target.'cfg(target_os = "android")'.dependencies]
+android_logger = "0.5"
+[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
