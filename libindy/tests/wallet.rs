@@ -737,6 +737,31 @@ mod medium_cases {
     }
 }
 
+mod dynamic_storage_cases {
+    extern crate libc;
+
+    use super::*;
+    use std::env;
+
+    mod configure_wallet_storage {
+        use super::*;
+
+        #[test]
+        fn configure_wallet_works_for_case() {
+            // TODO save (and clear) existing vars
+            let _hs_keep = utils::wallet::wallet_storage_overrides();
+
+            env::set_var("STG_TYPE", "inmem");
+            let hs = utils::wallet::wallet_storage_overrides();
+            env::remove_var("STG_TYPE");
+
+            // TODO restore original vars
+
+            assert_eq!(hs.get("STG_TYPE").unwrap(), &Some("inmem".to_string()));
+        }
+    }
+}
+
 fn _custom_path() -> String {
     let mut path = environment::tmp_path();
     path.push("custom_wallet_path");

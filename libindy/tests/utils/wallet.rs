@@ -5,6 +5,8 @@ use utils::{callback, sequence, environment, ctypes};
 use utils::inmem_wallet::InmemWallet;
 
 use std::collections::HashSet;
+use std::collections::HashMap;
+use std::env;
 use std::ffi::CString;
 use std::sync::Mutex;
 use std::ptr::null;
@@ -194,4 +196,58 @@ pub fn generate_wallet_key(config: Option<&str>) -> Result<String, ErrorCode> {
                                  cb);
 
     super::results::result_to_string(err, receiver)
+}
+
+/* 
+ * Dynamically loads the specified library and registers storage
+*/
+fn load_storage_library(_stg_type: &str, _library: &str, _fn_pfx: &str) {
+    ()
+}
+
+/*
+ * Returns wallet storage configuation dynamically configured via environment variables:
+ * STG_CONFIG - json configuration string to pass to the wallet on creation and open
+ * STG_CREDS - json credentials string to pass to the wallet on creation and open
+ * STG_TYPE - storage type to create
+ * STG_LIB - c-callable library to load (contains a plug-in storage) 
+ *             - if specified will dynamically load and register a wallet storage
+ * STG_FN_PREFIX - prefix for all plug-in functions (allows standard function naming)
+*/
+pub fn wallet_storage_overrides() -> HashMap<String, Option<String>> {
+    let mut storage_config = HashMap::new();
+    let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
+
+    for env_var in env_vars.iter() {
+        match env::var(env_var) {
+            Ok(var) => storage_config.insert(env_var.to_string(), Some(var.to_string())),
+            Err(_) => storage_config.insert(env_var.to_string(), None)
+        };
+    }
+
+    match storage_config.get("STG_LIB") {
+        Some(slibrary) => match slibrary {
+            Some(library) => {
+                let stg_type: String = match storage_config.get("STG_CONFIG") {
+                    Some(styp) => match styp {
+                        Some(typ) => typ.clone(),
+                        None => "".to_string()
+                    },
+                    None => "".to_string()
+                };
+                let fn_pfx: String = match storage_config.get("STG_FN_PREFIX") {
+                    Some(spfx) => match spfx {
+                        Some(pfx) => pfx.clone(),
+                        None => "".to_string()
+                    },
+                    None => "".to_string()
+                };
+                load_storage_library(&stg_type[..], &library[..], &fn_pfx[..])
+            },
+            None => ()
+        },
+        None => ()
+    }
+
+    storage_config
 }
