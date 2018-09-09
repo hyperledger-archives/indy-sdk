@@ -748,15 +748,26 @@ mod dynamic_storage_cases {
 
         #[test]
         fn configure_wallet_works_for_case() {
-            // TODO save (and clear) existing vars
-            let _hs_keep = utils::wallet::wallet_storage_overrides();
+            // save (and clear) existing vars
+            let hs_keep = utils::wallet::wallet_storage_overrides();
+            for (key, _val) in hs_keep.iter() {
+                env::remove_var(key);
+            }
 
+            // test we correctly pick up the values
             env::set_var("STG_TYPE", "inmem");
             let hs = utils::wallet::wallet_storage_overrides();
             env::remove_var("STG_TYPE");
 
-            // TODO restore original vars
+            // restore original vars
+            for (key, val) in hs_keep.iter() {
+                match val {
+                    Some(hval) => env::set_var(key, hval),
+                    None => ()
+                }
+            }
 
+            // finally assert our test
             assert_eq!(hs.get("STG_TYPE").unwrap(), &Some("inmem".to_string()));
         }
     }
