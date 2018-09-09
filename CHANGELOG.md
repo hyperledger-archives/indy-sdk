@@ -1,4 +1,6 @@
 # Changelog
+## 1.6.6
+* Fixed Android build rustflags. Now all architectures have same flags.
 
 ## 1.6.5
 * Fixed `ARGON2I` constants usage to be compatible with the latest sodium.
