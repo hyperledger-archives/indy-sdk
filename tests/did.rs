@@ -532,3 +532,230 @@ mod replace_keys_apply {
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
 }
+
+#[cfg(test)]
+mod test_store_their_did {
+    use super::*;
+
+    #[test]
+    fn store_their_did() {
+        let wallet = Wallet::new();
+        let config = json!({"did": VERKEY_1}).to_string();
+
+        let result = Did::store_their_did(wallet.handle, &config);
+    
+        assert_eq!((), result.unwrap());
+
+        let verkey = Did::get_ver_key_local(wallet.handle, VERKEY_1).unwrap();
+
+        assert_eq!(VERKEY_1, verkey);
+    }
+
+    #[test]
+    fn store_their_did_with_verkey() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+
+        let result = Did::store_their_did(wallet.handle, &config);
+    
+        assert_eq!((), result.unwrap());
+
+        let verkey = Did::get_ver_key_local(wallet.handle, DID_1).unwrap();
+
+        assert_eq!(VERKEY_1, verkey);
+    }
+
+    #[test]
+    fn store_their_did_with_crypto_verkey() {
+        let wallet = Wallet::new();
+        let config = json!({
+            "did": DID_1,
+            "verkey": format!("{}:ed25519", VERKEY_1)
+        }).to_string();
+
+        let result = Did::store_their_did(wallet.handle, &config);
+
+        assert_eq!((), result.unwrap());
+
+        let verkey = Did::get_ver_key_local(wallet.handle, DID_1).unwrap();
+
+        assert_eq!(format!("{}:ed25519", VERKEY_1), verkey);
+    }
+
+    #[test]
+    fn store_their_did_empty_identify_json() {
+        let wallet = Wallet::new();
+
+        let result = Did::store_their_did(wallet.handle, "{}");
+
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+    }
+
+    #[test]
+    fn store_their_did_invalid_handle() {
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+        let result = Did::store_their_did(INVALID_HANDLE, &config);
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn store_their_did_abbreviated_verkey() {
+        let wallet = Wallet::new();
+        let config = json!({
+            "did": "8wZcEriaNLNKtteJvx7f8i",
+            "verkey": "~NcYxiDXkpYi6ov5FcYDi1e"
+        }).to_string();
+
+        let result = Did::store_their_did(wallet.handle, &config);
+        
+        assert_eq!((), result.unwrap());
+    }
+
+    #[test]
+    fn store_their_did_invalid_did() {
+        let wallet = Wallet::new();
+        let config = json!({"did": "InvalidDid"}).to_string();
+
+        let result = Did::store_their_did(wallet.handle, &config);
+
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+    }
+
+    #[test]
+    fn store_their_did_with_invalid_verkey() {
+        let wallet = Wallet::new();
+        let config = json!({
+            "did": DID_1,
+            "verkey": "InvalidVerkey"
+        }).to_string();
+
+        let result = Did::store_their_did(wallet.handle, &config);
+
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+    }
+
+    #[test]
+    fn store_their_did_with_invalid_crypto_verkey() {
+        let wallet = Wallet::new();
+        let config = json!({
+            "did": DID_1,
+            "verkey": format!("{}:bad_crypto_type", VERKEY_1)
+        }).to_string();
+
+        let result = Did::store_their_did(wallet.handle, &config);
+
+        assert_eq!(ErrorCode::UnknownCryptoTypeError, result.unwrap_err());
+    }
+
+    #[test]
+    fn store_their_did_duplicate() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+
+        Did::store_their_did(wallet.handle, &config).unwrap();
+
+        let result = Did::store_their_did(wallet.handle, &config);
+
+        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err());
+    }
+
+    #[test]
+    /*
+    This test resulted from the ticket https://jira.hyperledger.org/browse/IS-802
+    Previously, an error was being thrown because rollback wasn't happening.
+    This test ensures the error is no longer occuring.
+    */
+    fn store_their_did_multiple_error_fixed() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+
+        Did::store_their_did(wallet.handle, &config).unwrap();
+
+        let result = Did::store_their_did(wallet.handle, &config);
+        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err());
+
+        let result = Did::store_their_did(wallet.handle, &config);
+        assert_eq!(ErrorCode::WalletItemAlreadyExists, result.unwrap_err());
+    }
+
+    #[test]
+    fn store_their_did_async_with_verkey() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+        let (sender, receiver) = channel();
+
+        Did::store_their_did_async(
+            wallet.handle,
+            &config,
+            move |ec| sender.send(ec).unwrap()
+        );
+
+        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::Success, ec);
+
+        let verkey = Did::get_ver_key_local(wallet.handle, DID_1).unwrap();
+
+        assert_eq!(VERKEY_1, verkey);
+    }
+
+    #[test]
+    fn store_their_did_async_invalid_wallet() {
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+        let (sender, receiver) = channel();
+
+        Did::store_their_did_async(
+            INVALID_HANDLE,
+            &config,
+            move |ec| sender.send(ec).unwrap()
+        );
+
+        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, ec);
+    }
+    
+    #[test]
+    fn store_their_did_timeout_with_verkey() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+
+        let result = Did::store_their_did_timeout(
+            wallet.handle,
+            &config,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!((), result.unwrap());
+
+        let verkey = Did::get_ver_key_local(wallet.handle, DID_1).unwrap();
+
+        assert_eq!(VERKEY_1, verkey);
+    }
+
+    #[test]
+    fn store_their_did_timeout_invalid_wallet() {
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+
+        let result = Did::store_their_did_timeout(
+            INVALID_HANDLE,
+            &config,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn store_their_did_timeout_timeouts() {
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+
+        let result = Did::store_their_did_timeout(
+            INVALID_HANDLE,
+            &config,
+            INVALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err())
+    }
+}
