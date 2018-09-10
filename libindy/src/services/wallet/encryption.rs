@@ -5,10 +5,11 @@ use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13, base58}
 
 use super::{Keys, WalletRecord};
 use super::storage::{Tag, TagName, StorageRecord};
-use domain::wallet::KeyDerivationMethod;
+use domain::wallet::{KeyDerivationMethod, Metadata};
 
 use errors::wallet::WalletError;
 
+#[cfg(test)]
 pub(super) fn gen_master_key_salt() -> Result<pwhash_argon2i13::Salt, WalletError> {
     Ok(pwhash_argon2i13::gen_salt())
 }
@@ -20,12 +21,62 @@ pub(super) fn master_key_salt_from_slice(slice: &[u8]) -> Result<pwhash_argon2i1
     Ok(salt)
 }
 
-pub(super) fn derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> Result<chacha20poly1305_ietf::Key, WalletError> {
+//TODO memzero for passphrase
+#[derive(Debug, Serialize, Deserialize)]
+pub enum KeyDerivationData {
+    Raw(String),
+    Argon2iMod(String, pwhash_argon2i13::Salt),
+    Argon2iInt(String, pwhash_argon2i13::Salt),
+}
+
+impl KeyDerivationData {
+    pub fn from_passphrase_with_new_salt(passphrase: &str, derivation_method: &KeyDerivationMethod) -> Self {
+        let salt = pwhash_argon2i13::gen_salt();
+        let passphrase = passphrase.to_owned();
+        match *derivation_method {
+            KeyDerivationMethod::ARGON2I_INT =>
+                KeyDerivationData::Argon2iInt(passphrase, salt),
+            KeyDerivationMethod::ARGON2I_MOD =>
+                KeyDerivationData::Argon2iMod(passphrase, salt),
+            KeyDerivationMethod::RAW =>
+                KeyDerivationData::Raw(passphrase)
+        }
+    }
+
+    pub(super) fn from_passphrase_and_metadata(passphrase: &str, metadata: &Metadata, derivation_method: &KeyDerivationMethod) -> Result<Self, WalletError> {
+        let passphrase = passphrase.to_owned();
+        let data = match (derivation_method, metadata) {
+            (KeyDerivationMethod::RAW, &Metadata::MetadataRaw(_)) => {
+                KeyDerivationData::Raw(passphrase)
+            }
+            (KeyDerivationMethod::ARGON2I_INT, &Metadata::MetadataArgon(ref metadata)) => {
+                let master_key_salt = master_key_salt_from_slice(&metadata.master_key_salt)?;
+                KeyDerivationData::Argon2iInt(passphrase, master_key_salt)
+            }
+            (KeyDerivationMethod::ARGON2I_MOD, &Metadata::MetadataArgon(ref metadata)) => {
+                let master_key_salt = master_key_salt_from_slice(&metadata.master_key_salt)?;
+                KeyDerivationData::Argon2iMod(passphrase, master_key_salt)
+            }
+            _ => return Err(WalletError::AccessFailed("Invalid combination of KeyDerivationMethod and Metadata".to_string()))
+        };
+        Ok(data)
+    }
+
+    pub fn calc_master_key(&self) -> Result<chacha20poly1305_ietf::Key, WalletError> {
+        match self {
+            KeyDerivationData::Raw(passphrase) => _raw_master_key(passphrase),
+            KeyDerivationData::Argon2iInt(passphrase, salt) => _derive_master_key(passphrase, &salt, &KeyDerivationMethod::ARGON2I_INT),
+            KeyDerivationData::Argon2iMod(passphrase, salt) => _derive_master_key(passphrase, &salt, &KeyDerivationMethod::ARGON2I_MOD),
+        }
+    }
+}
+
+fn _derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> Result<chacha20poly1305_ietf::Key, WalletError> {
     let key = chacha20poly1305_ietf::derive_key(passphrase, salt, key_derivation_method)?;
     Ok(key)
 }
 
-pub(super) fn raw_master_key(passphrase: &str) -> Result<chacha20poly1305_ietf::Key, WalletError> {
+fn _raw_master_key(passphrase: &str) -> Result<chacha20poly1305_ietf::Key, WalletError> {
     let bytes = &base58::decode(passphrase)?;
     let key = chacha20poly1305_ietf::Key::from_slice(&bytes)
         .map_err(|_| ::errors::common::CommonError::InvalidStructure("Invalid Master Key length".to_string()))?;

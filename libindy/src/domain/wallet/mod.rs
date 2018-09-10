@@ -48,6 +48,15 @@ pub enum Metadata {
     MetadataRaw(MetadataRaw),
 }
 
+impl Metadata {
+    pub fn get_keys(&self) -> &Vec<u8> {
+        match self {
+            &Metadata::MetadataArgon(ref metadata) => &metadata.keys,
+            &Metadata::MetadataRaw(ref metadata) => &metadata.keys,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetadataArgon {
     pub keys: Vec<u8>,
