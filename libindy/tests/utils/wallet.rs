@@ -200,9 +200,50 @@ pub fn generate_wallet_key(config: Option<&str>) -> Result<String, ErrorCode> {
 
 /* 
  * Dynamically loads the specified library and registers storage
-*/
+ */
 fn load_storage_library(_stg_type: &str, _library: &str, _fn_pfx: &str) {
     ()
+}
+
+/*
+ * Update the given configuration string based on supplied overrides
+ */
+fn override_wallet_configuration(config: &str, overrides: &HashMap<String, Option<String>>) -> String {
+    let v: Value = serde_json::from_str(config)?;
+
+    match overrides.get("STG_TYPE") {
+        Some(stype) => match stype {
+            Some(type) => v["storage_type"] = type.clone(),
+            None => ()
+        },
+        None => ()
+    }
+    match overrides.get("STG_CONFIG") {
+        Some(sconfig) => match sconfig {
+            Some(config) => v["storage_config"] = config.clone(),
+            None => ()
+        },
+        None => ()
+    }
+
+    serde_json::to_string(&v);
+}
+
+/*
+ * Update the given credentials string based on supplied overrides
+ */
+fn override_wallet_credentials(creds: &str, overrides: &HashMap<String, Option<String>>) -> String {
+    let v: Value = serde_json::from_str(creds)?;
+
+    match overrides.get("STG_CREDS") {
+        Some(screds) => match screds {
+            Some(creds) => v["storage_credentials"] = creds.clone(),
+            None => ()
+        },
+        None => ()
+    }
+
+    serde_json::to_string(&v);
 }
 
 /*
@@ -213,7 +254,7 @@ fn load_storage_library(_stg_type: &str, _library: &str, _fn_pfx: &str) {
  * STG_LIB - c-callable library to load (contains a plug-in storage) 
  *             - if specified will dynamically load and register a wallet storage
  * STG_FN_PREFIX - prefix for all plug-in functions (allows standard function naming)
-*/
+ */
 pub fn wallet_storage_overrides() -> HashMap<String, Option<String>> {
     let mut storage_config = HashMap::new();
     let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
