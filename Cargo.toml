@@ -36,6 +36,8 @@ byteorder = "1.0.0"
 pkg-config = "0.3.9"
 regex = "1.0.0"
 
+# This will be replace with the bs58 crate when the checksum changes are
+# merged into it.
 [dev-dependencies.bs58]
 name = "bs58"
 git = "https://github.com/evernym/bs58-rs.git"
