@@ -15,7 +15,7 @@ use named_type::NamedType;
 use std::rc::Rc;
 
 use api::wallet::*;
-use domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, KeyDerivationMethod, Tags};
+use domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, Tags};
 use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::sequence;
@@ -681,6 +681,7 @@ mod tests {
     use std::collections::HashMap;
     use std::path::Path;
 
+    use domain::wallet::KeyDerivationMethod;
     use errors::wallet::WalletError;
     use utils::environment;
     use utils::inmem_wallet::InmemWallet;
