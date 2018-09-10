@@ -1,5 +1,4 @@
 extern crate libc;
-extern crate futures;
 
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
@@ -64,7 +63,7 @@ pub extern fn vcx_wallet_get_token_info(command_handle: u32,
     info!("vcx_wallet_get_token_info(command_handle: {}, payment_handle: {})",
           command_handle, payment_handle);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match get_wallet_token_info() {
             Ok(x) => {
                 info!("vcx_wallet_get_token_info_cb(command_handle: {}, rc: {}, info: {})",
@@ -83,7 +82,7 @@ pub extern fn vcx_wallet_get_token_info(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -113,7 +112,7 @@ pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
     info!("vcx_wallet_create_payment_address(command_handle: {})",
           command_handle);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match create_address(seed) {
             Ok(x) => {
                 info!("vcx_wallet_create_payment_address_cb(command_handle: {}, rc: {}, address: {})",
@@ -132,7 +131,7 @@ pub extern fn vcx_wallet_create_payment_address(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -183,7 +182,7 @@ pub extern fn vcx_wallet_add_record(command_handle: u32,
     info!("vcx_wallet_add_record(command_handle: {}, type_: {}, id: {}, value: {}, tags_json: {})",
           command_handle, type_, id, value, tags_json);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match wallet::add_record(&type_, &id, &value, &tags_json) {
             Ok(x) => {
                 info!("vcx_wallet_add_record(command_handle: {}, rc: {})",
@@ -200,7 +199,7 @@ pub extern fn vcx_wallet_add_record(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -237,7 +236,7 @@ pub extern fn vcx_wallet_update_record_value(command_handle: u32,
     info!("vcx_wallet_update_record_value(command_handle: {}, type_: {}, id: {}, value: {})",
           command_handle, type_, id, value);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match wallet::update_record_value(&type_, &id, &value) {
             Ok(x) => {
                 info!("vcx_wallet_update_record_value(command_handle: {}, rc: {})",
@@ -254,7 +253,7 @@ pub extern fn vcx_wallet_update_record_value(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -287,11 +286,11 @@ pub extern fn vcx_wallet_update_record_tags(command_handle: u32,
     check_useful_c_str!(id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(tags, error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -324,10 +323,10 @@ pub extern fn vcx_wallet_add_record_tags(command_handle: u32,
     check_useful_c_str!(id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(tags, error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -360,10 +359,10 @@ pub extern fn vcx_wallet_delete_record_tags(command_handle: u32,
     check_useful_c_str!(id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(tags, error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -400,7 +399,7 @@ pub extern fn vcx_wallet_get_record(command_handle: u32,
     info!("vcx_wallet_get_record(command_handle: {}, type_: {}, id: {}, options: {})",
           command_handle, type_, id, options_json);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match wallet::get_record(&type_, &id, &options_json) {
             Ok(x) => {
                 info!("vcx_wallet_get_record(command_handle: {}, rc: {}, record_json: {})",
@@ -420,7 +419,7 @@ pub extern fn vcx_wallet_get_record(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -454,7 +453,7 @@ pub extern fn vcx_wallet_delete_record(command_handle: u32,
     info!("vcx_wallet_delete_record(command_handle: {}, type_: {}, id: {})",
           command_handle, type_, id);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match wallet::delete_record(&type_, &id) {
             Ok(x) => {
                 info!("vcx_wallet_delete_record(command_handle: {}, rc: {})",
@@ -471,7 +470,7 @@ pub extern fn vcx_wallet_delete_record(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -512,7 +511,7 @@ pub extern fn vcx_wallet_send_tokens(command_handle: u32,
     info!("vcx_wallet_send_tokens(command_handle: {}, payment_handle: {}, tokens: {}, recipient: {})",
           command_handle, payment_handle, tokens, recipient);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match pay_a_payee(tokens, &recipient) {
             Ok((payment, msg)) => {
                 info!("vcx_wallet_send_tokens_cb(command_handle: {}, rc: {}, receipt: {})",
@@ -529,7 +528,7 @@ pub extern fn vcx_wallet_send_tokens(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -571,10 +570,10 @@ pub  extern fn vcx_wallet_open_search(command_handle: i32,
                                                             search_handle: i32)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     use utils::constants::DEFAULT_SEARCH_HANDLE;
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num, DEFAULT_SEARCH_HANDLE as i32);
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -606,12 +605,12 @@ pub  extern fn vcx_wallet_search_next_records(command_handle: i32,
                                                      cb: Option<extern fn(command_handle_: i32, err: u32,
                                                                           records_json: *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         use utils::constants::DEFAULT_SEARCH_RECORD;
         let msg = CStringUtils::string_to_cstring(DEFAULT_SEARCH_RECORD.to_string());
         cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -638,12 +637,12 @@ pub extern fn vcx_wallet_close_search(command_handle: u32,
     info!("vcx_wallet_close_search(command_handle: {}, search_handle: {})",
           command_handle, search_handle);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         info!("vcx_wallet_close_search(command_handle: {}, rc: {})",
               command_handle, error_string(0));
         cb(command_handle, error::SUCCESS.code_num);
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -671,7 +670,7 @@ pub extern fn vcx_wallet_export(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(path,  error::INVALID_OPTION.code_num);
     check_useful_c_str!(backup_key, error::INVALID_OPTION.code_num);
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         let path = Path::new(&path);
         info!("vcx_wallet_export(command_handle: {}, path: {:?}, backup_key: ****)", command_handle, path);
         match export(get_wallet_handle(), &path, &backup_key) {
@@ -688,7 +687,7 @@ pub extern fn vcx_wallet_export(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -715,7 +714,7 @@ pub extern fn vcx_wallet_import(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(config,  error::INVALID_OPTION.code_num);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         info!("vcx_wallet_import(command_handle: {}, config: ****)", command_handle);
         match import(&config) {
             Ok(_) => {
@@ -731,7 +730,7 @@ pub extern fn vcx_wallet_import(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -755,10 +754,10 @@ pub  extern fn vcx_wallet_validate_payment_address(command_handle: i32,
                                                    cb: Option<extern fn(command_handle_: i32, err: u32)>) -> u32 {
     check_useful_c_str!(payment_address,  error::INVALID_OPTION.code_num);
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         cb(command_handle, error::SUCCESS.code_num);
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }

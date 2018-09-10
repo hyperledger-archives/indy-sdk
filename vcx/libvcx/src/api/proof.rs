@@ -1,5 +1,4 @@
 extern crate libc;
-extern crate futures;
 
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
@@ -48,7 +47,7 @@ pub extern fn vcx_proof_create(command_handle: u32,
     info!("vcx_proof_create(command_handle: {}, source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {})",
           command_handle, source_id, requested_attrs, requested_predicates, name);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         let ( rc, handle) = match proof::create_proof(source_id, requested_attrs, requested_predicates, name) {
             Ok(x) => {
                 info!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
@@ -64,7 +63,7 @@ pub extern fn vcx_proof_create(command_handle: u32,
         cb(command_handle, rc, handle);
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -94,7 +93,7 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
         return error::INVALID_PROOF_HANDLE.code_num;
     }
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match proof::update_state(proof_handle) {
             Ok(x) => {
                 info!("vcx_proof_update_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
@@ -109,7 +108,7 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
         }
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -128,7 +127,7 @@ pub extern fn vcx_proof_get_state(command_handle: u32,
         return error::INVALID_PROOF_HANDLE.code_num;
     }
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match proof::get_state(proof_handle) {
             Ok(x) => {
                 info!("vcx_proof_get_state_cb(command_handle: {}, rc: {}, proof_handle: {}, state: {}), source_id: {:?}",
@@ -143,7 +142,7 @@ pub extern fn vcx_proof_get_state(command_handle: u32,
         }
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -173,7 +172,7 @@ pub extern fn vcx_proof_serialize(command_handle: u32,
         return error::INVALID_PROOF_HANDLE.code_num;
     };
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match proof::to_string(proof_handle) {
             Ok(x) => {
                 info!("vcx_proof_serialize_cb(command_handle: {}, proof_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -189,7 +188,7 @@ pub extern fn vcx_proof_serialize(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -216,7 +215,7 @@ pub extern fn vcx_proof_deserialize(command_handle: u32,
     info!("vcx_proof_deserialize(command_handle: {}, proof_data: {})",
           command_handle, proof_data);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         let (rc, handle) = match proof::from_string(&proof_data) {
             Ok(x) => {
                 info!("vcx_proof_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
@@ -232,7 +231,7 @@ pub extern fn vcx_proof_deserialize(command_handle: u32,
         cb(command_handle, rc, handle);
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -286,7 +285,7 @@ pub extern fn vcx_proof_send_request(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         let err = match proof::send_proof_request(proof_handle, connection_handle) {
             Ok(x) => {
                 info!("vcx_proof_send_request_cb(command_handle: {}, rc: {}, proof_handle: {})", command_handle, 0, proof_handle);
@@ -301,7 +300,7 @@ pub extern fn vcx_proof_send_request(command_handle: u32,
         cb(command_handle,err);
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -335,7 +334,7 @@ pub extern fn vcx_get_proof(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         //update the state to see if proof has come, ignore any errors
         match proof::update_state(proof_handle) {
             Ok(_) => (),
@@ -355,7 +354,7 @@ pub extern fn vcx_get_proof(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }

@@ -1,6 +1,5 @@
 extern crate libc;
 extern crate serde_json;
-extern crate futures;
 
 use utils::version_constants;
 use self::libc::c_char;
@@ -119,7 +118,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
 
     info!("libvcx version: {}{}", version_constants::VERSION, version_constants::REVISION);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         if settings::get_config_value(settings::CONFIG_GENESIS_PATH).is_ok() {
             match ::utils::libindy::init_pool() {
                 Ok(_) => (),
@@ -141,7 +140,7 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
             }
         }
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }

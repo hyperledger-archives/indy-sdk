@@ -1,6 +1,5 @@
 extern crate libc;
 extern crate serde_json;
-extern crate futures;
 
 use self::libc::c_char;
 use messages;
@@ -11,6 +10,7 @@ use utils::cstring::CStringUtils;
 use utils::error;
 use utils::error::error_string;
 use utils::threadpool::spawn;
+use std::thread;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
@@ -98,9 +98,7 @@ pub extern fn vcx_agent_provision_async(command_handle : u32,
     info!("vcx_agent_provision_async(command_handle: {}, json: {})",
           command_handle, json);
 
-    ::utils::threadpool::init();
-
-    spawn(futures::lazy(move|| {
+    thread::spawn(move|| {
         match messages::agent_utils::connect_register_provision(&my_config.agency_url,
                                                                 &my_config.agency_did,
                                                                 &my_config.agency_verkey,
@@ -119,9 +117,7 @@ pub extern fn vcx_agent_provision_async(command_handle : u32,
                 cb(command_handle, 0, msg.as_ptr());
             },
         }
-
-        Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -156,7 +152,7 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
         },
     };
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match messages::agent_utils::update_agent_info(&agent_info.id, &agent_info.value){
             Ok(x) => {
                 info!("vcx_agent_update_info_cb(command_handle: {}, rc: {})",
@@ -171,7 +167,7 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -194,7 +190,7 @@ pub extern fn vcx_ledger_get_fees(command_handle: u32,
     info!("vcx_ledger_get_fees(command_handle: {})",
           command_handle);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match ::utils::libindy::payments::get_ledger_fees() {
             Ok(x) => {
                 info!("vcx_ledger_get_fees_cb(command_handle: {}, rc: {}, fees: {})",
@@ -212,7 +208,7 @@ pub extern fn vcx_ledger_get_fees(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -288,7 +284,7 @@ pub extern fn vcx_messages_download(command_handle: u32,
     info!("vcx_messages_download(command_handle: {}, message_status: {:?}, uids: {:?})",
           command_handle, message_status, uids);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match ::messages::get_message::download_messages(pw_dids, message_status, uids) {
             Ok(x) => {
                 match  serde_json::to_string(&x) {
@@ -316,7 +312,7 @@ pub extern fn vcx_messages_download(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -349,7 +345,7 @@ pub extern fn vcx_messages_update_status(command_handle: u32,
     info!("vcx_messages_set_status(command_handle: {}, message_status: {:?}, uids: {:?})",
           command_handle, message_status, msg_json);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match ::messages::update_message::update_agency_messages(&message_status, &msg_json) {
             Ok(_) => {
                 info!("vcx_messages_set_status_cb(command_handle: {}, rc: {})",
@@ -366,7 +362,7 @@ pub extern fn vcx_messages_update_status(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }

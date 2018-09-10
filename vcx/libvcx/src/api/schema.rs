@@ -1,6 +1,5 @@
 extern crate libc;
 extern crate serde_json;
-extern crate futures;
 
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
@@ -54,7 +53,7 @@ pub extern fn vcx_schema_create(command_handle: u32,
     info!(target:"vcx","vcx_schema_create(command_handle: {}, source_id: {}, schema_name: {},  schema_data: {})",
           command_handle, source_id, schema_name, schema_data);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         let ( rc, handle) = match schema::create_new_schema(&source_id,
                                                             issuer_did,
                                                             schema_name,
@@ -74,7 +73,7 @@ pub extern fn vcx_schema_create(command_handle: u32,
         cb(command_handle, rc, handle);
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -106,7 +105,7 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
         return error::INVALID_SCHEMA_HANDLE.code_num;
     };
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match schema::to_string(schema_handle) {
             Ok(x) => {
                 info!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -122,7 +121,7 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -147,7 +146,7 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
     check_useful_c_str!(schema_data, error::INVALID_OPTION.code_num);
 
     info!("vcx_schema_deserialize(command_handle: {}, schema_data: {})", command_handle, schema_data);
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         let (rc, handle) = match schema::from_string(&schema_data) {
             Ok(x) => {
                 info!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
@@ -163,7 +162,7 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
         cb(command_handle, rc, handle);
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -207,7 +206,7 @@ pub extern fn vcx_schema_get_schema_id(command_handle: u32,
         return error::INVALID_SCHEMA_HANDLE.code_num;
     }
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match schema::get_schema_id(schema_handle) {
             Ok(x) => {
                 info!("vcx_schema_get_schema_id(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
@@ -223,7 +222,7 @@ pub extern fn vcx_schema_get_schema_id(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -252,7 +251,7 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
     info!("vcx_schema_get_attributes(command_handle: {}, source_id: {}, schema_id: {})",
           command_handle, source_id, schema_id);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match schema::get_schema_attrs(source_id, schema_id) {
             Ok((handle, data)) => {
                 let data:serde_json::Value = serde_json::from_str(&data).unwrap();
@@ -270,7 +269,7 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -302,7 +301,7 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
 
     info!("vcx_schema_get_payment_txn(command_handle: {})", command_handle);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match schema::get_payment_txn(handle) {
             Ok(x) => {
                 match serde_json::to_string(&x) {
@@ -328,7 +327,7 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }

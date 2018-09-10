@@ -1,6 +1,5 @@
 extern crate libc;
 extern crate serde_json;
-extern crate futures;
 
 use self::libc::c_char;
 use utils::cstring::CStringUtils;
@@ -76,7 +75,7 @@ pub extern fn vcx_issuer_create_credential(command_handle: u32,
           credential_data,
           credential_name);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         let (rc, handle) = match issuer_credential::issuer_credential_create(cred_def_id, source_id, issuer_did, credential_name, credential_data, price) {
             Ok(x) => {
                 info!("vcx_issuer_create_credential_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
@@ -93,7 +92,7 @@ pub extern fn vcx_issuer_create_credential(command_handle: u32,
         cb(command_handle, rc, handle);
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -131,7 +130,7 @@ pub extern fn vcx_issuer_send_credential_offer(command_handle: u32,
         return error::INVALID_CONNECTION_HANDLE.code_num;
     }
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         let err = match issuer_credential::send_credential_offer(credential_handle, connection_handle) {
             Ok(x) => {
                 info!("vcx_issuer_send_credential_cb(command_handle: {}, credential_handle: {}, rc: {}), source_id: {:?}",
@@ -148,7 +147,7 @@ pub extern fn vcx_issuer_send_credential_offer(command_handle: u32,
         cb(command_handle,err);
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -179,7 +178,7 @@ pub extern fn vcx_issuer_credential_update_state(command_handle: u32,
         return error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num;
     }
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match issuer_credential::update_state(credential_handle) {
             Ok(x) => {
                 info!("vcx_issuer_credential_update_state_cb(command_handle: {}, credential_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -194,7 +193,7 @@ pub extern fn vcx_issuer_credential_update_state(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -214,7 +213,7 @@ pub extern fn vcx_issuer_credential_get_state(command_handle: u32,
         return error::INVALID_ISSUER_CREDENTIAL_HANDLE.code_num;
     }
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match issuer_credential::get_state(credential_handle) {
             Ok(x) => {
                 info!("vcx_issuer_credential_get_state_cb(command_handle: {}, credential_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -229,7 +228,7 @@ pub extern fn vcx_issuer_credential_get_state(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -271,7 +270,7 @@ pub extern fn vcx_issuer_send_credential(command_handle: u32,
     let source_id = issuer_credential::get_source_id(credential_handle).unwrap_or_default();
     info!("vcx_issuer_send_credential(command_handle: {}, credential_handle: {}, connection_handle: {}), source_id: {:?}",
           command_handle, credential_handle, connection_handle, source_id);
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         let err = match issuer_credential::send_credential(credential_handle, connection_handle) {
             Ok(x) => {
                 info!("vcx_issuer_send_credential_cb(command_handle: {}, credential_handle: {}, rc: {})",
@@ -288,7 +287,7 @@ pub extern fn vcx_issuer_send_credential(command_handle: u32,
         cb(command_handle,err);
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -321,7 +320,7 @@ pub extern fn vcx_issuer_credential_serialize(command_handle: u32,
     let source_id = issuer_credential::get_source_id(credential_handle).unwrap_or_default();
     info!("vcx_issuer_credential_serialize(credential_serialize(command_handle: {}, credential_handle: {}), source_id: {:?}",
           command_handle, credential_handle, source_id);
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match issuer_credential::to_string(credential_handle) {
             Ok(x) => {
                 info!("vcx_issuer_credential_serialize_cb(command_handle: {}, credential_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -337,7 +336,7 @@ pub extern fn vcx_issuer_credential_serialize(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -363,7 +362,7 @@ pub extern fn vcx_issuer_credential_deserialize(command_handle: u32,
 
     info!("vcx_issuer_credential_deserialize(command_handle: {}, credential_data: {})", command_handle, credential_data);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         let (rc, handle) = match issuer_credential::from_string(&credential_data) {
             Ok(x) => {
                 info!("vcx_issuer_credential_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
@@ -380,7 +379,7 @@ pub extern fn vcx_issuer_credential_deserialize(command_handle: u32,
         cb(command_handle, rc, handle);
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
@@ -431,7 +430,7 @@ pub extern fn vcx_issuer_credential_get_payment_txn(command_handle: u32,
 
     info!("vcx_issuer_credential_get_payment_txn(command_handle: {})", command_handle);
 
-    spawn(futures::lazy(move|| {
+    spawn(move|| {
         match issuer_credential::get_payment_txn(handle) {
             Ok(x) => {
                 match serde_json::to_string(&x) {
@@ -457,7 +456,7 @@ pub extern fn vcx_issuer_credential_get_payment_txn(command_handle: u32,
         };
 
         Ok(())
-    }));
+    });
 
     error::SUCCESS.code_num
 }
