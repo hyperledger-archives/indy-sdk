@@ -13,6 +13,7 @@ use serde_json;
 use self::libc::c_char;
 
 use std::ptr;
+use domain::ledger::attrib::Endpoint;
 
 
 /// Creates keys (signing and encryption keys) for a new
@@ -384,7 +385,7 @@ pub extern fn indy_key_for_local_did(command_handle: i32,
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: Wallet handle (created by open_wallet).
 /// did - The DID to resolve endpoint.
-/// address -  The DIDs endpoint address.
+/// address -  The DIDs endpoint address. indy-node and indy-plenum restrict this to ip_address:port
 /// transport_key - The DIDs transport key (ver key, key id).
 /// cb: Callback that takes command result as parameter.
 ///
@@ -416,12 +417,13 @@ pub extern fn indy_set_endpoint_for_did(command_handle: i32,
     trace!("indy_set_endpoint_for_did: entities >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}",
            wallet_handle, did, address, transport_key);
 
+    let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
+
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::SetEndpointForDid(
             wallet_handle,
             did,
-            address,
-            transport_key,
+            endpoint,
             Box::new(move |result| {
                 let err = result_to_err_code!(result);
                 trace!("indy_set_endpoint_for_did:");
