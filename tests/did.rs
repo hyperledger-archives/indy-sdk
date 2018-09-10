@@ -20,14 +20,24 @@ mod create_new_did {
 
     const VALID_TIMEOUT: Duration = Duration::from_secs(5);
 
+    #[inline]
+    fn assert_did_length(did: &str) {
+        assert_eq!(16, did.from_base58().unwrap().len());
+    }
+
+    #[inline]
+    fn assert_verkey_len(verkey: &str) {
+        assert_eq!(32, verkey.from_base58().unwrap().len());
+    }
+
     #[test]
     fn create_did_with_empty_json() {
         let wallet = Wallet::new();
 
         let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
 
-        assert_eq!(16, did.from_base58().unwrap().len());
-        assert_eq!(32, verkey.from_base58().unwrap().len());
+        assert_did_length(&did);
+        assert_verkey_len(&verkey);
     }
 
     #[test]
@@ -116,8 +126,8 @@ mod create_new_did {
         let (ec, did, verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
         
         assert_eq!(ErrorCode::Success, ec);
-        assert_eq!(16, did.from_base58().unwrap().len());
-        assert_eq!(32, verkey.from_base58().unwrap().len());
+        assert_did_length(&did);
+        assert_verkey_len(&verkey);
     }
     
     #[test]
@@ -159,21 +169,47 @@ mod create_new_did {
 
     #[test]
     fn create_did_timeout_no_config() {
-        unimplemented!();
+        let wallet = Wallet::new();
+        let (did, verkey) = Did::new_timeout(
+            wallet.handle,
+            "{}",
+            VALID_TIMEOUT
+        ).unwrap();
+
+        assert_did_length(&did);
+        assert_verkey_len(&verkey);
     }
 
     #[test]
     fn create_did_timeout_with_seed() {
-        unimplemented!();
+        let wallet = Wallet::new();
+        let config = json!({"seed": SEED_1}).to_string();
+        let (did, verkey) = Did::new_timeout(
+            wallet.handle,
+            &config,
+            VALID_TIMEOUT
+        ).unwrap();
+
+        assert_eq!(DID_1, did);
+        assert_eq!(VERKEY_1, verkey);
     }
 
     #[test]
     fn create_did_timeout_invalid_wallet() {
-        unimplemented!();
+        let result = Did::new_timeout(583741, "{}", VALID_TIMEOUT);
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
     }
 
     #[test]
     fn create_did_timeout_timeouts() {
-        unimplemented!();
+        let wallet = Wallet::new();
+        let config = json!({"seed": SEED_1}).to_string();
+        let result = Did::new_timeout(
+            wallet.handle,
+            &config,
+            Duration::from_micros(1)
+        );
+
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
 }
