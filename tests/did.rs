@@ -401,3 +401,134 @@ mod replace_keys_start {
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
 }
+
+#[cfg(test)]
+mod replace_keys_apply {
+    use super::*;
+
+    fn setup() -> (Wallet, String, String) {
+        let wallet = Wallet::new();
+        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
+
+        (wallet, did, verkey)
+    }
+
+    #[inline]
+    fn start_key_replacement(wallet: &Wallet, did: &str) {
+        let config = json!({"seed": SEED_1}).to_string();
+        Did::replace_keys_start(wallet.handle, did, &config).unwrap();
+    }
+
+    #[test]
+    fn replace_keys_apply() {
+        let (wallet, did, verkey) = setup();
+        start_key_replacement(&wallet, &did);
+
+        let result = Did::replace_keys_apply(wallet.handle, &did);
+
+        assert_eq!((), result.unwrap());
+
+        let new_verkey = Did::get_ver_key_local(wallet.handle, &did).unwrap();
+
+        assert_eq!(VERKEY_1, new_verkey);
+        assert_ne!(verkey, new_verkey);
+    }
+
+    #[test]
+    fn replace_keys_apply_without_replace_keys_start() {
+        let (wallet, did, _) = setup();
+
+        let result = Did::replace_keys_apply(wallet.handle, &did);
+
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+    }
+
+    #[test]
+    fn replace_keys_apply_invalid_did() {
+        let wallet = Wallet::new();
+
+        let result = Did::replace_keys_apply(wallet.handle, DID_1);
+
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+    }
+
+    #[test]
+    fn replace_keys_apply_invalid_wallet() {
+        let result = Did::replace_keys_apply(INVALID_HANDLE, DID_1);
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn replace_keys_apply_async() {
+        let (wallet, did, verkey) = setup();
+        let (sender, receiver) = channel();
+        start_key_replacement(&wallet, &did);
+
+        Did::replace_keys_apply_async(
+            wallet.handle,
+            &did,
+            move |ec| sender.send(ec).unwrap()
+        );
+
+        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        let new_verkey = Did::get_ver_key_local(wallet.handle, &did).unwrap();
+
+        assert_eq!(ErrorCode::Success, ec);
+        assert_eq!(VERKEY_1, new_verkey);
+        assert_ne!(verkey, new_verkey);
+    }
+
+    #[test]
+    fn replace_keys_apply_async_invalid_wallet() {
+        let (sender, receiver) = channel();
+
+        Did::replace_keys_apply_async(
+            INVALID_HANDLE,
+            DID_1,
+            move |ec| sender.send(ec).unwrap()
+        );
+
+        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, ec);
+    }
+
+    #[test]
+    fn replace_keys_apply_timeout() {
+        let (wallet, did, verkey) = setup();
+        start_key_replacement(&wallet, &did);
+
+        let result = Did::replace_keys_apply_timeout(
+            wallet.handle,
+            &did,
+            VALID_TIMEOUT
+        );
+        let new_verkey = Did::get_ver_key_local(wallet.handle, &did).unwrap();
+
+        assert_eq!((), result.unwrap());
+        assert_eq!(VERKEY_1, new_verkey);
+        assert_ne!(verkey, new_verkey);
+    }
+
+    #[test]
+    fn replace_keys_apply_timeout_invalid_wallet() {
+        let result = Did::replace_keys_apply_timeout(
+            INVALID_HANDLE,
+            DID_1,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn replace_keys_apply_timeout_timeouts() {
+        let result = Did::replace_keys_apply_timeout(
+            INVALID_HANDLE,
+            DID_1,
+            INVALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+    }
+}
