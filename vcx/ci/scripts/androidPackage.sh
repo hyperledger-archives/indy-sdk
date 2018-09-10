@@ -3,10 +3,10 @@
 set -e
 ANDROID_JNI_LIB=vcx/wrappers/java/android/src/main/jniLibs
 
-for arch in arm armv7 x86
+for arch in arm x86
 do
     arch_folder=${arch}
-    if [ "${arch}" = "armv7" ]; then
+    if [ "${arch}" = "arm" ]; then
         arch_folder="armeabi-v7a"
     fi
     mkdir -p ${ANDROID_JNI_LIB}/${arch_folder}
