@@ -3,7 +3,7 @@ extern crate serde_json;
 extern crate indy_crypto;
 
 use errors::indy::IndyError;
-use services::wallet::WalletService;
+use services::wallet::{WalletService, encryption::KeyDerivationData};
 use services::crypto::CryptoService;
 use api::wallet::*;
 use utils::crypto::{base58, randombytes, chacha20poly1305_ietf};
@@ -169,7 +169,9 @@ impl WalletCommandExecutor {
                credentials: &Credentials) -> Result<()> {
         trace!("_create >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        let res = self.wallet_service.create_wallet(config, credentials)?;
+        let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
+        let master_key = key_data.calc_master_key()?;
+        let res = self.wallet_service.create_wallet(config, (credentials, key_data, master_key))?;
 
         trace!("_create <<< res: {:?}", res);
         Ok(res)
