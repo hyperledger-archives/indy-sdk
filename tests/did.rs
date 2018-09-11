@@ -1496,6 +1496,25 @@ mod test_set_endpoint {
             }
         }
     }
+
+//    #[test]
+//    pub fn set_endpoint_async_succeeds() {
+//        let wallet = Wallet::new();
+//        let (sender, receiver) = channel();
+//        let config = json!({
+//            "seed": SEED_1
+//        }).to_string();
+//
+//        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+//
+//        let cb = move |stuff| {
+//            sender.send((stuff, ())).unwrap();
+//        };
+//
+//        let ec = Did::set_endpoint_async(wallet.handle, &did, "192.168.1.10", &verkey, cb);
+//        assert_eq!(ec, indy::ErrorCode::Success, "set_endpoint_async_succeeds failed {:?}", ec);
+//
+//    }
 }
 
 #[cfg(test)]
@@ -1609,7 +1628,6 @@ mod test_get_endpoint {
             assert!(false, "get_endpoint_timeout_succeeds failed to successfully compare end_point address");
         }
     }
-
 
     /// ----------------------------------------------------------------------------------------
     /// get_endpoint_timeout_fails_invalid_timeout uses an impossibly small time out to trigger error
