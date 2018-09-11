@@ -1205,3 +1205,43 @@ mod test_get_verkey_local {
         }
     }
 }
+
+#[cfg(test)]
+mod test_set_endpoint {
+    use super::*;
+
+    #[test]
+    pub fn set_endpoint_works() {
+        let wallet = Wallet::new();
+
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        let setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: false,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+
+        indy::pool::Pool::close(pool_handle).unwrap();
+
+    }
+
+}
+
+#[cfg(test)]
+mod test_get_endpoint {
+    use super::*;
+
+    #[test]
+    pub fn get_endpoint_works() {
+
+
+    }
+}
