@@ -10,6 +10,7 @@ use utils::libindy::wallet::{export, import, get_wallet_handle};
 use utils::libindy::wallet;
 use std::path::Path;
 use utils::threadpool::spawn;
+use std::thread;
 
 extern {
     pub fn indy_add_wallet_record(command_handle: i32,
@@ -714,7 +715,7 @@ pub extern fn vcx_wallet_import(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(config,  error::INVALID_OPTION.code_num);
 
-    spawn(move|| {
+    thread::spawn(move|| {
         info!("vcx_wallet_import(command_handle: {}, config: ****)", command_handle);
         match import(&config) {
             Ok(_) => {
@@ -728,8 +729,6 @@ pub extern fn vcx_wallet_import(command_handle: u32,
                 cb(command_handle, return_code);
             }
         };
-
-        Ok(())
     });
 
     error::SUCCESS.code_num
@@ -1037,7 +1036,6 @@ pub mod tests {
 
         settings::set_defaults();
         teardown!("false");
-        ::utils::threadpool::init();
         let wallet_name = settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
         let filename_str = &settings::get_config_value(settings::CONFIG_WALLET_NAME).unwrap();
         let wallet_key = settings::get_config_value(settings::CONFIG_WALLET_KEY).unwrap();
