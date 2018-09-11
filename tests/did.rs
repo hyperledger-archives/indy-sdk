@@ -11,7 +11,7 @@ use indy::ErrorCode;
 use std::sync::mpsc::channel;
 use std::time::Duration;
 use utils::b58::{FromBase58, IntoBase58};
-use utils::constants::{DID_1, SEED_1, VERKEY_1, METADATA};
+use utils::constants::{DID_1, SEED_1, VERKEY_1, METADATA, VERKEY_ABV_1};
 use utils::setup::{Setup, SetupConfig};
 use utils::wallet::Wallet;
 
@@ -1209,94 +1209,6 @@ mod test_get_verkey_local {
 }
 
 #[cfg(test)]
-mod test_get_endpoint {
-    use super::*;
-
-    #[test]
-    pub fn get_endpoint_works() {
-        let end_point_address = "192.168.1.10";
-        let wallet = Wallet::new();
-
-        let config = json!({
-            "seed": SEED_1
-        }).to_string();
-
-        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
-
-        let pool_setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        match indy::did::Did::set_endpoint(wallet.handle, &did, end_point_address, &verkey) {
-            Ok(_) => {}
-            Err(ec) => {
-                assert!(false, "get_endpoint_works failed set_endpoint {:?}", ec)
-            }
-        }
-
-        let pool_handle = indy::pool::Pool::open_ledger(&pool_setup.pool_name, None).unwrap();
-        let mut test_succeeded : bool = false;
-        let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
-
-        match indy::did::Did::get_endpoint(wallet.handle, pool_handle, &did) {
-            Ok(ret_address) => {
-
-                let (address, other) = Some(ret_address).unwrap();
-
-                if end_point_address.to_string() == address {
-                    test_succeeded = true;
-                }
-            },
-            Err(ec) => {
-                error_code = ec;
-            }
-        }
-
-        indy::pool::Pool::close(pool_handle).unwrap();
-
-        if false == test_succeeded {
-            assert!(false, "get_endpoint_works failed {:?}", error_code);
-        }
-    }
-
-     #[test]
-    pub fn get_endpoint_fails_no_set() {
-        let end_point_address = "192.168.1.10";
-        let wallet = Wallet::new();
-
-        let config = json!({
-            "seed": SEED_1
-        }).to_string();
-
-        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
-
-        let pool_setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = indy::pool::Pool::open_ledger(&pool_setup.pool_name, None).unwrap();
-        let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
-
-        match indy::did::Did::get_endpoint(wallet.handle, pool_handle, &did) {
-            Ok(ret_address) => {
-            },
-            Err(ec) => {
-                error_code = ec;
-            }
-        }
-
-        indy::pool::Pool::close(pool_handle).unwrap();
-
-        assert_eq!(error_code, indy::ErrorCode::CommonInvalidState);
-    }
-}
-
 mod test_get_metadata {
     use super::*;
 
@@ -1710,5 +1622,105 @@ mod test_get_endpoint {
         indy::pool::Pool::close(pool_handle).unwrap();
 
         assert_eq!(error_code, indy::ErrorCode::CommonInvalidState);
+    }
+}
+
+#[cfg(test)]
+mod test_abbreviate_verkey {
+    use super::*;
+
+    #[test]
+    fn abbreviate_verkey_abbreviated() {
+        let result = Did::abbreviate_verkey(DID_1, VERKEY_1);
+        assert_eq!(VERKEY_ABV_1, result.unwrap());
+    }
+
+    #[test]
+    fn abbreviate_verkey_full_verkey() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1}).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        let result = Did::abbreviate_verkey(&did, &verkey);
+
+        assert_eq!(verkey, result.unwrap());
+    }
+
+    #[test]
+    fn abbreviate_verkey_invalid_did() {
+        let result = Did::abbreviate_verkey("InvalidDid", VERKEY_1);
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+    }
+
+    #[test]
+    fn abbreviate_verkey_invalid_verkey() {
+        let result = Did::abbreviate_verkey(DID_1, "InvalidVerkey");
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+    }
+
+    #[test]
+    fn abbreviate_verkey_async_abbreviated() {
+        let (sender, receiver) = channel();
+        
+        Did::abbreviate_verkey_async(
+            DID_1,
+            VERKEY_1,
+            move |ec, verkey| sender.send((ec, verkey)).unwrap()
+        );
+
+        let (ec, verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::Success, ec);
+        assert_eq!(VERKEY_ABV_1, verkey);
+    }
+
+    #[test]
+    fn abbreviate_verkey_async_invalid_did() {
+        let (sender, receiver) = channel();
+
+        Did::abbreviate_verkey_async(
+            "InvalidDid",
+            VERKEY_1,
+            move |ec, verkey| sender.send((ec, verkey)).unwrap()
+        );
+
+        let (ec, verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::CommonInvalidStructure, ec);
+        assert_eq!("", verkey);
+    }
+
+    #[test]
+    fn abbreviate_verkey_timeout_abbreviated() {
+        let result = Did::abbreviate_verkey_timeout(
+            DID_1,
+            VERKEY_1,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!(VERKEY_ABV_1, result.unwrap());
+    }
+
+    #[test]
+    fn abbreviate_verkey_timeout_invalid_did() {
+        let result = Did::abbreviate_verkey_timeout(
+            "InvalidDid",
+            VERKEY_1,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+    }
+
+    #[test]
+    fn abbreviate_verkey_timeout_timeouts() {
+        let result = Did::abbreviate_verkey_timeout(
+            DID_1,
+            VERKEY_1,
+            INVALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
 }
