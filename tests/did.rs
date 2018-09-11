@@ -1220,16 +1220,12 @@ mod test_set_endpoint {
 
         let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
 
-        let setup = Setup::new(&wallet, SetupConfig {
-            connect_to_pool: false,
-            num_trustees: 0,
-            num_nodes: 4,
-            num_users: 0,
-        });
-
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
-
-        indy::pool::Pool::close(pool_handle).unwrap();
+        match indy::did::Did::set_endpoint(wallet.handle, &did, "192.168.1.10", &verkey) {
+            Ok(_) => {}
+            Err(ec) => {
+                assert!(false, "set_endpoint_works failed {:?}", ec)
+            }
+        }
 
     }
 
@@ -1241,7 +1237,51 @@ mod test_get_endpoint {
 
     #[test]
     pub fn get_endpoint_works() {
+        let end_point_address = "192.168.1.10";
+        let wallet = Wallet::new();
 
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
 
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        let setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: false,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        match indy::did::Did::set_endpoint(wallet.handle, &did, end_point_address, &verkey) {
+            Ok(_) => {}
+            Err(ec) => {
+                assert!(false, "get_endpoint_works failed set_endpoint {:?}", ec)
+            }
+        }
+
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let mut test_succeeded : bool = false;
+        let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
+
+        match indy::did::Did::get_endpoint(wallet.handle, pool_handle, &did) {
+            Ok(ret_address) => {
+
+                let (address, other) = Some(ret_address).unwrap();
+
+                if end_point_address.to_string() == address {
+                    test_succeeded = true;
+                }
+            },
+            Err(ec) => {
+                error_code = ec;
+            }
+        }
+
+        indy::pool::Pool::close(pool_handle).unwrap();
+
+        if false == test_succeeded {
+            assert!(false, "get_endpoint_works failed set_endpoint {:?}", error_code);
+        }
     }
 }
