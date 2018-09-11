@@ -4,7 +4,7 @@ extern crate rmp_serde;
 extern crate byteorder;
 extern crate rust_libindy_wrapper as indy;
 #[macro_use]
-mod utils;
+pub mod utils;
 
 use indy::wallet::Wallet;
 use utils::constants::{DEFAULT_CREDENTIALS, DID_1};
@@ -15,6 +15,7 @@ use indy::ErrorCode;
 use indy::pool::Pool;
 use utils::pool;
 
+#[cfg(test)]
 mod open_pool {
     use super::*;
 
@@ -433,7 +434,7 @@ mod open_pool {
     }
 }
 
-
+#[cfg(test)]
 mod close_pool {
     use super::*;
 
@@ -1162,7 +1163,6 @@ mod test_set_protocol_version {
     }
 }
 
-
 #[cfg(test)]
 /*
 The sync Pool::list is already tested by the create tests.
@@ -1208,6 +1208,7 @@ mod test_pool_list {
     }
 }
 
+#[cfg(test)]
 mod test_refresh_works {
     use super::*;
 
