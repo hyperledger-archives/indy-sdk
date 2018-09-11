@@ -97,7 +97,8 @@ get_libindy() {
             if [ "$LIBINDY_BRANCH" = "stable" ]; then
                 wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
             else
-                wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}-${LIBINDY_TAG}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+                # wget https://repo.sovrin.org/android/libindy/${LIBINDY_BRANCH}/${LIBINDY_VERSION}-${LIBINDY_TAG}/libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
+                wget https://f55e4205.ngrok.io/libindy_android_x86_1.6.6.zip
             fi
 
             unzip libindy_android_${ARCH}_${LIBINDY_VERSION}.zip
