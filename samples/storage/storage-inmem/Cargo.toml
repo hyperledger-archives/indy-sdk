@@ -42,7 +42,8 @@ memzero_sodium = ["sodiumoxide"]
 fatal_warnings = []
 
 [dependencies]
-indy-crypto = { version = "=0.4.1-dev-47", optional = true }
+indy = { path = "../../../libindy"}
+indy-crypto = { version = "=0.4.3", optional = true }
 int_traits = { version = "0.1.1", optional = true }
 digest = "0.6.2"
 env_logger = "0.5.10"

@@ -1,9 +1,10 @@
 extern crate libc;
 extern crate time;
+extern crate indy;
 extern crate indy_crypto;
 extern crate serde_json;
 
-use api::ErrorCode;
+use indy::api::ErrorCode;
 use utils::cstring::CStringUtils;
 use utils::sequence::SequenceUtils;
 
