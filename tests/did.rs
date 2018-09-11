@@ -759,3 +759,116 @@ mod test_store_their_did {
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err())
     }
 }
+
+#[cfg(test)]
+mod test_get_verkey_local {
+    use super::*;
+
+    #[test]
+    fn get_verkey_local_my_did() {
+        let wallet = Wallet::new();
+        let config = json!({"seed": SEED_1}).to_string();
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        let stored_verkey = Did::get_ver_key_local(wallet.handle, &did).unwrap();
+
+        assert_eq!(verkey, stored_verkey);
+    }
+
+    #[test]
+    fn get_verkey_local_their_did() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+        Did::store_their_did(wallet.handle, &config).unwrap();
+
+        let stored_verkey = Did::get_ver_key_local(wallet.handle, DID_1).unwrap();
+
+        assert_eq!(VERKEY_1, stored_verkey);
+    }
+
+    #[test]
+    fn get_verkey_local_invalid_did() {
+        let wallet = Wallet::new();
+        let result = Did::get_ver_key_local(wallet.handle, DID_1);
+
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+    }
+
+    #[test]
+    fn get_verkey_local_invalid_wallet() {
+        let result = Did::get_ver_key_local(INVALID_HANDLE, DID_1);
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn get_verkey_local_async() {
+        let wallet = Wallet::new();
+        let (sender, receiver) = channel();
+        let config = json!({"seed": SEED_1}).to_string();
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        Did::get_ver_key_local_async(
+            wallet.handle,
+            &did,
+            move |ec, verkey| sender.send((ec, verkey)).unwrap()
+        );
+
+        let (ec, stored_verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::Success, ec);
+        assert_eq!(VERKEY_1, stored_verkey);
+    }
+
+    #[test]
+    fn get_verkey_local_async_invalid_wallet() {
+        let (sender, receiver) = channel();
+
+        Did::get_ver_key_local_async(
+            INVALID_HANDLE,
+            DID_1,
+            move |ec, verkey| sender.send((ec, verkey)).unwrap()
+        );
+
+        let (ec, stored_verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, ec);
+        assert_eq!(String::from(""), stored_verkey);
+    }
+
+    #[test]
+    fn get_verkey_local_timeout() {
+        let wallet = Wallet::new();
+        let config = json!({"seed": SEED_1}).to_string();
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        let stored_verkey = Did::get_ver_key_local_timeout(
+            wallet.handle,
+            &did,
+            VALID_TIMEOUT
+        ).unwrap();
+
+        assert_eq!(verkey, stored_verkey);
+    }
+
+    #[test]
+    fn get_verkey_local_timeout_invalid_wallet() {
+        let result = Did::get_ver_key_local_timeout(
+            INVALID_HANDLE,
+            DID_1,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn get_verkey_local_timeout_timeouts() {
+        let result = Did::get_ver_key_local_timeout(
+            INVALID_HANDLE,
+            DID_1,
+            INVALID_TIMEOUT
+        );
+        
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+    }
+}
