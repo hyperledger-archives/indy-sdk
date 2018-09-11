@@ -38,7 +38,9 @@ pub fn init() {
 pub fn spawn<F>(future: F)
 where
     F: FnOnce() -> Result<(), ()> + Send + 'static {
-        if ::settings::get_threadpool_size() == 0 {
+        let handle;
+        unsafe { handle = TP_HANDLE; }
+        if ::settings::get_threadpool_size() == 0 || handle == 0{
             thread::spawn(future);
         }
         else {
