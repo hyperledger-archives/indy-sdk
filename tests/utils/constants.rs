@@ -4,3 +4,6 @@ pub const MY1_SEED: &str = "00000000000000000000000000000My1";
 pub const PROTOCOL_VERSION: i32 = 2;
 pub const EXPORT_KEY: &str = "export_key";
 pub const DID: &str = "8wZcEriaNLNKtteJvx7f8i";
+pub const DID_TRUSTEE: &str = "V4SGRU86Z58d6TV7PBUe6f";
+pub const VERKEY_TRUSTEE: &str = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL";
+pub const METADATA: &str = "some_metadata";
