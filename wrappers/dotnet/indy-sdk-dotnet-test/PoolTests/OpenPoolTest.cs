@@ -10,6 +10,8 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestOpenPoolWorksForNullConfig()
         {
+            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
+
             var poolName = PoolUtils.CreatePoolLedgerConfig();
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
@@ -21,6 +23,8 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestOpenPoolWorksForConfig()
         {
+            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
+
             var poolName = PoolUtils.CreatePoolLedgerConfig();
 
             var config = "{\"refresh_on_open\":true,\"auto_refresh_time\":false,\"network_timeout\":false}";
@@ -34,6 +38,8 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestOpenPoolWorksForTwice()
         {
+            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
+
             var poolName = PoolUtils.CreatePoolLedgerConfig();
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
@@ -48,6 +54,8 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestOpenPoolWorksForTwoNodes()
         {
+            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
+
             var poolName = PoolUtils.CreatePoolLedgerConfig(2);
 
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
@@ -59,6 +67,8 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestOpenPoolWorksForThreeNodes()
         {
+            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
+
             var poolName = PoolUtils.CreatePoolLedgerConfig(3);
 
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
