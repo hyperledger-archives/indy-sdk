@@ -17,6 +17,7 @@ use schema::{ LedgerSchema };
 
 use utils::libindy::anoncreds;
 use utils::libindy::crypto;
+use utils::serde_utils;
 
 use settings;
 use utils::httpclient;
@@ -85,29 +86,18 @@ fn credential_def_identifiers(credentials: &str) -> Result<Vec<(String, String, 
     let credentials: Value = serde_json::from_str(credentials)
         .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
-    if let Value::Object(ref map) = credentials["attrs"] {
-        for (requested_attr, value) in map {
-            if let Value::Object(ref attr_obj) = value["cred_info"] {
-
-                let cred_uuid = match attr_obj.get("referent") {
-                    Some(i) => if i.is_string() { i.as_str().unwrap() } else { return Err(ProofError::CommonError(error::INVALID_JSON.code_num))},
-                    None => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
-                };
-
-                let schema_id = match attr_obj.get("schema_id") {
-                    Some(i) => if i.is_string() { i.as_str().unwrap() } else { return Err(ProofError::CommonError(error::INVALID_JSON.code_num))},
-                    None => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
-                };
-
-                let cred_def_id = match attr_obj.get("cred_def_id") {
-                    Some(i) => if i.is_string() { i.as_str().unwrap() } else { return Err(ProofError::CommonError(error::INVALID_JSON.code_num))},
-                    None => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
-                };
-
-                rtn.push((requested_attr.to_string(),
-                          cred_uuid.to_string(),
-                          schema_id.to_string(),
-                          cred_def_id.to_string()))
+    if let Value::Object(ref attrs) = credentials["attrs"] {
+        for (requested_attr, value) in attrs {
+            if let Some(ref attr_obj) = value.get("cred_info") {
+                rtn.push((
+                    requested_attr.to_string(),
+                    serde_utils::get_value_to_string("referent", attr_obj)
+                        .map_err(|e| ProofError::CommonError(e))?,
+                    serde_utils::get_value_to_string("schema_id", attr_obj)
+                             .map_err(|e| ProofError::CommonError(e))?,
+                    serde_utils::get_value_to_string("cred_def_id", attr_obj)
+                             .map_err(|e| ProofError::CommonError(e))?
+                 ));
             }
         }
     }
@@ -433,7 +423,7 @@ pub fn get_proof_request(connection_handle: u32, msg_id: &str) -> Result<String,
            .or(Err(ProofError::CommonError(error::INVALID_HTTP_RESPONSE.code_num)))?;
 
         request.msg_ref_id = Some(message[0].uid.to_owned());
-        Ok(serde_json::to_string_pretty(&request).unwrap())
+        Ok(serde_json::to_string_pretty(&request).or(Err(ProofError::InvalidJson()))?)
     } else {
         Err(ProofError::CommonError(error::INVALID_MESSAGES.code_num))
     }
@@ -479,7 +469,7 @@ pub fn get_proof_request_messages(connection_handle: u32, match_name: Option<&st
         }
     }
 
-    Ok(serde_json::to_string_pretty(&messages).unwrap())
+    Ok(serde_json::to_string_pretty(&messages).or(Err(ProofError::InvalidJson()))?)
 }
 
 pub fn get_source_id(handle: u32) -> Result<String, u32> {

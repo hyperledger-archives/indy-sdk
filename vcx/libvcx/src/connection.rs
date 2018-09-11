@@ -384,7 +384,7 @@ pub fn update_agent_profile(handle: u32) -> Result<u32, ConnectionError> {
         match messages::update_data()
             .to(&pw_did)
             .name(&name)
-            .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).unwrap())
+            .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).map_err(|e| ConnectionError::CommonError(e))?)
             .send_secure() {
             Ok(_) => Ok(error::SUCCESS.code_num),
             Err(ec) => Err(ConnectionError::CommonError(ec)),
@@ -510,11 +510,12 @@ pub fn build_connection_with_invite(source_id: &str, details: &str) -> Result<u3
 pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<SenderDetail, ConnectionError> {
 
     debug!("parsing acceptance details for message {:?}", message);
-    if message.payload.is_none() {
-        return Err(ConnectionError::CommonError(error::INVALID_MSGPACK.code_num)) }
-
-    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
-    let payload = messages::to_u8(message.payload.as_ref().unwrap());
+    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).map_err(|e| ConnectionError::CommonError(e))?;
+    let payload = messages::to_u8(
+        message.payload
+        .as_ref()
+        .ok_or(ConnectionError::CommonError(error::INVALID_MSGPACK.code_num))?
+    );
     // TODO: check returned verkey
     let (_, payload) = crypto::parse_msg(&my_vk,&payload).map_err(|e| {ConnectionError::CommonError(e)})?;
 

@@ -122,11 +122,11 @@ impl GeneralMessage for UpdateProfileData{
         if self.validate_rc != error::SUCCESS.code_num {
             return Err(self.validate_rc)
         }
-        let data = encode::to_vec_named(&self.payload).unwrap();
+        let data = encode::to_vec_named(&self.payload).or(Err(error::UNKNOWN_ERROR.code_num))?;
         trace!("update profile inner bundle: {:?}", data);
         let msg = Bundled::create(data).encode()?;
 
-        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap();
+        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
         bundle_for_agency(msg, &to_did)
     }
 }
@@ -135,12 +135,11 @@ fn parse_update_profile_response(response: Vec<u8>) -> Result<String, u32> {
     let data = unbundle_from_agency(response)?;
 
     let mut de = Deserializer::new(&data[0][..]);
-    let response: UpdateProfileResponse = Deserialize::deserialize(&mut de).unwrap();
 
-    match serde_json::to_string(&response) {
-        Ok(x) => Ok(x),
-        Err(_) => Err(error::INVALID_JSON.code_num),
-    }
+    let response: UpdateProfileResponse = Deserialize::deserialize(&mut de)
+        .or(Err(error::UNKNOWN_ERROR.code_num))?;
+
+    serde_json::to_string(&response).or(Err(error::INVALID_JSON.code_num))
 }
 
 #[cfg(test)]

@@ -138,7 +138,7 @@ impl GeneralMessage for CreateKeyMsg  {
         debug!("create_keys inner bundle: {:?}", data);
         let msg = Bundled::create(data).encode()?;
 
-        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap();
+        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
         bundle_for_agency(msg, &to_did)
     }
 }
@@ -148,7 +148,7 @@ pub fn parse_create_keys_response(response: Vec<u8>) -> Result<(String, String),
 
     debug!("create keys response inner bundle: {:?}", data[0]);
     let mut de = Deserializer::new(&data[0][..]);
-    let response: CreateKeyResponse = Deserialize::deserialize(&mut de).unwrap();
+    let response: CreateKeyResponse = Deserialize::deserialize(&mut de).or(Err(error::UNKNOWN_ERROR.code_num))?;
 
     Ok((response.for_did, response.for_verkey))
 }

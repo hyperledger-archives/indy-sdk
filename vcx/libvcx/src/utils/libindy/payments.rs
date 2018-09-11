@@ -145,7 +145,7 @@ pub fn get_address_info(address: &str) -> Result<AddressInfo, u32> {
         return Ok(AddressInfo { address: address.to_string(), balance: _address_balance(&utxo), utxo})
     }
 
-    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
     let (txn, _) = Payment::build_get_payment_sources_request(get_wallet_handle() as i32, &did, address)
         .map_err(map_rust_indy_sdk_error_code)?;
@@ -156,10 +156,7 @@ pub fn get_address_info(address: &str) -> Result<AddressInfo, u32> {
         .map_err(map_rust_indy_sdk_error_code)?;
 
     trace!("indy_parse_get_utxo_response() --> {}", response);
-    let utxo: Vec<UTXO> = match serde_json::from_str(&response) {
-        Ok(x) => x,
-        Err(_) => return Err(error::INVALID_JSON.code_num),
-    };
+    let utxo: Vec<UTXO> = serde_json::from_str(&response).or(Err(error::INVALID_JSON.code_num))?;
 
     Ok(AddressInfo { address: address.to_string(), balance: _address_balance(&utxo), utxo })
 }
@@ -173,15 +170,7 @@ pub fn list_addresses() -> Result<Vec<String>, u32> {
         .map_err(map_rust_indy_sdk_error_code)?;
 
     trace!("--> {}", addresses);
-    let addresses: Value = match serde_json::from_str(&addresses) {
-        Ok(x) => x,
-        Err(_) => return Err(error::INVALID_JSON.code_num),
-    };
-    info!("my addresses: {}", addresses);
-    match addresses.as_array() {
-        None => Err(error::INVALID_JSON.code_num),
-        Some(x) => Ok(x.into_iter().map(|address|address.as_str().unwrap().to_string()).collect()),
-    }
+    Ok(serde_json::from_str(&addresses).or(Err(error::INVALID_JSON.code_num))?)
 }
 
 pub fn get_wallet_token_info() -> Result<WalletInfo, u32> {
@@ -204,7 +193,7 @@ pub fn get_wallet_token_info() -> Result<WalletInfo, u32> {
 pub fn get_ledger_fees() -> Result<String, u32> {
     if settings::test_indy_mode_enabled() { return Ok(DEFAULT_FEES.to_string()); }
 
-    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).or(Err(error::INVALID_CONFIGURATION.code_num))?;
 
     let response = match Payment::build_get_txn_fees_req(get_wallet_handle() as i32, &did, PAYMENT_METHOD_NAME) {
         Ok(txn) => libindy_sign_and_submit_request(&did, &txn)?,
@@ -223,7 +212,7 @@ pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(Option<PaymentTxn>, Str
     let txn_price = get_txn_price(txn_type)?;
 
     if txn_price == 0 {
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).or(Err(error::INVALID_CONFIGURATION.code_num))?;
         let txn_response = libindy_sign_and_submit_request(&did, req)?;
         Ok((None, txn_response))
     } else {
@@ -239,7 +228,7 @@ pub fn pay_for_txn(req: &str, txn_type: &str) -> Result<(Option<PaymentTxn>, Str
 }
 
 fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(String, String), u32> {
-    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).or(Err(error::INVALID_CONFIGURATION.code_num))?;
 
     let req = libindy_sign_request(&did, req)?;
 
@@ -271,7 +260,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), Pa
     let output = outputs(remainder, &refund_address, Some(address.to_string()), Some(price))?;
 
     let payment = PaymentTxn::from_parts(&input, &output, price, false).map_err(|e|PaymentError::CommonError(e))?;
-    let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).or(Err(PaymentError::CommonError(error::INVALID_CONFIGURATION.code_num)))?;
 
     if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1, false).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
 
@@ -318,7 +307,7 @@ pub fn inputs(cost: u64) -> Result<(u64, String, String), PaymentError> {
         refund_address = address.address.clone();
         'inner: for utxo in address.utxo.iter() {
             if balance < cost {
-                inputs.push(utxo.source.clone().unwrap().to_string());
+                inputs.push(utxo.source.clone().ok_or(PaymentError::InsufficientFunds())?.to_string());
                 balance += utxo.amount;
             } else { break 'outer }
         }
@@ -346,7 +335,7 @@ pub fn outputs(remainder: u64, refund_address: &str, payee_address: Option<Strin
         }));
     }
 
-    Ok(serde_json::to_string(&outputs).unwrap())
+    Ok(serde_json::to_string(&outputs).or(Err(PaymentError::InvalidWalletJson()))?)
 }
 
 // This is used for testing purposes only!!!

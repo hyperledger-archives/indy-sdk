@@ -167,9 +167,11 @@ impl LedgerSchema {
 
     pub fn new_from_ledger(id: &str) -> Result<LedgerSchema, SchemaError>
     {
-        //Todo: find out what submitter did needs to be
-        let submitter_did = &settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+        let submitter_did = &settings::get_config_value(settings::CONFIG_INSTITUTION_DID)
+            .map_err(|e| SchemaError::CommonError(e))?;
+
         let (schema_id, schema_json) = LedgerSchema::retrieve_schema(submitter_did, id)?;
+
         Ok(LedgerSchema{
             schema_id,
             schema_json,
@@ -188,11 +190,7 @@ impl CreateSchema {
     pub fn get_schema_id(&self) -> &String { &self.schema_id }
 
     fn get_payment_txn(&self) -> Result<PaymentTxn, u32> {
-        if self.payment_txn.is_some() {
-            Ok(self.payment_txn.clone().unwrap())
-        } else {
-            Err(error::NOT_READY.code_num)
-        }
+        Ok(self.payment_txn.clone().ok_or(error::NOT_READY.code_num)?)
     }
 
     fn to_string_with_version(&self) -> String {
@@ -242,11 +240,14 @@ pub fn create_new_schema(source_id: &str,
 
 
 pub fn get_schema_attrs(source_id: String, schema_id: String) -> Result<(u32, String), SchemaError> {
-    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)
+        .map_err(|e| SchemaError::CommonError(e))?;
 
     let (schema_id, schema_json) = LedgerSchema::retrieve_schema(&submitter_did, &schema_id)?;
+
     let schema_data: SchemaData = serde_json::from_str(&schema_json)
         .or(Err(SchemaError::CommonError(error::INVALID_JSON.code_num)))?;
+
     let new_schema = CreateSchema {
         source_id,
         schema_id,
@@ -404,7 +405,6 @@ pub mod tests {
 
         let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
         let (_, schema_attrs ) = get_schema_attrs("id".to_string(), schema_id.clone()).unwrap();
-
         assert!(schema_attrs.contains(&schema_id));
     }
 

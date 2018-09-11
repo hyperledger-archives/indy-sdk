@@ -157,8 +157,8 @@ impl GeneralMessage for SendMessage{
         };
 
         debug!("SendMessage details: {:?}", detail);
-        let create = encode::to_vec_named(&create).unwrap();
-        let detail = encode::to_vec_named(&detail).unwrap();
+        let create = encode::to_vec_named(&create).or(Err(error::UNKNOWN_ERROR.code_num))?;
+        let detail = encode::to_vec_named(&detail).or(Err(error::UNKNOWN_ERROR.code_num))?;
 
         let mut bundle = Bundled::create(create);
         bundle.bundled.push(detail);
@@ -184,42 +184,25 @@ fn parse_send_message_response(response: Vec<u8>) -> Result<String, u32> {
     }
 
     let mut de = Deserializer::new(&data[1][..]);
-    let response: SendMessageResponse = match Deserialize::deserialize(&mut de) {
-        Ok(x) => x,
-        Err(x) => {
-            error!("Could not parse messagepack: {}", x);
-            return Err(error::INVALID_MSGPACK.code_num)
-        },
-    };
+    let response: SendMessageResponse = Deserialize::deserialize(&mut de)
+        .or(Err(error::INVALID_MSGPACK.code_num))?;
 
     debug!("messages: {:?}", response);
-    match serde_json::to_string(&response) {
-        Ok(x) => Ok(x),
-        Err(_) => Err(error::INVALID_JSON.code_num),
-    }
+    serde_json::to_string(&response).or(Err(error::INVALID_JSON.code_num))
 }
 
 
 pub fn parse_msg_uid(response: &str) -> Result<String,u32> {
-    match serde_json::from_str(response) {
-        Ok(json) => {
-            let json: serde_json::Value = json;
-            match json["uids"].as_array() {
-                Some(x) => {
-                    Ok(String::from(x[0].as_str().unwrap()))
-                },
-                None => {
-                    info!("response had no uid");
-                    Err(error::INVALID_JSON.code_num)
-                },
-            }
-
-        },
-        Err(_) => {
-            info!("get_messages called without a valid response from server");
-            Err(error::INVALID_JSON.code_num)
-        }
-    }
+    serde_json::from_str::<serde_json::Value>(response)
+        .or(Err(error::INVALID_JSON.code_num))?["uids"]
+        .as_array()
+        .map_or(Err(error::INVALID_JSON.code_num), |uids| {
+            Ok(uids[0]
+                .as_str()
+                .ok_or(error::INVALID_JSON.code_num)?
+                .to_string()
+            )
+        })
 }
 
 #[cfg(test)]

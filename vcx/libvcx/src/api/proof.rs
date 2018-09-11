@@ -345,11 +345,11 @@ pub extern fn vcx_get_proof(command_handle: u32,
             Ok(x) => {
                 info!("vcx_get_proof_cb(command_handle: {}, proof_handle: {}, rc: {}, proof: {})", command_handle, proof_handle, 0, x);
                 let msg = CStringUtils::string_to_cstring(x);
-                cb(command_handle, error::SUCCESS.code_num, proof::get_proof_state(proof_handle).unwrap(), msg.as_ptr());
+                cb(command_handle, error::SUCCESS.code_num, proof::get_proof_state(proof_handle).unwrap_or(0), msg.as_ptr());
             },
             Err(x) => {
                 warn!("vcx_get_proof_cb(command_handle: {}, proof_handle: {}, rc: {}, proof: {})", command_handle, proof_handle, x.to_error_code(), "null");
-                cb(command_handle, x.to_error_code(), proof::get_proof_state(proof_handle).unwrap(), ptr::null_mut());
+                cb(command_handle, x.to_error_code(), proof::get_proof_state(proof_handle).unwrap_or(0), ptr::null_mut());
             },
         };
 

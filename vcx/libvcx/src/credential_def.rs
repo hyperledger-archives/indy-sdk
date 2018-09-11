@@ -59,13 +59,7 @@ impl CredentialDef {
 
     pub fn set_source_id(&mut self, source_id: String) { self.source_id = source_id.clone(); }
 
-    fn get_payment_txn(&self) -> Result<PaymentTxn, u32> {
-        if self.payment_txn.is_some() {
-            Ok(self.payment_txn.clone().unwrap())
-        } else {
-            Err(error::NOT_READY.code_num)
-        }
-    }
+    fn get_payment_txn(&self) -> Result<PaymentTxn, u32> { Ok(self.payment_txn.clone().ok_or(error::NOT_READY.code_num)?) }
 
     fn to_string_with_version(&self) -> String {
         json!({
@@ -75,14 +69,12 @@ impl CredentialDef {
     }
 
     fn from_string_with_version(data: &str) -> Result<CredentialDef, CredDefError> {
-        let values:serde_json::Value = serde_json::from_str(data).unwrap();
+        let values:serde_json::Value = serde_json::from_str(data).or(Err(CredDefError::CommonError(error::INVALID_JSON.code_num)))?;
         let version = values["version"].to_string();
         let data = values["data"].to_string();
         serde_json::from_str(&data).or(Err(CredDefError::CreateCredDefError()))
     }
 }
-
-//Todo: Add a get_cred_def_id call
 
 pub fn create_new_credentialdef(source_id: String,
                                 name: String,
