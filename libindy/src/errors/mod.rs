@@ -7,6 +7,7 @@ pub mod indy;
 pub mod wallet;
 pub mod did;
 pub mod payments;
+pub mod route;
 
 use api::ErrorCode;
 

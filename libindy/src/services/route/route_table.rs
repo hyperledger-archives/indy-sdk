@@ -1,6 +1,5 @@
-use services::wallet::{WalletService, WalletRecord};
+use services::wallet::{WalletService};
 use errors::wallet::WalletError;
-use serde_json::from_str;
 use std::collections::HashMap;
 
 pub struct RouteTable {
@@ -19,38 +18,24 @@ impl RouteTable {
 
     }
 
-    pub fn add_route(&mut self, did_with_key_frag : &str, 
+    pub fn add_route(&mut self, did_with_key_frag : &str,
                     endpoint : &str, wallet_handle:i32) -> Result<(), WalletError> {
-        
-//        let mut map : HashMap<String, String> = HashMap::new();
-//        match agent_name {
-//            Some(a) => map.insert("~agent_name".to_string(), a.to_string()),
-//            None => map.insert("~agent_name".to_string(), "None".to_string()),
-//        };
-
         self.wallet_service.add_record(wallet_handle, "route_table", did_with_key_frag, endpoint, &HashMap::new())
     }
 
-    pub fn lookup_route(&mut self, did_with_key_frag : &str, wallet_handle : i32) -> String {
-        let options_json = json!({
-          "retrieveType": false,
-          "retrieveValue": true,
-          "retrieveTags": false,
-        }).to_string();
+    pub fn lookup_route(&mut self, did_with_key_frag : &str, wallet_handle : i32) -> Option<String> {
+        let options_json = json!({"retrieveType": false,"retrieveValue": true,"retrieveTags": false}).to_string();
         let endpoint_result = self.wallet_service.get_record(wallet_handle,
                                                       "route_table",
                                                       did_with_key_frag,
                                                             &options_json);
-//        let wallet_record = endpoint_result.unwrap().clone();
-//        wallet_record.get_value().unwrap().to_string()
-
-        let wallet_record = match endpoint_result {
+        match endpoint_result {
             Ok(wr) => match wr.get_value() {
-                Some(value) => return value.to_string(),
-                None => return "No value".to_string()
+                Some(value) =>  Some(value.to_string()),
+                None => None
             },
-            Err(_) => return "WalletError: Record not found".to_string()
-        };
+            Err(_) => None
+        }
     }
 
     pub fn remove_route(&mut self, did_with_key_frag : &str, wallet_handle : i32) -> () {
@@ -66,10 +51,6 @@ impl RouteTable {
 #[cfg(test)]
 mod tests {
     use super::{RouteTable};
-    use services::wallet::WalletService;
-    use errors::ToErrorCode;
-    use api::ErrorCode;
-    use utils::cstring::CStringUtils;
     use utils::inmem_wallet::InmemWallet;
     use utils::test::TestUtils;
 
@@ -86,7 +67,7 @@ mod tests {
 
         //let result = route_table.add_route(did_with_key_frag, endpoint, wallet_handle);
         let endpoint_lookup = route_table.lookup_route(did_with_key_frag, wallet_handle);
-        assert_eq!(&endpoint_lookup, "WalletError: Record not found");
+        assert!(endpoint_lookup.is_none());
     }
 
     //TODO fix this test and test above so it can identify if add or lookup is failing
@@ -100,7 +81,7 @@ mod tests {
         let wallet_handle = route_table.wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
 
         let result = route_table.add_route(did_with_key_frag, endpoint, wallet_handle);
-        let endpoint_lookup = route_table.lookup_route(did_with_key_frag, wallet_handle);
+        let endpoint_lookup = route_table.lookup_route(did_with_key_frag, wallet_handle).unwrap();
         assert_eq!(&endpoint_lookup, endpoint);
     }
 
@@ -117,7 +98,7 @@ mod tests {
         let result = route_table.add_route(did_with_key_frag, endpoint, wallet_handle);
         route_table.remove_route(did_with_key_frag, wallet_handle);
         let endpoint_lookup = route_table.lookup_route(did_with_key_frag, wallet_handle);
-        assert_eq!(&endpoint_lookup, "WalletError: Record not found");
+        assert!(endpoint_lookup.is_none());
     }
 
     //TODO fix this test so it's more unit test style test for update_route() aka doesn't rely on other route_table functions
@@ -132,8 +113,8 @@ mod tests {
 
         let result = route_table.add_route(did_with_key_frag, endpoint, wallet_handle);
         route_table.update_route(did_with_key_frag, &"http://localhost:8081", wallet_handle);
-        let endpoint_lookup = route_table.lookup_route(did_with_key_frag, wallet_handle);
-        assert_eq!(&endpoint_lookup, &"http://localhost:8081");
+        let endpoint_lookup = route_table.lookup_route(did_with_key_frag, wallet_handle).unwrap();
+        assert_eq!(&endpoint_lookup, "http://localhost:8081");
     }
 
 
