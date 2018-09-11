@@ -148,6 +148,7 @@ mod low_cases {
             wallet_cleanup!(handle, wallet_name);
         }
 
+        #[ignore]
         #[test]
         fn set_metadata_timeout_works() {
             let wallet_name = r#"{"id":"set_metadata_timeout_works"}"#;
@@ -190,6 +191,7 @@ mod low_cases {
             wallet_cleanup!(handle, wallet_name);
         }
 
+        #[ignore]
         #[test]
         fn get_metadata_timeout_works() {
             let wallet_name = r#"{"id":"get_metadata_timeout_works"}"#;
