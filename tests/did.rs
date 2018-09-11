@@ -12,6 +12,7 @@ use std::sync::mpsc::channel;
 use std::time::Duration;
 use utils::b58::{FromBase58, IntoBase58};
 use utils::constants::{DID_1, SEED_1, VERKEY_1};
+use utils::setup::{Setup, SetupConfig};
 use utils::wallet::Wallet;
 
 const VALID_TIMEOUT: Duration = Duration::from_secs(5);
@@ -870,5 +871,175 @@ mod test_get_verkey_local {
         );
         
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+    }
+
+    #[cfg(test)]
+    mod test_get_verkey_ledger {
+        use super::*;
+        use indy::ledger::Ledger;
+
+        #[test]
+        fn get_verkey_my_did() {
+            let wallet = Wallet::new();
+            let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
+
+            let stored_verkey = Did::get_ver_key(
+                -1,
+                wallet.handle,
+                &did
+            ).unwrap();
+
+            assert_eq!(verkey, stored_verkey);
+        }
+
+        #[test]
+        fn get_verkey_their_did() {
+            let wallet = Wallet::new();
+            let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+            Did::store_their_did(wallet.handle, &config).unwrap();
+
+            let stored_verkey = Did::get_ver_key(
+                -1,
+                wallet.handle,
+                DID_1,
+            ).unwrap();
+
+            assert_eq!(VERKEY_1, stored_verkey);
+        }
+
+        #[test]
+        fn get_verkey_not_on_ledger() {
+            let wallet = Wallet::new();
+            let wallet2 = Wallet::new();
+            let setup = Setup::new(&wallet, SetupConfig {
+                connect_to_pool: true,
+                num_trustees: 0,
+                num_users: 0,
+                num_nodes: 4
+            });
+            let pool_handle = setup.pool_handle.unwrap();
+
+            let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
+
+            let result = Did::get_ver_key(
+                pool_handle,
+                wallet2.handle,
+                &did
+            );
+
+            assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+        }
+
+        #[test]
+        fn get_verkey_on_ledger() {
+            let wallet = Wallet::new();
+            let wallet2 = Wallet::new();
+            let setup = Setup::new(&wallet, SetupConfig {
+                connect_to_pool: true,
+                num_trustees: 1,
+                num_users: 1,
+                num_nodes: 4
+            });
+            let pool_handle = setup.pool_handle.unwrap();
+            let user = &setup.users.as_ref().unwrap()[0];
+
+            let ledger_verkey = Did::get_ver_key(
+                pool_handle,
+                wallet2.handle,
+                &user.did
+            ).unwrap();
+
+            assert_eq!(ledger_verkey, user.verkey);
+        }
+
+        #[test]
+        fn get_verkey_invalid_pool() {
+            let wallet = Wallet::new();
+
+            let result = Did::get_ver_key(-1, wallet.handle, DID_1);
+
+            assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, result.unwrap_err());
+        }
+
+        #[test]
+        fn get_verkey_invalid_wallet() {
+            let result = Did::get_ver_key(-1, INVALID_HANDLE, DID_1);
+            assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        }
+
+        #[test]
+        fn get_verkey_async_my_did() {
+            let (sender, receiver) = channel();
+            let wallet = Wallet::new();
+            let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
+
+            Did::get_ver_key_async(
+                -1,
+                wallet.handle,
+                &did,
+                move |ec, verkey| sender.send((ec, verkey)).unwrap()
+            );
+
+            let (ec, stored_verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+            assert_eq!(verkey, stored_verkey);
+        }
+
+        #[test]
+        fn get_verkey_async_invalid_wallet() {
+            let (sender, receiver) = channel();
+
+            Did::get_ver_key_async(
+                -1,
+                INVALID_HANDLE,
+                DID_1,
+                move |ec, verkey| sender.send((ec, verkey)).unwrap()
+            );
+
+            let (ec, stored_verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+            assert_eq!(ErrorCode::WalletInvalidHandle, ec);
+            assert_eq!(String::from(""), stored_verkey);
+        }
+
+        #[test]
+        fn get_verkey_timeout_my_did() {
+            let wallet = Wallet::new();
+            let config = json!({"seed": SEED_1}).to_string();
+            let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+            let stored_verkey = Did::get_ver_key_timeout(
+                -1,
+                wallet.handle,
+                &did,
+                VALID_TIMEOUT
+            ).unwrap();
+
+            assert_eq!(verkey, stored_verkey);
+        }
+
+        #[test]
+        fn get_verkey_timeout_invalid_wallet() {
+            let result = Did::get_ver_key_timeout(
+                -1,
+                INVALID_HANDLE, 
+                DID_1,
+                VALID_TIMEOUT
+            );
+    
+            assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        }
+
+        #[test]
+        fn get_verkey_timeout_timeouts() {
+            let result = Did::get_ver_key_timeout(
+                -1,
+                INVALID_HANDLE, 
+                DID_1,
+                INVALID_TIMEOUT
+            );
+    
+            assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+        }
     }
 }
