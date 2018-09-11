@@ -1348,7 +1348,7 @@ mod test_get_metadata {
         let wallet = Wallet::new();
         let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
         Did::store_their_did(wallet.handle, &config).unwrap();
-        Did::set_metadata(wallet.handle, DID_1, METADATA);
+        Did::set_metadata(wallet.handle, DID_1, METADATA).unwrap();
 
         let result = Did::get_metadata(wallet.handle, DID_1);
 
@@ -1395,7 +1395,7 @@ mod test_get_metadata {
         let (wallet, did) = setup();
         Did::set_metadata(wallet.handle, &did, METADATA).unwrap();
 
-        let result = Did::get_metadata_async(
+        Did::get_metadata_async(
             wallet.handle,
             &did,
             move |ec, metadata| sender.send((ec, metadata)).unwrap()
@@ -1411,7 +1411,7 @@ mod test_get_metadata {
     fn get_metadata_async_invalid_wallet() {
         let (sender, receiver) = channel();
 
-        let result = Did::get_metadata_async(
+        Did::get_metadata_async(
             INVALID_HANDLE,
             DID_1,
             move |ec, metadata| sender.send((ec, metadata)).unwrap()
