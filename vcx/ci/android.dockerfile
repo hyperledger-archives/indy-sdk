@@ -39,4 +39,4 @@ RUN echo "vcx ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 USER vcx 
 # cargo deb for debian packaging of libvcx
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.26.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.27.0
