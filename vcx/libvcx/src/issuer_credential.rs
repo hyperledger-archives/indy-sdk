@@ -125,7 +125,7 @@ impl IssuerCredential {
         let cred_json = json!(credential_offer);
         let mut payload = Vec::new();
 
-        if payment.is_some() { payload.push(json!(payment.unwrap())); }
+        if let Some(x) = payment { payload.push(json!(x)); }
         payload.push(cred_json);
         let payload = match serde_json::to_string(&payload) {
             Ok(p) => p,
@@ -328,16 +328,17 @@ impl IssuerCredential {
     }
 
     fn get_payment_txn(&self) -> Result<payments::PaymentTxn, u32> {
-        if self.price == 0 || self.payment_address.is_none() { return Err(error::NO_PAYMENT_INFORMATION.code_num); }
-
-        let payment_address = self.payment_address.clone().unwrap();
-
-        Ok(payments::PaymentTxn {
-            amount: self.price,
-            credit: true,
-            inputs: vec![payment_address],
-            outputs: Vec::new(),
-        })
+        match self.payment_address {
+            Some(ref payment_address) if self.price > 0 => {
+                Ok(payments::PaymentTxn {
+                    amount: self.price,
+                    credit: true,
+                    inputs: vec![payment_address.to_string()],
+                    outputs: Vec::new(),
+                })
+            },
+            _ => Err(error::NO_PAYMENT_INFORMATION.code_num)
+        }
     }
 
     pub fn to_string(&self) -> String {

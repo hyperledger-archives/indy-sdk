@@ -371,8 +371,8 @@ impl GeneralMessage for SendInvite{
 
         self.generate_signature()?;
         debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
-        let create = encode::to_vec_named(&self.payload.create_payload).unwrap();
-        let details = encode::to_vec_named(&self.payload.msg_detail_payload).unwrap();
+        let create = encode::to_vec_named(&self.payload.create_payload).or(Err(error::UNKNOWN_ERROR.code_num))?;
+        let details = encode::to_vec_named(&self.payload.msg_detail_payload).or(Err(error::UNKNOWN_ERROR.code_num))?;
 
         let mut bundle = Bundled::create(create);
         bundle.bundled.push(details);
@@ -407,8 +407,8 @@ impl GeneralMessage for AcceptInvite{
 
         self.generate_signature()?;
         debug!("connection invitation details: {}", serde_json::to_string(&self.payload.msg_detail_payload).unwrap_or("failure".to_string()));
-        let create = encode::to_vec_named(&self.payload.create_payload).unwrap();
-        let details = encode::to_vec_named(&self.payload.msg_detail_payload).unwrap();
+        let create = encode::to_vec_named(&self.payload.create_payload).or(Err(error::UNKNOWN_ERROR.code_num))?;
+        let details = encode::to_vec_named(&self.payload.msg_detail_payload).or(Err(error::UNKNOWN_ERROR.code_num))?;
 
         let mut bundle = Bundled::create(create);
         bundle.bundled.push(details);
