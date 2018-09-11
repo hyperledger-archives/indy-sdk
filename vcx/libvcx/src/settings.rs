@@ -176,18 +176,16 @@ pub fn test_agency_mode_enabled() -> bool {
 }
 
 pub fn process_config_string(config: &str) -> Result<u32, u32> {
-    let configuration: Value = serde_json::from_str(config)
-        .or(Err(error::INVALID_JSON.code_num))?;
+    let configuration: Value = serde_json::from_str(config).or(Err(error::INVALID_JSON.code_num))?;
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {
-            if value.is_string() {
-                set_config_value(key, value.as_str().unwrap());
-            }
+            set_config_value(key, value.as_str().ok_or(error::INVALID_JSON.code_num)?);
         }
     }
 
-    let config = SETTINGS.read().unwrap();
-    validate_config(&config.clone())
+    validate_config(
+        &SETTINGS.read().or(Err(error::INVALID_CONFIGURATION.code_num))?.clone()
+    )
 }
 
 pub fn process_config_file(path: &str) -> Result<u32, u32> {
@@ -200,10 +198,11 @@ pub fn process_config_file(path: &str) -> Result<u32, u32> {
 }
 
 pub fn get_config_value(key: &str) -> Result<String, u32> {
-    match SETTINGS.read().unwrap().get(key) {
-        None => Err(error::INVALID_CONFIGURATION.code_num),
-        Some(value) => Ok(value.to_string()),
-    }
+    SETTINGS
+        .read()
+        .or(Err(error::INVALID_CONFIGURATION.code_num))?
+        .get(key)
+        .map_or(Err(error::INVALID_CONFIGURATION.code_num), |v| Ok(v.to_string()))
 }
 
 pub fn set_config_value(key: &str, value: &str) {

@@ -65,13 +65,7 @@ pub fn delete(pool_name: &str) -> Result<(), u32> {
 }
 
 pub fn get_pool_handle() -> Result<i32, u32> {
-    let h = POOL_HANDLE.read().unwrap();
-    if h.is_none() {
-        Err(error::NO_POOL_OPEN.code_num)
-    }
-    else {
-        Ok(h.unwrap())
-    }
+    Ok(POOL_HANDLE.read().or(Err(error::NO_POOL_OPEN.code_num))?.ok_or(error::NO_POOL_OPEN.code_num)?)
 }
 
 #[cfg(test)]

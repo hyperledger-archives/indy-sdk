@@ -143,7 +143,8 @@ impl Credential {
         self.credential_request = Some(req.clone());
         let req = serde_json::to_string(&req).or(Err(CredentialError::InvalidCredentialJson()))?;
         let data: Vec<u8> = connection::generate_encrypted_payload(local_my_vk, local_their_vk, &req, "CRED_REQ").map_err(|e| CredentialError::CommonError(e.to_error_code()))?;
-        let offer_msg_id = self.credential_offer.as_ref().unwrap().msg_ref_id.as_ref().ok_or(CredentialError::CommonError(error::CREATE_CREDENTIAL_REQUEST_ERROR.code_num))?;
+        let offer_msg_id = self.credential_offer.as_ref().ok_or(CredentialError::CommonError(error::CREATE_CREDENTIAL_REQUEST_ERROR.code_num))?
+            .msg_ref_id.as_ref().ok_or(CredentialError::CommonError(error::CREATE_CREDENTIAL_REQUEST_ERROR.code_num))?;
 
         if self.payment_info.is_some() {
             let (payment_txn, _) = self.submit_payment()?;
@@ -184,7 +185,7 @@ impl Credential {
         let credential = extract_json_payload(&payload)?;
 
         let credential_msg: CredentialMessage = serde_json::from_str(&credential)
-            .or(Err(error::INVALID_CREDENTIAL_JSON.code_num)).unwrap();
+            .or(Err(error::INVALID_CREDENTIAL_JSON.code_num))?;
 
         let cred_req: &CredentialRequest = self.credential_request.as_ref()
             .ok_or(CredentialError::InvalidCredentialJson().to_error_code())?;
@@ -276,11 +277,10 @@ impl Credential {
     fn get_source_id(&self) -> &String {&self.source_id}
 
     fn get_payment_txn(&self) -> Result<PaymentTxn, u32> {
-        if self.payment_info.is_none() || self.payment_txn.is_none() {
-            return Err(error::NO_PAYMENT_INFORMATION.code_num);
+        match self.payment_txn {
+            Some(ref payment_txn) if self.payment_info.is_some() => Ok(payment_txn.clone()),
+            _ => Err(error::NO_PAYMENT_INFORMATION.code_num)
         }
-
-        Ok(self.payment_txn.clone().unwrap())
     }
 
     fn set_credential_offer(&mut self, offer: CredentialOffer){
@@ -432,9 +432,9 @@ pub fn get_credential_offer_msg(connection_handle: u32, msg_id: &str) -> Result<
         offer.msg_ref_id = Some(message[0].uid.to_owned());
         let mut payload = Vec::new();
         payload.push(json!(offer));
-        if payment_info.is_some() { payload.push(json!(payment_info.unwrap())); }
+        if let Some(p) = payment_info { payload.push(json!(p)); }
 
-        Ok(serde_json::to_string_pretty(&payload).unwrap())
+        Ok(serde_json::to_string_pretty(&payload).or(Err(CredentialError::CommonError(error::INVALID_MESSAGES.code_num)))?)
     } else {
         Err(CredentialError::CommonError(error::INVALID_MESSAGES.code_num))
     }
@@ -472,13 +472,13 @@ pub fn get_credential_offer_messages(connection_handle: u32, match_name: Option<
             offer.msg_ref_id = Some(msg.uid.to_owned());
             let mut payload = Vec::new();
             payload.push(json!(offer));
-            if payment_info.is_some() { payload.push(json!(payment_info.unwrap())); }
+            if let Some(p) = payment_info { payload.push(json!(p)); }
 
             messages.push(payload);
         }
     }
 
-    Ok(serde_json::to_string_pretty(&messages).unwrap())
+    Ok(serde_json::to_string_pretty(&messages).or(Err(CredentialError::CommonError(error::INVALID_MESSAGES.code_num)))?)
 }
 
 pub fn parse_json_offer(offer: &str) -> Result<(CredentialOffer, Option<PaymentInfo>), CredentialError> {
@@ -498,12 +498,7 @@ pub fn parse_json_offer(offer: &str) -> Result<(CredentialOffer, Option<PaymentI
             }
         }
     }
-    if offer.is_some() {
-        Ok((offer.unwrap(), payment))
-    }
-    else {
-        Err(CredentialError::InvalidCredentialJson())
-    }
+    Ok((offer.ok_or(CredentialError::InvalidCredentialJson())?, payment))
 }
 
 pub fn release(handle: u32) -> Result<(), CredentialError> {

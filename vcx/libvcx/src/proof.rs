@@ -214,7 +214,7 @@ impl Proof {
 
         self.proof_request = Some(proof_obj);
         let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST").map_err(|_| ProofError::ProofConnectionError())?;
-        let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap(), self.name);
+        let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).map_err(|e| ProofError::CommonError(e))?, self.name);
 
         match messages::send_message().to(&self.prover_did)
             .to_vk(&self.prover_vk)
@@ -429,7 +429,7 @@ fn get_proof_details(response: &str) -> Result<String, ProofError> {
         Ok(json) => {
             let json: serde_json::Value = json;
             let detail = match json["uids"].as_array() {
-                Some(x) => x[0].as_str().unwrap(),
+                Some(x) => x[0].as_str().ok_or(ProofError::CommonError(error::INVALID_JSON.code_num))?,
                 None => {
                     warn!("response had no uid");
                     return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
