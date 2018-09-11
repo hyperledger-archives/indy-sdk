@@ -1347,6 +1347,7 @@ mod test_get_metadata {
     }
 }
 
+#[cfg(test)]
 mod test_set_endpoint {
     use super::*;
 
@@ -1409,24 +1410,25 @@ mod test_set_endpoint {
         }
     }
 
-//    #[test]
-//    pub fn set_endpoint_async_succeeds() {
-//        let wallet = Wallet::new();
-//        let (sender, receiver) = channel();
-//        let config = json!({
-//            "seed": SEED_1
-//        }).to_string();
-//
-//        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
-//
-//        let cb = move |stuff| {
-//            sender.send((stuff, ())).unwrap();
-//        };
-//
-//        let ec = Did::set_endpoint_async(wallet.handle, &did, "192.168.1.10", &verkey, cb);
-//        assert_eq!(ec, indy::ErrorCode::Success, "set_endpoint_async_succeeds failed {:?}", ec);
-//
-//    }
+    #[test]
+    pub fn set_endpoint_async_succeeds() {
+        let wallet = Wallet::new();
+        let (sender, receiver) = channel();
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        let cb = move |ec| {
+            sender.send(ec).unwrap();
+        };
+
+        Did::set_endpoint_async(wallet.handle, &did, "192.168.1.10", &verkey, cb);
+        let error_code = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        assert_eq!(error_code, indy::ErrorCode::Success, "set_endpoint_async_succeeds failed {:?}", error_code);
+
+    }
 }
 
 #[cfg(test)]
@@ -1539,6 +1541,46 @@ mod test_get_endpoint {
         if false == test_succeeded {
             assert!(false, "get_endpoint_timeout_succeeds failed to successfully compare end_point address");
         }
+    }
+
+    #[test]
+    pub fn get_endpoint_async_success() {
+        let end_point_address = "192.168.1.10";
+        let wallet = Wallet::new();
+        let (sender, receiver) = channel();
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        let pool_setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: false,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        match indy::did::Did::set_endpoint(wallet.handle, &did, end_point_address, &verkey) {
+            Ok(_) => {}
+            Err(ec) => {
+                assert!(false, "get_endpoint_async failed set_endpoint {:?}", ec)
+            }
+        }
+
+        let pool_handle = indy::pool::Pool::open_ledger(&pool_setup.pool_name, None).unwrap();
+        let mut test_succeeded : bool = false;
+        let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
+
+        let cb = move |ec, str, opt_str| {
+            sender.send((ec, str, opt_str)).unwrap();
+        };
+
+        Did::get_endpoint_async(wallet.handle, pool_handle, &did, cb);
+        let (error_code, _, _) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        indy::pool::Pool::close(pool_handle).unwrap();
+        assert_eq!(error_code, indy::ErrorCode::Success, "get_endpoint_async failed {:?}", error_code);
     }
 
     /// ----------------------------------------------------------------------------------------
