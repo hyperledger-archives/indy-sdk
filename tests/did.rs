@@ -1067,7 +1067,9 @@ mod test_get_verkey_local {
 
         #[test]
         fn set_metadata_their_did() {
-            let (wallet, did) = setup();
+            let wallet = Wallet::new();
+            let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+            Did::store_their_did(wallet.handle, &config).unwrap();
 
             let result = Did::set_metadata(wallet.handle, DID_1, METADATA);
             let metadata = Did::get_metadata(wallet.handle, DID_1).unwrap();
@@ -1317,5 +1319,143 @@ mod test_get_endpoint {
         indy::pool::Pool::close(pool_handle).unwrap();
 
         assert_eq!(error_code, indy::ErrorCode::CommonInvalidState);
+    }
+}
+
+mod test_get_metadata {
+    use super::*;
+
+    #[inline]
+    fn setup() -> (Wallet, String) {
+        let wallet = Wallet::new();
+        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+        
+        (wallet, did)
+    }
+
+    #[test]
+    fn get_metadata_my_did() {
+        let (wallet, did) = setup();
+        Did::set_metadata(wallet.handle, &did, METADATA).unwrap();
+
+        let result = Did::get_metadata(wallet.handle, &did);
+
+        assert_eq!(METADATA, result.unwrap());
+    }
+
+    #[test]
+    fn get_metadata_their_did() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+        Did::store_their_did(wallet.handle, &config).unwrap();
+        Did::set_metadata(wallet.handle, DID_1, METADATA);
+
+        let result = Did::get_metadata(wallet.handle, DID_1);
+
+        assert_eq!(METADATA, result.unwrap());
+    }
+
+    #[test]
+    fn get_metadata_empty_string() {
+        let (wallet, did) = setup();
+        Did::set_metadata(wallet.handle, &did, "").unwrap();
+
+        let result = Did::get_metadata(wallet.handle, &did);
+
+        assert_eq!(String::from(""), result.unwrap());
+    }
+
+    #[test]
+    fn get_metadata_no_metadata_set() {
+        let (wallet, did) = setup();
+
+        let result = Did::get_metadata(wallet.handle, &did);
+
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+    }
+
+    #[test]
+    fn get_metadata_unknown_did() {
+        let wallet = Wallet::new();
+
+        let result = Did::get_metadata(wallet.handle, DID_1);
+
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+    }
+
+    #[test]
+    fn get_metadata_invalid_wallet() {
+        let result = Did::get_metadata(INVALID_HANDLE, DID_1);
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn get_metadata_async_my_did() {
+        let (sender, receiver) = channel();
+        let (wallet, did) = setup();
+        Did::set_metadata(wallet.handle, &did, METADATA).unwrap();
+
+        let result = Did::get_metadata_async(
+            wallet.handle,
+            &did,
+            move |ec, metadata| sender.send((ec, metadata)).unwrap()
+        );
+
+        let (ec, metadata) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::Success, ec);
+        assert_eq!(METADATA, metadata);
+    }
+
+    #[test]
+    fn get_metadata_async_invalid_wallet() {
+        let (sender, receiver) = channel();
+
+        let result = Did::get_metadata_async(
+            INVALID_HANDLE,
+            DID_1,
+            move |ec, metadata| sender.send((ec, metadata)).unwrap()
+        );
+
+        let (ec, metadata) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, ec);
+        assert_eq!("", &metadata);
+    }
+
+    #[test]
+    fn get_metadata_timeout_my_did() {
+        let (wallet, did) = setup();
+        Did::set_metadata(wallet.handle, &did, METADATA).unwrap();
+
+        let result = Did::get_metadata_timeout(
+            wallet.handle,
+            &did,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!(METADATA, result.unwrap());
+    }
+
+    #[test]
+    fn get_metadata_timeout_invalid_wallet() {
+        let result = Did::get_metadata_timeout(
+            INVALID_HANDLE,
+            DID_1,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn get_metadata_timeout_timeouts() {
+        let result = Did::get_metadata_timeout(
+            INVALID_HANDLE,
+            DID_1,
+            INVALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
 }
