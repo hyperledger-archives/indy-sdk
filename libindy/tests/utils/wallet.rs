@@ -225,9 +225,11 @@ pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) ->
 
     let xxtype = CString::new(stg_type).unwrap();
 
+    println!("Loading library: {}", library_path);
     let lib_path = Path::new(library_path);
     let lib = DynamicLibrary::open(Some(lib_path)).unwrap();
     let err;
+    println!("Register wallet storage");
     unsafe {
         let fn_create_handler = lib.symbol(&format!("{}create", fn_pfx)).unwrap();
         let fn_open_handler = lib.symbol(&format!("{}open", fn_pfx)).unwrap();
@@ -284,6 +286,7 @@ pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) ->
             cb
         );
     }
+    println!("... returns {:?}", err);
 
     wallets.insert(stg_type.to_string());
 
@@ -311,6 +314,7 @@ pub fn load_storage_library_config(storage_config: &HashMap<String, Option<Strin
                     },
                     None => "".to_string()
                 };
+                println!("Loading {} {} {}", stg_type, library, fn_pfx);
                 load_storage_library(&stg_type[..], &library[..], &fn_pfx[..])
             },
             None => Ok(())
