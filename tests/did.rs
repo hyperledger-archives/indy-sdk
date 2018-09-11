@@ -1209,31 +1209,6 @@ mod test_get_verkey_local {
 }
 
 #[cfg(test)]
-mod test_set_endpoint {
-    use super::*;
-
-    #[test]
-    pub fn set_endpoint_works() {
-        let wallet = Wallet::new();
-
-        let config = json!({
-            "seed": SEED_1
-        }).to_string();
-
-        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
-
-        match indy::did::Did::set_endpoint(wallet.handle, &did, "192.168.1.10", &verkey) {
-            Ok(_) => {}
-            Err(ec) => {
-                assert!(false, "set_endpoint_works failed {:?}", ec)
-            }
-        }
-
-    }
-
-}
-
-#[cfg(test)]
 mod test_get_endpoint {
     use super::*;
 
@@ -1457,5 +1432,265 @@ mod test_get_metadata {
         );
 
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+    }
+}
+
+mod test_set_endpoint {
+    use super::*;
+
+    #[test]
+    pub fn set_endpoint_succeeds() {
+        let wallet = Wallet::new();
+
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        match indy::did::Did::set_endpoint(wallet.handle, &did, "192.168.1.10", &verkey) {
+            Ok(_) => {}
+            Err(ec) => {
+                assert!(false, "set_endpoint_works failed {:?}", ec)
+            }
+        }
+
+    }
+
+    #[test]
+    pub fn set_endpoint_timeout_succeeds() {
+        let wallet = Wallet::new();
+
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        match indy::did::Did::set_endpoint_timeout(wallet.handle, &did, "192.168.1.10", &verkey, VALID_TIMEOUT) {
+            Ok(_) => {}
+            Err(ec) => {
+                assert!(false, "set_endpoint_works failed {:?}", ec)
+            }
+        }
+    }
+
+    #[test]
+    pub fn set_endpoint_timeout_fails_invalid_timeout() {
+        let wallet = Wallet::new();
+
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        match indy::did::Did::set_endpoint_timeout(wallet.handle, &did, "192.168.1.10", &verkey, INVALID_TIMEOUT) {
+            Ok(_) => {
+                assert!(false, "set_endpoint_timeout failed to return error code other than SUCCESS");
+            }
+            Err(ec) => {
+                if ec != indy::ErrorCode::CommonIOError {
+                    assert!(false, "set_endpoint_timeout failed error_code = {:?}", ec);
+                }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_get_endpoint {
+    use super::*;
+
+    #[test]
+    pub fn get_endpoint_succeeds() {
+        let end_point_address = "192.168.1.10";
+        let wallet = Wallet::new();
+
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        let pool_setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: false,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        match indy::did::Did::set_endpoint(wallet.handle, &did, end_point_address, &verkey) {
+            Ok(_) => {}
+            Err(ec) => {
+                assert!(false, "get_endpoint_works failed set_endpoint {:?}", ec)
+            }
+        }
+
+        let pool_handle = indy::pool::Pool::open_ledger(&pool_setup.pool_name, None).unwrap();
+        let mut test_succeeded : bool = false;
+        let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
+
+        match indy::did::Did::get_endpoint(wallet.handle, pool_handle, &did) {
+            Ok(ret_address) => {
+
+                let (address, other) = Some(ret_address).unwrap();
+
+                if end_point_address.to_string() == address {
+                    test_succeeded = true;
+                }
+            },
+            Err(ec) => {
+                error_code = ec;
+            }
+        }
+
+        indy::pool::Pool::close(pool_handle).unwrap();
+
+        if indy::ErrorCode::Success != error_code {
+            assert!(false, "get_endpoint_works failed error code {:?}", error_code);
+        }
+
+        if false == test_succeeded {
+            assert!(false, "get_endpoint_works failed to successfully compare end_point address");
+        }
+    }
+
+    #[test]
+    pub fn get_endpoint_timeout_succeeds() {
+        let end_point_address = "192.168.1.10";
+        let wallet = Wallet::new();
+
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        match indy::did::Did::set_endpoint(wallet.handle, &did, end_point_address, &verkey) {
+            Ok(_) => {}
+            Err(ec) => {
+                assert!(false, "get_endpoint_works failed at set endpoint {:?}", ec)
+            }
+        }
+
+        let pool_setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: false,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        let pool_handle = indy::pool::Pool::open_ledger(&pool_setup.pool_name, None).unwrap();
+        let mut test_succeeded : bool = false;
+        let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
+
+        match indy::did::Did::get_endpoint_timeout(wallet.handle, pool_handle, &did, VALID_TIMEOUT) {
+            Ok(ret_address) => {
+
+                let (address, other) = Some(ret_address).unwrap();
+
+                if end_point_address.to_string() == address {
+                    test_succeeded = true;
+                }
+            },
+            Err(ec) => {
+                error_code = ec;
+            }
+        }
+
+        indy::pool::Pool::close(pool_handle).unwrap();
+
+        if indy::ErrorCode::Success != error_code {
+            assert!(false, "get_endpoint_timeout_succeeds failed error code {:?}", error_code);
+        }
+
+        if false == test_succeeded {
+            assert!(false, "get_endpoint_timeout_succeeds failed to successfully compare end_point address");
+        }
+    }
+
+
+    /// ----------------------------------------------------------------------------------------
+    /// get_endpoint_timeout_fails_invalid_timeout uses an impossibly small time out to trigger error
+    /// get_endpoint_timeout should return error code since the timeout triggers
+    /// ----------------------------------------------------------------------------------------
+    #[test]
+    pub fn get_endpoint_timeout_fails_invalid_timeout() {
+        let end_point_address = "192.168.1.10";
+        let wallet = Wallet::new();
+
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        match indy::did::Did::set_endpoint(wallet.handle, &did, end_point_address, &verkey) {
+            Ok(_) => {}
+            Err(ec) => {
+                assert!(false, "get_endpoint_timeout_fails_invalid_timeout failed at set endpoint {:?}", ec)
+            }
+        }
+
+        let pool_setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: false,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        let pool_handle = indy::pool::Pool::open_ledger(&pool_setup.pool_name, None).unwrap();
+        let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
+
+        match indy::did::Did::get_endpoint_timeout(wallet.handle, pool_handle, &did, INVALID_TIMEOUT) {
+            Ok(_) => {
+
+            },
+            Err(ec) => {
+                error_code = ec;
+            }
+        }
+
+        indy::pool::Pool::close(pool_handle).unwrap();
+
+        assert_eq!(error_code, indy::ErrorCode::CommonIOError);
+    }
+
+    /// ----------------------------------------------------------------------------------------
+    /// get_endpoint_fails_no_set doesnt call set_endpoint before calling get_endpoint.
+    /// get_endpoint should return error code since the endpoint has not been set
+    /// ----------------------------------------------------------------------------------------
+    #[test]
+    pub fn get_endpoint_fails_no_set() {
+        let end_point_address = "192.168.1.10";
+        let wallet = Wallet::new();
+
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        let pool_setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: false,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        let pool_handle = indy::pool::Pool::open_ledger(&pool_setup.pool_name, None).unwrap();
+        let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
+
+        match indy::did::Did::get_endpoint(wallet.handle, pool_handle, &did) {
+            Ok(ret_address) => { },
+            Err(ec) => {
+                error_code = ec;
+            }
+        }
+
+        indy::pool::Pool::close(pool_handle).unwrap();
+
+        assert_eq!(error_code, indy::ErrorCode::CommonInvalidState);
     }
 }
