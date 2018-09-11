@@ -16,10 +16,9 @@ mod utils;
 
 use utils::{export_config_json, export_path};
 use utils::constants::DEFAULT_CREDENTIALS;
-
-mod tests {
+#[cfg(test)]
+mod wallet_tests {
     use super::*;
-
 
     #[test]
     fn create_delete_wallet_works() {
