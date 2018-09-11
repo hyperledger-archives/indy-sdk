@@ -1246,7 +1246,7 @@ mod test_get_endpoint {
 
         let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
 
-        let setup = Setup::new(&wallet, SetupConfig {
+        let pool_setup = Setup::new(&wallet, SetupConfig {
             connect_to_pool: false,
             num_trustees: 0,
             num_nodes: 4,
@@ -1260,7 +1260,7 @@ mod test_get_endpoint {
             }
         }
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&pool_setup.pool_name, None).unwrap();
         let mut test_succeeded : bool = false;
         let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
 
@@ -1281,7 +1281,41 @@ mod test_get_endpoint {
         indy::pool::Pool::close(pool_handle).unwrap();
 
         if false == test_succeeded {
-            assert!(false, "get_endpoint_works failed set_endpoint {:?}", error_code);
+            assert!(false, "get_endpoint_works failed {:?}", error_code);
         }
+    }
+
+     #[test]
+    pub fn get_endpoint_fails_no_set() {
+        let end_point_address = "192.168.1.10";
+        let wallet = Wallet::new();
+
+        let config = json!({
+            "seed": SEED_1
+        }).to_string();
+
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
+
+        let pool_setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: false,
+            num_trustees: 0,
+            num_nodes: 4,
+            num_users: 0,
+        });
+
+        let pool_handle = indy::pool::Pool::open_ledger(&pool_setup.pool_name, None).unwrap();
+        let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
+
+        match indy::did::Did::get_endpoint(wallet.handle, pool_handle, &did) {
+            Ok(ret_address) => {
+            },
+            Err(ec) => {
+                error_code = ec;
+            }
+        }
+
+        indy::pool::Pool::close(pool_handle).unwrap();
+
+        assert_eq!(error_code, indy::ErrorCode::CommonInvalidState);
     }
 }
