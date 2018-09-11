@@ -237,8 +237,8 @@ def buildAndroid(arch) {
 
             android.inside {
                 ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
-                LIBINDY_BRANCH="stable"
-                LIBINDY_VERSION="1.6.4"
+                LIBINDY_BRANCH="local"
+                LIBINDY_VERSION="1.6.6"
                 LIBINDY_TAG=""
 
                 sh 'sudo ./vcx/ci/scripts/installCert.sh'
