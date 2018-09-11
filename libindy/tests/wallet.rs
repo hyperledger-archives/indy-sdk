@@ -779,6 +779,17 @@ mod dynamic_storage_cases {
             storage_config
         }
 
+        fn inmem_lib_test_overrides() -> HashMap<String, Option<String>> {
+            let mut storage_config = HashMap::new();
+            let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
+            storage_config.insert(env_vars[0].to_string(), None);
+            storage_config.insert(env_vars[1].to_string(), None);
+            storage_config.insert(env_vars[2].to_string(), Some("inmem_custom".to_string()));
+            storage_config.insert(env_vars[3].to_string(), Some("../samples/storage/storage-inmem/target/debug/libindystrginmem.so".to_string()));
+            storage_config.insert(env_vars[4].to_string(), Some("inmemwallet_fn_".to_string()));
+            storage_config
+        }
+
         #[test]
         fn configure_wallet_works_for_case() {
             let hs_keep = save_config_overrides();
@@ -820,6 +831,28 @@ mod dynamic_storage_cases {
 
             assert_eq!(old_creds.key, new_creds.key);
             assert_eq!(new_creds.storage_credentials, Some(v));
+        }
+
+        #[test]
+        fn override_wallet_credentials_works() {
+            utils::setup();
+
+            // load dynamic lib and set config/creds based on overrides
+            let hs_vars = inmem_lib_test_overrides();
+            let new_config = utils::wallet::override_wallet_configuration(&UNKNOWN_WALLET_CONFIG, &hs_vars);
+            let new_creds = utils::wallet::override_wallet_credentials(&WALLET_CREDENTIALS_RAW, &hs_vars);
+            let res = utils::wallet::load_storage_library_config(&hs_vars);
+
+            // confirm dynamic lib loaded ok
+            assert_eq!(res, Ok(()));
+
+            // verify wallet CCOD
+            wallet::create_wallet(new_config, new_creds).unwrap();
+            let wallet_handle = wallet::open_wallet(new_config, new_creds).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(new_config, new_creds).unwrap();
+
+            utils::tear_down();
         }
     }
 }

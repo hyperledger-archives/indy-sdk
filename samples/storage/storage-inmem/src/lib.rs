@@ -23,6 +23,7 @@ extern crate lazy_static;
 //#[macro_use]
 //extern crate named_type_derive;
 
+extern crate indy;
 extern crate indy_crypto;
 extern crate libc;
 extern crate rand;
@@ -31,8 +32,8 @@ extern crate rand;
 #[macro_use]
 pub mod utils;
 
-pub mod api;
-mod errors;
+//pub mod api;
+//mod errors;
 
 #[cfg(test)]
 mod tests {
