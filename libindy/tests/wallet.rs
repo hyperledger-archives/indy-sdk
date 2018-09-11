@@ -742,23 +742,23 @@ mod dynamic_storage_cases {
 
     use super::*;
     use std::env;
+    use std::collections::HashMap;
+    use utils::domain::wallet::{Config, Credentials};
+    use serde_json::Value;
 
     mod configure_wallet_storage {
         use super::*;
 
-        #[test]
-        fn configure_wallet_works_for_case() {
+        fn save_config_overrides() -> HashMap<String, Option<String>> {
             // save (and clear) existing vars
             let hs_keep = utils::wallet::wallet_storage_overrides();
             for (key, _val) in hs_keep.iter() {
                 env::remove_var(key);
             }
+            hs_keep
+        }
 
-            // test we correctly pick up the values
-            env::set_var("STG_TYPE", "inmem");
-            let hs = utils::wallet::wallet_storage_overrides();
-            env::remove_var("STG_TYPE");
-
+        fn restore_config_overrides(hs_keep: HashMap<String, Option<String>>) {
             // restore original vars
             for (key, val) in hs_keep.iter() {
                 match val {
@@ -766,9 +766,60 @@ mod dynamic_storage_cases {
                     None => ()
                 }
             }
+        }
+
+        fn some_test_overrides() -> HashMap<String, Option<String>> {
+            let mut storage_config = HashMap::new();
+            let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
+            storage_config.insert(env_vars[0].to_string(), Some(r#"{"conf1":"key1", "conf2":"key2"}"#.to_string()));
+            storage_config.insert(env_vars[1].to_string(), Some(r#"{"account":"key1", "password":"key2"}"#.to_string()));
+            storage_config.insert(env_vars[2].to_string(), Some("type1".to_string()));
+            storage_config.insert(env_vars[3].to_string(), Some("./a/library.so".to_string()));
+            storage_config.insert(env_vars[4].to_string(), Some("my_fn_".to_string()));
+            storage_config
+        }
+
+        #[test]
+        fn configure_wallet_works_for_case() {
+            let hs_keep = save_config_overrides();
+
+            // test we correctly pick up the values
+            env::set_var("STG_TYPE", "inmem_mylocaltest");
+            let hs = utils::wallet::wallet_storage_overrides();
+            env::remove_var("STG_TYPE");
+
+            restore_config_overrides(hs_keep);
 
             // finally assert our test
-            assert_eq!(hs.get("STG_TYPE").unwrap(), &Some("inmem".to_string()));
+            assert_eq!(hs.get("STG_TYPE").unwrap(), &Some("inmem_mylocaltest".to_string()));
+        }
+
+        #[test]
+        fn override_wallet_configuration_works() {
+            let hs_vars = some_test_overrides();
+            let new_config = utils::wallet::override_wallet_configuration(&UNKNOWN_WALLET_CONFIG, &hs_vars);
+
+            let old_config: Config = serde_json::from_str(UNKNOWN_WALLET_CONFIG).unwrap();
+            let new_config: Config = serde_json::from_str(&new_config).unwrap();
+            let wconf = hs_vars.get("STG_CONFIG").as_ref().unwrap().as_ref().unwrap();
+            let v: Value = serde_json::from_str(&wconf[..]).unwrap();
+
+            assert_eq!(old_config.id, new_config.id);
+            assert_eq!(new_config.storage_config, Some(v));
+        }
+
+        #[test]
+        fn override_wallet_credentials_works() {
+            let hs_vars = some_test_overrides();
+            let new_creds = utils::wallet::override_wallet_credentials(&WALLET_CREDENTIALS_RAW, &hs_vars);
+
+            let old_creds: Credentials = serde_json::from_str(WALLET_CREDENTIALS_RAW).unwrap();
+            let new_creds: Credentials = serde_json::from_str(&new_creds).unwrap();
+            let wcreds = hs_vars.get("STG_CREDS").as_ref().unwrap().as_ref().unwrap();
+            let v: Value = serde_json::from_str(&wcreds[..]).unwrap();
+
+            assert_eq!(old_creds.key, new_creds.key);
+            assert_eq!(new_creds.storage_credentials, Some(v));
         }
     }
 }
@@ -778,4 +829,3 @@ fn _custom_path() -> String {
     path.push("custom_wallet_path");
     path.to_str().unwrap().to_owned()
 }
-

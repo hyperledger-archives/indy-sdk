@@ -3,6 +3,7 @@ use indy::api::wallet::*;
 
 use utils::{callback, sequence, environment, ctypes};
 use utils::inmem_wallet::InmemWallet;
+use utils::domain::wallet::{Config, Credentials};
 
 use std::collections::HashSet;
 use std::collections::HashMap;
@@ -15,6 +16,8 @@ use utils::constants::{TYPE, INMEM_TYPE, WALLET_CREDENTIALS};
 use std::path::{Path, PathBuf};
 
 use serde_json;
+use serde_json::Value;
+
 
 pub fn register_wallet_storage(xtype: &str, force_create: bool) -> Result<(), ErrorCode> {
     lazy_static! {
@@ -198,52 +201,60 @@ pub fn generate_wallet_key(config: Option<&str>) -> Result<String, ErrorCode> {
     super::results::result_to_string(err, receiver)
 }
 
-/* 
+/*
  * Dynamically loads the specified library and registers storage
  */
-fn load_storage_library(_stg_type: &str, _library: &str, _fn_pfx: &str) {
+pub fn load_storage_library(_stg_type: &str, _library: &str, _fn_pfx: &str) {
     ()
 }
 
 /*
  * Update the given configuration string based on supplied overrides
  */
-fn override_wallet_configuration(config: &str, overrides: &HashMap<String, Option<String>>) -> String {
-    let v: Value = serde_json::from_str(config)?;
+pub fn override_wallet_configuration(config: &str, overrides: &HashMap<String, Option<String>>) -> String {
+    let mut config: Config = serde_json::from_str(config).unwrap();
 
     match overrides.get("STG_TYPE") {
         Some(stype) => match stype {
-            Some(type) => v["storage_type"] = type.clone(),
+            Some(wtype) => {
+                config.storage_type = Some(wtype.clone());
+            },
             None => ()
         },
         None => ()
     }
     match overrides.get("STG_CONFIG") {
         Some(sconfig) => match sconfig {
-            Some(config) => v["storage_config"] = config.clone(),
+            Some(wconfig) => {
+                let v: Value = serde_json::from_str(&wconfig[..]).unwrap();
+                config.storage_config = Some(v.clone());
+            },
             None => ()
         },
         None => ()
     }
 
-    serde_json::to_string(&v);
+    serde_json::to_string(&config).unwrap()
 }
 
 /*
  * Update the given credentials string based on supplied overrides
  */
-fn override_wallet_credentials(creds: &str, overrides: &HashMap<String, Option<String>>) -> String {
-    let v: Value = serde_json::from_str(creds)?;
+pub fn override_wallet_credentials(creds: &str, overrides: &HashMap<String, Option<String>>) -> String {
+    let mut creds: Credentials = serde_json::from_str(creds).unwrap();
 
     match overrides.get("STG_CREDS") {
         Some(screds) => match screds {
-            Some(creds) => v["storage_credentials"] = creds.clone(),
+            Some(wcreds) => {
+                let v: Value = serde_json::from_str(&wcreds[..]).unwrap();
+                creds.storage_credentials = Some(v.clone());
+            },
             None => ()
         },
         None => ()
     }
 
-    serde_json::to_string(&v);
+    serde_json::to_string(&creds).unwrap()
 }
 
 /*
@@ -251,7 +262,7 @@ fn override_wallet_credentials(creds: &str, overrides: &HashMap<String, Option<S
  * STG_CONFIG - json configuration string to pass to the wallet on creation and open
  * STG_CREDS - json credentials string to pass to the wallet on creation and open
  * STG_TYPE - storage type to create
- * STG_LIB - c-callable library to load (contains a plug-in storage) 
+ * STG_LIB - c-callable library to load (contains a plug-in storage)
  *             - if specified will dynamically load and register a wallet storage
  * STG_FN_PREFIX - prefix for all plug-in functions (allows standard function naming)
  */
@@ -269,7 +280,7 @@ pub fn wallet_storage_overrides() -> HashMap<String, Option<String>> {
     match storage_config.get("STG_LIB") {
         Some(slibrary) => match slibrary {
             Some(library) => {
-                let stg_type: String = match storage_config.get("STG_CONFIG") {
+                let stg_type: String = match storage_config.get("STG_TYPE") {
                     Some(styp) => match styp {
                         Some(typ) => typ.clone(),
                         None => "".to_string()
