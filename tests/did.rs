@@ -18,12 +18,12 @@ use utils::wallet::Wallet;
 const VALID_TIMEOUT: Duration = Duration::from_secs(5);
 const INVALID_TIMEOUT: Duration = Duration::from_micros(1);
 const INVALID_HANDLE: i32 = 583741;
+const METADATA: &str = "some metadata";
 
 #[inline]
 fn assert_verkey_len(verkey: &str) {
     assert_eq!(32, verkey.from_base58().unwrap().len());
 }
-
 
 #[cfg(test)]
 mod create_new_did {
@@ -1039,6 +1039,169 @@ mod test_get_verkey_local {
                 INVALID_TIMEOUT
             );
     
+            assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+        }
+    }
+
+    #[cfg(test)]
+    mod test_set_metadata {
+        use super::*;
+
+        #[inline]
+        fn setup() -> (Wallet, String) {
+            let wallet = Wallet::new();
+            let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+            
+            (wallet, did)
+        }
+
+        #[test]
+        fn set_metadata_my_did() {
+            let (wallet, did) = setup();
+
+            let result = Did::set_metadata(wallet.handle, &did, METADATA);
+            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+            assert_eq!((), result.unwrap());
+            assert_eq!(METADATA, metadata);
+        }
+
+        #[test]
+        fn set_metadata_their_did() {
+            let (wallet, did) = setup();
+
+            let result = Did::set_metadata(wallet.handle, DID_1, METADATA);
+            let metadata = Did::get_metadata(wallet.handle, DID_1).unwrap();
+
+            assert_eq!((), result.unwrap());
+            assert_eq!(METADATA, metadata);
+        }
+
+        #[test]
+        fn set_metadata_replace_metadata() {
+            let (wallet, did) = setup();
+
+            Did::set_metadata(wallet.handle, &did, METADATA).unwrap();
+            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+            assert_eq!(METADATA, metadata);
+
+            let next_metadata = "replacement metadata";
+            Did::set_metadata(wallet.handle, &did, next_metadata).unwrap();
+            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+            assert_eq!(next_metadata, metadata);
+        }
+
+        #[test]
+        fn set_metadata_empty_string() {
+            let (wallet, did) = setup();
+
+            let result = Did::set_metadata(wallet.handle, &did, "");
+            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+            assert_eq!((), result.unwrap());
+            assert_eq!("", metadata);
+        }
+
+        #[test]
+        fn set_metadata_invalid_did() {
+            let wallet = Wallet::new();
+
+            let result = Did::set_metadata(wallet.handle, "InvalidDid", METADATA);
+
+            assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+        }
+
+        #[test]
+        fn set_metadata_unknown_did() {
+            let wallet = Wallet::new();
+
+            let result = Did::set_metadata(wallet.handle, DID_1, METADATA);
+            let metadata = Did::get_metadata(wallet.handle, DID_1).unwrap();
+
+            assert_eq!((), result.unwrap());
+            assert_eq!(METADATA, metadata);
+        }
+
+        #[test]
+        fn set_metadata_invalid_wallet() {
+            let result = Did::set_metadata(INVALID_HANDLE, DID_1, METADATA);
+            assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        }
+
+        #[test]
+        fn set_metadata_async_my_did() {
+            let (sender, receiver) = channel();
+            let (wallet, did) = setup();
+
+            let result = Did::set_metadata_async(
+                wallet.handle,
+                &did,
+                METADATA,
+                move |ec| sender.send(ec).unwrap()
+            );
+
+            let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+            assert_eq!(ErrorCode::Success, ec);
+            assert_eq!(METADATA, metadata);
+        }
+
+        #[test]
+        fn set_metadata_async_invalid_wallet() {
+            let (sender, receiver) = channel();
+
+            Did::set_metadata_async(
+                INVALID_HANDLE,
+                DID_1,
+                METADATA,
+                move |ec| sender.send(ec).unwrap()
+            );
+
+            let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+            assert_eq!(ErrorCode::WalletInvalidHandle, ec);
+        }
+
+        #[test]
+        fn set_metadata_timeout_my_did() {
+            let (wallet, did) = setup();
+
+            let result = Did::set_metadata_timeout(
+                wallet.handle,
+                &did,
+                METADATA,
+                VALID_TIMEOUT
+            );
+            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+            assert_eq!((), result.unwrap());
+            assert_eq!(METADATA, metadata);
+        }
+
+        #[test]
+        fn set_metadata_timeout_invalid_wallet() {
+            let result = Did::set_metadata_timeout(
+                INVALID_HANDLE,
+                DID_1,
+                METADATA,
+                VALID_TIMEOUT
+            );
+
+            assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+        }
+
+        #[test]
+        fn set_metadata_timeout_timeouts() {
+            let result = Did::set_metadata_timeout(
+                INVALID_HANDLE,
+                DID_1,
+                METADATA,
+                INVALID_TIMEOUT
+            );
+
             assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
         }
     }
