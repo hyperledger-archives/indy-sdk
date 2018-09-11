@@ -1467,7 +1467,7 @@ mod test_get_endpoint {
         match indy::did::Did::get_endpoint(wallet.handle, pool_handle, &did) {
             Ok(ret_address) => {
 
-                let (address, other) = Some(ret_address).unwrap();
+                let (address, _) = Some(ret_address).unwrap();
 
                 if end_point_address.to_string() == address {
                     test_succeeded = true;
@@ -1521,7 +1521,7 @@ mod test_get_endpoint {
         match indy::did::Did::get_endpoint_timeout(wallet.handle, pool_handle, &did, VALID_TIMEOUT) {
             Ok(ret_address) => {
 
-                let (address, other) = Some(ret_address).unwrap();
+                let (address, _) = Some(ret_address).unwrap();
 
                 if end_point_address.to_string() == address {
                     test_succeeded = true;
@@ -1569,11 +1569,10 @@ mod test_get_endpoint {
         }
 
         let pool_handle = indy::pool::Pool::open_ledger(&pool_setup.pool_name, None).unwrap();
-        let mut test_succeeded : bool = false;
         let mut error_code: indy::ErrorCode = indy::ErrorCode::Success;
 
-        let cb = move |ec, str, opt_str| {
-            sender.send((ec, str, opt_str)).unwrap();
+        let cb = move |ec, end_point, ver_key| {
+            sender.send((ec, end_point, ver_key)).unwrap();
         };
 
         Did::get_endpoint_async(wallet.handle, pool_handle, &did, cb);
