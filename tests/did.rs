@@ -1765,3 +1765,170 @@ mod test_abbreviate_verkey {
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
 }
+
+#[cfg(test)]
+mod test_list_with_metadata {
+    use super::*;
+
+    fn setup_multiple(wallet: &Wallet) -> Vec<serde_json::Value> {
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+        Did::store_their_did(wallet.handle, &config).unwrap();
+        let (did1, verkey1) = Did::new(wallet.handle, "{}").unwrap();
+        let (did2, verkey2) = Did::new(wallet.handle, "{}").unwrap();
+        Did::set_metadata(wallet.handle, &did1, METADATA).unwrap();
+
+        let expected = vec![
+            json!({
+                "did": did1,
+                "verkey": verkey1,
+                "metadata": Some(METADATA.to_string())
+            }),
+            json!({
+                "did": did2,
+                "verkey": verkey2,
+                "metadata": null
+            })
+        ];
+
+        expected
+    }
+
+    fn assert_multiple(json: String, expected: Vec<serde_json::Value>) {
+        let dids: Vec<serde_json::Value> = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(expected.len(), dids.len());
+
+        for did in expected {
+            assert!(dids.contains(&did));
+        }
+    }
+
+    #[test]
+    fn list_with_metadata_no_dids() {
+        let wallet = Wallet::new();
+
+        let result = Did::list_with_metadata(wallet.handle);
+
+        assert_eq!("[]", result.unwrap());
+    }
+
+    #[test]
+    fn list_with_metadata_their_did() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+        Did::store_their_did(wallet.handle, &config).unwrap();
+
+        let result = Did::list_with_metadata(wallet.handle);
+
+        assert_eq!("[]", result.unwrap());
+    }
+
+    #[test]
+    fn list_with_metadata_cryptonym() {
+        let wallet = Wallet::new();
+        let config = json!({"seed": SEED_1, "cid": true}).to_string();
+        Did::new(wallet.handle, &config).unwrap();
+
+        let json = Did::list_with_metadata(wallet.handle).unwrap();
+        let dids: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let expected = json!([{
+            "did": VERKEY_1,
+            "verkey": VERKEY_1,
+            "metadata": null
+        }]);
+
+        assert_eq!(expected, dids);
+    }
+
+    #[test]
+    fn list_with_metadata_did_with_metadata() {
+        let wallet = Wallet::new();
+        let config = json!({"seed": SEED_1}).to_string();
+        Did::new(wallet.handle, &config).unwrap();
+        Did::set_metadata(wallet.handle, DID_1, METADATA).unwrap();
+
+        let json = Did::list_with_metadata(wallet.handle).unwrap();
+        let dids: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        let expected = json!([{
+            "did": DID_1,
+            "verkey": VERKEY_1,
+            "metadata": METADATA
+        }]);
+
+        assert_eq!(expected, dids);
+    }
+
+    #[test]
+    fn list_with_metadata_multiple_dids() {
+        let wallet = Wallet::new();
+        let expected = setup_multiple(&wallet);
+       
+        let dids = Did::list_with_metadata(wallet.handle).unwrap();
+
+        assert_multiple(dids, expected);
+    }
+
+    #[test]
+    fn list_with_metadata_invalid_wallet() {
+        let result = Did::list_with_metadata(INVALID_HANDLE);
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn list_with_metadata_async_multiple_dids() {
+        let (sender, receiver) = channel();
+        let wallet = Wallet::new();
+        let expected = setup_multiple(&wallet);
+
+        Did::list_with_metadata_async(
+            wallet.handle,
+            move |ec, list| sender.send((ec, list)).unwrap()
+        );
+
+        let (ec, list) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_multiple(list, expected);
+    }
+
+    #[test]
+    fn list_with_metadata_async_invalid_wallet() {
+        let (sender, receiver) = channel();
+
+        Did::list_with_metadata_async(
+            INVALID_HANDLE,
+            move |ec, list| sender.send((ec, list)).unwrap()
+        );
+
+        let (ec, list) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, ec);
+        assert_eq!("", list);
+    }
+
+    #[test]
+    fn list_with_metadata_timeout_multiple_dids() {
+        let wallet = Wallet::new();
+        let expected = setup_multiple(&wallet);
+
+        let json = Did::list_with_metadata_timeout(
+            wallet.handle,
+            VALID_TIMEOUT
+        ).unwrap();
+
+        assert_multiple(json, expected);
+    }
+
+    #[test]
+    fn list_with_metadata_timeout_invalid_wallet() {
+        let result = Did::list_with_metadata_timeout(INVALID_HANDLE, VALID_TIMEOUT);
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn list_with_metadata_timeout_timeouts() {
+        let result = Did::list_with_metadata_timeout(INVALID_HANDLE, INVALID_TIMEOUT);
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+    }
+}
