@@ -868,343 +868,343 @@ mod test_get_verkey_local {
             DID_1,
             INVALID_TIMEOUT
         );
-        
+
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
+}
 
-    #[cfg(test)]
-    mod test_get_verkey_ledger {
-        use super::*;
-        use indy::ledger::Ledger;
+#[cfg(test)]
+mod test_get_verkey_ledger {
+    use super::*;
+    use indy::ledger::Ledger;
 
-        #[test]
-        fn get_verkey_my_did() {
-            let wallet = Wallet::new();
-            let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
+    #[test]
+    fn get_verkey_my_did() {
+        let wallet = Wallet::new();
+        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
 
-            let stored_verkey = Did::get_ver_key(
-                -1,
-                wallet.handle,
-                &did
-            ).unwrap();
+        let stored_verkey = Did::get_ver_key(
+            -1,
+            wallet.handle,
+            &did
+        ).unwrap();
 
-            assert_eq!(verkey, stored_verkey);
-        }
-
-        #[test]
-        fn get_verkey_their_did() {
-            let wallet = Wallet::new();
-            let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
-            Did::store_their_did(wallet.handle, &config).unwrap();
-
-            let stored_verkey = Did::get_ver_key(
-                -1,
-                wallet.handle,
-                DID_1,
-            ).unwrap();
-
-            assert_eq!(VERKEY_1, stored_verkey);
-        }
-
-        #[test]
-        fn get_verkey_not_on_ledger() {
-            let wallet = Wallet::new();
-            let wallet2 = Wallet::new();
-            let setup = Setup::new(&wallet, SetupConfig {
-                connect_to_pool: true,
-                num_trustees: 0,
-                num_users: 0,
-                num_nodes: 4
-            });
-            let pool_handle = setup.pool_handle.unwrap();
-
-            let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
-
-            let result = Did::get_ver_key(
-                pool_handle,
-                wallet2.handle,
-                &did
-            );
-
-            assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
-        }
-
-        #[test]
-        fn get_verkey_on_ledger() {
-            let wallet = Wallet::new();
-            let wallet2 = Wallet::new();
-            let setup = Setup::new(&wallet, SetupConfig {
-                connect_to_pool: true,
-                num_trustees: 1,
-                num_users: 1,
-                num_nodes: 4
-            });
-            let pool_handle = setup.pool_handle.unwrap();
-            let user = &setup.users.as_ref().unwrap()[0];
-
-            let ledger_verkey = Did::get_ver_key(
-                pool_handle,
-                wallet2.handle,
-                &user.did
-            ).unwrap();
-
-            assert_eq!(ledger_verkey, user.verkey);
-        }
-
-        #[test]
-        fn get_verkey_invalid_pool() {
-            let wallet = Wallet::new();
-
-            let result = Did::get_ver_key(-1, wallet.handle, DID_1);
-
-            assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, result.unwrap_err());
-        }
-
-        #[test]
-        fn get_verkey_invalid_wallet() {
-            let result = Did::get_ver_key(-1, INVALID_HANDLE, DID_1);
-            assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
-        }
-
-        #[test]
-        fn get_verkey_async_my_did() {
-            let (sender, receiver) = channel();
-            let wallet = Wallet::new();
-            let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
-
-            Did::get_ver_key_async(
-                -1,
-                wallet.handle,
-                &did,
-                move |ec, verkey| sender.send((ec, verkey)).unwrap()
-            );
-
-            let (ec, stored_verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-
-            assert_eq!(verkey, stored_verkey);
-        }
-
-        #[test]
-        fn get_verkey_async_invalid_wallet() {
-            let (sender, receiver) = channel();
-
-            Did::get_ver_key_async(
-                -1,
-                INVALID_HANDLE,
-                DID_1,
-                move |ec, verkey| sender.send((ec, verkey)).unwrap()
-            );
-
-            let (ec, stored_verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-
-            assert_eq!(ErrorCode::WalletInvalidHandle, ec);
-            assert_eq!(String::from(""), stored_verkey);
-        }
-
-        #[test]
-        fn get_verkey_timeout_my_did() {
-            let wallet = Wallet::new();
-            let config = json!({"seed": SEED_1}).to_string();
-            let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
-
-            let stored_verkey = Did::get_ver_key_timeout(
-                -1,
-                wallet.handle,
-                &did,
-                VALID_TIMEOUT
-            ).unwrap();
-
-            assert_eq!(verkey, stored_verkey);
-        }
-
-        #[test]
-        fn get_verkey_timeout_invalid_wallet() {
-            let result = Did::get_ver_key_timeout(
-                -1,
-                INVALID_HANDLE, 
-                DID_1,
-                VALID_TIMEOUT
-            );
-    
-            assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
-        }
-
-        #[test]
-        fn get_verkey_timeout_timeouts() {
-            let result = Did::get_ver_key_timeout(
-                -1,
-                INVALID_HANDLE, 
-                DID_1,
-                INVALID_TIMEOUT
-            );
-    
-            assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
-        }
+        assert_eq!(verkey, stored_verkey);
     }
 
-    #[cfg(test)]
-    mod test_set_metadata {
-        use super::*;
+    #[test]
+    fn get_verkey_their_did() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+        Did::store_their_did(wallet.handle, &config).unwrap();
 
-        #[inline]
-        fn setup() -> (Wallet, String) {
-            let wallet = Wallet::new();
-            let (did, _) = Did::new(wallet.handle, "{}").unwrap();
-            
-            (wallet, did)
-        }
+        let stored_verkey = Did::get_ver_key(
+            -1,
+            wallet.handle,
+            DID_1,
+        ).unwrap();
 
-        #[test]
-        fn set_metadata_my_did() {
-            let (wallet, did) = setup();
+        assert_eq!(VERKEY_1, stored_verkey);
+    }
 
-            let result = Did::set_metadata(wallet.handle, &did, METADATA);
-            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+    #[test]
+    fn get_verkey_not_on_ledger() {
+        let wallet = Wallet::new();
+        let wallet2 = Wallet::new();
+        let setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: true,
+            num_trustees: 0,
+            num_users: 0,
+            num_nodes: 4
+        });
+        let pool_handle = setup.pool_handle.unwrap();
 
-            assert_eq!((), result.unwrap());
-            assert_eq!(METADATA, metadata);
-        }
+        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
 
-        #[test]
-        fn set_metadata_their_did() {
-            let wallet = Wallet::new();
-            let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
-            Did::store_their_did(wallet.handle, &config).unwrap();
+        let result = Did::get_ver_key(
+            pool_handle,
+            wallet2.handle,
+            &did
+        );
 
-            let result = Did::set_metadata(wallet.handle, DID_1, METADATA);
-            let metadata = Did::get_metadata(wallet.handle, DID_1).unwrap();
+        assert_eq!(ErrorCode::WalletItemNotFound, result.unwrap_err());
+    }
 
-            assert_eq!((), result.unwrap());
-            assert_eq!(METADATA, metadata);
-        }
+    #[test]
+    fn get_verkey_on_ledger() {
+        let wallet = Wallet::new();
+        let wallet2 = Wallet::new();
+        let setup = Setup::new(&wallet, SetupConfig {
+            connect_to_pool: true,
+            num_trustees: 1,
+            num_users: 1,
+            num_nodes: 4
+        });
+        let pool_handle = setup.pool_handle.unwrap();
+        let user = &setup.users.as_ref().unwrap()[0];
 
-        #[test]
-        fn set_metadata_replace_metadata() {
-            let (wallet, did) = setup();
+        let ledger_verkey = Did::get_ver_key(
+            pool_handle,
+            wallet2.handle,
+            &user.did
+        ).unwrap();
 
-            Did::set_metadata(wallet.handle, &did, METADATA).unwrap();
-            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+        assert_eq!(ledger_verkey, user.verkey);
+    }
 
-            assert_eq!(METADATA, metadata);
+    #[test]
+    fn get_verkey_invalid_pool() {
+        let wallet = Wallet::new();
 
-            let next_metadata = "replacement metadata";
-            Did::set_metadata(wallet.handle, &did, next_metadata).unwrap();
-            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+        let result = Did::get_ver_key(-1, wallet.handle, DID_1);
 
-            assert_eq!(next_metadata, metadata);
-        }
+        assert_eq!(ErrorCode::PoolLedgerInvalidPoolHandle, result.unwrap_err());
+    }
 
-        #[test]
-        fn set_metadata_empty_string() {
-            let (wallet, did) = setup();
+    #[test]
+    fn get_verkey_invalid_wallet() {
+        let result = Did::get_ver_key(-1, INVALID_HANDLE, DID_1);
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
 
-            let result = Did::set_metadata(wallet.handle, &did, "");
-            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+    #[test]
+    fn get_verkey_async_my_did() {
+        let (sender, receiver) = channel();
+        let wallet = Wallet::new();
+        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
 
-            assert_eq!((), result.unwrap());
-            assert_eq!("", metadata);
-        }
+        Did::get_ver_key_async(
+            -1,
+            wallet.handle,
+            &did,
+            move |ec, verkey| sender.send((ec, verkey)).unwrap()
+        );
 
-        #[test]
-        fn set_metadata_invalid_did() {
-            let wallet = Wallet::new();
+        let (ec, stored_verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
 
-            let result = Did::set_metadata(wallet.handle, "InvalidDid", METADATA);
+        assert_eq!(verkey, stored_verkey);
+    }
 
-            assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
-        }
+    #[test]
+    fn get_verkey_async_invalid_wallet() {
+        let (sender, receiver) = channel();
 
-        #[test]
-        fn set_metadata_unknown_did() {
-            let wallet = Wallet::new();
+        Did::get_ver_key_async(
+            -1,
+            INVALID_HANDLE,
+            DID_1,
+            move |ec, verkey| sender.send((ec, verkey)).unwrap()
+        );
 
-            let result = Did::set_metadata(wallet.handle, DID_1, METADATA);
-            let metadata = Did::get_metadata(wallet.handle, DID_1).unwrap();
+        let (ec, stored_verkey) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
 
-            assert_eq!((), result.unwrap());
-            assert_eq!(METADATA, metadata);
-        }
+        assert_eq!(ErrorCode::WalletInvalidHandle, ec);
+        assert_eq!(String::from(""), stored_verkey);
+    }
 
-        #[test]
-        fn set_metadata_invalid_wallet() {
-            let result = Did::set_metadata(INVALID_HANDLE, DID_1, METADATA);
-            assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
-        }
+    #[test]
+    fn get_verkey_timeout_my_did() {
+        let wallet = Wallet::new();
+        let config = json!({"seed": SEED_1}).to_string();
+        let (did, verkey) = Did::new(wallet.handle, &config).unwrap();
 
-        #[test]
-        fn set_metadata_async_my_did() {
-            let (sender, receiver) = channel();
-            let (wallet, did) = setup();
+        let stored_verkey = Did::get_ver_key_timeout(
+            -1,
+            wallet.handle,
+            &did,
+            VALID_TIMEOUT
+        ).unwrap();
 
-            let result = Did::set_metadata_async(
-                wallet.handle,
-                &did,
-                METADATA,
-                move |ec| sender.send(ec).unwrap()
-            );
+        assert_eq!(verkey, stored_verkey);
+    }
 
-            let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+    #[test]
+    fn get_verkey_timeout_invalid_wallet() {
+        let result = Did::get_ver_key_timeout(
+            -1,
+            INVALID_HANDLE,
+            DID_1,
+            VALID_TIMEOUT
+        );
 
-            assert_eq!(ErrorCode::Success, ec);
-            assert_eq!(METADATA, metadata);
-        }
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
 
-        #[test]
-        fn set_metadata_async_invalid_wallet() {
-            let (sender, receiver) = channel();
+    #[test]
+    fn get_verkey_timeout_timeouts() {
+        let result = Did::get_ver_key_timeout(
+            -1,
+            INVALID_HANDLE,
+            DID_1,
+            INVALID_TIMEOUT
+        );
 
-            Did::set_metadata_async(
-                INVALID_HANDLE,
-                DID_1,
-                METADATA,
-                move |ec| sender.send(ec).unwrap()
-            );
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
+    }
+}
 
-            let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+#[cfg(test)]
+mod test_set_metadata {
+    use super::*;
 
-            assert_eq!(ErrorCode::WalletInvalidHandle, ec);
-        }
+    #[inline]
+    fn setup() -> (Wallet, String) {
+        let wallet = Wallet::new();
+        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
 
-        #[test]
-        fn set_metadata_timeout_my_did() {
-            let (wallet, did) = setup();
+        (wallet, did)
+    }
 
-            let result = Did::set_metadata_timeout(
-                wallet.handle,
-                &did,
-                METADATA,
-                VALID_TIMEOUT
-            );
-            let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+    #[test]
+    fn set_metadata_my_did() {
+        let (wallet, did) = setup();
 
-            assert_eq!((), result.unwrap());
-            assert_eq!(METADATA, metadata);
-        }
+        let result = Did::set_metadata(wallet.handle, &did, METADATA);
+        let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
 
-        #[test]
-        fn set_metadata_timeout_invalid_wallet() {
-            let result = Did::set_metadata_timeout(
-                INVALID_HANDLE,
-                DID_1,
-                METADATA,
-                VALID_TIMEOUT
-            );
+        assert_eq!((), result.unwrap());
+        assert_eq!(METADATA, metadata);
+    }
 
-            assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
-        }
+    #[test]
+    fn set_metadata_their_did() {
+        let wallet = Wallet::new();
+        let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
+        Did::store_their_did(wallet.handle, &config).unwrap();
 
-        #[test]
-        fn set_metadata_timeout_timeouts() {
-            let result = Did::set_metadata_timeout(
-                INVALID_HANDLE,
-                DID_1,
-                METADATA,
-                INVALID_TIMEOUT
-            );
+        let result = Did::set_metadata(wallet.handle, DID_1, METADATA);
+        let metadata = Did::get_metadata(wallet.handle, DID_1).unwrap();
 
-            assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
-        }
+        assert_eq!((), result.unwrap());
+        assert_eq!(METADATA, metadata);
+    }
+
+    #[test]
+    fn set_metadata_replace_metadata() {
+        let (wallet, did) = setup();
+
+        Did::set_metadata(wallet.handle, &did, METADATA).unwrap();
+        let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+        assert_eq!(METADATA, metadata);
+
+        let next_metadata = "replacement metadata";
+        Did::set_metadata(wallet.handle, &did, next_metadata).unwrap();
+        let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+        assert_eq!(next_metadata, metadata);
+    }
+
+    #[test]
+    fn set_metadata_empty_string() {
+        let (wallet, did) = setup();
+
+        let result = Did::set_metadata(wallet.handle, &did, "");
+        let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+        assert_eq!((), result.unwrap());
+        assert_eq!("", metadata);
+    }
+
+    #[test]
+    fn set_metadata_invalid_did() {
+        let wallet = Wallet::new();
+
+        let result = Did::set_metadata(wallet.handle, "InvalidDid", METADATA);
+
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+    }
+
+    #[test]
+    fn set_metadata_unknown_did() {
+        let wallet = Wallet::new();
+
+        let result = Did::set_metadata(wallet.handle, DID_1, METADATA);
+        let metadata = Did::get_metadata(wallet.handle, DID_1).unwrap();
+
+        assert_eq!((), result.unwrap());
+        assert_eq!(METADATA, metadata);
+    }
+
+    #[test]
+    fn set_metadata_invalid_wallet() {
+        let result = Did::set_metadata(INVALID_HANDLE, DID_1, METADATA);
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn set_metadata_async_my_did() {
+        let (sender, receiver) = channel();
+        let (wallet, did) = setup();
+
+        let result = Did::set_metadata_async(
+            wallet.handle,
+            &did,
+            METADATA,
+            move |ec| sender.send(ec).unwrap()
+        );
+
+        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+        assert_eq!(ErrorCode::Success, ec);
+        assert_eq!(METADATA, metadata);
+    }
+
+    #[test]
+    fn set_metadata_async_invalid_wallet() {
+        let (sender, receiver) = channel();
+
+        Did::set_metadata_async(
+            INVALID_HANDLE,
+            DID_1,
+            METADATA,
+            move |ec| sender.send(ec).unwrap()
+        );
+
+        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, ec);
+    }
+
+    #[test]
+    fn set_metadata_timeout_my_did() {
+        let (wallet, did) = setup();
+
+        let result = Did::set_metadata_timeout(
+            wallet.handle,
+            &did,
+            METADATA,
+            VALID_TIMEOUT
+        );
+        let metadata = Did::get_metadata(wallet.handle, &did).unwrap();
+
+        assert_eq!((), result.unwrap());
+        assert_eq!(METADATA, metadata);
+    }
+
+    #[test]
+    fn set_metadata_timeout_invalid_wallet() {
+        let result = Did::set_metadata_timeout(
+            INVALID_HANDLE,
+            DID_1,
+            METADATA,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::WalletInvalidHandle, result.unwrap_err());
+    }
+
+    #[test]
+    fn set_metadata_timeout_timeouts() {
+        let result = Did::set_metadata_timeout(
+            INVALID_HANDLE,
+            DID_1,
+            METADATA,
+            INVALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
 }
 
