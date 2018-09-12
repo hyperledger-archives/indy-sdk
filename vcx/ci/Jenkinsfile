@@ -21,7 +21,7 @@ def testing() {
         parallel([
             // 'Xenial' : { mainUbuntu() },
             'Android': { android() },
-            // 'iOS' : { ios() }
+            'iOS' : { ios() }
         ])
     }
 }
@@ -239,7 +239,7 @@ def buildAndroid(arch) {
                 ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'
                 LIBINDY_BRANCH="rc"
                 LIBINDY_VERSION="1.6.6"
-                LIBINDY_TAG="25"
+                LIBINDY_TAG="28"
 
                 sh 'sudo ./vcx/ci/scripts/installCert.sh'
                 sh "LIBINDY_BRANCH=${LIBINDY_BRANCH} LIBINDY_VERSION=${LIBINDY_VERSION} LIBINDY_TAG=${LIBINDY_TAG} ./${ANDROID_SCRIPT_PATH} ${arch}"
