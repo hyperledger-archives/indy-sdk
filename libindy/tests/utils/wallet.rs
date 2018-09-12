@@ -231,7 +231,9 @@ pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) ->
     let err;
     println!("Register wallet storage");
     unsafe {
+        let s = format!("{}create", fn_pfx);
         let fn_create_handler = lib.symbol(&format!("{}create", fn_pfx)).unwrap();
+        println!("{} returns {:?}", s, fn_create_handler);
         let fn_open_handler = lib.symbol(&format!("{}open", fn_pfx)).unwrap();
         let fn_close_handler = lib.symbol(&format!("{}close", fn_pfx)).unwrap();
         let fn_delete_handler = lib.symbol(&format!("{}delete", fn_pfx)).unwrap();
@@ -256,6 +258,8 @@ pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) ->
         let fn_fetch_search_next_record_handler = lib.symbol(&format!("{}fetch_search_next_record", fn_pfx)).unwrap();
         let fn_free_search_handler = lib.symbol(&format!("{}free_search", fn_pfx)).unwrap();
 
+        let p = transmute::<*mut u8, WalletCreate>(fn_create_handler);
+        println!("transmute returns {:?}", p);
         err = indy_register_wallet_storage(
             command_handle,
             xxtype.as_ptr(),
