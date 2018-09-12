@@ -43,6 +43,7 @@ fi
 # rustup self uninstall
 
 if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
+    rustup default 1.27.0
     rustup update
     rustup component add rls-preview rust-analysis rust-src
 
