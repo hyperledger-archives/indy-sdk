@@ -78,6 +78,8 @@ pub fn register_wallet_storage(xtype: &str, force_create: bool) -> Result<(), Er
 pub fn create_wallet(config: &str, credentials: &str) -> Result<(), ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
 
+    let (config, credentials) = override_wallet_config_creds(config, credentials, true);
+
     let config = CString::new(config).unwrap();
     let credentials = CString::new(credentials).unwrap();
 
@@ -92,6 +94,8 @@ pub fn create_wallet(config: &str, credentials: &str) -> Result<(), ErrorCode> {
 
 pub fn open_wallet(config: &str, credentials: &str) -> Result<i32, ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_i32();
+
+    let (config, credentials) = override_wallet_config_creds(config, credentials, false);
 
     let config = CString::new(config).unwrap();
     let credentials = CString::new(credentials).unwrap();
@@ -138,6 +142,8 @@ pub fn create_and_open_plugged_wallet() -> Result<i32, ErrorCode> {
 
 pub fn delete_wallet(config: &str, credentials: &str) -> Result<(), ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
+
+    let (config, credentials) = override_wallet_config_creds(config, credentials, false);
 
     let config = CString::new(config).unwrap();
     let credentials = CString::new(credentials).unwrap();
@@ -204,6 +210,35 @@ pub fn generate_wallet_key(config: Option<&str>) -> Result<String, ErrorCode> {
                                  cb);
 
     super::results::result_to_string(err, receiver)
+}
+
+/*
+ * Update wallet config based on supplied configuration,
+ *     *only if* "storage_type" is not already provided.
+ */
+pub fn override_wallet_config_creds(config: &str, credentials: &str, load_dynalib: bool) -> (String, String) {
+    // if storge_type is explicit then bail
+    let check_config: Config = serde_json::from_str(config).unwrap();
+    if let Some(_) = check_config.storage_type {
+        return (config.to_owned(), credentials.to_owned());
+    }
+
+    // if no config is provided at all then bail
+    let storage_config = wallet_storage_overrides();
+    if !any_overrides(&storage_config) {
+        return (config.to_owned(), credentials.to_owned());
+    }
+
+    // load dynamic library if requested
+    if load_dynalib {
+        load_storage_library_config(&storage_config).unwrap();
+    }
+
+    // update config and credentials
+    let config = override_wallet_configuration(config, &storage_config);
+    let credentials = override_wallet_credentials(credentials, &storage_config);
+
+    return (config, credentials);
 }
 
 /*
@@ -405,4 +440,13 @@ pub fn wallet_storage_overrides() -> HashMap<String, Option<String>> {
     }
 
     storage_config
+}
+
+pub fn any_overrides(storage_config: &HashMap<String, Option<String>>) -> bool {
+    for (_key, val) in storage_config {
+        if let Some(_) = val {
+            return true;
+        }
+    }
+    return false;
 }
