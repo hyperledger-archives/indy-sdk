@@ -1933,6 +1933,7 @@ mod test_list_with_metadata {
     }
 }
 
+#[cfg(test)]
 mod test_get_my_metadata {
     use super::*;
 
