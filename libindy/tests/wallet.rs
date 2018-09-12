@@ -22,6 +22,7 @@ extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
+extern crate os_type;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;
@@ -780,12 +781,18 @@ mod dynamic_storage_cases {
         }
 
         fn inmem_lib_test_overrides() -> HashMap<String, Option<String>> {
+            let os = os_type::current_platform();
+            let f_ext = match os.os_type {
+                os_type::OSType::OSX => "dylib",
+                _ => "so"
+            };
+
             let mut storage_config = HashMap::new();
             let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
             storage_config.insert(env_vars[0].to_string(), None);
             storage_config.insert(env_vars[1].to_string(), None);
             storage_config.insert(env_vars[2].to_string(), Some("inmem_custom".to_string()));
-            storage_config.insert(env_vars[3].to_string(), Some("../samples/storage/storage-inmem/target/debug/libindystrginmem.so".to_string()));
+            storage_config.insert(env_vars[3].to_string(), Some(format!("../samples/storage/storage-inmem/target/debug/libindystrginmem.{}", f_ext)));
             storage_config.insert(env_vars[4].to_string(), Some("inmemwallet_fn_".to_string()));
             storage_config
         }
@@ -838,23 +845,19 @@ mod dynamic_storage_cases {
             utils::setup();
 
             // load dynamic lib and set config/creds based on overrides
-            println!("Get overrides etc");
             let hs_vars = inmem_lib_test_overrides();
             let new_config = utils::wallet::override_wallet_configuration(&UNKNOWN_WALLET_CONFIG, &hs_vars);
             let new_creds = utils::wallet::override_wallet_credentials(&WALLET_CREDENTIALS_RAW, &hs_vars);
             let res = utils::wallet::load_storage_library_config(&hs_vars);
-            println!("Load library returns {:?}", res);
 
             // confirm dynamic lib loaded ok
             assert_eq!(res, Ok(()));
 
             // verify wallet CCOD
-            println!("Now verify wallet CCUD");
             wallet::create_wallet(&new_config, &new_creds).unwrap();
             let wallet_handle = wallet::open_wallet(&new_config, &new_creds).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
             wallet::delete_wallet(&new_config, &new_creds).unwrap();
-            println!("Done, tear down ...");
 
             utils::tear_down();
         }
