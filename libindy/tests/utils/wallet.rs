@@ -210,6 +210,7 @@ pub fn generate_wallet_key(config: Option<&str>) -> Result<String, ErrorCode> {
  * Dynamically loads the specified library and registers storage
  */
 pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) -> Result<(), ErrorCode> {
+    println!("Loading {} {} {}", stg_type, library_path, fn_pfx);
     lazy_static! {
             static ref STG_REGISERED_WALLETS: Mutex<HashMap<String, Lib>> = Default::default();
         }
@@ -227,9 +228,21 @@ pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) ->
 
     let err;
     let lib;
+    let lib_path = Path::new(library_path);
     unsafe {
-        lib = Lib::new(library_path).unwrap();
+        println!("Loading {:?}", lib_path);
+        lib = match Lib::new(lib_path) {
+            Ok(rlib) => {
+                println!("Loaded lib");
+                rlib
+            },
+            Err(err) => {
+                println!("Load error {:?}", err);
+                panic!("Load error {:?}", err)
+            }
+        };
 
+        println!("Get fn pointers ...");
         let fn_create_handler: Func<WalletCreate> = lib.find_func(&format!("{}create", fn_pfx)).unwrap();
         let fn_open_handler: Func<WalletOpen> = lib.find_func(&format!("{}open", fn_pfx)).unwrap();
         let fn_close_handler: Func<WalletClose> = lib.find_func(&format!("{}close", fn_pfx)).unwrap();
@@ -255,6 +268,7 @@ pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) ->
         let fn_fetch_search_next_record_handler: Func<WalletFetchSearchNextRecord> = lib.find_func(&format!("{}fetch_search_next_record", fn_pfx)).unwrap();
         let fn_free_search_handler: Func<WalletFreeSearch> = lib.find_func(&format!("{}free_search", fn_pfx)).unwrap();
 
+        println!("Register wallet ...");
         err = indy_register_wallet_storage(
             command_handle,
             xxtype.as_ptr(),
@@ -286,6 +300,7 @@ pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) ->
         );
     }
 
+    println!("Finish up ...");
     wallets.insert(stg_type.to_string(), lib);
 
     super::results::result_to_empty(err, receiver)

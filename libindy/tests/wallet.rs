@@ -846,18 +846,26 @@ mod dynamic_storage_cases {
 
             // load dynamic lib and set config/creds based on overrides
             let hs_vars = inmem_lib_test_overrides();
+            println!("Testing: {:?}", hs_vars);
             let new_config = utils::wallet::override_wallet_configuration(&UNKNOWN_WALLET_CONFIG, &hs_vars);
             let new_creds = utils::wallet::override_wallet_credentials(&WALLET_CREDENTIALS_RAW, &hs_vars);
+            println!("Loading library ...");
             let res = utils::wallet::load_storage_library_config(&hs_vars);
+            println!(" ... returns {:?}", res);
 
             // confirm dynamic lib loaded ok
             assert_eq!(res, Ok(()));
 
-            // verify wallet CCOD
+            // verify wallet COCD
+            println!("Create ...");
             wallet::create_wallet(&new_config, &new_creds).unwrap();
+            println!("Open ...");
             let wallet_handle = wallet::open_wallet(&new_config, &new_creds).unwrap();
+            println!("Close ...");
             wallet::close_wallet(wallet_handle).unwrap();
+            println!("Delete ...");
             wallet::delete_wallet(&new_config, &new_creds).unwrap();
+            println!("Done!");
 
             utils::tear_down();
         }
