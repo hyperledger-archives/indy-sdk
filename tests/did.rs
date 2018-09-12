@@ -1938,6 +1938,61 @@ mod test_get_my_metadata {
 
     #[test]
     pub fn get_my_metadata_success() {
-        
+        let wallet = Wallet::new();
+
+        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
+
+        match Did::get_my_metadata(wallet.handle, &did) {
+            Ok(s) => {},
+            Err(ec) => {
+                assert!(false, "get_my_metadata_success failed with error code {:?}", ec);
+            }
+        }
+    }
+
+    #[test]
+    pub fn get_my_metadata_async_success() {
+        let wallet = Wallet::new();
+        let (sender, receiver) = channel();
+        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
+
+        let cb = move |ec, data| {
+            sender.send((ec, data)).unwrap();
+        };
+
+        Did::get_my_metadata_async(wallet.handle, &did, cb);
+        let (error_code, meta_data) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(error_code, indy::ErrorCode::Success, "get_my_metadata_async_success failed error_code {:?}", error_code);
+    }
+
+    #[test]
+    pub fn get_my_metadata_timeout_success() {
+        let wallet = Wallet::new();
+
+        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
+
+        match Did::get_my_metadata_timeout(wallet.handle, &did, VALID_TIMEOUT) {
+            Ok(s) => {},
+            Err(ec) => {
+                assert!(false, "get_my_metadata_timeout_success failed with error code {:?}", ec);
+            }
+        }
+    }
+
+        #[test]
+    pub fn get_my_metadata_invalid_timeout_error() {
+        let wallet = Wallet::new();
+
+        let (did, verkey) = Did::new(wallet.handle, "{}").unwrap();
+
+        match Did::get_my_metadata_timeout(wallet.handle, &did, INVALID_TIMEOUT) {
+            Ok(s) => {
+                assert!(false, "get_my_metadata_invalid_timeout_error failed to timeout");
+            },
+            Err(ec) => {
+                assert_eq!(ec, indy::ErrorCode::CommonIOError, "get_my_metadata_invalid_timeout_error failed with error code {:?}", ec);
+            }
+        }
     }
 }
