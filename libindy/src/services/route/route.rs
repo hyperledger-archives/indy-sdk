@@ -15,6 +15,7 @@ use services::wallet::{WalletService, RecordOptions};
 pub struct RouteService {
     wallet_service: WalletService,
     crypto_service: CryptoService,
+    //route_table: RouteTable
 }
 
 
@@ -24,6 +25,7 @@ impl RouteService {
         RouteService {
             wallet_service,
             crypto_service : CryptoService::new(),
+            //route_table : RouteTable::new(Some(wallet_service))
         }
     }
 
@@ -115,46 +117,6 @@ pub mod tests {
     use utils::test::TestUtils;
 
     #[test]
-    pub fn test_pack_msg_success_multi_anoncrypt(){
-        _cleanup();
-        //setup generic data to test
-        let plaintext = "Hello World";
-        let auth = false;
-
-        let mut route_service = RouteService::new();
-
-        //setup sendkey
-        let (send_did, send_key) = _send_did1(&route_service.crypto_service);
-
-        //setup receiving key
-        let (recv_did, recv_key) = _recv_did2(&route_service.crypto_service);
-
-        //create wallet
-        route_service.wallet_service.create_wallet(&_config(), &_credentials());
-        let wallet_handle = route_service.wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
-
-        //add send key and send DID
-        route_service.wallet_service.add_indy_object(wallet_handle, &send_did.did, &send_did, &HashMap::new()).unwrap();
-        route_service.wallet_service.add_indy_object(wallet_handle, &send_key.verkey, &send_key, &HashMap::new()).unwrap();
-
-        //add receiving key and receiving DID
-        route_service.wallet_service.add_indy_object(wallet_handle, &recv_did.did, &recv_did, &HashMap::new()).unwrap();
-        route_service.wallet_service.add_indy_object(wallet_handle, &recv_key.verkey, &recv_key, &HashMap::new()).unwrap();
-
-        //setup recv_keys to use with pack_msg
-        let recv_keys = vec![_verkey2(&route_service.crypto_service),
-                                        _verkey3(&route_service.crypto_service),
-                                        _verkey4(&route_service.crypto_service)];
-
-        //pack then unpack message
-        let packed_msg = route_service.pack_msg(plaintext, auth, &recv_keys, None, wallet_handle).unwrap();
-        let unpacked_msg = route_service.unpack_msg(&packed_msg, &recv_key.verkey, wallet_handle).unwrap();
-
-        //verify same plaintext goes in and comes out
-        assert_eq!(plaintext, &unpacked_msg);
-    }
-
-    #[test]
     pub fn test_unpack_msg_success_multi_anoncrypt() {
         _cleanup();
 
@@ -193,48 +155,173 @@ pub mod tests {
        "tag":"DmpIMQSeqeyKtgdBJGt-9w=="}).to_string();
 
         let mut route_service : RouteService = RouteService::new();
-
-        let (did, key) = _recv_did2(&route_service.crypto_service);
-
-        route_service.wallet_service.create_wallet(&_config(), &_credentials());
-        let wallet_handle = route_service.wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
-        route_service.wallet_service.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new()).unwrap();
-        route_service.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).unwrap();
-
-        let plaintext = route_service.unpack_msg(&jwm, &key.verkey, wallet_handle).unwrap();
+        let (wallet_handle, recv_did, recv_key) = _setup_recv_wallet(&route_service);
+        let plaintext = route_service.unpack_msg(&jwm, &recv_key.verkey, wallet_handle).unwrap();
         assert_eq!(plaintext, "Hello World".to_string());
     }
 
+    #[test]
+    pub fn test_pack_and_unpack_msg_success_multi_anoncrypt(){
+        _cleanup();
+        //setup generic data to test
+        let plaintext = "Hello World";
+        let auth = false;
+
+        //setup route_service
+        let mut route_service = RouteService::new();
+
+        //setup wallets
+        let (recv_wallet_handle, recv_did, recv_key) = _setup_recv_wallet(&route_service);
+        let (send_wallet_handle , send_did, send_key) = _setup_send_wallet(&route_service);
+
+        //setup recv_keys to use with pack_msg
+        let (_ , recv_key1) = _recv_did1(&route_service.crypto_service);
+        let recv_key2 = _recv_key2(&route_service.crypto_service);
+        let recv_key3 = _recv_key3(&route_service.crypto_service);
+        let recv_keys = vec![recv_key1.verkey, recv_key2.verkey, recv_key3.verkey];
+
+        //pack then unpack message
+        let packed_msg = route_service.pack_msg(plaintext, auth, &recv_keys, None, send_wallet_handle).unwrap();
+        let unpacked_msg = route_service.unpack_msg(&packed_msg, &recv_key.verkey, recv_wallet_handle).unwrap();
+
+        //verify same plaintext goes in and comes out
+        assert_eq!(plaintext, &unpacked_msg);
+    }
+
+    #[test]
+    pub fn test_pack_and_unpack_msg_success_multi_authcrypt(){
+        _cleanup();
+        //setup generic data to test
+        let plaintext = "Hello World";
+        let auth = false;
+
+        //setup route_service
+        let mut route_service = RouteService::new();
+
+        //setup wallets
+        let (recv_wallet_handle, recv_did, recv_key) = _setup_recv_wallet(&route_service);
+        let (send_wallet_handle , send_did, send_key) = _setup_send_wallet(&route_service);
+
+
+        //setup recv_keys to use with pack_msg
+        let (_ , recv_key1) = _recv_did1(&route_service.crypto_service);
+        let recv_key2 = _recv_key2(&route_service.crypto_service);
+        let recv_key3 = _recv_key3(&route_service.crypto_service);
+        let recv_keys = vec![recv_key1.verkey, recv_key2.verkey, recv_key3.verkey];
+
+        //pack then unpack message
+        let packed_msg = route_service.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey), send_wallet_handle).unwrap();
+        let unpacked_msg = route_service.unpack_msg(&packed_msg, &recv_key.verkey, recv_wallet_handle).unwrap();
+
+        //verify same plaintext goes in and comes out
+        assert_eq!(plaintext, &unpacked_msg);
+    }
+
+    #[test]
+    pub fn test_pack_msg_success_single_anoncrypt(){
+        _cleanup();
+        //setup generic data to test
+        let plaintext = "Hello World";
+        let auth = false;
+
+        //setup route_service
+        let mut route_service = RouteService::new();
+
+        //setup wallets
+        let (recv_wallet_handle, recv_did, recv_key) = _setup_recv_wallet(&route_service);
+        let (send_wallet_handle , send_did, send_key) = _setup_send_wallet(&route_service);
+
+
+        //setup recv_keys to use with pack_msg
+        let (_ , recv_key) = _recv_did1(&route_service.crypto_service);
+        let recv_keys = vec![recv_key.verkey.clone()];
+
+        //pack then unpack message
+        let packed_msg = route_service.pack_msg(plaintext, auth, &recv_keys, None, send_wallet_handle).unwrap();
+        let unpacked_msg = route_service.unpack_msg(&packed_msg, &recv_key.verkey, recv_wallet_handle).unwrap();
+
+        //verify same plaintext goes in and comes out
+        assert_eq!(plaintext, &unpacked_msg);
+    }
+
+        #[test]
+    pub fn test_pack_msg_success_single_authcrypt(){
+        _cleanup();
+        //setup generic data to test
+        let plaintext = "Hello World";
+        let auth = true;
+
+        //setup route_service
+        let mut route_service = RouteService::new();
+
+        //setup wallets
+        let (recv_wallet_handle, recv_did, recv_key) = _setup_recv_wallet(&route_service);
+        let (send_wallet_handle , send_did, send_key) = _setup_send_wallet(&route_service);
+
+
+        //setup recv_keys to use with pack_msg
+        let (_ , recv_key) = _recv_did1(&route_service.crypto_service);
+        let recv_keys = vec![recv_key.verkey.clone()];
+
+        //pack then unpack message
+        let packed_msg = route_service.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey), send_wallet_handle).unwrap();
+        let unpacked_msg = route_service.unpack_msg(&packed_msg, &recv_key.verkey, recv_wallet_handle).unwrap();
+
+        //verify same plaintext goes in and comes out
+        assert_eq!(plaintext, &unpacked_msg);
+    }
+
+
+
+    fn _setup_send_wallet(route_service: &RouteService) -> (i32, Did, Key) {
+        let (did, key) = _send_did1(&route_service.crypto_service);
+        route_service.wallet_service.create_wallet(&_send_config(), &_credentials());
+        let wallet_handle = route_service.wallet_service.open_wallet(&_send_config(), &_credentials()).unwrap();
+        route_service.wallet_service.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new()).unwrap();
+        route_service.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).unwrap();
+        (wallet_handle, did, key)
+    }
+
+    fn _setup_recv_wallet(route_service: &RouteService) -> (i32, Did, Key) {
+        let (did, key) = _recv_did1(&route_service.crypto_service);
+        route_service.wallet_service.create_wallet(&_recv_config(), &_credentials());
+        let wallet_handle = route_service.wallet_service.open_wallet(&_recv_config(), &_credentials()).unwrap();
+        route_service.wallet_service.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new()).unwrap();
+        route_service.wallet_service.add_indy_object(wallet_handle, &key.verkey, &key, &HashMap::new()).unwrap();
+        (wallet_handle, did, key)
+    }
+
     fn _send_did1(service : &CryptoService) -> (Did, Key) {
-        let did_info = MyDidInfo { did: None, cid: None, seed: Some("00000000000000000000000000000My1".to_string()), crypto_type: None };
+        let did_info = MyDidInfo { did: None, cid: None, seed: Some("000000000000000000000000000SEND1".to_string()), crypto_type: None };
         service.create_my_did(&did_info).unwrap()
     }
 
-    fn _recv_did2(service : &CryptoService) -> (Did, Key) {
-        let did_info = MyDidInfo { did: None, cid: None, seed: Some("00000000000000000000000000000My2".to_string()), crypto_type: None };
+    fn _recv_did1(service : &CryptoService) -> (Did, Key) {
+        let did_info = MyDidInfo { did: None, cid: None, seed: Some("000000000000000000000000000RECV1".to_string()), crypto_type: None };
         service.create_my_did(&did_info).unwrap()
     }
 
-    fn _verkey2(service : &CryptoService) -> String {
-        let did_info = MyDidInfo { did: None, cid: None, seed: Some("00000000000000000000000000000My2".to_string()), crypto_type: None };
-        let (_, key) = service.create_my_did(&did_info).unwrap();
-        key.verkey
+    fn _recv_key2(service : &CryptoService) -> Key {
+        let key_info = KeyInfo {seed: Some("000000000000000000000000000RECV2".to_string()), crypto_type: None };
+        service.create_key(&key_info).unwrap()
     }
 
-    fn _verkey3(service : &CryptoService) -> String {
-        let did_info = MyDidInfo { did: None, cid: None, seed: Some("00000000000000000000000000000My3".to_string()), crypto_type: None };
-        let (_, key) = service.create_my_did(&did_info).unwrap();
-        key.verkey
+    fn _recv_key3(service : &CryptoService) -> Key {
+        let key_info = KeyInfo { seed: Some("000000000000000000000000000RECV3".to_string()), crypto_type: None };
+        service.create_key(&key_info).unwrap()
     }
 
-    fn _verkey4(service : &CryptoService) -> String {
-        let did_info = MyDidInfo { did: None, cid: None, seed: Some("00000000000000000000000000000My4".to_string()), crypto_type: None };
-        let (_, key) = service.create_my_did(&did_info).unwrap();
-        key.verkey
+    fn _route_key4(service : &CryptoService) -> Key {
+        let key_info = KeyInfo { seed: Some("000000000000000000000000000RECV4".to_string()), crypto_type: None };
+        service.create_key(&key_info).unwrap()
     }
 
-    fn _config() -> String {
-        json!({"id": "w1"}).to_string()
+    fn _send_config() -> String {
+        json!({"id": "send1"}).to_string()
+    }
+
+    fn _recv_config() -> String {
+        json!({"id": "recv1"}).to_string()
     }
 
     fn _credentials() -> String {
