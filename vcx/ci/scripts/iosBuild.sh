@@ -10,6 +10,7 @@ IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
 #IOS_ARCHS="x86_64"
 
 cd ${SCRIPTS_PATH}
+rustup default 1.27.0
 ./mac.02.libindy.env.sh
 ./mac.03.libindy.build.sh
 #./mac.04.libvcx.setup.sh
