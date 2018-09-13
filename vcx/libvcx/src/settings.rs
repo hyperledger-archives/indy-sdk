@@ -32,9 +32,11 @@ pub static CONFIG_WALLET_BACKUP_KEY: &str = "backup_key";
 pub static CONFIG_WALLET_KEY: &str = "wallet_key";
 pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
 pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
+pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
 
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 pub static UNINITIALIZED_BACKUP_KEY: &str = "<KEY_IS_NOT_SET>";
+pub static DEFAULT_PROTOCOL_VERSION: usize = 1;
 pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
 pub static DEFAULT_EXPORTED_WALLET_PATH: &str = "/tmp/wallet.txn";
 pub static DEFAULT_WALLET_NAME: &str = "LIBVCX_SDK_WALLET";
@@ -84,6 +86,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(),DEFAULT_VERKEY.to_string());
     settings.insert(CONFIG_WALLET_KEY.to_string(),TEST_WALLET_KEY.to_string());
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
+    settings.insert(CONFIG_PROTOCOL_VERSION.to_string(), DEFAULT_PROTOCOL_VERSION.to_string());
     settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(), DEFAULT_EXPORTED_WALLET_PATH.to_string());
     settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), UNINITIALIZED_BACKUP_KEY.to_string());
 
@@ -178,6 +181,18 @@ pub fn process_config_file(path: &str) -> Result<u32, u32> {
         Err(error::INVALID_CONFIGURATION.code_num)
     } else {
         process_config_string(&read_config_file(path)?)
+    }
+}
+
+pub fn get_protocol_version() -> usize {
+    let protocol_version = match get_config_value(CONFIG_PROTOCOL_VERSION) {
+        Ok(x) => x.parse::<usize>().unwrap_or(DEFAULT_PROTOCOL_VERSION),
+        Err(x) => DEFAULT_PROTOCOL_VERSION,
+    };
+    if protocol_version > DEFAULT_PROTOCOL_VERSION {
+        DEFAULT_PROTOCOL_VERSION
+    } else {
+        protocol_version
     }
 }
 
