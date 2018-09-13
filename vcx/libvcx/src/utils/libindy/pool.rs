@@ -17,7 +17,7 @@ pub fn change_pool_handle(handle: Option<i32>){
 }
 
 pub fn set_protocol_version() -> u32 {
-    match Pool::set_protocol_version(2) {
+    match Pool::set_protocol_version(settings::get_protocol_version()) {
         Ok(_) => error::SUCCESS.code_num,
         Err(_) => error::UNKNOWN_LIBINDY_ERROR.code_num,
     }
