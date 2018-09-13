@@ -10,7 +10,7 @@ license = ""
 [lib]
 name = "vcx"
 path = "src/lib.rs"
-crate-type = ["staticlib","rlib", "cdylib"]
+crate-type = ["staticlib","rlib", "dylib"]
 
 [features]
 default = ["nullpay"]
