@@ -217,8 +217,9 @@ If you would like to analyse CPU performance of libindy for your use case, you h
 ## How to start local nodes pool with docker
 To test the SDK codebase with a virtual Indy node network, you can start a pool of local nodes using docker:
 
-**Note: If you are getting a PoolLedgerTimeout error it's because the IP addresses in /indy-sdk/cli/docker_pool_transactions_genesis
-:and the pool configuration don't match. Use method 3 to configure the IPs of the docker containers to match the pool.**
+**Note: If you are getting a PoolLedgerTimeout error it's because the IP addresses in 
+/indy-sdk/cli/docker_pool_transactions_genesis and the pool configuration don't match. 
+Use method 3 to configure the IPs of the docker containers to match the pool.**
 
 ### 1) Starting the test pool on localhost
 Start the pool of local nodes on `127.0.0.1:9701-9708` with Docker by running:
