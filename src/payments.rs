@@ -464,7 +464,7 @@ impl Payment {
                          outputs_json: &str,
                          extra: Option<&str>,
                          cb: Option<ResponseStringStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let req_json = c_str!(req_json);
         let inputs_json = c_str!(inputs_json);
         let outputs_json = c_str!(outputs_json);
@@ -473,7 +473,7 @@ impl Payment {
         ErrorCode::from(unsafe {
             payments::indy_add_request_fees(command_handle,
                                             wallet_handle,
-                                            submitter_did.as_ptr(),
+                                            opt_c_ptr!(submitter_did, submitter_did_str),
                                             req_json.as_ptr(),
                                             inputs_json.as_ptr(),
                                             outputs_json.as_ptr(),
@@ -613,10 +613,10 @@ impl Payment {
     }
 
     fn _build_get_payment_sources_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_address: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let payment_address = c_str!(payment_address);
 
-        ErrorCode::from(unsafe { payments::indy_build_get_payment_sources_request(command_handle, wallet_handle, submitter_did.as_ptr(), payment_address.as_ptr(), cb) })
+        ErrorCode::from(unsafe { payments::indy_build_get_payment_sources_request(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_address.as_ptr(), cb) })
     }
 
     /// Parses response for Indy request for getting UTXO list.
@@ -785,7 +785,7 @@ impl Payment {
     }
 
     fn _build_payment_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, cb: Option<ResponseStringStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let inputs = c_str!(inputs);
         let outputs = c_str!(outputs);
         let extra_str = opt_c_str!(extra);
@@ -793,7 +793,7 @@ impl Payment {
         ErrorCode::from(unsafe {
             payments::indy_build_payment_req(command_handle,
                                              wallet_handle,
-                                             submitter_did.as_ptr(),
+                                             opt_c_ptr!(submitter_did, submitter_did_str),
                                              inputs.as_ptr(),
                                              outputs.as_ptr(),
                                              opt_c_ptr!(extra, extra_str),
@@ -945,11 +945,11 @@ impl Payment {
     }
 
     fn _build_mint_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>, cb: Option<ResponseStringStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let outputs_json = c_str!(outputs_json);
         let extra_str = opt_c_str!(extra);
 
-        ErrorCode::from(unsafe { payments::indy_build_mint_req(command_handle, wallet_handle, submitter_did.as_ptr(), outputs_json.as_ptr(), opt_c_ptr!(extra, extra_str), cb) })
+        ErrorCode::from(unsafe { payments::indy_build_mint_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), outputs_json.as_ptr(), opt_c_ptr!(extra, extra_str), cb) })
     }
 
     /// Builds Indy request for setting fees for transactions in the ledger
@@ -1022,11 +1022,11 @@ impl Payment {
     }
 
     fn _build_set_txn_fees_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, fees_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let payment_method = c_str!(payment_method);
         let fees_json = c_str!(fees_json);
 
-        ErrorCode::from(unsafe { payments::indy_build_set_txn_fees_req(command_handle, wallet_handle, submitter_did.as_ptr(), payment_method.as_ptr(), fees_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { payments::indy_build_set_txn_fees_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_method.as_ptr(), fees_json.as_ptr(), cb) })
     }
 
     /// Builds Indy get request for getting fees for transactions in the ledger
@@ -1083,10 +1083,10 @@ impl Payment {
     }
 
     fn _build_get_txn_fees_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let payment_method = c_str!(payment_method);
 
-        ErrorCode::from(unsafe { payments::indy_build_get_txn_fees_req(command_handle, wallet_handle, submitter_did.as_ptr(), payment_method.as_ptr(), cb) })
+        ErrorCode::from(unsafe { payments::indy_build_get_txn_fees_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_method.as_ptr(), cb) })
     }
 
     /// Parses response for Indy request for getting fees
@@ -1185,11 +1185,11 @@ impl Payment {
     }
 
     fn _build_verify_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, receipt: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let receipt = c_str!(receipt);
 
         ErrorCode::from(unsafe {
-          payments::indy_build_verify_payment_req(command_handle, wallet_handle, submitter_did.as_ptr(), receipt.as_ptr(), cb)
+          payments::indy_build_verify_payment_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), receipt.as_ptr(), cb)
         })
     }
 
