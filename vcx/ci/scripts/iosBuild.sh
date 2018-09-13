@@ -18,7 +18,7 @@ source ./mac.05.libvcx.env.sh
 cp -rf ~/OpenSSL-for-iPhone ${BASE_DIR}/.macosbuild
 cp -rf ~/libzmq-ios ${BASE_DIR}/.macosbuild
 cp -rf ~/combine-libs ${BASE_DIR}/.macosbuild
-./mac.06.libvcx.build.sh nodebug "${IOS_TARGETS}" noclean
+./mac.06.libvcx.build.sh nodebug "${IOS_TARGETS}" cleanbuild
 
 # clear previous builds from jenkins machine
 if [ ! -z "$(ls -A /Users/jenkins/IOSBuilds/libvcxpartial/)" ]; then
