@@ -3,14 +3,14 @@ pub mod export_import;
 use serde_json::value::Value;
 use std::collections::HashMap;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub id: String,
     pub storage_type: Option<String>,
     pub storage_config: Option<Value>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Credentials {
     pub key: String,
     pub rekey: Option<String>,
@@ -22,7 +22,7 @@ pub struct Credentials {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum KeyDerivationMethod {
     RAW,
     ARGON2I_MOD,

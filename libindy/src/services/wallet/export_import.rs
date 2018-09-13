@@ -80,13 +80,14 @@ pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32,
     Ok(())
 }
 
-pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Result<(), WalletError> {
-    let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = prepare_import(reader, passphrase)?;
+#[cfg(test)]
+fn import<T>(wallet: &Wallet, reader: T, passphrase: &str) -> Result<(), WalletError> where T: Read {
+    let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = preparse_file_to_import(reader, passphrase)?;
     let import_key = import_key_derivation_data.calc_master_key()?;
     finish_import(wallet, reader, import_key, nonce, chunk_size, header_bytes)
 }
 
-fn prepare_import<'a>(reader: &'a mut Read, passphrase: &str) -> Result<(BufReader<&'a mut Read>, KeyDerivationData, chacha20poly1305_ietf::Nonce, usize, Vec<u8>), WalletError> {
+pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> Result<(BufReader<T>, KeyDerivationData, chacha20poly1305_ietf::Nonce, usize, Vec<u8>), WalletError> where T: Read {
     // Reads plain
     let mut reader = BufReader::new(reader);
 
@@ -145,7 +146,7 @@ fn prepare_import<'a>(reader: &'a mut Read, passphrase: &str) -> Result<(BufRead
     Ok((reader, import_key_derivation_data, nonce, chunk_size, header_bytes))
 }
 
-fn finish_import(wallet: &Wallet, reader: BufReader<&mut Read>, key: chacha20poly1305_ietf::Key, nonce: chacha20poly1305_ietf::Nonce, chunk_size: usize, header_bytes: Vec<u8>) -> Result<(), WalletError> {
+pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chacha20poly1305_ietf::Key, nonce: chacha20poly1305_ietf::Nonce, chunk_size: usize, header_bytes: Vec<u8>) -> Result<(), WalletError> where T: Read {
     // Reads encrypted
     let mut reader = chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size);
 

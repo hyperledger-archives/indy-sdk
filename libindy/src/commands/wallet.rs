@@ -1,21 +1,20 @@
 extern crate libc;
 extern crate serde_json;
 extern crate indy_crypto;
-extern crate threadpool;
-
-use self::threadpool::ThreadPool;
 
 use errors::indy::IndyError;
 use errors::wallet::WalletError;
 use commands::{Command, CommandExecutor};
-use services::wallet::{WalletService, encryption::KeyDerivationData};
+use services::wallet::{WalletService, KeyDerivationData};
 use services::crypto::CryptoService;
 use api::wallet::*;
 use utils::crypto::{base58, randombytes, chacha20poly1305_ietf};
 use domain::wallet::{KeyConfig, Config, Credentials, ExportConfig};
 
 use std::rc::Rc;
+use std::cell::RefCell;
 use std::result;
+use std::collections::HashMap;
 
 type Result<T> = result::Result<T, IndyError>;
 
@@ -52,11 +51,15 @@ pub enum WalletCommand {
     CreateContinue(Config, // config
                    Credentials, // credentials
                    KeyDerivationData,
-                   result::Result<chacha20poly1305_ietf::Key, WalletError>,
-                   Box<Fn(Result<()>) + Send>),
+                   result::Result<chacha20poly1305_ietf::Key, ::errors::common::CommonError>,
+                   i32),
     Open(Config, // config
          Credentials, // credentials
          Box<Fn(Result<i32>) + Send>),
+    OpenContinue(i32, // wallet handle
+         result::Result<(::utils::crypto::chacha20poly1305_ietf::Key, Option<::utils::crypto::chacha20poly1305_ietf::Key>),
+            ::errors::common::CommonError>, // derive_key_result
+    ),
     Close(i32, // handle
           Box<Fn(Result<()>) + Send>),
     Delete(Config, // config
@@ -76,7 +79,8 @@ pub enum WalletCommand {
 pub struct WalletCommandExecutor {
     wallet_service: Rc<WalletService>,
     crypto_service: Rc<CryptoService>,
-    threadpool: ThreadPool,
+    open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32>) + Send>>>,
+    pending_callbacks: RefCell<HashMap<i32, Box<Fn(Result<()>) + Send>>>,
 }
 
 impl WalletCommandExecutor {
@@ -84,7 +88,8 @@ impl WalletCommandExecutor {
         WalletCommandExecutor {
             wallet_service,
             crypto_service,
-            threadpool: ThreadPool::new(4),
+            open_callbacks: RefCell::new(HashMap::new()),
+            pending_callbacks: RefCell::new(HashMap::new()),
         }
     }
 
@@ -106,25 +111,34 @@ impl WalletCommandExecutor {
             }
             WalletCommand::Create(config, credentials, cb) => {
                 debug!(target: "wallet_command_executor", "Create command received");
-                self.threadpool.execute(move || {
-                    let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
-                    let master_key_res = key_data.calc_master_key();
-                    CommandExecutor::instance().send(Command::Wallet(WalletCommand::CreateContinue(
-                        config, credentials,
-                        key_data, master_key_res,
-                        cb,
-                    ))).unwrap()
-                });
+                let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
+                let cb_id = ::utils::sequence::get_next_id();
+                self.pending_callbacks.borrow_mut().insert(cb_id, cb);
+                CommandExecutor::instance().send(Command::DeriveKey(
+                    key_data.clone(),
+                    Box::new(move |master_key_res| {
+                        CommandExecutor::instance().send(Command::Wallet(WalletCommand::CreateContinue(
+                            config.clone(), credentials.clone(),
+                            key_data.clone(), master_key_res,
+                            cb_id,
+                        ))).unwrap();
+                    }))).unwrap();
             }
-            WalletCommand::CreateContinue(config, credentials, key_data, key_result, cb) => {
+            WalletCommand::CreateContinue(config, credentials, key_data, key_result, cb_id) => {
                 debug!(target: "wallet_command_executor", "CreateContinue command received");
-                cb(key_result.and_then(|key| {
+                let cb = self.pending_callbacks.borrow_mut().remove(&cb_id).expect("FIXME INVALID STATE");
+                cb(key_result.map_err(WalletError::from).and_then(|key| {
                     self.wallet_service.create_wallet(&config, (&credentials, key_data, key))
                 }).map_err(IndyError::from))
             }
             WalletCommand::Open(config, credentials, cb) => {
                 debug!(target: "wallet_command_executor", "Open command received");
-                cb(self._open(&config, &credentials));
+                let wallet_handle = self._open(&config, &credentials).unwrap();
+                self.open_callbacks.borrow_mut().insert(wallet_handle, cb);
+            }
+            WalletCommand::OpenContinue(wallet_handle, key_result) => {
+                let cb = self.open_callbacks.borrow_mut().remove(&wallet_handle).unwrap();
+                cb(self.wallet_service.open_wallet_continue(wallet_handle, key_result).map_err(IndyError::from))
             }
             WalletCommand::Close(handle, cb) => {
                 debug!(target: "wallet_command_executor", "Close command received");
@@ -208,7 +222,7 @@ impl WalletCommandExecutor {
              credentials: &Credentials) -> Result<i32> {
         trace!("_open >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
-        let res = self.wallet_service.open_wallet(config, credentials)?;
+        let res = self.wallet_service.open_wallet_prepare(config, credentials)?;
 
         trace!("_open <<< res: {:?}", res);
         Ok(res)
