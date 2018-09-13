@@ -18,7 +18,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var action = "start";
             var schedule = "{}";
-            //var poolRestartRequest = await Ledger.BuildPoolRestartRequestAsync(DID1, action, schedule);
+            var poolRestartRequest = ""; //TODO await Ledger.BuildPoolRestartRequestAsync(DID1, action, schedule);
 
             Assert.IsTrue(poolRestartRequest.Replace("\\", "").Contains(expectedResult));
         }
