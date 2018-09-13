@@ -29,4 +29,7 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
     <WarningsAsErrors></WarningsAsErrors>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
 </Project>
