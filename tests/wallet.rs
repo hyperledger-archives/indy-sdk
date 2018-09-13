@@ -11,11 +11,19 @@ use indy::ErrorCode;
 
 use std::path::Path;
 use std::panic;
+use std::sync::mpsc::channel;
+use std::time::Duration;
 
 mod utils;
 
 use utils::{export_config_json, export_path};
 use utils::constants::DEFAULT_CREDENTIALS;
+use utils::file::TempDir;
+use utils::rand;
+
+const VALID_TIMEOUT: Duration = Duration::from_secs(5);
+const INVALID_TIMEOUT: Duration = Duration::from_micros(1);
+
 #[cfg(test)]
 mod wallet_tests {
     use super::*;
@@ -96,5 +104,175 @@ mod wallet_tests {
             }
             _ => open_closure()
         };
+    }
+}
+
+#[cfg(test)]
+mod test_wallet_create {
+    use super::*;
+    const CREDENTIALS: &str = r#"{"key":"9DXvkIMD7iSgD&RT$XYjHo0t"}"#;
+
+    fn wallet_config(storage_type: Option<&str>) -> String {
+        let name = rand::random_string(20);
+
+        if let Some(storage) = storage_type {
+            json!({
+                "id": name,
+                "storage_type": storage
+            }).to_string()
+        } else {
+            json!({"id": name}).to_string()
+        }
+    }
+
+    #[test]
+    fn create_default_wallet() {
+        let config = wallet_config(Some("default"));
+        
+        let result = Wallet::create(&config, CREDENTIALS);
+
+        assert_eq!((), result.unwrap());
+
+        Wallet::delete(&config, CREDENTIALS).unwrap();
+    }
+
+    #[test]
+    fn create_default_wallet_custom_path() {
+        let dir = TempDir::new(None).unwrap();
+        let config = json!({
+            "id": rand::random_string(20),
+            "storage_type": "default",
+            "storage_config": {
+                "path": dir.as_ref().to_str()
+            }
+        }).to_string();
+
+        let result = Wallet::create(&config, CREDENTIALS);
+
+        assert_eq!((), result.unwrap());
+
+        Wallet::delete(&config, CREDENTIALS).unwrap();
+    }
+
+    // #[test]
+    // fn create_wallet_custom_storage_type() {
+    //     unimplemented!();
+    // }
+
+    #[test]
+    fn create_wallet_unknown_storage_type() {
+        let config = wallet_config(Some("unknown"));
+
+        let result = Wallet::create(&config, CREDENTIALS);
+
+        assert_eq!(ErrorCode::WalletUnknownTypeError, result.unwrap_err());
+    }
+
+    #[test]
+    fn create_wallet_empty_storage_type() {
+        let config = wallet_config(None);
+
+        let result = Wallet::create(&config, CREDENTIALS);
+
+        assert_eq!((), result.unwrap());
+
+        Wallet::delete(&config, CREDENTIALS).unwrap();
+    }
+
+    #[test]
+    fn create_wallet_without_key() {
+        let config = wallet_config(None);
+        let credentials = "{}";
+
+        let result = Wallet::create(&config, credentials);
+
+        assert_eq!(ErrorCode::CommonInvalidStructure, result.unwrap_err());
+    }
+
+    #[test]
+    fn create_wallet_without_encryption() {
+        let config = wallet_config(None);
+        let credentials = json!({"key": ""}).to_string();
+
+        let result = Wallet::create(&config, &credentials);
+
+        assert_eq!((), result.unwrap());
+
+        Wallet::delete(&config, &credentials).unwrap();
+    }
+
+    #[test]
+    fn create_default_wallet_async() {
+        let (sender, receiver) = channel();
+        let config = wallet_config(Some("default"));
+
+        Wallet::create_async(
+            &config,
+            CREDENTIALS,
+            move |ec| sender.send(ec).unwrap()
+        );
+
+        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        
+        assert_eq!(ErrorCode::Success, ec);
+
+        Wallet::delete(&config, CREDENTIALS).unwrap();
+    }
+
+    #[test]
+    fn create_wallet_unknown_storage_type_async() {
+        let (sender, receiver) = channel();
+        let config = wallet_config(Some("unknown"));
+
+        Wallet::create_async(
+            &config,
+            CREDENTIALS,
+            move |ec| sender.send(ec).unwrap()
+        );
+
+        let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::WalletUnknownTypeError, ec);
+    }
+
+    #[test]
+    fn create_default_wallet_timeout() {
+        let config = wallet_config(Some("default"));
+
+        let result = Wallet::create_timeout(
+            &config,
+            CREDENTIALS,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!((), result.unwrap());
+
+        Wallet::delete(&config, CREDENTIALS).unwrap();
+    }
+
+    #[test]
+    fn create_wallet_unknown_storage_type_timeout() {
+        let config = wallet_config(Some("unknown"));
+
+        let result = Wallet::create_timeout(
+            &config,
+            CREDENTIALS,
+            VALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::WalletUnknownTypeError, result.unwrap_err());
+    }
+
+    #[test]
+    fn create_wallet_timeout_timeouts() {
+        let config = wallet_config(Some("unknown"));
+
+        let result = Wallet::create_timeout(
+            &config,
+            CREDENTIALS,
+            INVALID_TIMEOUT
+        );
+
+        assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
     }
 }
