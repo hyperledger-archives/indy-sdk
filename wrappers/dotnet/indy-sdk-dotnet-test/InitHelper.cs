@@ -13,14 +13,7 @@ namespace Hyperledger.Indy.Test
             if (_isInitialized)
                 return;
 
-            await RegisterWalletTypeAsync();
-
             _isInitialized = true;
-        }
-
-        private static async Task RegisterWalletTypeAsync()
-        {
-            await Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType());
         }
     }
 }
