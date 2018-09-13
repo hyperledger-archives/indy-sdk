@@ -5,12 +5,17 @@ using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
+using Hyperledger.Indy.Test.Util;
 
 namespace Hyperledger.Indy.Test.DemoTests
 {
     [TestClass]
     public class LedgerDemoTest : IndyIntegrationTestBase
     {
+        private const string WALLET_NAME = "commonWallet";
+        private const string TRUSTEE_WALLET_NAME = "trusteeWallet";
+        private const string TRUSTEE_WALLET_KEY = "trusteeWalletKey";
+
         [TestMethod]
         public async Task TestLedgerDemo()
         {
@@ -19,12 +24,12 @@ namespace Hyperledger.Indy.Test.DemoTests
             var pool = await Pool.OpenPoolLedgerAsync(poolName, "{}");
 
             // 2. Create and Open My Wallet
-            await Wallet.CreateWalletAsync(poolName, "myWallet", TYPE, null, null);
-            var myWallet = await Wallet.OpenWalletAsync("myWallet", null, null);
+            await WalletUtils.CreateWallet(WALLET_NAME, WALLET_KEY);
+            var myWallet = await WalletUtils.OpenWallet(WALLET_NAME, WALLET_KEY);
 
             // 3. Create and Open Trustee Wallet
-            await Wallet.CreateWalletAsync(poolName, "theirWallet", TYPE, null, null);
-            var trusteeWallet = await Wallet.OpenWalletAsync("theirWallet", null, null);
+            await WalletUtils.CreateWallet(TRUSTEE_WALLET_NAME, TRUSTEE_WALLET_KEY);
+            var trusteeWallet = await WalletUtils.OpenWallet(TRUSTEE_WALLET_NAME, TRUSTEE_WALLET_KEY);
 
             // 4. Create My Did
             var createMyDidResult = await Did.CreateAndStoreMyDidAsync(myWallet, "{}");
@@ -52,11 +57,11 @@ namespace Hyperledger.Indy.Test.DemoTests
 
             // 8. Close and delete My Wallet
             await myWallet.CloseAsync();
-            await Wallet.DeleteWalletAsync("myWallet", null);
+            await WalletUtils.DeleteWallet(WALLET_NAME, WALLET_KEY);
 
             // 9. Close and delete Their Wallet
             await trusteeWallet.CloseAsync();
-            await Wallet.DeleteWalletAsync("theirWallet", null);
+            await WalletUtils.DeleteWallet(TRUSTEE_WALLET_NAME, TRUSTEE_WALLET_KEY);
 
             // 10. Close Pool
             await pool.CloseAsync();

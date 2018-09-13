@@ -37,7 +37,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"data\":{2}" +
                     "}}", DID1, DID1, data);
 
-            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(DID1, DID1, data);
+            var getSchemaRequest = ""; // TODO await Ledger.BuildGetSchemaRequestAsync(DID1, DID1, data);
 
             Assert.IsTrue(getSchemaRequest.Contains(expectedResult));
         }
@@ -67,7 +67,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, did, schemaRequest);
 
             var getSchemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
-            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData);
+            var getSchemaRequest = ""; // TODO await Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData);
             var getSchemaResponse = await Ledger.SubmitRequestAsync(pool, getSchemaRequest);
 
             var getSchemaResponseObject = JObject.Parse(getSchemaResponse);
@@ -83,7 +83,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var did = didResult.Did;
 
             var getSchemaData = "{\"name\":\"schema_name\",\"version\":\"2.0\"}";
-            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData);
+            var getSchemaRequest = ""; // TODO await Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData);
             var getSchemaResponse = await Ledger.SubmitRequestAsync(pool, getSchemaRequest);
 
             var getSchemaResponseObject = JObject.Parse(getSchemaResponse);
