@@ -22,10 +22,11 @@ namespace Hyperledger.Indy.Test.Util
             return JsonConvert.SerializeObject(cred, Formatting.Indented);
         }
 
-        public static async Task CreateWallet(string pool, string wallet)
+        public static async Task CreateWallet(string walletName, string key)
         {
-            string config = WalletUtils.GetCreateWalletConfig(wallet);
-            await Wallet.CreateWalletAsync(pool, config);
+            string config = WalletUtils.GetCreateWalletConfig(walletName);
+            string cred = WalletUtils.GetOpenWalletCredentials(key);
+            await Wallet.CreateWalletAsync(config, cred);
         }
 
         public static async Task<Wallet> OpenWallet(string wallet, string key)
@@ -41,6 +42,13 @@ namespace Hyperledger.Indy.Test.Util
             await WalletUtils.CreateWallet(pool, wallet);
 
             return await OpenWallet(wallet, key);
+        }
+
+        public static async Task DeleteWallet(string walletName, string key) 
+        {
+            string config = WalletUtils.GetCreateWalletConfig(walletName);
+            string cred = WalletUtils.GetOpenWalletCredentials(key);
+            await Wallet.DeleteWalletAsync(config, cred);
         }
     }
 }
