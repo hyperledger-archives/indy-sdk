@@ -37,6 +37,7 @@ fi
 if [ "$CLEAN_BUILD" = "cleanbuild" ]; then
     cargo clean
     rm -rf ${BUILD_CACHE}/target
+    rm -rf ${BUILD_CACHE}/arch_libs
     # cargo update
 # else
 #     if [ -d ${BUILD_CACHE}/target ]; then
@@ -97,7 +98,7 @@ do
     export LIBINDY_DIR=${libindy_dir}/${target_arch}
     export LIBSOVTOKEN_DIR=${libsovtoken_dir}/${target_arch}
 
-    cargo build --target "${target}" --release --no-default-features --features "ci sovtoken" 
+    cargo build --target "${target}" --release --no-default-features --features "ci sovtoken"
     to_combine="${to_combine} ./target/${target}/release/libvcx.a"
 
 done
