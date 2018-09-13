@@ -100,10 +100,10 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var claimDefObj = JObject.Parse(claimDef);
 
             var claimDefJson = claimDefObj["data"].ToString();
-            var claimDefRequest = await Ledger.BuildClaimDefTxnAsync(myDid, _seqNo, _signatureType, claimDefJson);
+            var claimDefRequest = ""; //TODO await Ledger.BuildClaimDefTxnAsync(myDid, _seqNo, _signatureType, claimDefJson);
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, claimDefRequest);
    
-            var getClaimDefRequest = await Ledger.BuildGetClaimDefTxnAsync(myDid, _seqNo, _signatureType, claimDefObj["origin"].ToString());
+            var getClaimDefRequest = ""; //TODO await Ledger.BuildGetClaimDefTxnAsync(myDid, _seqNo, _signatureType, claimDefObj["origin"].ToString());
             var getClaimDefResponse = await Ledger.SubmitRequestAsync(pool, getClaimDefRequest);
 
             var getClaimDefResponseObj = JObject.Parse(getClaimDefResponse);
@@ -144,7 +144,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var claimDefObj = JObject.Parse(claimDef);
             var claimDefJson = claimDefObj["data"].ToString();
 
-            var claimDefRequest = await Ledger.BuildClaimDefTxnAsync(myDid, _seqNo, _signatureType, claimDefJson);
+            var claimDefRequest = ""; //TODO await Ledger.BuildClaimDefTxnAsync(myDid, _seqNo, _signatureType, claimDefJson);
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
                 Ledger.SubmitRequestAsync(pool, claimDefRequest)
