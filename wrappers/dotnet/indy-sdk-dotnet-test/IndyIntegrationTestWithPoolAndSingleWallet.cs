@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.PoolApi;
+using Hyperledger.Indy.Test.Util;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
@@ -14,11 +15,13 @@ namespace Hyperledger.Indy.Test
         [TestInitialize]
         public async Task CreateWallet()
         {
+            await Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION);
+
             poolName = PoolUtils.CreatePoolLedgerConfig();
             pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
-            await Wallet.CreateWalletAsync(poolName, WALLET, TYPE, null, null);
-            wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
+            await WalletUtils.CreateWallet(WALLET, WALLET_KEY);
+            wallet = await WalletUtils.OpenWallet(WALLET, WALLET_KEY);
         }
 
         [TestCleanup]
@@ -26,7 +29,7 @@ namespace Hyperledger.Indy.Test
         {
             await pool.CloseAsync();
             await wallet.CloseAsync();
-            await Wallet.DeleteWalletAsync(WALLET, null);
+            await WalletUtils.DeleteWallet(WALLET, WALLET_KEY);
         }
     }
 }
