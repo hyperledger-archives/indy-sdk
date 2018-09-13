@@ -1,5 +1,5 @@
 mod storage;
-pub mod encryption;
+mod encryption;
 mod query_encryption;
 mod iterator;
 mod language;
@@ -15,23 +15,25 @@ use named_type::NamedType;
 use std::rc::Rc;
 
 use api::wallet::*;
+use commands::{CommandExecutor, Command, wallet::WalletCommand};
 use domain::wallet::{Config, Credentials, ExportConfig, Metadata, MetadataArgon, MetadataRaw, Tags};
 use errors::wallet::WalletError;
 use errors::common::CommonError;
 use utils::sequence;
 use utils::crypto::chacha20poly1305_ietf;
 use utils::crypto::chacha20poly1305_ietf::Key as MasterKey;
-use services::wallet::encryption::KeyDerivationData;
+pub use services::wallet::encryption::KeyDerivationData;
 
-use self::export_import::{export_continue, import};
-use self::storage::WalletStorageType;
+use self::export_import::{export_continue, preparse_file_to_import, finish_import};
+use self::storage::{WalletStorageType, WalletStorage};
 use self::storage::default::SQLiteStorageType;
 use self::storage::plugged::PluggedStorageType;
 use self::wallet::{Wallet, Keys};
 
 pub struct WalletService {
     storage_types: RefCell<HashMap<String, Box<WalletStorageType>>>,
-    wallets: RefCell<HashMap<i32, Box<Wallet>>>
+    wallets: RefCell<HashMap<i32, Box<Wallet>>>,
+    pending_for_open: RefCell<HashMap<i32, (String /* id */, Box<WalletStorage>, Metadata, Option<KeyDerivationData>)>>,
 }
 
 impl WalletService {
@@ -44,7 +46,8 @@ impl WalletService {
 
         WalletService {
             storage_types,
-            wallets: RefCell::new(HashMap::new())
+            wallets: RefCell::new(HashMap::new()),
+            pending_for_open: RefCell::new(HashMap::new()),
         }
     }
 
@@ -100,7 +103,13 @@ impl WalletService {
 
     pub fn create_wallet(&self,
                          config: &Config,
-                         (credentials, key_data, master_key): (&Credentials, KeyDerivationData, MasterKey)) -> Result<(), WalletError> {
+                         credentials: (&Credentials, KeyDerivationData, MasterKey)) -> Result<(), WalletError> {
+        self._create_wallet(config, credentials).map(|_| ())
+    }
+
+    fn _create_wallet(&self,
+                      config: &Config,
+                      (credentials, key_data, master_key): (&Credentials, KeyDerivationData, MasterKey)) -> Result<Keys, WalletError> {
         trace!("create_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         if config.id.is_empty() {
@@ -109,9 +118,10 @@ impl WalletService {
 
         let storage_types = self.storage_types.borrow();
 
-        let (storage_type, storage_config, storage_credentials) = WalletService::_get_storage_type(config, credentials, &storage_types)?;
+        let (storage_type, storage_config, storage_credentials) = WalletService::_get_config_and_cred_for_storage(config, credentials, &storage_types)?;
 
-        let metadata = self._prepare_metadata(master_key, key_data, &Keys::new())?;
+        let keys = Keys::new();
+        let metadata = self._prepare_metadata(master_key, key_data, &keys)?;
 
         storage_type.create_storage(&config.id,
                                     storage_config
@@ -122,7 +132,7 @@ impl WalletService {
                                         .map(String::as_str),
                                     &metadata)?;
 
-        Ok(())
+        Ok(keys)
     }
 
     pub fn delete_wallet(&self, config: &Config, credentials: &Credentials) -> Result<(), WalletError> {
@@ -132,30 +142,16 @@ impl WalletService {
             Err(CommonError::InvalidState(format!("Wallet has to be closed before deleting: {:?}", config.id)))?
         }
 
-        let storage_types = self.storage_types.borrow();
-
-        let (storage_type, storage_config, storage_credentials) = WalletService::_get_storage_type(config, credentials, &storage_types)?;
-
         // check credentials and close connection before deleting wallet
         {
-            let storage = storage_type.open_storage(&config.id,
-                                                    storage_config
-                                                        .as_ref()
-                                                        .map(String::as_str),
-                                                    storage_credentials
-                                                        .as_ref()
-                                                        .map(String::as_str))?;
-
-            let metadata: Metadata = {
-                let metadata = storage.get_storage_metadata()?;
-                serde_json::from_slice(&metadata)
-                    .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err)))?
-            };
-
-            let key_derivation_data = KeyDerivationData::from_passphrase_and_metadata(&credentials.key, &metadata, &credentials.key_derivation_method)?;
+            let (_, metadata, key_derivation_data) = self._open_storage_and_fetch_metadata(config, &credentials)?;
             let master_key = key_derivation_data.calc_master_key()?;
             self._restore_keys(&metadata, &master_key)?;
         }
+
+        let storage_types = self.storage_types.borrow();
+
+        let (storage_type, storage_config, storage_credentials) = WalletService::_get_config_and_cred_for_storage(config, credentials, &storage_types)?;
 
         storage_type.delete_storage(&config.id,
                                     storage_config
@@ -169,55 +165,86 @@ impl WalletService {
         Ok(())
     }
 
-    pub fn open_wallet(&self, config: &Config, credentials: &Credentials) -> Result<i32, WalletError> {
-        trace!("open_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
+    pub fn open_wallet_prepare(&self, config: &Config, credentials: &Credentials) -> Result<i32, WalletError> {
+        trace!("open_wallet >>> config: {:?}, credentials: {:?}", config, secret!(&credentials));
 
-        if config.id.is_empty() {
-            Err(CommonError::InvalidStructure("Wallet id is empty".to_string()))?
-        }
+        self._is_id_from_config_not_used(config)?;
 
-        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == config.id) {
-            Err(WalletError::AlreadyOpened(config.id.clone()))?
-        }
+        let (storage, metadata, key_derivation_data) = self._open_storage_and_fetch_metadata(config, credentials)?;
 
-        let storage_types = self.storage_types.borrow();
+        let wallet_handle = sequence::get_next_id();
 
-        let (storage_type, storage_config, storage_credentials) = WalletService::_get_storage_type(config, credentials, &storage_types)?;
+        let rekey_data: Option<KeyDerivationData> = credentials.rekey.as_ref().map(|ref rekey|
+            KeyDerivationData::from_passphrase_with_new_salt(rekey, &credentials.rekey_derivation_method));
 
-        let storage = storage_type.open_storage(&config.id,
-                                                storage_config
-                                                    .as_ref()
-                                                    .map(String::as_str),
-                                                storage_credentials
-                                                    .as_ref()
-                                                    .map(String::as_str))?;
+        self.pending_for_open.borrow_mut().insert(wallet_handle, (config.id.clone(), storage, metadata, rekey_data.clone()));
 
-        let metadata: Metadata = {
-            let metadata = storage.get_storage_metadata()?;
-            serde_json::from_slice(&metadata)
-                .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err)))?
-        };
+        CommandExecutor::instance().send(Command::DeriveKey(
+            key_derivation_data,
+            Box::new(move |key_result| {
+                let key_result = key_result.clone();
+                match (key_result, rekey_data.clone()) {
+                    (Ok(key_result), Some(rekey_data)) => {
+                        CommandExecutor::instance().send(
+                            Command::DeriveKey(
+                                rekey_data,
+                                Box::new(move |rekey_result| {
+                                    let key_result = key_result.clone();
+                                    CommandExecutor::instance().send(
+                                        Command::Wallet(WalletCommand::OpenContinue(
+                                            wallet_handle,
+                                            rekey_result.map(move |rekey_result| (key_result.clone(), Some(rekey_result))),
+                                        ))
+                                    ).unwrap();
+                                }),
+                            )
+                        ).unwrap();
+                    }
+                    (key_result, _) => {
+                        CommandExecutor::instance().send(
+                            Command::Wallet(WalletCommand::OpenContinue(
+                                wallet_handle,
+                                key_result.map(|kr| (kr, None)),
+                            ))
+                        ).unwrap()
+                    }
+                }
+            }),
+        )).unwrap();
 
-        let key_derivation_data = KeyDerivationData::from_passphrase_and_metadata(&credentials.key, &metadata, &credentials.key_derivation_method)?;
-        let master_key = key_derivation_data.calc_master_key()?;
+        Ok(wallet_handle)
+    }
+
+    pub fn open_wallet_continue(&self, wallet_handle: i32, master_key: Result<(MasterKey, Option<MasterKey>), CommonError>) -> Result<i32, WalletError> {
+        let (id, storage, metadata, rekey_data) = self.pending_for_open.borrow_mut().remove(&wallet_handle).expect("FIXME INVALID STATE");
+
+        let (master_key, rekey) = master_key?;
         let keys = self._restore_keys(&metadata, &master_key)?;
 
         // Rotate master key
-        if let Some(ref rekey) = credentials.rekey {
-            let key_data = KeyDerivationData::from_passphrase_with_new_salt(rekey, &credentials.rekey_derivation_method);
-            let master_key = key_data.calc_master_key()?;
-            let metadata = self._prepare_metadata(master_key, key_data, &keys)?;
+        if let (Some(rekey), Some(rekey_data)) = (rekey, rekey_data) {
+            let metadata = self._prepare_metadata(rekey, rekey_data, &keys)?;
             storage.set_storage_metadata(&metadata)?;
         }
 
-        let wallet = Wallet::new(config.id.clone(), storage, Rc::new(keys));
+        let wallet = Wallet::new(id, storage, Rc::new(keys));
 
-        let wallet_handle = sequence::get_next_id();
         let mut wallets = self.wallets.borrow_mut();
         wallets.insert(wallet_handle, Box::new(wallet));
 
         trace!("open_wallet <<< res: {:?}", wallet_handle);
         Ok(wallet_handle)
+    }
+
+    fn _open_storage_and_fetch_metadata(&self, config: &Config, credentials: &Credentials) -> Result<(Box<WalletStorage>, Metadata, KeyDerivationData), WalletError> {
+        let storage = self._open_storage(config, credentials)?;
+        let metadata: Metadata = {
+            let metadata = storage.get_storage_metadata()?;
+            serde_json::from_slice(&metadata)
+                .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err)))?
+        };
+        let key_derivation_data = KeyDerivationData::from_passphrase_and_metadata(&credentials.key, &metadata, &credentials.key_derivation_method)?;
+        Ok((storage, metadata, key_derivation_data))
     }
 
     pub fn close_wallet(&self, handle: i32) -> Result<(), WalletError> {
@@ -430,41 +457,37 @@ impl WalletService {
                          export_config: &ExportConfig) -> Result<(), WalletError> {
         trace!("import_wallet >>> config: {:?}, credentials: {:?}, export_config: {:?}", config, secret!(export_config), secret!(export_config));
 
-        let mut export_file =
+        let exported_file_to_import =
             fs::OpenOptions::new()
                 .read(true)
                 .open(&export_config.path)?;
 
-        // TODO - this can be refactor to skip the entire wallet_handle ceremony,
-        // but in order to do that a lot of WalletService needs to be refactored
+        let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = preparse_file_to_import(exported_file_to_import, &export_config.key)?;
+        let import_key = import_key_derivation_data.calc_master_key()?;
 
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
         let master_key = key_data.calc_master_key()?;
-        self.create_wallet(config, (credentials, key_data, master_key))?;
-        let wallet_handle = self.open_wallet(config, credentials)?;
+        let keys = self._create_wallet(config, (credentials, key_data, master_key))?;
 
-        let res = {
-            // to finish self.wallets borrowing
-            let wallets = self.wallets.borrow();
-            let wallet = wallets
-                .get(&wallet_handle)
-                .ok_or(WalletError::InvalidHandle(wallet_handle.to_string()))?; // This should never happen
+        self._is_id_from_config_not_used(config)?;
+        let storage = self._open_storage(config, credentials)?;
 
-            import(wallet, &mut export_file, &export_config.key)
-        };
+        let mut wallet = Wallet::new(config.id.clone(), storage, Rc::new(keys));
 
-        self.close_wallet(wallet_handle)?;
+        let res = finish_import(&wallet, reader, import_key, nonce, chunk_size, header_bytes);
 
         if res.is_err() {
             self.delete_wallet(config, credentials)?;
         }
+
+        wallet.close()?;
 
         trace!("import_wallet <<<");
 
         res
     }
 
-    fn _get_storage_type<'a>(config: &Config, credentials: &Credentials, storage_types: &'a HashMap<String, Box<WalletStorageType>>) -> Result<(&'a Box<WalletStorageType>, Option<String>, Option<String>), WalletError> {
+    fn _get_config_and_cred_for_storage<'a>(config: &Config, credentials: &Credentials, storage_types: &'a HashMap<String, Box<WalletStorageType>>) -> Result<(&'a Box<WalletStorageType>, Option<String>, Option<String>), WalletError> {
         let storage_type = {
             let storage_type = config.storage_type
                 .as_ref()
@@ -479,6 +502,26 @@ impl WalletService {
         let storage_credentials = credentials.storage_credentials.as_ref().map(|value| value.to_string());
 
         Ok((storage_type, storage_config, storage_credentials))
+    }
+
+    fn _is_id_from_config_not_used(&self, config: &Config) -> Result<(), WalletError> {
+        if config.id.is_empty() {
+            Err(CommonError::InvalidStructure("Wallet id is empty".to_string()))?
+        }
+        if self.wallets.borrow_mut().values().any(|ref wallet| wallet.get_id() == config.id) {
+            Err(WalletError::AlreadyOpened(config.id.clone()))?
+        }
+        Ok(())
+    }
+
+    fn _open_storage(&self, config: &Config, credentials: &Credentials) -> Result<Box<WalletStorage>, WalletError> {
+        let storage_types = self.storage_types.borrow();
+        let (storage_type, storage_config, storage_credentials) =
+            WalletService::_get_config_and_cred_for_storage(config, credentials, &storage_types)?;
+        let storage = storage_type.open_storage(&config.id,
+                                                storage_config.as_ref().map(String::as_str),
+                                                storage_credentials.as_ref().map(String::as_str))?;
+        Ok(storage)
     }
 
     fn _prepare_metadata(&self, master_key: chacha20poly1305_ietf::Key, key_data: KeyDerivationData, keys: &Keys) -> Result<Vec<u8>, WalletError> {
@@ -509,7 +552,8 @@ impl WalletService {
         let metadata_keys = metadata.get_keys();
 
         let res = Keys::deserialize_encrypted(&metadata_keys, master_key)
-            .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
+            .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))
+            .map_err(map_err_trace!())?;
 
         Ok(res)
     }
@@ -687,6 +731,35 @@ mod tests {
     use utils::inmem_wallet::InmemWallet;
     use utils::test;
 
+    impl WalletService {
+        fn open_wallet(&self, config: &Config, credentials: &Credentials) -> Result<i32, WalletError> {
+            self._is_id_from_config_not_used(config)?;
+
+            let (storage, metadata, key_derivation_data) = self._open_storage_and_fetch_metadata(config, credentials)?;
+
+            let wallet_handle = sequence::get_next_id();
+
+            let rekey_data: Option<KeyDerivationData> = credentials.rekey.as_ref().map(|ref rekey|
+                KeyDerivationData::from_passphrase_with_new_salt(rekey, &credentials.rekey_derivation_method));
+
+            self.pending_for_open.borrow_mut().insert(wallet_handle, (config.id.clone(), storage, metadata, rekey_data.clone()));
+
+            let key_result = key_derivation_data.calc_master_key();
+
+            let keys_result = match (key_result, rekey_data) {
+                (Ok(key_result), Some(rekey_data)) => {
+                    let rekey_result = rekey_data.calc_master_key();
+                    rekey_result.map(move |rekey_result| (key_result.clone(), Some(rekey_result)))
+                }
+                (key_result, _) => {
+                    key_result.map(|kr| (kr, None))
+                }
+            };
+
+            self.open_wallet_continue(wallet_handle, keys_result)
+        }
+    }
+
     #[test]
     fn wallet_service_new_works() {
         WalletService::new();
@@ -717,11 +790,11 @@ mod tests {
     }
 
     #[test]
-    fn wallet_service_create_wallet_works_for_raw_key() {
+    fn wallet_service_create_wallet_works_for_moderate_key_derivation() {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config_default(), _credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_default(), _credentials_moderate()).unwrap();
     }
 
     #[test]
@@ -732,7 +805,7 @@ mod tests {
         let wallet_service = WalletService::new();
 
         let time = SystemTime::now();
-        wallet_service.create_wallet(&_config_default(), _credentials()).unwrap();
+        wallet_service.create_wallet(&_config_default(), _credentials_moderate()).unwrap();
         let time_diff_moderate_key = SystemTime::now().duration_since(time).unwrap();
 
         _cleanup();
@@ -815,13 +888,13 @@ mod tests {
     }
 
     #[test]
-    fn wallet_service_delete_wallet_works_for_raw_key() {
+    fn wallet_service_delete_wallet_works_for_moderate_key_derivation() {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), _credentials_raw()).unwrap();
-        wallet_service.delete_wallet(&_config(), _credentials_raw().0).unwrap();
-        wallet_service.create_wallet(&_config(), _credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), _credentials_moderate()).unwrap();
+        wallet_service.delete_wallet(&_config(), _credentials_moderate().0).unwrap();
+        wallet_service.create_wallet(&_config(), _credentials_moderate()).unwrap();
     }
 
     #[test]
@@ -886,12 +959,12 @@ mod tests {
     }
 
     #[test]
-    fn wallet_service_open_wallet_works_for_raw_key() {
+    fn wallet_service_open_wallet_works_for_moderate_key_derivation() {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), _credentials_raw()).unwrap();
-        let handle = wallet_service.open_wallet(&_config(), _credentials_raw().0).unwrap();
+        wallet_service.create_wallet(&_config(), _credentials_moderate()).unwrap();
+        let handle = wallet_service.open_wallet(&_config(), _credentials_moderate().0).unwrap();
 
         // cleanup
         wallet_service.close_wallet(handle).unwrap();
@@ -1462,7 +1535,7 @@ mod tests {
 
         wallet_service.close_wallet(wallet_handle).unwrap();
 
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_rekey_credentials()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &_rekey_credentials_moderate()).unwrap();
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
         assert_eq!("type", record.get_type().unwrap());
         assert_eq!("value1", record.get_value().unwrap());
@@ -1682,7 +1755,7 @@ mod tests {
     }
 
     #[test]
-    fn wallet_service_export_import_wallet_1_item_for_raw_method() {
+    fn wallet_service_export_import_wallet_1_item_for_moderate_method() {
         _cleanup();
 
         let wallet_service = WalletService::new();
@@ -1698,8 +1771,8 @@ mod tests {
         wallet_service.close_wallet(wallet_handle).unwrap();
         wallet_service.delete_wallet(&_config(), _credentials().0).unwrap();
 
-        wallet_service.import_wallet(&_config(), _credentials_raw().0, &_export_config_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), _credentials_raw().0).unwrap();
+        wallet_service.import_wallet(&_config(), _credentials_moderate().0, &_export_config_raw()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), _credentials_moderate().0).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
     }
 
@@ -1852,7 +1925,7 @@ mod tests {
         };
     }
 
-    fn _credentials() -> (&'static Credentials, KeyDerivationData, MasterKey) {
+    fn _credentials_moderate() -> (&'static Credentials, KeyDerivationData, MasterKey) {
         let kdd = KeyDerivationData::from_passphrase_with_new_salt("my_key", &KeyDerivationMethod::ARGON2I_MOD);
         let master_key = kdd.calc_master_key().unwrap();
         (&ARGON_MOD_CREDENTIAL, kdd, master_key)
@@ -1864,7 +1937,7 @@ mod tests {
         (&ARGON_INT_CREDENTIAL, kdd, master_key)
     }
 
-    fn _credentials_raw() -> (&'static Credentials, KeyDerivationData, MasterKey) {
+    fn _credentials() -> (&'static Credentials, KeyDerivationData, MasterKey) {
         let kdd = KeyDerivationData::from_passphrase_with_new_salt("6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw", &KeyDerivationMethod::RAW);
         let master_key = kdd.calc_master_key().unwrap();
         (&RAW_CREDENTIAL, kdd, master_key)
@@ -1880,32 +1953,32 @@ mod tests {
         }
     }
 
-    fn _rekey_credentials() -> Credentials {
+    fn _rekey_credentials_moderate() -> Credentials {
         Credentials {
-            key: "my_key".to_string(),
+            key: "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string(),
             rekey: Some("my_new_key".to_string()),
             storage_credentials: None,
-            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            key_derivation_method: KeyDerivationMethod::RAW,
             rekey_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
         }
     }
 
     fn _rekey_credentials_interactive() -> Credentials {
         Credentials {
-            key: "my_key".to_string(),
+            key: "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string(),
             rekey: Some("my_new_key".to_string()),
             storage_credentials: None,
-            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            key_derivation_method: KeyDerivationMethod::RAW,
             rekey_derivation_method: KeyDerivationMethod::ARGON2I_INT,
         }
     }
 
     fn _rekey_credentials_raw() -> Credentials {
         Credentials {
-            key: "my_key".to_string(),
-            rekey: Some("6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string()),
+            key: "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string(),
+            rekey: Some("7nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string()),
             storage_credentials: None,
-            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            key_derivation_method: KeyDerivationMethod::RAW,
             rekey_derivation_method: KeyDerivationMethod::RAW,
         }
     }
@@ -1932,7 +2005,7 @@ mod tests {
 
     fn _credentials_for_new_key_raw() -> Credentials {
         Credentials {
-            key: "6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string(),
+            key: "7nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw".to_string(),
             rekey: None,
             storage_credentials: None,
             key_derivation_method: KeyDerivationMethod::RAW,

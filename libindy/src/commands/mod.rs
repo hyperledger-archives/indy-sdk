@@ -9,6 +9,11 @@ pub mod pairwise;
 pub mod non_secrets;
 pub mod payments;
 
+extern crate threadpool;
+
+use self::threadpool::ThreadPool;
+
+
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
 use commands::crypto::{CryptoCommand, CryptoCommandExecutor};
@@ -47,12 +52,13 @@ pub enum Command {
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
-    Payments(PaymentsCommand)
+    Payments(PaymentsCommand),
+    DeriveKey(::services::wallet::KeyDerivationData, Box<Fn(Result<::utils::crypto::chacha20poly1305_ietf::Key, ::errors::common::CommonError>) + Send>)
 }
 
 pub struct CommandExecutor {
     worker: Option<thread::JoinHandle<()>>,
-    sender: Sender<Command>
+    sender: Sender<Command>,
 }
 
 // Global (lazy inited) instance of CommandExecutor
@@ -67,6 +73,7 @@ impl CommandExecutor {
 
     fn new() -> CommandExecutor {
         let (sender, receiver) = channel();
+        let threadpool = ThreadPool::new(4);
 
         CommandExecutor {
             sender,
@@ -137,6 +144,9 @@ impl CommandExecutor {
                         Ok(Command::Exit) => {
                             info!("Exit command received");
                             break
+                        }
+                        Ok(Command::DeriveKey(key_data, cb)) => {
+                            threadpool.execute(move || cb(key_data.calc_master_key()));
                         }
                         Err(err) => {
                             error!("Failed to get command!");
