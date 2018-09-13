@@ -375,10 +375,10 @@ impl Ledger {
     }
 
     fn _build_get_ddo_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let target_did = c_str!(target_did);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_ddo_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), cb) })
+        ErrorCode::from(unsafe { ledger::indy_build_get_ddo_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), target_did.as_ptr(), cb) })
     }
 
     /// Builds a NYM request. Request to create a new NYM record for a specific user.
@@ -527,10 +527,10 @@ impl Ledger {
     }
 
     fn _build_get_nym_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let target_did = c_str!(target_did);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_nym_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), cb) })
+        ErrorCode::from(unsafe { ledger::indy_build_get_nym_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), target_did.as_ptr(), cb) })
     }
 
     /// Builds a GET_TXN request. Request to get any transaction by its seq_no.
@@ -594,10 +594,10 @@ impl Ledger {
     }
 
     fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, cb: Option<ResponseStringCB>) ->  ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let ledger_type_str = opt_c_str!(ledger_type);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_txn_request(command_handle, submitter_did.as_ptr(), opt_c_ptr!(ledger_type, ledger_type_str), seq_no, cb) })
+        ErrorCode::from(unsafe { ledger::indy_build_get_txn_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), opt_c_ptr!(ledger_type, ledger_type_str), seq_no, cb) })
     }
 
     /// Builds an ATTRIB request. Request to add attribute to a NYM record.
@@ -734,7 +734,7 @@ impl Ledger {
     }
 
     fn _build_get_attrib_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let target_did = c_str!(target_did);
 
         let raw_str = opt_c_str!(raw);
@@ -743,7 +743,7 @@ impl Ledger {
 
         ErrorCode::from(unsafe {
             ledger::indy_build_get_attrib_request(command_handle,
-                                                  submitter_did.as_ptr(),
+                                                  opt_c_ptr!(submitter_did, submitter_did_str),
                                                   target_did.as_ptr(),
                                                   opt_c_ptr!(raw, raw_str),
                                                   opt_c_ptr!(hash, hash_str),
@@ -877,10 +877,10 @@ impl Ledger {
     }
 
     fn _build_get_schema_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let id = c_str!(id);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_schema_request(command_handle, submitter_did.as_ptr(), id.as_ptr(), cb) })
+        ErrorCode::from(unsafe { ledger::indy_build_get_schema_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), id.as_ptr(), cb) })
     }
 
     /// Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API.
@@ -1091,10 +1091,10 @@ impl Ledger {
     }
 
     fn _build_get_cred_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let id = c_str!(id);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_cred_def_request(command_handle, submitter_did.as_ptr(), id.as_ptr(), cb) })
+        ErrorCode::from(unsafe { ledger::indy_build_get_cred_def_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), id.as_ptr(), cb) })
     }
 
     /// Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.
@@ -1740,10 +1740,10 @@ impl Ledger {
     }
 
     fn _build_get_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let id = c_str!(id);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_def_request(command_handle, submitter_did.as_ptr(), id.as_ptr(), cb) })
+        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_def_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), id.as_ptr(), cb) })
     }
 
     /// Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format
@@ -1982,10 +1982,10 @@ impl Ledger {
     }
 
     fn _build_get_revoc_reg_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let revoc_reg_def_id = c_str!(revoc_reg_def_id);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_request(command_handle, submitter_did.as_ptr(), revoc_reg_def_id.as_ptr(), timestamp, cb) })
+        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), revoc_reg_def_id.as_ptr(), timestamp, cb) })
     }
 
     /// Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.
@@ -2112,10 +2112,10 @@ impl Ledger {
     }
 
     fn _build_get_revoc_reg_delta_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
-        let submitter_did = opt_c_str!(submitter_did);
+        let submitter_did_str = opt_c_str!(submitter_did);
         let revoc_reg_def_id = c_str!(revoc_reg_def_id);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_delta_request(command_handle, submitter_did.as_ptr(), revoc_reg_def_id.as_ptr(), from, to, cb) })
+        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_delta_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), revoc_reg_def_id.as_ptr(), from, to, cb) })
     }
 
     /// Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
