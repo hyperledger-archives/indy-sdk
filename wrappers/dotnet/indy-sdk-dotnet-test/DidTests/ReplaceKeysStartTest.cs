@@ -33,7 +33,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestReplaceKeysStartWorksForNotExistsDid()
         {
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                 Did.ReplaceKeysStartAsync(this.wallet, DID1, "{}")
             );
         }
