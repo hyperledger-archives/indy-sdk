@@ -7,72 +7,75 @@ namespace Hyperledger.Indy.Test.WalletTests
     [TestClass]
     public class DeleteWalletTest : IndyIntegrationTestBase
     {
-        [TestMethod]
-        public async Task TestDeleteWalletWorks()
-        {
-            await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
-            await Wallet.DeleteWalletAsync(WALLET, null);
-            await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
-            await Wallet.DeleteWalletAsync(WALLET, null);
-        }
+        // TODO
 
-        [TestMethod]
-        public async Task TestDeleteWalletWorksForClosed()
-        {
-            await Wallet.CreateWalletAsync(POOL, WALLET, null, null, null);
 
-            var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
-            Assert.IsNotNull(wallet);
+        //[TestMethod]
+        //public async Task TestDeleteWalletWorks()
+        //{
+        //    await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
+        //    await Wallet.DeleteWalletAsync(WALLET, null);
+        //    await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
+        //    await Wallet.DeleteWalletAsync(WALLET, null);
+        //}
 
-            await wallet.CloseAsync();
-            await Wallet.DeleteWalletAsync(WALLET, null);
-            await Wallet.CreateWalletAsync(POOL, WALLET, null, null, null);
-            await Wallet.DeleteWalletAsync(WALLET, null);
-        }
+        //[TestMethod]
+        //public async Task TestDeleteWalletWorksForClosed()
+        //{
+        //    await Wallet.CreateWalletAsync(POOL, WALLET, null, null, null);
 
-        [TestMethod]
-        [Ignore] //TODO: Remove ignore when bug in Indy fixed.
-        public async Task TestDeleteWalletWorksForOpened()
-        {
-            await Wallet.CreateWalletAsync(POOL, WALLET, null, null, null);
-            var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
+        //    var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
+        //    Assert.IsNotNull(wallet);
 
-            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
-                Wallet.DeleteWalletAsync(WALLET, null)
-            );           
-        }
+        //    await wallet.CloseAsync();
+        //    await Wallet.DeleteWalletAsync(WALLET, null);
+        //    await Wallet.CreateWalletAsync(POOL, WALLET, null, null, null);
+        //    await Wallet.DeleteWalletAsync(WALLET, null);
+        //}
 
-        [TestMethod]
-        public async Task TestDeleteWalletWorksForTwice()
-        {
-            await Wallet.CreateWalletAsync(POOL, WALLET, null, null, null);
+        //[TestMethod]
+        //[Ignore] //TODO: Remove ignore when bug in Indy fixed.
+        //public async Task TestDeleteWalletWorksForOpened()
+        //{
+        //    await Wallet.CreateWalletAsync(POOL, WALLET, null, null, null);
+        //    var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
 
-            var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
-            await wallet.CloseAsync();
+        //    var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
+        //        Wallet.DeleteWalletAsync(WALLET, null)
+        //    );           
+        //}
 
-            await Wallet.DeleteWalletAsync(WALLET, null);
+        //[TestMethod]
+        //public async Task TestDeleteWalletWorksForTwice()
+        //{
+        //    await Wallet.CreateWalletAsync(POOL, WALLET, null, null, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
-                 Wallet.DeleteWalletAsync(WALLET, null)
-            );        
-        }
+        //    var wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
+        //    await wallet.CloseAsync();
 
-        [TestMethod]
-        public async Task TestDeleteWalletWorksForNotCreated()
-        {
-            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
-                Wallet.DeleteWalletAsync(WALLET, null)
-            );
-        }
+        //    await Wallet.DeleteWalletAsync(WALLET, null);
 
-        [TestMethod]
-        public async Task TestDeleteWalletWorksForPlugged()
-        {
-            var walletName = "pluggedWalletDelete";
+        //    var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
+        //         Wallet.DeleteWalletAsync(WALLET, null)
+        //    );        
+        //}
 
-            await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
-            await Wallet.DeleteWalletAsync(walletName, null);
-            await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
-        }
+        //[TestMethod]
+        //public async Task TestDeleteWalletWorksForNotCreated()
+        //{
+        //    var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
+        //        Wallet.DeleteWalletAsync(WALLET, null)
+        //    );
+        //}
+
+        //[TestMethod]
+        //public async Task TestDeleteWalletWorksForPlugged()
+        //{
+        //    var walletName = "pluggedWalletDelete";
+
+        //    await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
+        //    await Wallet.DeleteWalletAsync(walletName, null);
+        //    await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
+        //}
     }
 }

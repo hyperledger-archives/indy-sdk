@@ -20,7 +20,14 @@ namespace Hyperledger.Indy.Test.WalletTests
                 _openWallet.CloseAsync();
                 _openWallet.Dispose();
 
-            } catch {}  // eat the exceptions
+            }
+            catch
+            {
+                // the point of cleanup is to make sure everything is cleaned up
+                // if it fails, it means no clean up was needed, most likely due
+                // to test failing.  so its not imperative to do anything
+                // with exceptions during clean up
+            }
         }
 
         [TestMethod]
