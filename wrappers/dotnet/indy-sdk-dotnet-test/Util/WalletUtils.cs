@@ -22,27 +22,25 @@ namespace Hyperledger.Indy.Test.Util
             return JsonConvert.SerializeObject(cred, Formatting.Indented);
         }
 
-        public static async Task CreateDefaultWallet(string pool, string wallet)
+        public static async Task CreateWallet(string pool, string wallet)
         {
             string config = WalletUtils.GetCreateWalletConfig(wallet);
             await Wallet.CreateWalletAsync(pool, config);
         }
 
-        public static async Task OpenWallet(string wallet, string key)
+        public static async Task<Wallet> OpenWallet(string wallet, string key)
         {
             string config = WalletUtils.GetCreateWalletConfig(wallet);
             string cred = WalletUtils.GetOpenWalletCredentials(key);
 
-            await Wallet.OpenWalletAsync(config, cred);
+            return await Wallet.OpenWalletAsync(config, cred);
         }
 
-        public static async Task CreateAndOpenWallet(string pool, string wallet, string key)
+        public static async Task<Wallet> CreateAndOpenWallet(string pool, string wallet, string key)
         {
-            string config = WalletUtils.GetCreateWalletConfig(wallet);
-            string cred = WalletUtils.GetOpenWalletCredentials(key);
+            await WalletUtils.CreateWallet(pool, wallet);
 
-            Task result = WalletUtils.CreateDefaultWallet(pool, wallet);
-            await Wallet.OpenWalletAsync(config, cred);
+            return await OpenWallet(wallet, key);
         }
     }
 }
