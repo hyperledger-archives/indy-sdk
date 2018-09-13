@@ -20,7 +20,7 @@ def testing() {
     stage('Testing') {
         parallel([
             // 'Xenial' : { mainUbuntu() },
-            'Android': { android() },
+            //'Android': { android() },
             'iOS' : { ios() }
         ])
     }

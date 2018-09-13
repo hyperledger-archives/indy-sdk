@@ -4,10 +4,10 @@ set -e
 export SCRIPTS_PATH="vcx/libvcx/build_scripts/ios/mac"
 export BASE_DIR="../../../../.."
 export WRAPPER_LIBS="vcx/wrappers/ios/vcx/lib"
-IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
-#IOS_TARGETS="x86_64-apple-ios"
-IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
-#IOS_ARCHS="x86_64"
+#IOS_TARGETS="aarch64-apple-ios,armv7-apple-ios,armv7s-apple-ios,i386-apple-ios,x86_64-apple-ios"
+IOS_TARGETS="x86_64-apple-ios"
+#IOS_ARCHS="arm64,armv7,armv7s,i386,x86_64"
+IOS_ARCHS="x86_64"
 
 cd ${SCRIPTS_PATH}
 ./mac.01.libindy.setup.sh
