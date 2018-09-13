@@ -12,7 +12,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestStoreTheirDidWorks()
         {
-            await Did.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", DID1));
+            await Did.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", _verkey));
         }
 
         [TestMethod]
