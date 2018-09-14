@@ -8,7 +8,12 @@ namespace Hyperledger.Indy.Test.LedgerTests
     [TestClass]
     public class PoolRestartRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
     {
+        /// <summary>
+        /// Marked as ignore, see commented out code.  Havent found a suitable replacement so this test might be obsolete
+        /// </summary>
+        /// <returns>The build pool restart request works.</returns>
         [TestMethod]
+        [Ignore]    
         public async Task TestBuildPoolRestartRequestWorks()
         {
             var expectedResult = string.Format("\"identifier\":\"%s\"," +
