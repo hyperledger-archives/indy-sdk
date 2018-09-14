@@ -8,8 +8,6 @@ namespace Hyperledger.Indy.Test.SignusTests
     [TestClass]
     public class GetEndpointForDidTest : IndyIntegrationTestWithPoolAndSingleWallet
     {
-        // TODO
-
         [TestMethod]
         public async Task TestGetEndpointForDidWorks()
         {

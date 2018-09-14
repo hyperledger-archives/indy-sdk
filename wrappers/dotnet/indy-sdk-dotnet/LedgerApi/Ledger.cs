@@ -445,9 +445,11 @@ namespace Hyperledger.Indy.LedgerApi
         /// "ip", "port", and "keys":
         /// <code>
         /// {
+        ///     "id": "id",
         ///     "name":"access",
         ///     "version":"1.0",
-        ///     "attr_names":["ip","port","keys"]
+        ///     "attrNames":["ip","port","keys"],
+        ///     "ver":"1.0"      // note: this must always be 1.0
         /// }
         /// </code>
         /// </para>
