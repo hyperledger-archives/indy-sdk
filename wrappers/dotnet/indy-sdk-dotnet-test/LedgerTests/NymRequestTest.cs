@@ -36,7 +36,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestBuildNymRequestWorksForOnlyOptionalFields()
         {
-            var verkey = "Anfh2rjAcxkE249DcdsaQl";
+            var verkey = VERKEY_TRUSTEE;
 
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
@@ -70,9 +70,10 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var nymRequest = await Ledger.BuildNymRequestAsync(did, did, null, null, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-                Ledger.SubmitRequestAsync(pool, nymRequest)
-            );
+            var result = await Ledger.SubmitRequestAsync(pool, nymRequest);
+
+            Assert.IsTrue(result.Contains("\"op\":\"REQNACK\""), "expected REQNACK in {0}", result);
+            Assert.IsTrue(result.Contains("MissingSignature"), "expected CouldNotAuthenticate in {0}", result);
         }
 
         [TestMethod]
@@ -137,13 +138,14 @@ namespace Hyperledger.Indy.Test.LedgerTests
 
             var nymRequest2 = await Ledger.BuildNymRequestAsync(myDid, myDid2, null, null, null);
 
-            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-                Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, nymRequest2)
-            );
+            var result = await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, nymRequest2);
+
+            Assert.IsTrue(result.Contains("\"op\":\"REQNACK\""), "expected REQNACK in {0}", result);
+            Assert.IsTrue(result.Contains("CouldNotAuthenticate"), "expected CouldNotAuthenticate in {0}", result);
         }
 
         [TestMethod]
-        public async Task TestSendNymRequestsWorksForUnknownSigner()
+        public async Task TestSendNymRequestsResultsInREQNACKForUnknownSigner()
         {
             var trusteeDidJson = "{\"seed\":\"000000000000000000000000Trustee9\"}";
             var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, trusteeDidJson);
@@ -153,10 +155,11 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var myDid = myDidResult.Did;
 
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null);
+            var result = await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
 
-            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-                Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest)
-            );
+            Assert.IsTrue(result.Contains("\"op\":\"REQNACK\""), "expected REQNACK in {0}", result);
+            Assert.IsTrue(result.Contains("CouldNotAuthenticate"), "expected CouldNotAuthenticate in {0}", result);
+
         }
 
         [TestMethod]
