@@ -41,12 +41,18 @@ pub mod inmem_wallet;
 #[path = "../../src/domain/mod.rs"]
 pub mod domain;
 
+use self::constants::{WALLET_CONFIG, WALLET_CREDENTIALS};
+
 pub fn setup() {
+    // delete wallet if exists, just to be sure!  (don't bother to validate)
+    let _res = wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
     test::cleanup_storage();
     logger::set_default_logger();
 }
 
 pub fn tear_down() {
+    // delete wallet if exists, just to be sure!  (don't bother to validate)
+    let _res = wallet::delete_wallet(WALLET_CONFIG, WALLET_CREDENTIALS);
     test::cleanup_storage();
 }
 

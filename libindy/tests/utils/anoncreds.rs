@@ -747,6 +747,9 @@ pub fn init_common_wallet() -> (&'static str, &'static str, &'static str, &'stat
         COMMON_WALLET_INIT.call_once(|| {
             test::cleanup_storage();
 
+            // delete wallet if exists, just to be sure!  (don't bother to validate)
+            let _res = wallet::delete_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS);
+
             pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
             //1. Create and Open wallet
