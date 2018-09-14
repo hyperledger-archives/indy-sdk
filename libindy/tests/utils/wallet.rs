@@ -161,6 +161,20 @@ pub fn close_wallet(wallet_handle: i32) -> Result<(), ErrorCode> {
     super::results::result_to_empty(err, receiver)
 }
 
+/* 
+ * Wrapper to ensure a wallet is closed when it goes out of scope
+ * (i.e. if the unit test didn't shut down cleanly)
+ */
+pub struct WalletHandleWrapper {
+    pub handle: i32,
+}
+impl ::std::ops::Drop for WalletHandleWrapper {
+    fn drop(&mut self) {
+        // close wallet; ignore result in case we are closing it twice
+        let _res = close_wallet(self.handle);
+    }
+}
+
 pub fn export_wallet(wallet_handle: i32, export_config_json: &str) -> Result<(), ErrorCode> {
     let (receiver, command_handle, cb) = callback::_closure_to_cb_ec();
     let export_config_json = CString::new(export_config_json).unwrap();
