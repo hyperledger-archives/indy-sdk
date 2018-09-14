@@ -5,9 +5,9 @@ if [ $# -ne 3 ]; then
     exit 1
 fi
 
-CREDENTIALS=$1
-FILENAME=$2
-URL=$3
+CREDENTIALS=$KRAKEN_CREDENTIALS
+FILENAME=$1
+URL=$2
 LOOKUP_DIR="output"
 
 echo "Filename: ${FILENAME}"
