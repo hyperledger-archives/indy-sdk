@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import sys
 from os import environ
 from pathlib import Path
 from shutil import rmtree
@@ -26,7 +27,11 @@ async def test_register_custom_storage_works():
 
     # load dynamic library
     logger.debug("register_wallet: Load library with custom storage")
-    inmemlib = CDLL("../../samples/storage/storage-inmem/target/debug/libindystrginmem.so")
+    if sys.platform == 'darwin':
+        f_ext = 'dylib'
+    else:
+        f_ext = 'so'
+    inmemlib = CDLL("../../samples/storage/storage-inmem/target/debug/libindystrginmem." + f_ext)
 
     await wallet.register_wallet_storage("custom_inmem",
                                          inmemlib.inmemwallet_fn_create,
@@ -82,9 +87,13 @@ async def test_register_custom_storage_library_works():
 
     # register custom wallet storage
     logger.debug("register_wallet: Register custom wallet storage")
+    if sys.platform == 'darwin':
+        f_ext = 'dylib'
+    else:
+        f_ext = 'so'
     await wallet.register_wallet_storage_library("custom_inmem2",
-                                                 "../../samples/storage/storage-inmem/target/debug/libindystrginmem.so",
-                                                 "inmemwallet_fn_")
+                                "../../samples/storage/storage-inmem/target/debug/libindystrginmem." + f_ext,
+                                "inmemwallet_fn_")
 
     # create/open/close/delete wallet
     logger.debug("register_wallet: Creating wallet")
