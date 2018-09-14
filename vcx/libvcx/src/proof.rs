@@ -242,7 +242,7 @@ impl Proof {
     }
 
     fn get_proof_request_status(&mut self) -> Result<u32, ProofError> {
-        debug!("updating state for proof {}", self.source_id);
+        debug!("updating state for proof {} with msg_id {:?}", self.source_id, self.msg_uid);
         if self.state == VcxStateType::VcxStateAccepted {
             return Ok(self.get_state());
         }
