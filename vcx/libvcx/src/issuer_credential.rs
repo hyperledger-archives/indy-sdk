@@ -216,7 +216,7 @@ impl IssuerCredential {
     // TODO: The error arm of this Result is never used in any calling functions.
     // So currently there is no way to test the error status.
     fn get_credential_offer_status(&mut self) -> Result<u32, IssuerCredError> {
-        debug!("updating state for credential offer: {}", self.source_id);
+        debug!("updating state for credential offer: {} msg_uid: {:?}", self.source_id, self.msg_uid);
         if self.state == VcxStateType::VcxStateRequestReceived {
             return Ok(self.get_state());
         }

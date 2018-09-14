@@ -205,6 +205,7 @@ impl Credential {
     }
 
     fn update_state(&mut self) {
+        debug!("updating state for credential {} with msg_id {:?}", self.source_id, self.msg_uid);
         match self.state {
             VcxStateType::VcxStateOfferSent => {
                 //Check for messages
