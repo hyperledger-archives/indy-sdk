@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Hyperledger.Indy.Test.LedgerTests
 {
     [TestClass]
-    class PoolRestartRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
+    public class PoolRestartRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
     {
         [TestMethod]
         public async Task TestBuildPoolRestartRequestWorks()
