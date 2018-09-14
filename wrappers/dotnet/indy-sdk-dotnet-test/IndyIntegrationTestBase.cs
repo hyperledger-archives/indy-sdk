@@ -24,7 +24,7 @@ namespace Hyperledger.Indy.Test
         protected const string INVALID_DID = "invalid_base58string";
         protected const string IDENTITY_JSON_TEMPLATE = "{{\"did\":\"{0}\",\"verkey\":\"{1}\"}}";
         protected readonly static byte[] MESSAGE = Encoding.UTF8.GetBytes("{\"reqId\":1496822211362017764}");
-        protected const string SCHEMA_DATA = "{\"name\":\"gvt2\",\"version\":\"3.1\",\"attr_names\": [\"name\", \"male\"]}";
+        protected const string SCHEMA_DATA = "{\"id\":\"id\",\"attrNames\": [\"name\", \"male\"],\"name\":\"gvt2\",\"version\":\"3.1\",\"ver\":\"1.0\"}";
         protected const string POOL = "Pool1";
         protected const string WALLET = "Wallet1";
         protected const string WALLET_KEY = "Wallet1Key";
