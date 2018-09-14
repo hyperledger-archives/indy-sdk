@@ -6,7 +6,7 @@ use commands::{Command, CommandExecutor};
 use commands::payments::PaymentsCommand;
 use errors::ToErrorCode;
 use services::payments::PaymentsMethodCBs;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 /// Create the payment address for this payment method.
 ///
@@ -48,7 +48,7 @@ pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// req_json: initial transaction request as json
 /// inputs_json: The list of payment sources as json array:
 ///   ["source1", ...]
@@ -99,7 +99,7 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// payment_address: target payment address
 ///
 /// #Returns
@@ -143,7 +143,7 @@ pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// inputs_json: The list of payment sources as json array:
 ///   ["source1", ...]
 ///   Note that each source should reference payment address
@@ -192,7 +192,7 @@ pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
 /// #Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// outputs_json: The list of outputs as json array:
 ///   [{
 ///     recipient: <str>, // payment address of recipient
@@ -216,7 +216,7 @@ pub type BuildMintReqCB = extern fn(command_handle: i32,
 /// # Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// fees_json {
 ///   txnType1: amount1,
 ///   txnType2: amount2,
@@ -239,7 +239,7 @@ pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
 /// # Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 ///
 /// # Return
 /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
@@ -274,7 +274,7 @@ pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
 /// # Params
 /// command_handle: command handle to map callback to context
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// receipt: payment receipt to verify
 ///
 /// # Return
@@ -450,7 +450,7 @@ pub extern fn indy_create_payment_address(command_handle: i32,
                     Box::new(move |result| {
                         let (err, address) = result_to_err_code_1!(result, String::new());
                         trace!("indy_create_payment_address: address: {:?}", address);
-                        let address = CStringUtils::string_to_cstring(address);
+                        let address = ctypes::string_to_cstring(address);
                         cb(command_handle, err, address.as_ptr());
                     }))
             ));
@@ -490,7 +490,7 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
                     Box::new(move |result| {
                         let (err, addresses_json) = result_to_err_code_1!(result, String::new());
                         trace!("indy_list_payment_address: addresses_json: {:?}", addresses_json);
-                        let addresses_json = CStringUtils::string_to_cstring(addresses_json);
+                        let addresses_json = ctypes::string_to_cstring(addresses_json);
                         cb(command_handle, err, addresses_json.as_ptr());
                     }))
             ));
@@ -516,7 +516,7 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// req_json: initial transaction request as json
 /// inputs_json: The list of payment sources as json array:
 ///   ["source1", ...]
@@ -546,7 +546,7 @@ pub extern fn indy_add_request_fees(command_handle: i32,
                                                          payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_add_request_fees: >>> wallet_handle: {:?}, submitter_did: {:?}, req_json: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(req_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam6);
@@ -569,8 +569,8 @@ pub extern fn indy_add_request_fees(command_handle: i32,
                     Box::new(move |result| {
                         let (err, req_with_fees_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
                         trace!("indy_add_request_fees: req_with_fees_json: {:?}, payment_method: {:?}", req_with_fees_json, payment_method);
-                        let req_with_fees_json = CStringUtils::string_to_cstring(req_with_fees_json);
-                        let payment_method = CStringUtils::string_to_cstring(payment_method);
+                        let req_with_fees_json = ctypes::string_to_cstring(req_with_fees_json);
+                        let payment_method = ctypes::string_to_cstring(payment_method);
                         cb(command_handle, err, req_with_fees_json.as_ptr(), payment_method.as_ptr());
                     }))
             ));
@@ -618,7 +618,7 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
                     payment_method, resp_json, Box::new(move |result| {
                         let (err, receipts_json) = result_to_err_code_1!(result, String::new());
                         trace!("indy_parse_response_with_fees: receipts_json: {:?}", receipts_json);
-                        let receipts_json = CStringUtils::string_to_cstring(receipts_json);
+                        let receipts_json = ctypes::string_to_cstring(receipts_json);
                         cb(command_handle, err, receipts_json.as_ptr());
                     }))
             ));
@@ -635,7 +635,7 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// payment_address: target payment address
 ///
 /// #Returns
@@ -651,7 +651,7 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: i32,
                                                                           get_sources_txn_json: *const c_char,
                                                                           payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_payment_sources_request: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_address: {:?}", wallet_handle, submitter_did, payment_address);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(payment_address, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -667,8 +667,8 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: i32,
                     Box::new(move |result| {
                         let (err, get_sources_txn_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
                         trace!("indy_build_get_payment_sources_request: get_sources_txn_json: {:?}, payment_method: {:?}", get_sources_txn_json, payment_method);
-                        let get_sources_txn_json = CStringUtils::string_to_cstring(get_sources_txn_json);
-                        let payment_method = CStringUtils::string_to_cstring(payment_method);
+                        let get_sources_txn_json = ctypes::string_to_cstring(get_sources_txn_json);
+                        let payment_method = ctypes::string_to_cstring(payment_method);
                         cb(command_handle, err, get_sources_txn_json.as_ptr(), payment_method.as_ptr());
                     }))
             ));
@@ -718,7 +718,7 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: i32,
                     Box::new(move |result| {
                         let (err, sources_json) = result_to_err_code_1!(result, String::new());
                         trace!("indy_parse_get_payment_sources_response: sources_json: {:?}", sources_json);
-                        let sources_json = CStringUtils::string_to_cstring(sources_json);
+                        let sources_json = ctypes::string_to_cstring(sources_json);
                         cb(command_handle, err, sources_json.as_ptr());
                     }))
             ));
@@ -741,7 +741,7 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: i32,
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// inputs_json: The list of payment sources as json array:
 ///   ["source1", ...]
 ///   Note that each source should reference payment address
@@ -768,7 +768,7 @@ pub extern fn indy_build_payment_req(command_handle: i32,
                                                           payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_payment_req: >>> wallet_handle: {:?}, submitter_did: {:?}, inputs_json: {:?}, outputs_json: {:?}, extra: {:?}",
            wallet_handle, submitter_did, inputs_json, outputs_json, extra);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(inputs_json, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam5);
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam6);
@@ -789,8 +789,8 @@ pub extern fn indy_build_payment_req(command_handle: i32,
                     Box::new(move |result| {
                         let (err, payment_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
                         trace!("indy_build_payment_req: payment_req_json: {:?}, payment_method: {:?}", payment_req_json, payment_method);
-                        let payment_req_json = CStringUtils::string_to_cstring(payment_req_json);
-                        let payment_method = CStringUtils::string_to_cstring(payment_method);
+                        let payment_req_json = ctypes::string_to_cstring(payment_req_json);
+                        let payment_method = ctypes::string_to_cstring(payment_method);
                         cb(command_handle, err, payment_req_json.as_ptr(), payment_method.as_ptr());
                     }))
             ));
@@ -840,7 +840,7 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
                     Box::new(move |result| {
                         let (err, receipts_json) = result_to_err_code_1!(result, String::new());
                         trace!("indy_parse_payment_response: receipts_json: {:?}", receipts_json);
-                        let receipts_json = CStringUtils::string_to_cstring(receipts_json);
+                        let receipts_json = ctypes::string_to_cstring(receipts_json);
                         cb(command_handle, err, receipts_json.as_ptr());
                     }))
             ));
@@ -858,7 +858,7 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 /// #Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// outputs_json: The list of outputs as json array:
 ///   [{
 ///     recipient: <str>, // payment address of recipient
@@ -880,7 +880,7 @@ pub extern fn indy_build_mint_req(command_handle: i32,
                                                        mint_req_json: *const c_char,
                                                        payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_mint_req: >>> wallet_handle: {:?}, submitter_did: {:?}, outputs_json: {:?}, extra: {:?}", wallet_handle, submitter_did, outputs_json, extra);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(outputs_json, ErrorCode::CommonInvalidParam4);
     check_useful_opt_c_str!(extra, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -898,8 +898,8 @@ pub extern fn indy_build_mint_req(command_handle: i32,
                     Box::new(move |result| {
                         let (err, mint_req_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
                         trace!("indy_build_mint_req: mint_req_json: {:?}, payment_method: {:?}", mint_req_json, payment_method);
-                        let mint_req_json = CStringUtils::string_to_cstring(mint_req_json);
-                        let payment_method = CStringUtils::string_to_cstring(payment_method);
+                        let mint_req_json = ctypes::string_to_cstring(mint_req_json);
+                        let payment_method = ctypes::string_to_cstring(payment_method);
                         cb(command_handle, err, mint_req_json.as_ptr(), payment_method.as_ptr());
                     }))
             ));
@@ -916,7 +916,7 @@ pub extern fn indy_build_mint_req(command_handle: i32,
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// payment_method: payment method to use
 /// fees_json {
 ///   txnType1: amount1,
@@ -936,7 +936,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
                                                                err: ErrorCode,
                                                                set_txn_fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_set_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
     check_useful_c_str!(fees_json, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
@@ -954,7 +954,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
                     Box::new(move |result| {
                         let (err, set_txn_fees_json) = result_to_err_code_1!(result, String::new());
                         trace!("indy_build_set_txn_fees_req: set_txn_fees_json: {:?}", set_txn_fees_json);
-                        let set_txn_fees_json = CStringUtils::string_to_cstring(set_txn_fees_json);
+                        let set_txn_fees_json = ctypes::string_to_cstring(set_txn_fees_json);
                         cb(command_handle, err, set_txn_fees_json.as_ptr());
                     }))
             ));
@@ -971,7 +971,7 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// payment_method: payment method to use
 ///
 /// # Return
@@ -985,7 +985,7 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
                                                                err: ErrorCode,
                                                                get_txn_fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}", wallet_handle, submitter_did, payment_method);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(payment_method, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1001,7 +1001,7 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
                     Box::new(move |result| {
                         let (err, get_txn_fees_json) = result_to_err_code_1!(result, String::new());
                         trace!("indy_build_get_txn_fees_req: entities >>> get_txn_fees_json: {:?}", get_txn_fees_json);
-                        let get_txn_fees_json = CStringUtils::string_to_cstring(get_txn_fees_json);
+                        let get_txn_fees_json = ctypes::string_to_cstring(get_txn_fees_json);
                         cb(command_handle, err, get_txn_fees_json.as_ptr());
                     }))
             ));
@@ -1050,7 +1050,7 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: i32,
                     Box::new(move |result| {
                         let (err, fees_json) = result_to_err_code_1!(result, String::new());
                         trace!("indy_parse_get_txn_fees_response: fees_json: {:?}", fees_json);
-                        let fees_json = CStringUtils::string_to_cstring(fees_json);
+                        let fees_json = ctypes::string_to_cstring(fees_json);
                         cb(command_handle, err, fees_json.as_ptr());
                     }))
             ));
@@ -1067,7 +1067,7 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: i32,
 /// # Params
 /// command_handle: Command handle to map callback to caller context.
 /// wallet_handle: wallet handle
-/// submitter_did : DID of request sender
+/// submitter_did: (Optional) DID of request sender
 /// receipt: payment receipt to verify
 ///
 /// # Return
@@ -1083,7 +1083,7 @@ pub extern fn indy_build_verify_payment_req(command_handle: i32,
                                                          verify_txn_json: *const c_char,
                                                          payment_method: *const c_char)>) -> ErrorCode {
     trace!("indy_build_verify_payment_req: >>> wallet_handle {:?}, submitter_did: {:?}, receipt: {:?}", wallet_handle, submitter_did, receipt);
-    check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
+    check_useful_opt_c_str!(submitter_did, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(receipt, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
@@ -1098,8 +1098,8 @@ pub extern fn indy_build_verify_payment_req(command_handle: i32,
                 Box::new(move |result| {
                     let (err, verify_txn_json, payment_method) = result_to_err_code_2!(result, String::new(), String::new());
                     trace!("indy_build_verify_payment_req: verify_txn_json: {:?}, payment_method: {:?}", verify_txn_json, payment_method);
-                    let verify_txn_json = CStringUtils::string_to_cstring(verify_txn_json);
-                    let payment_method = CStringUtils::string_to_cstring(payment_method);
+                    let verify_txn_json = ctypes::string_to_cstring(verify_txn_json);
+                    let payment_method = ctypes::string_to_cstring(payment_method);
                     cb(command_handle, err, verify_txn_json.as_ptr(), payment_method.as_ptr());
                 })
             )));
@@ -1150,7 +1150,7 @@ pub extern fn indy_parse_verify_payment_response(command_handle: i32,
                 Box::new(move |result| {
                     let (err, txn_json) = result_to_err_code_1!(result, String::new());
                     trace!("indy_parse_verify_payment_response: txn_json: {:?}", txn_json);
-                    let txn_json = CStringUtils::string_to_cstring(txn_json);
+                    let txn_json = ctypes::string_to_cstring(txn_json);
                     cb(command_handle, err, txn_json.as_ptr());
                 })
             )));

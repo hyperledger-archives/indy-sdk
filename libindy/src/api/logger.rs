@@ -8,7 +8,7 @@ use api::ErrorCode;
 use errors::ToErrorCode;
 
 use utils::logger::{EnabledCB, LogCB, FlushCB, LibindyLogger, LibindyDefaultLogger, LOGGER_STATE};
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 /// Set custom logger implementation.
 ///

@@ -55,7 +55,7 @@ impl Commander {
 #[cfg(test)]
 mod commander_tests {
     use super::*;
-    use utils::sequence::SequenceUtils;
+    use utils::sequence;
 
     #[test]
     pub fn commander_new_works() {
@@ -99,7 +99,7 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "exit";
@@ -113,7 +113,7 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "refresh";
@@ -127,7 +127,7 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "connect";
@@ -141,7 +141,7 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         let mut buf_to = [0u8; 4];

@@ -197,7 +197,7 @@ public class Payments extends IndyJava.API {
      * with at least one output that corresponds to payment address that user owns.
      *
      * @param wallet The wallet.
-     * @param submitterDid DID of request sender
+     * @param submitterDid (Option) DID of request sender
      * @param reqJson initial transaction request as json
      * @param inputsJson The list of payment sources as json array:
      *   ["source1", ...]
@@ -221,7 +221,6 @@ public class Payments extends IndyJava.API {
             String outputsJson,
             String extra
     ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(reqJson, "reqJson");
         ParamGuard.notNullOrWhiteSpace(inputsJson, "inputsJson");
         ParamGuard.notNullOrWhiteSpace(outputsJson, "outputsJson");
@@ -272,7 +271,7 @@ public class Payments extends IndyJava.API {
      * according to this payment method.
      * 
      * @param wallet The wallet.
-     * @param submitterDid DID of request sender
+     * @param submitterDid (Option) DID of request sender
      * @param paymentAddress target payment address
      * @return Indy request for getting sources list for payment address
      * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -282,7 +281,6 @@ public class Payments extends IndyJava.API {
             String submitterDid,
             String paymentAddress
     ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(paymentAddress, "paymentAddress");
 
         CompletableFuture<BuildGetPaymentSourcesRequestResult> future = new CompletableFuture<>();
@@ -333,7 +331,7 @@ public class Payments extends IndyJava.API {
      * with at least one output that corresponds to payment address that user owns.
      * 
      * @param wallet The wallet.
-     * @param submitterDid DID of request sender
+     * @param submitterDid (Option) DID of request sender
      * @param inputsJson The list of payment sources as json array:
      *   ["source1", ...]
      *   Note that each source should reference payment address
@@ -354,7 +352,6 @@ public class Payments extends IndyJava.API {
             String outputsJson,
             String extra
     ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(inputsJson, "inputsJson");
         ParamGuard.notNullOrWhiteSpace(outputsJson, "outputsJson");
 
@@ -403,7 +400,7 @@ public class Payments extends IndyJava.API {
      * according to this payment method.
      *
      * @param wallet The wallet.
-     * @param submitterDid DID of request sender
+     * @param submitterDid (Option) DID of request sender
      * @param outputsJson The list of outputs as json array:
      *   [{
      *     recipient: "str", // payment address of recipient
@@ -421,7 +418,6 @@ public class Payments extends IndyJava.API {
             String outputsJson,
             String extra
     ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(outputsJson, "outputsJson");
 
         CompletableFuture<BuildMintReqResult> future = new CompletableFuture<>();
@@ -446,7 +442,7 @@ public class Payments extends IndyJava.API {
      * Builds Indy request for setting fees for transactions in the ledger
      *
      * @param wallet The wallet.
-     * @param submitterDid DID of request sender
+     * @param submitterDid (Option) DID of request sender
      * @param paymentMethod payment method to use
      * @param feesJson {
      *   txnType1: amount1,
@@ -463,7 +459,6 @@ public class Payments extends IndyJava.API {
             String paymentMethod,
             String feesJson
     ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
         ParamGuard.notNullOrWhiteSpace(feesJson, "feesJson");
 
@@ -489,7 +484,7 @@ public class Payments extends IndyJava.API {
      * Builds Indy get request for getting fees for transactions in the ledger
      *
      * @param wallet The wallet.
-     * @param submitterDid DID of request sender
+     * @param submitterDid (Option) DID of request sender
      * @param paymentMethod payment method to use
      * @return Indy request for getting fees for transactions in the ledger
      * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -499,7 +494,6 @@ public class Payments extends IndyJava.API {
             String submitterDid,
             String paymentMethod
     ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(paymentMethod, "paymentMethod");
 
         CompletableFuture<String> future = new CompletableFuture<>();
@@ -544,7 +538,7 @@ public class Payments extends IndyJava.API {
      * Builds Indy request for information to verify the payment receipt
      *
      * @param wallet The wallet.
-     * @param submitterDid DID of request sender
+     * @param submitterDid (Option) DID of request sender
      * @param receipt payment receipt to verify
      * @return Indy request for doing verification
      * @throws IndyException Thrown if a call to the underlying SDK fails.
@@ -554,7 +548,6 @@ public class Payments extends IndyJava.API {
             String submitterDid,
             String receipt
     ) throws IndyException {
-        ParamGuard.notNullOrWhiteSpace(submitterDid, "submitterDid");
         ParamGuard.notNullOrWhiteSpace(receipt, "receipt");
 
         CompletableFuture<BuildVerifyPaymentReqResult> future = new CompletableFuture<>();

@@ -24,6 +24,9 @@ version you can check migration guides history:
 * [Libindy 1.6.2 to 1.6.3 migration](#libindy-162-to-163-migration-guide)
     * [Wallet API 1.6.3](#wallet-api-163)
     * [Ledger API 1.6.3](#ledger-api-163)
+* [Libindy 1.6.3 to 1.6.4 migration](#libindy-163-to-164-migration-guide)
+* [Libindy 1.6.4 to 1.6.5 migration](#libindy-164-to-165-migration-guide)
+
 
 ## Notes
 
@@ -1267,3 +1270,14 @@ Left the same but the additional optional field <b>blskey_pop</b> has been added
     </td>
   </tr>
 </table>
+
+## Libindy 1.6.3 to 1.6.4 migration Guide
+
+The Libindy 1.6.4 release contains fixes that don't affect API functions. 
+
+## Libindy 1.6.4 to 1.6.5 migration Guide
+
+The Libindy 1.6.5 release contains changes that related with Ledger API and Payment API but doesn't break them.
+Parameter `submitter_did` set as the optional field for:
+* Ledger API `indy_build_get_*` functions (except `indy_build_get_validator_info_request`).
+* all functions in Payment API.

@@ -1180,6 +1180,18 @@ pub mod tests {
         ensure_opened_wallet_handle(&ctx).unwrap()
     }
 
+    pub fn open_wallet(ctx: &CommandContext) -> i32 {
+        {
+            let cmd = open_command::new();
+            let mut params = CommandParams::new();
+            params.insert("name", WALLET.to_string());
+            params.insert("key", WALLET_KEY.to_string());
+            cmd.execute(&ctx, &params).unwrap();
+        }
+
+        ensure_opened_wallet_handle(&ctx).unwrap()
+    }
+
     pub fn close_and_delete_wallet(ctx: &CommandContext) {
         {
             let cmd = close_command::new();
@@ -1193,6 +1205,14 @@ pub mod tests {
             params.insert("name", WALLET.to_string());
             params.insert("key", WALLET_KEY.to_string());
             cmd.execute(&CommandContext::new(), &params).unwrap();
+        }
+    }
+
+    pub fn close_wallet(ctx: &CommandContext) {
+        {
+            let cmd = close_command::new();
+            let params = CommandParams::new();
+            cmd.execute(&ctx, &params).unwrap();
         }
     }
 

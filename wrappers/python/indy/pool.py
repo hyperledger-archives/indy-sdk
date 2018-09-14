@@ -191,7 +191,7 @@ async def set_protocol_version(protocol_version: int) -> None:
 
     :param protocol_version: Protocol version will be used:
         1 - for Indy Node 1.3
-        2 - for Indy Node 1.4
+        2 - for Indy Node 1.4 and greater
     :return: Error code
     """
 
