@@ -153,6 +153,7 @@ build(){
             RUSTFLAGS="-C link-args=-Wl,-rpath,${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -L${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/${TOOLCHAIN_SYSROOT_LIB} -lgnustl_shared" \
             cargo build --release --target=${TRIPLET}
         else
+        RUSTFLAGS="-L${TOOLCHAIN_DIR}/${TRIPLET}/lib -lgnustl_shared" \
             cargo build --release --target=${TRIPLET}
         fi
 

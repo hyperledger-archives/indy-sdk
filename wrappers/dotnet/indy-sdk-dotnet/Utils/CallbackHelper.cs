@@ -21,7 +21,7 @@ namespace Hyperledger.Indy.Utils
 #if __IOS__
         [MonoPInvokeCallback(typeof(IndyMethodCompletedDelegate))]
 #endif
-        public static void TaskCompletingNoValueCallback(int xcommand_handle, int err)
+        public static void TaskCompletingNoValueCallbackMethod(int xcommand_handle, int err)
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -30,6 +30,7 @@ namespace Hyperledger.Indy.Utils
 
             taskCompletionSource.SetResult(true);
         }
+        public static IndyMethodCompletedDelegate TaskCompletingNoValueCallback = TaskCompletingNoValueCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use for functions that don't return a value and are not associated with a task.
@@ -37,10 +38,11 @@ namespace Hyperledger.Indy.Utils
 #if __IOS__
         [MonoPInvokeCallback(typeof(IndyMethodCompletedDelegate))]
 #endif
-        public static void NoValueCallback(int xcommand_handle, int err)
+        public static void NoValueCallbackMethod(int xcommand_handle, int err)
         {
             CheckCallback(err);
         }
+        public static IndyMethodCompletedDelegate NoValueCallback = NoValueCallbackMethod;
 
         /// <summary>
         /// Checks the result from a Sovrin function call.

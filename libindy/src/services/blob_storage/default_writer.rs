@@ -10,7 +10,7 @@ use self::rust_base58::ToBase58;
 
 use super::{WritableBlob, Writer, WriterType};
 use errors::common::CommonError;
-use utils::environment::EnvironmentUtils;
+use utils::environment;
 
 #[allow(dead_code)]
 pub struct DefaultWriter {
@@ -95,7 +95,7 @@ impl WritableBlob for DefaultWriter {
 }
 
 fn tmp_storage_file(id: i32) -> PathBuf {
-    EnvironmentUtils::tmp_file_path(&format!("def_storage_tmp_{}", id))
+    environment::tmp_file_path(&format!("def_storage_tmp_{}", id))
 }
 
 pub struct DefaultWriterType {}

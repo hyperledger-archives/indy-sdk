@@ -9,7 +9,7 @@ use services::wallet::{WalletService, WalletRecord, WalletSearch, RecordOptions,
 use domain::wallet::Tags;
 use std::rc::Rc;
 use std::collections::HashMap;
-use utils::sequence::SequenceUtils;
+use utils::sequence;
 use std::cell::RefCell;
 
 use std::result;
@@ -258,7 +258,7 @@ impl NonSecretsCommandExecutor {
 
         let search = self.wallet_service.search_records(wallet_handle, type_, query_json, &options_json)?;
 
-        let search_handle = SequenceUtils::get_next_id();
+        let search_handle = sequence::get_next_id();
 
         self.searches.borrow_mut().insert(search_handle, Box::new(search));
 
