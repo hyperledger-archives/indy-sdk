@@ -25,7 +25,7 @@ npm run lint
 ```
 npm install
 npm ci
-npm doc-gen
+npm run doc-gen
 ```
 * A directory will be created locally `./docs` which contains an `index.html` file which can be used to navigate the generated documents.
 
