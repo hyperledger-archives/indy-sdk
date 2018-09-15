@@ -577,7 +577,7 @@ mod high_cases {
 
             let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
             ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
-            let hashed_attr = ctx.finish2().unwrap().as_ref().to_hex();
+            let hashed_attr = ctx.finish().unwrap().as_ref().to_hex();
 
             let attrib_request = ledger::build_attrib_request(&trustee_did,
                                                               &trustee_did,
