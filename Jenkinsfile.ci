@@ -5,12 +5,12 @@ testing()
 def testing() {
     stage('Testing') {
         parallel([
-                'ubuntu-test' : { ubuntuTesting() },
+//                'ubuntu-test' : { ubuntuTesting() },
                 'android-test': { androidTesting() },
-                'macos-test'  : { macosTesting() },
-                'ios-test'    : { iosTesting() },
-                'redhat-test' : { rhelTesting() },
-                'windows-test': { windowsTesting() }
+//                'macos-test'  : { macosTesting() },
+//                'ios-test'    : { iosTesting() },
+//                'redhat-test' : { rhelTesting() },
+//                'windows-test': { windowsTesting() }
         ])
     }
 }

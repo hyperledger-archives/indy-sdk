@@ -36,14 +36,22 @@ check_if_emulator_is_running(){
 }
 
 kill_avd(){
+    export PATH=${ANDROID_SDK}/platform-tools/:${ANDROID_SDK}/tools/bin/:${PATH}
+    ls -la ${ANDROID_SDK}/platform-tools/
+    ls -la ${ANDROID_SDK}/tools/bin/
+    adb devices
+    adb devices | grep emulator
+    adb devices | grep emulator | cut -f1
     adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done || true
 }
 delete_existing_avd(){
+    export PATH=${ANDROID_SDK}/platform-tools/:${ANDROID_SDK}/tools/bin/:${PATH}
     kill_avd
     avdmanager delete avd -n ${ABSOLUTE_ARCH}
 }
 
 create_avd(){
+    export PATH=${ANDROID_SDK}/platform-tools/:${ANDROID_SDK}/tools/bin/:${PATH}
 
     echo "${GREEN}Creating Android SDK${RESET}"
     echo "yes" | \
@@ -72,7 +80,9 @@ download_sdk(){
         echo "${GREEN}Done!${RESET}"
         unzip -qq sdk-tools-linux-4333796.zip
         export PATH=${ANDROID_SDK}/platform-tools/:${ANDROID_SDK}/tools/bin/:${PATH}
+        set +e
         delete_existing_avd
+        set -e
         create_avd
      popd
 }
