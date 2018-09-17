@@ -1,9 +1,30 @@
 use serde_json;
-use serde_json::{Error, from_str};
+use serde_json::from_str;
 use utils::crypto::base64::{encode, decode_to_string};
 use utils::json::JsonDecodable;
 
 use errors::route::RouteError;
+
+pub struct Payload {
+    pub iv: Vec<u8>,
+    pub tag: Vec<u8>,
+    pub ciphertext: Vec<u8>,
+    pub sym_key: Vec<u8>
+}
+
+pub struct JWMData {
+    pub header: Header,
+    pub cek: Vec<u8>,
+    pub ciphertext: Vec<u8>,
+    pub iv: Vec<u8>,
+    pub tag: Vec<u8>
+}
+
+pub struct CEK {
+    pub cek : String,
+    pub nonce : String,
+    pub their_vk : String
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ForwardJSON {
@@ -68,17 +89,7 @@ impl Header {
             alg: String::from("x-anon"),
             enc: String::from("xsalsa20poly1305"),
             kid: String::from(recipient_vk),
-            jwk: None
-        }
-    }
-
-    pub fn new_plain_header() -> Header {
-        Header {
-            typ: String::from("x-b64nacl"),
-            alg: String::from("x-plain"),
-            enc: String::from(""),
-            kid: String::from(""),
-            jwk: None
+            jwk: Some(String::from("")),
         }
     }
 }
@@ -166,7 +177,7 @@ pub fn serialize_jwm_compact(recipient_vk : &str,
         false => Ok(Header::new_anoncrypt_header(recipient_vk))
     }?;
 
-    let header_json = serde_json::to_string(&header).map_err(|e| RouteError::EncodeError("Failed to encode jwm compact".to_string()))?;
+    let header_json = serde_json::to_string(&header).map_err(|err| RouteError::EncodeError(format!("Failed to encode jwm compact: {:?}", err)))?;
 
     Ok(format!("{}.{}.{}.{}.{}", encode(&header_json.as_bytes()),
                               encode(&cek.as_bytes()),

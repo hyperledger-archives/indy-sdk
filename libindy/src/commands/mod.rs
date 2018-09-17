@@ -8,6 +8,7 @@ pub mod wallet;
 pub mod pairwise;
 pub mod non_secrets;
 pub mod payments;
+pub mod route;
 
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
@@ -19,6 +20,7 @@ use commands::wallet::{WalletCommand, WalletCommandExecutor};
 use commands::pairwise::{PairwiseCommand, PairwiseCommandExecutor};
 use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
 use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
+use commands::route::{RouteCommand, RouteCommandExecutor};
 
 use errors::common::CommonError;
 
@@ -29,6 +31,7 @@ use services::pool::PoolService;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
+use services::route::RouteService;
 
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
@@ -47,7 +50,8 @@ pub enum Command {
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
-    Payments(PaymentsCommand)
+    Payments(PaymentsCommand),
+    Route(RouteCommand)
 }
 
 pub struct CommandExecutor {
@@ -81,6 +85,7 @@ impl CommandExecutor {
                 let payments_service = Rc::new(PaymentsService::new());
                 let pool_service = Rc::new(PoolService::new());
                 let wallet_service = Rc::new(WalletService::new());
+                let route_service = Rc::new(RouteService::new());
 
                 let anoncreds_command_executor = AnoncredsCommandExecutor::new(anoncreds_service.clone(), blob_storage_service.clone(), pool_service.clone(), wallet_service.clone(), crypto_service.clone());
                 let crypto_command_executor = CryptoCommandExecutor::new(wallet_service.clone(), crypto_service.clone());
@@ -92,6 +97,7 @@ impl CommandExecutor {
                 let blob_storage_command_executor = BlobStorageCommandExecutor::new(blob_storage_service.clone());
                 let non_secret_command_executor = NonSecretsCommandExecutor::new(wallet_service.clone());
                 let payments_command_executor = PaymentsCommandExecutor::new(payments_service.clone(), wallet_service.clone(), crypto_service.clone());
+                let route_command_executor = RouteCommandExecutor::new(wallet_service.clone(), crypto_service.clone(), route_service.clone());
 
                 loop {
                     match receiver.recv() {
@@ -134,6 +140,10 @@ impl CommandExecutor {
                         Ok(Command::Payments(cmd)) => {
                             info!("PaymentsCommand command received");
                             payments_command_executor.execute(cmd);
+                        }
+                        Ok(Command::Route(cmd)) => {
+                            info!("RouteCommand command received");
+                            route_command_executor.execute(cmd);
                         }
                         Ok(Command::Exit) => {
                             info!("Exit command received");

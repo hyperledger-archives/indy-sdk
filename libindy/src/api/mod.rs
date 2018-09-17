@@ -234,5 +234,8 @@ pub enum ErrorCode
     RouteMissingKeyError = 805,
 
     // Failed to serialize a JWM based on the parameters provided
-    RouteSerializationError = 806
+    RouteSerializationError = 806,
+
+    // Failed to complete action with RouteTable
+    RouteTableError = 807
 }

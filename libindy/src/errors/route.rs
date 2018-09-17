@@ -15,6 +15,7 @@ pub enum RouteError {
     PackError(String),
     MissingKeyError(String),
     SerializationError(String),
+    TableError(String),
     CommonError(CommonError)
 }
 
@@ -28,6 +29,7 @@ impl fmt::Display for RouteError {
             RouteError::PackError(ref description) => write!(f, "Failed while packing message: {}", description),
             RouteError::MissingKeyError(ref description) => write!(f, "Invalid key usage: {}", description),
             RouteError::SerializationError(ref description) => write!(f, "Failed to serialize: {}", description),
+            RouteError::TableError(ref description) => write!(f, "Error with Route Table: {}", description),
             RouteError::CommonError(ref err) => err.fmt(f)
         }
     }
@@ -43,6 +45,7 @@ impl error::Error for RouteError {
             RouteError::PackError(ref description) => description,
             RouteError::MissingKeyError(ref description) => description,
             RouteError::SerializationError(ref description) => description,
+            RouteError::TableError(ref description) => description,
             RouteError::CommonError(ref err) => err.description()
         }
     }
@@ -56,6 +59,7 @@ impl error::Error for RouteError {
             RouteError::PackError(_) => None,
             RouteError::MissingKeyError(_) => None,
             RouteError::SerializationError(_) => None,
+            RouteError::TableError(_) => None,
             RouteError::CommonError(ref err) => Some(err)
         }
     }
@@ -71,6 +75,7 @@ impl ToErrorCode for RouteError {
             RouteError::PackError(_) => ErrorCode::RoutePackError,
             RouteError::MissingKeyError(_) => ErrorCode::RouteMissingKeyError,
             RouteError::SerializationError(_) => ErrorCode::RouteSerializationError,
+            RouteError::TableError(_) => ErrorCode::RouteTableError,
             RouteError::CommonError(ref err) => err.to_error_code()
         }
     }
