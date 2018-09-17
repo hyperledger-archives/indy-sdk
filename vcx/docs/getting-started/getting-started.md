@@ -1,11 +1,11 @@
-﻿# Getting Started with Libindy
+﻿# Getting Started with Libvcx
 
-## A Developer Guide for Building Indy Clients Using Libindy
+## A Developer Guide for Building Indy Clients Using Libvcx
 
 ![logo](https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png)
 
 * [Getting Started with Libvcx](#getting-started-with-libvcx)
-  * [What Indy and Libindy are and Why They Matter](#what-indy-and-libindy-are-and-why-they-matter)
+  * [What Indy, Libindy and Libvcx are and Why They Matter](#what-indy-libindy-and-libvcx-are-and-why-they-matter)
   * [What We'll Cover](#what-well-cover)
   * [About Alice](#about-alice)
   * [Infrastructure Preparation](#infrastructure-preparation)
@@ -24,7 +24,7 @@
 
 ## What Indy, Libindy and Libvcx are and Why They Matter
 
-Indy provides a software ecosystem for private, secure, and powerful identity, and libindy enables clients for it. Indy puts people — not the organizations that traditionally centralize identity — in charge of decisions about their own privacy and disclosure. Libvcx is library on top of libindy which simplifies credential exchange. This enables all kinds of rich innovation: connection contracts, revocation, novel payment workflows, asset and document management features, creative forms of escrow, curated reputation, integrations with other cool technologies, and so on.
+Indy provides a software ecosystem for private, secure, and powerful identity, and libindy enables clients for it. Indy puts people — not the organizations that traditionally centralize identity — in charge of decisions about their own privacy and disclosure. Libindy is a low level library that provides fine configuration, Libvcx is higher-level library on top of libindy which simplifies credential exchange. Libvcx is concentrated on hiding low-level details and increasing application development efficiency. This enables all kinds of rich innovation: connection contracts, revocation, novel payment workflows, asset and document management features, creative forms of escrow, curated reputation, integrations with other cool technologies, and so on.
 
 Indy uses open-source, distributed ledger technology. These ledgers are a form of database that is provided cooperatively by a pool of participants, instead of by a giant database with a central admin. Data lives redundantly in many places, and it accrues in transactions orchestrated by many machines. Strong, industry-standard cryptography protects it. Best practices in key management and cybersecurity pervade its design. The result is a reliable, public source of truth under no single entity’s control, robust to system failure, resilient to hacking, and highly immune to subversion by hostile entities.
 
