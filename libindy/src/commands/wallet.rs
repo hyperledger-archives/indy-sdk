@@ -72,6 +72,10 @@ pub enum WalletCommand {
            Credentials, // credentials
            ExportConfig, // import config
            Box<Fn(Result<()>) + Send>),
+    ImportContinue(i32, // handle
+                   result::Result<(::utils::crypto::chacha20poly1305_ietf::Key, ::utils::crypto::chacha20poly1305_ietf::Key),
+                   ::errors::common::CommonError>, // derive_key_result
+    ),
     GenerateKey(Option<KeyConfig>, // config
                 Box<Fn(Result<String>) + Send>),
 }
@@ -81,6 +85,7 @@ pub struct WalletCommandExecutor {
     crypto_service: Rc<CryptoService>,
     open_callbacks: RefCell<HashMap<i32, Box<Fn(Result<i32>) + Send>>>,
     pending_callbacks: RefCell<HashMap<i32, Box<Fn(Result<()>) + Send>>>,
+    pending_data: RefCell<HashMap<i32, (Config, Credentials)>>,
 }
 
 impl WalletCommandExecutor {
@@ -90,6 +95,7 @@ impl WalletCommandExecutor {
             crypto_service,
             open_callbacks: RefCell::new(HashMap::new()),
             pending_callbacks: RefCell::new(HashMap::new()),
+            pending_data: RefCell::new(HashMap::new()),
         }
     }
 
@@ -154,7 +160,13 @@ impl WalletCommandExecutor {
             }
             WalletCommand::Import(config, credentials, import_config, cb) => {
                 debug!(target: "wallet_command_executor", "Import command received");
-                cb(self._import(&config, &credentials, &import_config));
+                let cb_id = self._import(&config, &credentials, &import_config).expect("FIXME RETURN ERR");
+                self.pending_callbacks.borrow_mut().insert(cb_id, cb);
+            }
+            WalletCommand::ImportContinue(handle, key_result) => {
+                let cb = self.pending_callbacks.borrow_mut().remove(&handle).expect("FIXME ERR TRACE");
+                let (config, credential) = self.pending_data.borrow_mut().remove(&handle).expect("FIXME INVALID STATE");
+                cb(self.wallet_service.import_wallet_continue(&config, &credential, handle, key_result).map_err(IndyError::from))
             }
             WalletCommand::GenerateKey(config, cb) => {
                 debug!(target: "wallet_command_executor", "DeriveKey command received");
@@ -264,11 +276,11 @@ impl WalletCommandExecutor {
     fn _import(&self,
                config: &Config,
                credentials: &Credentials,
-               import_config: &ExportConfig) -> Result<()> {
+               import_config: &ExportConfig) -> Result<i32> {
         trace!("_import >>> config: {:?}, credentials: {:?}, import_config: {:?}",
                config, secret!(credentials), secret!(import_config));
 
-        let res = self.wallet_service.import_wallet(config, credentials, import_config)?;
+        let res = self.wallet_service.import_wallet_prepare(config, credentials, import_config)?;
 
         trace!("_import <<< res: {:?}", res);
         Ok(res)
