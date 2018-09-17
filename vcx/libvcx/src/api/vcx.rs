@@ -640,7 +640,7 @@ mod tests {
         let proof = ::proof::create_proof("1".to_string(),"[]".to_string(), "[]".to_string(),"Optional".to_owned()).unwrap();
         let credentialdef = ::credential_def::create_new_credentialdef("SID".to_string(),"NAME".to_string(),"4fUDR9R7fjwELRvH9JT6HH".to_string(), "id".to_string(), "tag".to_string(),"{}".to_string() ).unwrap();
         let schema = ::schema::create_new_schema("5",  "VsKV7grR1BUE29mG2Fm2kX".to_string(),"name".to_string(), "0.1".to_string(), data.to_string()).unwrap();
-        let disclosed_proof = ::disclosed_proof::create_proof("id".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
+        let disclosed_proof = ::disclosed_proof::create_proof("id",::utils::constants::PROOF_REQUEST_JSON).unwrap();
         let credential = ::credential::credential_create_with_offer("name", ::utils::constants::CREDENTIAL_OFFER_JSON).unwrap();
 
         vcx_shutdown(true);

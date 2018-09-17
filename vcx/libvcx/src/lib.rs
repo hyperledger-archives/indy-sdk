@@ -93,7 +93,7 @@ mod tests {
         thread::sleep(Duration::from_millis(2000));
         // AS CONSUMER SEND CREDENTIAL REQUEST
         set_consumer();
-        let credential_offers = credential::get_credential_offer_messages(faber, None).unwrap();
+        let credential_offers = credential::get_credential_offer_messages(faber).unwrap();
         let offers: Value = serde_json::from_str(&credential_offers).unwrap();
         let offers = serde_json::to_string(&offers[0]).unwrap();
         let credential = credential::credential_create_with_offer("TEST_CREDENTIAL", &offers).unwrap();
@@ -178,7 +178,7 @@ mod tests {
         let requests = disclosed_proof::get_proof_request_messages(faber, None).unwrap();
         let requests: Value = serde_json::from_str(&requests).unwrap();
         let requests = serde_json::to_string(&requests[0]).unwrap();
-        let proof_handle = disclosed_proof::create_proof(::utils::constants::DEFAULT_PROOF_NAME.to_string(), requests).unwrap();
+        let proof_handle = disclosed_proof::create_proof(::utils::constants::DEFAULT_PROOF_NAME, &requests).unwrap();
         println!("retrieving matching credentials");
         let retrieved_credentials = disclosed_proof::retrieve_credentials(proof_handle).unwrap();
         let matching_credentials: Value = serde_json::from_str(&retrieved_credentials).unwrap();

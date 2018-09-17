@@ -39,15 +39,15 @@ pub extern fn vcx_disclosed_proof_create_with_request(command_handle: u32,
           command_handle, source_id, proof_req);
 
     spawn(move|| {
-        match disclosed_proof::create_proof(source_id, proof_req){
+        match disclosed_proof::create_proof(&source_id, &proof_req){
             Ok(x) => {
-                info!("vcx_disclosed_proof_create_with_request_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(0), x);
+                info!("vcx_disclosed_proof_create_with_request_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, error_string(0), x, source_id);
                 cb(command_handle, 0, x);
             },
             Err(x) => {
-                error!("vcx_disclosed_proof_create_with_request_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(x.to_error_code()), 0);
+                error!("vcx_disclosed_proof_create_with_request_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, error_string(x.to_error_code()), 0, source_id);
                 cb(command_handle, x.to_error_code(), 0);
             },
         };
@@ -93,16 +93,16 @@ pub extern fn vcx_disclosed_proof_create_with_msgid(command_handle: u32,
     spawn(move|| {
         match disclosed_proof::get_proof_request(connection_handle, &msg_id) {
             Ok(request) => {
-                match disclosed_proof::create_proof(source_id, request.clone()) {
+                match disclosed_proof::create_proof(&source_id, &request) {
                     Ok(handle) => {
-                        info!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {}, proof_req: {})",
-                              command_handle, error_string(0), handle, request);
+                        info!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {}, proof_req: {}) source_id: {}",
+                              command_handle, error_string(0), handle, request, source_id);
                         let msg = CStringUtils::string_to_cstring(request);
                         cb(command_handle, error::SUCCESS.code_num, handle, msg.as_ptr())
                     },
                     Err(e) => {
-                        warn!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {}, proof_req: {})",
-                              command_handle, e.to_string(), 0, request);
+                        warn!("vcx_disclosed_proof_create_with_msgid_cb(command_handle: {}, rc: {}, handle: {}, proof_req: {}) source_id: {}",
+                              command_handle, e.to_string(), 0, request, source_id);
                         let msg = CStringUtils::string_to_cstring(request);
                         cb(command_handle, e.to_error_code(), 0, msg.as_ptr());
                     },
@@ -148,18 +148,18 @@ pub extern fn vcx_disclosed_proof_send_proof(command_handle: u32,
     }
 
     let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
-    info!("vcx_disclosed_proof_send_proof(command_handle: {}, proof_handle: {}, connection_handle: {}), source_id: {:?}",
+    info!("vcx_disclosed_proof_send_proof(command_handle: {}, proof_handle: {}, connection_handle: {}) source_id: {}",
           command_handle, proof_handle, connection_handle, source_id);
 
     spawn(move|| {
         let err = match disclosed_proof::send_proof(proof_handle, connection_handle) {
             Ok(x) => {
-                info!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}), source_id: {:?}",
+                info!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}) source_id: {}",
                       command_handle, error_string(0), source_id);
                 cb(command_handle,x);
             },
             Err(x) => {
-                error!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}), source_id: {:?}",
+                error!("vcx_disclosed_proof_send_proof_cb(command_handle: {}, rc: {}) source_id: {}",
                       command_handle, error_string(x.to_error_code()), source_id);
                 cb(command_handle,x.to_error_code());
             },
@@ -236,12 +236,12 @@ pub extern fn vcx_disclosed_proof_get_state(command_handle: u32,
     spawn(move|| {
         match disclosed_proof::get_state(proof_handle) {
             Ok(s) => {
-                info!("vcx_disclosed_proof_get_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                info!("vcx_disclosed_proof_get_state_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
                       command_handle, error_string(0), s, source_id);
                 cb(command_handle, error::SUCCESS.code_num, s)
             },
             Err(e) => {
-                error!("vcx_disclosed_proof_get_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                error!("vcx_disclosed_proof_get_state_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
                        command_handle, error_string(e), 0, source_id);
                 cb(command_handle, e, 0)
             }
@@ -265,18 +265,18 @@ pub extern fn vcx_disclosed_proof_update_state(command_handle: u32,
     }
 
     let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
-    info!("vcx_disclosed_proof_update_state(command_handle: {}, proof_handle: {}), source_id: {:?}",
+    info!("vcx_disclosed_proof_update_state(command_handle: {}, proof_handle: {}) source_id: {}",
           command_handle, proof_handle, source_id);
 
     spawn(move|| {
         match disclosed_proof::update_state(proof_handle) {
             Ok(s) => {
-                info!("vcx_disclosed_proof_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                info!("vcx_disclosed_proof_update_state_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
                       command_handle, error_string(0), s, source_id);
                 cb(command_handle, error::SUCCESS.code_num, s)
             },
             Err(e) => {
-                error!("vcx_disclosed_proof_update_state_cb(command_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                error!("vcx_disclosed_proof_update_state_cb(command_handle: {}, rc: {}, state: {}) source_id: {}",
                        command_handle, error_string(e), 0, source_id);
                 cb(command_handle, e, 0)
             }
@@ -311,19 +311,19 @@ pub extern fn vcx_disclosed_proof_serialize(command_handle: u32,
     }
 
     let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
-    info!("vcx_disclosed_proof_serialize(command_handle: {}, proof_handle: {}), source_id: {:?}",
+    info!("vcx_disclosed_proof_serialize(command_handle: {}, proof_handle: {}) source_id: {}",
           command_handle, proof_handle, source_id);
 
     spawn(move|| {
         match disclosed_proof::to_string(proof_handle) {
             Ok(x) => {
-                info!("vcx_disclosed_proof_serialize_cb(command_handle: {}, rc: {}, data: {}), source_id: {:?}",
+                info!("vcx_disclosed_proof_serialize_cb(command_handle: {}, rc: {}, data: {}) source_id: {}",
                       command_handle, error_string(0), x, source_id);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num,msg.as_ptr());
             },
             Err(x) => {
-                error!("vcx_disclosed_proof_serialize_cb(command_handle: {}, rc: {}, data: {}), source_id: {:?}",
+                error!("vcx_disclosed_proof_serialize_cb(command_handle: {}, rc: {}, data: {}) source_id: {}",
                        command_handle, error_string(x), 0, source_id);
                 cb(command_handle,x,ptr::null_mut());
             },
@@ -361,13 +361,13 @@ pub extern fn vcx_disclosed_proof_deserialize(command_handle: u32,
     spawn(move|| {
         match disclosed_proof::from_string(&proof_data) {
             Ok(x) => {
-                info!("vcx_disclosed_proof_deserialize_cb(command_handle: {}, rc: {}, proof_handle: {}), source_id: {:?}",
+                info!("vcx_disclosed_proof_deserialize_cb(command_handle: {}, rc: {}, proof_handle: {}) source_id: {}",
                       command_handle, error_string(0), x, disclosed_proof::get_source_id(x).unwrap_or_default());
 
                 cb(command_handle, 0, x);
             },
             Err(x) => {
-                error!("vcx_disclosed_proof_deserialize_cb(command_handle: {}, rc: {}, proof_handle: {}), source_id: {:?}",
+                error!("vcx_disclosed_proof_deserialize_cb(command_handle: {}, rc: {}, proof_handle: {}) source_id: {}",
                        command_handle, error_string(x.to_error_code()), 0, "");
                 cb(command_handle, x.to_error_code(), 0);
             },
@@ -402,19 +402,19 @@ pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: u32,
     }
 
     let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
-    info!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, proof_handle: {}), source_id: {:?}",
+    info!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, proof_handle: {}) source_id: {}",
           command_handle, proof_handle, source_id);
 
     spawn(move|| {
         match disclosed_proof::retrieve_credentials(proof_handle) {
             Ok(x) => {
-                info!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, rc: {}, data: {}), source_id: {:?}",
+                info!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, rc: {}, data: {}) source_id: {}",
                       command_handle, error_string(0), x, source_id);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num,msg.as_ptr());
             },
             Err(x) => {
-                error!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, rc: {}, data: {}), source_id: {:?}",
+                error!("vcx_disclosed_proof_retrieve_credentials(command_handle: {}, rc: {}, data: {}) source_id: {}",
                        command_handle, error_string(x.to_error_code()), 0, source_id);
                 cb(command_handle,x.to_error_code(),ptr::null_mut());
             },
@@ -461,18 +461,18 @@ pub extern fn vcx_disclosed_proof_generate_proof(command_handle: u32,
     }
 
     let source_id = disclosed_proof::get_source_id(proof_handle).unwrap_or_default();
-    info!("vcx_disclosed_proof_generate_proof(command_handle: {}, proof_handle: {}, selected_credentials: {}, self_attested_attrs: {}), source_id: {:?}",
+    info!("vcx_disclosed_proof_generate_proof(command_handle: {}, proof_handle: {}, selected_credentials: {}, self_attested_attrs: {}) source_id: {}",
           command_handle, proof_handle, selected_credentials, self_attested_attrs, source_id);
 
     spawn(move|| {
         match disclosed_proof::generate_proof(proof_handle, selected_credentials, self_attested_attrs) {
             Ok(_) => {
-                info!("vcx_disclosed_proof_generate_proof(command_handle: {}, rc: {}), source_id: {:?}",
+                info!("vcx_disclosed_proof_generate_proof(command_handle: {}, rc: {}) source_id: {}",
                       command_handle, error::SUCCESS.code_num, source_id);
                 cb(command_handle, error::SUCCESS.code_num);
             },
             Err(x) => {
-                error!("vcx_disclosed_proof_generate_proof(command_handle: {}, rc: {}), source_id: {:?}",
+                error!("vcx_disclosed_proof_generate_proof(command_handle: {}, rc: {}) source_id: {}",
                        command_handle, error_string(x.to_error_code()), source_id);
                 cb(command_handle,x.to_error_code());
             },
@@ -560,7 +560,7 @@ mod tests {
     fn test_vcx_disclosed_proof_serialize_and_deserialize() {
         init!("true");
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
+        let handle = disclosed_proof::create_proof("1",::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(vcx_disclosed_proof_serialize(cb.command_handle,
                                        handle,
                                        Some(cb.get_callback())), error::SUCCESS.code_num);
@@ -582,7 +582,7 @@ mod tests {
     fn test_vcx_send_proof() {
         init!("true");
 
-        let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
+        let handle = disclosed_proof::create_proof("1",::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(disclosed_proof::get_state(handle).unwrap(),VcxStateType::VcxStateRequestReceived as u32);
 
         let connection_handle = connection::build_connection("test_send_proof").unwrap();
@@ -605,7 +605,7 @@ mod tests {
     #[test]
     fn test_vcx_proof_get_state() {
         init!("true");
-        let handle = disclosed_proof::create_proof("1".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
+        let handle = disclosed_proof::create_proof("1",::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert!(handle > 0);
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_disclosed_proof_get_state(cb.command_handle,handle,Some(cb.get_callback())),error::SUCCESS.code_num);
