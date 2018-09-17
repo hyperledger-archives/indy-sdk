@@ -66,7 +66,7 @@ impl Proof {
                            rev_regs_json: &str) -> Result<u32, ProofError> {
         if settings::test_indy_mode_enabled() {return Ok(error::SUCCESS.code_num);}
 
-        debug!("starting libindy proof verification");
+        debug!("starting libindy proof verification for {}", self.source_id);
         let valid = libindy_verifier_verify_proof(proof_req_json,
                                                   proof_json,
                                                   schemas_json,
@@ -79,17 +79,17 @@ impl Proof {
         })?;
 
         if !valid {
-            warn!("indy returned false when validating proof");
+            warn!("indy returned false when validating proof {}", self.source_id);
             self.proof_state = ProofStateType::ProofInvalid;
             return Ok(error::SUCCESS.code_num)
         }
-        debug!("Indy validated Proof: {}", self.source_id);
+        debug!("Indy validated proof: {}", self.source_id);
         self.proof_state = ProofStateType::ProofValidated;
         Ok(error::SUCCESS.code_num)
     }
 
     fn build_credential_defs_json(&self, credential_data: &Vec<(String, String, String)>) -> Result<String, ProofError> {
-        debug!("building credentialdef json for proof validation");
+        debug!("{} building credentialdef json for proof validation", self.source_id);
         let mut credential_json: HashMap<String, serde_json::Value> = HashMap::new();
 
         for &(_, ref cred_def_id, _) in credential_data.iter() {
@@ -108,7 +108,7 @@ impl Proof {
     }
 
     fn build_proof_json(&self) -> Result<String, ProofError> {
-        debug!("building proof json for proof validation");
+        debug!("{} building proof json for proof validation", self.source_id);
         match self.proof {
             Some(ref x) => Ok(x.libindy_proof.clone()),
             None => Err(ProofError::InvalidProof()),
@@ -116,7 +116,7 @@ impl Proof {
     }
 
     fn build_schemas_json(&self, credential_data: &Vec<(String, String, String)>) -> Result<String, ProofError> {
-        debug!("building schemas json for proof validation");
+        debug!("{} building schemas json for proof validation", self.source_id);
 
         let mut schema_json: HashMap<String, serde_json::Value> = HashMap::new();
 
@@ -134,7 +134,7 @@ impl Proof {
     }
 
     fn build_proof_req_json(&self) -> Result<String, ProofError> {
-        debug!("building proof request json for proof validation");
+        debug!("{} building proof request json for proof validation", self.source_id);
         match self.proof_request {
             Some(ref x) => {
                 Ok(x.get_proof_request_data())
@@ -231,7 +231,7 @@ impl Proof {
                 return Ok(error::SUCCESS.code_num)
             },
             Err(x) => {
-                warn!("could not send proofReq: {}", x);
+                warn!("{} could not send proofReq: {}", self.source_id, x);
                 return Err(ProofError::ProofMessageError(x));
             }
         }

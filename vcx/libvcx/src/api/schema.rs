@@ -60,12 +60,12 @@ pub extern fn vcx_schema_create(command_handle: u32,
                                                             version,
                                                             schema_data) {
             Ok(x) => {
-                info!(target:"vcx", "vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
-                      command_handle, error_string(0), x, &source_id);
+                info!(target:"vcx", "vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, error_string(0), x, source_id);
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}, source_id: {:?})",
+                warn!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, error_string(x.to_error_code()), 0, source_id);
                 (x.to_error_code(), 0) },
         };
@@ -98,7 +98,7 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
-    info!("vcx_schema_serialize(command_handle: {}, schema_handle: {}), source_id: {:?}",
+    info!("vcx_schema_serialize(command_handle: {}, schema_handle: {}) source_id: {}",
           command_handle, schema_handle, source_id);
 
     if !schema::is_valid_handle(schema_handle) {
@@ -108,13 +108,13 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
     spawn(move|| {
         match schema::to_string(schema_handle) {
             Ok(x) => {
-                info!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                info!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}) source_id: {}",
                       command_handle, schema_handle, error_string(0), x, source_id);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                warn!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}) source_id: {}",
                       command_handle, schema_handle, error_string(x.to_error_code()), "null", source_id);
                 cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
@@ -149,12 +149,12 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
     spawn(move|| {
         let (rc, handle) = match schema::from_string(&schema_data) {
             Ok(x) => {
-                info!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                info!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
                       command_handle, error_string(0), x, schema::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                warn!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
                       command_handle, error_string(x.to_error_code()), 0, "");
                 (x.to_error_code(), 0)
             },
@@ -178,9 +178,9 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
 pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
     let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
     match schema::release(schema_handle) {
-        Ok(x) => info!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {:?}",
+        Ok(x) => info!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
                        schema_handle, error_string(0), source_id),
-        Err(e) => warn!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {:?}",
+        Err(e) => warn!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
                        schema_handle, error_string(e.to_error_code()), source_id),
     };
     error::SUCCESS.code_num

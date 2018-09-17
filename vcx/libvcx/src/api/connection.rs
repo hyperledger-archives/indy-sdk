@@ -77,13 +77,13 @@ pub extern fn vcx_connection_create(command_handle: u32,
     spawn(move|| {
         match build_connection(&source_id) {
             Ok(handle) => {
-                info!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(0), handle);
+                info!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, error_string(0), handle, source_id);
                 cb(command_handle, error::SUCCESS.code_num, handle);
             },
             Err(x) => {
-                warn!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, x.to_string(), 0);
+                warn!("vcx_connection_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, x.to_string(), 0, source_id);
                 cb(command_handle, x.to_error_code(), 0);
             },
         };
@@ -120,13 +120,13 @@ pub extern fn vcx_connection_create_with_invite(command_handle: u32,
     spawn(move|| {
         match build_connection_with_invite(&source_id, &invite_details) {
             Ok(handle) => {
-                info!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, error_string(0), handle);
+                info!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, error_string(0), handle, source_id);
                 cb(command_handle, error::SUCCESS.code_num, handle);
             },
             Err(x) => {
-                warn!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {})",
-                      command_handle, x.to_string(), 0);
+                warn!("vcx_connection_create_with_invite_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, x.to_string(), 0, source_id);
                 cb(command_handle, x.to_error_code(), 0);
             },
         };

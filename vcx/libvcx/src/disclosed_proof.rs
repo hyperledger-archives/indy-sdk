@@ -197,6 +197,7 @@ impl DisclosedProof {
     }
 
     fn generate_proof(&mut self, credentials: &str, self_attested_attrs: &str) -> Result<u32, ProofError> {
+        debug!("generating proof {}", self.source_id);
         if settings::test_indy_mode_enabled() {return Ok(error::SUCCESS.code_num)}
 
         let proof_req = self.proof_request.as_ref()
@@ -227,7 +228,7 @@ impl DisclosedProof {
     }
 
     fn send_proof(&mut self, connection_handle: u32) -> Result<u32, ProofError> {
-        debug!("sending proof via connection connection: {}", connection_handle);
+        debug!("sending proof {} via connection: {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         // There feels like there's a much more rusty way to do the below.
         self.my_did = Some(connection::get_pw_did(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
         self.my_vk = Some(connection::get_pw_verkey(connection_handle).or(Err(ProofError::ProofConnectionError()))?);
@@ -315,13 +316,13 @@ fn handle_err(code_num: u32) -> u32 {
     }
 }
 
-pub fn create_proof(source_id: String, proof_req: String) -> Result<u32, ProofError> {
+pub fn create_proof(source_id: &str, proof_req: &str) -> Result<u32, ProofError> {
     debug!("creating disclosed proof with id: {}", source_id);
 
     let mut new_proof: DisclosedProof = Default::default();
 
-    new_proof.set_source_id(&source_id);
-    new_proof.set_proof_request(serde_json::from_str(&proof_req)
+    new_proof.set_source_id(source_id);
+    new_proof.set_proof_request(serde_json::from_str(proof_req)
         .map_err(|_| ProofError::CommonError(error::INVALID_JSON.code_num))?);
 
     new_proof.set_state(VcxStateType::VcxStateRequestReceived);
@@ -489,13 +490,13 @@ mod tests {
     #[test]
     fn test_create_proof() {
         init!("true");
-        assert!(create_proof("1".to_string(), ::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap() > 0);
+        assert!(create_proof("1", ::utils::constants::PROOF_REQUEST_JSON).unwrap() > 0);
     }
 
     #[test]
     fn test_create_fails() {
         init!("true");
-        assert_eq!(create_proof("1".to_string(),"{}".to_string()).err(),
+        assert_eq!(create_proof("1","{}").err(),
                    Some(ProofError::CommonError(error::INVALID_JSON.code_num)));
     }
 
@@ -509,7 +510,7 @@ mod tests {
         let requests:Value = serde_json::from_str(&requests).unwrap();
         let requests = serde_json::to_string(&requests[0]).unwrap();
 
-        let handle = create_proof("TEST_CREDENTIAL".to_owned(), requests).unwrap();
+        let handle = create_proof("TEST_CREDENTIAL", &requests).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(handle).unwrap());
         send_proof(handle, connection_h).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, get_state(handle).unwrap());
@@ -520,14 +521,14 @@ mod tests {
         init!("true");
         let proof: DisclosedProof =  Default::default();
         assert_eq!(VcxStateType::VcxStateNone as u32, proof.get_state());
-        let handle = create_proof("id".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
+        let handle = create_proof("id",::utils::constants::PROOF_REQUEST_JSON).unwrap();
         assert_eq!(VcxStateType::VcxStateRequestReceived as u32, get_state(handle).unwrap())
     }
 
     #[test]
     fn to_string_test() {
         init!("true");
-        let handle = create_proof("id".to_string(),::utils::constants::PROOF_REQUEST_JSON.to_string()).unwrap();
+        let handle = create_proof("id",::utils::constants::PROOF_REQUEST_JSON).unwrap();
         let serialized = to_string(handle).unwrap();
         let j:Value = serde_json::from_str(&serialized).unwrap();
         assert_eq!(j["version"], "1.0");
