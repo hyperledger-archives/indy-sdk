@@ -103,7 +103,7 @@ impl IssuerCredential {
     }
 
     fn send_credential_offer(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
-        debug!("sending credential offer for issuer_credential {} to connection handle {}", self.source_id, connection_handle);
+        debug!("sending credential offer for issuer_credential {} to connection {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         if self.state != VcxStateType::VcxStateInitialized {
             warn!("credential {} has invalid state {} for sending credentialOffer", self.source_id, self.state as u32);
             return Err(IssuerCredError::NotReadyError())
@@ -160,7 +160,7 @@ impl IssuerCredential {
     }
 
     fn send_credential(&mut self, connection_handle: u32) -> Result<u32, IssuerCredError> {
-        debug!("sending credential for issuer_credential {} to connection handle {}", self.source_id, connection_handle);
+        debug!("sending credential for issuer_credential {} to connection {}", self.source_id, connection::get_source_id(connection_handle).unwrap_or_default());
         if self.state != VcxStateType::VcxStateRequestReceived {
             warn!("credential {} has invalid state {} for sending credential", self.source_id, self.state as u32);
             return Err(IssuerCredError::NotReadyError());
@@ -472,7 +472,7 @@ pub fn issuer_credential_create(cred_def_id: String,
     new_issuer_credential.state = VcxStateType::VcxStateInitialized;
 
     let new_handle = ISSUER_CREDENTIAL_MAP.add(new_issuer_credential).map_err(|key|IssuerCredError::CreateError())?;
-    debug!("inserting handle {} into credential_issuer table", new_handle);
+    debug!("creating issuer_credential {} with handle {}", get_source_id(new_handle).unwrap_or_default(), new_handle);
 
     Ok(new_handle)
 }
