@@ -780,7 +780,7 @@ impl WalletStorageType for PluggedStorageType {
     }
 }
 
-#[cfg(test)]
+#[cfg(testx)]
 mod tests {
     extern crate rand;
 
