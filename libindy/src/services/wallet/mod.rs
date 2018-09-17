@@ -9,6 +9,7 @@ mod wallet;
 use serde_json;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::io::BufReader;
 use std::fs;
 use std::path::PathBuf;
 use named_type::NamedType;
@@ -34,6 +35,7 @@ pub struct WalletService {
     storage_types: RefCell<HashMap<String, Box<WalletStorageType>>>,
     wallets: RefCell<HashMap<i32, Box<Wallet>>>,
     pending_for_open: RefCell<HashMap<i32, (String /* id */, Box<WalletStorage>, Metadata, Option<KeyDerivationData>)>>,
+    pending_for_import: RefCell<HashMap<i32, (BufReader<::std::fs::File>, chacha20poly1305_ietf::Nonce, usize, Vec<u8>, KeyDerivationData)>>,
 }
 
 impl WalletService {
@@ -48,6 +50,7 @@ impl WalletService {
             storage_types,
             wallets: RefCell::new(HashMap::new()),
             pending_for_open: RefCell::new(HashMap::new()),
+            pending_for_import: RefCell::new(HashMap::new()),
         }
     }
 
@@ -451,11 +454,11 @@ impl WalletService {
         res
     }
 
-    pub fn import_wallet(&self,
-                         config: &Config,
-                         credentials: &Credentials,
-                         export_config: &ExportConfig) -> Result<(), WalletError> {
-        trace!("import_wallet >>> config: {:?}, credentials: {:?}, export_config: {:?}", config, secret!(export_config), secret!(export_config));
+    pub fn import_wallet_prepare(&self,
+                                 config: &Config,
+                                 credentials: &Credentials,
+                                 export_config: &ExportConfig) -> Result<i32, WalletError> {
+        trace!("import_wallet_prepare >>> config: {:?}, credentials: {:?}, export_config: {:?}", config, secret!(export_config), secret!(export_config));
 
         let exported_file_to_import =
             fs::OpenOptions::new()
@@ -463,10 +466,36 @@ impl WalletService {
                 .open(&export_config.path)?;
 
         let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = preparse_file_to_import(exported_file_to_import, &export_config.key)?;
-        let import_key = import_key_derivation_data.calc_master_key()?;
-
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
-        let master_key = key_data.calc_master_key()?;
+
+        let wallet_handle = sequence::get_next_id();
+
+        let stashed_key_data = key_data.clone();
+        CommandExecutor::instance().send(Command::DeriveKey(
+            import_key_derivation_data,
+            Box::new(move |import_key_result| {
+                CommandExecutor::instance().send(Command::DeriveKey(
+                    key_data.clone(),
+                    Box::new(move |key_result| {
+                        let import_key_result = import_key_result.clone();
+                        CommandExecutor::instance().send(Command::Wallet(WalletCommand::ImportContinue(
+                            wallet_handle,
+                            import_key_result.and_then(|import_key| key_result.map(|key| (import_key, key))),
+                        ))).unwrap();
+                    }),
+                )).unwrap();
+            }),
+        )).expect("FIXME INVALID STATE");
+
+        self.pending_for_import.borrow_mut().insert(wallet_handle, (reader, nonce, chunk_size, header_bytes, stashed_key_data));
+
+        Ok(wallet_handle)
+    }
+
+    pub fn import_wallet_continue(&self, config: &Config, credentials: &Credentials, wallet_handle: i32, key_result: Result<(MasterKey, MasterKey), CommonError>) -> Result<(), WalletError> {
+        let (reader, nonce, chunk_size, header_bytes, key_data) = self.pending_for_import.borrow_mut().remove(&wallet_handle).unwrap();
+
+        let (import_key, master_key) = key_result?;
         let keys = self._create_wallet(config, (credentials, key_data, master_key))?;
 
         self._is_id_from_config_not_used(config)?;
@@ -757,6 +786,30 @@ mod tests {
             };
 
             self.open_wallet_continue(wallet_handle, keys_result)
+        }
+
+        pub fn import_wallet(&self,
+                             config: &Config,
+                             credentials: &Credentials,
+                             export_config: &ExportConfig) -> Result<(), WalletError> {
+            trace!("import_wallet_prepare >>> config: {:?}, credentials: {:?}, export_config: {:?}", config, secret!(export_config), secret!(export_config));
+
+            let exported_file_to_import =
+                fs::OpenOptions::new()
+                    .read(true)
+                    .open(&export_config.path)?;
+
+            let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = preparse_file_to_import(exported_file_to_import, &export_config.key)?;
+            let key_data = KeyDerivationData::from_passphrase_with_new_salt(&credentials.key, &credentials.key_derivation_method);
+
+            let wallet_handle = sequence::get_next_id();
+
+            let stashed_key_data = key_data.clone();
+            self.pending_for_import.borrow_mut().insert(wallet_handle, (reader, nonce, chunk_size, header_bytes, stashed_key_data));
+
+            self.import_wallet_continue(config, credentials, wallet_handle,
+                                        import_key_derivation_data.calc_master_key()
+                                            .and_then(|ik| key_data.calc_master_key().map(|k| (ik, k))))
         }
     }
 
