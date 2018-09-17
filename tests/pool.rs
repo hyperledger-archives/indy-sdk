@@ -641,7 +641,7 @@ mod close_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
 
-        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(DID_1, DID_1).unwrap();
+        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(Some(DID_1), DID_1).unwrap();
 
         let (sender, receiver) = channel();
 
@@ -670,7 +670,7 @@ mod close_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
 
-        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(DID_1, DID_1).unwrap();
+        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(Some(DID_1), DID_1).unwrap();
 
         let (sender, receiver) = channel();
 
@@ -705,7 +705,7 @@ mod close_pool {
 
         let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
 
-        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(DID_1, DID_1).unwrap();
+        let get_nym_req = indy::ledger::Ledger::build_get_nym_request(Some(DID_1), DID_1).unwrap();
 
         let (sender, receiver) = channel();
 
@@ -1083,7 +1083,7 @@ mod test_set_protocol_version {
 
     fn assert_protocol_version_set(version: usize) {
         let did = "5UBVMdSADMjGzuJMQwJ6yyzYV1krTcKRp6EqRAz8tiDP";
-        let request = Ledger::build_get_nym_request(did, did).unwrap();
+        let request = Ledger::build_get_nym_request(Some(did), did).unwrap();
         let request: serde_json::Value = serde_json::from_str(&request).unwrap();
         assert_eq!(json!(version), *request.get("protocolVersion").unwrap());
     }
