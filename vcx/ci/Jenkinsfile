@@ -130,7 +130,7 @@ def mainUbuntu() {
                             java.inside() {
                                 sh 'cp $settingsFile .'
                                 sh "chmod +x vcx/wrappers/java/ci/publishJar.sh"
-                                sh 'vcx/wrappers/java/ci/publishJar.sh'find
+                                sh 'vcx/wrappers/java/ci/publishJar.sh'
                             }
                         }
 
