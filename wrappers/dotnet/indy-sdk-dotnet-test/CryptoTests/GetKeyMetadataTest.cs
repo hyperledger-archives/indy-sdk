@@ -27,7 +27,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
         [TestMethod]
         public async Task TestGetKeyMetadataWorksForNoMetadata()
         {
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                Crypto.GetKeyMetadataAsync(wallet, VERKEY)
            );
         }

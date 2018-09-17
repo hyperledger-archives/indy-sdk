@@ -56,12 +56,12 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             await WalletUtils.CreateWallet(WALLET_NAME, WALLET_KEY);
             commonWallet = await WalletUtils.OpenWallet(WALLET_NAME, WALLET_KEY);
 
-            claimDef = ""; //TODO await AnonCreds.IssuerCreateAndStoreClaimDefAsync(commonWallet, issuerDid, schema, null, false);
+            IssuerCreateAndStoreCredentialDefResult claimDefType = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(commonWallet, issuerDid, schema, null, null, null);
+            claimDef = claimDefType.CredDefJson;
 
-            //TODO 
-            //await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid, 1));
-            //await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid, 2));
-            //await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid2, 2));
+            await AnonCreds.ProverStoreCredentialAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid, 1), null, null, null, null);
+            // TODO await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid, 2), null, null, null, null);
+            // TODO await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid2, 2), null, null, null, null);
 
             await AnonCreds.ProverCreateMasterSecretAsync(commonWallet, masterSecretName);
 

@@ -36,7 +36,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
         {
             var encryptedMessage = await Crypto.AnonCryptAsync(VERKEY_MY1, MESSAGE);
 
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                 Crypto.AnonDecryptAsync(wallet, VERKEY_MY1, encryptedMessage)
            );
         }
