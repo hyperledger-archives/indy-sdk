@@ -27,11 +27,12 @@ declare -a EXE_ARRAY
 build_test_artifacts(){
     pushd ${WORKDIR}
 
+        set -e
         cargo clean
         RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/lib -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-                    cargo test --target=${TRIPLET} --no-run
+                    cargo test --release --target=${TRIPLET} --no-run
         EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/lib -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-                    cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
+                    cargo test --release --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
     popd
 }
 
