@@ -22,10 +22,9 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestGetPairwiseWorksWhenNoMetadataIsPresent()
         {
-            await Pairwise.CreateAsync(wallet, theirDid, theirVerkey, null);
+            await Pairwise.CreateAsync(wallet, theirVerkey, myDid, null);
 
             var pairwiseInfoJson = await Pairwise.GetAsync(wallet, theirVerkey);
             var pairwiseInfo = JObject.Parse(pairwiseInfoJson);
