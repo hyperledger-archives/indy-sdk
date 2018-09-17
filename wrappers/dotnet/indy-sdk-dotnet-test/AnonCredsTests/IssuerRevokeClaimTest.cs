@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.AnonCredsApi;
+using Hyperledger.Indy.BlobStorageApi;
 using Hyperledger.Indy.Test.Util;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -14,6 +15,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         private const string WALLET_KEY = "commonWalletKey";
         private Wallet _issuerWallet;
         private const string _walletName = "issuerWallet";
+        private string _tailsWriterConfig = string.Format("{{\"base_dir\":\"{0}\", \"uri_pattern\":\"\"}}", "TODO");
         private const int _userRevocIndex = 1;
         private const string _proofReqJson = "{" +
                                        "\"nonce\":\"123432421212\"," +
@@ -41,10 +43,12 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             _issuerWallet = await WalletUtils.OpenWallet(WALLET_NAME, WALLET_KEY);
 
             //2. Issuer create claim definition
-            _claimDefJson = ""; // TODO await AnonCreds.IssuerCreateAndStoreClaimDefAsync(_issuerWallet, issuerDid, schema, null, true);
+            IssuerCreateAndStoreCredentialDefResult result = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(_issuerWallet, issuerDid, schema, null, null, null);
+            _claimDefJson = result.CredDefJson;
 
             //3. Issuer create revocation registry
-            // TODO await AnonCreds.IssuerCreateAndStoreRevocRegAsync(_issuerWallet, issuerDid, 1, 5);
+            BlobStorageWriter tailsWriter = await BlobStorage.OpenWriterAsync("default", _tailsWriterConfig);
+            await AnonCreds.IssuerCreateAndStoreRevocRegAsync(_issuerWallet, issuerDid, null, null, null, null, tailsWriter);
 
             //4. Prover create Master Secret
             await AnonCreds.ProverCreateMasterSecretAsync(_issuerWallet, masterSecretName);
