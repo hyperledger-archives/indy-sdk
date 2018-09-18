@@ -201,11 +201,10 @@ def ios() {
                 sh "source vcx/ci/scripts/iosBuild.sh"
 
                 // Publish to Kraken
-
                 if (env.BRANCH_NAME == "master") {
                     withCredentials([usernameColonPassword(credentialsId: 'jenkins-kraken-svc', variable: 'KRAKEN_CREDENTIALS')]) {
-                        sh "find /Users/jenkins/IOSBuilds/libvcxpartial/ -type f -name 'vcx.libvcxpartial_*_universal.zip' -exec curl -u \"${KRAKEN_CREDENTIALS}\" -X POST  https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \\;"
-                        sh "find /Users/jenkins/IOSBuilds/libvcxall/ -type f -name 'vcx.libvcxall_*_universal.zip' -exec curl -u \"${KRAKEN_CREDENTIALS}\" -X POST  https://kraken.corp.evernym.com/repo/ios/upload -F 'file=@{}' \\;"
+                        sh "vcx/ci/scripts/publish.sh 'vcx.libvcxpartial_*_universal.zip' https://kraken.corp.evernym.com/repo/ios/upload /Users/jenkins/IOSBuilds/libvcxpartial/"
+                        sh "vcx/ci/scripts/publish.sh 'vcx.libvcxall_*_universal.zip' https://kraken.corp.evernym.com/repo/ios/upload /Users/jenkins/IOSBuilds/libvcxall/"
                     }
                 }
             } catch (Exception ex) {
