@@ -156,7 +156,8 @@ def androidTesting() {
                 echo 'Building android binaries.This will start emulator and test android binaries'
                 checkout scm
 
-                poolInst = openPool("Ubuntu Android", "pool_network")
+                network_name = "pool_network"
+                poolInst = openPool("Ubuntu Android", network_name)
 
                 dir('libindy') {
                     echo 'Building android binaries: Building docker image'
@@ -165,7 +166,7 @@ def androidTesting() {
                     sh 'chmod -R 777 ci/*.sh'
                     sh 'chmod -R 777 *.sh'
                     //TODO: IS-835 Tests on emulator fails as of now. Enable device testing when all tests starts passing
-                    androidTestingOnEmulator(testEnv)
+                    androidTestingOnEmulator(testEnv, network_name)
 
                     //Meanwhile use "build success" as test
                     buildAndroid(testEnv)
@@ -178,10 +179,10 @@ def androidTesting() {
     }
 }
 
-def androidTestingOnEmulator(testEnv) {
+def androidTestingOnEmulator(testEnv, network_name) {
     ANDROID_SCRIPT_PATH = 'android.test.sh'
     echo 'Testing Libindy android files for arm'
-    testEnv.inside {
+    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
         sh "./${ANDROID_SCRIPT_PATH} arm"
     }
 }
