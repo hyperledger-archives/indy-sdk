@@ -183,7 +183,7 @@ def androidTestingOnEmulator(testEnv, network_name) {
     ANDROID_SCRIPT_PATH = 'android.test.sh'
     echo 'Testing Libindy android files for arm'
     testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-        sh "./${ANDROID_SCRIPT_PATH} arm"
+        sh "./${ANDROID_SCRIPT_PATH} arm64"
     }
 }
 
