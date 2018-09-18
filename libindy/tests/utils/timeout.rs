@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 pub fn short_timeout() -> Duration {
-    Duration::from_secs(300)
+    Duration::from_secs(10)
 }
 
 pub fn medium_timeout() -> Duration {
