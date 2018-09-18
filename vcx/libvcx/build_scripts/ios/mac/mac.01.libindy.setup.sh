@@ -51,7 +51,7 @@ if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios x86_64-apple-ios i386-apple-ios
 
     RUST_TARGETS=$(rustc --print target-list|grep -i ios)
-    if [ "RUST_TARGETS" = "" ]; then
+    if [ "$RUST_TARGETS" = "" ]; then
         sudo xcodebuild -license
         # DON'T do this
         #xcode-select --install # Install Command Line Tools if you haven't already.
