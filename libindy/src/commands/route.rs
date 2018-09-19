@@ -61,26 +61,26 @@ impl RouteCommandExecutor {
             None => None
         };
 
-        self.route_service.pack_msg(plaintext, auth, recv_keys, my_vk, wallet_handle, self.wallet_service, self.crypto_service)
+        self.route_service.pack_msg(plaintext, auth, recv_keys, my_vk, wallet_handle, self.wallet_service.clone(), self.crypto_service.clone())
     }
 
     pub fn unpack_msg(&self, json_jwm: &str, my_vk: &str, wallet_handle: i32) -> Result<String> {
-        self.route_service.unpack_msg(json_jwm, my_vk, wallet_handle, self.wallet_service, self.crypto_service)
+        self.route_service.unpack_msg(json_jwm, my_vk, wallet_handle, self.wallet_service.clone(), self.crypto_service.clone())
     }
 
     pub fn add_route(&self, did_with_key_frag : &str, endpoint : &str, wallet_handle:i32) -> Result<()> {
-        self.route_service.add_route(did_with_key_frag, endpoint, wallet_handle, self.wallet_service)
+        self.route_service.add_route(did_with_key_frag, endpoint, wallet_handle, self.wallet_service.clone())
     }
 
     pub fn lookup_route(&self, did_with_key_frag : &str, wallet_handle : i32) -> Result<String> {
-        self.route_service.lookup_route(did_with_key_frag, wallet_handle, self.wallet_service)
+        self.route_service.lookup_route(did_with_key_frag, wallet_handle, self.wallet_service.clone())
     }
 
     pub fn remove_route(&self, did_with_key_frag : &str, wallet_handle : i32) -> Result<()> {
-        self.route_service.remove_route(did_with_key_frag, wallet_handle, self.wallet_service)
+        self.route_service.remove_route(did_with_key_frag, wallet_handle, self.wallet_service.clone())
     }
 
     pub fn update_route(&self, did_with_key_frag : &str, new_endpoint : &str, wallet_handle : i32) -> Result<()> {
-        self.route_service.update_route(did_with_key_frag, new_endpoint, wallet_handle, self.wallet_service)
+        self.route_service.update_route(did_with_key_frag, new_endpoint, wallet_handle, self.wallet_service.clone())
     }
 }

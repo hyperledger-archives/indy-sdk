@@ -7,6 +7,7 @@ use services::crypto::CryptoService;
 use services::wallet::{WalletService, RecordOptions};
 use utils::crypto::base64::{decode, encode};
 use utils::crypto::xsalsa20::{encrypt_payload, decrypt_payload};
+use utils::serialization::jwm::*;
 use std::rc::Rc;
 use std::collections::HashMap;
 use services::wallet::WalletRecord;
@@ -27,8 +28,8 @@ impl RouteService {
         };
 
         let jwm_data = self.get_jwm_data(jwm_struct, my_vk)?;
-        let my_key = self.get_key_from_str(my_vk, wallet_handle, ws)?;
-        let sym_key = self.get_sym_key(&my_key, &jwm_data.cek, jwm_data.header, cs)?;
+        let my_key = self.get_key_from_str(my_vk, wallet_handle, ws.clone())?;
+        let sym_key = self.get_sym_key(&my_key, &jwm_data.cek, jwm_data.header, cs.clone())?;
         //format payload to decrypt
         let payload = Payload {
             iv: jwm_data.iv,
@@ -52,12 +53,12 @@ impl RouteService {
 
         //convert str to Key
         let key = match my_vk {
-            Some(vk) => Some(self.get_key_from_str(vk, wallet_handle, ws)?),
+            Some(vk) => Some(self.get_key_from_str(vk, wallet_handle, ws.clone())?),
             None => None
         };
 
         //encrypt content_encryption_keys
-        let encrypted_ceks = self.encrypt_ceks(recv_keys, auth, key, &encrypted_payload.sym_key, cs)?;
+        let encrypted_ceks = self.encrypt_ceks(recv_keys, auth, key, &encrypted_payload.sym_key, cs.clone())?;
 
         //create jwm string
         match recv_keys.len() {
@@ -94,13 +95,10 @@ impl RouteService {
 
     pub fn lookup_route(&self, did_with_key_frag : &str,
                         wallet_handle : i32, wallet_service: Rc<WalletService>) -> Result<String, RouteError> {
-
         let options_json = json!({"retrieveType": false,"retrieveValue": true,"retrieveTags": false}).to_string();
-
         let wallet_record : WalletRecord = wallet_service.get_record(wallet_handle, "route_table",
                                                       did_with_key_frag, &options_json)
             .map_err(|err|RouteError::TableError(format!("Failed to locate value in route table: {:?}", err)))?;
-
 
         match wallet_record.get_value() {
                 Some(value) =>  Ok(value.to_string()),
@@ -120,7 +118,7 @@ impl RouteService {
             .map_err(|err| RouteError::TableError(format!("Failed to update route: {:?}", err)))
     }
 
-    pub fn get_jwm_data(&self, jwm : JWM, my_vk: &str) -> Result<JWMData, RouteError> {
+    fn get_jwm_data(&self, jwm : JWM, my_vk: &str) -> Result<JWMData, RouteError> {
         match jwm {
             JWM::JWMFull(jwmf) => {
                 //finds the recipient index that matches the verkey passed in to the recipient verkey field
@@ -157,7 +155,7 @@ impl RouteService {
         }
     }
     
-    pub fn get_key_from_str(&self, my_vk : &str, wallet_handle: i32,
+    fn get_key_from_str(&self, my_vk : &str, wallet_handle: i32,
                             wallet_service: Rc<WalletService>) -> Result<Key, RouteError> {
         wallet_service.get_indy_object(wallet_handle,
                                        my_vk,
@@ -166,7 +164,7 @@ impl RouteService {
         .map_err(|err| RouteError::UnpackError(format!("Can't find key: {:?}", err)))
     }
     
-    pub fn get_sym_key(&self, key: &Key, cek: &[u8], header: Header,
+    fn get_sym_key(&self, key: &Key, cek: &[u8], header: Header,
                        crypto_service: Rc<CryptoService>) -> Result<Vec<u8>, RouteError> {
         match header.alg.as_ref() {
             //handles authdecrypting content encryption key
@@ -197,7 +195,7 @@ impl RouteService {
         }
     }
     
-    pub fn encrypt_ceks(&self, recv_keys: &Vec<String>, auth: bool, key : Option<Key>, sym_key: &[u8],
+    fn encrypt_ceks(&self, recv_keys: &Vec<String>, auth: bool, key : Option<Key>, sym_key: &[u8],
                         crypto_service: Rc<CryptoService>) -> Result<Vec<String>, RouteError>{
         let mut enc_ceks : Vec<(String)> = vec![];
     
@@ -277,11 +275,14 @@ pub mod tests {
     "iv":"jrsxpWDdn06GVlrK43qQZLf5t1n4wA4o",
     "tag":"k_HE0Mz0dBhaO5N-GgODYQ=="}).to_string();
 
-        let mut route_service : RouteService = RouteService::new();
+        //setup services
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
         let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
-        let (wallet_handle, recv_did, recv_key) = _setup_recv_wallet1(ws, cs);
-        let plaintext = route_service.unpack_msg(&jwm, &recv_key.verkey, wallet_handle, ws, cs).unwrap();
+
+        //run tests
+        let (wallet_handle, recv_did, recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let plaintext = rs.unpack_msg(&jwm, &recv_key.verkey, wallet_handle, ws.clone(), cs.clone()).unwrap();
         assert_eq!(plaintext, "Hello World".to_string());
     }
 
@@ -293,33 +294,33 @@ pub mod tests {
         let auth = false;
 
         //setup route_service
-        let mut route_service = RouteService::new();
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
         let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
         //setup recv_keys to use with pack_msg
-        let (_, recv_key1_before_wallet_setup) = _recv_did1(cs);
-        let (_, recv_key2_before_wallet_setup) = _recv_did2(cs);
+        let (_, recv_key1_before_wallet_setup) = _recv_did1(cs.clone());
+        let (_, recv_key2_before_wallet_setup) = _recv_did2(cs.clone());
         let recv_keys = vec![recv_key1_before_wallet_setup.verkey, recv_key2_before_wallet_setup.verkey];
 
         //setup send wallet then pack message
-        let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws, cs);
-        let packed_msg = route_service.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey),
-                                                send_wallet_handle, ws, cs).unwrap();
-        route_service.wallet_service.close_wallet(send_wallet_handle);
+        let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
+        let packed_msg = rs.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey),
+                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
+        ws.close_wallet(send_wallet_handle);
 
         //setup recv_wallet1 and unpack message then verify plaintext
-        let (recv_wallet_handle1, _, recv_key1) = _setup_recv_wallet1(ws, cs);
-        let unpacked_msg1 = route_service.unpack_msg(&packed_msg, &recv_key1.verkey, 
-                                                     recv_wallet_handle1, ws, cs).unwrap();
+        let (recv_wallet_handle1, _, recv_key1) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let unpacked_msg1 = rs.unpack_msg(&packed_msg, &recv_key1.verkey,
+                                                     recv_wallet_handle1, ws.clone(), cs.clone()).unwrap();
         assert_eq!(plaintext, &unpacked_msg1);
-        route_service.wallet_service.close_wallet(recv_wallet_handle1);
+        ws.close_wallet(recv_wallet_handle1);
 
 
         //setup recv_wallet2 and unpack message then verify plaintext
-        let (recv_wallet_handle2, _, recv_key2) = _setup_recv_wallet2(ws, cs);
-        let unpacked_msg2 = route_service.unpack_msg(&packed_msg, &recv_key2.verkey, 
-                                                     recv_wallet_handle2, ws, cs).unwrap();
+        let (recv_wallet_handle2, _, recv_key2) = _setup_recv_wallet2(ws.clone(), cs.clone());
+        let unpacked_msg2 = rs.unpack_msg(&packed_msg, &recv_key2.verkey,
+                                                     recv_wallet_handle2, ws.clone(), cs.clone()).unwrap();
         assert_eq!(plaintext, &unpacked_msg2);
     }
 
@@ -331,33 +332,33 @@ pub mod tests {
         let auth = true;
 
         //setup route_service
-        let mut route_service = RouteService::new();
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
         let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
         //setup recv_keys to use with pack_msg
-        let (_, recv_key1_before_wallet_setup) = _recv_did1(cs);
-        let (_, recv_key2_before_wallet_setup) = _recv_did2(cs);
+        let (_, recv_key1_before_wallet_setup) = _recv_did1(cs.clone());
+        let (_, recv_key2_before_wallet_setup) = _recv_did2(cs.clone());
         let recv_keys = vec![recv_key1_before_wallet_setup.verkey, recv_key2_before_wallet_setup.verkey];
 
         //setup send wallet then pack message
-        let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws, cs);
-        let packed_msg = route_service.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey),
-                                                send_wallet_handle, ws, cs).unwrap();
-        route_service.wallet_service.close_wallet(send_wallet_handle);
+        let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
+        let packed_msg = rs.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey),
+                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
+        ws.close_wallet(send_wallet_handle);
 
         //setup recv_wallet1 and unpack message then verify plaintext
-        let (recv_wallet_handle1, _, recv_key1) = _setup_recv_wallet1(ws, cs);
-        let unpacked_msg1 = route_service.unpack_msg(&packed_msg, &recv_key1.verkey,
-                                                     recv_wallet_handle1, ws, cs).unwrap();
+        let (recv_wallet_handle1, _, recv_key1) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let unpacked_msg1 = rs.unpack_msg(&packed_msg, &recv_key1.verkey,
+                                                     recv_wallet_handle1, ws.clone(), cs.clone()).unwrap();
         assert_eq!(plaintext, &unpacked_msg1);
-        route_service.wallet_service.close_wallet(recv_wallet_handle1);
+        ws.close_wallet(recv_wallet_handle1);
 
 
         //setup recv_wallet2 and unpack message then verify plaintext
-        let (recv_wallet_handle2, _, recv_key2) = _setup_recv_wallet2(ws, cs);
-        let unpacked_msg2 = route_service.unpack_msg(&packed_msg, &recv_key2.verkey,
-                                                     recv_wallet_handle2, ws, cs).unwrap();
+        let (recv_wallet_handle2, _, recv_key2) = _setup_recv_wallet2(ws.clone(), cs.clone());
+        let unpacked_msg2 = rs.unpack_msg(&packed_msg, &recv_key2.verkey,
+                                                     recv_wallet_handle2, ws.clone(), cs.clone()).unwrap();
         assert_eq!(plaintext, &unpacked_msg2);
     }
 
@@ -369,24 +370,24 @@ pub mod tests {
         let auth = false;
 
         //setup route_service
-        let mut route_service = RouteService::new();
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
         let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
         //setup wallets
-        let (recv_wallet_handle, recv_did, recv_key) = _setup_recv_wallet1(ws, cs);
-        let (send_wallet_handle , send_did, send_key) = _setup_send_wallet(ws, cs);
+        let (recv_wallet_handle, recv_did, recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let (send_wallet_handle , send_did, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
 
 
         //setup recv_keys to use with pack_msg
-        let (_ , recv_key) = _recv_did1(cs);
+        let (_ , recv_key) = _recv_did1(cs.clone());
         let recv_keys = vec![recv_key.verkey.clone()];
 
         //pack then unpack message
-        let packed_msg = route_service.pack_msg(plaintext, auth, &recv_keys, None,
-                                                send_wallet_handle, ws, cs).unwrap();
-        let unpacked_msg = route_service.unpack_msg(&packed_msg, &recv_key.verkey,
-                                                    recv_wallet_handle, ws, cs).unwrap();
+        let packed_msg = rs.pack_msg(plaintext, auth, &recv_keys, None,
+                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
+        let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
+                                                    recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
 
         //verify same plaintext goes in and comes out
         assert_eq!(plaintext, &unpacked_msg);
@@ -400,22 +401,24 @@ pub mod tests {
         let auth = true;
 
         //setup route_service
-        let mut route_service = RouteService::new();
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
         //setup wallets
-        let (recv_wallet_handle, recv_did, recv_key) = _setup_recv_wallet1(ws, cs);
-        let (send_wallet_handle , send_did, send_key) = _setup_send_wallet(ws, cs);
+        let (recv_wallet_handle, recv_did, recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let (send_wallet_handle , send_did, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
 
 
         //setup recv_keys to use with pack_msg
-        let (_ , recv_key) = _recv_did1(&route_service.crypto_service);
+        let (_ , recv_key) = _recv_did1(cs.clone());
         let recv_keys = vec![recv_key.verkey.clone()];
 
         //pack then unpack message
-        let packed_msg = route_service.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey),
-                                                send_wallet_handle, ws, cs).unwrap();
-        let unpacked_msg = route_service.unpack_msg(&packed_msg, &recv_key.verkey,
-                                                    recv_wallet_handle, ws, cs).unwrap();
+        let packed_msg = rs.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey),
+                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
+        let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
+                                                    recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
 
         //verify same plaintext goes in and comes out
         assert_eq!(plaintext, &unpacked_msg);
@@ -423,17 +426,18 @@ pub mod tests {
 
     //TODO fix this test so that Error is returned not String
     #[test]
-    fn test_add_and_lookup_route_fail() {
+    fn test_lookup_route_fail() {
         _cleanup();
         let did_with_key_frag : &str = &"did:sov:NCjtLejiBg18RAV9mefAQT#1";
         let endpoint : &str = &"http://localhost:8080";
-        let mut route_table : RouteTable = RouteTable::new(None);
-        route_table.wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
-        let wallet_handle = route_table.wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
 
-        //let result = route_table.add_route(did_with_key_frag, endpoint, wallet_handle);
-        let endpoint_lookup = route_table.lookup_route(did_with_key_frag, wallet_handle);
-        assert!(endpoint_lookup.is_none());
+        ws.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = ws.open_wallet(&_config(), &_credentials()).unwrap();
+
+        let endpoint_lookup = rs.lookup_route(did_with_key_frag, wallet_handle, ws.clone());
+        assert!(endpoint_lookup.is_err());
     }
 
     //TODO fix this test and test above so it can identify if add or lookup is failing
@@ -442,12 +446,14 @@ pub mod tests {
         _cleanup();
         let did_with_key_frag : &str = &"did:sov:NCjtLejiBg18RAV9mefAQT#1";
         let endpoint : &str = &"http://localhost:8080";
-        let mut route_table : RouteTable = RouteTable::new(None);
-        route_table.wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
-        let wallet_handle = route_table.wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
 
-        let result = route_table.add_route(did_with_key_frag, endpoint, wallet_handle);
-        let endpoint_lookup = route_table.lookup_route(did_with_key_frag, wallet_handle).unwrap();
+        ws.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = ws.open_wallet(&_config(), &_credentials()).unwrap();
+
+        let result = rs.add_route(did_with_key_frag, endpoint, wallet_handle, ws.clone());
+        let endpoint_lookup = rs.lookup_route(did_with_key_frag, wallet_handle, ws.clone()).unwrap();
         assert_eq!(&endpoint_lookup, endpoint);
     }
 
@@ -457,14 +463,16 @@ pub mod tests {
         _cleanup();
         let did_with_key_frag : &str = &"did:sov:NCjtLejiBg18RAV9mefAQT#1";
         let endpoint : &str = &"http://localhost:8080";
-        let mut route_table : RouteTable = RouteTable::new(None);
-        route_table.wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
-        let wallet_handle = route_table.wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
 
-        let result = route_table.add_route(did_with_key_frag, endpoint, wallet_handle);
-        route_table.remove_route(did_with_key_frag, wallet_handle);
-        let endpoint_lookup = route_table.lookup_route(did_with_key_frag, wallet_handle);
-        assert!(endpoint_lookup.is_none());
+        ws.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = ws.open_wallet(&_config(), &_credentials()).unwrap();
+
+        rs.add_route(did_with_key_frag, endpoint, wallet_handle, ws.clone());
+        rs.remove_route(did_with_key_frag, wallet_handle, ws.clone());
+        let endpoint_lookup = rs.lookup_route(did_with_key_frag, wallet_handle, ws.clone());
+        assert!(endpoint_lookup.is_err());
     }
 
     //TODO fix this test so it's more unit test style test for update_route() aka doesn't rely on other route_table functions
@@ -473,13 +481,15 @@ pub mod tests {
         _cleanup();
         let did_with_key_frag : &str = &"did:sov:NCjtLejiBg18RAV9mefAQT#1";
         let endpoint : &str = &"http://localhost:8080";
-        let mut route_table : RouteTable = RouteTable::new(None);
-        route_table.wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
-        let wallet_handle = route_table.wallet_service.open_wallet(&_config(), &_credentials()).unwrap();
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
 
-        let result = route_table.add_route(did_with_key_frag, endpoint, wallet_handle);
-        route_table.update_route(did_with_key_frag, &"http://localhost:8081", wallet_handle);
-        let endpoint_lookup = route_table.lookup_route(did_with_key_frag, wallet_handle).unwrap();
+        ws.create_wallet(&_config(), &_credentials()).unwrap();
+        let wallet_handle = ws.open_wallet(&_config(), &_credentials()).unwrap();
+
+        let result = rs.add_route(did_with_key_frag, endpoint, wallet_handle, ws.clone()).unwrap();
+        let fail_if_none = rs.update_route(did_with_key_frag, &"http://localhost:8081", wallet_handle, ws.clone()).unwrap();
+        let endpoint_lookup = rs.lookup_route(did_with_key_frag, wallet_handle, ws.clone()).unwrap();
         assert_eq!(&endpoint_lookup, "http://localhost:8081");
     }
 
@@ -501,7 +511,7 @@ pub mod tests {
 //    }
 
     fn _setup_send_wallet(ws: Rc<WalletService>, cs : Rc<CryptoService>) -> (i32, Did, Key) {
-        let (did, key) = _send_did1(cs);
+        let (did, key) = _send_did1(cs.clone());
         ws.create_wallet(&_send_config(), &_credentials());
         let wallet_handle = ws.open_wallet(&_send_config(), &_credentials()).unwrap();
         ws.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new()).unwrap();
@@ -510,7 +520,7 @@ pub mod tests {
     }
 
     fn _setup_recv_wallet1(ws: Rc<WalletService>, cs : Rc<CryptoService>) -> (i32, Did, Key) {
-        let (did, key) = _recv_did1(cs);
+        let (did, key) = _recv_did1(cs.clone());
         ws.create_wallet(&_recv_config(), &_credentials());
         let wallet_handle = ws.open_wallet(&_recv_config(), &_credentials()).unwrap();
         ws.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new()).unwrap();
@@ -519,7 +529,7 @@ pub mod tests {
     }
 
     fn _setup_recv_wallet2(ws: Rc<WalletService>, cs : Rc<CryptoService>) -> (i32, Did, Key) {
-        let (did, key) = _recv_did2(cs);
+        let (did, key) = _recv_did2(cs.clone());
         ws.create_wallet(&_recv_config(), &_credentials());
         let wallet_handle = ws.open_wallet(&_recv_config(), &_credentials()).unwrap();
         ws.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new()).unwrap();

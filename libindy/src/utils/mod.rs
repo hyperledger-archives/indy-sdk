@@ -31,3 +31,5 @@ pub mod test;
 pub mod try;
 
 pub mod json;
+
+pub mod serialization;
