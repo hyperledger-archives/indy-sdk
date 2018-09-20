@@ -33,6 +33,7 @@ pub mod create_command {
                                     raw - raw wallet key provided (skip derivation)")
                 .add_optional_param("storage_type", "Type of the wallet storage.")
                 .add_optional_param("storage_config", "The list of key:value pairs defined by storage type.")
+                .add_optional_param("storage_credentials", "The list of key:value pairs defined by storage type.")
                 .add_example("wallet create wallet1 key")
                 .add_example("wallet create wallet1 key storage_type=default")
                 .add_example(r#"wallet create wallet1 key storage_type=default storage_config={"key1":"value1","key2":"value2"}"#)
@@ -47,9 +48,10 @@ pub mod create_command {
         let key_derivation_method = get_opt_str_param("key_derivation_method", params).map_err(error_err!())?;
         let storage_type = get_opt_str_param("storage_type", params).map_err(error_err!())?.unwrap_or("default");
         let storage_config = get_opt_object_param("storage_config", params).map_err(error_err!())?;
+        let storage_credentials = get_opt_object_param("storage_credentials", params).map_err(error_err!())?;
 
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
-        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)? }).to_string();
+        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)?, "storage_credentials": storage_credentials }).to_string();
 
         trace!("Wallet::create_wallet try: config {}", config);
 
@@ -93,6 +95,7 @@ pub mod open_command {
                                                 argon2m - derive secured wallet key (used by default)
                                                 argon2i - derive secured wallet key (less secured but faster)
                                                 raw - raw key provided (skip derivation)")
+                            .add_optional_param("storage_credentials", "The list of key:value pairs defined by storage type.")
                             .add_example("wallet open wallet1 key")
                             .add_example("wallet open wallet1 key rekey")
                             .finalize());
@@ -105,6 +108,7 @@ pub mod open_command {
         let rekey = get_opt_str_param("rekey", params).map_err(error_err!())?;
         let key_derivation_method = get_opt_str_param("key_derivation_method", params).map_err(error_err!())?;
         let rekey_derivation_method = get_opt_str_param("rekey_derivation_method", params).map_err(error_err!())?;
+        let storage_credentials = get_opt_object_param("storage_credentials", params).map_err(error_err!())?;
 
         let config = _read_wallet_config(id)
             .map_err(|_| println_err!("Wallet \"{}\" not found or unavailable", id))?;
@@ -117,6 +121,14 @@ pub mod open_command {
 
             update_json_map_opt_key!(json, "rekey", rekey);
             json.insert("rekey_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(rekey_derivation_method)?.to_string()));
+
+            match storage_credentials {
+                Some(creds) => {
+                    json.insert("storage_credentials".to_string(), creds);
+                    ()
+                },
+                _ => ()
+            }
 
             JSONValue::from(json).to_string()
         };
