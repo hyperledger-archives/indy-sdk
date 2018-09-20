@@ -19,6 +19,7 @@ Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hype
   * [payment](#payment)
   * [pool](#pool)
   * [wallet](#wallet)
+  * [logger](#logger)
 - [Advanced](#advanced)
 - [Contributing](#contributing)
 
@@ -2456,6 +2457,19 @@ Errors: `Common*`, `Wallet*`
 
 [//]: # (CODEGEN-END - don't edit by hand see `codegen/index.js`)
 
+### logger
+
+#### setDefaultLogger \( pattern \)
+
+Calling this turns on the default logger where libindy will write logs to stdout.
+
+* `pattern`: String - pattern that corresponds with the log messages to show.
+
+Errors: `Common*`
+
+NOTE: This is a synchronous function (does not return a promise.)
+
+
 ## Advanced
 
 If you need to get closer to the metal, you can access the node bindings directly.
@@ -2488,16 +2502,13 @@ Setup an Indy SDK environment, and start a local pool.
 # You will need libindy in your system library path. (i.e. /usr/lib/libindy.so for linux)
 # or in this directory (i.e. wrappers/nodejs/libindy.so)
 
-# Copy over the libindy header files. This is needed for the build step.
-cp -r ../../libindy/include/ .
-
 # Install dependencies and do the initial build.
 npm install
 
 # Run the tests
-RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+TEST_POOL_IP=10.0.0.2 npm test
 # If you built with libindy locally (i.e. wrappers/nodejs/libindy.so) you need to set LD_LIBRARY_PATH
-LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+LD_LIBRARY_PATH=./ TEST_POOL_IP=10.0.0.2 npm test
 
 # To recompile the native bindings
 npm run rebuild

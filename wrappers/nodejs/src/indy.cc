@@ -327,5 +327,14 @@ void indyCalled(IndyCallback* icb, indy_error_t res) {
     icb->cbNone(res);
 }
 
+NAN_METHOD(setDefaultLogger) {
+  INDY_ASSERT_NARGS(setDefaultLogger, 1)
+  INDY_ASSERT_STRING(setDefaultLogger, 0, pattern)
+  const char* pattern = argToCString(info[0]);
+  indy_error_t res = indy_set_default_logger(pattern);
+  delete pattern;
+  info.GetReturnValue().Set(res);
+}
+
 // Now inject the generated C++ code (see /codegen/cpp.js)
 #include "indy_codegen.h"
