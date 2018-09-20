@@ -87,7 +87,7 @@ fn anoncreds_demo_works() {
     let (create_rev_state_receiver, create_rev_state_command_handle, create_rev_state_cb) = callback::_closure_to_cb_ec_string();
 
     let issuer_wallet_config = json!({"id": "issuer_wallet"}).to_string();
-    let issuer_wallet_credentials = json!({"key":"issuer_key"}).to_string();
+    let issuer_wallet_credentials = json!({"key":"issuerKey1111111111111111111111111111111111", "key_derivation_method":"RAW"}).to_string();
 
     // Issuer Creates Wallet
     let err =
@@ -115,7 +115,7 @@ fn anoncreds_demo_works() {
 
     // Prover Creates Wallet
     let prover_wallet_config = json!({"id": "prover_wallet"}).to_string();
-    let prover_wallet_credentials = json!({"key":"prover_key"}).to_string();
+    let prover_wallet_credentials = json!({"key":"ProverKey1111111111111111111111111111111111", "key_derivation_method":"RAW"}).to_string();
 
     let err =
         indy_create_wallet(prover_create_wallet_command_handle,
