@@ -9,5 +9,5 @@ pub fn medium_timeout() -> Duration {
 }
 
 pub fn long_timeout() -> Duration {
-    Duration::from_secs(500)
+    Duration::from_secs(1000)
 }
