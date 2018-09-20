@@ -46,7 +46,7 @@ impl RouteService {
     // This API call is made to encrypt both Application layer messages and Transport layer
 // messages. The purpose of it is to take a message and wrap it up so that it can be fed into
 // send_msg and on the other end unpack_msg can be called on it.
-    pub fn pack_msg(&self, plaintext: &str, auth: bool, recv_keys: &Vec<String>, my_vk: Option<&str>, 
+    pub fn pack_msg(&self, plaintext: &str, recv_keys: &Vec<String>, my_vk: Option<&str>, auth: bool,
                     wallet_handle: i32, ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<String, RouteError> {
         //encrypt plaintext
         let encrypted_payload = encrypt_payload(plaintext);
@@ -118,7 +118,7 @@ impl RouteService {
             .map_err(|err| RouteError::TableError(format!("Failed to update route: {:?}", err)))
     }
 
-    fn get_jwm_data(&self, jwm : JWM, my_vk: &str) -> Result<JWMData, RouteError> {
+    fn get_jwm_data(&self, jwm : JWM, my_vk: &str) -> Result<AMESData, RouteError> {
         match jwm {
             JWM::JWMFull(jwmf) => {
                 //finds the recipient index that matches the verkey passed in to the recipient verkey field
@@ -126,9 +126,9 @@ impl RouteService {
                     .position(|ref recipient| recipient.header.kid == my_vk);
                 match recipient_index {
                     Some(v) => {
-                        Ok(JWMData {
+                        Ok(AMESData {
                             header: jwmf.recipients[v].header.clone(),
-                            cek: decode(&jwmf.recipients[v].encrypted_key)?,
+                            cek: decode(&jwmf.recipients[v].cek)?,
                             ciphertext: decode(&jwmf.ciphertext)?,
                             iv: decode(&jwmf.iv)?,
                             tag: decode(&jwmf.tag)?
@@ -141,7 +141,7 @@ impl RouteService {
     
             JWM::JWMCompact(jwmc) => {
                 if jwmc.header.kid == my_vk {
-                    Ok(JWMData {
+                    Ok(AMESData {
                         header: jwmc.header,
                         cek: decode(&jwmc.cek)?,
                         ciphertext: decode(&jwmc.ciphertext)?,
@@ -170,13 +170,13 @@ impl RouteService {
             //handles authdecrypting content encryption key
             "x-auth" => {
                 let decrypted_header = crypto_service.decrypt_sealed(key, cek)
-                .map_err( | err | RouteError::EncryptionError(format ! ("Can't decrypt encrypted_key: {:?}", err)))?;
+                .map_err( | err | RouteError::EncryptionError(format ! ("Can't decrypt cek: {:?}", err)))?;
                 let parsed_msg = ComboBox::from_msg_pack(decrypted_header.as_slice())
                 .map_err( | err | RouteError::UnpackError(format !("Can't deserialize ComboBox: {:?}", err)))?;
                 let cek: Vec < u8 > = decode( &parsed_msg.msg)
-                .map_err( | err | RouteError::UnpackError(format ! ("Can't decode encrypted_key msg filed from base64 {}", err)))?;
+                .map_err( | err | RouteError::UnpackError(format ! ("Can't decode cek msg filed from base64 {}", err)))?;
                 let nonce: Vec <u8 > = decode( & parsed_msg.nonce)
-                .map_err( | err | RouteError::UnpackError(format ! ("Can't decode encrypted_key nonce from base64 {}", err)))?;
+                .map_err( | err | RouteError::UnpackError(format ! ("Can't decode cek nonce from base64 {}", err)))?;
     
                 match &header.jwk {
                     Some(jwk) => Ok(crypto_service.decrypt( key, jwk, & cek, &nonce)
@@ -261,7 +261,7 @@ pub mod tests {
             "enc":"xsalsa20poly1305",
             "kid":"2M2U2FRSvkk5tHRALQn3Jy1YjjWtkpZ3xZyDjEuEZzko",
             "jwk": null},
-        "encrypted_key":"0PkLL5bi04zuvIg5P6qnlct-aYIq_MD1ODnO-EE7XEyQHnSszh2uWfbiKUZs4pYppHy9yjEBB3JOe0reTHSkNuX46b6MyYjU_Ld4p4ISC7g="
+        "cek":"0PkLL5bi04zuvIg5P6qnlct-aYIq_MD1ODnO-EE7XEyQHnSszh2uWfbiKUZs4pYppHy9yjEBB3JOe0reTHSkNuX46b6MyYjU_Ld4p4ISC7g="
         },
         {"header":
             {"typ":"x-b64nacl",
@@ -269,7 +269,7 @@ pub mod tests {
             "enc":"xsalsa20poly1305",
             "kid":"H9teBJHh4YUrbzpSMJyWRJcCQnuu4gzppbx9owvWFv8c",
             "jwk":null},
-        "encrypted_key":"ivudsdb1tbK78ih3rbFbutlK9jpV2y_20vHDBRq-Ijo2VrJRruvTqu2wIyuqI0gfq5fOcEAvSuKNEMS0msJbhsVhQ_pmu5hcab7THda-yfM="
+        "cek":"ivudsdb1tbK78ih3rbFbutlK9jpV2y_20vHDBRq-Ijo2VrJRruvTqu2wIyuqI0gfq5fOcEAvSuKNEMS0msJbhsVhQ_pmu5hcab7THda-yfM="
         }],
     "ciphertext":"-_Hdq304MkI9vOQ=",
     "iv":"jrsxpWDdn06GVlrK43qQZLf5t1n4wA4o",
@@ -305,7 +305,7 @@ pub mod tests {
 
         //setup send wallet then pack message
         let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
-        let packed_msg = rs.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey),
+        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), auth,
                                                 send_wallet_handle, ws.clone(), cs.clone()).unwrap();
         ws.close_wallet(send_wallet_handle);
 
@@ -343,7 +343,7 @@ pub mod tests {
 
         //setup send wallet then pack message
         let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
-        let packed_msg = rs.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey),
+        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), auth,
                                                 send_wallet_handle, ws.clone(), cs.clone()).unwrap();
         ws.close_wallet(send_wallet_handle);
 
@@ -384,7 +384,7 @@ pub mod tests {
         let recv_keys = vec![recv_key.verkey.clone()];
 
         //pack then unpack message
-        let packed_msg = rs.pack_msg(plaintext, auth, &recv_keys, None,
+        let packed_msg = rs.pack_msg(plaintext, &recv_keys,None, auth,
                                                 send_wallet_handle, ws.clone(), cs.clone()).unwrap();
         let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
                                                     recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
@@ -415,7 +415,7 @@ pub mod tests {
         let recv_keys = vec![recv_key.verkey.clone()];
 
         //pack then unpack message
-        let packed_msg = rs.pack_msg(plaintext, auth, &recv_keys, Some(&send_key.verkey),
+        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), auth,
                                                 send_wallet_handle, ws.clone(), cs.clone()).unwrap();
         let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
                                                     recv_wallet_handle, ws.clone(), cs.clone()).unwrap();

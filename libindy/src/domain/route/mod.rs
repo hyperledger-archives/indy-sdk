@@ -5,7 +5,7 @@ pub struct Payload {
     pub sym_key: Vec<u8>
 }
 
-pub struct JWMData {
+pub struct AMESData {
     pub header: Header,
     pub cek: Vec<u8>,
     pub ciphertext: Vec<u8>,
@@ -14,7 +14,7 @@ pub struct JWMData {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct JWMFull {
+pub struct AMESJson {
     pub recipients: Vec<Recipient>,
     pub ciphertext: String,
     pub iv: String,
@@ -24,7 +24,7 @@ pub struct JWMFull {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Recipient {
     pub header : Header,
-    pub encrypted_key : String
+    pub cek: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -37,7 +37,7 @@ pub struct Header {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct JWMCompact {
+pub struct AMESCompact {
     pub header : Header,
     pub cek : String,
     pub iv : String,
@@ -47,8 +47,8 @@ pub struct JWMCompact {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum JWM {
-    JWMFull(JWMFull),
-    JWMCompact(JWMCompact)
+    JWMFull(AMESJson),
+    JWMCompact(AMESCompact)
 }
 
 impl Header {
@@ -77,7 +77,7 @@ impl Recipient {
     pub fn new(header : Header, cek: String) -> Recipient {
         Recipient {
             header,
-            encrypted_key: cek
+            cek: cek
         }
     }
 }

@@ -15,7 +15,7 @@ pub fn json_serialize_jwm(recipient_vks : &Vec<String>,
 
     let recipients = create_receipients(encrypted_keys, recipient_vks, sender_vk, auth)?;
 
-    let jwm_full = JWMFull {
+    let jwm_full = AMESJson {
         recipients,
         ciphertext: ciphertext.to_string(),
         iv : iv.to_string(),
@@ -27,7 +27,7 @@ pub fn json_serialize_jwm(recipient_vks : &Vec<String>,
 }
 
 pub fn json_deserialize_jwm(jwm : &str) -> Result<JWM, RouteError> {
-    Ok(JWM::JWMFull(JWMFull::from_json(jwm)
+    Ok(JWM::JWMFull(AMESJson::from_json(jwm)
         .map_err( | err | RouteError::DecodeError(format!("{}", err)))?))
 }
 
@@ -67,7 +67,7 @@ pub fn deserialize_jwm_compact (message : &str) -> Result<JWM, RouteError> {
     let header : Header = from_str(&header_str)
         .map_err( | err | RouteError::DecodeError(format!("{}", err)))?;
 
-    Ok(JWM::JWMCompact(JWMCompact {
+    Ok(JWM::JWMCompact(AMESCompact {
         header,
         cek,
         iv,
@@ -143,7 +143,7 @@ pub mod tests {
                         "kid" : &recipient_vks[0],
                         "jwk" : &sender_vk
                     },
-                    "encrypted_key" : &encrypted_keys[0]
+                    "cek" : &encrypted_keys[0]
                 },
                 {
                     "header" : {
@@ -153,7 +153,7 @@ pub mod tests {
                         "kid" : &recipient_vks[1],
                         "jwk" : &sender_vk
                     },
-                    "encrypted_key" : &encrypted_keys[1]
+                    "cek" : &encrypted_keys[1]
                 },
                 {
                     "header" : {
@@ -163,7 +163,7 @@ pub mod tests {
                         "kid" : &recipient_vks[2],
                         "jwk" : &sender_vk
                     },
-                    "encrypted_key" : &encrypted_keys[2]
+                    "cek" : &encrypted_keys[2]
                 }
             ],
         "ciphertext" : "this is fake ciphertext to test JWMs",
@@ -200,7 +200,7 @@ pub mod tests {
         let ciphertext = "this is fake ciphertext to test JWMs";
         let iv = "FAKE_IVTOTESTJWMSERIALIZE";
         let tag = "FAKE_TAGTOTESTJWMSERIALIZE";
-        let expected_jwm = JWMFull {
+        let expected_jwm = AMESJson {
             recipients : recipients.unwrap(),
             ciphertext : ciphertext.to_string(),
             iv : iv.to_string(),
@@ -246,7 +246,7 @@ pub mod tests {
                     "kid" : &recipient_vks[0],
                     "jwk" : &sender_vk
                 },
-                "encrypted_key" : &encrypted_keys[0]
+                "cek" : &encrypted_keys[0]
             },
             {
                 "header" : {
@@ -256,7 +256,7 @@ pub mod tests {
                     "kid" : &recipient_vks[1],
                     "jwk" : &sender_vk
                 },
-                "encrypted_key" : &encrypted_keys[1]
+                "cek" : &encrypted_keys[1]
             },
             {
                 "header" : {
@@ -266,7 +266,7 @@ pub mod tests {
                     "kid" : &recipient_vks[2],
                     "jwk" : &sender_vk
                 },
-                "encrypted_key" : &encrypted_keys[2]
+                "cek" : &encrypted_keys[2]
             }
         ]);
 

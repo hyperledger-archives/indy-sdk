@@ -10,6 +10,7 @@ pub mod wallet;
 pub mod blob_storage;
 pub mod non_secrets;
 pub mod payments;
+//pub mod route;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
