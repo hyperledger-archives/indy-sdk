@@ -142,18 +142,27 @@ generate_arch_flags(){
 download_and_unzip_dependencies(){
     #TODO Get dependencies in more optimized way
     pushd ${ANDROID_BUILD_FOLDER}
-        if [ ! -d "indy-android-dependencies" ] ; then
-            echo "${GREEN}Downloading dependencies...${RESET}"
-            git clone https://github.com/evernym/indy-android-dependencies.git
-            pushd ${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/
-                git checkout tags/v1.0.2
-                find . -name "*.zip" | xargs -P 5 -I FILENAME sh -c 'unzip -o -qq -d "$(dirname "FILENAME")" "FILENAME"'
-            popd
-             echo "${GREEN}Done!${RESET}"
-        fi
-        export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/openssl/openssl_${ABSOLUTE_ARCH}
-        export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/sodium/libsodium_${ABSOLUTE_ARCH}
-        export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/indy-android-dependencies/prebuilt/zmq/libzmq_${ABSOLUTE_ARCH}
+        echo -e "${GREEN}Downloading openssl for $1 ${RESET}"
+        curl -sSLO https://repo.sovrin.org/android/libindy/deps/openssl/openssl_$1.zip
+        unzip -o -qq openssl_$1.zip
+        export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
+        echo -e "${GREEN}Done!${RESET}"
+
+        echo -e "${GREEN}Downloading sodium for $1 ${RESET}"
+        curl -sSLO https://repo.sovrin.org/android/libindy/deps/sodium/libsodium_$1.zip
+        unzip -o -qq libsodium_$1.zip
+        export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
+        echo -e "${GREEN}Done!${RESET}"
+
+        echo -e "${GREEN}Downloading zmq for $1 ${RESET}"
+        curl -sSLO https://repo.sovrin.org/android/libindy/deps/zmq/libzmq_$1.zip
+        unzip -o -qq libzmq_$1.zip
+        export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/libzmq_$1
+        echo -e "${GREEN}Done!${RESET}"
+
+        rm openssl_$1.zip
+        rm libsodium_$1.zip
+        rm libzmq_$1.zip
     popd
 }
 
