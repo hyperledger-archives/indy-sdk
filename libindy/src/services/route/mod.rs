@@ -430,7 +430,6 @@ pub mod tests {
         assert_eq!(plaintext, &unpacked_msg);
     }
 
-    //TODO fix this test so that Error is returned not String
     #[test]
     fn test_lookup_route_fail() {
         _cleanup();
@@ -446,7 +445,6 @@ pub mod tests {
         assert!(endpoint_lookup.is_err());
     }
 
-    //TODO fix this test and test above so it can identify if add or lookup is failing
     #[test]
     fn test_add_and_lookup_route_success() {
         _cleanup();
@@ -463,7 +461,6 @@ pub mod tests {
         assert_eq!(&endpoint_lookup, endpoint);
     }
 
-    //TODO fix this test so it's more unit test style test for remove_route()
     #[test]
     fn test_add_remove_then_lookup_route_success() {
         _cleanup();
@@ -481,7 +478,6 @@ pub mod tests {
         assert!(endpoint_lookup.is_err());
     }
 
-    //TODO fix this test so it's more unit test style test for update_route() aka doesn't rely on other route_table functions
     #[test]
     fn test_update_route_success() {
         _cleanup();
