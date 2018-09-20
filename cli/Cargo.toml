@@ -11,6 +11,7 @@ fatal_warnings = []
 
 [dependencies]
 atty = "0.2"
+indy = { path = "../libindy"}
 ansi_term = "0.11"
 chrono = "0.4"
 unescape = "0.1"
