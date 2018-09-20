@@ -417,6 +417,7 @@ pub mod import_command {
                                     raw - raw key provided (skip derivation)")
                 .add_optional_param("storage_type", "Type of the wallet storage.")
                 .add_optional_param("storage_config", "The list of key:value pairs defined by storage type.")
+                .add_optional_param("storage_credentials", "The list of key:value pairs defined by storage type.")
                 .add_required_param("export_path", "Path to the file that contains exported wallet content")
                 .add_required_deferred_param("export_key", "Key used for export of the wallet")
                 .add_example("wallet import wallet1 key export_path=/home/indy/export_wallet export_key")
@@ -434,9 +435,10 @@ pub mod import_command {
         let export_key = get_str_param("export_key", params).map_err(error_err!())?;
         let storage_type = get_opt_str_param("storage_type", params).map_err(error_err!())?;
         let storage_config = get_opt_object_param("storage_config", params).map_err(error_err!())?;
+        let storage_credentials = get_opt_object_param("storage_credentials", params).map_err(error_err!())?;
 
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
-        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)? }).to_string();
+        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)?, "storage_credentials": storage_credentials }).to_string();
         let import_config: String = json!({ "path": export_path.clone(), "key": export_key.clone()}).to_string();
 
         if _wallet_config_path(id).exists() {
