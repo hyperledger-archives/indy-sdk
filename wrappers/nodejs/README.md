@@ -2459,15 +2459,34 @@ Errors: `Common*`, `Wallet*`
 
 ### logger
 
+WARNING: You can only set the logger **once**. Call `setLogger`, `setDefaultLogger`, not both. Once it's been set, libindy won't let you change it.
+
 #### setDefaultLogger \( pattern \)
 
-Calling this turns on the default logger where libindy will write logs to stdout.
+Calling this turns on the default logger and libindy will write logs to stdout.
 
 * `pattern`: String - pattern that corresponds with the log messages to show.
 
 Errors: `Common*`
 
 NOTE: This is a synchronous function (does not return a promise.)
+
+#### setLogger \( logFn \)
+
+Set a function to be called every time a log is emitted from libindy.
+
+* `logFn`: Function(Int level, String target, String message, String module_path, String file, Int line)
+
+Example:
+```js
+indy.setLogger(function (level, target, message, modulePath, file, line) {
+    console.log('libindy said:', level, target, message, modulePath, file, line)
+})
+```
+
+Errors: `Common*`
+
+NOTE: This is a synchronous function (does not return a promise) but may call `logFn` asynchronously many times.
 
 
 ## Advanced

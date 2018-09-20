@@ -43,6 +43,13 @@ indy.setDefaultLogger = function setDefaultLogger (pattern) {
   }
 }
 
+indy.setLogger = function setLogger (logFn) {
+  var err = capi.setLogger(logFn)
+  if (err !== 0) {
+    throw new IndyError(err)
+  }
+}
+
 `
 
 apiFunctions.forEach(function (fn) {

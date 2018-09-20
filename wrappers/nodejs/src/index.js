@@ -35,6 +35,13 @@ indy.setDefaultLogger = function setDefaultLogger (pattern) {
   }
 }
 
+indy.setLogger = function setLogger (logFn) {
+  var err = capi.setLogger(logFn)
+  if (err !== 0) {
+    throw new IndyError(err)
+  }
+}
+
 indy.issuerCreateSchema = function issuerCreateSchema (issuerDid, name, version, attrNames, cb) {
   cb = wrapIndyCallback(cb, function (data) {
     return [data[0], fromJson(data[1])]
