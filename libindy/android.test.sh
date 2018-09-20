@@ -28,10 +28,12 @@ build_test_artifacts(){
     pushd ${WORKDIR}
 
         set -e
-        cp "${TOOLCHAIN_PREFIX}/android-ndk-r16b/platforms/android-21/arch-${TARGET_ARCH}/usr/lib/libc.so" "${TOOLCHAIN_DIR}/sysroot/usr/lib"
+        # The libc.so in the standalone toolchains does not have FORTIFIED_SOURCE compatible symbols.
+        # We need to copy the libc.so from platforms folder into the standalone toolchain.
+        cp "${TOOLCHAIN_x/IXs}xs/android-ndk-r16b/platforms/android-${TARGET_API}/arch-${TARGET_ARCH}/usr/lib/libc.so" "${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}"
         cargo clean
 
-        EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/lib -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+        EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
                     cargo test --release --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
     popd
 }
