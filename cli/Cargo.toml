@@ -1,6 +1,6 @@
 [package]
 name = "indy-cli"
-version = "1.6.5"
+version = "1.6.6"
 authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
 
 [features]
