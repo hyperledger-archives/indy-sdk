@@ -12,6 +12,7 @@ pub mod blob_storage;
 pub mod non_secrets;
 pub mod payments;
 pub mod logger;
+//pub mod route;
 
 use self::libc::c_char;
 
