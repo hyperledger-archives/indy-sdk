@@ -18,6 +18,15 @@ This library is currently in experimental state.
 
 "Everything is awesome when you're part of a team!" #TeamOneDirection
 
+### Building ubuntu 16.04 package using docker
+Run these commands in vcx directory:
+
+    ```
+    docker build -f ci/ubuntu.dockerfile -t libvcx ..
+    docker run -v ${PWD}:/build/vcx -v /path/to/output:/build/output libvcx
+    ```
+Debian package will be created in output directory (replace /path/to/output).
+
 # Debians and Artifacts
 
 **`libvcx_<ver>_amd.deb`**
