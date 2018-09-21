@@ -175,7 +175,7 @@ fn _map_io_err(e: io::Error) -> CommonError {
     }
 }
 
-#[cfg(testx)]
+#[cfg(test)]
 mod tests {
     use super::*;
 

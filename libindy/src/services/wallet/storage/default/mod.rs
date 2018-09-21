@@ -775,7 +775,7 @@ impl WalletStorageType for SQLiteStorageType {
 }
 
 
-#[cfg(testx)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use super::super::Tag;

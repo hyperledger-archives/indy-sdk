@@ -221,7 +221,7 @@ fn join_operators<'a>(operators: &'a [Operator], join_str: &str, arguments: &mut
 }
 
 
-#[cfg(testx)]
+#[cfg(test)]
 mod tests {
     use super::*;
 

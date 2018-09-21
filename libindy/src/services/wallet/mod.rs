@@ -686,7 +686,7 @@ impl Default for SearchOptions {
     }
 }
 
-#[cfg(testx)]
+#[cfg(test)]
 mod tests {
     use super::*;
 

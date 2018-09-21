@@ -157,7 +157,7 @@ pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Res
 }
 
 
-#[cfg(testx)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json;

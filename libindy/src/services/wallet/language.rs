@@ -291,7 +291,7 @@ fn parse_single_operator(operator_name: String, key: String, value: serde_json::
     }
 }
 
-#[cfg(testx)]
+#[cfg(test)]
 mod tests {
     extern crate rand;
 
