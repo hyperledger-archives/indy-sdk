@@ -89,38 +89,7 @@ impl RouteService {
         decrypt_payload(&payload)
     }
 
-    pub fn add_route(&self, did_with_key_frag : &str, endpoint : &str,
-                     wallet_handle:i32, wallet_service: Rc<WalletService>) -> Result<(), RouteError> {
-        wallet_service.add_record(wallet_handle, "route_table", did_with_key_frag, endpoint, &HashMap::new())
-            .map_err(|err | RouteError::TableError(format!("Failed to add route: {:?}", err)))
-    }
-
-    pub fn lookup_route(&self, did_with_key_frag : &str,
-                        wallet_handle : i32, wallet_service: Rc<WalletService>) -> Result<String, RouteError> {
-        let options_json = json!({"retrieveType": false,"retrieveValue": true,"retrieveTags": false}).to_string();
-        let wallet_record : WalletRecord = wallet_service.get_record(wallet_handle, "route_table",
-                                                      did_with_key_frag, &options_json)
-            .map_err(|err|RouteError::TableError(format!("Failed to locate value in route table: {:?}", err)))?;
-
-        match wallet_record.get_value() {
-                Some(value) =>  Ok(value.to_string()),
-                None => Err(RouteError::TableError(format!("Failed to locate value in route table")))
-        }
-    }
-
-    pub fn remove_route(&self, did_with_key_frag : &str,
-                        wallet_handle : i32, wallet_service: Rc<WalletService>) -> Result<(), RouteError> {
-        wallet_service.delete_record(wallet_handle, "route_table", did_with_key_frag)
-            .map_err(|err|RouteError::TableError(format!("Failed to remove route: {:?}", err)))
-    }
-
-    pub fn update_route(&self, did_with_key_frag : &str, new_endpoint : &str,
-                        wallet_handle : i32, wallet_service: Rc<WalletService>) -> Result<(), RouteError> {
-        wallet_service.update_record_value(wallet_handle, "route_table", did_with_key_frag, new_endpoint)
-            .map_err(|err| RouteError::TableError(format!("Failed to update route: {:?}", err)))
-    }
-
-    fn get_jwm_data(&self, jwm : JWM, my_vk: &str) -> Result<AMESData, RouteError> {
+    fn get_jwm_data(&self, jwm : AMES, my_vk: &str) -> Result<AMESData, RouteError> {
         match jwm {
             AMES::AMESFull(jwmf) => {
                 //finds the recipient index that matches the verkey passed in to the recipient verkey field
@@ -424,70 +393,6 @@ pub mod tests {
 
         //verify same plaintext goes in and comes out
         assert_eq!(plaintext, &unpacked_msg);
-    }
-
-    #[test]
-    fn test_lookup_route_fail() {
-        _cleanup();
-        let did_with_key_frag : &str = &"did:sov:NCjtLejiBg18RAV9mefAQT#1";
-        let ws: Rc<WalletService> = Rc::new(WalletService::new());
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-
-        ws.create_wallet(&_config(), &_credentials()).unwrap();
-        let wallet_handle = ws.open_wallet(&_config(), &_credentials()).unwrap();
-
-        let endpoint_lookup = rs.lookup_route(did_with_key_frag, wallet_handle, ws.clone());
-        assert!(endpoint_lookup.is_err());
-    }
-
-    #[test]
-    fn test_add_and_lookup_route_success() {
-        _cleanup();
-        let did_with_key_frag : &str = &"did:sov:NCjtLejiBg18RAV9mefAQT#1";
-        let endpoint : &str = &"http://localhost:8080";
-        let ws: Rc<WalletService> = Rc::new(WalletService::new());
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-
-        ws.create_wallet(&_config(), &_credentials()).unwrap();
-        let wallet_handle = ws.open_wallet(&_config(), &_credentials()).unwrap();
-
-        let result = rs.add_route(did_with_key_frag, endpoint, wallet_handle, ws.clone());
-        let endpoint_lookup = rs.lookup_route(did_with_key_frag, wallet_handle, ws.clone()).unwrap();
-        assert_eq!(&endpoint_lookup, endpoint);
-    }
-
-    #[test]
-    fn test_add_remove_then_lookup_route_success() {
-        _cleanup();
-        let did_with_key_frag : &str = &"did:sov:NCjtLejiBg18RAV9mefAQT#1";
-        let endpoint : &str = &"http://localhost:8080";
-        let ws: Rc<WalletService> = Rc::new(WalletService::new());
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-
-        ws.create_wallet(&_config(), &_credentials()).unwrap();
-        let wallet_handle = ws.open_wallet(&_config(), &_credentials()).unwrap();
-
-        rs.add_route(did_with_key_frag, endpoint, wallet_handle, ws.clone());
-        rs.remove_route(did_with_key_frag, wallet_handle, ws.clone());
-        let endpoint_lookup = rs.lookup_route(did_with_key_frag, wallet_handle, ws.clone());
-        assert!(endpoint_lookup.is_err());
-    }
-
-    #[test]
-    fn test_update_route_success() {
-        _cleanup();
-        let did_with_key_frag : &str = &"did:sov:NCjtLejiBg18RAV9mefAQT#1";
-        let endpoint : &str = &"http://localhost:8080";
-        let ws: Rc<WalletService> = Rc::new(WalletService::new());
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-
-        ws.create_wallet(&_config(), &_credentials()).unwrap();
-        let wallet_handle = ws.open_wallet(&_config(), &_credentials()).unwrap();
-
-        let result = rs.add_route(did_with_key_frag, endpoint, wallet_handle, ws.clone()).unwrap();
-        let fail_if_none = rs.update_route(did_with_key_frag, &"http://localhost:8081", wallet_handle, ws.clone()).unwrap();
-        let endpoint_lookup = rs.lookup_route(did_with_key_frag, wallet_handle, ws.clone()).unwrap();
-        assert_eq!(&endpoint_lookup, "http://localhost:8081");
     }
 
     //TODO write these tests
