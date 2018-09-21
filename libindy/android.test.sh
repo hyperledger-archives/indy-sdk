@@ -30,9 +30,17 @@ build_test_artifacts(){
         set -e
         # The libc.so in the standalone toolchains does not have FORTIFIED_SOURCE compatible symbols.
         # We need to copy the libc.so from platforms folder into the standalone toolchain.
-        cp "${TOOLCHAIN_x/IXs}xs/android-ndk-r16b/platforms/android-${TARGET_API}/arch-${TARGET_ARCH}/usr/lib/libc.so" "${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}"
+        DEPS_TARGET_API_LEVEL=21 #FIXME remove it, should be same with TARGET_API. Probably deps (sodium and/or zmq) should be rebuilt
+        cp "${ANDROID_NDK_ROOT}/platforms/android-${DEPS_TARGET_API_LEVEL}/arch-${TARGET_ARCH}/usr/lib/libc.so" "${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}"
+
         cargo clean
 
+        # build - separate step to see origin build output
+        # TODO move RUSTFLAGS to cargo config and do not duplicate it here
+        RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+                    cargo test --release --target=${TRIPLET} --no-run
+
+        # collect items to execute tests, uses resulting files from previous step
         EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
                     cargo test --release --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
     popd
