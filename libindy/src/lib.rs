@@ -34,6 +34,7 @@ extern crate rusqlite;
 
 #[macro_use]
 extern crate derivative;
+extern crate sha2;
 
 // Note that to use macroses from util inside of other modules it must me loaded first!
 #[macro_use]
