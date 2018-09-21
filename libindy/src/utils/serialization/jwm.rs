@@ -26,8 +26,8 @@ pub fn json_serialize_jwm(recipient_vks : &Vec<String>,
         .map_err( | err | RouteError::EncodeError(format!("{}", err)))
 }
 
-pub fn json_deserialize_jwm(jwm : &str) -> Result<JWM, RouteError> {
-    Ok(JWM::JWMFull(AMESJson::from_json(jwm)
+pub fn json_deserialize_jwm(jwm : &str) -> Result<AMES, RouteError> {
+    Ok(AMES::JWMFull(AMESJson::from_json(jwm)
         .map_err( | err | RouteError::DecodeError(format!("{}", err)))?))
 }
 
@@ -56,7 +56,7 @@ pub fn serialize_jwm_compact(recipient_vk : &str,
 
 }
 
-pub fn deserialize_jwm_compact (message : &str) -> Result<JWM, RouteError> {
+pub fn deserialize_jwm_compact (message : &str) -> Result<AMES, RouteError> {
     let msg_as_vec: Vec<&str> = message.split('.').collect();
     let header_str = decode_to_string(msg_as_vec[0])?;
     let cek = decode_to_string(msg_as_vec[1])?;
@@ -67,7 +67,7 @@ pub fn deserialize_jwm_compact (message : &str) -> Result<JWM, RouteError> {
     let header : Header = from_str(&header_str)
         .map_err( | err | RouteError::DecodeError(format!("{}", err)))?;
 
-    Ok(JWM::JWMCompact(AMESCompact {
+    Ok(AMES::JWMCompact(AMESCompact {
         header,
         cek,
         iv,
@@ -106,11 +106,8 @@ pub fn create_receipients(encrypted_keys : &Vec<String>,
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::crypto::base64;
     use serde_json;
-    use serde_json::{Value, Error};
-    use base64::{encode_config, URL_SAFE};
-    use errors::route::RouteError;
+    use serde_json::{Value};
 
     #[test]
     fn test_json_serialize_jwm() {
@@ -124,11 +121,6 @@ pub mod tests {
 
         let sender_vk = "KLPrG3eq3DNZwveVd7NS7i";
         let auth = true;
-        let recipients = create_receipients(&encrypted_keys,
-                                                                         &recipient_vks,
-                                                               Some(sender_vk),
-                                                                         auth);
-
         let ciphertext = "this is fake ciphertext to test JWMs";
         let iv = "FAKE_IVTOTESTJWMSERIALIZE";
         let tag = "FAKE_TAGTOTESTJWMSERIALIZE";
@@ -216,6 +208,7 @@ pub mod tests {
 
         let function_output = json_deserialize_jwm(&jwm_string).unwrap();
 
+        //TODO see if should be assert_match instead and then fix it
         assert_match!(function_output, expected_jwm);
     }
 
@@ -320,7 +313,7 @@ pub mod tests {
         let jwm =
             deserialize_jwm_compact(input).unwrap();
 
-       if let JWM::JWMCompact(jwmc) = jwm {
+       if let AMES::JWMCompact(jwmc) = jwm {
                 assert_eq!(jwmc.header.kid, recipient_vk);
                 assert_eq!(jwmc.header.jwk.unwrap(), sender_vk);
                 assert_eq!(jwmc.cek, cek);

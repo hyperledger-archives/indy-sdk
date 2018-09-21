@@ -37,6 +37,7 @@ mod tests {
         assert_eq!(&[1, 2, 3], &result.unwrap()[..]);
     }
 
+    #[test]
     fn decode_to_string_works() {
         let result = decode_to_string("dGVzdF9zdHJpbmc=");
         assert_eq!(result.unwrap(), "test_string".to_string());

@@ -46,7 +46,7 @@ pub struct AMESCompact {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum JWM {
+pub enum AMES {
     JWMFull(AMESJson),
     JWMCompact(AMESCompact)
 }

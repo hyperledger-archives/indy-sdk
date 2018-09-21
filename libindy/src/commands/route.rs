@@ -23,6 +23,24 @@ pub enum RouteCommand {
         String, // my verkey
         i32, // wallet handle
         Box<Fn(Result<(String /*plaintext*/)>) + Send>),
+    AddRoute(
+        String, //DID#key
+        String, //endpoint
+        i32, //wallet_handle
+        Box<Fn(Result<()>) + Send>),
+    LookupRoute(
+        String, //DID#key
+        i32, //wallet_handle
+        Box<Fn(Result<(String /*endpoint*/)>) + Send>),
+    RemoveRoute(
+        String, //DID#key
+        i32, //wallet_handle
+        Box<Fn(Result<()>) + Send>),
+    UpdateRoute(
+        String, //DID#key
+        String, //new endpoint
+        i32, //wallet_handle
+        Box<Fn(Result<()>) + Send>),
 }
 
 pub struct RouteCommandExecutor {
@@ -49,9 +67,25 @@ impl RouteCommandExecutor {
                 info!("PackMessage command received");
                 cb(self.pack_msg(&plaintext, &recv_keys, &my_vk, auth, wallet_handle));
             }
-            RouteCommand::UnpackMessage(jwm, my_vk, wallet_handle, cb) => {
+            RouteCommand::UnpackMessage(ames, my_vk, wallet_handle, cb) => {
                 info!("UnpackMessage command received");
-                cb(self.unpack_msg(&jwm, &my_vk, wallet_handle));
+                cb(self.unpack_msg(&ames, &my_vk, wallet_handle));
+            }
+            RouteCommand::AddRoute(did, endpoint, wallet_handle, cb) => {
+                info!("AddRoute command received");
+                cb(self.add_route(&did, &endpoint, wallet_handle));
+            }
+            RouteCommand::LookupRoute(did, wallet_handle, cb) => {
+                info!("AddRoute command received");
+                cb(self.lookup_route(&did, wallet_handle));
+            }
+            RouteCommand::RemoveRoute(did, wallet_handle, cb) => {
+                info!("AddRoute command received");
+                cb(self.remove_route(&did, wallet_handle));
+            }
+            RouteCommand::UpdateRoute(did, new_endpoint, wallet_handle, cb) => {
+                info!("AddRoute command received");
+                cb(self.update_route(&did, &new_endpoint, wallet_handle));
             }
         };
     }
@@ -62,6 +96,8 @@ impl RouteCommandExecutor {
         let recv_keys : Vec<String> = serde_json::from_str(recv_keys_json)
             .map_err(|err| RouteError::SerializationError(format!("Failed to serialize recv_keys {:?}", err)))?;
 
+
+        //TODO fix unreachable pattern if a blank string is passed
         //convert type from string to Option
         let my_vk_opt= match my_vk {
             _ => Some(my_vk),

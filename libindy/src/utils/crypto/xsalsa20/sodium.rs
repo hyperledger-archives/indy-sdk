@@ -113,7 +113,7 @@ mod tests {
     #[test]
     pub fn test_encrypt_payload(){
         let message = "This is a test message";
-        let payload= encrypt_payload(message);
+        let _payload= encrypt_payload(message);
     }
 
     #[test]
