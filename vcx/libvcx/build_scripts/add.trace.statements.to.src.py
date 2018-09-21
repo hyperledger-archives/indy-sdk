@@ -15,7 +15,7 @@ def recursive_walk(folder, rustLogFunction):
     for folderName, subfolders, filenames in os.walk(folder):
         if subfolders:
             for subfolder in subfolders:
-                recursive_walk(subfolder)
+                recursive_walk(subfolder, rustLogFunction)
         print('\nFolder: ' + folderName)
         for filename in filenames:
             if (filename.endswith(".newrs")):
