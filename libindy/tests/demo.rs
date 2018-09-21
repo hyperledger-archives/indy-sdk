@@ -62,6 +62,7 @@ use std::thread;
 
 #[test]
 fn anoncreds_demo_works() {
+    println!("{}:{}", file!(), line!());
     utils::setup();
 
     let (issuer_create_wallet_receiver, issuer_create_wallet_command_handle, issuer_create_wallet_callback) = callback::_closure_to_cb_ec();
@@ -86,7 +87,7 @@ fn anoncreds_demo_works() {
     let (create_rev_state_receiver, create_rev_state_command_handle, create_rev_state_cb) = callback::_closure_to_cb_ec_string();
 
     let issuer_wallet_config = json!({"id": "issuer_wallet"}).to_string();
-    let issuer_wallet_credentials = json!({"key":"issuer_key"}).to_string();
+    let issuer_wallet_credentials = json!({"key":"issuerKey1111111111111111111111111111111111", "key_derivation_method":"RAW"}).to_string();
 
     // Issuer Creates Wallet
     let err =
@@ -94,6 +95,7 @@ fn anoncreds_demo_works() {
                            CString::new(issuer_wallet_config.as_str()).unwrap().as_ptr(),
                            CString::new(issuer_wallet_credentials.as_str()).unwrap().as_ptr(),
                            issuer_create_wallet_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let err = issuer_create_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -105,6 +107,7 @@ fn anoncreds_demo_works() {
                          CString::new(issuer_wallet_config.as_str()).unwrap().as_ptr(),
                          CString::new(issuer_wallet_credentials.as_str()).unwrap().as_ptr(),
                          issuer_open_wallet_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, issuer_wallet_handle) = issuer_open_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -112,13 +115,14 @@ fn anoncreds_demo_works() {
 
     // Prover Creates Wallet
     let prover_wallet_config = json!({"id": "prover_wallet"}).to_string();
-    let prover_wallet_credentials = json!({"key":"prover_key"}).to_string();
+    let prover_wallet_credentials = json!({"key":"ProverKey1111111111111111111111111111111111", "key_derivation_method":"RAW"}).to_string();
 
     let err =
         indy_create_wallet(prover_create_wallet_command_handle,
                            CString::new(prover_wallet_config.as_str()).unwrap().as_ptr(),
                            CString::new(prover_wallet_credentials.as_str()).unwrap().as_ptr(),
                            prover_create_wallet_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let err = prover_create_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -130,6 +134,7 @@ fn anoncreds_demo_works() {
                          CString::new(prover_wallet_config.as_str()).unwrap().as_ptr(),
                          CString::new(prover_wallet_credentials.as_str()).unwrap().as_ptr(),
                          prover_open_wallet_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, prover_wallet_handle) = prover_open_wallet_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -150,6 +155,7 @@ fn anoncreds_demo_works() {
                                   CString::new(version).unwrap().as_ptr(),
                                   CString::new(attrs).unwrap().as_ptr(),
                                   issuer_create_schema_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, schema_id, schema_json) = issuer_create_schema_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -168,6 +174,7 @@ fn anoncreds_demo_works() {
                                                     null(),
                                                     CString::new(config).unwrap().as_ptr(),
                                                     issuer_create_credential_definition_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, credential_def_id, credential_def_json) = issuer_create_credential_definition_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -183,6 +190,7 @@ fn anoncreds_demo_works() {
                                             CString::new("default").unwrap().as_ptr(),
                                             CString::new(tails_writer_config).unwrap().as_ptr(),
                                             bs_writer_cb);
+    println!("{}:{}", file!(), line!());
     assert_eq!(ErrorCode::Success, err);
     let (err, tails_writer_handle) = bs_writer_receiver.recv_timeout(timeout::short_timeout()).unwrap();
     assert_eq!(ErrorCode::Success, err);
@@ -196,6 +204,7 @@ fn anoncreds_demo_works() {
                                                      CString::new(r#"{"max_cred_num":5, "issuance_type":"ISSUANCE_ON_DEMAND"}"#).unwrap().as_ptr(),
                                                      tails_writer_handle,
                                                      cs_rev_reg_cb);
+    println!("{}:{}", file!(), line!());
     assert_eq!(ErrorCode::Success, err);
     let (err, rev_reg_id, revoc_reg_def_json, _) = cs_rev_reg_receiver.recv().unwrap();
     assert_eq!(ErrorCode::Success, err);
@@ -208,6 +217,7 @@ fn anoncreds_demo_works() {
                                          prover_wallet_handle,
                                          CString::new(master_secret_id).unwrap().as_ptr(),
                                          prover_create_master_secret_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, _) = prover_create_master_secret_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -219,6 +229,7 @@ fn anoncreds_demo_works() {
                                             issuer_wallet_handle,
                                             CString::new(credential_def_id.as_str()).unwrap().as_ptr(),
                                             issuer_create_credential_offer_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, credential_offer_json) = issuer_create_credential_offer_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -233,6 +244,7 @@ fn anoncreds_demo_works() {
                                           CString::new(credential_def_json.as_str()).unwrap().as_ptr(),
                                           CString::new(master_secret_id).unwrap().as_ptr(),
                                           prover_create_credential_req_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, credential_req_json, credential_req_metadata_json) = prover_create_credential_req_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -255,6 +267,7 @@ fn anoncreds_demo_works() {
                                             CString::new("default").unwrap().as_ptr(),
                                             CString::new(tails_reader_config).unwrap().as_ptr(),
                                             bs_reader_cb);
+    println!("{}:{}", file!(), line!());
     assert_eq!(ErrorCode::Success, err);
     let (err, blob_storage_reader_handle) =
         bs_reader_receiver.recv_timeout(timeout::short_timeout()).unwrap();
@@ -269,6 +282,7 @@ fn anoncreds_demo_works() {
                                       CString::new(rev_reg_id.as_str()).unwrap().as_ptr(),
                                       blob_storage_reader_handle,
                                       issuer_create_credential_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, credential_json, cred_rev_id, rreg_issue_delta_json) =
@@ -288,6 +302,7 @@ fn anoncreds_demo_works() {
                                      CString::new(credential_def_json.as_str()).unwrap().as_ptr(),
                                      CString::new(revoc_reg_def_json.as_str()).unwrap().as_ptr(),
                                      prover_store_credential_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, _) = prover_store_credential_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -320,6 +335,7 @@ fn anoncreds_demo_works() {
                                                   prover_wallet_handle,
                                                   CString::new(proof_req_json.as_str()).unwrap().as_ptr(),
                                                   prover_get_credentials_for_proof_req_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, credentials_json) = prover_get_credentials_for_proof_req_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -341,6 +357,7 @@ fn anoncreds_demo_works() {
                                            issue_ts,
                                            CString::new(cred_rev_id).unwrap().as_ptr(),
                                            create_rev_state_cb);
+    println!("{}:{}", file!(), line!());
     assert_eq!(ErrorCode::Success, err);
     let (err, rev_state_json) = create_rev_state_receiver.recv().unwrap();
     assert_eq!(ErrorCode::Success, err);
@@ -394,6 +411,7 @@ fn anoncreds_demo_works() {
                                  CString::new(credential_defs_json.as_str()).unwrap().as_ptr(),
                                  CString::new(rev_states_json.as_str()).unwrap().as_ptr(),
                                  prover_create_proof_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, proof_json) = prover_create_proof_receiver.recv_timeout(timeout::long_timeout()).unwrap();
@@ -424,6 +442,7 @@ fn anoncreds_demo_works() {
                                    CString::new(rev_reg_defs_json).unwrap().as_ptr(),
                                    CString::new(rev_regs_json).unwrap().as_ptr(),
                                    verifier_verify_proof_callback);
+    println!("{}:{}", file!(), line!());
 
     assert_eq!(ErrorCode::Success, err);
     let (err, valid) = verifier_verify_proof_receiver.recv_timeout(timeout::long_timeout()).unwrap();
