@@ -13,7 +13,7 @@ pub struct AMESData {
     pub tag: Vec<u8>
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct AMESJson {
     pub recipients: Vec<Recipient>,
     pub ciphertext: String,
@@ -21,13 +21,13 @@ pub struct AMESJson {
     pub tag: String
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Recipient {
     pub header : Header,
     pub cek: String
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Header {
     pub typ : String,
     pub alg : String,
@@ -36,7 +36,7 @@ pub struct Header {
     pub jwk : Option<String>
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct AMESCompact {
     pub header : Header,
     pub cek : String,
@@ -45,10 +45,10 @@ pub struct AMESCompact {
     pub tag : String
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum AMES {
-    JWMFull(AMESJson),
-    JWMCompact(AMESCompact)
+    AMESFull(AMESJson),
+    AMESCompact(AMESCompact)
 }
 
 impl Header {

@@ -23,7 +23,7 @@ pub fn indy_auth_pack_message(command_handle: i32,
 
     check_useful_c_str!(message, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(recv_keys, ErrorCode::CommonInvalidParam4);
-    check_useful_c_str!(my_vk, ErrorCode::CommonInvalidParam5);
+    check_useful_opt_c_str!(my_vk, ErrorCode::CommonInvalidParam5);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam6);
 
     trace!("indy_auth_pack_message: entities >>> wallet_handle: {:?}, message: {:?}, recv_keys: {:?}, my_vk: {:?}",
@@ -77,7 +77,7 @@ pub fn indy_anon_pack_message(command_handle: i32,
     .send(Command::Route(RouteCommand::PackMessage(
         message,
         recv_keys,
-        "".to_string(), //passes empty verkey to align with service api
+        None, //passes none option to align with service api
         false, //sets auth to false to use anoncrypt
         wallet_handle,
         Box::new(move |result| {

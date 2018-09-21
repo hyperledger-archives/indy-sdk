@@ -27,7 +27,7 @@ pub fn json_serialize_jwm(recipient_vks : &Vec<String>,
 }
 
 pub fn json_deserialize_jwm(jwm : &str) -> Result<AMES, RouteError> {
-    Ok(AMES::JWMFull(AMESJson::from_json(jwm)
+    Ok(AMES::AMESFull(AMESJson::from_json(jwm)
         .map_err( | err | RouteError::DecodeError(format!("{}", err)))?))
 }
 
@@ -67,7 +67,7 @@ pub fn deserialize_jwm_compact (message : &str) -> Result<AMES, RouteError> {
     let header : Header = from_str(&header_str)
         .map_err( | err | RouteError::DecodeError(format!("{}", err)))?;
 
-    Ok(AMES::JWMCompact(AMESCompact {
+    Ok(AMES::AMESCompact(AMESCompact {
         header,
         cek,
         iv,
@@ -125,7 +125,7 @@ pub mod tests {
         let iv = "FAKE_IVTOTESTJWMSERIALIZE";
         let tag = "FAKE_TAGTOTESTJWMSERIALIZE";
 
-        let expected_output = json!({
+        let expected_output : Value = json!({
         "recipients" : [
                 {
                     "header" : {
@@ -168,7 +168,7 @@ pub mod tests {
                                      Some(sender_vk),
                                      ciphertext, iv, tag, auth ).unwrap();
         let function_output : Value = serde_json::from_str(&jwm).unwrap();
-        assert_eq!(function_output, expected_output);
+        assert!(function_output.eq(&expected_output));
     }
 
     #[test]
@@ -207,9 +207,7 @@ pub mod tests {
                                                    tag, auth).unwrap();
 
         let function_output = json_deserialize_jwm(&jwm_string).unwrap();
-
-        //TODO see if should be assert_match instead and then fix it
-        assert_match!(function_output, expected_jwm);
+        assert!(function_output == AMES::AMESFull(expected_jwm));
     }
 
     #[test]
@@ -303,7 +301,7 @@ pub mod tests {
         let ciphertext = "unencrypted text which would normally be encrypted already".to_string();
         let iv = "FAKE_IVTOTESTJWMSERIALIZE".to_string();
         let tag = "FAKE_TAGTOTESTJWMSERIALIZE".to_string();
-        let auth = true;
+        let _auth = true;
 
         let input = "eyJ0eXAiOiJ4LWI2NG5hY2wiLCJhbGciOiJ4LWF1dGgiLCJlbmMiOiJ4c2Fsc2EyMHBvbHkx\
         MzA1Iiwia2lkIjoiQzVxMk1EbWRHMjZuVnc3M3loVmhkeiIsImp3ayI6IkVGYkM0V3hEWG1GZkhveW43bUNCbksifQ==\
@@ -313,7 +311,7 @@ pub mod tests {
         let jwm =
             deserialize_jwm_compact(input).unwrap();
 
-       if let AMES::JWMCompact(jwmc) = jwm {
+       if let AMES::AMESCompact(jwmc) = jwm {
                 assert_eq!(jwmc.header.kid, recipient_vk);
                 assert_eq!(jwmc.header.jwk.unwrap(), sender_vk);
                 assert_eq!(jwmc.cek, cek);
