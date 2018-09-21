@@ -107,7 +107,7 @@ public class CredentialDefApi extends VcxJava.API {
         }
     };
 
-    public static CompletableFuture<Integer> credentialDefSerialize(String credentialDefData) throws VcxException {
+    public static CompletableFuture<Integer> credentialDefDeserialize(String credentialDefData) throws VcxException {
         ParamGuard.notNull(credentialDefData, "credentialDefData");
         logger.debug("credentialDefSerialize() called with: credentialDefData = [" + credentialDefData + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
