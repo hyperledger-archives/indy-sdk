@@ -131,37 +131,3 @@ pub fn indy_unpack_message(command_handle: i32,
 
 
 }
-
-pub fn add_route(did_with_key_frag : *const c_char,
-                 endpoint : *const c_char,
-                 wallet_handle:i32,
-                 cb: Option<extern fn(xcommand_handle: i32,
-                                      err: ErrorCode)>) -> ErrorCode {
-
-
-
-}
-
-pub fn lookup_route(did_with_key_frag : *const c_char,
-                 wallet_handle:i32,
-                 cb: Option<extern fn(xcommand_handle: i32,
-                                      err: ErrorCode,
-                                      endpoint: *const c_char)>) -> ErrorCode {
-
-}
-
-pub fn remove_route(did_with_key_frag : *const c_char,
-                    endpoint : *const c_char,
-                    wallet_handle:i32,
-                    cb: Option<extern fn(xcommand_handle: i32,
-                                         err: ErrorCode)>) -> ErrorCode {
-
-}
-
-pub fn update_route(did_with_key_frag : &str,
-                    new_endpoint : &str,
-                    wallet_handle : i32,
-                    cb: Option<extern fn(xcommand_handle: i32,
-                                         err: ErrorCode)>) -> ErrorCode {
-
-}
