@@ -148,16 +148,21 @@ def macosTesting() {
 }
 
 def androidTesting() {
+    env_name="android_on_linux"
+    network_name="pool_network"
+    parallel([
+            "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
+            "${env_name}-android-building" : { androidBuildAsTesting() }
+    ])
+}
+
+def androidBuildAsTesting() {
 
     node('ubuntu') {
         stage('Android Test') {
-            def poolInst
             try {
                 echo 'Building android binaries.This will start emulator and test android binaries'
                 checkout scm
-
-                network_name = "pool_network"
-                poolInst = openPool("Ubuntu Android", network_name)
 
                 dir('libindy') {
                     echo 'Building android binaries: Building docker image'
@@ -165,25 +170,14 @@ def androidTesting() {
                     testEnv = dockerBuild('libindy', "ci/ubuntu.dockerfile ci")
                     sh 'chmod -R 777 ci/*.sh'
                     sh 'chmod -R 777 *.sh'
-                    //TODO: IS-835 Tests on emulator fails as of now. Enable device testing when all tests starts passing
-                    androidTestingOnEmulator(testEnv, network_name)
 
-                    //Meanwhile use "build success" as test
                     buildAndroid(testEnv)
                 }
             }
             finally {
-                closePool("Ubuntu Android", "pool_network", poolInst)
+                step([$class: 'WsCleanup'])
             }
         }
-    }
-}
-
-def androidTestingOnEmulator(testEnv, network_name) {
-    ANDROID_SCRIPT_PATH = 'android.test.sh'
-    echo 'Testing Libindy android files for arm'
-    testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-        sh "./${ANDROID_SCRIPT_PATH} arm"
     }
 }
 
@@ -389,6 +383,19 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
             module_tester(env_name, network_name, testEnv)
         } finally {
             closePool(env_name, network_name, poolInst)
+        }
+    }
+}
+
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
+    dir('libindy') {
+        sh 'chmod -R 777 ci/*.sh'
+        sh 'chmod -R 777 *.sh'
+
+        ANDROID_SCRIPT_PATH = 'android.test.sh'
+        echo "${env_name} Libindy Test: Test on ARM emulator"
+        testEnv.inside("--network=${network_name}") {
+            sh "./${ANDROID_SCRIPT_PATH} arm"
         }
     }
 }
