@@ -405,14 +405,14 @@ def ubuntuTesting() {
     }
 }
 
-
-def androidEmulatorTest(buildEnv) {
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
     dir('libindy') {
-        echo 'Building android binaries: Building docker image'
-        ANDROID_SCRIPT_PATH = 'android.test.sh'
-        echo 'Testing Libindy android files for arm'
-        buildEnv.inside {
-            sh "./${ANDROID_SCRIPT_PATH} arm"
+        sh 'chmod -R 777 ci/*.sh'
+        sh 'chmod -R 777 *.sh'
+
+        echo "${env_name} Libindy Test: Test on ARM emulator"
+        testEnv.inside("--network=${network_name}") {
+            sh "./android.test.sh arm"
         }
     }
 }
@@ -1058,6 +1058,7 @@ def androidTesting() {
 }
 
 def androidBuildAsTesting() {
+    def libindyVersion
 
     node('ubuntu') {
         stage('Android test') {

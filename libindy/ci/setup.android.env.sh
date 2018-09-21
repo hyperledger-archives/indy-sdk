@@ -71,8 +71,9 @@ download_sdk(){
         curl -sSLO https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
         echo "${GREEN}Done!${RESET}"
         unzip -qq sdk-tools-linux-4333796.zip
-        export PATH=${ANDROID_SDK}/platform-tools/:${ANDROID_SDK}/tools/bin/:${PATH}
+        set +e
         delete_existing_avd
+        set -e
         create_avd
      popd
 }
@@ -130,7 +131,6 @@ generate_arch_flags(){
 
 
 download_and_unzip_dependencies(){
-    #TODO Get dependencies in more optimized way
     pushd ${ANDROID_BUILD_FOLDER}
         echo -e "${GREEN}Downloading openssl for $1 ${RESET}"
         curl -sSLO https://repo.sovrin.org/android/libindy/deps/openssl/openssl_$1.zip
