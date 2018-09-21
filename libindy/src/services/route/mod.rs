@@ -25,33 +25,6 @@ impl RouteService {
         RouteService {}
     }
 
-    pub fn unpack_msg(&self, json_jwm: &str, my_vk: &str, wallet_handle: i32, 
-                      ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<String, RouteError> {
-        //check if jwm or jwm_compact
-        let jwm_struct = match json_jwm.contains("recipients") {
-            true => json_deserialize_jwm(json_jwm)?,
-            false => deserialize_jwm_compact(json_jwm)?
-        };
-
-        let jwm_data = self.get_jwm_data(jwm_struct, my_vk)?;
-        let my_key = self.get_key_from_str(my_vk, wallet_handle, ws.clone())?;
-        let sym_key = self.get_sym_key(&my_key, &jwm_data.cek, jwm_data.header, cs.clone())?;
-        //format payload to decrypt
-        let payload = Payload {
-            iv: jwm_data.iv,
-            tag: jwm_data.tag,
-            ciphertext: jwm_data.ciphertext,
-            sym_key
-        };
-
-        //decrypt ciphertext
-        decrypt_payload(&payload)
-    }
-
-
-    // This API call is made to encrypt both Application layer messages and Transport layer
-// messages. The purpose of it is to take a message and wrap it up so that it can be fed into
-// send_msg and on the other end unpack_msg can be called on it.
     pub fn pack_msg(&self, plaintext: &str, recv_keys: &Vec<String>, my_vk: Option<&str>, auth: bool,
                     wallet_handle: i32, ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<String, RouteError> {
         //encrypt plaintext
@@ -92,7 +65,30 @@ impl RouteService {
             }
         }
     }
-    
+
+    pub fn unpack_msg(&self, json_jwm: &str, my_vk: &str, wallet_handle: i32, 
+                      ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<String, RouteError> {
+        //check if jwm or jwm_compact
+        let jwm_struct = match json_jwm.contains("recipients") {
+            true => json_deserialize_jwm(json_jwm)?,
+            false => deserialize_jwm_compact(json_jwm)?
+        };
+
+        let jwm_data = self.get_jwm_data(jwm_struct, my_vk)?;
+        let my_key = self.get_key_from_str(my_vk, wallet_handle, ws.clone())?;
+        let sym_key = self.get_sym_key(&my_key, &jwm_data.cek, jwm_data.header, cs.clone())?;
+        //format payload to decrypt
+        let payload = Payload {
+            iv: jwm_data.iv,
+            tag: jwm_data.tag,
+            ciphertext: jwm_data.ciphertext,
+            sym_key
+        };
+
+        //decrypt ciphertext
+        decrypt_payload(&payload)
+    }
+
     pub fn add_route(&self, did_with_key_frag : &str, endpoint : &str,
                      wallet_handle:i32, wallet_service: Rc<WalletService>) -> Result<(), RouteError> {
         wallet_service.add_record(wallet_handle, "route_table", did_with_key_frag, endpoint, &HashMap::new())
@@ -126,7 +122,7 @@ impl RouteService {
 
     fn get_jwm_data(&self, jwm : JWM, my_vk: &str) -> Result<AMESData, RouteError> {
         match jwm {
-            JWM::JWMFull(jwmf) => {
+            AMES::AMESFull(jwmf) => {
                 //finds the recipient index that matches the verkey passed in to the recipient verkey field
                 let recipient_index = jwmf.recipients.iter()
                     .position(|ref recipient| recipient.header.kid == my_vk);
@@ -145,7 +141,7 @@ impl RouteService {
                 }
             },
     
-            JWM::JWMCompact(jwmc) => {
+            AMES::AMESCompact(jwmc) => {
                 if jwmc.header.kid == my_vk {
                     Ok(AMESData {
                         header: jwmc.header,
@@ -287,7 +283,7 @@ pub mod tests {
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
         //run tests
-        let (wallet_handle, recv_did, recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let (wallet_handle, _ , recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
         let plaintext = rs.unpack_msg(&jwm, &recv_key.verkey, wallet_handle, ws.clone(), cs.clone()).unwrap();
         assert_eq!(plaintext, "Hello World".to_string());
     }
@@ -381,8 +377,8 @@ pub mod tests {
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
         //setup wallets
-        let (recv_wallet_handle, recv_did, recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
-        let (send_wallet_handle , send_did, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
+        let (recv_wallet_handle, _, _) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let (send_wallet_handle , _, _) = _setup_send_wallet(ws.clone(), cs.clone());
 
 
         //setup recv_keys to use with pack_msg
@@ -412,8 +408,8 @@ pub mod tests {
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
         //setup wallets
-        let (recv_wallet_handle, recv_did, recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
-        let (send_wallet_handle , send_did, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
+        let (recv_wallet_handle, _, _) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
 
 
         //setup recv_keys to use with pack_msg
@@ -434,7 +430,6 @@ pub mod tests {
     fn test_lookup_route_fail() {
         _cleanup();
         let did_with_key_frag : &str = &"did:sov:NCjtLejiBg18RAV9mefAQT#1";
-        let endpoint : &str = &"http://localhost:8080";
         let ws: Rc<WalletService> = Rc::new(WalletService::new());
         let rs: Rc<RouteService> = Rc::new(RouteService::new());
 
