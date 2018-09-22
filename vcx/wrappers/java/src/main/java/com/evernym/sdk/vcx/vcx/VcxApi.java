@@ -23,7 +23,7 @@ public class VcxApi extends VcxJava.API {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "]");
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            Integer result = err;
+            Integer result = commandHandle;
             future.complete(result);
         }
     };
@@ -34,9 +34,9 @@ public class VcxApi extends VcxJava.API {
         @SuppressWarnings({"unused", "unchecked"})
         public void callback(int xcommandHandle, int err) {
             logger.debug("callback() called with: xcommandHandle = [" + xcommandHandle + "], err = [" + err + "]");
-            CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(xcommandHandle);
+            CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommandHandle);
             if (!checkCallback(future, err)) return;
-            int result = err;
+            Void result = null;
             future.complete(result);
 
         }

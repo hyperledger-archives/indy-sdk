@@ -1,4 +1,4 @@
-package com.evernym.sdk.vcx.wallet;
+package com.evernym.sdk.vcx.vcx;
 
 import com.evernym.sdk.vcx.ErrorCode;
 import com.evernym.sdk.vcx.VcxException;
