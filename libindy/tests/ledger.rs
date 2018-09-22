@@ -1,4 +1,5 @@
 #[macro_use]
+
 extern crate lazy_static;
 
 #[macro_use]
@@ -19,12 +20,17 @@ extern crate indy;
 extern crate indy_crypto;
 extern crate uuid;
 extern crate named_type;
-extern crate openssl;
+//extern crate openssl;
 extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
 extern crate serde;
 extern crate sodiumoxide;
+extern crate sha2;
+extern crate generic_array;
+
+use generic_array::typenum::U32;
+use sha2::Digest;
 
 // Workaround to share some utils code based on indy sdk types between tests and indy sdk
 use indy::api as api;
@@ -38,7 +44,7 @@ use utils::{pool, ledger, did, anoncreds};
 use utils::types::*;
 use utils::constants::*;
 
-use openssl::hash::{MessageDigest, Hasher};
+//use openssl::hash::{MessageDigest, Hasher};
 use sodiumoxide::crypto::secretbox;
 
 use utils::domain::ledger::constants;
@@ -441,6 +447,8 @@ mod high_cases {
     mod attrib_requests {
         use super::*;
         use self::hex::ToHex;
+        use sha2::Sha256;
+        use generic_array::GenericArray;
 
         #[test]
         #[cfg(feature = "local_nodes_pool")]
@@ -575,9 +583,10 @@ mod high_cases {
         fn indy_attrib_requests_works_for_hash_value() {
             let (wallet_handle, pool_handle, trustee_did) = utils::setup_trustee();
 
-            let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
-            ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
-            let hashed_attr = ctx.finish2().unwrap().as_ref().to_hex();
+            let mut hasher = Sha256::default();
+            hasher.input(&ATTRIB_RAW_DATA.as_bytes());
+            let output : GenericArray<u8, U32> = hasher.result();
+            let hashed_attr = output.to_hex();
 
             let attrib_request = ledger::build_attrib_request(&trustee_did,
                                                               &trustee_did,
