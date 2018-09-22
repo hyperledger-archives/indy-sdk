@@ -5,10 +5,20 @@ use self::hex::ToHex;
 use self::serde_json::Value;
 
 use errors::common::CommonError;
-use utils::crypto::hash::Hash;
+use sha2::{Sha256, Digest};
 
 pub fn serialize_signature(v: Value) -> Result<String, CommonError> {
     _serialize_signature(v, true)
+}
+
+fn _raw_hash_end(stroption : Option<&str>) -> Value {
+    let mut hasher = Sha256::default();
+    match stroption {
+        None => hasher.input(&CommonError::InvalidState("Cannot update hash context".to_string()).to_string().as_bytes()),
+        Some(strvalue) => hasher.input(strvalue.as_bytes())
+    };
+    let hashed_value = hasher.result();
+    Value::String(hashed_value.to_hex())
 }
 
 fn _serialize_signature(v: Value, is_top_level: bool) -> Result<String, CommonError> {
@@ -40,9 +50,7 @@ fn _serialize_signature(v: Value, is_top_level: bool) -> Result<String, CommonEr
 
                 let mut value = map[key].clone();
                 if key == "raw" || key == "hash" || key == "enc" {
-                    let mut ctx = Hash::new_context()?;
-                    ctx.update(&value.as_str().ok_or(CommonError::InvalidState("Cannot update hash context".to_string()))?.as_bytes())?;
-                    value = Value::String(ctx.finish2()?.as_ref().to_hex());
+                    value = _raw_hash_end(value.as_str());
                 }
                 result = result + key + ":" + &_serialize_signature(value, false)?;
                 in_middle = true;

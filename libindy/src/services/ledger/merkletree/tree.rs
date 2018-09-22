@@ -1,5 +1,4 @@
 use std::cmp;
-use utils::crypto::hash::{Digest, Hash};
 use errors::common::CommonError;
 
 pub use services::ledger::merkletree::proof::{
@@ -7,6 +6,8 @@ pub use services::ledger::merkletree::proof::{
     Lemma,
     Positioned
 };
+use utils::crypto::hash::Hash;
+use utils::crypto::hash::HashBytes;
 
 pub type TreeLeafData = Vec<u8>;
 
@@ -31,14 +32,14 @@ pub enum Tree {
 
 impl Tree {
     /// Create an empty tree
-    pub fn empty(hash: Digest) -> Self {
+    pub fn empty(hash: HashBytes) -> Self {
         Tree::Empty {
             hash: hash.to_vec()
         }
     }
 
     /// Create a new tree
-    pub fn new(hash: Digest, value: TreeLeafData) -> Self {
+    pub fn new(hash: HashBytes, value: TreeLeafData) -> Self {
         Tree::Leaf {
             hash: hash.to_vec(),
             value: value
