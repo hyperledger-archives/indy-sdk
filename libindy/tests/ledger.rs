@@ -20,7 +20,6 @@ extern crate indy;
 extern crate indy_crypto;
 extern crate uuid;
 extern crate named_type;
-//extern crate openssl;
 extern crate rmp_serde;
 extern crate rust_base58;
 extern crate time;
@@ -44,7 +43,6 @@ use utils::{pool, ledger, did, anoncreds};
 use utils::types::*;
 use utils::constants::*;
 
-//use openssl::hash::{MessageDigest, Hasher};
 use sodiumoxide::crypto::secretbox;
 
 use utils::domain::ledger::constants;
