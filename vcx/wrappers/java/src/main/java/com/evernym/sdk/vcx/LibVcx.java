@@ -13,11 +13,29 @@ import java.io.File;
 
 public abstract class LibVcx {
     private static final Logger logger = LoggerFactory.getLogger("LibVcx");
+    // TODO: We should assign explicit numbers to each state
+    public enum State {
+        none,
+        initialized,
+        offer_sent,
+        request_received,
+        accepted,
+        unfulfilled,
+        expired,
+        revoked,
+    }
+
     private static final String LIBRARY_NAME = "vcx";
+    private static final String TAG ="VCX_ANDROID_WRAPPER::";
     /*
      * Native library interface
      */
 
+    public enum vcx_proof_state {
+        undefined,
+        validated,
+        invalid
+    }
 
     /**
      * JNA method signatures for calling SDK function.
@@ -33,18 +51,11 @@ public abstract class LibVcx {
         public String vcx_error_c_message(int error_code);
         public int vcx_shutdown(boolean delete);
         public int vcx_reset();
-
-    /**
-     * Helper API for testing purposes.
-     */
-        public void vcx_set_next_agency_response(int msg);
-
-
-    /**
-     * Schema object
-     *
-     * For creating, validating and committing a schema to the sovrin ledger.
-     */
+/**
+ * Schema object
+ *
+ * For creating, validating and committing a schema to the sovrin ledger.
+ */
 
         /**
          * Creates a schema from a json string. Populates a handle to the new schema.
@@ -79,12 +90,12 @@ public abstract class LibVcx {
 
 
 
-    /**
-     * connection object
-     *
-     * For creating a connection with an identity owner for interactions such as exchanging
-     * claims and proofs.
-     */
+/**
+ * connection object
+ *
+ * For creating a connection with an identity owner for interactions such as exchanging
+ * claims and proofs.
+ */
 
         /**
          * Creates a connection object to a specific identity owner. Populates a handle to the new connection.
@@ -137,11 +148,11 @@ public abstract class LibVcx {
         public int vcx_connection_delete_connection(int command_handle, int connection_handle, Callback cb);
 
 
-    /**
-     * credential issuer object
-     *
-     * Used for offering and managing a credential with an identity owner.
-     */
+/**
+ * credential issuer object
+ *
+ * Used for offering and managing a credential with an identity owner.
+ */
 
         /** Creates a credential object from the specified credentialdef handle. Populates a handle the new credential. */
         public int vcx_issuer_create_credential(int command_handle, String source_id, String cred_def_id, String issuer_did, String credential_data, String credential_name, long price, Callback cb);
@@ -177,11 +188,11 @@ public abstract class LibVcx {
         public int vcx_issuer_accept_credential(int credential_handle);
 
 
-    /**
-     * proof object
-     *
-     * Used for requesting and managing a proof request with an identity owner.
-     */
+/**
+ * proof object
+ *
+ * Used for requesting and managing a proof request with an identity owner.
+ */
 
         /**
          * Creates a proof object.  Populates a handle to the new proof.
@@ -228,11 +239,11 @@ public abstract class LibVcx {
          */
         public int vcx_proof_release(int proof_handle);
 
-    /**
-     * disclosed_proof object
-     *
-     * Used for sending a disclosed_proof to an identity owner.
-     */
+/**
+ * disclosed_proof object
+ *
+ * Used for sending a disclosed_proof to an identity owner.
+ */
 
         /**
          * Creates a disclosed_proof object.  Populates a handle to the new disclosed_proof.
@@ -293,7 +304,7 @@ public abstract class LibVcx {
          * Generate a proof that can be sent later
          */
         public int vcx_disclosed_proof_generate_proof(int command_handle, int proof_handle, String selected_credentials, String self_attested_attributes, Callback cb);
-
+        
 
         /**
          * UtilsApi object

@@ -20,9 +20,6 @@ allprojects {
         }
     }
 }
-test {
-    useJUnitPlatform()
-}
 
 static def versionMajor() {
     return '1.0.0'
@@ -66,14 +63,12 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-lang3', version:'3.5'
     implementation 'net.sourceforge.streamsupport:android-retrofuture:1.6.2'
     implementation group: 'net.sourceforge.streamsupport', name: 'android-retrostreams', version: '1.6.2'
-    testCompile 'org.junit.jupiter:junit-jupiter-api:5.1.0'
     testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
+    testImplementation group: 'junit', name: 'junit', version:'4.12'
     testImplementation group: 'commons-io', name: 'commons-io', version:'2.5'
-    testImplementation group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
+    testImplementation group: 'org.json', name: 'json', version:'20160810'
     testImplementation 'net.java.dev.jna:jna:4.5.0'
     testImplementation 'org.awaitility:awaitility-scala:3.1.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
 
 }
 
