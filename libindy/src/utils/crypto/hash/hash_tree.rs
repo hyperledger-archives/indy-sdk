@@ -1,9 +1,4 @@
-//extern crate openssl;
-
 use errors::common::CommonError;
-
-//use self::openssl::hash::{hash2, MessageDigest, Hasher, DigestBytes};
-//use self::openssl::error::ErrorStack;
 
 use sha2::{Sha256, Digest as Sha256Digest};
 use generic_array::GenericArray;
