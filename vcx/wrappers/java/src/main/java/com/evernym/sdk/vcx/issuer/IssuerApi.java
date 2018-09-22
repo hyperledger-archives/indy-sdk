@@ -90,11 +90,11 @@ public class IssuerApi extends VcxJava.API {
 
     private static Callback issuerCredntialUpdateStateCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err,int state) {
+        public void callback(int commandHandle, int err, LibVcx.State state) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], state = [" + state + "]");
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            future.complete(state);
+            future.complete(state.ordinal());
         }
     };
 
@@ -110,11 +110,11 @@ public class IssuerApi extends VcxJava.API {
 
     private static Callback issuerCredntialGetStateCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err, int state) {
+        public void callback(int commandHandle, int err, LibVcx.State state) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], state = [" + state + "]");
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            future.complete(state);
+            future.complete(state.ordinal());
         }
     };
 

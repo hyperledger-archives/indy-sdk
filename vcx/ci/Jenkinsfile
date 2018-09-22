@@ -55,7 +55,7 @@ def mainUbuntu() {
         def libvcxDockerfile = 'vcx/ci/libvcx.dockerfile'
         def pythonDockerfile = 'vcx/wrappers/python3/ci/python.dockerfile'
         def nodeDockerfile = 'vcx/wrappers/node/ci/node.dockerfile'
-        def javaDockerfile = 'vcx/wrappers/java/ci/java.dockerfile'
+        def javaDockerfile = 'vcx/ci/android.dockerfile' // We can reuse the android dockerfile for java
         def uid= sh(returnStdout: true, script: 'id -u').trim()
         def libvcx
         def python
@@ -86,12 +86,6 @@ def mainUbuntu() {
                     sh 'vcx/wrappers/python3/ci/test.sh'
                 }
             }
-            stage('Test Java Wrapper'){
-                java = docker.build("java", "--build-arg uid=${uid} -f ${javaDockerfile} .")
-                java.inside() {
-                    sh 'cd vcx/wrappers/java && ./gradlew --no-daemon test'
-                }
-            }
             stage('Package Node Wrapper') {
                 node.inside() {
                     sh 'vcx/wrappers/node/ci/package.sh'
@@ -103,6 +97,7 @@ def mainUbuntu() {
                 }
             }
             stage('Package Java Wrapper') {
+                java = docker.build("java", "-f ${javaDockerfile} .")
                 java.inside() {
                     sh 'vcx/wrappers/java/ci/buildJar.sh'
                 }
@@ -169,9 +164,8 @@ def android() {
         }
         node('ubuntu') {
             try {
-                def uid= sh(returnStdout: true, script: 'id -u').trim()
                 checkout scm
-                android = docker.build("android", "--build-arg uid=${uid} -f vcx/wrappers/java/ci/android.dockerfile .")
+                android = build('android', 'vcx/ci/android.dockerfile', 'vcx')
                 stage('Android Packaging') {
                     //Package .so files into .aar
                     packageAndroid(android)
@@ -240,9 +234,8 @@ def fail() {
 def buildAndroid(arch) {
     node('ubuntu') {
         try {
-            def uid= sh(returnStdout: true, script: 'id -u').trim()
             checkout scm
-            android =  docker.build("android", "--build-arg uid=${uid} -f vcx/wrappers/java/ci/android.dockerfile .")
+            android = build('android', 'vcx/ci/android.dockerfile', 'vcx')
 
             android.inside {
                 ANDROID_SCRIPT_PATH = 'vcx/ci/scripts/androidBuild.sh'

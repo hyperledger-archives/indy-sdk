@@ -26,15 +26,7 @@ RUN apt-get update -y && apt-get install -y \
 	sudo \
     rubygems \
     libzmq5 \
-    python3 \
-    libtool \
-    openjdk-8-jdk \
-    maven \
-    apt-transport-https \
-    libzmq3-dev \
-    zip \
-    unzip \
-    vim
+    python3
 
 # Install Nodejs 
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash - \
@@ -45,10 +37,6 @@ ARG RUST_VER="1.27.0"
 ENV RUST_ARCHIVE=rust-${RUST_VER}-x86_64-unknown-linux-gnu.tar.gz
 ENV RUST_DOWNLOAD_URL=https://static.rust-lang.org/dist/$RUST_ARCHIVE
 
-# Install Gradle
-RUN wget https://services.gradle.org/distributions/gradle-3.4.1-bin.zip
-RUN mkdir /opt/gradle
-RUN unzip -d /opt/gradle gradle-3.4.1-bin.zip
 
 # fpm for deb packaging of npm
 RUN gem install fpm

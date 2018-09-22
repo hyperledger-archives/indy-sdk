@@ -77,11 +77,11 @@ public class DisclosedProofApi extends VcxJava.API {
 
     private static Callback vcxProofUpdateStateCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err, int proofHandle, int state) {
+        public void callback(int commandHandle, int err, int proofHandle, LibVcx.State state) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], proofHandle = [" + proofHandle + "], state = [" + state + "]");
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            future.complete(state);
+            future.complete(state.ordinal());
         }
     };
 
@@ -123,11 +123,11 @@ public class DisclosedProofApi extends VcxJava.API {
 
     private static Callback vcxProofGetStateCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err, int proofHandle, int state) {
+        public void callback(int commandHandle, int err, int proofHandle, LibVcx.State state) {
             logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], proofHandle = [" + proofHandle + "], state = [" + state + "]");
             CompletableFuture<Integer> future = (CompletableFuture<Integer>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
-            future.complete(state);
+            future.complete(state.ordinal());
         }
     };
 
