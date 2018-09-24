@@ -56,10 +56,6 @@ mod wallet_config {
     }
 }
 
-#[cfg(test)]
-mod wallet_register {
-
-}
 
 #[cfg(test)]
 mod wallet_tests {
@@ -142,6 +138,11 @@ mod wallet_tests {
             _ => open_closure()
         };
     }
+}
+
+#[cfg(test)]
+mod test_wallet_register {
+    // Future work
 }
 
 #[cfg(test)]
@@ -472,7 +473,7 @@ mod test_wallet_delete {
 }
 
 #[cfg(test)]
-mod test_open_wallet {
+mod test_wallet_open {
     use super::*;
     
     #[test]
