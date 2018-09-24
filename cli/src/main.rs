@@ -1,5 +1,6 @@
 #![cfg_attr(feature = "fatal_warnings", deny(warnings))]
 
+extern crate atty;
 extern crate ansi_term;
 extern crate unescape;
 #[macro_use]
@@ -36,6 +37,9 @@ use std::io::BufReader;
 use std::rc::Rc;
 
 fn main() {
+    #[cfg(target_os = "windows")]
+    ansi_term::enable_ansi_support().is_ok();
+
     let mut args = env::args();
     args.next(); // skip library
 
@@ -128,9 +132,6 @@ fn build_executor() -> CommandExecutor {
 }
 
 fn execute_stdin(command_executor: CommandExecutor) {
-    #[cfg(target_os = "windows")]
-    ansi_term::enable_ansi_support().is_ok();
-
     match Reader::new("indy-cli") {
         Ok(reader) => execute_interactive(command_executor, reader),
         Err(_) => execute_batch(&command_executor, None),
