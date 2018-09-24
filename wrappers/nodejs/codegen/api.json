@@ -49,7 +49,10 @@
     "c600": "DidAlreadyExistsError",
     "c700": "PaymentUnknownMethodError",
     "c701": "PaymentIncompatibleMethodsError",
-    "c702": "PaymentInsufficientFundsError"
+    "c702": "PaymentInsufficientFundsError",
+    "c703": "PaymentSourceDoesNotExistError",
+    "c704": "PaymentOperationNotSupportedError",
+    "c705": "PaymentExtraFundsError"
   },
   "functions": {
     "indy_issuer_create_schema": {
@@ -140,7 +143,7 @@
       "ret": "indy_error_t"
     },
     "indy_issuer_create_credential": {
-      "docs": "Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.\n\nCred Request must match Cred Offer. The credential definition and revocation registry definition\nreferenced in Cred Offer and Cred Request must be already created and stored into the wallet.\n\nInformation for this credential revocation will be store in the wallet as part of revocation registry under\ngenerated cred_revoc_id local for this wallet.\n\nThis call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.\nNote that it is possible to accumulate deltas to reduce ledger load.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ncred_offer_json: a cred offer created by indy_issuer_create_credential_offer\ncred_req_json: a credential request created by indy_prover_create_credential_req\ncred_values_json: a credential containing attribute values for each of requested attribute names.\n    Example:\n    {\n     \"attr1\" : {\"raw\": \"value1\", \"encoded\": \"value1_as_int\" },\n     \"attr2\" : {\"raw\": \"value1\", \"encoded\": \"value1_as_int\" }\n    }\nrev_reg_id: id of revocation registry stored in the wallet\nblob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails\ncb: Callback that takes command result as parameter.\n\n#Returns\ncred_json: Credential json containing signed credential values\n    {\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_def_id\", Optional<string>,\n        \"values\": <see cred_values_json above>,\n        // Fields below can depend on Cred Def type\n        \"signature\": <signature>,\n        \"signature_correctness_proof\": <signature_correctness_proof>\n    }\ncred_revoc_id: local id for revocation info (Can be used for revocation of this cred)\nrevoc_reg_delta_json: Revocation registry delta json with a newly issued credential\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "docs": "Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.\n\nCred Request must match Cred Offer. The credential definition and revocation registry definition\nreferenced in Cred Offer and Cred Request must be already created and stored into the wallet.\n\nInformation for this credential revocation will be store in the wallet as part of revocation registry under\ngenerated cred_revoc_id local for this wallet.\n\nThis call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.\nNote that it is possible to accumulate deltas to reduce ledger load.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\ncred_offer_json: a cred offer created by indy_issuer_create_credential_offer\ncred_req_json: a credential request created by indy_prover_create_credential_req\ncred_values_json: a credential containing attribute values for each of requested attribute names.\n    Example:\n    {\n     \"attr1\" : {\"raw\": \"value1\", \"encoded\": \"value1_as_int\" },\n     \"attr2\" : {\"raw\": \"value1\", \"encoded\": \"value1_as_int\" }\n    }\nrev_reg_id: id of revocation registry stored in the wallet\nblob_storage_reader_handle: configuration of blob storage reader handle that will allow to read revocation tails\ncb: Callback that takes command result as parameter.\n\n#Returns\ncred_json: Credential json containing signed credential values\n    {\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_def_id\", Optional<string>,\n        \"values\": <see cred_values_json above>,\n        // Fields below can depend on Cred Def type\n        \"signature\": <signature>,\n        \"signature_correctness_proof\": <signature_correctness_proof>\n    }\ncred_revoc_id: local id for revocation info (Can be used for revocation of this credential)\nrevoc_reg_delta_json: Revocation registry delta json with a newly issued credential\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -220,7 +223,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_create_credential_req": {
-      "docs": "Creates a credential request for the given credential offer.\n\nThe method creates a blinded master secret for a master secret identified by a provided name.\nThe master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)\nThe blinded master secret is a part of the credential request.\n\n#Params\ncommand_handle: command handle to map callback to user context\nwallet_handle: wallet handler (created by open_wallet)\nprover_did: a DID of the prover\ncred_offer_json: credential offer as a json containing information about the issuer and a credential\ncred_def_json: credential definition json\nmaster_secret_id: the id of the master secret stored in the wallet\ncb: Callback that takes command result as parameter.\n\n#Returns\ncred_req_json: Credential request json for creation of credential by Issuer\n    {\n     \"prover_did\" : string,\n     \"cred_def_id\" : string,\n        // Fields below can depend on Cred Def type\n     \"blinded_ms\" : <blinded_master_secret>,\n     \"blinded_ms_correctness_proof\" : <blinded_ms_correctness_proof>,\n     \"nonce\": string\n   }\ncred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "docs": "Creates a credential request for the given credential offer.\n\nThe method creates a blinded master secret for a master secret identified by a provided name.\nThe master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)\nThe blinded master secret is a part of the credential request.\n\n#Params\ncommand_handle: command handle to map callback to user context\nwallet_handle: wallet handler (created by open_wallet)\nprover_did: a DID of the prover\ncred_offer_json: credential offer as a json containing information about the issuer and a credential\ncred_def_json: credential definition json related to <cred_def_id> in <cred_offer_json>\nmaster_secret_id: the id of the master secret stored in the wallet\ncb: Callback that takes command result as parameter.\n\n#Returns\ncred_req_json: Credential request json for creation of credential by Issuer\n    {\n     \"prover_did\" : string,\n     \"cred_def_id\" : string,\n        // Fields below can depend on Cred Def type\n     \"blinded_ms\" : <blinded_master_secret>,\n     \"blinded_ms_correctness_proof\" : <blinded_ms_correctness_proof>,\n     \"nonce\": string\n   }\ncred_req_metadata_json: Credential request metadata json for further processing of received form Issuer credential.\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -242,7 +245,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_store_credential": {
-      "docs": "Check credential provided by Issuer for the given credential request,\nupdates the credential by a master secret and stores in a secure wallet.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handler (created by open_wallet).\ncred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet\ncred_req_metadata_json: a credential request metadata created by indy_prover_create_credential_req\ncred_json: credential json received from issuer\ncred_def_json: credential definition json\nrev_reg_def_json: revocation registry definition json\ncb: Callback that takes command result as parameter.\n\n#Returns\nout_cred_id: identifier by which credential is stored in the wallet\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "docs": "Check credential provided by Issuer for the given credential request,\nupdates the credential by a master secret and stores in a secure wallet.\n\nTo support efficient and flexible search the following tags will be created for stored credential:\n    {\n        \"schema_id\": <credential schema id>,\n        \"schema_issuer_did\": <credential schema issuer did>,\n        \"schema_name\": <credential schema name>,\n        \"schema_version\": <credential schema version>,\n        \"issuer_did\": <credential issuer did>,\n        \"cred_def_id\": <credential definition id>,\n        \"rev_reg_id\": <credential revocation registry id>, // \"None\" as string if not present\n        // for every attribute in <credential values>\n        \"attr::<attribute name>::marker\": \"1\",\n        \"attr::<attribute name>::value\": <attribute raw value>,\n    }\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handler (created by open_wallet).\ncred_id: (optional, default is a random one) identifier by which credential will be stored in the wallet\ncred_req_metadata_json: a credential request metadata created by indy_prover_create_credential_req\ncred_json: credential json received from issuer\ncred_def_json: credential definition json related to <cred_def_id> in <cred_json>\nrev_reg_def_json: revocation registry definition json related to <rev_reg_def_id> in <cred_json>\ncb: Callback that takes command result as parameter.\n\n#Returns\nout_cred_id: identifier by which credential is stored in the wallet\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -264,7 +267,7 @@
       "ret": "indy_error_t"
     },
     "indy_prover_get_credentials": {
-      "docs": "Gets human readable credentials according to the filter.\nIf filter is NULL, then all credentials are returned.\nCredentials can be filtered by Issuer, credential_def and/or Schema.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nfilter_json: filter for credentials\n       {\n           \"schema_id\": string, (Optional)\n           \"schema_issuer_did\": string, (Optional)\n           \"schema_name\": string, (Optional)\n           \"schema_version\": string, (Optional)\n           \"issuer_did\": string, (Optional)\n           \"cred_def_id\": string, (Optional)\n       }\ncb: Callback that takes command result as parameter.\n\n#Returns\ncredentials json\n    [{\n        \"referent\": string, // cred_id in the wallet\n        \"values\": <see cred_values_json above>,\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_id\": Optional<string>,\n        \"cred_rev_id\": Optional<string>\n    }]\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "docs": "Gets human readable credentials according to the filter.\nIf filter is NULL, then all credentials are returned.\nCredentials can be filtered by Issuer, credential_def and/or Schema.\n\nNOTE: This method is deprecated because immediately returns all fetched credentials.\nUse <indy_prover_search_credentials> to fetch records by small batches.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nfilter_json: filter for credentials\n       {\n           \"schema_id\": string, (Optional)\n           \"schema_issuer_did\": string, (Optional)\n           \"schema_name\": string, (Optional)\n           \"schema_version\": string, (Optional)\n           \"issuer_did\": string, (Optional)\n           \"cred_def_id\": string, (Optional)\n       }\ncb: Callback that takes command result as parameter.\n\n#Returns\ncredentials json\n    [{\n        \"referent\": string, // cred_id in the wallet\n        \"attrs\": {\"key1\":\"raw_value1\", \"key2\":\"raw_value2\"},\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_id\": Optional<string>,\n        \"cred_rev_id\": Optional<string>\n    }]\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -281,8 +284,79 @@
       ],
       "ret": "indy_error_t"
     },
+    "indy_prover_get_credential": {
+      "docs": "Gets human readable credential by the given id.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncred_id: Identifier by which requested credential is stored in the wallet\ncb: Callback that takes command result as parameter.\n\n#Returns\ncredential json:\n    {\n        \"referent\": string, // cred_id in the wallet\n        \"attrs\": {\"key1\":\"raw_value1\", \"key2\":\"raw_value2\"},\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_id\": Optional<string>,\n        \"cred_rev_id\": Optional<string>\n    }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "cred_id", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "credential_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_search_credentials": {
+      "docs": "Search for credentials stored in wallet.\nCredentials can be filtered by tags created during saving of credential.\n\nInstead of immediately returning of fetched credentials\nthis call returns search_handle that can be used later\nto fetch records by small batches (with indy_prover_fetch_credentials).\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nquery_json: Wql query filter for credentials searching based on tags.\nwhere query: indy-sdk/doc/design/011-wallet-query-language/README.md\ncb: Callback that takes command result as parameter.\n\n#Returns\nsearch_handle: Search handle that can be used later to fetch records by small batches (with indy_prover_fetch_credentials)\ntotal_count: Total count of records\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "query_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "search_handle", "type": "indy_handle_t"},
+            {"name": "total_count", "type": "indy_u32_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_fetch_credentials": {
+      "docs": "Fetch next credentials for search.\n\n#Params\nsearch_handle: Search handle (created by indy_prover_search_credentials)\ncount: Count of credentials to fetch\ncb: Callback that takes command result as parameter.\n\n#Returns\ncredentials_json: List of human readable credentials:\n    [{\n        \"referent\": string, // cred_id in the wallet\n        \"attrs\": {\"key1\":\"raw_value1\", \"key2\":\"raw_value2\"},\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_id\": Optional<string>,\n        \"cred_rev_id\": Optional<string>\n    }]\nNOTE: The list of length less than the requested count means credentials search iterator is completed.\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "search_handle", "type": "indy_handle_t"},
+        {"name": "count", "type": "indy_u32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "credentials_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_close_credentials_search": {
+      "docs": "Close credentials search (make search handle invalid)\n\n#Params\nsearch_handle: Search handle (created by indy_prover_search_credentials)\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "search_handle", "type": "indy_handle_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
     "indy_prover_get_credentials_for_proof_req": {
-      "docs": "Gets human readable credentials matching the given proof request.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nproof_request_json: proof request json\n    {\n        \"name\": string,\n        \"version\": string,\n        \"nonce\": string,\n        \"requested_attributes\": { // set of requested attributes\n             \"<attr_referent>\": <attr_info>, // see below\n             ...,\n        },\n        \"requested_predicates\": { // set of requested predicates\n             \"<predicate_referent>\": <predicate_info>, // see below\n             ...,\n         },\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval for each attribute\n                       // (can be overridden on attribute level)\n    }\ncb: Callback that takes command result as parameter.\n\nwhere\nattr_referent: Proof-request local identifier of requested attribute\nattr_info: Describes requested attribute\n    {\n        \"name\": string, // attribute name, (case insensitive and ignore spaces)\n        \"restrictions\": Optional<[<attr_filter>]> // see below,\n                        // if specified, credential must satisfy to one of the given restriction.\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\npredicate_referent: Proof-request local identifier of requested attribute predicate\npredicate_info: Describes requested attribute predicate\n    {\n        \"name\": attribute name, (case insensitive and ignore spaces)\n        \"p_type\": predicate type (Currently >= only)\n        \"p_value\": predicate value\n        \"restrictions\": Optional<[<attr_filter>]> // see below,\n                        // if specified, credential must satisfy to one of the given restriction.\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\nnon_revoc_interval: Defines non-revocation interval\n    {\n        \"from\": Optional<int>, // timestamp of interval beginning\n        \"to\": Optional<int>, // timestamp of interval ending\n    }\nfilter: see filter_json above\n\n#Returns\ncredentials_json: json with credentials for the given pool request.\n    {\n        \"requested_attrs\": {\n            \"<attr_referent>\": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],\n            ...,\n        },\n        \"requested_predicates\": {\n            \"requested_predicates\": [{ cred_info: <credential_info>, timestamp: Optional<integer> }, { cred_info: <credential_2_info>, timestamp: Optional<integer> }],\n            \"requested_predicate_2_referent\": [{ cred_info: <credential_2_info>, timestamp: Optional<integer> }]\n        }\n    }, where credential is\n    {\n        \"referent\": <string>,\n        \"attrs\": [{\"attr_name\" : \"attr_raw_value\"}],\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_id\": Optional<int>,\n        \"cred_rev_id\": Optional<int>,\n    }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "docs": "Gets human readable credentials matching the given proof request.\n\nNOTE: This method is deprecated because immediately returns all fetched credentials.\nUse <indy_prover_search_credentials_for_proof_req> to fetch records by small batches.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nproof_request_json: proof request json\n    {\n        \"name\": string,\n        \"version\": string,\n        \"nonce\": string,\n        \"requested_attributes\": { // set of requested attributes\n             \"<attr_referent>\": <attr_info>, // see below\n             ...,\n        },\n        \"requested_predicates\": { // set of requested predicates\n             \"<predicate_referent>\": <predicate_info>, // see below\n             ...,\n         },\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval for each attribute\n                       // (can be overridden on attribute level)\n    }\ncb: Callback that takes command result as parameter.\n\nwhere\nattr_referent: Proof-request local identifier of requested attribute\nattr_info: Describes requested attribute\n    {\n        \"name\": string, // attribute name, (case insensitive and ignore spaces)\n        \"restrictions\": Optional<filter_json>, // see above\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\npredicate_referent: Proof-request local identifier of requested attribute predicate\npredicate_info: Describes requested attribute predicate\n    {\n        \"name\": attribute name, (case insensitive and ignore spaces)\n        \"p_type\": predicate type (Currently \">=\" only)\n        \"p_value\": int predicate value\n        \"restrictions\": Optional<filter_json>, // see above\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\nnon_revoc_interval: Defines non-revocation interval\n    {\n        \"from\": Optional<int>, // timestamp of interval beginning\n        \"to\": Optional<int>, // timestamp of interval ending\n    }\n\n#Returns\ncredentials_json: json with credentials for the given proof request.\n    {\n        \"requested_attrs\": {\n            \"<attr_referent>\": [{ cred_info: <credential_info>, interval: Optional<non_revoc_interval> }],\n            ...,\n        },\n        \"requested_predicates\": {\n            \"requested_predicates\": [{ cred_info: <credential_info>, timestamp: Optional<integer> }, { cred_info: <credential_2_info>, timestamp: Optional<integer> }],\n            \"requested_predicate_2_referent\": [{ cred_info: <credential_2_info>, timestamp: Optional<integer> }]\n        }\n    }, where credential is\n    {\n        \"referent\": <string>,\n        \"attrs\": {\"attr_name\" : \"attr_raw_value\"},\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_id\": Optional<int>,\n        \"cred_rev_id\": Optional<int>,\n    }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -299,8 +373,62 @@
       ],
       "ret": "indy_error_t"
     },
+    "indy_prover_search_credentials_for_proof_req": {
+      "docs": "Search for credentials matching the given proof request.\n\nInstead of immediately returning of fetched credentials\nthis call returns search_handle that can be used later\nto fetch records by small batches (with indy_prover_fetch_credentials_for_proof_req).\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\nproof_request_json: proof request json\n    {\n        \"name\": string,\n        \"version\": string,\n        \"nonce\": string,\n        \"requested_attributes\": { // set of requested attributes\n             \"<attr_referent>\": <attr_info>, // see below\n             ...,\n        },\n        \"requested_predicates\": { // set of requested predicates\n             \"<predicate_referent>\": <predicate_info>, // see below\n             ...,\n         },\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval for each attribute\n                       // (can be overridden on attribute level)\n    }\nextra_query_json:(Optional) List of extra queries that will be applied to correspondent attribute/predicate:\n    {\n        \"<attr_referent>\": <wql query>,\n        \"<predicate_referent>\": <wql query>,\n    }\nwhere wql query: indy-sdk/doc/design/011-wallet-query-language/README.md\ncb: Callback that takes command result as parameter.\n\n#Returns\nsearch_handle: Search handle that can be used later to fetch records by small batches (with indy_prover_fetch_credentials_for_proof_req)\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "proof_request_json", "type": "const char*", "json": true},
+        {"name": "extra_query_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "search_handle", "type": "indy_handle_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_fetch_credentials_for_proof_req": {
+      "docs": "Fetch next credentials for the requested item using proof request search\nhandle (created by indy_prover_search_credentials_for_proof_req).\n\n#Params\nsearch_handle: Search handle (created by indy_prover_search_credentials_for_proof_req)\nitem_referent: Referent of attribute/predicate in the proof request\ncount: Count of credentials to fetch\ncb: Callback that takes command result as parameter.\n\n#Returns\ncredentials_json: List of credentials for the given proof request.\n    [{\n        cred_info: <credential_info>,\n        interval: Optional<non_revoc_interval>\n    }]\nwhere\ncredential_info:\n    {\n        \"referent\": <string>,\n        \"attrs\": {\"attr_name\" : \"attr_raw_value\"},\n        \"schema_id\": string,\n        \"cred_def_id\": string,\n        \"rev_reg_id\": Optional<int>,\n        \"cred_rev_id\": Optional<int>,\n    }\nnon_revoc_interval:\n    {\n        \"from\": Optional<int>, // timestamp of interval beginning\n        \"to\": Optional<int>, // timestamp of interval ending\n    }\nNOTE: The list of length less than the requested count means that search iterator\ncorrespondent to the requested <item_referent> is completed.\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "search_handle", "type": "indy_handle_t"},
+        {"name": "item_referent", "type": "const char*"},
+        {"name": "count", "type": "indy_u32_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "credentials_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_prover_close_credentials_search_for_proof_req": {
+      "docs": "Close credentials search for proof request (make search handle invalid)\n\n#Params\nsearch_handle: Search handle (created by indy_prover_search_credentials_for_proof_req)\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "group": "anoncreds",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "search_handle", "type": "indy_handle_t"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
     "indy_prover_create_proof": {
-      "docs": "Creates a proof according to the given proof request\nEither a corresponding credential with optionally revealed attributes or self-attested attribute must be provided\nfor each requested attribute (see indy_prover_get_credentials_for_pool_req).\nA proof request may request multiple credentials from different schemas and different issuers.\nAll required schemas, public keys and revocation registries must be provided.\nThe proof request also contains nonce.\nThe proof contains either proof or self-attested attribute value for each requested attribute.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nproof_request_json: proof request json\n    {\n        \"name\": string,\n        \"version\": string,\n        \"nonce\": string,\n        \"requested_attributes\": { // set of requested attributes\n             \"<attr_referent>\": <attr_info>, // see below\n             ...,\n        },\n        \"requested_predicates\": { // set of requested predicates\n             \"<predicate_referent>\": <predicate_info>, // see below\n             ...,\n         },\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval for each attribute\n                       // (can be overridden on attribute level)\n    }\nrequested_credentials_json: either a credential or self-attested attribute for each requested attribute\n    {\n        \"self_attested_attributes\": {\n            \"self_attested_attribute_referent\": string\n        },\n        \"requested_attributes\": {\n            \"requested_attribute_referent_1\": {\"cred_id\": string, \"timestamp\": Optional<number>, revealed: <bool> }},\n            \"requested_attribute_referent_2\": {\"cred_id\": string, \"timestamp\": Optional<number>, revealed: <bool> }}\n        },\n        \"requested_predicates\": {\n            \"requested_predicates_referent_1\": {\"cred_id\": string, \"timestamp\": Optional<number> }},\n        }\n    }\nmaster_secret_id: the id of the master secret stored in the wallet\nschemas_json: all schemas json participating in the proof request\n    {\n        <schema1_id>: <schema1_json>,\n        <schema2_id>: <schema2_json>,\n        <schema3_id>: <schema3_json>,\n    }\ncredential_defs_json: all credential definitions json participating in the proof request\n    {\n        \"cred_def1_id\": <credential_def1_json>,\n        \"cred_def2_id\": <credential_def2_json>,\n        \"cred_def3_id\": <credential_def3_json>,\n    }\nrev_states_json: all revocation states json participating in the proof request\n    {\n        \"rev_reg_def1_id\": {\n            \"timestamp1\": <rev_state1>,\n            \"timestamp2\": <rev_state2>,\n        },\n        \"rev_reg_def2_id\": {\n            \"timestamp3\": <rev_state3>\n        },\n        \"rev_reg_def3_id\": {\n            \"timestamp4\": <rev_state4>\n        },\n    }\ncb: Callback that takes command result as parameter.\n\nwhere\nattr_referent: Proof-request local identifier of requested attribute\nattr_info: Describes requested attribute\n    {\n        \"name\": string, // attribute name, (case insensitive and ignore spaces)\n        \"restrictions\": Optional<[<attr_filter>]> // see above,\n                         // if specified, credential must satisfy to one of the given restriction.\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\npredicate_referent: Proof-request local identifier of requested attribute predicate\npredicate_info: Describes requested attribute predicate\n    {\n        \"name\": attribute name, (case insensitive and ignore spaces)\n        \"p_type\": predicate type (Currently >= only)\n        \"p_value\": predicate value\n        \"restrictions\": Optional<[<attr_filter>]> // see above,\n                        // if specified, credential must satisfy to one of the given restriction.\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\nnon_revoc_interval: Defines non-revocation interval\n    {\n        \"from\": Optional<int>, // timestamp of interval beginning\n        \"to\": Optional<int>, // timestamp of interval ending\n    }\n\n#Returns\nProof json\nFor each requested attribute either a proof (with optionally revealed attribute value) or\nself-attested attribute value is provided.\nEach proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.\nThere is also aggregated proof part common for all credential proofs.\n    {\n        \"requested\": {\n            \"revealed_attrs\": {\n                \"requested_attr1_id\": {sub_proof_index: number, raw: string, encoded: string},\n                \"requested_attr4_id\": {sub_proof_index: number: string, encoded: string},\n            },\n            \"unrevealed_attrs\": {\n                \"requested_attr3_id\": {sub_proof_index: number}\n            },\n            \"self_attested_attrs\": {\n                \"requested_attr2_id\": self_attested_value,\n            },\n            \"requested_predicates\": {\n                \"requested_predicate_1_referent\": {sub_proof_index: int},\n                \"requested_predicate_2_referent\": {sub_proof_index: int},\n            }\n        }\n        \"proof\": {\n            \"proofs\": [ <credential_proof>, <credential_proof>, <credential_proof> ],\n            \"aggregated_proof\": <aggregated_proof>\n        }\n        \"identifiers\": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]\n    }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
+      "docs": "Creates a proof according to the given proof request\nEither a corresponding credential with optionally revealed attributes or self-attested attribute must be provided\nfor each requested attribute (see indy_prover_get_credentials_for_pool_req).\nA proof request may request multiple credentials from different schemas and different issuers.\nAll required schemas, public keys and revocation registries must be provided.\nThe proof request also contains nonce.\nThe proof contains either proof or self-attested attribute value for each requested attribute.\n\n#Params\nwallet_handle: wallet handler (created by open_wallet).\ncommand_handle: command handle to map callback to user context.\nproof_request_json: proof request json\n    {\n        \"name\": string,\n        \"version\": string,\n        \"nonce\": string,\n        \"requested_attributes\": { // set of requested attributes\n             \"<attr_referent>\": <attr_info>, // see below\n             ...,\n        },\n        \"requested_predicates\": { // set of requested predicates\n             \"<predicate_referent>\": <predicate_info>, // see below\n             ...,\n         },\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval for each attribute\n                       // (can be overridden on attribute level)\n    }\nrequested_credentials_json: either a credential or self-attested attribute for each requested attribute\n    {\n        \"self_attested_attributes\": {\n            \"self_attested_attribute_referent\": string\n        },\n        \"requested_attributes\": {\n            \"requested_attribute_referent_1\": {\"cred_id\": string, \"timestamp\": Optional<number>, revealed: <bool> }},\n            \"requested_attribute_referent_2\": {\"cred_id\": string, \"timestamp\": Optional<number>, revealed: <bool> }}\n        },\n        \"requested_predicates\": {\n            \"requested_predicates_referent_1\": {\"cred_id\": string, \"timestamp\": Optional<number> }},\n        }\n    }\nmaster_secret_id: the id of the master secret stored in the wallet\nschemas_json: all schemas json participating in the proof request\n    {\n        <schema1_id>: <schema1_json>,\n        <schema2_id>: <schema2_json>,\n        <schema3_id>: <schema3_json>,\n    }\ncredential_defs_json: all credential definitions json participating in the proof request\n    {\n        \"cred_def1_id\": <credential_def1_json>,\n        \"cred_def2_id\": <credential_def2_json>,\n        \"cred_def3_id\": <credential_def3_json>,\n    }\nrev_states_json: all revocation states json participating in the proof request\n    {\n        \"rev_reg_def1_id\": {\n            \"timestamp1\": <rev_state1>,\n            \"timestamp2\": <rev_state2>,\n        },\n        \"rev_reg_def2_id\": {\n            \"timestamp3\": <rev_state3>\n        },\n        \"rev_reg_def3_id\": {\n            \"timestamp4\": <rev_state4>\n        },\n    }\ncb: Callback that takes command result as parameter.\n\nwhere\nwhere wql query: indy-sdk/doc/design/011-wallet-query-language/README.md\nattr_referent: Proof-request local identifier of requested attribute\nattr_info: Describes requested attribute\n    {\n        \"name\": string, // attribute name, (case insensitive and ignore spaces)\n        \"restrictions\": Optional<wql query>,\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\npredicate_referent: Proof-request local identifier of requested attribute predicate\npredicate_info: Describes requested attribute predicate\n    {\n        \"name\": attribute name, (case insensitive and ignore spaces)\n        \"p_type\": predicate type (Currently >= only)\n        \"p_value\": predicate value\n        \"restrictions\": Optional<wql query>,\n        \"non_revoked\": Optional<<non_revoc_interval>>, // see below,\n                       // If specified prover must proof non-revocation\n                       // for date in this interval this attribute\n                       // (overrides proof level interval)\n    }\nnon_revoc_interval: Defines non-revocation interval\n    {\n        \"from\": Optional<int>, // timestamp of interval beginning\n        \"to\": Optional<int>, // timestamp of interval ending\n    }\n\n#Returns\nProof json\nFor each requested attribute either a proof (with optionally revealed attribute value) or\nself-attested attribute value is provided.\nEach proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.\nThere is also aggregated proof part common for all credential proofs.\n    {\n        \"requested\": {\n            \"revealed_attrs\": {\n                \"requested_attr1_id\": {sub_proof_index: number, raw: string, encoded: string},\n                \"requested_attr4_id\": {sub_proof_index: number: string, encoded: string},\n            },\n            \"unrevealed_attrs\": {\n                \"requested_attr3_id\": {sub_proof_index: number}\n            },\n            \"self_attested_attrs\": {\n                \"requested_attr2_id\": self_attested_value,\n            },\n            \"requested_predicates\": {\n                \"requested_predicate_1_referent\": {sub_proof_index: int},\n                \"requested_predicate_2_referent\": {sub_proof_index: int},\n            }\n        }\n        \"proof\": {\n            \"proofs\": [ <credential_proof>, <credential_proof>, <credential_proof> ],\n            \"aggregated_proof\": <aggregated_proof>\n        }\n        \"identifiers\": [{schema_id, cred_def_id, Optional<rev_reg_id>, Optional<timestamp>}]\n    }\n\n#Errors\nAnnoncreds*\nCommon*\nWallet*",
       "group": "anoncreds",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -478,7 +606,7 @@
       "ret": "indy_error_t"
     },
     "indy_crypto_sign": {
-      "docs": "Signs a message with a key.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handler (created by open_wallet).\nsigner_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did\nmessage_raw: a pointer to first byte of message to be signed\nmessage_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\na signature string\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "docs": "Signs a message with a key.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handler (created by open_wallet).\nsigner_vk: id (verkey) of message signer. The key must be created by calling indy_create_key or indy_create_and_store_my_did\nmessage_raw: a pointer to first byte of message to be signed\nmessage_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\na signature string\n\n#Errors\nCommon*\nWallet*\nCrypto*",
       "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -499,7 +627,7 @@
       "ret": "indy_error_t"
     },
     "indy_crypto_verify": {
-      "docs": "Verify a signature with a verkey.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nsigner_vk: verkey of signer of the message\nmessage_raw: a pointer to first byte of message that has been signed\nmessage_len: a message length\nsignature_raw: a pointer to first byte of signature to be verified\nsignature_len: a signature length\ncb: Callback that takes command result as parameter.\n\n#Returns\nvalid: true - if signature is valid, false - otherwise\n\n#Errors\nCommon*\nWallet*\nLedger*\nCrypto*",
+      "docs": "Verify a signature with a verkey.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nsigner_vk: verkey of the message signer\nmessage_raw: a pointer to first byte of message that has been signed\nmessage_len: a message length\nsignature_raw: a pointer to first byte of signature to be verified\nsignature_len: a signature length\ncb: Callback that takes command result as parameter.\n\n#Returns\nvalid: true - if signature is valid, false - otherwise\n\n#Errors\nCommon*\nWallet*\nLedger*\nCrypto*",
       "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -520,7 +648,7 @@
       "ret": "indy_error_t"
     },
     "indy_crypto_auth_crypt": {
-      "docs": "Encrypt a message by authenticated-encryption scheme.\n\nSender can encrypt a confidential message specifically for Recipient, using Sender's public key.\nUsing Recipient's public key, Sender can compute a shared secret key.\nUsing Sender's public key and his secret key, Recipient can compute the exact same shared secret key.\nThat shared secret key can be used to verify that the encrypted message was not tampered with,\nbefore eventually decrypting it.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handle (created by open_wallet).\nsender_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did\nrecipient_vk: id (verkey) of their key\nmessage_raw: a pointer to first byte of message that to be encrypted\nmessage_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\nan encrypted message as a pointer to array of bytes.\n\n#Errors\nCommon*\nWallet*\nLedger*\nCrypto*",
+      "docs": "Encrypt a message by authenticated-encryption scheme.\n\nSender can encrypt a confidential message specifically for Recipient, using Sender's public key.\nUsing Recipient's public key, Sender can compute a shared secret key.\nUsing Sender's public key and his secret key, Recipient can compute the exact same shared secret key.\nThat shared secret key can be used to verify that the encrypted message was not tampered with,\nbefore eventually decrypting it.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handle (created by open_wallet).\nsender_vk: id (verkey) of message sender. The key must be created by calling indy_create_key or indy_create_and_store_my_did\nrecipient_vk: id (verkey) of message recipient\nmessage_raw: a pointer to first byte of message that to be encrypted\nmessage_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\nan encrypted message as a pointer to array of bytes.\n\n#Errors\nCommon*\nWallet*\nLedger*\nCrypto*",
       "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -542,7 +670,7 @@
       "ret": "indy_error_t"
     },
     "indy_crypto_auth_decrypt": {
-      "docs": "Decrypt a message by authenticated-encryption scheme.\n\nSender can encrypt a confidential message specifically for Recipient, using Sender's public key.\nUsing Recipient's public key, Sender can compute a shared secret key.\nUsing Sender's public key and his secret key, Recipient can compute the exact same shared secret key.\nThat shared secret key can be used to verify that the encrypted message was not tampered with,\nbefore eventually decrypting it.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handler (created by open_wallet).\nrecipient_vk: id (verkey) of my key. The key must be created by calling indy_create_key or indy_create_and_store_my_did\nencrypted_msg_raw: a pointer to first byte of message that to be decrypted\nencrypted_msg_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\nsender verkey and decrypted message as a pointer to array of bytes\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "docs": "Decrypt a message by authenticated-encryption scheme.\n\nSender can encrypt a confidential message specifically for Recipient, using Sender's public key.\nUsing Recipient's public key, Sender can compute a shared secret key.\nUsing Sender's public key and his secret key, Recipient can compute the exact same shared secret key.\nThat shared secret key can be used to verify that the encrypted message was not tampered with,\nbefore eventually decrypting it.\n\nNote to use DID keys with this function you can call indy_key_for_did to get key id (verkey)\nfor specific DID.\n\n#Params\ncommand_handle: command handle to map callback to user context.\nwallet_handle: wallet handler (created by open_wallet).\nrecipient_vk: id (verkey) of message recipient. The key must be created by calling indy_create_key or indy_create_and_store_my_did\nencrypted_msg_raw: a pointer to first byte of message that to be decrypted\nencrypted_msg_len: a message length\ncb: Callback that takes command result as parameter.\n\n#Returns\nsender verkey and decrypted message as a pointer to array of bytes\n\n#Errors\nCommon*\nWallet*\nCrypto*",
       "group": "crypto",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -879,6 +1007,26 @@
       ],
       "ret": "indy_error_t"
     },
+    "indy_submit_action": {
+      "docs": "Send action to particular nodes of validator pool.\n\nThe list of requests can be send:\n    POOL_RESTART\n    GET_VALIDATOR_INFO\n\nThe request is sent to the nodes as is. It's assumed that it's already prepared.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\npool_handle: pool handle (created by open_pool_ledger).\nrequest_json: Request data json.\nnodes: (Optional) List of node names to send the request.\n       [\"Node1\", \"Node2\",....\"NodeN\"]\ntimeout: (Optional) Time to wait respond from nodes (override the default timeout) (in sec).\n                    Pass -1 to use default timeout\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*\nLedger*",
+      "group": "ledger",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "pool_handle", "type": "indy_handle_t"},
+        {"name": "request_json", "type": "const char*", "json": true},
+        {"name": "nodes", "type": "const char*", "json": true},
+        {"name": "timeout", "type": "indy_i32_t", "optional": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "request_result_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
     "indy_sign_request": {
       "docs": "Signs request message.\n\nAdds submitter information to passed request json, signs it with submitter\nsign key (see wallet_sign).\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nwallet_handle: wallet handle (created by open_wallet).\nsubmitter_did: Id of Identity stored in secured Wallet.\nrequest_json: Request data json.\ncb: Callback that takes command result as parameter.\n\n#Returns\nSigned request json.\n\n#Errors\nCommon*\nWallet*\nLedger*\nCrypto*",
       "group": "ledger",
@@ -1125,7 +1273,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_node_request": {
-      "docs": "Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\ntarget_did: Target Node's DID.  It differs from submitter_did field.\ndata: Data associated with the Node: {\n    alias: string - Node's alias\n    blskey: string - (Optional) BLS multi-signature key as base58-encoded string.\n    client_ip: string - (Optional) Node's client listener IP address.\n    client_port: string - (Optional) Node's client listener port.\n    node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.\n    node_port: string - (Optional) The port other Nodes use to communicate with this Node.\n    services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\ntarget_did: Target Node's DID.  It differs from submitter_did field.\ndata: Data associated with the Node: {\n    alias: string - Node's alias\n    blskey: string - (Optional) BLS multi-signature key as base58-encoded string.\n    blskey_pop: string - (Optional) BLS key proof of possession as base58-encoded string.\n    client_ip: string - (Optional) Node's client listener IP address.\n    client_port: string - (Optional) Node's client listener port.\n    node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.\n    node_port: string - (Optional) The port other Nodes use to communicate with this Node.\n    services: array<string> - (Optional) The service of the Node. VALIDATOR is the only supported one now.\n}\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1161,7 +1309,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_txn_request": {
-      "docs": "Builds a GET_TXN request. Request to get any transaction by its seq_no.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the request submitter.\nledger_type: (Optional) type of the ledger the requested transaction belongs to:\n    DOMAIN - used default,\n    POOL,\n    CONFIG\nseq_no: requested transaction sequence number as it's stored on Ledger.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a GET_TXN request. Request to get any transaction by its seq_no.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the request submitter.\nledger_type: (Optional) type of the ledger the requested transaction belongs to:\n    DOMAIN - used default,\n    POOL,\n    CONFIG\n    any number\nseq_no: requested transaction sequence number as it's stored on Ledger.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1199,7 +1347,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_pool_restart_request": {
-      "docs": "Builds a POOL_RESTART request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\naction:\ndatetime:\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a POOL_RESTART request.\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: Id of Identity stored in secured Wallet.\naction:        Action that pool has to do after received transaction.\ndatetime:      <Optional> Restart time in datetime format. Skip to restart as early as possible.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1218,7 +1366,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_pool_upgrade_request": {
-      "docs": "Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).\nIt upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\nname: Human-readable name for the upgrade.\nversion: The version of indy-node package we perform upgrade to.\n         Must be greater than existing one (or equal if reinstall flag is True).\naction: Either start or cancel.\nsha256: sha256 hash of the package.\ntimeout: (Optional) Limits upgrade time on each Node.\nschedule: (Optional) Schedule of when to perform upgrade on each node. Map Node DIDs to upgrade time.\njustification: (Optional) justification string for this particular Upgrade.\nreinstall: Whether it's allowed to re-install the same version. False by default.\nforce: Whether we should apply transaction (schedule Upgrade) without waiting\n       for consensus of this transaction.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
+      "docs": "Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).\nIt upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).\n\n#Params\ncommand_handle: command handle to map callback to caller context.\nsubmitter_did: DID of the submitter stored in secured Wallet.\nname: Human-readable name for the upgrade.\nversion: The version of indy-node package we perform upgrade to.\n         Must be greater than existing one (or equal if reinstall flag is True).\naction: Either start or cancel.\nsha256: sha256 hash of the package.\ntimeout: (Optional) Limits upgrade time on each Node.\nschedule: (Optional) Schedule of when to perform upgrade on each node. Map Node DIDs to upgrade time.\njustification: (Optional) justification string for this particular Upgrade.\nreinstall: Whether it's allowed to re-install the same version. False by default.\nforce: Whether we should apply transaction (schedule Upgrade) without waiting\n       for consensus of this transaction.\npackage: (Optional) Package to be upgraded.\ncb: Callback that takes command result as parameter.\n\n#Returns\nRequest result as json.\n\n#Errors\nCommon*",
       "group": "ledger",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1232,6 +1380,7 @@
         {"name": "justification", "type": "const char*"},
         {"name": "reinstall", "type": "indy_bool_t"},
         {"name": "force", "type": "indy_bool_t"},
+        {"name": "package_", "type": "const char*"},
         {
           "name": "cb",
           "params": [
@@ -1673,31 +1822,14 @@
       ],
       "ret": "indy_error_t"
     },
-    "indy_register_payment_method": {
-      "docs": "Create the payment address for this payment method.\n\nThis method generates private part of payment address\nand stores it in a secure place. Ideally it should be\nsecret in libindy wallet (see crypto module).\n\nNote that payment method should be able to resolve this\nsecret by fully resolvable payment address format.\n\n#Params\ncommand_handle: command handle to map callback to context\nwallet_handle: wallet handle where keys for signature are stored\nconfig: payment address config as json:\n  {\n    seed: <str>, // allows deterministic creation of payment address\n  }\n\n#Returns\npayment_address - public identifier of payment address in fully resolvable payment address format\nModifies Indy request by adding information how to pay fees for this transaction\naccording to this payment method.\n\nThis method consumes set of UTXO inputs and outputs. The difference between inputs balance\nand outputs balance is the fee for this transaction.\n\nNot that this method also produces correct fee signatures.\n\nFormat of inputs is specific for payment method. Usually it should reference payment transaction\nwith at least one output that corresponds to payment address that user owns.\n\n#Params\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\nreq_json: initial transaction request as json\ninputs_json: The list of UTXO inputs as json array:\n  [\"input1\", ...]\n  Note that each input should reference paymentAddress\noutputs_json: The list of UTXO outputs as json array:\n  [{\n    paymentAddress: <str>, // payment address used as output\n    amount: <int>, // amount of tokens to transfer to this payment address\n    extra: <str>, // optional data\n  }]\n\n#Returns\nreq_with_fees_json - modified Indy request with added fees info\nParses response for Indy request with fees.\n\n#Params\ncommand_handle\nresp_json: response for Indy request with fees\n  Note: this param will be used to determine payment_method\n\n#Returns\nutxo_json - parsed (payment method and node version agnostic) utxo info as json:\n  [{\n     txo: <str>, // UTXO input\n     paymentAddress: <str>, //payment address for this UTXO\n     amount: <int>, // amount of tokens in this input\n     extra: <str>, // optional data from payment transaction\n  }]\nBuilds Indy request for getting UTXO list for payment address\naccording to this payment method.\n\n#Params\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\npayment_address: target payment address\n\n#Returns\nget_utxo_txn_json - Indy request for getting UTXO list for payment address\nParses response for Indy request for getting UTXO list.\n\n#Params\nresp_json: response for Indy request for getting UTXO list\n\n#Returns\nutxo_json - parsed (payment method and node version agnostic) utxo info as json:\n  [{\n     txo: <str>, // UTXO input\n     paymentAddress: <str>, //payment address for this UTXO\n     amount: <int>, // amount of tokens in this input\n     extra: <str>, // optional data from payment transaction\n  }]\nBuilds Indy request for doing tokens payment\naccording to this payment method.\n\nThis method consumes set of UTXO inputs and outputs.\n\nFormat of inputs is specific for payment method. Usually it should reference payment transaction\nwith at least one output that corresponds to payment address that user owns.\n\n#Params\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\ninputs_json: The list of UTXO inputs as json array:\n  [\"input1\", ...]\n  Note that each input should reference paymentAddress\noutputs_json: The list of UTXO outputs as json array:\n  [{\n    paymentAddress: <str>, // payment address used as output\n    amount: <int>, // amount of tokens to transfer to this payment address\n    extra: <str>, // optional data\n  }]\n\n#Returns\npayment_req_json - Indy request for doing tokens payment\nParses response for Indy request for payment txn.\n\n#Params\ncommand_handle\nresp_json: response for Indy request for payment txn\n  Note: this param will be used to determine payment_method\n\n#Returns\nutxo_json - parsed (payment method and node version agnostic) utxo info as json:\n  [{\n     txo: <str>, // UTXO input\n     paymentAddress: <str>, //payment address for this UTXO\n     amount: <int>, // amount of tokens in this input\n     extra: <str>, // optional data from payment transaction\n  }]\nBuilds Indy request for doing tokens minting\naccording to this payment method.\n\n#Params\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\noutputs_json: The list of UTXO outputs as json array:\n  [{\n    paymentAddress: <str>, // payment address used as output\n    amount: <int>, // amount of tokens to transfer to this payment address\n    extra: <str>, // optional data\n  }]\n\n#Returns\nmint_req_json - Indy request for doing tokens minting\nBuilds Indy request for setting fees for transactions in the ledger\n\n# Params\ncommand_handle\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\nfees_json {\n  txnType1: amount1,\n  txnType2: amount2,\n  .................\n  txnTypeN: amountN,\n}\n\n# Return\nset_txn_fees_json - Indy request for setting fees for transactions in the ledger\nBuilds Indy get request for getting fees for transactions in the ledger\n\n# Params\ncommand_handle\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\n\n# Return\nget_txn_fees_json - Indy request for getting fees for transactions in the ledger\nParses response for Indy request for getting fees\n\n# Params\ncommand_handle\npayment_method\nresp_json: response for Indy request for getting fees\n\n# Return\nfees_json {\n  txnType1: amount1,\n  txnType2: amount2,\n  .................\n  txnTypeN: amountN,\n}\nRegister custom payment implementation.\n\nIt allows library user to provide custom payment method implementation as set of handlers.\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\npayment_method: The type of payment method also used as sub-prefix for fully resolvable payment address format (\"sov\" - for example)\ncreate_payment_address: \"create_payment_address\" operation handler\nadd_request_fees: \"add_request_fees\" operation handler\nbuild_get_utxo_request: \"build_get_utxo_request\" operation handler\nparse_get_utxo_response: \"parse_get_utxo_response\" operation handler\nbuild_payment_req: \"build_payment_req\" operation handler\nbuild_mint_req: \"build_mint_req\" operation handler\n\n#Returns\nError code",
-      "group": "payment",
-      "params": [
-        {"name": "command_handle", "type": "indy_handle_t"},
-        {"name": "payment_method", "type": "const char*"},
-        {
-          "name": "createPaymentAddress",
-          "params": [
-            {"name": "config", "type": "const char*"},
-            {"name": "payment_address_ptr", "type": "const char ** const"}
-          ],
-          "ret": "indy_error_t"
-        }
-      ],
-      "ret": "indy_error_t"
-    },
     "indy_create_payment_address": {
-      "docs": "Create the payment address for specified payment method\n\n\nThis method generates private part of payment address\nand stores it in a secure place. Ideally it should be\nsecret in libindy wallet (see crypto module).\n\nNote that payment method should be able to resolve this\nsecret by fully resolvable payment address format.\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\ncommand_handle: command handle to map callback to context\nwallet_handle: wallet handle where to save new address\npayment_method: Payment method to use (for example, 'sov')\nconfig: payment address config as json:\n  {\n    seed: <str>, // allows deterministic creation of payment address\n  }\n\n#Returns\npayment_address - public identifier of payment address in fully resolvable payment address format",
+      "docs": "Create the payment address for specified payment method\n\n\nThis method generates private part of payment address\nand stores it in a secure place. Ideally it should be\nsecret in libindy wallet (see crypto module).\n\nNote that payment method should be able to resolve this\nsecret by fully resolvable payment address format.\n\n#Params\ncommand_handle: command handle to map callback to context\nwallet_handle: wallet handle where to save new address\npayment_method: payment method to use (for example, 'sov')\nconfig: payment address config as json:\n  {\n    seed: <str>, // allows deterministic creation of payment address\n  }\n\n#Returns\npayment_address - public identifier of payment address in fully resolvable payment address format",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
         {"name": "payment_method", "type": "const char*"},
-        {"name": "config", "type": "const char*"},
+        {"name": "config", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [
@@ -1710,7 +1842,7 @@
       "ret": "indy_error_t"
     },
     "indy_list_payment_addresses": {
-      "docs": "Lists all payment addresses that are stored in the wallet\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\ncommand_handle: command handle to map callback to context\nwallet_handle: wallet to search for payment_addresses in\n\n#Returns\npayment_addresses_json - json array of string with json addresses",
+      "docs": "Lists all payment addresses that are stored in the wallet\n\n#Params\ncommand_handle: command handle to map callback to context\nwallet_handle: wallet to search for payment_addresses in\n\n#Returns\npayment_addresses_json - json array of string with json addresses",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1727,7 +1859,7 @@
       "ret": "indy_error_t"
     },
     "indy_add_request_fees": {
-      "docs": "Modifies Indy request by adding information how to pay fees for this transaction\naccording to selected payment method.\n\nPayment selection is performed by looking to o\n\nThis method consumes set of UTXO inputs and outputs. The difference between inputs balance\nand outputs balance is the fee for this transaction.\n\nNot that this method also produces correct fee signatures.\n\nFormat of inputs is specific for payment method. Usually it should reference payment transaction\nwith at least one output that corresponds to payment address that user owns.\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\nreq_json: initial transaction request as json\ninputs_json: The list of UTXO inputs as json array:\n  [\"input1\", ...]\n  Notes:\n    - each input should reference paymentAddress\n    - this param will be used to determine payment_method\noutputs_json: The list of UTXO outputs as json array:\n  [{\n    paymentAddress: <str>, // payment address used as output\n    amount: <int>, // amount of tokens to transfer to this payment address\n    extra: <str>, // optional data\n  }]\n\n#Returns\nreq_with_fees_json - modified Indy request with added fees info\npayment_method",
+      "docs": "Modifies Indy request by adding information how to pay fees for this transaction\naccording to this payment method.\n\nThis method consumes set of inputs and outputs. The difference between inputs balance\nand outputs balance is the fee for this transaction.\n\nNot that this method also produces correct fee signatures.\n\nFormat of inputs is specific for payment method. Usually it should reference payment transaction\nwith at least one output that corresponds to payment address that user owns.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\nreq_json: initial transaction request as json\ninputs_json: The list of payment sources as json array:\n  [\"source1\", ...]\n    - each input should reference paymentAddress\n    - this param will be used to determine payment_method\noutputs_json: The list of outputs as json array:\n  [{\n    recipient: <str>, // payment address of recipient\n    amount: <int>, // amount\n  }]\nextra: // optional information for payment operation\n\n#Returns\nreq_with_fees_json - modified Indy request with added fees info\npayment_method - used payment method",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1736,6 +1868,7 @@
         {"name": "req_json", "type": "const char*", "json": true},
         {"name": "inputs_json", "type": "const char*", "json": true},
         {"name": "outputs_json", "type": "const char*", "json": true},
+        {"name": "extra", "type": "const char*"},
         {
           "name": "cb",
           "params": [
@@ -1749,7 +1882,7 @@
       "ret": "indy_error_t"
     },
     "indy_parse_response_with_fees": {
-      "docs": "Parses response for Indy request with fees.\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\ncommand_handle\npayment_method\nresp_json: response for Indy request with fees\n  Note: this param will be used to determine payment_method\n\n#Returns\nutxo_json - parsed (payment method and node version agnostic) utxo info as json:\n  [{\n     txo: <str>, // UTXO input\n     paymentAddress: <str>, //payment address for this UTXO\n     amount: <int>, // amount of tokens in this input\n     extra: <str>, // optional data from payment transaction\n  }]",
+      "docs": "Parses response for Indy request with fees.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\npayment_method: payment method to use\nresp_json: response for Indy request with fees\n\n#Returns\nreceipts_json - parsed (payment method and node version agnostic) receipts info as json:\n  [{\n     receipt: <str>, // receipt that can be used for payment referencing and verification\n     recipient: <str>, //payment address of recipient\n     amount: <int>, // amount\n     extra: <str>, // optional data from payment transaction\n  }]",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1760,14 +1893,14 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "utxo_json", "type": "const char*", "json": true}
+            {"name": "receipts_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
-    "indy_build_get_utxo_request": {
-      "docs": "Builds Indy request for getting UTXO list for payment address\naccording to this payment method.\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\npayment_address: target payment address\n\n#Returns\nget_utxo_txn_json - Indy request for getting UTXO list for payment address\npayment_method",
+    "indy_build_get_payment_sources_request": {
+      "docs": "Builds Indy request for getting sources list for payment address\naccording to this payment method.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\npayment_address: target payment address\n\n#Returns\nget_sources_txn_json - Indy request for getting sources list for payment address\npayment_method - used payment method",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1779,15 +1912,15 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "get_utxo_txn_json", "type": "const char*", "json": true},
+            {"name": "get_sources_txn_json", "type": "const char*", "json": true},
             {"name": "payment_method", "type": "const char*"}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
-    "indy_parse_get_utxo_response": {
-      "docs": "Parses response for Indy request for getting UTXO list.\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\nresp_json: response for Indy request for getting UTXO list\n  Note: this param will be used to determine payment_method\n\n#Returns\nutxo_json - parsed (payment method and node version agnostic) utxo info as json:\n  [{\n     txo: <str>, // UTXO input\n     paymentAddress: <str>, //payment address for this UTXO\n     amount: <int>, // amount of tokens in this input\n     extra: <str>, // optional data from payment transaction\n  }]",
+    "indy_parse_get_payment_sources_response": {
+      "docs": "Parses response for Indy request for getting sources list.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\npayment_method: payment method to use.\nresp_json: response for Indy request for getting sources list\n\n#Returns\nsources_json - parsed (payment method and node version agnostic) sources info as json:\n  [{\n     source: <str>, // source input\n     paymentAddress: <str>, //payment address for this source\n     amount: <int>, // amount\n     extra: <str>, // optional data from payment transaction\n  }]",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1798,14 +1931,14 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "utxo_json", "type": "const char*", "json": true}
+            {"name": "sources_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
     "indy_build_payment_req": {
-      "docs": "Builds Indy request for doing tokens payment\naccording to this payment method.\n\nThis method consumes set of UTXO inputs and outputs.\n\nFormat of inputs is specific for payment method. Usually it should reference payment transaction\nwith at least one output that corresponds to payment address that user owns.\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\ninputs_json: The list of UTXO inputs as json array:\n  [\"input1\", ...]\n  Note that each input should reference paymentAddress\noutputs_json: The list of UTXO outputs as json array:\n  [{\n    paymentAddress: <str>, // payment address used as output\n    amount: <int>, // amount of tokens to transfer to this payment address\n    extra: <str>, // optional data\n  }]\n\n#Returns\npayment_req_json - Indy request for doing tokens payment\npayment_method",
+      "docs": "Builds Indy request for doing payment\naccording to this payment method.\n\nThis method consumes set of inputs and outputs.\n\nFormat of inputs is specific for payment method. Usually it should reference payment transaction\nwith at least one output that corresponds to payment address that user owns.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\ninputs_json: The list of payment sources as json array:\n  [\"source1\", ...]\n  Note that each source should reference payment address\noutputs_json: The list of outputs as json array:\n  [{\n    recipient: <str>, // payment address of recipient\n    amount: <int>, // amount\n  }]\nextra: // optional information for payment operation\n\n#Returns\npayment_req_json - Indy request for doing payment\npayment_method - used payment method",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1813,6 +1946,7 @@
         {"name": "submitter_did", "type": "const char*"},
         {"name": "inputs_json", "type": "const char*", "json": true},
         {"name": "outputs_json", "type": "const char*", "json": true},
+        {"name": "extra", "type": "const char*"},
         {
           "name": "cb",
           "params": [
@@ -1826,7 +1960,7 @@
       "ret": "indy_error_t"
     },
     "indy_parse_payment_response": {
-      "docs": "Parses response for Indy request for payment txn.\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\ncommand_handle\npayment_method\nresp_json: response for Indy request for payment txn\n  Note: this param will be used to determine payment_method\n\n#Returns\nutxo_json - parsed (payment method and node version agnostic) utxo info as json:\n  [{\n     txo: <str>, // UTXO input\n     paymentAddress: <str>, //payment address for this UTXO\n     amount: <int>, // amount of tokens in this input\n     extra: <str>, // optional data from payment transaction\n  }]",
+      "docs": "Parses response for Indy request for payment txn.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\npayment_method: payment method to use\nresp_json: response for Indy request for payment txn\n\n#Returns\nreceipts_json - parsed (payment method and node version agnostic) receipts info as json:\n  [{\n     receipt: <str>, // receipt that can be used for payment referencing and verification\n     recipient: <str>, // payment address of recipient\n     amount: <int>, // amount\n     extra: <str>, // optional data from payment transaction\n  }]",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1837,20 +1971,21 @@
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
-            {"name": "utxo_json", "type": "const char*", "json": true}
+            {"name": "receipts_json", "type": "const char*", "json": true}
           ]
         }
       ],
       "ret": "indy_error_t"
     },
     "indy_build_mint_req": {
-      "docs": "Builds Indy request for doing tokens minting\naccording to this payment method.\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\noutputs_json: The list of UTXO outputs as json array:\n  [{\n    paymentAddress: <str>, // payment address used as output\n    amount: <int>, // amount of tokens to transfer to this payment address\n    extra: <str>, // optional data\n  }]\n\n#Returns\nmint_req_json - Indy request for doing tokens minting\npayment_method",
+      "docs": "Builds Indy request for doing minting\naccording to this payment method.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\noutputs_json: The list of outputs as json array:\n  [{\n    recipient: <str>, // payment address of recipient\n    amount: <int>, // amount\n  }]\nextra: // optional information for mint operation\n\n#Returns\nmint_req_json - Indy request for doing minting\npayment_method - used payment method",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "wallet_handle", "type": "indy_handle_t"},
         {"name": "submitter_did", "type": "const char*"},
         {"name": "outputs_json", "type": "const char*", "json": true},
+        {"name": "extra", "type": "const char*"},
         {
           "name": "cb",
           "params": [
@@ -1864,7 +1999,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_set_txn_fees_req": {
-      "docs": "Builds Indy request for setting fees for transactions in the ledger\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n# Params\ncommand_handle\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\npayment_method\nfees_json {\n  txnType1: amount1,\n  txnType2: amount2,\n  .................\n  txnTypeN: amountN,\n}\n# Return\nset_txn_fees_json - Indy request for setting fees for transactions in the ledger",
+      "docs": "Builds Indy request for setting fees for transactions in the ledger\n\n# Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\npayment_method: payment method to use\nfees_json {\n  txnType1: amount1,\n  txnType2: amount2,\n  .................\n  txnTypeN: amountN,\n}\n# Return\nset_txn_fees_json - Indy request for setting fees for transactions in the ledger",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1884,7 +2019,7 @@
       "ret": "indy_error_t"
     },
     "indy_build_get_txn_fees_req": {
-      "docs": "Builds Indy get request for getting fees for transactions in the ledger\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n# Params\ncommand_handle\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\npayment_method\n\n# Return\nget_txn_fees_json - Indy request for getting fees for transactions in the ledger",
+      "docs": "Builds Indy get request for getting fees for transactions in the ledger\n\n# Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\npayment_method: payment method to use\n\n# Return\nget_txn_fees_json - Indy request for getting fees for transactions in the ledger",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1903,7 +2038,7 @@
       "ret": "indy_error_t"
     },
     "indy_parse_get_txn_fees_response": {
-      "docs": "Parses response for Indy request for getting fees\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n# Params\ncommand_handle\npayment_method\nresp_json: response for Indy request for getting fees\n\n# Return\nfees_json {\n  txnType1: amount1,\n  txnType2: amount2,\n  .................\n  txnTypeN: amountN,\n}",
+      "docs": "Parses response for Indy request for getting fees\n\n# Params\ncommand_handle: Command handle to map callback to caller context.\npayment_method: payment method to use\nresp_json: response for Indy request for getting fees\n\n# Return\nfees_json {\n  txnType1: amount1,\n  txnType2: amount2,\n  .................\n  txnTypeN: amountN,\n}",
       "group": "payment",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -1915,6 +2050,44 @@
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"},
             {"name": "fees_json", "type": "const char*", "json": true}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_build_verify_payment_req": {
+      "docs": "Builds Indy request for information to verify the payment receipt\n\n# Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: wallet handle\nsubmitter_did : DID of request sender\nreceipt: payment receipt to verify\n\n# Return\nverify_txn_json: Indy request for verification receipt\npayment_method: used payment method",
+      "group": "payment",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "wallet_handle", "type": "indy_handle_t"},
+        {"name": "submitter_did", "type": "const char*"},
+        {"name": "receipt", "type": "const char*"},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "verify_txn_json", "type": "const char*", "json": true},
+            {"name": "payment_method", "type": "const char*"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_parse_verify_payment_response": {
+      "docs": "Parses Indy response with information to verify receipt\n\n# Params\ncommand_handle: Command handle to map callback to caller context.\npayment_method: payment method to use\nresp_json: response of the ledger for verify txn\n\n# Return\ntxn_json: {\n    sources: [<str>, ]\n    receipts: [ {\n        recipient: <str>, // payment address of recipient\n        receipt: <str>, // receipt that can be used for payment referencing and verification\n        amount: <int>, // amount\n    } ],\n    extra: <str>, //optional data\n}",
+      "group": "payment",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "payment_method", "type": "const char*"},
+        {"name": "resp_json", "type": "const char*", "json": true},
+        {
+          "name": "cb",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "txn_json", "type": "const char*", "json": true}
           ]
         }
       ],
@@ -1938,12 +2111,12 @@
       "ret": "indy_error_t"
     },
     "indy_open_pool_ledger": {
-      "docs": "Opens pool ledger and performs connecting to pool nodes.\n\nPool ledger configuration with corresponded name must be previously created\nwith indy_create_pool_ledger_config method.\nIt is impossible to open pool with the same name more than once.\n\nconfig_name: Name of the pool ledger configuration.\nconfig (optional): Runtime pool configuration json.\n                        if NULL, then default config will be used. Example:\n{\n    \"refresh_on_open\": bool (optional), Forces pool ledger to be refreshed immediately after opening.\n                     Defaults to true.\n    \"auto_refresh_time\": int (optional), After this time in minutes pool ledger will be automatically refreshed.\n                       Use 0 to disable automatic refresh. Defaults to 24*60.\n    \"network_timeout\": int (optional), Network timeout for communication with nodes in milliseconds.\n                      Defaults to 20000.\n}\n\n#Returns\nHandle to opened pool to use in methods that require pool connection.\n\n#Errors\nCommon*\nLedger*",
+      "docs": "Opens pool ledger and performs connecting to pool nodes.\n\nPool ledger configuration with corresponded name must be previously created\nwith indy_create_pool_ledger_config method.\nIt is impossible to open pool with the same name more than once.\n\nconfig_name: Name of the pool ledger configuration.\nconfig (optional): Runtime pool configuration json.\n                        if NULL, then default config will be used. Example:\n{\n    \"timeout\": int (optional), timeout for network request (in sec).\n    \"extended_timeout\": int (optional), extended timeout for network request (in sec).\n    \"preordered_nodes\": array<string> -  (optional), names of nodes which will have a priority during request sending:\n        [\"name_of_1st_prior_node\",  \"name_of_2nd_prior_node\", .... ]\n        Note: Not specified nodes will be placed in a random way.\n}\n\n#Returns\nHandle to opened pool to use in methods that require pool connection.\n\n#Errors\nCommon*\nLedger*",
       "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
         {"name": "config_name", "type": "const char*"},
-        {"name": "config", "type": "const char*"},
+        {"name": "config", "type": "const char*", "json": true},
         {
           "name": "cb",
           "params": [
@@ -1972,7 +2145,7 @@
       "ret": "indy_error_t"
     },
     "indy_list_pools": {
-      "docs": "Lists names of created pool ledgers",
+      "docs": "Lists names of created pool ledgers\n\n#Params\n\n#Returns\nError code\n\n#Errors",
       "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -2020,7 +2193,7 @@
       "ret": "indy_error_t"
     },
     "indy_set_protocol_version": {
-      "docs": "Set PROTOCOL_VERSION to specific version.\n\nThere is a global property PROTOCOL_VERSION that used in every request to the pool and\nspecified version of Indy Node which Libindy works.\n\nBy default PROTOCOL_VERSION=1.\n\n#Params\nprotocol_version: Protocol version will be used:\n    1 - for Indy Node 1.3\n    2 - for Indy Node 1.4\n\n#Returns\nError code\n\n#Errors\nCommon*",
+      "docs": "Set PROTOCOL_VERSION to specific version.\n\nThere is a global property PROTOCOL_VERSION that used in every request to the pool and\nspecified version of Indy Node which Libindy works.\n\nBy default PROTOCOL_VERSION=1.\n\n#Params\nprotocol_version: Protocol version will be used:\n    1 - for Indy Node 1.3\n    2 - for Indy Node 1.4 and greater\n\n#Returns\nError code\n\n#Errors\nCommon*",
       "group": "pool",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -2045,7 +2218,7 @@
           "name": "createFn",
           "params": [
             {"name": "name", "type": "const char*"},
-            {"name": "config", "type": "const char*"},
+            {"name": "config", "type": "const char*", "json": true},
             {"name": "credentials_json", "type": "const char*", "json": true},
             {"name": "metadata", "type": "const char*"}
           ],
@@ -2055,13 +2228,10 @@
       "ret": "indy_error_t"
     },
     "indy_create_wallet": {
-      "docs": "Creates a new secure wallet with the given unique name.\n\n#Params\npool_name: Name of the pool that corresponds to this wallet.\nname: Name of the wallet.\nstorage_type(optional): Type of the wallet storage. Defaults to 'default'.\n                 Custom storage types can be registered with indy_register_wallet_storage call.\nconfig(optional): Wallet configuration json.\n  {\n      \"storage\": <object>  List of supported keys are defined by wallet type.\n  }\ncredentials: Wallet credentials json\n  {\n      \"key\": string,\n      \"rekey\": Optional<string>,\n      \"storage\": Optional<object>  List of supported keys are defined by wallet type.\n\n  }\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "docs": "Create a new secure wallet.\n\n#Params\nconfig: Wallet configuration json.\n{\n  \"id\": string, Identifier of the wallet.\n        Configured storage uses this identifier to lookup exact wallet data placement.\n  \"storage_type\": optional<string>, Type of the wallet storage. Defaults to 'default'.\n                 'Default' storage type allows to store wallet data in the local file.\n                 Custom storage types can be registered with indy_register_wallet_storage call.\n  \"storage_config\": optional<object>, Storage configuration json. Storage type defines set of supported keys.\n                    Can be optional if storage supports default configuration.\n                    For 'default' storage type configuration is:\n  {\n    \"path\": optional<string>, Path to the directory with wallet files.\n            Defaults to $HOME/.indy_client/wallets.\n            Wallet will be stored in the file {path}/{id}/sqlite.db\n  }\n}\ncredentials: Wallet credentials json\n{\n  \"key\": string, Passphrase used to derive wallet master key\n  \"storage_credentials\": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.\n                         Can be optional if storage supports default configuration.\n                         For 'default' storage type should be empty.\n  \"key_derivation_method\": optional<string> algorithm to use for master key derivation:\n                         ARGON2I_MOD (used by default)\n                         ARGON2I_INT - less secured but faster\n}\n\n#Returns\nerr: Error code\n\n#Errors\nCommon*\nWallet*",
       "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
-        {"name": "pool_name", "type": "const char*"},
-        {"name": "name", "type": "const char*"},
-        {"name": "xtype", "type": "const char*"},
         {"name": "config", "type": "const char*", "json": true},
         {"name": "credentials", "type": "const char*", "json": true},
         {
@@ -2075,12 +2245,11 @@
       "ret": "indy_error_t"
     },
     "indy_open_wallet": {
-      "docs": "Opens the wallet with specific name.\n\nWallet with corresponded name must be previously created with indy_create_wallet method.\nIt is impossible to open wallet with the same name more than once.\n\n#Params\nname: Name of the wallet.\nruntime_config (optional): Runtime wallet configuration json. if NULL, then default runtime_config will be used.\n  {\n      \"storage\": Optional<object>  List of supported keys are defined by wallet type.\n  }\ncredentials: Wallet credentials json\n  {\n      \"key\": string,\n      \"rekey\": Optional<string>,\n      \"storage\": Optional<object>  List of supported keys are defined by wallet type.\n\n  }\n\n#Returns\nHandle to opened wallet to use in methods that require wallet access.\n\n#Errors\nCommon*\nWallet*",
+      "docs": "Open the wallet.\n\nWallet must be previously created with indy_create_wallet method.\n\n#Params\nconfig: Wallet configuration json.\n  {\n      \"id\": string, Identifier of the wallet.\n            Configured storage uses this identifier to lookup exact wallet data placement.\n      \"storage_type\": optional<string>, Type of the wallet storage. Defaults to 'default'.\n                      'Default' storage type allows to store wallet data in the local file.\n                      Custom storage types can be registered with indy_register_wallet_storage call.\n      \"storage_config\": optional<object>, Storage configuration json. Storage type defines set of supported keys.\n                        Can be optional if storage supports default configuration.\n                        For 'default' storage type configuration is:\n          {\n             \"path\": optional<string>, Path to the directory with wallet files.\n                     Defaults to $HOME/.indy_client/wallets.\n                     Wallet will be stored in the file {path}/{id}/sqlite.db\n          }\n\n  }\ncredentials: Wallet credentials json\n  {\n      \"key\": string, Passphrase used to derive current wallet master key\n      \"rekey\": optional<string>, If present than wallet master key will be rotated to a new one\n                                 derived from this passphrase.\n      \"storage_credentials\": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.\n                             Can be optional if storage supports default configuration.\n                             For 'default' storage type should be empty.\n      \"key_derivation_method\": optional<string> algorithm to use for master key derivation:\n                            ARGON2I_MOD (used by default)\n                            ARGON2I_INT - less secured but faster\n      \"rekey_derivation_method\": optional<string> algorithm to use for master rekey derivation:\n                            ARGON2I_MOD (used by default)\n                            ARGON2I_INT - less secured but faster\n  }\n\n#Returns\nerr: Error code\nhandle: Handle to opened wallet to use in methods that require wallet access.\n\n#Errors\nCommon*\nWallet*",
       "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
-        {"name": "name", "type": "const char*"},
-        {"name": "runtime_config", "type": "const char*"},
+        {"name": "config", "type": "const char*", "json": true},
         {"name": "credentials", "type": "const char*", "json": true},
         {
           "name": "fn",
@@ -2093,24 +2262,8 @@
       ],
       "ret": "indy_error_t"
     },
-    "indy_list_wallets": {
-      "docs": "Lists created wallets as JSON array with each wallet metadata: name, type, name of associated pool\n\nNote this function is DEPRECATED and will be removed in the next release.\n\n#Returns\nwallets list json: [{\n   \"name\": <string>\n   \"type\": <string>\n   \"pool_name\": <string>\n}].\n\n#Errors\nCommon*\nWallet*",
-      "group": "wallet",
-      "params": [
-        {"name": "command_handle", "type": "indy_handle_t"},
-        {
-          "name": "fn",
-          "params": [
-            {"name": "xcommand_handle", "type": "indy_handle_t"},
-            {"name": "err", "type": "indy_error_t"},
-            {"name": "wallets", "type": "const char *const", "json": true}
-          ]
-        }
-      ],
-      "ret": "indy_error_t"
-    },
     "indy_export_wallet": {
-      "docs": "Exports opened wallet\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params:\nwallet_handle: wallet handle returned by indy_open_wallet\nexport_config_json: JSON containing settings for input operation.\n  {\n    \"path\": path of the file that contains exported wallet content\n    \"key\": passphrase used to derive export key\n  }\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "docs": "Exports opened wallet\n\n#Params:\nwallet_handle: wallet handle returned by indy_open_wallet\nexport_config: JSON containing settings for input operation.\n  {\n    \"path\": <string>, Path of the file that contains exported wallet content\n    \"key\": <string>, Passphrase used to derive export key\n    \"key_derivation_method\": optional<string> algorithm to use for export key derivation:\n                             ARGON2I_MOD (used by default)\n                             ARGON2I_INT - less secured but faster\n  }\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
       "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
@@ -2127,13 +2280,10 @@
       "ret": "indy_error_t"
     },
     "indy_import_wallet": {
-      "docs": "Creates a new secure wallet with the given unique name and then imports its content\naccording to fields provided in import_config\nThis can be seen as an indy_create_wallet call with additional content import\n\nNote this endpoint is EXPERIMENTAL. Function signature and behaviour may change\nin the future releases.\n\n#Params\npool_name: Name of the pool that corresponds to this wallet\nname: Name of the wallet\nstorage_type(optional): Type of the wallet storage. Defaults to 'default'.\n                 Custom storage types can be registered with indy_register_wallet_storage_call\nconfig(optional): Wallet configuration json.\n  {\n      \"storage\": <object>  List of supported keys are defined by wallet type.\n  }\ncredentials: Wallet credentials json (if NULL, then default config will be used).\n  {\n      \"key\": string,\n      \"storage\": Optional<object>  List of supported keys are defined by wallet type.\n\n  }\nimport_config_json: JSON containing settings for input operation.\n  {\n    \"path\": path of the file that contains exported wallet content\n    \"key\": passphrase used to derive export key\n  }\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "docs": "Creates a new secure wallet and then imports its content\naccording to fields provided in import_config\nThis can be seen as an indy_create_wallet call with additional content import\n\n#Params\nconfig: Wallet configuration json.\n{\n  \"id\": string, Identifier of the wallet.\n        Configured storage uses this identifier to lookup exact wallet data placement.\n  \"storage_type\": optional<string>, Type of the wallet storage. Defaults to 'default'.\n                 'Default' storage type allows to store wallet data in the local file.\n                 Custom storage types can be registered with indy_register_wallet_storage call.\n  \"storage_config\": optional<object>, Storage configuration json. Storage type defines set of supported keys.\n                    Can be optional if storage supports default configuration.\n                    For 'default' storage type configuration is:\n  {\n    \"path\": optional<string>, Path to the directory with wallet files.\n            Defaults to $HOME/.indy_client/wallets.\n            Wallet will be stored in the file {path}/{id}/sqlite.db\n  }\n}\ncredentials: Wallet credentials json\n{\n  \"key\": string, Passphrase used to derive wallet master key\n  \"storage_credentials\": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.\n                         Can be optional if storage supports default configuration.\n                         For 'default' storage type should be empty.\n  \"key_derivation_method\": optional<string> algorithm to use for master key derivation:\n                           ARGON2I_MOD (used by default)\n                           ARGON2I_INT - less secured but faster\n}\nimport_config: Import settings json.\n{\n  \"path\": <string>, path of the file that contains exported wallet content\n  \"key\": <string>, passphrase used to derive export key\n}\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
       "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
-        {"name": "pool_name", "type": "const char*"},
-        {"name": "name", "type": "const char*"},
-        {"name": "xtype", "type": "const char*"},
         {"name": "config", "type": "const char*", "json": true},
         {"name": "credentials", "type": "const char*", "json": true},
         {"name": "import_config_json", "type": "const char*", "json": true},
@@ -2164,17 +2314,34 @@
       "ret": "indy_error_t"
     },
     "indy_delete_wallet": {
-      "docs": "Deletes created wallet.\n\n#Params\nname: Name of the wallet to delete.\ncredentials: Wallet credentials json\n  {\n      \"key\": string,\n      \"rekey\": Optional<string>,\n      \"storage\": Optional<object>  List of supported keys are defined by wallet type.\n\n  }\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "docs": "Deletes created wallet.\n\n#Params\nconfig: Wallet configuration json.\n{\n  \"id\": string, Identifier of the wallet.\n        Configured storage uses this identifier to lookup exact wallet data placement.\n  \"storage_type\": optional<string>, Type of the wallet storage. Defaults to 'default'.\n                 'Default' storage type allows to store wallet data in the local file.\n                 Custom storage types can be registered with indy_register_wallet_storage call.\n  \"storage_config\": optional<object>, Storage configuration json. Storage type defines set of supported keys.\n                    Can be optional if storage supports default configuration.\n                    For 'default' storage type configuration is:\n  {\n    \"path\": optional<string>, Path to the directory with wallet files.\n            Defaults to $HOME/.indy_client/wallets.\n            Wallet will be stored in the file {path}/{id}/sqlite.db\n  }\n}\ncredentials: Wallet credentials json\n{\n  \"key\": string, Passphrase used to derive wallet master key\n  \"storage_credentials\": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.\n                         Can be optional if storage supports default configuration.\n                         For 'default' storage type should be empty.\n  \"key_derivation_method\": optional<string> algorithm to use for master key derivation:\n                           ARGON2I_MOD (used by default)\n                           ARGON2I_INT - less secured but faster\n}\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
       "group": "wallet",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
-        {"name": "name", "type": "const char*"},
+        {"name": "config", "type": "const char*", "json": true},
         {"name": "credentials", "type": "const char*", "json": true},
         {
           "name": "fn",
           "params": [
             {"name": "xcommand_handle", "type": "indy_handle_t"},
             {"name": "err", "type": "indy_error_t"}
+          ]
+        }
+      ],
+      "ret": "indy_error_t"
+    },
+    "indy_generate_wallet_key": {
+      "docs": "Generate wallet master key.\n\n#Params\nconfig: (optional) key configuration json.\n{\n  \"seed\":optional<string> Seed that allows deterministic key creation (if not set random one will be used).\n}\n\n#Returns\nError code\n\n#Errors\nCommon*\nWallet*",
+      "group": "wallet",
+      "params": [
+        {"name": "command_handle", "type": "indy_handle_t"},
+        {"name": "config", "type": "const char*", "json": true},
+        {
+          "name": "fn",
+          "params": [
+            {"name": "xcommand_handle", "type": "indy_handle_t"},
+            {"name": "err", "type": "indy_error_t"},
+            {"name": "key", "type": "const char *const"}
           ]
         }
       ],

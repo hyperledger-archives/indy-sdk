@@ -24,24 +24,6 @@ pub enum RouteCommand {
         String, // my verkey
         i32, // wallet handle
         Box<Fn(Result<(String /*plaintext*/)>) + Send>),
-    AddRoute(
-        String, //DID#key
-        String, //endpoint
-        i32, //wallet_handle
-        Box<Fn(Result<()>) + Send>),
-    LookupRoute(
-        String, //DID#key
-        i32, //wallet_handle
-        Box<Fn(Result<(String /*endpoint*/)>) + Send>),
-    RemoveRoute(
-        String, //DID#key
-        i32, //wallet_handle
-        Box<Fn(Result<()>) + Send>),
-    UpdateRoute(
-        String, //DID#key
-        String, //new endpoint
-        i32, //wallet_handle
-        Box<Fn(Result<()>) + Send>),
 }
 
 pub struct RouteCommandExecutor {

@@ -23,12 +23,17 @@ import pprint
 from indy import pool, ledger, wallet, did
 from indy.error import IndyError
 
+from src.utils import get_pool_genesis_txn_path, PROTOCOL_VERSION
+
 
 pool_name = 'pool'
-wallet_name = 'wallet'
-genesis_file_path = '/home/vagrant/code/evernym/indy-sdk/cli/docker_pool_transactions_genesis'
+genesis_file_path = get_pool_genesis_txn_path(pool_name)
+
+wallet_config = json.dumps({"id": "wallet"})
 wallet_credentials = json.dumps({"key": "wallet_key"})
 
+# Set protocol version to 2 to work with the current version of Indy Node
+PROTOCOL_VERSION = 2
 
 def print_log(value_color="", value_noncolor=""):
     """set the colors for text."""
@@ -38,15 +43,17 @@ def print_log(value_color="", value_noncolor=""):
 
 
 async def rotate_key_on_the_ledger():
-    try:
-        # Step 2 code goes here.
+	try:
+		await pool.set_protocol_version(PROTOCOL_VERSION)
 
-        # Step 3 code goes here.
+		# Step 2 code goes here.
 
-        # Step 4 code goes here.
+		# Step 3 code goes here.
 
-    except IndyError as e:
-        print('Error occurred: %s' % e)
+		# Step 4 code goes here.
+
+	except IndyError as e:
+		print('Error occurred: %s' % e)
 
 
 def main():

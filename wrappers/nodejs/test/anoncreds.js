@@ -50,6 +50,7 @@ test('anoncreds', async function (t) {
   var blobReaderHandle = await indy.openBlobStorageReader('default', tailsWriterConfig)
 
   // Issuer create credential for credential Request
+  // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
   var [cred, revId, revDelta] = await indy.issuerCreateCredential(wh, credOffer, credReq, {
     name: {'raw': 'Alex', 'encoded': '1139481716457488690172217916278103335'},
     height: {'raw': '175', 'encoded': '175'},
@@ -62,6 +63,23 @@ test('anoncreds', async function (t) {
   // Prover process and store credential
   var outCredId = await indy.proverStoreCredential(wh, 'cred_1_id', credReqMetadata, cred, credDef, revocRegDef)
   t.is(typeof outCredId, 'string')
+
+  // Prover get Credential
+  var credential = await indy.proverGetCredential(wh, outCredId)
+  t.not(typeof credential, 'string')
+  t.is(credential.schema_id, schemaId)
+  t.is(credential.cred_def_id, credDefId)
+
+  // Prover searches Credentials
+  var [sh, totalCount] = await indy.proverSearchCredentials(wh, {schema_id: schemaId})
+  t.truthy(totalCount > 0)
+
+  var credentials = await indy.proverFetchCredentials(sh, totalCount)
+  t.truthy(Array.isArray(credentials))
+  t.truthy(credentials.length > 0)
+  t.is(credentials[0].schema_id, schemaId)
+
+  await indy.proverCloseCredentialsSearch(sh)
 
   // Prover gets credentials for Proof Request
   var proofReq = {
@@ -78,7 +96,7 @@ test('anoncreds', async function (t) {
   }
   var credentialsForProof = await indy.proverGetCredentialsForProofReq(wh, proofReq)
 
-  var credentials = await indy.proverGetCredentials(wh)
+  credentials = await indy.proverGetCredentials(wh)
   t.truthy(Array.isArray(credentials))
   t.truthy(credentials.length > 0)
 
@@ -86,6 +104,21 @@ test('anoncreds', async function (t) {
   t.truthy(Array.isArray(credentials))
   t.truthy(credentials.length > 0)
   t.is(credentials[0].schema_id, schemaId)
+
+  // Prover searches Credentials for Proof Request
+  sh = await indy.proverSearchCredentialsForProofReq(wh, proofReq, null)
+
+  credentials = await indy.proverFetchCredentialsForProofReq(sh, 'attr1_referent', 100)
+  t.truthy(Array.isArray(credentials))
+  t.truthy(credentials.length > 0)
+  t.is(credentials[0]['cred_info'].schema_id, schemaId)
+
+  credentials = await indy.proverFetchCredentialsForProofReq(sh, 'predicate1_referent', 100)
+  t.truthy(Array.isArray(credentials))
+  t.truthy(credentials.length > 0)
+  t.is(credentials[0]['cred_info'].schema_id, schemaId)
+
+  await indy.proverCloseCredentialsSearchForProofReq(sh)
 
   // Prover gets credentials for Proof Request
   var timestamp = 100

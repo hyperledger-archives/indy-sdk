@@ -4,7 +4,7 @@ use api::ErrorCode;
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::blob_storage::BlobStorageCommand;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 use self::libc::c_char;
 

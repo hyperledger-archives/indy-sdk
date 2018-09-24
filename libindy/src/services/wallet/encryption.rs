@@ -1,11 +1,11 @@
 use std::str;
 use std::collections::HashMap;
 
-use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13};
-use utils::crypto::memzero::memzero;
+use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13, base58};
 
 use super::{Keys, WalletRecord};
 use super::storage::{Tag, TagName, StorageRecord};
+use domain::wallet::KeyDerivationMethod;
 
 use errors::wallet::WalletError;
 
@@ -15,15 +15,21 @@ pub(super) fn gen_master_key_salt() -> Result<pwhash_argon2i13::Salt, WalletErro
 
 pub(super) fn master_key_salt_from_slice(slice: &[u8]) -> Result<pwhash_argon2i13::Salt, WalletError> {
     let salt = pwhash_argon2i13::Salt::from_slice(slice)
-        .map_err(|err| ::errors::common::CommonError::InvalidState("Invalid master key salt".to_string()))?;
+        .map_err(|_| WalletError::AccessFailed("Invalid master key salt".to_string()))?;
 
     Ok(salt)
 }
 
-pub(super) fn derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt) -> Result<chacha20poly1305_ietf::Key, WalletError> {
-    let mut key_bytes = [0u8; chacha20poly1305_ietf::KEYBYTES];
-    pwhash_argon2i13::pwhash(&mut key_bytes, passphrase.as_bytes(), salt)?;
-    Ok(chacha20poly1305_ietf::Key::new(key_bytes))
+pub(super) fn derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> Result<chacha20poly1305_ietf::Key, WalletError> {
+    let key = chacha20poly1305_ietf::derive_key(passphrase, salt, key_derivation_method)?;
+    Ok(key)
+}
+
+pub(super) fn raw_master_key(passphrase: &str) -> Result<chacha20poly1305_ietf::Key, WalletError> {
+    let bytes = &base58::decode(passphrase)?;
+    let key = chacha20poly1305_ietf::Key::from_slice(&bytes)
+        .map_err(|_| ::errors::common::CommonError::InvalidStructure("Invalid Master Key length".to_string()))?;
+    Ok(key)
 }
 
 pub(super) fn encrypt_tag_names(tag_names: &[&str], tag_name_key: &chacha20poly1305_ietf::Key, tags_hmac_key: &hmacsha256::Key) -> Vec<TagName> {
@@ -90,7 +96,7 @@ pub(super) fn decrypt(data: &[u8], key: &chacha20poly1305_ietf::Key, nonce: &cha
 pub(super) fn decrypt_merged(joined_data: &[u8], key: &chacha20poly1305_ietf::Key) -> Result<Vec<u8>, WalletError> {
     let nonce = chacha20poly1305_ietf::Nonce::from_slice(&joined_data[..chacha20poly1305_ietf::NONCEBYTES]).unwrap(); // We can safety unwrap here
     let data = &joined_data[chacha20poly1305_ietf::NONCEBYTES..];
-    let res = chacha20poly1305_ietf::decrypt(data, key, &nonce)?;
+    let res = decrypt(data, key, &nonce)?;
     Ok(res)
 }
 
@@ -134,13 +140,7 @@ pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Res
     let decrypted_name = String::from_utf8(decrypted_name)?;
 
     let decrypted_value = match record.value {
-        Some(ref value) => {
-            let mut decrypted_value_key_bytes = decrypt_merged(&value.key, &keys.value_key)?;
-            let decrypted_value_key = chacha20poly1305_ietf::Key::from_slice(&decrypted_value_key_bytes).unwrap(); // FIXME:
-            memzero(&mut decrypted_value_key_bytes);
-            let decrypted_value = decrypt_merged(&value.data, &decrypted_value_key)?;
-            Some(String::from_utf8(decrypted_value)?)
-        }
+        Some(ref value) => Some(value.decrypt(&keys.value_key)?),
         None => None
     };
 

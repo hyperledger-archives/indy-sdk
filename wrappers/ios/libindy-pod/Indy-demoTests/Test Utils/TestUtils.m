@@ -28,7 +28,7 @@
 }
 
 + (NSTimeInterval)defaultTimeout {
-    return 15;
+    return 25;
 }
 
 + (NSTimeInterval)shortTimeout {
@@ -149,10 +149,6 @@
 
 + (NSString *)defaultType {
     return @"default";
-}
-
-+ (NSString *)keychainType {
-    return @"keychain";
 }
 
 + (NSString *)gvtSchema {

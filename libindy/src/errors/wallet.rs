@@ -24,7 +24,6 @@ pub enum WalletError {
     AlreadyExists(String),
     NotFound(String),
     PluggedWalletError(ErrorCode),
-    #[allow(dead_code)] // FIXME
     AlreadyOpened(String),
     AccessFailed(String),
     CommonError(CommonError),

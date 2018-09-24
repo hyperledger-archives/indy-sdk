@@ -1,9 +1,13 @@
-﻿using Hyperledger.Indy.DidApi;
+﻿using System;
+using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.CryptoApi.NativeMethods;
+#if __IOS__
+using ObjCRuntime;
+#endif
 
 namespace Hyperledger.Indy.CryptoApi
 {
@@ -15,7 +19,10 @@ namespace Hyperledger.Indy.CryptoApi
         /// <summary>
         /// Gets the callback to use when the indy_create_key command has completed.
         /// </summary>
-        private static CreateKeyCompletedDelegate _createKeyCompletedCallback = (xcommand_handle, err, verkey) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(CreateKeyCompletedDelegate))]
+#endif
+        private static void CreateKeyCompletedCallbackMethod(int xcommand_handle, int err, string verkey)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -23,12 +30,16 @@ namespace Hyperledger.Indy.CryptoApi
                 return;
 
             taskCompletionSource.SetResult(verkey);
-        };
+        }
+        private static CreateKeyCompletedDelegate CreateKeyCompletedCallback = CreateKeyCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the indy_get_key_metadata command has completed.
         /// </summary>
-        private static GetKeyMetadataCompletedDelegate _getKeyMetadataCompletedCallback = (xcommand_handle, err, metadata) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(GetKeyMetadataCompletedDelegate))]
+#endif
+        private static void GetKeyMetadataCompletedCallbackMethod(int xcommand_handle, int err, string metadata)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -36,12 +47,16 @@ namespace Hyperledger.Indy.CryptoApi
                 return;
 
             taskCompletionSource.SetResult(metadata);
-        };
+        }
+        private static GetKeyMetadataCompletedDelegate GetKeyMetadataCompletedCallback = GetKeyMetadataCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the indy_crypto_sign command has completed.
         /// </summary>
-        private static SignCompletedDelegate _cryptoSignCompletedCallback = (xcommand_handle, err, signature_raw, signature_len) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(SignCompletedDelegate))]
+#endif
+        private static void CryptoSignCompletedCallbackMethod(int xcommand_handle, int err, IntPtr signature_raw, int signature_len)
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -52,12 +67,16 @@ namespace Hyperledger.Indy.CryptoApi
             Marshal.Copy(signature_raw, signatureBytes, 0, signature_len);
 
             taskCompletionSource.SetResult(signatureBytes);
-        };
+        }
+        private static SignCompletedDelegate CryptoSignCompletedCallback = CryptoSignCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the indy_crypto_verify command  has completed.
         /// </summary>
-        private static VerifyCompletedDelegate _cryptoVerifyCompletedCallback = (xcommand_handle, err, valid) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(VerifyCompletedDelegate))]
+#endif
+        private static void CryptoVerifyCompletedCallbackMethod(int xcommand_handle, int err, bool valid)
         {
             var taskCompletionSource = PendingCommands.Remove<bool>(xcommand_handle);
 
@@ -65,12 +84,16 @@ namespace Hyperledger.Indy.CryptoApi
                 return;
 
             taskCompletionSource.SetResult(valid);
-        };
+        }
+        private static VerifyCompletedDelegate CryptoVerifyCompletedCallback = CryptoVerifyCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when indy_crypto_auth_crypt or indy_crypto_anon_crypt has completed
         /// </summary>
-        private static EncryptCompletedDelegate _cryptoEncryptCompletedCallback = (xcommand_handle, err, encrypted_msg, encrypted_len) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(EncryptCompletedDelegate))]
+#endif
+        private static void CryptoEncryptCompletedCallbackMethod(int xcommand_handle, int err, IntPtr encrypted_msg, int encrypted_len)
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(xcommand_handle);
 
@@ -81,12 +104,16 @@ namespace Hyperledger.Indy.CryptoApi
             Marshal.Copy(encrypted_msg, messageBytes, 0, encrypted_len);
 
             taskCompletionSource.SetResult(messageBytes);
-        };
+        }
+        private static EncryptCompletedDelegate CryptoEncryptCompletedCallback = CryptoEncryptCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when indy_crypto_auth_decrypt has completed
         /// </summary>
-        private static AuthDecryptCompletedDelegate _cryptoAuthDecryptCompletedCallback = (command_handle, err, their_vk, msg_data, msg_len) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(AuthDecryptCompletedDelegate))]
+#endif
+        private static void CryptoAuthDecryptCompletedCallbackMethod(int command_handle, int err, string their_vk, IntPtr msg_data, int msg_len)
         {
             var taskCompletionSource = PendingCommands.Remove<AuthDecryptResult>(command_handle);
 
@@ -99,13 +126,16 @@ namespace Hyperledger.Indy.CryptoApi
             var result = new AuthDecryptResult(their_vk, messageBytes);
 
             taskCompletionSource.SetResult(result);
-        };
-
+        }
+        private static AuthDecryptCompletedDelegate CryptoAuthDecryptCompletedCallback = CryptoAuthDecryptCompletedCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the indy_crypto_box_seal_open command has completed.
         /// </summary>
-        private static AnonDecryptCompletedDelegate _cryptoAnonDecryptCompletedCallback = (command_handle, err, msg_data, msg_len) =>
+#if __IOS__
+        [MonoPInvokeCallback(typeof(AnonDecryptCompletedDelegate))]
+#endif
+        private static void CryptoAnonDecryptCompletedCallbackMethod(int command_handle, int err, IntPtr msg_data, int msg_len)
         {
             var taskCompletionSource = PendingCommands.Remove<byte[]>(command_handle);
 
@@ -116,7 +146,8 @@ namespace Hyperledger.Indy.CryptoApi
             Marshal.Copy(msg_data, decryptedMsgBytes, 0, msg_len);
 
             taskCompletionSource.SetResult(decryptedMsgBytes);
-        };
+        }
+        private static AnonDecryptCompletedDelegate CryptoAnonDecryptCompletedCallback = CryptoAnonDecryptCompletedCallbackMethod;
 
         /// <summary>
         /// Creates a key in the provided wallet.
@@ -150,7 +181,7 @@ namespace Hyperledger.Indy.CryptoApi
                 commandHandle,
                 wallet.Handle,
                 keyJson,
-                _createKeyCompletedCallback
+                CreateKeyCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -211,7 +242,7 @@ namespace Hyperledger.Indy.CryptoApi
                 commandHandle,
                 wallet.Handle,
                 verKey,
-                _getKeyMetadataCompletedCallback
+                GetKeyMetadataCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -250,7 +281,7 @@ namespace Hyperledger.Indy.CryptoApi
                 myVk,
                 message,
                 message.Length,
-                _cryptoSignCompletedCallback
+                CryptoSignCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -285,7 +316,7 @@ namespace Hyperledger.Indy.CryptoApi
                 message.Length,
                 signature,
                 signature.Length,
-                _cryptoVerifyCompletedCallback
+                CryptoVerifyCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -327,7 +358,7 @@ namespace Hyperledger.Indy.CryptoApi
                 theirVk,
                 message,
                 message.Length,
-                _cryptoEncryptCompletedCallback
+                CryptoEncryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -367,7 +398,7 @@ namespace Hyperledger.Indy.CryptoApi
                 myVk,
                 message,
                 message.Length,
-                _cryptoAuthDecryptCompletedCallback
+                CryptoAuthDecryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
@@ -401,12 +432,12 @@ namespace Hyperledger.Indy.CryptoApi
                 theirVk,
                 message,
                 message.Length,
-                _cryptoEncryptCompletedCallback
+                CryptoEncryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);
 
-            return taskCompletionSource.Task; 
+            return taskCompletionSource.Task;
         }
 
         /// <summary>
@@ -445,7 +476,7 @@ namespace Hyperledger.Indy.CryptoApi
                 myVk,
                 encryptedMessage,
                 encryptedMessage.Length,
-                _cryptoAnonDecryptCompletedCallback
+                CryptoAnonDecryptCompletedCallback
                 );
 
             CallbackHelper.CheckResult(commandResult);

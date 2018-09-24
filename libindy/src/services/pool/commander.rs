@@ -17,21 +17,14 @@ impl Commander {
     }
 
     pub fn fetch_events(&self) -> Option<PoolEvent> {
-        let cmd = match self.cmd_socket.recv_multipart(zmq::DONTWAIT).map_err(map_err_trace!()) {
-            Ok(v) => v,
-            Err(_) => {
-                return None;
-            }
-        };
-        trace!("cmd {:?}", cmd);
-        let cmd_s = match String::from_utf8(cmd[0].clone())
+        let cmd_parts = self.cmd_socket.recv_multipart(zmq::DONTWAIT)
+            .map_err(map_err_trace!()).ok()?;
+        trace!("cmd_parts {:?}", cmd_parts);
+        let cmd_s = String::from_utf8(cmd_parts[0].clone())
             .map_err(|err|
                 CommonError::InvalidState(format!("Invalid command received: {:?}", err)))
-            .map_err(map_err_trace!()) {
-            Ok(cmd) => cmd,
-            Err(_) => { return None; }
-        };
-        let id = cmd.get(1).map(|cmd: &Vec<u8>| LittleEndian::read_i32(cmd.as_slice()))
+            .map_err(map_err_trace!()).ok()?;
+        let id = cmd_parts.get(1).map(|cmd: &Vec<u8>| LittleEndian::read_i32(cmd.as_slice()))
             .unwrap_or(-1);
         if "exit".eq(cmd_s.as_str()) {
             Some(PoolEvent::Close(id))
@@ -40,7 +33,17 @@ impl Commander {
         } else if "connect".eq(cmd_s.as_str()) {
             Some(PoolEvent::CheckCache(id))
         } else {
-            Some(PoolEvent::SendRequest(id, cmd_s))
+            let timeout = LittleEndian::read_i32(cmd_parts[2].as_slice());
+            let timeout = if timeout == -1 { None } else { Some(timeout) };
+            let nodes = if let Some(nodes) = cmd_parts.get(3) {
+                Some(String::from_utf8(nodes.clone())
+                    .map_err(|err|
+                        CommonError::InvalidState(format!("Invalid command received: {:?}", err)))
+                    .map_err(map_err_trace!()).ok()?)
+            } else {
+                None
+            };
+            Some(PoolEvent::SendRequest(id, cmd_s, timeout, nodes))
         }
     }
 
@@ -52,7 +55,7 @@ impl Commander {
 #[cfg(test)]
 mod commander_tests {
     use super::*;
-    use utils::sequence::SequenceUtils;
+    use utils::sequence;
 
     #[test]
     pub fn commander_new_works() {
@@ -96,7 +99,7 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "exit";
@@ -110,7 +113,7 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "refresh";
@@ -124,7 +127,7 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
         let msg = "connect";
@@ -138,12 +141,14 @@ mod commander_tests {
 
         let cmd = Commander::new(recv_cmd_sock);
 
-        let cmd_id: i32 = SequenceUtils::get_next_id();
+        let cmd_id: i32 = sequence::get_next_id();
         let mut buf = [0u8; 4];
         LittleEndian::write_i32(&mut buf, cmd_id);
+        let mut buf_to = [0u8; 4];
+        LittleEndian::write_i32(&mut buf_to, -1);
         let msg = "test";
-        send_cmd_sock.send_multipart(&[msg.as_bytes(), &buf], zmq::DONTWAIT).expect("FIXME");
-        assert_match!(Some(PoolEvent::SendRequest(cmd_id_, msg_)), cmd.fetch_events(),
+        send_cmd_sock.send_multipart(&[msg.as_bytes(), &buf, &buf_to], zmq::DONTWAIT).expect("FIXME");
+        assert_match!(Some(PoolEvent::SendRequest(cmd_id_, msg_, None, None)), cmd.fetch_events(),
                       cmd_id_, cmd_id,
                       msg_, msg);
     }

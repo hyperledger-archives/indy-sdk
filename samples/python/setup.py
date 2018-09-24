@@ -8,5 +8,5 @@ setup(
     author='Artem Ivanov',
     author_email='artem.ivanov@dsr-company.com',
     description='This is the sample of usage python wrapper for Hyperledger Indy SDK.',
-    install_requires=['python3-indy==1.4.0-dev-586']
+    install_requires=['python3-indy==1.6.2-dev-720']
 )

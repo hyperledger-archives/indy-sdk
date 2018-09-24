@@ -1,4 +1,6 @@
-indy-cli (1.5.0) unstable; urgency=medium
+indy-cli (1.6.6) unstable; urgency=medium
 
-  [ Hyperledger ]
-  * Created Indy-Cli
+[ Hyperledger ]
+
+* 1.6.5
+    * `ledger get-*` commands can be called without having an active `did`.

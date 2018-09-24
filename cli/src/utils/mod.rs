@@ -1,13 +1,13 @@
 #[allow(dead_code)] // FIXME
 pub mod environment;
-#[allow(dead_code)] // FIXME
 #[macro_use]
 pub mod logger;
 #[macro_use]
 pub mod term;
-#[allow(dead_code)] // FIXME
+#[cfg(test)]
 pub mod test;
 pub mod sequence;
+pub mod cstring;
 pub mod table;
 
 #[macro_export] //TODO move to more relevant place
@@ -51,4 +51,14 @@ macro_rules! command_with_cleanup {
             )
         }
     )
+}
+
+#[macro_export] //TODO move to more relevant place
+macro_rules! unwrap_or_return {
+    ($result:expr, $err:expr) => {
+        match $result {
+            Some(res) => res,
+            None => return $err
+        };
+    }
 }

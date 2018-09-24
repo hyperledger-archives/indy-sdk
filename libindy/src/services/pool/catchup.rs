@@ -4,9 +4,11 @@ use services::ledger::merkletree::merkletree::MerkleTree;
 use services::pool::merkle_tree_factory;
 use services::pool::rust_base58::{FromBase58, ToBase58};
 use services::pool::types::{CatchupReq, Message};
+
+use serde_json;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use super::indy_crypto::utils::json::JsonEncodable;
+
 
 pub enum CatchupProgress {
     ShouldBeStarted(
@@ -35,7 +37,7 @@ pub fn build_catchup_req(merkle: &MerkleTree, target_mt_size: usize) -> Result<O
         catchupTill: target_mt_size,
     };
     let req_id = format!("{}{}", seq_no_start, seq_no_end);
-    let req_json = Message::CatchupReq(cr).to_json()
+    let req_json = serde_json::to_string(&Message::CatchupReq(cr))
         .map_err(|err| CommonError::InvalidState(format!("Cannot serialize CatchupRequest: {:?}", err)))?;
     trace!("catchup_req msg: {:?}", req_json);
     Ok(Some((req_id, req_json)))
@@ -43,11 +45,12 @@ pub fn build_catchup_req(merkle: &MerkleTree, target_mt_size: usize) -> Result<O
 
 pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Option<Vec<String>>), HashSet<String>>,
                                        merkle_tree: &MerkleTree,
-                                       node_count: usize,
+                                       node_cnt: usize,
                                        f: usize,
                                        pool_name: &str) -> Result<CatchupProgress, PoolError> {
     if let Some((most_popular_vote, votes_cnt)) = nodes_votes.iter().map(|(key, val)| (key, val.len())).max_by_key(|entry| entry.1) {
-        if votes_cnt == node_count - f {
+        let is_consensus_reached = votes_cnt == node_cnt - f;
+        if is_consensus_reached {
             if most_popular_vote.0.eq("timeout") {
                 return Err(PoolError::Timeout);
             }
@@ -59,6 +62,14 @@ pub fn check_nodes_responses_on_status(nodes_votes: &HashMap<(String, usize, Opt
                     Err(err)
                 }
             });
+        } else {
+            let reps_cnt: usize = nodes_votes.values().map(|set| set.len()).sum();
+            let positive_votes_cnt = votes_cnt + (node_cnt - reps_cnt);
+            let is_consensus_reachable = positive_votes_cnt < node_cnt - f;
+            if is_consensus_reachable {
+                //TODO: maybe we should change the error, but it was made to escape changing of ErrorCode returned to client
+                return Err(PoolError::Timeout);
+            }
         }
     }
     Ok(CatchupProgress::InProgress)
@@ -73,7 +84,7 @@ fn _try_to_catch_up(ledger_status: &(String, usize, Option<Vec<String>>), merkle
             return Ok(CatchupProgress::NotNeeded(merkle_tree.clone()));
         } else {
             return Err(PoolError::CommonError(CommonError::InvalidState(
-                "Ledger merkle tree doesn't acceptable for current tree.".to_string())));
+                "Ledger merkle tree is not acceptable for current tree.".to_string())));
         }
     } else if target_mt_size > cur_mt_size {
         let target_mt_root = target_mt_root.from_base58().map_err(|_|

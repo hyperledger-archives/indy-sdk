@@ -1,13 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="MSBuild.Sdk.Extras/1.6.46">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.1</TargetFramework>
+    <TargetFrameworks>netstandard1.1;xamarinios10</TargetFrameworks>
     <AssemblyName>Hyperledger.Indy.Sdk</AssemblyName>
     <RootNamespace>Hyperledger.Indy</RootNamespace>
-    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-    <Version>1.4.0</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>1.6.4</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Authors>Symon Rottem</Authors>
+    <Authors>Symon Rottem, Tomislav Markovski</Authors>
     <Company>Hyperledger Indy</Company>
     <Product>Hyperledger Indy SDK</Product>
     <Description>.NET wrapper for the Hyperledger Indy SDK.
@@ -19,8 +19,8 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
     <PackageTags>hyperledger indy sdk</PackageTags>
     <PackageLicenseUrl>https://github.com/hyperledger/indy-sdk/blob/master/LICENSE</PackageLicenseUrl>
     <PackageIconUrl></PackageIconUrl>
-    <AssemblyVersion>1.4.0.0</AssemblyVersion>
-    <FileVersion>1.4.0.0</FileVersion>
+    <AssemblyVersion>1.6.4</AssemblyVersion>
+    <FileVersion>1.6.4</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

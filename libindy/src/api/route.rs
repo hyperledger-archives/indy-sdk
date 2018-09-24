@@ -4,7 +4,7 @@ use api::ErrorCode;
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::route::RouteCommand;
-use utils::cstring::CStringUtils;
+use utils::ctypes;
 
 use self::libc::c_char;
 
@@ -40,7 +40,7 @@ pub fn indy_auth_pack_message(command_handle: i32,
             let (err, ames) = result_to_err_code_1!(result, String::new());
             trace!("indy_auth_pack_message: cb command_handle: {:?}, err: {:?}, ames: {:?}",
                    command_handle, err, ames);
-            let ames = CStringUtils::string_to_cstring(ames);
+            let ames = ctypes::string_to_cstring(ames);
             cb(command_handle, err, ames.as_ptr())
         })
     )));
@@ -84,7 +84,7 @@ pub fn indy_anon_pack_message(command_handle: i32,
             let (err, ames) = result_to_err_code_1!(result, String::new());
             trace!("indy_anon_pack_message: cb command_handle: {:?}, err: {:?}, ames: {:?}",
                    command_handle, err, ames);
-            let verkey = CStringUtils::string_to_cstring(ames);
+            let verkey = ctypes::string_to_cstring(ames);
             cb(command_handle, err, verkey.as_ptr())
         })
     )));
@@ -124,7 +124,7 @@ pub fn indy_unpack_message(command_handle: i32,
             let (err, plaintext) = result_to_err_code_1!(result, String::new());
             trace!("indy_unpack_message: cb command_handle: {:?}, err: {:?}, plaintext: {:?}",
                    command_handle, err, plaintext);
-            let plaintext = CStringUtils::string_to_cstring(plaintext);
+            let plaintext = ctypes::string_to_cstring(plaintext);
             cb(command_handle, err, plaintext.as_ptr())
         })
     )));

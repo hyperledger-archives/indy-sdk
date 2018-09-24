@@ -1,3 +1,4 @@
+#[macro_use]
 pub mod callbacks;
 #[macro_use]
 pub mod cstring;
@@ -8,4 +9,4 @@ pub mod logger;
 pub mod sequence;
 pub mod rand;
 pub mod types;
-pub mod utxo;
+pub mod source;

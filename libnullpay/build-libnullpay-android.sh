@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 
-pushd build_scripts/android
+export INDY_PREFIX_DIR="libindy"
 echo "Building for arm"
-sh build.sh arm 21 arm-linux-androideabi libindy_arm
+sh android.build.sh -d arm "${INDY_PREFIX_DIR}/libindy_arm"
 echo "Building for arm64"
-sh build.sh arm64 21 aarch64-linux-android libindy_arm64
+sh android.build.sh -d arm64 "${INDY_PREFIX_DIR}/libindy_arm64"
 echo "Building for x86"
-sh build.sh x86 21 i686-linux-android libindy_x86
-popd
+sh android.build.sh -d x86 "${INDY_PREFIX_DIR}/libindy_x86"

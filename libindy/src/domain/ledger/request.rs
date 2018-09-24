@@ -1,11 +1,10 @@
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-extern crate time;
-
-use self::indy_crypto::utils::json::JsonEncodable;
+use serde;
+use serde_json;
+use time;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+pub const DEFAULT_LIBIDY_DID: &'static str = "LibindyDid111111111111";
 
 pub struct ProtocolVersion {}
 
@@ -28,7 +27,7 @@ impl ProtocolVersion {
 }
 
 
-#[derive(Serialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Request<T: serde::Serialize> {
     pub req_id: u64,
@@ -50,10 +49,9 @@ impl<T: serde::Serialize> Request<T> {
         }
     }
 
-    pub fn build_request(identifier: &str, operation: T) -> Result<String, serde_json::Error> {
+    pub fn build_request(identifier: Option<&str>, operation: T) -> Result<String, serde_json::Error> {
         let req_id = time::get_time().sec as u64 * (1e9 as u64) + time::get_time().nsec as u64;
+        let identifier = identifier.unwrap_or(DEFAULT_LIBIDY_DID);
         serde_json::to_string(&Request::new(req_id, identifier, operation, ProtocolVersion::get()))
     }
 }
-
-impl<T: JsonEncodable> JsonEncodable for Request<T> {}

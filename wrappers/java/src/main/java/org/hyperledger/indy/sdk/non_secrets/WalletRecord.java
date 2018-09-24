@@ -35,7 +35,7 @@ public class WalletRecord extends IndyJava.API {
 		public void callback(int xcommand_handle, int err) {
 
 			CompletableFuture<Void> future = (CompletableFuture<Void>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			Void result = null;
 			future.complete(result);
@@ -51,7 +51,7 @@ public class WalletRecord extends IndyJava.API {
 		public void callback(int xcommand_handle, int err, String str) {
 
 			CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(xcommand_handle);
-			if (! checkCallback(future, err)) return;
+			if (! checkResult(future, err)) return;
 
 			String result = str;
 			future.complete(result);
@@ -71,8 +71,8 @@ public class WalletRecord extends IndyJava.API {
 	 * @param value    The value of record
 	 * @param tagsJson The record tags used for search and storing meta information as json:
 	 *                 {
-	 *                     "tagName1": <str>, // string tag (will be stored encrypted)
-	 *                     "tagName2": <str>, // string tag (will be stored encrypted)
+	 *                     "tagName1": "str", // string tag (will be stored encrypted)
+	 *                     "tagName2": "str", // string tag (will be stored encrypted)
 	 *                 }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -103,7 +103,7 @@ public class WalletRecord extends IndyJava.API {
 				tagsJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -142,7 +142,7 @@ public class WalletRecord extends IndyJava.API {
 				value,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -155,8 +155,8 @@ public class WalletRecord extends IndyJava.API {
 	 * @param id       The id of record
 	 * @param tagsJson The record tags used for search and storing meta information as json:
 	 *                 {
-	 *                     "tagName1": <str>, // string tag (will be stored encrypted)
-	 *                     "tagName2": <str>, // string tag (will be stored encrypted)
+	 *                     "tagName1": "str", // string tag (will be stored encrypted)
+	 *                     "tagName2": "str", // string tag (will be stored encrypted)
 	 *                 }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -185,7 +185,7 @@ public class WalletRecord extends IndyJava.API {
 				tagsJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -198,8 +198,8 @@ public class WalletRecord extends IndyJava.API {
 	 * @param id       The id of record
 	 * @param tagsJson The record tags used for search and storing meta information as json:
 	 *                 {
-	 *                     "tagName1": <str>, // string tag (will be stored encrypted)
-	 *                     "tagName2": <str>, // string tag (will be stored encrypted)
+	 *                     "tagName1": "str", // string tag (will be stored encrypted)
+	 *                     "tagName2": "str", // string tag (will be stored encrypted)
 	 *                 }
 	 * @return A future that resolves no value.
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
@@ -228,7 +228,7 @@ public class WalletRecord extends IndyJava.API {
 				tagsJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -268,7 +268,7 @@ public class WalletRecord extends IndyJava.API {
 				tagNamesJson,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -303,7 +303,7 @@ public class WalletRecord extends IndyJava.API {
 				id,
 				voidCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}
@@ -325,7 +325,7 @@ public class WalletRecord extends IndyJava.API {
 	 *    id: "Some id",
 	 *    type: "Some type", // present only if retrieveType set to true
 	 *    value: "Some value", // present only if retrieveValue set to true
-	 *    tags: <tags json>, // present only if retrieveTags set to true
+	 *    tags: "Some tags json", // present only if retrieveTags set to true
 	 *  }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.
 	 */
@@ -353,7 +353,7 @@ public class WalletRecord extends IndyJava.API {
 				optionsJson,
 				stringCb);
 
-		checkResult(result);
+		checkResult(future, result);
 
 		return future;
 	}

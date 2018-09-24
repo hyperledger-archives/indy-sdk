@@ -9,8 +9,6 @@ use utils::crypto::base64::{decode, encode};
 use utils::crypto::xsalsa20::{encrypt_payload, decrypt_payload};
 use utils::serialization::jwm::*;
 use std::rc::Rc;
-use std::collections::HashMap;
-use services::wallet::WalletRecord;
 
 pub struct RouteService { }
 
@@ -124,8 +122,7 @@ impl RouteService {
                             wallet_service: Rc<WalletService>) -> Result<Key, RouteError> {
         wallet_service.get_indy_object(wallet_handle,
                                        my_vk,
-                                       &RecordOptions::id_value(),
-                                       &mut String::new())
+                                       &RecordOptions::id_value())
         .map_err(|err| RouteError::UnpackError(format!("Can't find key: {:?}", err)))
     }
     
@@ -212,8 +209,13 @@ pub mod tests {
     use super::{RouteService};
     use std::collections::HashMap;
     use utils::inmem_wallet::InmemWallet;
-    use utils::test::TestUtils;
+    use utils::test;
     use std::rc::Rc;
+    use domain::wallet::Config;
+    use domain::wallet::Credentials;
+    use domain::wallet::KeyDerivationMethod;
+
+    // TODO Fix texts so only one wallet is used to speed up tests
 
     #[test]
     pub fn test_unpack_msg_success_multi_anoncrypt() {
@@ -448,24 +450,42 @@ pub mod tests {
         service.create_my_did(&did_info).unwrap()
     }
 
-    fn _send_config() -> String {
-        json!({"id": "send1"}).to_string()
+    fn _send_config() -> Config {
+        Config {
+            id: "w1".to_string(),
+            storage_type: None,
+            storage_config: None,
+        }
     }
 
-    fn _recv_config() -> String {
-        json!({"id": "recv1"}).to_string()
+    fn _recv_config() -> Config {
+        Config {
+            id: "recv1".to_string(),
+            storage_type: None,
+            storage_config: None,
+        }
     }
 
-    fn _config() -> String {
-        json!({"id": "w1"}).to_string()
+    fn _config() -> Config {
+        Config {
+            id: "w1".to_string(),
+            storage_type: None,
+            storage_config: None,
+        }
     }
 
-    fn _credentials() -> String {
-        json!({"key": "my_key"}).to_string()
+    fn _credentials() -> Credentials {
+        Credentials {
+            key: "my_key".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+        }
     }
 
     fn _cleanup() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
         InmemWallet::cleanup();
     }
 

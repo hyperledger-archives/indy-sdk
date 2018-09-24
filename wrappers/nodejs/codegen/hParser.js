@@ -120,9 +120,6 @@ function parseParams (src) {
       name: buff.substring(i).trim(),
       type: buff.substring(0, i).replace(/ \*$/, '*')
     }
-    if (/json/i.test(o.name)) {
-      o.json = true
-    }
     switch (o.type.toLowerCase().replace(/\s+/g, '').trim()) {
       case 'indy_u64_t':
       case 'longlong':
@@ -130,6 +127,13 @@ function parseParams (src) {
         if (o.name === 'timestamp') {
           o.timestamp = true
         }
+        break
+      case 'constchar*':
+      case 'constchar*const':
+        if (/json|^config$|^data$|^credentials$/i.test(o.name)) {
+          o.json = true
+        }
+        break
     }
     params.push(o)
     buff = ''
@@ -222,33 +226,24 @@ fs.readdirSync(dir).forEach(function (file) {
 
 // manually set some json and timestamp hints
 api.functions.indy_build_attrib_request.params[4].json = true
-api.functions.indy_build_cred_def_request.params[2].json = true
-api.functions.indy_build_node_request.params[3].json = true
-api.functions.indy_build_revoc_reg_def_request.params[2].json = true
 api.functions.indy_build_revoc_reg_entry_request.params[4].json = true
-api.functions.indy_build_schema_request.params[2].json = true
-api.functions.indy_create_pool_ledger_config.params[2].json = true
-api.functions.indy_create_wallet.params[4].json = true
-api.functions.indy_create_wallet.params[5].json = true
-api.functions.indy_delete_wallet.params[2].json = true
 api.functions.indy_get_my_did_with_meta.params[3].params[2].json = true
-api.functions.indy_import_wallet.params[4].json = true
-api.functions.indy_import_wallet.params[5].json = true
-api.functions.indy_issuer_create_credential.params[6].optional = true
 api.functions.indy_issuer_create_schema.params[4].json = true
 api.functions.indy_issuer_merge_revocation_registry_deltas.params[3].params[2].json = true
 api.functions.indy_list_my_dids_with_meta.params[2].params[2].json = true
 api.functions.indy_list_pairwise.params[2].params[2].json = true
 api.functions.indy_list_pools.params[1].params[2].json = true
-api.functions.indy_list_wallets.params[1].params[2].json = true
-api.functions.indy_open_wallet.params[3].json = true
 api.functions.indy_parse_get_cred_def_response.params[1].json = true
 api.functions.indy_parse_get_revoc_reg_def_response.params[1].json = true
 api.functions.indy_parse_get_revoc_reg_delta_response.params[1].json = true
 api.functions.indy_parse_get_revoc_reg_response.params[1].json = true
 api.functions.indy_parse_get_schema_response.params[1].json = true
+api.functions.indy_submit_action.params[3].json = true
 
 api.functions.indy_build_get_revoc_reg_delta_request.params[3].timestamp = true
 api.functions.indy_build_get_revoc_reg_delta_request.params[4].timestamp = true
+
+api.functions.indy_issuer_create_credential.params[6].optional = true
+api.functions.indy_submit_action.params[4].optional = true
 
 fs.writeFileSync(path.resolve(__dirname, 'api.json'), stringify(api, {maxLength: 100}), 'utf8')

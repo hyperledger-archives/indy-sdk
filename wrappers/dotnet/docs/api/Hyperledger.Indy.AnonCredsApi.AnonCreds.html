@@ -86,7 +86,7 @@
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
-    <div class="level0"><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.object(v=vs.110).aspx">Object</a></div>
+    <div class="level0"><span class="xref">System.Object</span></div>
     <div class="level1"><span class="xref">AnonCreds</span></div>
   </div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Hyperledger.Indy.AnonCredsApi.html">Hyperledger.Indy.AnonCredsApi</a></h6>
@@ -99,8 +99,7 @@
   </h3>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_CreateRevocationStateAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.CreateRevocationStateAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_CreateRevocationStateAsync_Hyperledger_Indy_BlobStorageApi_BlobStorageReader_System_String_System_String_System_Int64_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.CreateRevocationStateAsync(Hyperledger.Indy.BlobStorageApi.BlobStorageReader,System.String,System.String,System.Int64,System.String)">CreateRevocationStateAsync(BlobStorageReader, String, String, Int64, String)</h4>
-  <div class="markdown level1 summary"><p>Create revocation state for credential in the particular time moment.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -119,32 +118,27 @@
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.BlobStorageApi.BlobStorageReader.html">BlobStorageReader</a></td>
         <td><span class="parametername">blobStorageReader</span></td>
-        <td><p>Configuration of blob storage reader handle that will allow to read revocation tails.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revRegDef</span></td>
-        <td><p>Revocation registry definition json.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revRegDelta</span></td>
-        <td><p>Revocation registry definition delta json.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int64(v=vs.110).aspx">Int64</a></td>
+        <td><span class="xref">System.Int64</span></td>
         <td><span class="parametername">timestamp</span></td>
-        <td><p>Time represented as a total number of seconds from Unix Epoch.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credRevId</span></td>
-        <td><p>user credential revocation id in revocation registry.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -158,22 +152,14 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>revocation state json:
-{
-&quot;rev_reg&quot;: &lt;revocation registry&gt;,
-&quot;witness&quot;: &lt;witness&gt;,
-&quot;timestamp&quot; : integer
-}
-.</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreCredentialDefAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateAndStoreCredentialDefAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreCredentialDefAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateAndStoreCredentialDefAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String)">IssuerCreateAndStoreCredentialDefAsync(Wallet, String, String, String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Creates keys for the given schema and signature type.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -192,38 +178,32 @@
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>The wallet into which the claim definition will be stored.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">issuerDid</span></td>
-        <td><p>The DID of the issuer of the claim definition.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">schemaJson</span></td>
-        <td><p>The JSON schema of the claim definition.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">tag</span></td>
-        <td><p>Allows to distinct between credential definitions for the same issuer and schema</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">type</span></td>
-        <td><p>The type of signature to use.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">configJson</span></td>
-        <td><p>Whether to request non-revocation claim.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -237,40 +217,14 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateAndStoreCredentialDefResult.html">IssuerCreateAndStoreCredentialDefResult</a>&gt;</td>
-        <td><p>credDefId: identifier of created credential definition
-credDefJson: public part of created credential definition</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateAndStoreCredentialDefResult.html">IssuerCreateAndStoreCredentialDefResult</a>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
-  <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreCredentialDefAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p><p>This method creates both primary and revocation keys for the given
-signature type and schema and stores them in the provided <code data-dev-comment-type="paramref" class="paramref">wallet</code>.
-The generated claim definition is returned as a JSON string containing information about the 
-signature type, schema, the issuer&apos;s public key and the unique identifier of the public key 
-in the wallet.
-</p>
-<div class="NOTE"><h5>note</h5><p>Currently the only signature type that is supported is &apos;CL&apos;.</p></div></p>
-</div>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreRevocRegAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateAndStoreRevocRegAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateAndStoreRevocRegAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_Hyperledger_Indy_BlobStorageApi_BlobStorageWriter_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateAndStoreRevocRegAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String,Hyperledger.Indy.BlobStorageApi.BlobStorageWriter)">IssuerCreateAndStoreRevocRegAsync(Wallet, String, String, String, String, String, BlobStorageWriter)</h4>
-  <div class="markdown level1 summary"><p>Create a new revocation registry for the given credential definition as tuple of entities:</p>
-<ul>
-<li>Revocation registry definition that encapsulates credentials definition reference, revocation type specific configuration and
-secrets used for credentials revocation</li>
-<li>Revocation registry state that stores the information about revoked entities in a non-disclosing way. The state can be
-represented as ordered list of revocation registry entries were each entry represents the list of revocation or issuance operations.</li>
-</ul>
-<p>Revocation registry definition entity contains private and public parts. Private part will be stored in the wallet. Public part
-will be returned as json intended to be shared with all anoncreds workflow actors usually by publishing REVOC_REG_DEF transaction
-to Indy distributed ledger.</p>
-<p>Revocation registry state is stored on the wallet and also intended to be shared as the ordered list of REVOC_REG_ENTRY transactions.
-This call initializes the state in the wallet and returns the initial entry.</p>
-<p>Some revocation registry types (for example, &apos;CL_ACCUM&apos;) can require generation of binary blob called tails used to hide information about revoked credentials in public
-revocation registry and intended to be distributed out of leger (REVOC_REG_DEF transaction will still contain uri and hash of tails).
-This call requires access to pre-configured blob storage writer instance handle that will allow to write generated tails.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -289,56 +243,37 @@ This call requires access to pre-configured blob storage writer instance handle 
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>wallet handler (created by open_wallet)..</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">issuerDid</span></td>
-        <td><p>a DID of the issuer signing transaction to the Ledger.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">type</span></td>
-        <td><p>revocation registry type (optional, default value depends on credential definition type). Supported types are:</p>
-<ul>
-<li>&apos;CL_ACCUM&apos;: Type-3 pairing based accumulator. Default for &apos;CL&apos; credential definition type.</li>
-</ul>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">tag</span></td>
-        <td><p>allows to distinct between revocation registries for the same issuer and credential definition.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credDefId</span></td>
-        <td><p>id of stored in ledger credential definition.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">configJson</span></td>
-        <td><p>type-specific configuration of revocation registry as json:</p>
-<ul>
-<li>&apos;CL_ACCUM&apos;: {
-  &quot;issuance_type&quot;: (optional) type of issuance. Currently supported:
-      1) ISSUANCE_BY_DEFAULT: all indices are assumed to be issued and initial accumulator is calculated over all indices;
-         Revocation Registry is updated only during revocation.
-      2) ISSUANCE_ON_DEMAND: nothing is issued initially accumulator is 1 (used by default);
-  &quot;max_cred_num&quot;: maximum number of credentials the new registry can process (optional, default 100000)
-}.</li>
-</ul>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.BlobStorageApi.BlobStorageWriter.html">BlobStorageWriter</a></td>
         <td><span class="parametername">tailsWriter</span></td>
-        <td><p>handle of blob storage to store tails</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -352,24 +287,14 @@ This call requires access to pre-configured blob storage writer instance handle 
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateAndStoreRevocRegResult.html">IssuerCreateAndStoreRevocRegResult</a>&gt;</td>
-        <td><p>revoc_reg_id: identifier of created revocation registry definition
-revoc_reg_def_json: public part of revocation registry definition
-revoc_reg_entry_json: revocation registry entry that defines initial state of revocation registry</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateAndStoreRevocRegResult.html">IssuerCreateAndStoreRevocRegResult</a>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateCredentialAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateCredentialAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateCredentialAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_Hyperledger_Indy_BlobStorageApi_BlobStorageReader_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateCredentialAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,Hyperledger.Indy.BlobStorageApi.BlobStorageReader)">IssuerCreateCredentialAsync(Wallet, String, String, String, String, BlobStorageReader)</h4>
-  <div class="markdown level1 summary"><p>Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.</p>
-<p>Cred Request must match Cred Offer. The credential definition and revocation registry definition
-referenced in Cred Offer and Cred Request must be already created and stored into the wallet.</p>
-<p>Information for this credential revocation will be store in the wallet as part of revocation registry under
-generated cred_revoc_id local for this wallet.</p>
-<p>This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
-Note that it is possible to accumulate deltas to reduce ledger load.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -388,43 +313,32 @@ Note that it is possible to accumulate deltas to reduce ledger load.</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>Wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credOfferJson</span></td>
-        <td><p>a cred offer created by indy_issuer_create_credential_offer</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credReqJson</span></td>
-        <td><p>a credential request created by indy_prover_create_credential_req.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credValuesJson</span></td>
-        <td><p>a credential containing attribute values for each of requested attribute names.
-    Example:
-    {
-     &quot;attr1&quot; : {&quot;raw&quot;: &quot;value1&quot;, &quot;encoded&quot;: &quot;value1_as_int&quot; },
-     &quot;attr2&quot; : {&quot;raw&quot;: &quot;value1&quot;, &quot;encoded&quot;: &quot;value1_as_int&quot; }
-    }</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revRegId</span></td>
-        <td><p>id of revocation registry stored in the wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.BlobStorageApi.BlobStorageReader.html">BlobStorageReader</a></td>
         <td><span class="parametername">blobStorageReader</span></td>
-        <td><p>configuration of blob storage reader handle that will allow to read revocation tails</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -438,29 +352,14 @@ Note that it is possible to accumulate deltas to reduce ledger load.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateCredentialResult.html">IssuerCreateCredentialResult</a>&gt;</td>
-        <td><p>cred_json: Credential json containing signed credential values
-{
-&quot;schema_id&quot;: string,
-&quot;cred_def_id&quot;: string,
-&quot;rev_reg_def_id&quot;, Optional&lt;string&gt;,
-&quot;values&quot;: [see cred_values_json above],
-// Fields below can depend on Cred Def type
-&quot;signature&quot;: [signature],
-&quot;signature_correctness_proof&quot;: [signature_correctness_proof]
-}
-cred_revoc_id: local id for revocation info (Can be used for revocation of this cred)
-revoc_reg_delta_json: Revocation registry delta json with a newly issued credential</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateCredentialResult.html">IssuerCreateCredentialResult</a>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateCredentialOfferAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateCredentialOfferAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateCredentialOfferAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateCredentialOfferAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">IssuerCreateCredentialOfferAsync(Wallet, String)</h4>
-  <div class="markdown level1 summary"><p>Create credential offer that will be used by Prover for
-credential request creation. Offer includes nonce and key correctness proof
-for authentication between protocol steps and integrity checking.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -479,14 +378,12 @@ for authentication between protocol steps and integrity checking.</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>Wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credDefId</span></td>
-        <td><p>id of credential definition stored in the wallet</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -500,29 +397,14 @@ for authentication between protocol steps and integrity checking.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>credential offer json:
-{
-&quot;schema_id&quot;: string,
-&quot;cred_def_id&quot;: string,
-// Fields below can depend on Cred Def type
-&quot;nonce&quot;: string,
-&quot;key_correctness_proof&quot; : [key_correctness_proof]
-}</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateSchemaAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateSchemaAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerCreateSchemaAsync_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerCreateSchemaAsync(System.String,System.String,System.String,System.String)">IssuerCreateSchemaAsync(String, String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Create credential schema entity that describes credential attributes list and allows credentials
-interoperability.</p>
-<p>Schema is public and intended to be shared with all anoncreds workflow actors usually by publishing SCHEMA transaction
-to Indy distributed ledger.</p>
-<p>It is IMPORTANT for current version POST Schema in Ledger and after that GET it from Ledger
-with correct seq_no to save compatibility with Ledger.
-After that can call indy_issuer_create_and_store_credential_def to build corresponding Credential Definition.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -539,28 +421,24 @@ After that can call indy_issuer_create_and_store_credential_def to build corresp
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">issuerDid</span></td>
-        <td><p>DID of schema issuer</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">name</span></td>
-        <td><p>Name of the schema</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">version</span></td>
-        <td><p>Version of the schema</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">attrs</span></td>
-        <td><p>A list of schema attributes descriptions</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -574,18 +452,14 @@ After that can call indy_issuer_create_and_store_credential_def to build corresp
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.html">IssuerCreateSchemaResult</a>&gt;</td>
-        <td><p>schemaId: identifier of created schema
-schemaJson: schema as json</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.IssuerCreateSchemaResult.html">IssuerCreateSchemaResult</a>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerMergeRevocationRegistryDeltasAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerMergeRevocationRegistryDeltasAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerMergeRevocationRegistryDeltasAsync_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerMergeRevocationRegistryDeltasAsync(System.String,System.String)">IssuerMergeRevocationRegistryDeltasAsync(String, String)</h4>
-  <div class="markdown level1 summary"><p>Merge two revocation registry deltas (returned by indy_issuer_create_credential or indy_issuer_revoke_credential) to accumulate common delta.
-Send common delta to ledger to reduce the load.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -602,16 +476,14 @@ Send common delta to ledger to reduce the load.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revRegDelta</span></td>
-        <td><p>revocation registry delta.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">otherRevRegDelta</span></td>
-        <td><p>revocation registry delta for which PrevAccum value  is equal to current accum value of rev_reg_delta_json..</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -625,20 +497,14 @@ Send common delta to ledger to reduce the load.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>merged_rev_reg_delta: Merged revocation registry delta.</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerRevokeCredentialAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerRevokeCredentialAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_IssuerRevokeCredentialAsync_Hyperledger_Indy_WalletApi_Wallet_Hyperledger_Indy_BlobStorageApi_BlobStorageReader_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.IssuerRevokeCredentialAsync(Hyperledger.Indy.WalletApi.Wallet,Hyperledger.Indy.BlobStorageApi.BlobStorageReader,System.String,System.String)">IssuerRevokeCredentialAsync(Wallet, BlobStorageReader, String, String)</h4>
-  <div class="markdown level1 summary"><p>Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).</p>
-<p>The corresponding credential definition and revocation registry must be already
-created an stored into the wallet.</p>
-<p>This call returns revoc registry delta as json file intended to be shared as REVOC_REG_ENTRY transaction.
-Note that it is possible to accumulate deltas to reduce ledger load.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -657,26 +523,22 @@ Note that it is possible to accumulate deltas to reduce ledger load.</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>Wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.BlobStorageApi.BlobStorageReader.html">BlobStorageReader</a></td>
         <td><span class="parametername">blobStorageReader</span></td>
-        <td><p>configuration of blob storage reader handle that will allow to read revocation tails</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revRegId</span></td>
-        <td><p>id of revocation registry stored in wallet</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credRevocId</span></td>
-        <td><p>local id for revocation info.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -690,19 +552,14 @@ Note that it is possible to accumulate deltas to reduce ledger load.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>revoc_reg_delta_json: Revocation registry delta json with a revoked credential.</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateCredentialReqAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateCredentialReqAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateCredentialReqAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateCredentialReqAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String)">ProverCreateCredentialReqAsync(Wallet, String, String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Creates a credential request for the given credential offer.</p>
-<p>The method creates a blinded master secret for a master secret identified by a provided name.
-The master secret identified by the name must be already stored in the secure wallet (see prover_create_master_secret)
-The blinded master secret is a part of the credential request.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -721,32 +578,27 @@ The blinded master secret is a part of the credential request.</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>Wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">proverDid</span></td>
-        <td><p>a DID of the prover.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credOfferJson</span></td>
-        <td><p>credential offer as a json containing information about the issuer and a credential.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credDefJson</span></td>
-        <td><p>credential definition json.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">masterSecretId</span></td>
-        <td><p>the id of the master secret stored in the wallet.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -760,18 +612,8 @@ The blinded master secret is a part of the credential request.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.ProverCreateCredentialRequestResult.html">ProverCreateCredentialRequestResult</a>&gt;</td>
-        <td><p>cred_req_json: Credential request json for creation of credential by Issuer
-{
-&quot;prover_did&quot; : string,
-&quot;cred_def_id&quot; : string,
-// Fields below can depend on Cred Def type
-&quot;blinded_ms&quot; : [blinded_master_secret],
-&quot;blinded_ms_correctness_proof&quot; : [blinded_ms_correctness_proof],
-&quot;nonce&quot;: string
-}
-cred_req_metadata_json: Credential request metadata json for processing of received form Issuer credential.</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Hyperledger.Indy.AnonCredsApi.ProverCreateCredentialRequestResult.html">ProverCreateCredentialRequestResult</a>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -801,10 +643,9 @@ cred_req_metadata_json: Credential request metadata json for processing of recei
 </td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">masterSecretId</span></td>
-        <td><p>The name of the master secret.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -818,8 +659,8 @@ cred_req_metadata_json: Credential request metadata json for processing of recei
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>An asynchronous <a class="xref" href="https://msdn.microsoft.com/en-us/library/system.threading.tasks.task(v=vs.110).aspx">Task</a> that completes when the operation has completed.</p>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task</span> that completes when the operation has completed.</p>
 </td>
       </tr>
     </tbody>
@@ -829,13 +670,7 @@ cred_req_metadata_json: Credential request metadata json for processing of recei
 </div>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateProofAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateProofAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateProofAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverCreateProofAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String,System.String)">ProverCreateProofAsync(Wallet, String, String, String, String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Creates a proof according to the given proof request
-Either a corresponding credential with optionally revealed attributes or self-attested attribute must be provided
-for each requested attribute (see indy_prover_get_credentials_for_pool_req).
-A proof request may request multiple credentials from different schemas and different issuers.
-All required schemas, public keys and revocation registries must be provided.
-The proof request also contains nonce.
-The proof contains either proof or self-attested attribute value for each requested attribute.</p>
+  <div class="markdown level1 summary"><p>Creates a proof for the provided proof request.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
@@ -855,92 +690,38 @@ The proof contains either proof or self-attested attribute value for each reques
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>Wallet.</p>
+        <td><p>The target wallet.</p>
 </td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">proofRequest</span></td>
-        <td><p>proof_request_json: proof request json
-    {
-        &quot;name&quot;: string,
-        &quot;version&quot;: string,
-        &quot;nonce&quot;: string,
-        &quot;requested_attributes&quot;: { // set of requested attributes
-             &quot;(attr_referent)&quot;: (attr_info), // see below
-             ...,
-        },
-        &quot;requested_predicates&quot;: { // set of requested predicates
-             &quot;(predicate_referent)&quot;: (predicate_info), // see below
-             ...,
-         },
-        &quot;non_revoked&quot;: Optional [non_revoc_interval], // see below,
-                       // If specified prover must proof non-revocation
-                       // for date in this interval for each attribute
-                       // (can be overridden on attribute level)
-    }</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">requestedCredentials</span></td>
-        <td><p>requested_credentials_json: either a credential or self-attested attribute for each requested attribute
-{
-&quot;self_attested_attributes&quot;: {
-&quot;self_attested_attribute_referent&quot;: string
-},
-&quot;requested_attributes&quot;: {
-&quot;requested_attribute_referent_1&quot;: {&quot;cred_id&quot;: string, &quot;timestamp&quot;: Optional number, revealed: bool }},
-&quot;requested_attribute_referent_2&quot;: {&quot;cred_id&quot;: string, &quot;timestamp&quot;: Optional number, revealed: bool }}
-},
-&quot;requested_predicates&quot;: {
-&quot;requested_predicates_referent_1&quot;: {&quot;cred_id&quot;: string, &quot;timestamp&quot;: Optional number }},
-}
-}.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">masterSecret</span></td>
-        <td><p>the id of the master secret stored in the wallet</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">schemas</span></td>
-        <td><p>schemas_json: all schemas json participating in the proof request
-{</p>
-<p>}.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credentialDefs</span></td>
-        <td><p>credential_defs_json: all credential definitions json participating in the proof request
-{
-&quot;cred_def1_id&quot;: (credential_def1_json),
-&quot;cred_def2_id&quot;: (credential_def2_json),
-&quot;cred_def3_id&quot;: (credential_def3_json),
-}.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revStates</span></td>
-        <td><p>rev_states_json: all revocation states json participating in the proof request
-{
-&quot;rev_reg_def1_id&quot;: {
-&quot;timestamp1&quot;: (rev_state1),
-&quot;timestamp2&quot;: (rev_state2),
-},
-&quot;rev_reg_def2_id&quot;: {
-&quot;timestamp3&quot;: (rev_state3)
-},
-&quot;rev_reg_def3_id&quot;: {
-&quot;timestamp4&quot;: (rev_state4)
-},
-}.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -954,77 +735,103 @@ The proof contains either proof or self-attested attribute value for each reques
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>Proof json
-For each requested attribute either a proof (with optionally revealed attribute value) or
-self-attested attribute value is provided.
-Each proof is associated with a credential and corresponding schema_id, cred_def_id, rev_reg_id and timestamp.
-There is also aggregated proof part common for all credential proofs.
-{
-&quot;requested&quot;: {
-&quot;revealed_attrs&quot;: {
-   &quot;requested_attr1_id&quot;: {sub_proof_index: number, raw: string, encoded: string},
-   &quot;requested_attr4_id&quot;: {sub_proof_index: number: string, encoded: string},
-},
-&quot;unrevealed_attrs&quot;: {
-   &quot;requested_attr3_id&quot;: {sub_proof_index: number}
-},
-&quot;self_attested_attrs&quot;: {
-   &quot;requested_attr2_id&quot;: self_attested_value,
-},
-&quot;requested_predicates&quot;: {
-   &quot;requested_predicate_1_referent&quot;: {sub_proof_index: int},
-   &quot;requested_predicate_2_referent&quot;: {sub_proof_index: int},
-}
-}
-&quot;proof&quot;: {
-&quot;proofs&quot;: [ (credential_proof), (credential_proof), (credential_proof) ],
-&quot;aggregated_proof&quot;: (aggregated_proof)
-}
-&quot;identifiers&quot;: [{schema_id, cred_def_id, Optional rev_reg_id , Optional timestamp}]
-}</p>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td><p>An asynchronous <span class="xref">System.Threading.Tasks.Task&lt;&gt;</span> that, when the operation completes, resolves 
+to a JSON string containing the proof.</p>
 </td>
       </tr>
     </tbody>
   </table>
   <h5 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverCreateProofAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_System_String__remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>where
-attr_referent: Proof-request local identifier of requested attribute
-attr_info: Describes requested attribute
-{
-&quot;name&quot;: string, // attribute name, (case insensitive and ignore spaces)
-&quot;restrictions&quot;: Optional [&apos;attr_filter&apos;] // see above,
-           // if specified, credential must satisfy to one of the given restriction.
-&quot;non_revoked&quot;: Optional [non_revoc_interval], // see below,
-          // If specified prover must proof non-revocation
-          // for date in this interval this attribute
-          // (overrides proof level interval)
-}
-predicate_referent: Proof-request local identifier of requested attribute predicate
-predicate_info: Describes requested attribute predicate
-{
-&quot;name&quot;: attribute name, (case insensitive and ignore spaces)
-&quot;p_type&quot;: predicate type (Currently &gt;= only)
-&quot;p_value&quot;: predicate value
-&quot;restrictions&quot;: Optional [&apos;attr_filter&apos;] // see above,
-           // if specified, credential must satisfy to one of the given restriction.
-&quot;non_revoked&quot;: Optional [non_revoc_interval], // see below,
-          // If specified prover must proof non-revocation
-          // for date in this interval this attribute
-          // (overrides proof level interval)
-}
-non_revoc_interval: Defines non-revocation interval
-{
-&quot;from&quot;: Optional int, // timestamp of interval beginning
-&quot;to&quot;: Optional int, // timestamp of interval ending
-}</p>
+  <div class="markdown level1 remarks"><p><p>
+Either a corresponding claim with optionally revealed attributes or self-attested attribute 
+must be provided for each requested attribute - see the 
+<span class="xref">Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetClaimsForProofReqAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)</span> method.
+A proof request may request multiple claims from different schema and different issuers.
+All required schema, public keys and revocation registries must be provided.
+The proof request also contains a nonce.
+The proof contains either proof or self-attested attribute value for each requested attribute.
+</p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">proofReqJson</code> parameter expects a JSON string containing a proof request
+from the party that will verify the proof.  E.g.:</p>
+<pre><code> {
+    &quot;nonce&quot;: string,
+    &quot;requested_attr1_referent&quot;: &lt;attr_info>,
+    &quot;requested_attr2_referent&quot;: &lt;attr_info>,
+    &quot;requested_attr3_referent&quot;: &lt;attr_info>,
+    &quot;requested_predicate_1_referent&quot;: &lt;predicate_info>,
+    &quot;requested_predicate_2_referent&quot;: &lt;predicate_info>,
+}</code></pre>
+<p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">requestedClaimsJson</code> parameter should contain either a claim or a 
+self-attested attribute for each attribute requested in the proof request.  E.g.:</p>
+<pre><code>{
+    &quot;requested_attr1_referent&quot;: [claim1_referent_in_wallet, true &lt;reveal_attr>],
+    &quot;requested_attr2_referent&quot;: [self_attested_attribute],
+    &quot;requested_attr3_referent&quot;: [claim2_seq_no_in_wallet, false]
+    &quot;requested_attr4_referent&quot;: [claim2_seq_no_in_wallet, true]
+    &quot;requested_predicate_1_referent&quot;: [claim2_seq_no_in_wallet],
+    &quot;requested_predicate_2_referent&quot;: [claim3_seq_no_in_wallet],
+}</code></pre>
+<p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">schemasJson</code> parameter expects the JSON for each schema that participates
+in the proof request.  E.g.:</p>
+<pre><code>{
+    &quot;claim1_referent_in_wallet&quot;: &lt;schema1>,
+    &quot;claim2_referent_in_wallet&quot;: &lt;schema2>,
+    &quot;claim3_referent_in_wallet&quot;: &lt;schema3>,
+}</code></pre>
+<p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">masterSecretName</code> specifies the name of the master secret stored in 
+the wallet.
+</p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">claimDefsJson</code> parameter expects the JSON for each claim definition 
+participating in the proof request. E.g.:</p>
+<pre><code>{
+    &quot;claim1_referent_in_wallet&quot;: &lt;claim_def1>,
+    &quot;claim2_referent_in_wallet&quot;: &lt;claim_def2>,
+    &quot;claim3_referent_in_wallet&quot;: &lt;claim_def3>,
+}</code></pre>
+<p>
+<p>
+The <code data-dev-comment-type="paramref" class="paramref">revocRegsJson</code> parameter expects the JSON for each revocation registry
+participating in the proof request.  E.g.:</p>
+<pre><code>{
+    &quot;claim1_referent_in_wallet&quot;: &lt;revoc_reg1>,
+    &quot;claim2_referent_in_wallet&quot;: &lt;revoc_reg2>,
+    &quot;claim3_referent_in_wallet&quot;: &lt;revoc_reg3>,
+}</code></pre>
+<p>
+Upon successful completion the operation will return a JSON string.
+For each requested attribute either a proof (with optionally revealed attribute value) or
+self-attested attribute value is provided.
+Each proof is associated with a claim and corresponding schema_seq_no, issuer_did and revoc_reg_seq_no.
+There is also aggregated proof part common for all claim proofs.</p>
+<pre><code>{
+    &quot;requested&quot;: {
+        &quot;requested_attr1_id&quot;: [claim_proof1_referent, revealed_attr1, revealed_attr1_as_int],
+        &quot;requested_attr2_id&quot;: [self_attested_attribute],
+        &quot;requested_attr3_id&quot;: [claim_proof2_referent]
+        &quot;requested_attr4_id&quot;: [claim_proof2_referent, revealed_attr4, revealed_attr4_as_int],
+        &quot;requested_predicate_1_referent&quot;: [claim_proof2_referent],
+        &quot;requested_predicate_2_referent&quot;: [claim_proof3_referent],
+        }
+    &quot;claim_proofs&quot;: {
+        &quot;claim_proof1_referent&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+        &quot;claim_proof2_referent&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no],
+        &quot;claim_proof3_referent&quot;: [&lt;claim_proof>, issuer_did, schema_seq_no, revoc_reg_seq_no]
+    },
+    &quot;aggregated_proof&quot;: &lt;aggregated_proof>
+}</code></pre>
 </div>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetCredentialsAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetCredentialsAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetCredentialsAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetCredentialsAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverGetCredentialsAsync(Wallet, String)</h4>
-  <div class="markdown level1 summary"><p>Gets human readable credentials according to the filter.
-If filter is NULL, then all credentials are returned.
-Credentials can be filtered by Issuer, credential_def and/or Schema.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -1043,22 +850,12 @@ Credentials can be filtered by Issuer, credential_def and/or Schema.</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>Wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">filterJson</span></td>
-        <td><p>filter_json: filter for credentials
-       {
-           &quot;schema_id&quot;: string, (Optional)
-           &quot;schema_issuer_did&quot;: string, (Optional)
-           &quot;schema_name&quot;: string, (Optional)
-           &quot;schema_version&quot;: string, (Optional)
-           &quot;issuer_did&quot;: string, (Optional)
-           &quot;cred_def_id&quot;: string, (Optional)
-       }</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -1072,24 +869,14 @@ Credentials can be filtered by Issuer, credential_def and/or Schema.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>/// credentials json
-    [{
-        &quot;referent&quot;: string, // cred_id in the wallet
-        &quot;values&quot;: [see cred_values_json above],
-        &quot;schema_id&quot;: string,
-        &quot;cred_def_id&quot;: string,
-        &quot;rev_reg_id&quot;: Optional string,
-        &quot;cred_rev_id&quot;: Optional string
-    }].</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetCredentialsForProofReqAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetCredentialsForProofReqAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverGetCredentialsForProofReqAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverGetCredentialsForProofReqAsync(Hyperledger.Indy.WalletApi.Wallet,System.String)">ProverGetCredentialsForProofReqAsync(Wallet, String)</h4>
-  <div class="markdown level1 summary"><p>Gets human readable credentials matching the given proof request.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -1108,62 +895,12 @@ Credentials can be filtered by Issuer, credential_def and/or Schema.</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>Wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">proofRequestJson</span></td>
-        <td><p>/// proof_request_json: proof request json
-    {
-        &quot;name&quot;: string,
-        &quot;version&quot;: string,
-        &quot;nonce&quot;: string,
-        &quot;requested_attributes&quot;: { // set of requested attributes
-             &quot;[attr_referent]&quot;: [attr_info], // see below
-             ...,
-        },
-        &quot;requested_predicates&quot;: { // set of requested predicates
-             &quot;[predicate_referent]&quot;: [predicate_info], // see below
-             ...,
-         },
-        &quot;non_revoked&quot;: Optional [non_revoc_interval], // see below,
-                       // If specified prover must proof non-revocation
-                       // for date in this interval for each attribute
-                       // (can be overridden on attribute level)
-    }</p>
-<p>where
-attr_referent: Proof-request local identifier of requested attribute
-attr_info: Describes requested attribute
-    {
-        &quot;name&quot;: string, // attribute name, (case insensitive and ignore spaces)
-        &quot;restrictions&quot;: Optional [&apos;attr_filter&apos;] // see below,
-                        // if specified, credential must satisfy to one of the given restriction.
-        &quot;non_revoked&quot;: Optional [non_revoc_interval], // see below,
-                       // If specified prover must proof non-revocation
-                       // for date in this interval this attribute
-                       // (overrides proof level interval)
-    }
-predicate_referent: Proof-request local identifier of requested attribute predicate
-predicate_info: Describes requested attribute predicate
-    {
-        &quot;name&quot;: attribute name, (case insensitive and ignore spaces)
-        &quot;p_type&quot;: predicate type (Currently &gt;= only)
-        &quot;p_value&quot;: predicate value
-        &quot;restrictions&quot;: Optional [&apos;attr_filter&apos;] // see below,
-                        // if specified, credential must satisfy to one of the given restriction.
-        &quot;non_revoked&quot;: Optional [non_revoc_interval], // see below,
-                       // If specified prover must proof non-revocation
-                       // for date in this interval this attribute
-                       // (overrides proof level interval)
-    }
-non_revoc_interval: Defines non-revocation interval
-    {
-        &quot;from&quot;: Optional int, // timestamp of interval beginning
-        &quot;to&quot;: Optional int, // timestamp of interval ending
-    }
-filter: see filter_json above</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -1177,39 +914,18 @@ filter: see filter_json above</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>credentials_json: json with credentials for the given pool request.
-{
-&quot;requested_attrs&quot;: {
-&quot;[attr_referent]&quot;: [{ cred_info: (credential_info), interval: Optional(non_revoc_interval) }],
-...,
-},
-&quot;requested_predicates&quot;: {
-&quot;requested_predicates&quot;: [{ cred_info: (credential_info), timestamp: Optional integer }, { cred_info: (credential_2_info), timestamp: Optional integer }],
-&quot;requested_predicate_2_referent&quot;: [{ cred_info: (credential_2_info), timestamp: Optional integer }]
-}
-}, where credential is
-{
-&quot;referent&quot;: string,
-&quot;attrs&quot;: [{&quot;attr_name&quot; : &quot;attr_raw_value&quot;}],
-&quot;schema_id&quot;: string,
-&quot;cred_def_id&quot;: string,
-&quot;rev_reg_id&quot;: Optional int,
-&quot;cred_rev_id&quot;: Optional int,
-}</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreCredentialAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreCredentialAsync*"></a>
-  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreCredentialAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreCredentialAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String,System.String)">ProverStoreCredentialAsync(Wallet, String, String, String, String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Check credential provided by Issuer for the given credential request,
-updates the credential by a master secret and stores in a secure wallet.</p>
-</div>
+  <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_ProverStoreCredentialAsync_Hyperledger_Indy_WalletApi_Wallet_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.ProverStoreCredentialAsync(Hyperledger.Indy.WalletApi.Wallet,System.String,System.String,System.String,System.String,System.String)">ProverStoreCredentialAsync(Wallet, String, String, String, String, String)</h4>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverStoreCredentialAsync(Wallet wallet, string credId, string credReqJson, string credReqMetadataJson, string credJson, string credDefJson, string revRegDefJson)</code></pre>
+    <pre><code class="lang-csharp hljs">public static Task&lt;string&gt; ProverStoreCredentialAsync(Wallet wallet, string credId, string credReqMetadataJson, string credJson, string credDefJson, string revRegDefJson)</code></pre>
   </div>
   <h5 class="parameters">Parameters</h5>
   <table class="table table-bordered table-striped table-condensed">
@@ -1224,44 +940,32 @@ updates the credential by a master secret and stores in a secure wallet.</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.WalletApi.Wallet.html">Wallet</a></td>
         <td><span class="parametername">wallet</span></td>
-        <td><p>Wallet.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credId</span></td>
-        <td><p>(optional, default is a random one) identifier by which credential will be stored in the wallet</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
-        <td><span class="parametername">credReqJson</span></td>
-        <td><p>a credential request created by indy_prover_create_credential_req.</p>
-</td>
-      </tr>
-      <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credReqMetadataJson</span></td>
-        <td><p>a credential request metadata created by indy_prover_create_credential_req</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credJson</span></td>
-        <td><p>credential json received from issuer.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credDefJson</span></td>
-        <td><p>redential definition json.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revRegDefJson</span></td>
-        <td><p>revocation registry definition json.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -1275,17 +979,14 @@ updates the credential by a master secret and stores in a secure wallet.</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>out_cred_id: identifier by which credential is stored in the wallet.</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_UpdateRevocationStateAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.UpdateRevocationStateAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_UpdateRevocationStateAsync_Hyperledger_Indy_BlobStorageApi_BlobStorageReader_System_String_System_String_System_String_System_Int64_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.UpdateRevocationStateAsync(Hyperledger.Indy.BlobStorageApi.BlobStorageReader,System.String,System.String,System.String,System.Int64,System.String)">UpdateRevocationStateAsync(BlobStorageReader, String, String, String, Int64, String)</h4>
-  <div class="markdown level1 summary"><p>Create new revocation state for a credential based on existed state
-at the particular time moment (to reduce calculation time).</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -1304,38 +1005,32 @@ at the particular time moment (to reduce calculation time).</p>
       <tr>
         <td><a class="xref" href="Hyperledger.Indy.BlobStorageApi.BlobStorageReader.html">BlobStorageReader</a></td>
         <td><span class="parametername">blobStorageReader</span></td>
-        <td><p>configuration of blob storage reader handle that will allow to read revocation tails.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revState</span></td>
-        <td><p>revocation registry state json</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revRegDef</span></td>
-        <td><p>revocation registry definition json</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revRegDelta</span></td>
-        <td><p>revocation registry definition delta json.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.int64(v=vs.110).aspx">Int64</a></td>
+        <td><span class="xref">System.Int64</span></td>
         <td><span class="parametername">timestamp</span></td>
-        <td><p>time represented as a total number of seconds from Unix Epoch.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credRevId</span></td>
-        <td><p>user credential revocation id in revocation registry.</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -1349,23 +1044,14 @@ at the particular time moment (to reduce calculation time).</p>
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a>&gt;</td>
-        <td><p>revocation state json:
-{
-&quot;rev_reg&quot;: &lt;revocation registry&gt;,
-&quot;witness&quot;: &lt;witness&gt;,
-&quot;timestamp&quot; : integer
-}
-.</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.String</span>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
   <a id="Hyperledger_Indy_AnonCredsApi_AnonCreds_VerifierVerifyProofAsync_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.VerifierVerifyProofAsync*"></a>
   <h4 id="Hyperledger_Indy_AnonCredsApi_AnonCreds_VerifierVerifyProofAsync_System_String_System_String_System_String_System_String_System_String_System_String_" data-uid="Hyperledger.Indy.AnonCredsApi.AnonCreds.VerifierVerifyProofAsync(System.String,System.String,System.String,System.String,System.String,System.String)">VerifierVerifyProofAsync(String, String, String, String, String, String)</h4>
-  <div class="markdown level1 summary"><p>Verifies a proof (of multiple credential).
-All required schemas, public keys and revocation registries must be provided.</p>
-</div>
+  <div class="markdown level1 summary"></div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="decalaration">Declaration</h5>
   <div class="codewrapper">
@@ -1382,107 +1068,34 @@ All required schemas, public keys and revocation registries must be provided.</p
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">proofRequest</span></td>
-        <td><p>proof_request_json: proof request json
-{
-&quot;name&quot;: string,
-&quot;version&quot;: string,
-&quot;nonce&quot;: string,
-&quot;requested_attributes&quot;: { // set of requested attributes
- &quot;(attr_referent)&quot;: (attr_info), // see below
- ...,
-},
-&quot;requested_predicates&quot;: { // set of requested predicates
- &quot;[predicate_referent]&quot;: (predicate_info), // see below
- ...,
-},
-&quot;non_revoked&quot;: Optional [non_revoc_interval], // see below,
-           // If specified prover must proof non-revocation
-           // for date in this interval for each attribute
-           // (can be overridden on attribute level)
-}</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">proof</span></td>
-        <td><p>proof_json: created for request proof json
-{
-&quot;requested&quot;: {
-&quot;revealed_attrs&quot;: {
-    &quot;requested_attr1_id&quot;: {sub_proof_index: number, raw: string, encoded: string},
-    &quot;requested_attr4_id&quot;: {sub_proof_index: number: string, encoded: string},
-},
-&quot;unrevealed_attrs&quot;: {
-    &quot;requested_attr3_id&quot;: {sub_proof_index: number}
-},
-&quot;self_attested_attrs&quot;: {
-    &quot;requested_attr2_id&quot;: self_attested_value,
-},
-&quot;requested_predicates&quot;: {
-    &quot;requested_predicate_1_referent&quot;: {sub_proof_index: int},
-    &quot;requested_predicate_2_referent&quot;: {sub_proof_index: int},
-}
-}
-&quot;proof&quot;: {
-&quot;proofs&quot;: [ &lt;credential_proof&gt;, &lt;credential_proof&gt;, &lt;credential_proof&gt; ],
-&quot;aggregated_proof&quot;: &lt;aggregated_proof&gt;
-}
-&quot;identifiers&quot;: [{schema_id, cred_def_id, Optional&lt;rev_reg_id&gt;, Optional timestamp }]
-}.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">schemas</span></td>
-        <td><p>schemas_json: all schema jsons participating in the proof
-{
-&lt;schema1_id&gt;: &lt;schema1_json&gt;,
-&lt;schema2_id&gt;: &lt;schema2_json&gt;,
-&lt;schema3_id&gt;: &lt;schema3_json&gt;,
-}.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">credentialDefs</span></td>
-        <td><p>credential_defs_json: all credential definitions json participating in the proof
-{
-&quot;cred_def1_id&quot;: &lt;credential_def1_json&gt;,
-&quot;cred_def2_id&quot;: &lt;credential_def2_json&gt;,
-&quot;cred_def3_id&quot;: &lt;credential_def3_json&gt;,
-}</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revocRegDefs</span></td>
-        <td><p>rev_reg_defs_json: all revocation registry definitions json participating in the proof
-{
-&quot;rev_reg_def1_id&quot;: &lt;rev_reg_def1_json&gt;,
-&quot;rev_reg_def2_id&quot;: &lt;rev_reg_def2_json&gt;,
-&quot;rev_reg_def3_id&quot;: &lt;rev_reg_def3_json&gt;,
-}.</p>
-</td>
+        <td></td>
       </tr>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/system.string(v=vs.110).aspx">String</a></td>
+        <td><span class="xref">System.String</span></td>
         <td><span class="parametername">revocRegs</span></td>
-        <td><p>rev_regs_json: all revocation registries json participating in the proof
-{
-&quot;rev_reg_def1_id&quot;: {
-&quot;timestamp1&quot;: &lt;rev_reg1&gt;,
-&quot;timestamp2&quot;: &lt;rev_reg2&gt;,
-},
-&quot;rev_reg_def2_id&quot;: {
-&quot;timestamp3&quot;: &lt;rev_reg3&gt;
-},
-&quot;rev_reg_def3_id&quot;: {
-&quot;timestamp4&quot;: &lt;rev_reg4&gt;
-},
-}</p>
-</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -1496,9 +1109,8 @@ All required schemas, public keys and revocation registries must be provided.</p
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://msdn.microsoft.com/en-us/library/dd321424(v=vs.110).aspx">Task</a>&lt;<a class="xref" href="https://msdn.microsoft.com/en-us/library/system.boolean(v=vs.110).aspx">Boolean</a>&gt;</td>
-        <td><p>The verify proof async.</p>
-</td>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Boolean</span>&gt;</td>
+        <td></td>
       </tr>
     </tbody>
   </table>

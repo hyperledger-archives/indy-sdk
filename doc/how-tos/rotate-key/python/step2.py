@@ -3,17 +3,17 @@
 		# just for demonstration purposes.
 		print_log('1. Creates a new local pool ledger configuration that is used '
 				  'later when connecting to ledger.\n')
-		pool_config = json.dumps({'genesis_txn': genesis_file_path})
+		pool_config = json.dumps({'genesis_txn': str(genesis_file_path)})
 		await pool.create_pool_ledger_config(config_name=pool_name, config=pool_config)
 
 		print_log('\n2. Open pool ledger and get handle from libindy\n')
 		pool_handle = await pool.open_pool_ledger(config_name=pool_name, config=None)
 
 		print_log('\n3. Creating new secure wallet with the given unique name\n')
-		await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
+		await wallet.create_wallet(wallet_config, wallet_credentials)
 
 		print_log('\n4. Open wallet and get handle from libindy to use in methods that require wallet access\n')
-		wallet_handle = await wallet.open_wallet(wallet_name, None, wallet_credentials)
+		wallet_handle = await wallet.open_wallet(wallet_config, wallet_credentials)
 
 		# First, put a steward DID and its keypair in the wallet. This doesn't write anything to the ledger,
 		# but it gives us a key that we can use to sign a ledger transaction that we're going to submit later.
@@ -33,7 +33,7 @@
 		print_log('Steward DID: ', steward_did)
 
 		# Now, create a new DID and verkey for a trust anchor, and store it in our wallet as well. Don't use a seed;
-		# this DID and its keyas are secure and random. Again, we're not writing to the ledger yet.
+		# this DID and its keys are secure and random. Again, we're not writing to the ledger yet.
 		print_log('\n6. Generating and storing trust anchor DID and verkey\n')
 		trust_anchor_did, trust_anchor_verkey = await did.create_and_store_my_did(wallet_handle, "{}")
 		print_log('Trust Anchor DID: ', trust_anchor_did)

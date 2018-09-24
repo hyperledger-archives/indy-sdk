@@ -31,17 +31,17 @@ async function run() {
     console.log("------------------------------");
 
     console.log("\"Sovrin Steward\" -> Create wallet");
-    let stewardWalletName = 'sovrinStewardWallet';
+    let stewardWalletConfig = {'id': 'stewardWalletName'}
     let stewardWalletCredentials = {'key': 'steward_key'}
     try {
-        await indy.createWallet(poolName, stewardWalletName, 'default', null, stewardWalletCredentials)
+        await indy.createWallet(stewardWalletConfig, stewardWalletCredentials)
     } catch(e) {
         if(e.message !== "WalletAlreadyExistsError") {
             throw e;
         }
     }
 
-    let stewardWallet = await indy.openWallet(stewardWalletName, null, stewardWalletCredentials);
+    let stewardWallet = await indy.openWallet(stewardWalletConfig, stewardWalletCredentials);
 
     console.log("\"Sovrin Steward\" -> Create and store in Wallet DID from seed");
     let stewardDidInfo = {
@@ -54,9 +54,9 @@ async function run() {
     console.log("== Getting Trust Anchor credentials - Government Onboarding  ==");
     console.log("------------------------------");
 
-    let governmentWalletName = 'governmentWallet'
+    let governmentWalletConfig = {'id': 'governmentWallet'}
     let governmentWalletCredentials = {'key': 'government_key'}
-    let [governmentWallet, stewardGovernmentKey, governmentStewardDid, governmentStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Government", null, governmentWalletName, governmentWalletCredentials);
+    let [governmentWallet, stewardGovernmentKey, governmentStewardDid, governmentStewardKey] = await onboarding(poolHandle, "Sovrin Steward", stewardWallet, stewardDid, "Government", null, governmentWalletConfig, governmentWalletCredentials);
 
     console.log("==============================");
     console.log("== Getting Trust Anchor credentials - Government getting Verinym  ==");
@@ -70,9 +70,9 @@ async function run() {
     console.log("== Getting Trust Anchor credentials - Faber Onboarding  ==");
     console.log("------------------------------");
 
-    let faberWalletName = 'faberWallet'
+    let faberWalletConfig = {'id': 'faberWallet'}
     let faberWalletCredentials = {'key': 'faber_key'}
-    let [faberWallet, stewardFaberKey, faberStewardDid, faberStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Faber", null, faberWalletName, faberWalletCredentials);
+    let [faberWallet, stewardFaberKey, faberStewardDid, faberStewardKey] = await onboarding(poolHandle, "Sovrin Steward", stewardWallet, stewardDid, "Faber", null, faberWalletConfig, faberWalletCredentials);
 
     console.log("==============================");
     console.log("== Getting Trust Anchor credentials - Faber getting Verinym  ==");
@@ -85,9 +85,9 @@ async function run() {
     console.log("== Getting Trust Anchor credentials - Acme Onboarding  ==");
     console.log("------------------------------");
 
-    let acmeWalletName = 'acmeWallet'
+    let acmeWalletConfig = {'id': 'acmeWallet'}
     let acmeWalletCredentials = {'key': 'acme_key'}
-    let [acmeWallet, stewardAcmeKey, acmeStewardDid, acmeStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Acme", null, acmeWalletName, acmeWalletCredentials);
+    let [acmeWallet, stewardAcmeKey, acmeStewardDid, acmeStewardKey] = await onboarding(poolHandle, "Sovrin Steward", stewardWallet, stewardDid, "Acme", null, acmeWalletConfig, acmeWalletCredentials);
 
     console.log("==============================");
     console.log("== Getting Trust Anchor credentials - Acme getting Verinym  ==");
@@ -100,9 +100,9 @@ async function run() {
     console.log("== Getting Trust Anchor credentials - Thrift Onboarding  ==");
     console.log("------------------------------");
 
-    let thriftWalletName = 'thriftWallet'
+    let thriftWalletConfig = {'id': 'thriftWallet'}
     let thriftWalletCredentials = {'key': 'thrift_key'}
-    let [thriftWallet, stewardThriftKey, thriftStewardDid, thriftStewardKey] = await onboarding(poolHandle, poolName, "Sovrin Steward", stewardWallet, stewardDid, "Thrift", null, thriftWalletName, thriftWalletCredentials);
+    let [thriftWallet, stewardThriftKey, thriftStewardDid, thriftStewardKey] = await onboarding(poolHandle, "Sovrin Steward", stewardWallet, stewardDid, "Thrift", null, thriftWalletConfig, thriftWalletCredentials);
 
     console.log("==============================");
     console.log("== Getting Trust Anchor credentials - Thrift getting Verinym  ==");
@@ -162,9 +162,9 @@ async function run() {
     console.log("== Getting Transcript with Faber - Onboarding ==");
     console.log("------------------------------");
 
-    let aliceWalletName = 'aliceWallet'
+    let aliceWalletConfig = {'id': 'aliceWallet'}
     let aliceWalletCredentials = {'key': 'alice_key'}
-    let [aliceWallet, faberAliceKey, aliceFaberDid, aliceFaberKey, faberAliceConnectionResponse] = await onboarding(poolHandle, poolName, "Faber", faberWallet, faberDid, "Alice", null, aliceWalletName, aliceWalletCredentials);
+    let [aliceWallet, faberAliceKey, aliceFaberDid, aliceFaberKey, faberAliceConnectionResponse] = await onboarding(poolHandle, "Faber", faberWallet, faberDid, "Alice", null, aliceWalletConfig, aliceWalletCredentials);
 
     console.log("==============================");
     console.log("== Getting Transcript with Faber - Getting Transcript Credential ==");
@@ -204,6 +204,7 @@ async function run() {
     [aliceFaberVerkey, authdecryptedTranscriptCredRequestJson] = await authDecrypt(faberWallet, faberAliceKey, authcryptedTranscriptCredRequest);
 
     console.log("\"Faber\" -> Create \"Transcript\" Credential for Alice");
+    // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
     let transcriptCredValues = {
         "first_name": {"raw": "Alice", "encoded": "1139481716457488690172217916278103335"},
         "last_name": {"raw": "Garcia", "encoded": "5321642780241790123587902456789123452"},
@@ -235,7 +236,7 @@ async function run() {
     console.log("------------------------------");
     let acmeAliceKey, aliceAcmeDid, aliceAcmeKey, acmeAliceConnectionResponse;
 
-    [aliceWallet, acmeAliceKey, aliceAcmeDid, aliceAcmeKey, acmeAliceConnectionResponse] = await onboarding(poolHandle, poolName, "Acme", acmeWallet, acmeDid, "Alice", aliceWallet, aliceWalletName, aliceWalletCredentials);
+    [aliceWallet, acmeAliceKey, aliceAcmeDid, aliceAcmeKey, acmeAliceConnectionResponse] = await onboarding(poolHandle, "Acme", acmeWallet, acmeDid, "Alice", aliceWallet, aliceWalletConfig, aliceWalletCredentials);
 
     console.log("==============================");
     console.log("== Apply for the job with Acme - Transcript proving ==");
@@ -291,14 +292,27 @@ async function run() {
     let [acmeAliceVerkey, authdecryptedJobApplicationProofRequestJson] = await authDecrypt(aliceWallet, aliceAcmeKey, authcryptedJobApplicationProofRequestJson);
 
     console.log("\"Alice\" -> Get credentials for \"Job-Application\" Proof Request");
-    let credsForJobApplicationProofRequest = await indy.proverGetCredentialsForProofReq(aliceWallet, authdecryptedJobApplicationProofRequestJson);
+    let searchForJobApplicationProofRequest = await indy.proverSearchCredentialsForProofReq(aliceWallet, authdecryptedJobApplicationProofRequestJson, null)
 
-    let credForAttr1 = credsForJobApplicationProofRequest['attrs']['attr1_referent'][0]['cred_info'];
-    let credForAttr2 = credsForJobApplicationProofRequest['attrs']['attr2_referent'][0]['cred_info'];
-    let credForAttr3 = credsForJobApplicationProofRequest['attrs']['attr3_referent'][0]['cred_info'];
-    let credForAttr4 = credsForJobApplicationProofRequest['attrs']['attr4_referent'][0]['cred_info'];
-    let credForAttr5 = credsForJobApplicationProofRequest['attrs']['attr5_referent'][0]['cred_info'];
-    let credForPredicate1 = credsForJobApplicationProofRequest['predicates']['predicate1_referent'][0]['cred_info'];
+    let credentials = await indy.proverFetchCredentialsForProofReq(searchForJobApplicationProofRequest, 'attr1_referent', 100)
+    let credForAttr1 = credentials[0]['cred_info'];
+
+    await indy.proverFetchCredentialsForProofReq(searchForJobApplicationProofRequest, 'attr2_referent', 100)
+    let credForAttr2 = credentials[0]['cred_info'];
+
+    await indy.proverFetchCredentialsForProofReq(searchForJobApplicationProofRequest, 'attr3_referent', 100)
+    let credForAttr3 = credentials[0]['cred_info'];
+
+    await indy.proverFetchCredentialsForProofReq(searchForJobApplicationProofRequest, 'attr4_referent', 100)
+    let credForAttr4 = credentials[0]['cred_info'];
+
+    await indy.proverFetchCredentialsForProofReq(searchForJobApplicationProofRequest, 'attr5_referent', 100)
+    let credForAttr5 = credentials[0]['cred_info'];
+
+    await indy.proverFetchCredentialsForProofReq(searchForJobApplicationProofRequest, 'predicate1_referent', 100)
+    let credForPredicate1 = credentials[0]['cred_info'];
+
+    await indy.proverCloseCredentialsSearchForProofReq(searchForJobApplicationProofRequest)
 
     let credsForJobApplicationProof = {};
     credsForJobApplicationProof[`${credForAttr1['referent']}`] = credForAttr1;
@@ -417,8 +431,8 @@ async function run() {
     console.log("------------------------------");
 
     let thriftAliceKey, aliceThriftDid, aliceThriftKey, thriftAliceConnectionResponse;
-    [aliceWallet, thriftAliceKey, aliceThriftDid, aliceThriftKey, thriftAliceConnectionResponse] = await onboarding(poolHandle, poolName, "Thrift", thriftWallet, thriftDid,
-        "Alice", aliceWallet, aliceWalletName, aliceWalletCredentials);
+    [aliceWallet, thriftAliceKey, aliceThriftDid, aliceThriftKey, thriftAliceConnectionResponse] = await onboarding(poolHandle, "Thrift", thriftWallet, thriftDid,
+        "Alice", aliceWallet, aliceWalletConfig, aliceWalletCredentials);
 
     console.log("==============================");
     console.log("== Apply for the loan with Thrift - Job-Certificate proving  ==");
@@ -463,12 +477,19 @@ async function run() {
     let [thriftAliceVerkey, authdecryptedApplyLoanProofRequestJson] = await authDecrypt(aliceWallet, aliceThriftKey, authcryptedApplyLoanProofRequestJson);
 
     console.log("\"Alice\" -> Get credentials for \"Loan-Application-Basic\" Proof Request");
-    let credsForApplyLoanProofRequest = await indy.proverGetCredentialsForProofReq(aliceWallet, authdecryptedApplyLoanProofRequestJson);
-    // FIXME: Check here for JSON error. Needs parsing?
 
-    credForAttr1 = credsForApplyLoanProofRequest['attrs']['attr1_referent'][0]['cred_info'];
-    credForPredicate1 = credsForApplyLoanProofRequest['predicates']['predicate1_referent'][0]['cred_info'];
-    let credForPredicate2 = credsForApplyLoanProofRequest['predicates']['predicate2_referent'][0]['cred_info'];
+    let searchForJApplyLoanProofRequest = await indy.proverSearchCredentialsForProofReq(aliceWallet, authdecryptedApplyLoanProofRequestJson, null)
+
+    credentials = await indy.proverFetchCredentialsForProofReq(searchForJApplyLoanProofRequest, 'attr1_referent', 100)
+    credForAttr1 = credentials[0]['cred_info'];
+
+    await indy.proverFetchCredentialsForProofReq(searchForJApplyLoanProofRequest, 'predicate1_referent', 100)
+    credForPredicate1 = credentials[0]['cred_info'];
+
+    await indy.proverFetchCredentialsForProofReq(searchForJApplyLoanProofRequest, 'predicate2_referent', 100)
+    let credForPredicate2 = credentials[0]['cred_info'];
+
+    await indy.proverCloseCredentialsSearchForProofReq(searchForJApplyLoanProofRequest)
 
     let credsForApplyLoanProof = {};
     credsForApplyLoanProof[`${credForAttr1['referent']}`] = credForAttr1;
@@ -544,12 +565,19 @@ async function run() {
     [thriftAliceVerkey, authdecryptedApplyLoanKycProofRequestJson] = await authDecrypt(aliceWallet, aliceThriftKey, authcryptedApplyLoanKycProofRequestJson);
 
     console.log("\"Alice\" -> Get credentials for \"Loan-Application-KYC\" Proof Request");
-    let credsForApplyLoanKycProofRequest = await indy.proverGetCredentialsForProofReq(aliceWallet, authdecryptedApplyLoanKycProofRequestJson);
-    // FIXME: Check for JSON parsing error here. Needs parsing?
 
-    credForAttr1 = credsForApplyLoanKycProofRequest['attrs']['attr1_referent'][0]['cred_info'];
-    credForAttr2 = credsForApplyLoanKycProofRequest['attrs']['attr2_referent'][0]['cred_info'];
-    credForAttr3 = credsForApplyLoanKycProofRequest['attrs']['attr3_referent'][0]['cred_info'];
+    let searchForApplyLoanKycProofRequest = await indy.proverSearchCredentialsForProofReq(aliceWallet, authdecryptedApplyLoanKycProofRequestJson, null)
+
+    credentials = await indy.proverFetchCredentialsForProofReq(searchForApplyLoanKycProofRequest, 'attr1_referent', 100)
+    credForAttr1 = credentials[0]['cred_info'];
+
+    credentials = await indy.proverFetchCredentialsForProofReq(searchForApplyLoanKycProofRequest, 'attr2_referent', 100)
+    credForAttr2 = credentials[0]['cred_info'];
+
+    credentials = await indy.proverFetchCredentialsForProofReq(searchForApplyLoanKycProofRequest, 'attr3_referent', 100)
+    credForAttr3 = credentials[0]['cred_info'];
+
+    await indy.proverCloseCredentialsSearchForProofReq(searchForApplyLoanKycProofRequest)
 
     let credsForApplyLoanKycProof = {};
     credsForApplyLoanKycProof[`${credForAttr1['referent']}`] = credForAttr1;
@@ -598,27 +626,27 @@ async function run() {
 
     console.log(" \"Sovrin Steward\" -> Close and Delete wallet");
     await indy.closeWallet(stewardWallet);
-    await indy.deleteWallet(stewardWalletName, stewardWalletCredentials);
+    await indy.deleteWallet(stewardWalletConfig, stewardWalletCredentials);
 
     console.log("\"Government\" -> Close and Delete wallet");
     await indy.closeWallet(governmentWallet);
-    await indy.deleteWallet(governmentWalletName, governmentWalletCredentials);
+    await indy.deleteWallet(governmentWalletConfig, governmentWalletCredentials);
 
     console.log("\"Faber\" -> Close and Delete wallet");
     await indy.closeWallet(faberWallet);
-    await indy.deleteWallet(faberWalletName, faberWalletCredentials);
+    await indy.deleteWallet(faberWalletConfig, faberWalletCredentials);
 
     console.log("\"Acme\" -> Close and Delete wallet");
     await indy.closeWallet(acmeWallet);
-    await indy.deleteWallet(acmeWalletName, acmeWalletCredentials);
+    await indy.deleteWallet(acmeWalletConfig, acmeWalletCredentials);
 
     console.log("\"Thrift\" -> Close and Delete wallet");
     await indy.closeWallet(thriftWallet);
-    await indy.deleteWallet(thriftWalletName, thriftWalletCredentials);
+    await indy.deleteWallet(thriftWalletConfig, thriftWalletCredentials);
 
     console.log("\"Alice\" -> Close and Delete wallet");
     await indy.closeWallet(aliceWallet);
-    await indy.deleteWallet(aliceWalletName, aliceWalletCredentials);
+    await indy.deleteWallet(aliceWalletConfig, aliceWalletCredentials);
 
     console.log("Close and Delete pool");
     await indy.closePoolLedger(poolHandle);
@@ -627,7 +655,7 @@ async function run() {
     console.log("Getting started -> done")
 }
 
-async function onboarding(poolHandle, poolName, From, fromWallet, fromDid, to, toWallet, toWalletName, toWalletCredentials) {
+async function onboarding(poolHandle, From, fromWallet, fromDid, to, toWallet, toWalletConfig, toWalletCredentials) {
     console.log(`\"${From}\" > Create and store in Wallet \"${From} ${to}\" DID`);
     let [fromToDid, fromToKey] = await indy.createAndStoreMyDid(fromWallet, {});
 
@@ -643,13 +671,13 @@ async function onboarding(poolHandle, poolName, From, fromWallet, fromDid, to, t
     if (!toWallet) {
         console.log(`\"${to}\" > Create wallet"`);
         try {
-            await indy.createWallet(poolName, toWalletName, 'default', null, toWalletCredentials)
+            await indy.createWallet(toWalletConfig, toWalletCredentials)
         } catch(e) {
             if(e.message !== "WalletAlreadyExistsError") {
                 throw e;
             }
         }
-        toWallet = await indy.openWallet(toWalletName, null, toWalletCredentials);
+        toWallet = await indy.openWallet(toWalletConfig, toWalletCredentials);
     }
 
     console.log(`\"${to}\" > Create and store in Wallet \"${to} ${From}\" DID`);

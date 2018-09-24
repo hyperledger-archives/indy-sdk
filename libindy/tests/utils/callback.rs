@@ -14,14 +14,7 @@ lazy_static! {
     static ref COMMAND_HANDLE_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 }
 
-lazy_static! {
-    static ref CLOSURE_CB_MAP: Mutex<HashMap<i32, i32>> = Default::default();
-}
-
-pub struct CallbackUtils {}
-
-impl CallbackUtils {
-    pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
+ pub fn _closure_to_cb_ec() -> (Receiver<ErrorCode>, i32,
                                    Option<extern fn(command_handle: i32,
                                                     err: ErrorCode)>) {
         let (sender, receiver) = channel();
@@ -64,6 +57,32 @@ impl CallbackUtils {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             cb(err, c_i32)
+        }
+
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        let command_handle = (COMMAND_HANDLE_COUNTER.fetch_add(1, Ordering::SeqCst) + 1) as i32;
+        callbacks.insert(command_handle, closure);
+
+        (receiver, command_handle, Some(_callback))
+    }
+
+    pub fn _closure_to_cb_ec_i32_usize() -> (Receiver<(ErrorCode, i32, usize)>, i32,
+                                             Option<extern fn(command_handle: i32, err: ErrorCode,
+                                                              c_i32: i32, c_usize: usize)>) {
+        let (sender, receiver) = channel();
+
+        lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, i32, usize) + Send>>> = Default::default();
+        }
+
+        let closure = Box::new(move |err, val, val_2| {
+            sender.send((err, val, val_2)).unwrap();
+        });
+
+        extern "C" fn _callback(command_handle: i32, err: ErrorCode, c_i32: i32, c_usize: usize) {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            let mut cb = callbacks.remove(&command_handle).unwrap();
+            cb(err, c_i32, c_usize)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -377,4 +396,3 @@ impl CallbackUtils {
 
         (receiver, command_handle, Some(_callback))
     }
-}

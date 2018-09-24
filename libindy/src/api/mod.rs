@@ -10,6 +10,7 @@ pub mod wallet;
 pub mod blob_storage;
 pub mod non_secrets;
 pub mod payments;
+pub mod logger;
 pub mod route;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -216,6 +217,15 @@ pub enum ErrorCode
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
 
+    // No such source on a ledger
+    PaymentSourceDoesNotExistError = 703,
+
+    // Operation is not supported for payment method
+    PaymentOperationNotSupportedError = 704,
+
+    // Extra funds on inputs
+    PaymentExtraFundsError = 705,
+
     // Failed to perform Encryption or Decryption while routing messages
     RouteEncryptionError = 800,
 
@@ -235,8 +245,5 @@ pub enum ErrorCode
     RouteMissingKeyError = 805,
 
     // Failed to serialize a JWM based on the parameters provided
-    RouteSerializationError = 806,
-
-    // Failed to complete action with RouteTable
-    RouteTableError = 807
+    RouteSerializationError = 806
 }

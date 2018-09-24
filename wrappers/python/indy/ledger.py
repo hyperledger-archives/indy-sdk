@@ -85,6 +85,55 @@ async def submit_request(pool_handle: int,
     return res
 
 
+async def submit_action(pool_handle: int,
+                        request_json: str,
+                        nodes: Optional[str],
+                        timeout: Optional[int]) -> str:
+    """
+    Send action to particular nodes of validator pool.
+    
+    The list of requests can be send:
+        POOL_RESTART
+        GET_VALIDATOR_INFO
+   
+    The request is sent to the nodes as is. It's assumed that it's already prepared.
+
+    :param pool_handle: pool handle (created by open_pool_ledger).
+    :param request_json: Request data json.
+    :param nodes: (Optional) List of node names to send the request.
+           ["Node1", "Node2",...."NodeN"]
+    :param timeout: (Optional) Time to wait respond from nodes (override the default timeout) (in sec).
+    :return: Request result as json.
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("submit_action: >>> pool_handle: %r, request_json: %r, nodes: %r, timeout: %r",
+                 pool_handle,
+                 request_json,
+                 nodes,
+                 timeout)
+
+    if not hasattr(submit_action, "cb"):
+        logger.debug("submit_action: Creating callback")
+        submit_action.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_pool_handle = c_int32(pool_handle)
+    c_request_json = c_char_p(request_json.encode('utf-8'))
+    c_nodes = c_char_p(nodes.encode('utf-8')) if nodes is not None else None
+    c_timeout = c_int32(timeout) if timeout is not None else None
+
+    request_result = await do_call('indy_submit_action',
+                                   c_pool_handle,
+                                   c_request_json,
+                                   c_nodes,
+                                   c_timeout,
+                                   submit_action.cb)
+
+    res = request_result.decode()
+    logger.debug("submit_action: <<< res: %r", res)
+    return res
+
+
 async def sign_request(wallet_handle: int,
                        submitter_did: str,
                        request_json: str) -> str:
@@ -165,12 +214,12 @@ async def multi_sign_request(wallet_handle: int,
     return res
 
 
-async def build_get_ddo_request(submitter_did: str,
+async def build_get_ddo_request(submitter_did: Optional[str],
                                 target_did: str) -> str:
     """
     Builds a request to get a DDO.
 
-    :param submitter_did: Id of Identity stored in secured Wallet.
+    :param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     :param target_did: Id of Identity stored in secured Wallet.
     :return: Request result as json.
     """
@@ -184,7 +233,7 @@ async def build_get_ddo_request(submitter_did: str,
         logger.debug("build_get_ddo_request: Creating callback")
         build_get_ddo_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_target_did = c_char_p(target_did.encode('utf-8'))
 
     request_json = await do_call('indy_build_get_ddo_request',
@@ -296,7 +345,7 @@ async def build_attrib_request(submitter_did: str,
     return res
 
 
-async def build_get_attrib_request(submitter_did: str,
+async def build_get_attrib_request(submitter_did: Optional[str],
                                    target_did: str,
                                    raw: Optional[str],
                                    xhash: Optional[str],
@@ -304,7 +353,7 @@ async def build_get_attrib_request(submitter_did: str,
     """
     Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
 
-    :param submitter_did: DID of the read request sender.
+    :param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     :param target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
     :param xhash: (Optional) Requested attribute name.
     :param raw: (Optional) Requested attribute hash.
@@ -324,7 +373,7 @@ async def build_get_attrib_request(submitter_did: str,
         logger.debug("build_get_attrib_request: Creating callback")
         build_get_attrib_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_target_did = c_char_p(target_did.encode('utf-8'))
     c_raw = c_char_p(raw.encode('utf-8')) if raw is not None else None
     c_xhash = c_char_p(xhash.encode('utf-8')) if xhash is not None else None
@@ -343,12 +392,12 @@ async def build_get_attrib_request(submitter_did: str,
     return res
 
 
-async def build_get_nym_request(submitter_did: str,
+async def build_get_nym_request(submitter_did: Optional[str],
                                 target_did: str) -> str:
     """
     Builds a GET_NYM request. Request to get information about a DID (NYM).
 
-    :param submitter_did: DID of the read request sender.
+    :param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     :param target_did: Target DID as base58-encoded string for 16 or 32 bit DID value.
     :return: Request result as json.
     """
@@ -362,7 +411,7 @@ async def build_get_nym_request(submitter_did: str,
         logger.debug("build_get_nym_request: Creating callback")
         build_get_nym_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_target_did = c_char_p(target_did.encode('utf-8'))
 
     request_json = await do_call('indy_build_get_nym_request',
@@ -414,12 +463,12 @@ async def build_schema_request(submitter_did: str,
     return res
 
 
-async def build_get_schema_request(submitter_did: str,
+async def build_get_schema_request(submitter_did: Optional[str],
                                    id_: str) -> str:
     """
     Builds a GET_SCHEMA request. Request to get Credential's Schema.
 
-    :param submitter_did: DID of the read request sender.
+    :param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     :param id_: Schema Id in ledger
     :return: Request result as json.
     """
@@ -433,7 +482,7 @@ async def build_get_schema_request(submitter_did: str,
         logger.debug("build_get_schema_request: Creating callback")
         build_get_schema_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_id = c_char_p(id_.encode('utf-8'))
 
     request_json = await do_call('indy_build_get_schema_request',
@@ -523,13 +572,13 @@ async def build_cred_def_request(submitter_did: str,
     return res
 
 
-async def build_get_cred_def_request(submitter_did: str,
+async def build_get_cred_def_request(submitter_did: Optional[str],
                                      id_: str) -> str:
     """
    Builds a GET_CRED_DEF request. Request to get a credential definition (in particular, public key),
    that Issuer creates for a particular Credential Schema.
 
-    :param submitter_did: DID of read request sender.
+    :param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     :param id_: Credential Definition Id in ledger.
     :return: Request result as json.
     """
@@ -543,7 +592,7 @@ async def build_get_cred_def_request(submitter_did: str,
         logger.debug("build_get_cred_def_request: Creating callback")
         build_get_cred_def_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_id = c_char_p(id_.encode('utf-8'))
 
     request_json = await do_call('indy_build_get_cred_def_request',
@@ -605,6 +654,7 @@ async def build_node_request(submitter_did: str,
       {
           alias: string - Node's alias
           blskey: string - (Optional) BLS multi-signature key as base58-encoded string.
+          blskey_pop: string - (Optional) BLS key proof of possession as base58-encoded string.
           client_ip: string - (Optional) Node's client listener IP address.
           client_port: string - (Optional) Node's client listener port.
           node_ip: string - (Optional) The IP address other Nodes use to communicate with this Node.
@@ -664,17 +714,18 @@ async def build_get_validator_info_request(submitter_did: str) -> str:
     return res
 
 
-async def build_get_txn_request(submitter_did: str,
+async def build_get_txn_request(submitter_did: Optional[str],
                                 ledger_type: Optional[str],
                                 seq_no: int) -> str:
     """
     Builds a GET_TXN request. Request to get any transaction by its seq_no.
 
-    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     :param ledger_type: (Optional) type of the ledger the requested transaction belongs to:
         DOMAIN - used default,
         POOL,
         CONFIG
+        any number
     :param seq_no: requested transaction sequence number as it's stored on Ledger.
     :return: Request result as json.
     """
@@ -689,7 +740,7 @@ async def build_get_txn_request(submitter_did: str,
         logger.debug("build_get_txn_request: Creating callback")
         build_get_txn_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_ledger_type = c_char_p(ledger_type.encode('utf-8')) if ledger_type is not None else None
     c_seq_no = c_int32(seq_no)
 
@@ -784,7 +835,8 @@ async def build_pool_upgrade_request(submitter_did: str,
                                      schedule: Optional[str],
                                      justification: Optional[str],
                                      reinstall: bool,
-                                     force: bool) -> str:
+                                     force: bool,
+                                     package: Optional[str]) -> str:
     """
     Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
     It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
@@ -801,13 +853,15 @@ async def build_pool_upgrade_request(submitter_did: str,
     :param reinstall: Whether it's allowed to re-install the same version. False by default.
     :param force: Whether we should apply transaction (schedule Upgrade) without waiting
                   for consensus of this transaction.
+    :param package: (Optional) Package to be upgraded.
     :return: Request result as json.
     """
 
     logger = logging.getLogger(__name__)
     logger.debug("build_pool_upgrade_request: >>> submitter_did: %r, name: %r, version: %r, action: %r, _sha256: %r, "
-                 "timeout: %r, schedule: %r, justification: %r, reinstall: %r, force: %r",
-                 submitter_did, name, version, action, _sha256, _timeout, schedule, justification, reinstall, force)
+                 "timeout: %r, schedule: %r, justification: %r, reinstall: %r, force: %r, package: %r",
+                 submitter_did, name, version, action, _sha256, _timeout, schedule, justification, reinstall, force,
+                 package)
 
     if not hasattr(build_pool_upgrade_request, "cb"):
         logger.debug("build_pool_upgrade_request: Creating callback")
@@ -823,6 +877,7 @@ async def build_pool_upgrade_request(submitter_did: str,
     c_justification = c_char_p(justification.encode('utf-8')) if justification is not None else None
     c_reinstall = c_bool(reinstall)
     c_force = c_bool(force)
+    c_package = c_char_p(package.encode('utf-8')) if package is not None else None
 
     request_json = await do_call('indy_build_pool_upgrade_request',
                                  c_submitter_did,
@@ -835,6 +890,7 @@ async def build_pool_upgrade_request(submitter_did: str,
                                  c_justification,
                                  c_reinstall,
                                  c_force,
+                                 c_package,
                                  build_pool_upgrade_request.cb)
 
     res = request_json.decode()
@@ -888,13 +944,13 @@ async def build_revoc_reg_def_request(submitter_did: str,
     return res
 
 
-async def build_get_revoc_reg_def_request(submitter_did: str,
+async def build_get_revoc_reg_def_request(submitter_did: Optional[str],
                                           rev_reg_def_id: str) -> str:
     """
     Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
     that Issuer creates for a particular Credential Definition.
 
-    :param submitter_did:DID of the submitter stored in secured Wallet.
+    :param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     :param rev_reg_def_id: ID of Revocation Registry Definition in ledger.
 
     :return: Request result as json.
@@ -908,7 +964,7 @@ async def build_get_revoc_reg_def_request(submitter_did: str,
         logger.debug("build_get_revoc_reg_def_request: Creating callback")
         build_get_revoc_reg_def_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_rev_reg_def_id = c_char_p(rev_reg_def_id.encode('utf-8'))
 
     request_json = await do_call('indy_build_get_revoc_reg_def_request',
@@ -1012,14 +1068,14 @@ async def build_revoc_reg_entry_request(submitter_did: str,
     return res
 
 
-async def build_get_revoc_reg_request(submitter_did: str,
+async def build_get_revoc_reg_request(submitter_did: Optional[str],
                                       revoc_reg_def_id: str,
                                       timestamp: int) -> str:
     """
     Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
     by ID. The state is defined by the given timestamp.
 
-    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     :param revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
     :param timestamp: Requested time represented as a total number of seconds from Unix Epoch
     :return: Request result as json.
@@ -1033,7 +1089,7 @@ async def build_get_revoc_reg_request(submitter_did: str,
         logger.debug("build_get_revoc_reg_request: Creating callback")
         build_get_revoc_reg_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_revoc_reg_def_id = c_char_p(revoc_reg_def_id.encode('utf-8'))
     c_timestamp = c_int64(timestamp)
 
@@ -1080,7 +1136,7 @@ async def parse_get_revoc_reg_response(get_revoc_reg_response: str) -> (str, str
     return res
 
 
-async def build_get_revoc_reg_delta_request(submitter_did: str,
+async def build_get_revoc_reg_delta_request(submitter_did: Optional[str],
                                             revoc_reg_def_id: str,
                                             from_: Optional[int],
                                             to: int) -> str:
@@ -1089,7 +1145,7 @@ async def build_get_revoc_reg_delta_request(submitter_did: str,
     The Delta is defined by from and to timestamp fields.
     If from is not specified, then the whole state till to will be returned.
 
-    :param submitter_did: DID of the submitter stored in secured Wallet.
+    :param submitter_did: (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
     :param revoc_reg_def_id:  ID of the corresponding Revocation Registry Definition in ledger.
     :param from_: Requested time represented as a total number of seconds from Unix Epoch
     :param to: Requested time represented as a total number of seconds from Unix Epoch
@@ -1104,7 +1160,7 @@ async def build_get_revoc_reg_delta_request(submitter_did: str,
         logger.debug("build_get_revoc_reg_delta_request: Creating callback")
         build_get_revoc_reg_delta_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_revoc_reg_def_id = c_char_p(revoc_reg_def_id.encode('utf-8'))
     c_from = c_int64(from_) if from_  else -1
     c_to = c_int64(to)

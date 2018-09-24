@@ -17,8 +17,6 @@ class Ledger {
 	static void demo() throws Exception {
 		System.out.println("Ledger sample -> started");
 
-		String myWalletName = "myWallet";
-		String theirWalletName = "theirWallet";
 		String trusteeSeed = "000000000000000000000000Trustee1";
 
 		// Set protocol version 2 to work with Indy Node 1.4
@@ -29,14 +27,16 @@ class Ledger {
 		Pool pool = Pool.openPoolLedger(poolName, "{}").get();
 
 		// 2. Create and Open My Wallet
+		String myWalletConfig = "{\"id\":\"myWallet\"}";
 		String myWalletCredentials = "{\"key\":\"my_wallet_key\"}";
-		Wallet.createWallet(poolName, myWalletName, "default", null, myWalletCredentials).get();
-		Wallet myWallet = Wallet.openWallet(myWalletName, null, myWalletCredentials).get();
+		Wallet.createWallet(myWalletConfig, myWalletCredentials).get();
+		Wallet myWallet = Wallet.openWallet(myWalletConfig, myWalletCredentials).get();
 
 		// 3. Create and Open Trustee Wallet
+		String trusteeWalletConfig = "{\"id\":\"theirWallet\"}";
 		String trusteeWalletCredentials = "{\"key\":\"trustee_wallet_key\"}";
-		Wallet.createWallet(poolName, theirWalletName, "default", null, trusteeWalletCredentials).get();
-		Wallet trusteeWallet = Wallet.openWallet(theirWalletName, null, trusteeWalletCredentials).get();
+		Wallet.createWallet(trusteeWalletConfig, trusteeWalletCredentials).get();
+		Wallet trusteeWallet = Wallet.openWallet(trusteeWalletConfig, trusteeWalletCredentials).get();
 
 		// 4. Create My Did
 		CreateAndStoreMyDidResult createMyDidResult = Did.createAndStoreMyDid(myWallet, "{}").get();
@@ -63,11 +63,11 @@ class Ledger {
 
 		// 8. Close and delete My Wallet
 		myWallet.closeWallet().get();
-		Wallet.deleteWallet(myWalletName, myWalletCredentials).get();
+		Wallet.deleteWallet(myWalletConfig, myWalletCredentials).get();
 
 		// 9. Close and delete Their Wallet
 		trusteeWallet.closeWallet().get();
-		Wallet.deleteWallet(theirWalletName, trusteeWalletCredentials).get();
+		Wallet.deleteWallet(trusteeWalletConfig, trusteeWalletCredentials).get();
 
 		// 10. Close Pool
 		pool.closePoolLedger().get();

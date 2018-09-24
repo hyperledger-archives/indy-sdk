@@ -1,6 +1,6 @@
 extern crate sodiumoxide;
 
-use self::sodiumoxide::utils::memzero;
+use utils::crypto::memzero::memzero;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -227,14 +227,14 @@ mod tests {
     use std::rc::Rc;
     use std::collections::HashMap;
 
-    use domain::wallet::Metadata;
+    use domain::wallet::{Metadata, MetadataArgon};
     use errors::wallet::WalletError;
     use services::wallet::encryption;
     use services::wallet::wallet::Wallet;
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::language::*;
-    use utils::test::TestUtils;
+    use utils::test;
 
     macro_rules! jsonstr {
         ($($x:tt)+) => {
@@ -267,7 +267,7 @@ mod tests {
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.name, _id1());
+        assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(record.tags.unwrap(), _tags());
     }
@@ -283,7 +283,7 @@ mod tests {
         let wallet = _exists_wallet();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.name, _id1());
+        assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(record.tags.unwrap(), _tags());
     }
@@ -318,14 +318,14 @@ mod tests {
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.name, _id1());
+        assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(record.tags.unwrap(), _tags());
 
         wallet.update(_type1(), _id1(), _value2()).unwrap();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.name, _id1());
+        assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value2());
         assert_eq!(record.tags.unwrap(), _tags());
     }
@@ -440,7 +440,7 @@ mod tests {
         wallet.add(_type1(), _id1(), _value1(), &_tags()).unwrap();
 
         let record = wallet.get(_type1(), _id1(), &_fetch_options(false, true, true)).unwrap();
-        assert_eq!(record.name, _id1());
+        assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value1());
         assert_eq!(record.tags.unwrap(), _tags());
 
@@ -528,13 +528,13 @@ mod tests {
 
         let expected_records = _sort(vec![
             WalletRecord {
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
                 type_: None,
             },
             WalletRecord {
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: None,
                 type_: None,
@@ -560,13 +560,13 @@ mod tests {
 
         let expected_records = _sort(vec![
             WalletRecord {
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: Some(_tags()),
                 type_: Some(_type1().to_string()),
             },
             WalletRecord {
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: Some(_tags()),
                 type_: Some(_type1().to_string()),
@@ -614,7 +614,7 @@ mod tests {
         let expected_records = vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             }
@@ -710,7 +710,7 @@ mod tests {
         let expected_records = vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             }
@@ -773,7 +773,7 @@ mod tests {
         let expected_records = vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             }
@@ -835,7 +835,7 @@ mod tests {
         let expected_records = vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             }
@@ -893,13 +893,13 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id3().to_string(),
+                id: _id3().to_string(),
                 value: Some(_value3().to_string()),
                 tags: None,
             },
@@ -962,13 +962,13 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id3().to_string(),
+                id: _id3().to_string(),
                 value: Some(_value3().to_string()),
                 tags: None,
             },
@@ -1031,13 +1031,13 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: None,
             },
@@ -1100,13 +1100,13 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: None,
             },
@@ -1169,13 +1169,13 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: None,
             },
@@ -1238,13 +1238,13 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id3().to_string(),
+                id: _id3().to_string(),
                 value: Some(_value3().to_string()),
                 tags: None,
             },
@@ -1302,13 +1302,13 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id3().to_string(),
+                id: _id3().to_string(),
                 value: Some(_value3().to_string()),
                 tags: None,
             },
@@ -1386,7 +1386,7 @@ mod tests {
         let expected_records = vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             }
@@ -1405,7 +1405,7 @@ mod tests {
         let expected_records = vec![
             WalletRecord {
                 type_: None,
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: None,
             }
@@ -1424,13 +1424,13 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: None,
             },
@@ -1529,19 +1529,19 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id3().to_string(),
+                id: _id3().to_string(),
                 value: Some(_value3().to_string()),
                 tags: None,
             },
@@ -1564,13 +1564,13 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id3().to_string(),
+                id: _id3().to_string(),
                 value: Some(_value3().to_string()),
                 tags: None,
             },
@@ -1592,7 +1592,7 @@ mod tests {
         let expected_records = vec![
             WalletRecord {
                 type_: None,
-                name: _id3().to_string(),
+                id: _id3().to_string(),
                 value: Some(_value3().to_string()),
                 tags: None,
             },
@@ -1663,19 +1663,19 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id2().to_string(),
+                id: _id2().to_string(),
                 value: Some(_value2().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id3().to_string(),
+                id: _id3().to_string(),
                 value: Some(_value3().to_string()),
                 tags: None,
             },
@@ -1691,13 +1691,13 @@ mod tests {
         let expected_records = _sort(vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
             WalletRecord {
                 type_: None,
-                name: _id3().to_string(),
+                id: _id3().to_string(),
                 value: Some(_value3().to_string()),
                 tags: None,
             },
@@ -1753,7 +1753,7 @@ mod tests {
         let expected_records = vec![
             WalletRecord {
                 type_: None,
-                name: _id1().to_string(),
+                id: _id1().to_string(),
                 value: Some(_value1().to_string()),
                 tags: None,
             },
@@ -1764,7 +1764,7 @@ mod tests {
     }
 
     fn _cleanup() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
     }
 
     fn _type1() -> &'static str {
@@ -1816,10 +1816,10 @@ mod tests {
         let metadata = {
             let master_key_salt = encryption::gen_master_key_salt().unwrap();
 
-            let metadata = Metadata {
+            let metadata = Metadata::MetadataArgon(MetadataArgon {
                 master_key_salt: master_key_salt[..].to_vec(),
                 keys: keys.serialize_encrypted(&master_key).unwrap(),
-            };
+            });
 
             serde_json::to_vec(&metadata)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot serialize wallet metadata: {:?}", err))).unwrap()
@@ -1839,9 +1839,9 @@ mod tests {
         let storage_type = SQLiteStorageType::new();
         let storage = storage_type.open_storage(_wallet_id(), None, None).unwrap();
 
-        let metadata: Metadata = {
+        let metadata: MetadataArgon = {
             let metadata = storage.get_storage_metadata().unwrap();
-            serde_json::from_slice(&metadata)
+            serde_json::from_slice::<MetadataArgon>(&metadata)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err))).unwrap()
         };
 

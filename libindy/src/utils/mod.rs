@@ -1,20 +1,17 @@
 pub mod environment;
 
+#[allow(unused_macros)]
 #[macro_use]
-pub mod cstring;
+pub mod ctypes;
 
 #[macro_use]
 pub mod ccallback;
-
-#[macro_use]
-pub mod byte_array;
 
 pub mod crypto;
 #[macro_use]
 pub mod logger;
 
-//#[cfg(test)]
-#[allow(dead_code)]
+#[cfg(test)]
 pub mod inmem_wallet;
 
 #[allow(unused_macros)]
@@ -35,3 +32,7 @@ pub mod json;
 pub mod serialization;
 
 pub mod option;
+
+//TODO remove this after unpack/pack feature changed to support new key and nonce structs
+#[macro_use]
+pub mod byte_array;

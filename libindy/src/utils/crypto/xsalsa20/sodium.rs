@@ -3,69 +3,68 @@ extern crate sodiumoxide;
 use errors::common::CommonError;
 use errors::route::RouteError;
 use domain::route::Payload;
-
-use self::sodiumoxide::crypto::secretbox;
 use utils::byte_array::_clone_into_array;
 
-pub struct XSalsa20 {}
+use self::sodiumoxide::crypto::secretbox;
+use self::sodiumoxide::crypto::secretbox::xsalsa20poly1305;
 
-impl XSalsa20 {
-    pub fn new() -> XSalsa20 {
-        XSalsa20 {}
-    }
+pub const KEYBYTES: usize = xsalsa20poly1305::KEYBYTES;
+pub const NONCEBYTES: usize = xsalsa20poly1305::NONCEBYTES;
 
-    pub fn create_key(&self) -> Vec<u8> {
-        secretbox::gen_key()[..].to_vec()
-    }
+sodium_type!(Key, xsalsa20poly1305::Key, KEYBYTES);
+sodium_type!(Nonce, xsalsa20poly1305::Nonce, NONCEBYTES);
 
-    pub fn gen_nonce(&self) -> Vec<u8> {
-        secretbox::gen_nonce()[..].to_vec()
-    }
+pub fn create_key() -> Key {
+    Key(secretbox::gen_key())
+}
 
-    pub fn encrypt(&self, key: &[u8], nonce: &[u8], doc: &[u8]) -> Vec<u8> {
-        secretbox::seal(
-            doc,
-            &secretbox::Nonce(_clone_into_array(nonce)),
-            &secretbox::Key(_clone_into_array(key))
-        )
-    }
+pub fn gen_nonce() -> Nonce {
+    Nonce(secretbox::gen_nonce())
+}
 
-    pub fn encrypt_detached(&self, key: &[u8], nonce: &[u8], doc: &[u8]) -> (Vec<u8>, Vec<u8>) {
-        let mut cipher = doc.to_vec();
-        let tag = secretbox::seal_detached(cipher.as_mut_slice(),
-                                 &secretbox::Nonce(_clone_into_array(nonce)),
-                                 &secretbox::Key(_clone_into_array(key)));
-        (cipher, tag[..].to_vec())
-    }
+pub fn encrypt(key: &Key, nonce: &Nonce, doc: &[u8]) -> Vec<u8> {
+    secretbox::seal(
+        doc,
+        &nonce.0,
+        &key.0
+    )
+}
 
-    pub fn decrypt(&self, key: &[u8], nonce: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
-        secretbox::open(
-            doc,
-            &secretbox::Nonce(_clone_into_array(nonce)),
-            &secretbox::Key(_clone_into_array(key))
-        )
-            .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
-    }
+pub fn decrypt(key: &Key, nonce: &Nonce, doc: &[u8]) -> Result<Vec<u8>, CommonError> {
+    secretbox::open(
+        doc,
+        &nonce.0,
+        &key.0
+    )
+        .map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))
+}
 
-    pub fn decrypt_detached(&self, key: &[u8], nonce: &[u8], tag: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
-        let mut plain = doc.to_vec();
-        secretbox::open_detached(plain.as_mut_slice(),
-                                 &secretbox::Tag(_clone_into_array(tag)),
-                                 &secretbox::Nonce(_clone_into_array(nonce)),
-                                 &secretbox::Key(_clone_into_array(key))).map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))?;
-        Ok(plain.to_vec())
-    }
+pub fn encrypt_detached(key: &[u8], nonce: &[u8], doc: &[u8]) -> (Vec<u8>, Vec<u8>) {
+    let mut cipher = doc.to_vec();
+    let tag = secretbox::seal_detached(cipher.as_mut_slice(),
+                                &secretbox::Nonce(_clone_into_array(nonce)),
+                                &secretbox::Key(_clone_into_array(key)));
+    (cipher, tag[..].to_vec())
+}
+
+pub fn decrypt_detached(key: &[u8], nonce: &[u8], tag: &[u8], doc: &[u8]) -> Result<Vec<u8>, CommonError> {
+    let mut plain = doc.to_vec();
+    secretbox::open_detached(plain.as_mut_slice(),
+                                &secretbox::Tag(_clone_into_array(tag)),
+                                &secretbox::Nonce(_clone_into_array(nonce)),
+                                &secretbox::Key(_clone_into_array(key))).map_err(|err| CommonError::InvalidStructure(format!("Unable to decrypt data: {:?}", err)))?;
+    Ok(plain.to_vec())
 }
 
 pub fn encrypt_payload(plaintext: &str) -> Payload {
 
     //prep for payload encryption
-    let xsalsa = XSalsa20::new();
-    let sym_key = xsalsa.create_key();
-    let iv = xsalsa.gen_nonce();
+    // TODO FIX ME: make this depend on functions above instead of old implementation
+    let sym_key = secretbox::gen_key()[..].to_vec();
+    let iv = secretbox::gen_nonce()[..].to_vec();
 
     //encrypt payload
-    let (ciphertext, tag) = xsalsa.encrypt_detached(&sym_key, &iv, plaintext.as_bytes());
+    let (ciphertext, tag) = encrypt_detached(&sym_key, &iv, plaintext.as_bytes());
 
     //encode payload and return
     Payload {
@@ -78,11 +77,11 @@ pub fn encrypt_payload(plaintext: &str) -> Payload {
 
 pub fn decrypt_payload(payload: &Payload) -> Result<String, RouteError> {
     //decrypt payload
-    let xsalsa = XSalsa20::new();
-    let result = xsalsa.decrypt_detached(&payload.sym_key,
-                                                            &payload.iv.as_slice(),
-                                                              &payload.tag.as_slice(),
-                                                              &payload.ciphertext.as_slice());
+
+    let result = decrypt_detached(&payload.sym_key,
+                                                     &payload.iv.as_slice(),
+                                                       &payload.tag.as_slice(),
+                                                       &payload.ciphertext.as_slice());
     //return plaintext or throw error
     match result {
         Ok(v) => Ok(String::from_utf8(v).map_err(|err| RouteError::DecodeError(format!("{}", err)))?),
@@ -97,14 +96,12 @@ mod tests {
 
     #[test]
     fn encrypt_decrypt_works() {
-        let xsalsa20 = XSalsa20::new();
-
-        let nonce = xsalsa20.gen_nonce();
-        let key = xsalsa20.create_key();
+        let nonce = gen_nonce();
+        let key = create_key();
         let data = randombytes::randombytes(16);
 
-        let encrypted_data = xsalsa20.encrypt(&key, &nonce, &data);
-        let decrypt_result = xsalsa20.decrypt(&key, &nonce, &encrypted_data);
+        let encrypted_data = encrypt(&key, &nonce, &data);
+        let decrypt_result = decrypt(&key, &nonce, &encrypted_data);
 
         assert!(decrypt_result.is_ok());
         assert_eq!(data, decrypt_result.unwrap());

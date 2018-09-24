@@ -1,6 +1,7 @@
 from .libindy import do_call, create_cb
 
 from ctypes import *
+from typing import Optional
 
 import logging
 
@@ -28,11 +29,16 @@ async def create_wallet(config: str,
      }
     :param credentials: Wallet credentials json
      {
-       "key": string, Passphrase used to derive wallet master key
+       "key": string, Key or passphrase used for wallet key derivation.
+                      Look to key_derivation_method param for information about supported key derivation methods.
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                                For 'default' storage type should be empty.
-
+       "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                                ARGON2I_MOD - derive secured wallet master key (used by default)
+                                ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                                RAW - raw wallet key master provided (skip derivation).
+                                      RAW keys can be generated with generate_wallet_key call
      }
     :return: Error code
     """
@@ -84,13 +90,21 @@ async def open_wallet(config: str,
     }
     :param credentials: Wallet credentials json
     {
-       "key": string, Passphrase used to derive current wallet master key
-       "rekey": optional<string>, If present than wallet master key will be rotated to a new one
-                                  derived from this passphrase.
+       "key": string, Key or passphrase used for wallet key derivation.
+                      Look to key_derivation_method param for information about supported key derivation methods.
+       "rekey": optional<string>, If present, then wallet master key will be rotated to a new one.
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                               For 'default' storage type should be empty.
-
+       "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                               ARGON2I_MOD - derive secured wallet master key (used by default)
+                               ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                               RAW - raw wallet master key provided (skip derivation)
+       "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
+                               ARGON2I_MOD - derive secured wallet master rekey (used by default)
+                               ARGON2I_INT - derive secured wallet master rekey (less secured but faster)
+                               RAW - raw wallet rekey master provided (skip derivation).
+                                     RAW keys can be generated with generate_wallet_key call
     }
     :return: Handle to opened wallet to use in methods that require wallet access.
     """
@@ -163,11 +177,16 @@ async def delete_wallet(config: str,
      }
     :param credentials: Wallet credentials json
      {
-       "key": string, Passphrase used to derive wallet master key
+       "key": string, Key or passphrase used for wallet key derivation.
+                      Look to key_derivation_method param for information about supported key derivation methods.
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                               For 'default' storage type should be empty.
-
+       "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                                ARGON2I_MOD - derive secured wallet master key (used by default)
+                                ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                                RAW - raw wallet key master provided (skip derivation).
+                                      RAW keys can be generated with generate_wallet_key call
      }
     :return:
     """
@@ -197,14 +216,17 @@ async def export_wallet(handle: int,
     """
     Exports opened wallet to the file.
 
-    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-    in the future releases.
-
     :param handle: wallet handle returned by indy_open_wallet.
     :param export_config_json: JSON containing settings for input operation.
        {
-           "path": path of the file that contains exported wallet content
-          "key": passphrase used to export key
+          "path": path of the file that contains exported wallet content
+          "key": string, Key or passphrase used for wallet export key derivation.
+                         Look to key_derivation_method param for information about supported key derivation methods.
+          "key_derivation_method": optional<string> algorithm to use for export key derivation:
+                                ARGON2I_MOD - derive secured wallet export key (used by default)
+                                ARGON2I_INT - derive secured wallet export key (less secured but faster)
+                                RAW - raw wallet export key provided (skip derivation).
+                                      RAW keys can be generated with generate_wallet_key call
        }
     :return:
     """
@@ -236,9 +258,6 @@ async def import_wallet(config: str,
     according to fields provided in import_config
     This can be seen as an indy_create_wallet call with additional content import
 
-    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-    in the future releases.
-
     :param config: Wallet configuration json.
      {
        "id": string, Identifier of the wallet.
@@ -257,15 +276,20 @@ async def import_wallet(config: str,
      }
     :param credentials: Wallet credentials json
      {
-       "key": string, Passphrase used to derive wallet master key
+       "key": string, Key or passphrase used for wallet key derivation.
+                      Look to key_derivation_method param for information about supported key derivation methods.
        "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                               Can be optional if storage supports default configuration.
                               For 'default' storage type should be empty.
-
+       "key_derivation_method": optional<string> Algorithm to use for wallet key derivation:
+                                 ARGON2I_MOD - derive secured wallet master key (used by default)
+                                 ARGON2I_INT - derive secured wallet master key (less secured but faster)
+                                 RAW - raw wallet key master provided (skip derivation).
+                                       RAW keys can be generated with generate_wallet_key call
      }
     :param import_config_json: JSON containing settings for input operationЖ {
      "path": path of the file that contains exported wallet content
-     "key": passphrase used to export key
+     "key": key used for export of the wallet
    }
     :return: Error code
     """
@@ -291,3 +315,36 @@ async def import_wallet(config: str,
                   import_wallet.cb)
 
     logger.debug("import_wallet: <<<")
+
+
+async def generate_wallet_key(config: Optional[str]) -> str:
+    """
+    Generate wallet master key.
+    Returned key is compatible with "RAW" key derivation method.
+    It allows to avoid expensive key derivation for use cases when wallet keys can be stored in a secure enclave.
+
+    :param config: (optional) key configuration json.
+     {
+       seed": optional<string> Seed that allows deterministic key creation (if not set random one will be used).
+     }
+    :return: Error code
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("generate_wallet_key: >>> config: %r",
+                 config)
+
+    if not hasattr(generate_wallet_key, "cb"):
+        logger.debug("generate_wallet_key: Creating callback")
+        generate_wallet_key.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_config = c_char_p(config.encode('utf-8')) if config is not None else None
+
+    key = await do_call('indy_generate_wallet_key',
+                        c_config,
+                        generate_wallet_key.cb)
+
+    res = key.decode()
+
+    logger.debug("generate_wallet_key: <<< res: %r", res)
+    return res

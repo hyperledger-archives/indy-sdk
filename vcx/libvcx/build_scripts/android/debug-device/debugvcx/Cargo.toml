@@ -1,0 +1,8 @@
+[package]
+name = "debugvcx"
+version = "0.1.0"
+authors = ["Norman Jarvis <norman.jarvis@evernym.com>"]
+
+[dependencies]
+libloading = "0.5"
+libc = "0.2.21"

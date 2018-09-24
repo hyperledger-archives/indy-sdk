@@ -3,6 +3,7 @@ from .libindy import do_call, create_cb
 from typing import Optional
 from ctypes import *
 
+import json
 import logging
 
 
@@ -54,12 +55,11 @@ async def open_pool_ledger(config_name: str,
     :param config: (optional) Runtime pool configuration json.
      if NULL, then default config will be used. Example:
         {
-            "refresh_on_open": bool (optional), Forces pool ledger to be refreshed immediately after opening.
-                             Defaults to true.
-            "auto_refresh_time": int (optional), After this time in minutes pool ledger will be automatically refreshed.
-                               Use 0 to disable automatic refresh. Defaults to 24*60.
-            "network_timeout": int (optional), Network timeout for communication with nodes in milliseconds.
-                              Defaults to 20000.
+            "timeout": int (optional), timeout for network request (in sec).
+            "extended_timeout": int (optional), extended timeout for network request (in sec).
+            "preordered_nodes": array<string> -  (optional), names of nodes which will have a priority during request sending:
+                ["name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+                Note: Not specified nodes will be placed in a random way.
         }
     :return: Handle to opened pool to use in methods that require pool connection.
     """
@@ -110,6 +110,24 @@ async def refresh_pool_ledger(handle: int) -> None:
     logger.debug("refresh_pool_ledger: <<< res: %r", res)
     return res
 
+async def list_pools() -> None:
+    """
+    Lists names of created pool ledgers
+    :return: Error code
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("list_pools: >>> ")
+
+    if not hasattr(list_pools, "cb"):
+        logger.debug("list_pools: Creating callback")
+        list_pools.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    res = await do_call('indy_list_pools',
+                        list_pools.cb)
+    res = json.loads(res.decode())
+    logger.debug("list_pools: <<< res: %r", res)
+    return res
 
 async def close_pool_ledger(handle: int) -> None:
     """
@@ -173,7 +191,7 @@ async def set_protocol_version(protocol_version: int) -> None:
 
     :param protocol_version: Protocol version will be used:
         1 - for Indy Node 1.3
-        2 - for Indy Node 1.4
+        2 - for Indy Node 1.4 and greater
     :return: Error code
     """
 
@@ -181,13 +199,13 @@ async def set_protocol_version(protocol_version: int) -> None:
     logger.debug("set_protocol_version: >>> protocol_version: %r",
                  protocol_version)
 
-    if not hasattr(delete_pool_ledger_config, "cb"):
+    if not hasattr(set_protocol_version, "cb"):
         logger.debug("set_protocol_version: Creating callback")
-        delete_pool_ledger_config.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+        set_protocol_version.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
 
     res = await do_call('indy_set_protocol_version',
                         protocol_version,
-                        delete_pool_ledger_config.cb)
+                        set_protocol_version.cb)
 
     logger.debug("set_protocol_version: <<< res: %r", res)
     return res

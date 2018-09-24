@@ -5,7 +5,6 @@ extern crate serde_json;
 extern crate time;
 
 use errors::common::CommonError;
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -25,6 +24,7 @@ pub struct NodeData {
     pub node_port: Option<u64>,
     pub services: Option<Vec<String>>,
     pub blskey: Option<String>,
+    pub blskey_pop: Option<String>,
 }
 
 fn string_or_number<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
@@ -51,10 +51,6 @@ pub enum NodeTransaction {
     NodeTransactionV0(NodeTransactionV0),
     NodeTransactionV1(NodeTransactionV1),
 }
-
-impl JsonEncodable for NodeTransaction {}
-
-impl<'a> JsonDecodable<'a> for NodeTransaction {}
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct NodeTransactionV0 {
@@ -185,6 +181,9 @@ impl NodeTransactionV1 {
         if let Some(ref mut blskey) = other.txn.data.data.blskey {
             self.txn.data.data.blskey = Some(blskey.to_owned());
         }
+        if let Some(ref mut blskey_pop) = other.txn.data.data.blskey_pop {
+            self.txn.data.data.blskey_pop = Some(blskey_pop.to_owned());
+        }
         if let Some(ref mut services) = other.txn.data.data.services {
             self.txn.data.data.services = Some(services.to_owned());
         }
@@ -227,8 +226,6 @@ pub struct CatchupReq {
     pub seqNoEnd: usize,
     pub catchupTill: usize,
 }
-
-impl<'a> JsonDecodable<'a> for CatchupReq {}
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -350,10 +347,6 @@ pub struct SimpleRequest {
     pub req_id: u64,
 }
 
-impl JsonEncodable for SimpleRequest {}
-
-impl<'a> JsonDecodable<'a> for SimpleRequest {}
-
 #[serde(tag = "op")]
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Message {
@@ -384,14 +377,10 @@ impl Message {
         match str {
             "po" => Ok(Message::Pong),
             "pi" => Ok(Message::Ping),
-            _ => Message::from_json(str).map_err(CommonError::from),
+            _ => serde_json::from_str::<Message>(str).map_err(|err| CommonError::InvalidStructure(format!("Invalid message: {}", err))),
         }
     }
 }
-
-impl JsonEncodable for Message {}
-
-impl<'a> JsonDecodable<'a> for Message {}
 
 /**
  Single item to verification:
@@ -448,24 +437,7 @@ pub struct KeyValuesSubTrieData {
     pub kvs: Vec<(String /* b64-encoded key_suffix */, Option<String /* val */>)>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct PoolConfig {
-    pub genesis_txn: String
-}
-
-impl JsonEncodable for PoolConfig {}
-
-impl<'a> JsonDecodable<'a> for PoolConfig {}
-
-impl PoolConfig {
-    pub fn default_for_name(name: &str) -> PoolConfig {
-        let mut txn = name.to_string();
-        txn += ".txn";
-        PoolConfig { genesis_txn: txn }
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RemoteNode {
     pub name: String,
     pub public_key: Vec<u8>,

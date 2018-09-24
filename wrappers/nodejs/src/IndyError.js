@@ -40,7 +40,13 @@ var errors = {
   406: 'AnoncredsCredentialRevoked',
   407: 'AnoncredsCredDefAlreadyExistsError',
   500: 'UnknownCryptoTypeError',
-  600: 'DidAlreadyExistsError'
+  600: 'DidAlreadyExistsError',
+  700: 'PaymentUnknownMethodError',
+  701: 'PaymentIncompatibleMethodsError',
+  702: 'PaymentInsufficientFundsError',
+  703: 'PaymentSourceDoesNotExistError',
+  704: 'PaymentOperationNotSupportedError',
+  705: 'PaymentExtraFundsError'
 }
 
 function IndyError (err) {

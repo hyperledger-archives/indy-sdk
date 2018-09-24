@@ -20,9 +20,6 @@ async def create_payment_address(wallet_handle: int,
      Note that payment method should be able to resolve this
      secret by fully resolvable payment address format.
 
-     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-     in the future releases.
-
     :param wallet_handle: wallet handle (created by open_wallet).
     :param payment_method: Payment method to use (for example, 'sov').
     :param config: payment address config as json:
@@ -61,9 +58,6 @@ async def list_payment_addresses(wallet_handle: int) -> str:
     """
      Lists all payment addresses that are stored in the wallet
 
-     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-     in the future releases.
-
     :param wallet_handle: wallet handle (created by open_wallet).
     :return: payment_addresses_json: json array of string with json addresses
     """
@@ -91,59 +85,60 @@ async def add_request_fees(wallet_handle: int,
                            submitter_did: str,
                            req_json: str,
                            inputs_json: str,
-                           outputs_json: str) -> (str, str):
+                           outputs_json: str,
+                           extra: Optional[str]) -> (str, str):
     """
-     Modifies Indy request by adding information how to pay fees for this transaction
-     according to selected payment method.
-
-     Payment selection is performed by looking to o
-
-     This method consumes set of UTXO inputs and outputs. The difference between inputs balance
-     and outputs balance is the fee for this transaction.
-
-     Not that this method also produces correct fee signatures.
-
-     Format of inputs is specific for payment method. Usually it should reference payment transaction
-     with at least one output that corresponds to payment address that user owns.
-
-     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-     in the future releases.
+    Modifies Indy request by adding information how to pay fees for this transaction
+    according to this payment method.
+   
+    This method consumes set of inputs and outputs. The difference between inputs balance
+    and outputs balance is the fee for this transaction.
+   
+    Not that this method also produces correct fee signatures.
+   
+    Format of inputs is specific for payment method. Usually it should reference payment transaction
+    with at least one output that corresponds to payment address that user owns.
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did : DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param req_json : initial transaction request as json
-    :param inputs_json: The list of UTXO inputs as json array:
-           ["input1", ...]
-           Notes:
-             - each input should reference paymentAddress
-             - this param will be used to determine payment_method
-    :param outputs_json: The list of UTXO outputs as json array:
-           [{
-             paymentAddress: <str>, // payment address used as output
-             amount: <int>, // amount of tokens to transfer to this payment address
-             extra: <str>, // optional data
-           }]
-    :return: req_with_fees_json: modified Indy request with added fees info, payment_method
+    :param inputs_json: The list of payment sources as json array:
+      ["source1", ...]
+        - each input should reference paymentAddress
+        - this param will be used to determine payment_method
+    :param outputs_json: The list of outputs as json array:
+      [{
+        recipient: <str>, // payment address of recipient
+        amount: <int>, // amount
+      }]
+    :param extra: // optional information for payment operation
+
+    :return:
+        req_with_fees_json: modified Indy request with added fees info,
+        payment_method: used payment method
     """
 
     logger = logging.getLogger(__name__)
     logger.debug(
-        "add_request_fees: >>> wallet_handle: %r, submitter_did: %r, req_json: %r, inputs_json: %r, outputs_json: %r",
+        "add_request_fees: >>> wallet_handle: %r, submitter_did: %r, req_json: %r, inputs_json: %r, outputs_json: %r, "
+        "extra: %r",
         wallet_handle,
         submitter_did,
         req_json,
         inputs_json,
-        outputs_json)
+        outputs_json,
+        extra)
 
     if not hasattr(add_request_fees, "cb"):
         logger.debug("add_request_fees: Creating callback")
         add_request_fees.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_req_json = c_char_p(req_json.encode('utf-8'))
     c_inputs_json = c_char_p(inputs_json.encode('utf-8'))
     c_outputs_json = c_char_p(outputs_json.encode('utf-8'))
+    c_extra = c_char_p(extra.encode('utf-8')) if extra is not None else None
 
     (req_with_fees_json, payment_method) = await do_call('indy_add_request_fees',
                                                          c_wallet_handle,
@@ -151,6 +146,7 @@ async def add_request_fees(wallet_handle: int,
                                                          c_req_json,
                                                          c_inputs_json,
                                                          c_outputs_json,
+                                                         c_extra,
                                                          add_request_fees.cb)
     res = (req_with_fees_json.decode(), payment_method.decode())
 
@@ -161,20 +157,18 @@ async def add_request_fees(wallet_handle: int,
 async def parse_response_with_fees(payment_method: str,
                                    resp_json: str) -> str:
     """
-     Parses response for Indy request with fees.
-
-     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-     in the future releases.
+    Parses response for Indy request with fees.
 
     :param payment_method: Payment method to use (for example, 'sov').
     :param resp_json: response for Indy request with fees
                Note: this param will be used to determine payment_method
-    :return: utxo_json - parsed (payment method and node version agnostic) utxo info as json:
-           [{
-              input: <str>, // UTXO input
-              amount: <int>, // amount of tokens in this input
-              extra: <str>, // optional data from payment transaction
-           }]
+    :return: receipts_json - parsed (payment method and node version agnostic) receipts info as json:
+      [{
+         receipt: <str>, // receipt that can be used for payment referencing and verification
+         recipient: <str>, //payment address of recipient
+         amount: <int>, // amount
+         extra: <str>, // optional data from payment transaction
+      }]
     """
 
     logger = logging.getLogger(__name__)
@@ -189,150 +183,149 @@ async def parse_response_with_fees(payment_method: str,
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
     c_resp_json = c_char_p(resp_json.encode('utf-8'))
 
-    utxo_json = await do_call('indy_parse_response_with_fees',
-                              c_payment_method,
-                              c_resp_json,
-                              parse_response_with_fees.cb)
+    receipts_json = await do_call('indy_parse_response_with_fees',
+                                  c_payment_method,
+                                  c_resp_json,
+                                  parse_response_with_fees.cb)
 
-    res = utxo_json.decode()
+    res = receipts_json.decode()
     logger.debug("parse_response_with_fees: <<< res: %r", res)
     return res
 
 
-async def build_get_utxo_request(wallet_handle: int,
-                                 submitter_did: str,
-                                 payment_address: str) -> (str, str):
+async def build_get_payment_sources_request(wallet_handle: int,
+                                            submitter_did: str,
+                                            payment_address: str) -> (str, str):
     """
-    Builds Indy request for getting UTXO list for payment address
+    Builds Indy request for getting sources list for payment address
     according to this payment method.
 
-    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-    in the future releases.
-
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did : DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param payment_address: target payment address
-    :return: get_utxo_txn_json: Indy request for getting UTXO list for payment address
-             payment_method
+    :return: get_sources_txn_json: Indy request for getting sources list for payment address
+             payment_method: used payment method
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_get_utxo_request: >>> wallet_handle: %r, submitter_did: %r, payment_address: %r",
+    logger.debug("build_get_payment_sources_request: >>> wallet_handle: %r, submitter_did: %r, payment_address: %r",
                  wallet_handle,
                  submitter_did,
                  payment_address)
 
-    if not hasattr(build_get_utxo_request, "cb"):
-        logger.debug("build_get_utxo_request: Creating callback")
-        build_get_utxo_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+    if not hasattr(build_get_payment_sources_request, "cb"):
+        logger.debug("build_get_payment_sources_request: Creating callback")
+        build_get_payment_sources_request.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_payment_address = c_char_p(payment_address.encode('utf-8'))
 
-    (get_utxo_txn_json, payment_method) = await do_call('indy_build_get_utxo_request',
-                                                        c_wallet_handle,
-                                                        c_submitter_did,
-                                                        c_payment_address,
-                                                        build_get_utxo_request.cb)
-    res = (get_utxo_txn_json.decode(), payment_method.decode())
+    (get_sources_txn_json, payment_method) = await do_call('indy_build_get_payment_sources_request',
+                                                           c_wallet_handle,
+                                                           c_submitter_did,
+                                                           c_payment_address,
+                                                           build_get_payment_sources_request.cb)
+    res = (get_sources_txn_json.decode(), payment_method.decode())
 
-    logger.debug("build_get_utxo_request: <<< res: %r", res)
+    logger.debug("build_get_payment_sources_request: <<< res: %r", res)
     return res
 
 
-async def parse_get_utxo_response(payment_method: str,
-                                  resp_json: str) -> str:
+async def parse_get_payment_sources_response(payment_method: str,
+                                             resp_json: str) -> str:
     """
-     Parses response for Indy request for getting UTXO list.
-
-     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-     in the future releases.
+    Parses response for Indy request for getting sources list.
 
     :param payment_method: Payment method to use (for example, 'sov').
-    :param resp_json: resp_json: response for Indy request for getting UTXO list
+    :param resp_json: resp_json: response for Indy request for getting sources list
                       Note: this param will be used to determine payment_method
-    :return: utxo_json - parsed (payment method and node version agnostic) utxo info as json:
-           [{
-              input: <str>, // UTXO input
-              amount: <int>, // amount of tokens in this input
-              extra: <str>, // optional data from payment transaction
-           }]
+    :return: sources_json: parsed (payment method and node version agnostic) sources info as json:
+      [{
+         source: <str>, // source input
+         paymentAddress: <str>, //payment address for this source
+         amount: <int>, // amount
+         extra: <str>, // optional data from payment transaction
+      }]
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("parse_get_utxo_response: >>> payment_method: %r, resp_json: %r",
+    logger.debug("parse_get_payment_sources_response: >>> payment_method: %r, resp_json: %r",
                  payment_method,
                  resp_json)
 
-    if not hasattr(parse_get_utxo_response, "cb"):
-        logger.debug("parse_get_utxo_response: Creating callback")
-        parse_get_utxo_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+    if not hasattr(parse_get_payment_sources_response, "cb"):
+        logger.debug("parse_get_payment_sources_response: Creating callback")
+        parse_get_payment_sources_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
     c_resp_json = c_char_p(resp_json.encode('utf-8'))
 
-    utxo_json = await do_call('indy_parse_get_utxo_response',
-                              c_payment_method,
-                              c_resp_json,
-                              parse_get_utxo_response.cb)
+    sources_json = await do_call('indy_parse_get_payment_sources_response',
+                                 c_payment_method,
+                                 c_resp_json,
+                                 parse_get_payment_sources_response.cb)
 
-    res = utxo_json.decode()
-    logger.debug("parse_get_utxo_response: <<< res: %r", res)
+    res = sources_json.decode()
+    logger.debug("parse_get_payment_sources_response: <<< res: %r", res)
     return res
 
 
 async def build_payment_req(wallet_handle: int,
                             submitter_did: str,
                             inputs_json: str,
-                            outputs_json: str) -> (str, str):
+                            outputs_json: str,
+                            extra: Optional[str]) -> (str, str):
     """
-     Builds Indy request for doing tokens payment according to this payment method.
-
-     This method consumes set of UTXO inputs and outputs.
-
-     Format of inputs is specific for payment method. Usually it should reference payment transaction
-     with at least one output that corresponds to payment address that user owns.
-
-     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-     in the future releases.
+    Builds Indy request for doing payment
+    according to this payment method.
+   
+    This method consumes set of inputs and outputs.
+   
+    Format of inputs is specific for payment method. Usually it should reference payment transaction
+    with at least one output that corresponds to payment address that user owns.
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did : DID of request sender
-    :param inputs_json: The list of UTXO inputs as json array:
-                       ["input1", ...]
-                       Note that each input should reference paymentAddress    
-    :param outputs_json: The list of UTXO outputs as json array:
-                       [{
-                         paymentAddress: <str>, // payment address used as output
-                         amount: <int>, // amount of tokens to transfer to this payment address
-                         extra: <str>, // optional data
-                       }]
-    :return: payment_req_json: Indy request for doing tokens payment
-             payment_method
+    :param submitter_did : (Option) DID of request sender
+    :param inputs_json: The list of payment sources as json array:
+      ["source1", ...]
+      Note that each source should reference payment address    
+    :param outputs_json: The list of outputs as json array:
+      [{
+        recipient: <str>, // payment address of recipient
+        amount: <int>, // amount
+      }]
+    :param extra: // optional information for payment operation
+
+    :return: payment_req_json: Indy request for doing payment
+             payment_method: used payment method
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_payment_req: >>> wallet_handle: %r, submitter_did: %r, inputs_json: %r, outputs_json: %r",
+    logger.debug("build_payment_req: >>> wallet_handle: %r, submitter_did: %r, inputs_json: %r, outputs_json: %r,"
+                 " extra: %r",
                  wallet_handle,
                  submitter_did,
                  inputs_json,
-                 outputs_json)
+                 outputs_json,
+                 extra)
 
     if not hasattr(build_payment_req, "cb"):
         logger.debug("build_payment_req: Creating callback")
         build_payment_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_inputs_json = c_char_p(inputs_json.encode('utf-8'))
     c_outputs_json = c_char_p(outputs_json.encode('utf-8'))
+    c_extra = c_char_p(extra.encode('utf-8')) if extra is not None else None
 
     (payment_req_json, payment_method) = await do_call('indy_build_payment_req',
                                                        c_wallet_handle,
                                                        c_submitter_did,
                                                        c_inputs_json,
                                                        c_outputs_json,
+                                                       c_extra,
                                                        build_payment_req.cb)
     res = (payment_req_json.decode(), payment_method.decode())
 
@@ -343,20 +336,18 @@ async def build_payment_req(wallet_handle: int,
 async def parse_payment_response(payment_method: str,
                                  resp_json: str) -> str:
     """
-     Parses response for Indy request for getting UTXO list.
-
-     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-     in the future releases.
+    Parses response for Indy request for payment txn.
 
     :param payment_method: Payment method to use (for example, 'sov').
-    :param resp_json: resp_json: response for Indy request for getting UTXO list
-                      Note: this param will be used to determine payment_method
-    :return: utxo_json - parsed (payment method and node version agnostic) utxo info as json:
-           [{
-              input: <str>, // UTXO input
-              amount: <int>, // amount of tokens in this input
-              extra: <str>, // optional data from payment transaction
-           }]
+    :param resp_json: resp_json: response for Indy request for payment txn
+      Note: this param will be used to determine payment_method
+    :return: receipts_json: parsed (payment method and node version agnostic) receipts info as json:
+      [{
+         receipt: <str>, // receipt that can be used for payment referencing and verification
+         recipient: <str>, // payment address of recipient
+         amount: <int>, // amount
+         extra: <str>, // optional data from payment transaction
+      }]
     """
 
     logger = logging.getLogger(__name__)
@@ -371,60 +362,59 @@ async def parse_payment_response(payment_method: str,
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
     c_resp_json = c_char_p(resp_json.encode('utf-8'))
 
-    utxo_json = await do_call('indy_parse_payment_response',
-                              c_payment_method,
-                              c_resp_json,
-                              parse_payment_response.cb)
+    receipts_json = await do_call('indy_parse_payment_response',
+                                  c_payment_method,
+                                  c_resp_json,
+                                  parse_payment_response.cb)
 
-    res = utxo_json.decode()
+    res = receipts_json.decode()
     logger.debug("parse_payment_response: <<< res: %r", res)
     return res
 
 
 async def build_mint_req(wallet_handle: int,
                          submitter_did: str,
-                         outputs_json: str) -> (str, str):
+                         outputs_json: str,
+                         extra: Optional[str]) -> (str, str):
     """
-     Builds Indy request for doing tokens minting according to this payment method.
-
-     This method consumes set of UTXO inputs and outputs.
-
-     Format of inputs is specific for payment method. Usually it should reference payment transaction
-     with at least one output that corresponds to payment address that user owns.
-
-     Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-     in the future releases.
+    Builds Indy request for doing minting
+    according to this payment method.
 
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did : DID of request sender
-    :param outputs_json: The list of UTXO outputs as json array:
-                           [{
-                             paymentAddress: <str>, // payment address used as output
-                             amount: <int>, // amount of tokens to transfer to this payment address
-                             extra: <str>, // optional data
-                           }]
-    :return: mint_req_json: Indy request for doing tokens minting
-             payment_method
+    :param submitter_did : (Option) DID of request sender
+    :param outputs_json: The list of outputs as json array:
+      [{
+        recipient: <str>, // payment address of recipient
+        amount: <int>, // amount
+        extra: <str>, // optional data
+      }]
+    :param extra: // optional information for payment operation
+
+    :return: mint_req_json: Indy request for doing minting
+             payment_method: used payment method
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("build_mint_req: >>> wallet_handle: %r, submitter_did: %r, outputs_json: %r",
+    logger.debug("build_mint_req: >>> wallet_handle: %r, submitter_did: %r, outputs_json: %r, extra: %r",
                  wallet_handle,
                  submitter_did,
-                 outputs_json)
+                 outputs_json,
+                 extra)
 
     if not hasattr(build_mint_req, "cb"):
         logger.debug("build_mint_req: Creating callback")
         build_mint_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_outputs_json = c_char_p(outputs_json.encode('utf-8'))
+    c_extra = c_char_p(extra.encode('utf-8')) if extra is not None else None
 
     (mint_req_json, payment_method) = await do_call('indy_build_mint_req',
                                                     c_wallet_handle,
                                                     c_submitter_did,
                                                     c_outputs_json,
+                                                    c_extra,
                                                     build_mint_req.cb)
     res = (mint_req_json.decode(), payment_method.decode())
 
@@ -439,11 +429,8 @@ async def build_set_txn_fees_req(wallet_handle: int,
     """
     Builds Indy request for setting fees for transactions in the ledger
 
-    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-    in the future releases.
-
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did:  DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param payment_method: Payment method to use (for example, 'sov').
     :param fees_json: {
        txnType1: amount1,
@@ -466,7 +453,7 @@ async def build_set_txn_fees_req(wallet_handle: int,
         build_set_txn_fees_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
     c_fees_json = c_char_p(fees_json.encode('utf-8'))
 
@@ -488,11 +475,8 @@ async def build_get_txn_fees_req(wallet_handle: int,
     """
     Builds Indy request for getting fees for transactions in the ledger
 
-    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-    in the future releases.
-
     :param wallet_handle: wallet handle (created by open_wallet).
-    :param submitter_did: DID of request sender
+    :param submitter_did : (Option) DID of request sender
     :param payment_method: Payment method to use (for example, 'sov').
     :return: set_txn_fees_json: Indy request for setting fees for transactions in the ledger
     """
@@ -508,7 +492,7 @@ async def build_get_txn_fees_req(wallet_handle: int,
         build_get_txn_fees_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
 
     c_wallet_handle = c_int32(wallet_handle)
-    c_submitter_did = c_char_p(submitter_did.encode('utf-8'))
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
     c_payment_method = c_char_p(payment_method.encode('utf-8'))
 
     get_txn_fees_json = await do_call('indy_build_get_txn_fees_req',
@@ -526,9 +510,6 @@ async def parse_get_txn_fees_response(payment_method: str,
                                       resp_json: str) -> str:
     """
     Parses response for Indy request for getting fees
-
-    Note this endpoint is EXPERIMENTAL. Function signature and behavior may change
-    in the future releases.
 
     :param payment_method: Payment method to use (for example, 'sov').
     :param resp_json: response for Indy request for getting fees
@@ -559,4 +540,85 @@ async def parse_get_txn_fees_response(payment_method: str,
 
     res = fees_json.decode()
     logger.debug("parse_get_txn_fees_response: <<< res: %r", res)
+    return res
+
+
+async def build_verify_payment_req(wallet_handle: int,
+                                   submitter_did: str,
+                                   receipt: str) -> (str, str):
+    """
+    Builds Indy request for information to verify the payment receipt
+
+    :param wallet_handle: wallet handle (created by open_wallet).
+    :param submitter_did : (Option) DID of request sender
+    :param receipt: payment receipt to verify
+
+    :return: verify_txn_json: Indy request for verification receipt for transactions in the ledger
+             payment_method: used payment method
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("build_verify_payment_req: >>> wallet_handle: %r, submitter_did: %r, receipt: %r",
+                 wallet_handle,
+                 submitter_did,
+                 receipt)
+
+    if not hasattr(build_verify_payment_req, "cb"):
+        logger.debug("build_verify_payment_req: Creating callback")
+        build_verify_payment_req.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p, c_char_p))
+
+    c_wallet_handle = c_int32(wallet_handle)
+    c_submitter_did = c_char_p(submitter_did.encode('utf-8')) if submitter_did is not None else None
+    c_receipt = c_char_p(receipt.encode('utf-8'))
+
+    (verify_txn_json, payment_method) = await do_call('indy_build_verify_payment_req',
+                                                      c_wallet_handle,
+                                                      c_submitter_did,
+                                                      c_receipt,
+                                                      build_verify_payment_req.cb)
+    res = (verify_txn_json.decode(), payment_method.decode())
+
+    logger.debug("build_verify_payment_req: <<< res: %r", res)
+    return res
+
+
+async def parse_verify_payment_response(payment_method: str,
+                                        resp_json: str) -> str:
+    """
+    Parses Indy response with information to verify receipt
+
+    :param payment_method: Payment method to use (for example, 'sov').
+    :param resp_json: resp_json: response for Indy request for payment txn
+      Note: this param will be used to determine payment_method
+    :return: receipts_json: parsed (payment method and node version agnostic) receipt verification info as json:
+    {
+         sources: [<str>, ]
+         receipts: [ {
+             recipient: <str>, // payment address of recipient
+             receipt: <str>, // receipt that can be used for payment referencing and verification
+             amount: <int>, // amount
+         } ],
+         extra: <str>, //optional data
+    }
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("parse_verify_payment_response: >>> wallet_handle: %r, payment_method: %r, resp_json: %r",
+                 payment_method,
+                 resp_json)
+
+    if not hasattr(parse_verify_payment_response, "cb"):
+        logger.debug("parse_verify_payment_response: Creating callback")
+        parse_verify_payment_response.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32, c_char_p))
+
+    c_payment_method = c_char_p(payment_method.encode('utf-8'))
+    c_resp_json = c_char_p(resp_json.encode('utf-8'))
+
+    receipts_json = await do_call('indy_parse_verify_payment_response',
+                                  c_payment_method,
+                                  c_resp_json,
+                                  parse_verify_payment_response.cb)
+
+    res = receipts_json.decode()
+    logger.debug("parse_verify_payment_response: <<< res: %r", res)
     return res

@@ -12,8 +12,6 @@ use domain::crypto::did::{Did, TheirDid};
 use std::rc::Rc;
 use std::str;
 
-use self::indy_crypto::utils::json::JsonEncodable;
-
 use std::result;
 
 type Result<T> = result::Result<T, IndyError>;
@@ -147,9 +145,9 @@ impl PairwiseCommandExecutor {
 
         let pairwise_info =
             PairwiseInfo::from(
-                self.wallet_service.get_indy_object::<Pairwise>(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())?);
+                self.wallet_service.get_indy_object::<Pairwise>(wallet_handle, &their_did, &RecordOptions::id_value())?);
 
-        let res = pairwise_info.to_json()
+        let res = serde_json::to_string(&pairwise_info)
             .map_err(|e|
                 CommonError::InvalidState(format!("Can't serialize PairwiseInfo: {:?}", e)))?;
 
@@ -166,9 +164,9 @@ impl PairwiseCommandExecutor {
         debug!("set_pairwise_metadata >>> wallet_handle: {:?}, their_did: {:?}, metadata: {:?}", wallet_handle, their_did, metadata);
 
         let mut pairwise: Pairwise =
-            self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value(), &mut String::new())?;
+            self.wallet_service.get_indy_object(wallet_handle, &their_did, &RecordOptions::id_value())?;
 
-        pairwise.metadata = metadata.as_ref().map(|m| m.to_string());
+        pairwise.metadata = metadata.map(str::to_string);
 
         self.wallet_service.update_indy_object(wallet_handle, &their_did, &pairwise)?;
 

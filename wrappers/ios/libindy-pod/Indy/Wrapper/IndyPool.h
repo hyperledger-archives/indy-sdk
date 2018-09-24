@@ -38,14 +38,13 @@
  It is impossible to open pool with the same name more than once.
  
  @code
- Example poolConfig:
+ Example poolConfig
   {
-      "refresh_on_open": bool (optional), Forces pool ledger to be refreshed immediately after opening.
-                       Defaults to true.
-      "auto_refresh_time": int (optional), After this time in minutes pool ledger will be automatically refreshed.
-                         Use 0 to disable automatic refresh. Defaults to 24*60.
-      "network_timeout": int (optional), Network timeout for communication with nodes in milliseconds.
-                        Defaults to 20000.
+      "timeout": int (optional), Timeout for network request (in sec).
+      "extended_timeout": int (optional), Extended timeout for network request (in sec).
+      "preordered_nodes": array<string> (optional), Names of nodes which will have a priority during request sending:
+            [ "name_of_1st_prior_node",  "name_of_2nd_prior_node", .... ]
+            Note: Not specified nodes will be placed in a random way.
   }
  @endcode
  
@@ -94,7 +93,7 @@
  
  @param protocolVersion Protocol version will be used:
     1 - for Indy Node 1.3
-    2 - for Indy Node 1.4
+    2 - for Indy Node 1.4 and greater
  @param completion Completion callback, returns error code.
  */
 + (void)setProtocolVersion:(NSNumber *)protocolVersion

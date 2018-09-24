@@ -23,6 +23,7 @@ public class IndyException extends Exception {
 	 * Initializes a new IndyException with the specified message.
 	 *
 	 * @param message The message for the exception.
+	 * @param sdkErrorCode The SDK error code to construct the exception from.
 	 */
 	protected IndyException(String message, int sdkErrorCode) {
 		super(message);
@@ -42,6 +43,8 @@ public class IndyException extends Exception {
 	 * Initializes a new IndyException using the specified SDK error code.
 	 *
 	 * @param sdkErrorCode The SDK error code to construct the exception from.
+	 *
+	 * @return IndyException correspondent to SDK error code
 	 */
 	public static IndyException fromSdkError(int sdkErrorCode) {
 
@@ -139,6 +142,12 @@ public class IndyException extends Exception {
 				return new IncompatiblePaymentException();
 			case InsufficientFundsError:
 				return new InsufficientFundsException();
+			case ExtraFundsError:
+				return new ExtraFundsException();
+			case PaymentSourceDoesNotExistError:
+				return new PaymentSourceDoesNotExistException();
+			case PaymentOperationNotSupportedError:
+				return new PaymentOperationNotSupportedException();
 			default:
 				String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
 				return new IndyException(message, sdkErrorCode);

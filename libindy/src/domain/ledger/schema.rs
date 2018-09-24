@@ -1,11 +1,5 @@
-extern crate serde;
-extern crate serde_json;
-extern crate indy_crypto;
-
 use super::constants::{SCHEMA, GET_SCHEMA};
 use super::response::GetReplyResultV1;
-
-use self::indy_crypto::utils::json::{JsonDecodable, JsonEncodable};
 
 use std::collections::HashSet;
 
@@ -25,8 +19,6 @@ impl SchemaOperation {
     }
 }
 
-impl JsonEncodable for SchemaOperation {}
-
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct SchemaOperationData {
     pub name: String,
@@ -43,10 +35,6 @@ impl SchemaOperationData {
         }
     }
 }
-
-impl JsonEncodable for SchemaOperationData {}
-
-impl<'a> JsonDecodable<'a> for SchemaOperationData {}
 
 #[derive(Serialize, PartialEq, Debug)]
 pub struct GetSchemaOperation {
@@ -66,8 +54,6 @@ impl GetSchemaOperation {
     }
 }
 
-impl JsonEncodable for GetSchemaOperation {}
-
 #[derive(Serialize, PartialEq, Debug, Deserialize)]
 pub struct GetSchemaOperationData {
     pub name: String,
@@ -83,18 +69,12 @@ impl GetSchemaOperationData {
     }
 }
 
-impl JsonEncodable for GetSchemaOperationData {}
-
-impl<'a> JsonDecodable<'a> for GetSchemaOperationData {}
-
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum GetSchemaReplyResult {
     GetSchemaReplyResultV0(GetSchemaResultV0),
     GetSchemaReplyResultV1(GetReplyResultV1<GetSchemaResultDataV1>)
 }
-
-impl<'a> JsonDecodable<'a> for GetSchemaReplyResult {}
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -103,8 +83,6 @@ pub struct GetSchemaResultV0 {
     pub data: SchemaOperationData,
     pub dest: String
 }
-
-impl<'a> JsonDecodable<'a> for GetSchemaResultV0 {}
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -121,5 +99,3 @@ pub struct GetSchemaResultDataV1 {
 pub struct GetSchemaResultDataValueV1 {
     pub attr_names: HashSet<String>
 }
-
-impl<'a> JsonDecodable<'a> for GetSchemaResultDataV1 {}

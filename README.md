@@ -24,6 +24,57 @@ functions in the SDK can be used to construct rich clients: [Indy-SDK Getting-St
 that explored the ecosystem via command line. That material is being
 rewritten but still contains some useful ideas.
 
+## Items included in this SDK
+
+### libindy
+
+The major artifact of the SDK is a C-callable library that provides the basic building blocks for 
+the creation of applications on the top of [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy).
+It is available for most popular desktop, mobile and server platfrorms.
+
+### Libindy wrappers
+
+A set of libindy wrappers for developing Indy-based applications in your favorite programming language.
+Indy SDK provides libindy wrappers for the following programming languages and platforms:
+
+* [Java](wrappers/java/README.md)
+* [Python](wrappers/python/README.md)
+* [iOS](wrappers/ios/README.md)
+* [NodeJS](wrappers/nodejs/README.md)
+* [.Net](wrappers/dotnet/README.md)
+
+
+### Indy CLI
+
+[Indy CLI](cli/README.md) is the official command line interface that helps Indy developers and administrators.
+
+
+### Libnullpay
+
+[Libnullpay](/libnullpay/README.md) is a libindy plugin that can be used for development of applications that use the Payments API of Indy SDK.
+
+### Libvcx
+
+[Libvcx](/vcx/README.md) is a c-callable library built on top of libindy that provides a high-level
+credential exchange protocol. It simplifies creation of agent applications and provides
+better agent-2-agent interoperability for [Hyperledger Indy](https://www.hyperledger.org/projects/hyperledger-indy)
+infrastructure.
+
+This library is currently in an **experimental** state and is not part of official releases.
+
+### Libvcx wrappers
+
+A set of libvcx wrappers for developing vcx-based applications in your favorite programming language.
+
+Indy SDK provides libvcx wrappers for the following programming languages and platforms:
+
+* [Java](/vcx/wrappers/java/vcx/README.md)
+* [Python](/vcx/wrappers/python3/README.md)
+* [iOS](vcx/wrappers/ios/README.md)
+* [NodeJS](/vcx/wrappers/node/README.md)
+
+These wrappers are currently in **experimental** state and it is not part of official releases.
+
 ## How-To Tutorials
 
 Short, simple tutorials that demonstrate how to accomplish common tasks
@@ -87,6 +138,48 @@ See section "Release channels" for more details.
 ### iOS
 See [wrapper iOS install documentation](wrappers/ios/README.md "How to install").
 
+### Android
+
+1. Go to `https://repo.sovrin.org/android/libindy/{release-channel}`.
+2. 3 architecture are supported as of now arm,arm64 and x86.
+3. Download latest version of libindy.
+4. Unzip archives to the directory where you want to save the `.so` files.
+5. After unzip you will get next structure of files:
+
+* `Your working directory`
+    * `include`
+        * `...`
+    * `lib`
+        * `libindy.so`
+        * `libindy_shared.so`
+        * `libindy.a`
+
+`include` contains c-header files which contains all necessary declarations
+that may be need for your applications.
+
+`lib` contains three types of binaries.
+ * `libindy.so` - This is a shared library which is statically linked with all the depenedencies. 
+ You dont need to sidelaod other dependencies like zmq, sodium and openssl to android app if you use this.
+ 
+ * `libindy_shared.so` - This is pure shared library. It is not dynamically linked to its dependencies. 
+ You need to sideload the binaries with its dependencies. You can download the needed pre-built dependencies from [here](https://github.com/evernym/indy-android-dependencies/tree/v1.0.2)
+    * Rename this library to `libindy.so` before loading it into the app. This will help you in having the compatibility with existing wrappers.
+    
+ * `libindy.a` - This is a static library, which is compiled with NDK.
+ 
+ [How to use instructions.](https://github.com/hyperledger/indy-sdk/blob/master/doc/android-build.md#usage)  
+
+{release channel} must be replaced with rc or stable to define corresponded release channel.
+See section "Release channels" for more details.
+
+ **Note** :
+ 
+ - [WARNING] This library should be considered as experimental as currently unit tests are *not* executed in the CI phase.
+ 
+ - We are using the [NDK16b](https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip) because it is the last NDK to have support for `gnustl_shared` stl. 
+ gnustl_shared is deprecated in latest NDK. gnustal_shared is needed because the dependencies are compiled using gnustal_shared and you will get build errors if more than one type of stl while compiling.
+ 
+ 
 ### MacOS
 
 Pre-built libraries are not provided for MacOS. Please look [here](doc/mac-build.md)
@@ -124,6 +217,11 @@ If you would like to analyse CPU performance of libindy for your use case, you h
 ## How to start local nodes pool with docker
 To test the SDK codebase with a virtual Indy node network, you can start a pool of local nodes using docker:
 
+**Note: If you are getting a PoolLedgerTimeout error it's because the IP addresses in
+cli/docker_pool_transactions_genesis and the pool configuration don't match. 
+Use method 3 to configure the IPs of the docker containers to match the pool.**
+
+### 1) Starting the test pool on localhost
 Start the pool of local nodes on `127.0.0.1:9701-9708` with Docker by running:
 
 ```
@@ -131,9 +229,23 @@ docker build -f ci/indy-pool.dockerfile -t indy_pool .
 docker run -itd -p 9701-9708:9701-9708 indy_pool
 ```
 
+### 2) Starting the test pool on a specific IP address
  Dockerfile `ci/indy-pool.dockerfile` supports an optional pool_ip param that allows
- changing ip of pool nodes in generated pool configuration. The following commands
- allow to start local nodes pool in custom docker network and access this pool
+ changing ip of pool nodes in generated pool configuration. 
+
+ You can start the pool with e.g. with the IP address of your development machine's WIFI interface
+ so that mobile apps in the same network can reach the pool.
+
+ ```
+ # replace 192.168.179.90 with your wifi IP address
+ docker build --build-arg pool_ip=192.168.179.90 -f ci/indy-pool.dockerfile -t indy_pool .
+ docker run -itd -p 192.168.179.90:9701-9708:9701-9708 indy_pool
+ ```
+ To connect to the pool the IP addresses in /var/lib/indy/sandbox/pool_transactions_genesis (in docker) and 
+ the pool configuration you use in your mobile app must match.
+
+### 3) Starting the test pool on a docker network
+ The following commands allow to start local nodes pool in custom docker network and access this pool
  by custom ip in docker network:
 
  ```
@@ -195,3 +307,12 @@ The documents that provide necessary information for Libindy migration. This doc
 to simplify their transition to API of Libindy 1.4.0.
 * [v1.3.0 → v1.4.0](doc/migration-guide-1.3.0-1.4.0.md)
 * [v1.4.0 → v1.5.0](doc/migration-guide-1.4.0-1.5.0.md)
+* [v1.5.0 → v1.6.x](doc/migration-guide-1.5.0-1.6.0.md)
+
+## How to Contribute
+
+* We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
+* You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
+* We use developer certificate of origin (DCO) in all hyperledger repositories,
+  so to get your pull requests accepted, you must certify your commits by signing off on each commit.
+  More information can be found in [Signing Commits](doc/signing-commits.md) article.

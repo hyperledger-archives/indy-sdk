@@ -98,10 +98,14 @@ pub mod list_command {
 pub fn handle_payment_error(err: ErrorCode, payment_method: Option<&str>) {
     match err {
         ErrorCode::PaymentUnknownMethodError => println_err!("Unknown payment method {}", payment_method.unwrap_or("")),
-        ErrorCode::PaymentIncompatibleMethodsError => println_err!("No method were scraped or more than one were scraped"),
+        ErrorCode::PaymentIncompatibleMethodsError => println_err!("No methods were scraped or more than one was scraped"),
         ErrorCode::PaymentInsufficientFundsError => println_err!("Insufficient funds on inputs"),
+        ErrorCode::PaymentExtraFundsError => println_err!("Extra funds on inputs"),
         ErrorCode::CommonInvalidState => println_err!("Input not found"),
+        ErrorCode::PaymentSourceDoesNotExistError => println_err!("Payment source not found"),
+        ErrorCode::PaymentOperationNotSupportedError => println_err!("Payment operation not supported"),
         ErrorCode::CommonInvalidStructure => println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc..."),
+        ErrorCode::WalletItemAlreadyExists => println_err!("Payment address already exists"),
         err => println_err!("Indy SDK error occurred {:?}", err)
     }
 }

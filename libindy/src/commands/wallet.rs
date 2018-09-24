@@ -4,9 +4,12 @@ extern crate indy_crypto;
 
 use errors::indy::IndyError;
 use services::wallet::WalletService;
+use services::crypto::CryptoService;
 use api::wallet::*;
-use std::rc::Rc;
+use utils::crypto::{base58, randombytes, chacha20poly1305_ietf};
+use domain::wallet::{KeyConfig, Config, Credentials, ExportConfig};
 
+use std::rc::Rc;
 use std::result;
 
 type Result<T> = result::Result<T, IndyError>;
@@ -38,34 +41,38 @@ pub enum WalletCommand {
                        WalletFetchSearchNextRecord, // fetch search next record
                        WalletFreeSearch, // free search
                        Box<Fn(Result<()>) + Send>),
-    Create(String, // config
-           String, // credentials
+    Create(Config, // config
+           Credentials, // credentials
            Box<Fn(Result<()>) + Send>),
-    Open(String, // config
-         String, // credentials
+    Open(Config, // config
+         Credentials, // credentials
          Box<Fn(Result<i32>) + Send>),
     Close(i32, // handle
           Box<Fn(Result<()>) + Send>),
-    Delete(String, // config
-           String, // credentials
+    Delete(Config, // config
+           Credentials, // credentials
            Box<Fn(Result<()>) + Send>),
     Export(i32, // wallet_handle
-           String, // export config
+           ExportConfig, // export config
            Box<Fn(Result<()>) + Send>),
-    Import(String, // config
-           String, // credentials
-           String, // import config
+    Import(Config, // config
+           Credentials, // credentials
+           ExportConfig, // import config
            Box<Fn(Result<()>) + Send>),
+    GenerateKey(Option<KeyConfig>, // config
+                Box<Fn(Result<String>) + Send>),
 }
 
 pub struct WalletCommandExecutor {
-    wallet_service: Rc<WalletService>
+    wallet_service: Rc<WalletService>,
+    crypto_service: Rc<CryptoService>,
 }
 
 impl WalletCommandExecutor {
-    pub fn new(wallet_service: Rc<WalletService>) -> WalletCommandExecutor {
+    pub fn new(wallet_service: Rc<WalletService>, crypto_service: Rc<CryptoService>) -> WalletCommandExecutor {
         WalletCommandExecutor {
-            wallet_service
+            wallet_service,
+            crypto_service
         }
     }
 
@@ -108,6 +115,10 @@ impl WalletCommandExecutor {
             WalletCommand::Import(config, credentials, import_config, cb) => {
                 debug!(target: "wallet_command_executor", "Import command received");
                 cb(self._import(&config, &credentials, &import_config));
+            }
+            WalletCommand::GenerateKey(config, cb) => {
+                debug!(target: "wallet_command_executor", "DeriveKey command received");
+                cb(self._generate_key(config.as_ref()));
             }
         };
     }
@@ -154,9 +165,9 @@ impl WalletCommandExecutor {
     }
 
     fn _create(&self,
-               config: &str,
-               credentials: &str) -> Result<()> {
-        trace!("_create >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
+               config: &Config,
+               credentials: &Credentials) -> Result<()> {
+        trace!("_create >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let res = self.wallet_service.create_wallet(config, credentials)?;
 
@@ -165,9 +176,9 @@ impl WalletCommandExecutor {
     }
 
     fn _open(&self,
-             config: &str,
-             credentials: &str) -> Result<i32> {
-        trace!("_open >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
+             config: &Config,
+             credentials: &Credentials) -> Result<i32> {
+        trace!("_open >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let res = self.wallet_service.open_wallet(config, credentials)?;
 
@@ -186,9 +197,9 @@ impl WalletCommandExecutor {
     }
 
     fn _delete(&self,
-               config: &str,
-               credentials: &str) -> Result<()> {
-        trace!("_delete >>> config: {:?}, credentials: {:?}", config, "_"); // TODO: FIXME: Log secrets in debug
+               config: &Config,
+               credentials: &Credentials) -> Result<()> {
+        trace!("_delete >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         let res = self.wallet_service.delete_wallet(config, credentials)?;
 
@@ -198,8 +209,8 @@ impl WalletCommandExecutor {
 
     fn _export(&self,
                wallet_handle: i32,
-               export_config: &str) -> Result<()> {
-        trace!("_export >>> handle: {:?}, export_config: {:?}", wallet_handle, export_config);
+               export_config: &ExportConfig) -> Result<()> {
+        trace!("_export >>> handle: {:?}, export_config: {:?}", wallet_handle, secret!(export_config));
 
         // TODO - later add proper versioning
         let res = self.wallet_service.export_wallet(wallet_handle, export_config, 0)?;
@@ -209,15 +220,32 @@ impl WalletCommandExecutor {
     }
 
     fn _import(&self,
-               config: &str,
-               credentials: &str,
-               import_config: &str) -> Result<()> {
+               config: &Config,
+               credentials: &Credentials,
+               import_config: &ExportConfig) -> Result<()> {
         trace!("_import >>> config: {:?}, credentials: {:?}, import_config: {:?}",
-               config, "_", import_config); // TODO: FIXME: Log credentials in debug
+               config, secret!(credentials), secret!(import_config));
 
         let res = self.wallet_service.import_wallet(config, credentials, import_config)?;
 
         trace!("_import <<< res: {:?}", res);
+        Ok(res)
+    }
+
+    fn _generate_key(&self,
+                     config: Option<&KeyConfig>) -> Result<String> {
+        trace!("_generate_key >>>config: {:?}", secret!(config));
+
+        let seed = config.and_then(|config| config.seed.as_ref().map(String::as_str));
+
+        let key = match self.crypto_service.convert_seed(seed)? {
+            Some(seed) => randombytes::randombytes_deterministic(chacha20poly1305_ietf::KEYBYTES, &randombytes::Seed::from_slice(&seed[..])?),
+            None => randombytes::randombytes(chacha20poly1305_ietf::KEYBYTES)
+        };
+
+        let res = base58::encode(&key[..]);
+
+        trace!("_generate_key <<< res: {:?}", res);
         Ok(res)
     }
 }
