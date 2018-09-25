@@ -93,13 +93,15 @@ impl Proof {
         let mut credential_json: HashMap<String, serde_json::Value> = HashMap::new();
 
         for &(_, ref cred_def_id, _) in credential_data.iter() {
-            let (_, credential_def) = retrieve_credential_def(cred_def_id)
-                .map_err(|ec| ProofError::CommonError(ec.to_error_code()))?;
+            if !credential_json.contains_key(cred_def_id) {
+                let (_, credential_def) = retrieve_credential_def(cred_def_id)
+                    .map_err(|ec| ProofError::CommonError(ec.to_error_code()))?;
 
-            let credential_def = serde_json::from_str(&credential_def)
-                .or(Err(ProofError::InvalidCredData()))?;
+                let credential_def = serde_json::from_str(&credential_def)
+                    .or(Err(ProofError::InvalidCredData()))?;
 
-            credential_json.insert(cred_def_id.to_string(), credential_def);
+                credential_json.insert(cred_def_id.to_string(), credential_def);
+            }
         }
 
         serde_json::to_string(&credential_json).map_err(|err| {
@@ -121,13 +123,15 @@ impl Proof {
         let mut schema_json: HashMap<String, serde_json::Value> = HashMap::new();
 
         for &(ref schema_id, _, _) in credential_data.iter() {
-            let schema = LedgerSchema::new_from_ledger(schema_id)
-                .or(Err(ProofError::InvalidSchema()))?;
+            if !schema_json.contains_key(schema_id) {
+                let schema = LedgerSchema::new_from_ledger(schema_id)
+                    .or(Err(ProofError::InvalidSchema()))?;
 
-            let schema_val = serde_json::from_str(&schema.schema_json)
-                .or(Err(ProofError::InvalidSchema()))?;
+                let schema_val = serde_json::from_str(&schema.schema_json)
+                    .or(Err(ProofError::InvalidSchema()))?;
 
-            schema_json.insert(schema_id.to_string(), schema_val);
+                schema_json.insert(schema_id.to_string(), schema_val);
+            }
         }
 
         serde_json::to_string(&schema_json).or(Err(ProofError::InvalidSchema()))

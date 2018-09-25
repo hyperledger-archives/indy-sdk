@@ -236,7 +236,7 @@ pub mod tests {
     #[test]
     fn test_get_credential_def() {
         init!("ledger");
-        let (_, _, cred_def_id, cred_def_json) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
+        let (_, _, cred_def_id, cred_def_json) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS);
 
         let (id, r_cred_def_json) = retrieve_credential_def(&cred_def_id).unwrap();
 
@@ -252,7 +252,7 @@ pub mod tests {
         init!("ledger");
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
-        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
+        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let rc = create_new_credentialdef("1".to_string(),
@@ -273,7 +273,7 @@ pub mod tests {
         ::utils::libindy::payments::mint_tokens_and_set_fees(Some(0),Some(0),Some(r#"{"101":0, "102":0}"#.to_string()), None).unwrap();
 
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
-        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
+        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let rc = create_new_credentialdef("1".to_string(),
@@ -296,7 +296,7 @@ pub mod tests {
     #[test]
     fn test_create_credential_def_fails_when_already_created() {
         init!("ledger");
-        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
+        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let my_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
 
         let handle = create_new_credentialdef("1".to_string(),

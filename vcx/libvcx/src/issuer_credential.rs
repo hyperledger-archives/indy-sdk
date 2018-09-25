@@ -675,7 +675,7 @@ pub mod tests {
 
     pub fn create_full_issuer_credential() -> (IssuerCredential, ::credential::Credential) {
         let issuer_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (_, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
+        let (_, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
 
         let mut issuer_credential = IssuerCredential {
