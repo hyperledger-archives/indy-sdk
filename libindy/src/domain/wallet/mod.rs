@@ -33,7 +33,7 @@ fn default_key_derivation_method() -> KeyDerivationMethod {
     KeyDerivationMethod::ARGON2I_MOD
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ExportConfig {
     pub key: String,
     pub path: String,
@@ -41,7 +41,7 @@ pub struct ExportConfig {
     pub key_derivation_method: KeyDerivationMethod
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum Metadata {
     MetadataArgon(MetadataArgon),
@@ -57,13 +57,13 @@ impl Metadata {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MetadataArgon {
     pub keys: Vec<u8>,
     pub master_key_salt: Vec<u8>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MetadataRaw {
     pub keys: Vec<u8>
 }
