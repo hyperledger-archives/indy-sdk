@@ -9,10 +9,10 @@ pub mod pairwise;
 pub mod non_secrets;
 pub mod payments;
 
+extern crate indy_crypto;
 extern crate threadpool;
 
 use self::threadpool::ThreadPool;
-
 
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
@@ -26,20 +26,25 @@ use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
 use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 
 use errors::common::CommonError;
+use errors::anoncreds::AnoncredsError;
 
 use services::anoncreds::AnoncredsService;
 use services::blob_storage::BlobStorageService;
 use services::payments::PaymentsService;
 use services::pool::PoolService;
-use services::wallet::WalletService;
+use services::wallet::{WalletService, KeyDerivationData};
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
+use domain::anoncreds::credential_definition::CredentialDefinitionData;
+
+use indy_crypto::cl::{CredentialPrivateKey, CredentialKeyCorrectnessProof};
 
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
 use std::rc::Rc;
 use std::thread;
 use std::sync::{Mutex, MutexGuard};
+use std::collections::HashSet;
 
 pub enum Command {
     Exit,
@@ -53,7 +58,13 @@ pub enum Command {
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
     Payments(PaymentsCommand),
-    DeriveKey(::services::wallet::KeyDerivationData, Box<Fn(Result<::utils::crypto::chacha20poly1305_ietf::Key, ::errors::common::CommonError>) + Send>)
+    DeriveKey(KeyDerivationData,
+              Box<Fn(Result<::utils::crypto::chacha20poly1305_ietf::Key, CommonError>) + Send>),
+    CreateCredentialDefinition(HashSet<String>,
+                               bool,
+                               Box<Fn(Result<(CredentialDefinitionData,
+                                              CredentialPrivateKey,
+                                              CredentialKeyCorrectnessProof), AnoncredsError>) + Send>)
 }
 
 pub struct CommandExecutor {
@@ -147,6 +158,9 @@ impl CommandExecutor {
                         }
                         Ok(Command::DeriveKey(key_data, cb)) => {
                             threadpool.execute(move || cb(key_data.calc_master_key()));
+                        }
+                        Ok(Command::CreateCredentialDefinition(attr_names, support_revocation, cb)) => {
+                            threadpool.execute(move || cb(::services::anoncreds::issuer::Issuer::new_credential_definition(&attr_names, support_revocation)));
                         }
                         Err(err) => {
                             error!("Failed to get command!");
