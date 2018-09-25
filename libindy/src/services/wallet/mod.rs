@@ -105,13 +105,15 @@ impl WalletService {
 
     pub fn create_wallet(&self,
                          config: &Config,
-                         credentials: (&Credentials, KeyDerivationData, MasterKey)) -> Result<(), WalletError> {
-        self._create_wallet(config, credentials).map(|_| ())
+                         credentials: &Credentials,
+                         key: (KeyDerivationData, MasterKey)) -> Result<(), WalletError> {
+        self._create_wallet(config, credentials, key).map(|_| ())
     }
 
     fn _create_wallet(&self,
                       config: &Config,
-                      (credentials, key_data, master_key): (&Credentials, KeyDerivationData, MasterKey)) -> Result<Keys, WalletError> {
+                      credentials: &Credentials,
+                      (key_data, master_key): (KeyDerivationData, MasterKey)) -> Result<Keys, WalletError> {
         trace!("create_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         if config.id.is_empty() {
@@ -152,11 +154,11 @@ impl WalletService {
     }
 
 
-    pub fn delete_wallet_continue(&self, config: &Config, credentials: &Credentials, metadata: &Metadata, master_key: Result<MasterKey, CommonError>) -> Result<(), WalletError> {
+    pub fn delete_wallet_continue(&self, config: &Config, credentials: &Credentials, metadata: &Metadata, master_key: MasterKey) -> Result<(), WalletError> {
         trace!("delete_wallet >>> config: {:?}, credentials: {:?}", config, secret!(credentials));
 
         {
-            self._restore_keys(metadata, &master_key?)?;
+            self._restore_keys(metadata, &master_key)?;
         }
 
         let storage_types = self.storage_types.borrow();
@@ -192,10 +194,10 @@ impl WalletService {
         Ok((wallet_handle, key_derivation_data, rekey_data))
     }
 
-    pub fn open_wallet_continue(&self, wallet_handle: i32, master_key: Result<(MasterKey, Option<MasterKey>), CommonError>) -> Result<i32, WalletError> {
+    pub fn open_wallet_continue(&self, wallet_handle: i32, master_key: (MasterKey, Option<MasterKey>)) -> Result<i32, WalletError> {
         let (id, storage, metadata, rekey_data) = self.pending_for_open.borrow_mut().remove(&wallet_handle).expect("FIXME INVALID STATE");
 
-        let (master_key, rekey) = master_key?;
+        let (master_key, rekey) = master_key;
         let keys = self._restore_keys(&metadata, &master_key)?;
 
         // Rotate master key
@@ -450,31 +452,33 @@ impl WalletService {
         Ok((wallet_handle, key_data, import_key_derivation_data))
     }
 
-    pub fn import_wallet_continue(&self, config: &Config, credentials: &Credentials, wallet_handle: i32, key_result: Result<(MasterKey, MasterKey), CommonError>) -> Result<(), WalletError> {
+    pub fn import_wallet_continue(&self, wallet_handle: i32, config: &Config, credentials: &Credentials, key: (MasterKey, MasterKey)) -> Result<(), WalletError> {
         let (reader, nonce, chunk_size, header_bytes, key_data) = self.pending_for_import.borrow_mut().remove(&wallet_handle).unwrap();
 
-        let (import_key, master_key) = key_result?;
+        let (import_key, master_key) = key;
 
         let master_key_d = master_key.clone(); // TODO: FIXME
 
-        let keys = self._create_wallet(config, (credentials, key_data, master_key))?;
+        let keys = self._create_wallet(config, credentials, (key_data, master_key))?;
 
         self._is_id_from_config_not_used(config)?;
         let storage = self._open_storage(config, credentials)?;
         let metadata = storage.get_storage_metadata()?;
 
-        let mut wallet = Wallet::new(config.id.clone(), storage, Rc::new(keys));
+        let res = {
+            let mut wallet = Wallet::new(config.id.clone(), storage, Rc::new(keys));
 
-        let res = finish_import(&wallet, reader, import_key, nonce, chunk_size, header_bytes);
+            finish_import(&wallet, reader, import_key, nonce, chunk_size, header_bytes)
+        };
 
         if res.is_err() {
             let metadata: Metadata = serde_json::from_slice(&metadata)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err)))?;
 
-            self.delete_wallet_continue(config, credentials, &metadata, Ok(master_key_d))?;
+            self.delete_wallet_continue(config, credentials, &metadata, master_key_d)?;
         }
 
-        wallet.close()?;
+//        self.close_wallet(wallet_handle)?;
 
         trace!("import_wallet <<<");
 
@@ -738,19 +742,17 @@ mod tests {
 
             self.pending_for_open.borrow_mut().insert(wallet_handle, (config.id.clone(), storage, metadata, rekey_data.clone()));
 
-            let key_result = key_derivation_data.calc_master_key();
+            let key = key_derivation_data.calc_master_key()?;
 
-            let keys_result = match (key_result, rekey_data) {
-                (Ok(key_result), Some(rekey_data)) => {
-                    let rekey_result = rekey_data.calc_master_key();
-                    rekey_result.map(move |rekey_result| (key_result.clone(), Some(rekey_result)))
+            let rekey = match rekey_data {
+                Some(rekey_data) => {
+                    let rekey_result = rekey_data.calc_master_key()?;
+                    Some(rekey_result)
                 }
-                (key_result, _) => {
-                    key_result.map(|kr| (kr, None))
-                }
+                None => None
             };
 
-            self.open_wallet_continue(wallet_handle, keys_result)
+            self.open_wallet_continue(wallet_handle, (key, rekey))
         }
 
         pub fn import_wallet(&self,
@@ -769,12 +771,12 @@ mod tests {
 
             let wallet_handle = sequence::get_next_id();
 
-            let stashed_key_data = key_data.clone();
-            self.pending_for_import.borrow_mut().insert(wallet_handle, (reader, nonce, chunk_size, header_bytes, stashed_key_data));
+            let import_key = import_key_derivation_data.calc_master_key()?;
+            let master_key = key_data.calc_master_key()?;
 
-            self.import_wallet_continue(config, credentials, wallet_handle,
-                                        import_key_derivation_data.calc_master_key()
-                                            .and_then(|ik| key_data.calc_master_key().map(|k| (ik, k))))
+            self.pending_for_import.borrow_mut().insert(wallet_handle, (reader, nonce, chunk_size, header_bytes, key_data));
+
+            self.import_wallet_continue(wallet_handle, config, credentials, (import_key, master_key))
         }
 
         fn delete_wallet(&self, config: &Config, credentials: &Credentials) -> Result<(), WalletError> {
@@ -784,8 +786,9 @@ mod tests {
 
             let (_, metadata, key_derivation_data) = self._open_storage_and_fetch_metadata(config, credentials)?;
 
-            self.delete_wallet_continue(config, credentials,& metadata, key_derivation_data.calc_master_key())
+            let master_key = key_derivation_data.calc_master_key()?;
 
+            self.delete_wallet_continue(config, credentials, &metadata, master_key)
         }
     }
 
@@ -807,7 +810,7 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config_default(), &_credentials_moderate()).unwrap();
+        wallet_service.create_wallet(&_config_default(), &RAW_CREDENTIAL, _keys()).unwrap();
     }
 
     #[test]
@@ -815,7 +818,7 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config_default(), _credentials_interactive()).unwrap();
+        wallet_service.create_wallet(&_config_default(), &ARGON_INT_CREDENTIAL, _keys_interactive()).unwrap();
     }
 
     #[test]
@@ -823,7 +826,7 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config_default(), _credentials_moderate()).unwrap();
+        wallet_service.create_wallet(&_config_default(), &ARGON_MOD_CREDENTIAL, _keys_moderate()).unwrap();
     }
 
     #[test]
@@ -834,13 +837,13 @@ mod tests {
         let wallet_service = WalletService::new();
 
         let time = SystemTime::now();
-        wallet_service.create_wallet(&_config_default(), &_credentials_moderate()).unwrap();
+        wallet_service.create_wallet(&_config_default(), &ARGON_MOD_CREDENTIAL, _keys_moderate()).unwrap();
         let time_diff_moderate_key = SystemTime::now().duration_since(time).unwrap();
 
         _cleanup();
 
         let time = SystemTime::now();
-        wallet_service.create_wallet(&_config_default(), _credentials_interactive()).unwrap();
+        wallet_service.create_wallet(&_config_default(), &ARGON_INT_CREDENTIAL, _keys_interactive()).unwrap();
         let time_diff_interactive_key = SystemTime::now().duration_since(time).unwrap();
 
         assert!(time_diff_interactive_key < time_diff_moderate_key);
@@ -855,7 +858,7 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
     }
 
     #[test]
@@ -863,7 +866,7 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
     }
 
     #[test]
@@ -871,7 +874,7 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        let res = wallet_service.create_wallet(&_config_unknown(), &_credentials_raw());
+        let res = wallet_service.create_wallet(&_config_unknown(), &RAW_CREDENTIAL, _keys());
         assert_match!(Err(WalletError::UnknownType(_)), res);
     }
 
@@ -880,9 +883,9 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
 
-        let res = wallet_service.create_wallet(&_config(), &_credentials_raw());
+        let res = wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys());
         assert_match!(Err(WalletError::AlreadyExists(_)), res);
     }
     /*
@@ -901,9 +904,9 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_moderate()).unwrap();
-        wallet_service.delete_wallet(&_config(), &_credentials_moderate()).unwrap();
-        wallet_service.create_wallet(&_config(), &_credentials_moderate()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        wallet_service.delete_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
     }
 
     #[test]
@@ -911,9 +914,9 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), _credentials_interactive()).unwrap();
-        wallet_service.delete_wallet(&_config(), _credentials_interactive().0).unwrap();
-        wallet_service.create_wallet(&_config(), _credentials_interactive()).unwrap();
+        wallet_service.create_wallet(&_config(), &ARGON_INT_CREDENTIAL, _keys_interactive()).unwrap();
+        wallet_service.delete_wallet(&_config(), &ARGON_INT_CREDENTIAL).unwrap();
+        wallet_service.create_wallet(&_config(), &ARGON_INT_CREDENTIAL, _keys_interactive()).unwrap();
     }
 
     #[test]
@@ -921,9 +924,9 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), _credentials_moderate()).unwrap();
-        wallet_service.delete_wallet(&_config(), _credentials_moderate().0).unwrap();
-        wallet_service.create_wallet(&_config(), _credentials_moderate()).unwrap();
+        wallet_service.create_wallet(&_config(), &ARGON_MOD_CREDENTIAL, _keys_moderate()).unwrap();
+        wallet_service.delete_wallet(&_config(), &ARGON_MOD_CREDENTIAL).unwrap();
+        wallet_service.create_wallet(&_config(), &ARGON_MOD_CREDENTIAL, _keys_moderate()).unwrap();
     }
 
     #[test]
@@ -934,9 +937,9 @@ mod tests {
 
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        wallet_service.delete_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        wallet_service.delete_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
     }
 
     #[test]
@@ -944,10 +947,10 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
-        let res = wallet_service.delete_wallet(&_config(), &_credentials_raw());
+        let res = wallet_service.delete_wallet(&_config(), &RAW_CREDENTIAL);
 
         assert_match!(Err(WalletError::CommonError(CommonError::InvalidState(_))), res);
     }
@@ -957,9 +960,9 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_moderate()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
 
-        let res = wallet_service.delete_wallet(&_config(), _credentials_interactive().0);
+        let res = wallet_service.delete_wallet(&_config(), &ARGON_INT_CREDENTIAL);
         assert_match!(Err(WalletError::AccessFailed(_)), res);
     }
 
@@ -968,8 +971,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_moderate()).unwrap();
-        let handle = wallet_service.open_wallet(&_config(), &_credentials_moderate()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         // cleanup
         wallet_service.close_wallet(handle).unwrap();
@@ -980,8 +983,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), _credentials_interactive()).unwrap();
-        let handle = wallet_service.open_wallet(&_config(), _credentials_interactive().0).unwrap();
+        wallet_service.create_wallet(&_config(), &ARGON_INT_CREDENTIAL, _keys_interactive()).unwrap();
+        let handle = wallet_service.open_wallet(&_config(), &ARGON_INT_CREDENTIAL).unwrap();
 
         // cleanup
         wallet_service.close_wallet(handle).unwrap();
@@ -992,8 +995,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), _credentials_moderate()).unwrap();
-        let handle = wallet_service.open_wallet(&_config(), _credentials_moderate().0).unwrap();
+        wallet_service.create_wallet(&_config(), &ARGON_MOD_CREDENTIAL, _keys_moderate()).unwrap();
+        let handle = wallet_service.open_wallet(&_config(), &ARGON_MOD_CREDENTIAL).unwrap();
 
         // cleanup
         wallet_service.close_wallet(handle).unwrap();
@@ -1004,7 +1007,7 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        let res = wallet_service.open_wallet(&_config(), &_credentials_raw());
+        let res = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL);
         assert_match!(Err(WalletError::NotFound(_)), res);
     }
 
@@ -1015,8 +1018,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
     }
 
     //    #[test]
@@ -1034,9 +1037,9 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
 
-        let res = wallet_service.open_wallet(&_config(), _credentials_interactive().0);
+        let res = wallet_service.open_wallet(&_config(), &ARGON_INT_CREDENTIAL);
         assert_match!(Err(WalletError::AccessFailed(_)), res);
     }
 
@@ -1045,11 +1048,11 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
         wallet_service.close_wallet(wallet_handle).unwrap();
 
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
         wallet_service.close_wallet(wallet_handle).unwrap();
     }
 
@@ -1060,11 +1063,11 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
         wallet_service.close_wallet(wallet_handle).unwrap();
 
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
         wallet_service.close_wallet(wallet_handle).unwrap();
     }
 
@@ -1073,8 +1076,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
@@ -1087,8 +1090,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
@@ -1099,8 +1102,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
@@ -1118,8 +1121,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, false, false)).unwrap();
@@ -1134,8 +1137,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
@@ -1152,8 +1155,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
@@ -1168,8 +1171,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
         let mut tags = HashMap::new();
         tags.insert(String::from("1"), String::from("some"));
 
@@ -1188,8 +1191,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
         let tags = serde_json::from_str(r#"{"1":"some"}"#).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &tags).unwrap();
@@ -1205,12 +1208,12 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.close_wallet(wallet_handle).unwrap();
 
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false)).unwrap();
         assert_eq!("value1", record.get_value().unwrap());
     }
@@ -1220,8 +1223,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         let res = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false));
 
@@ -1235,8 +1238,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
 
         let res = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(false, true, false));
         assert_match!(Err(WalletError::ItemNotFound), res);
@@ -1255,8 +1258,8 @@ mod tests {
         let new_value = "new_value";
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
@@ -1279,8 +1282,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
@@ -1303,8 +1306,8 @@ mod tests {
         let value = "value";
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
@@ -1326,8 +1329,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, type_, name, value, &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, type_, name, &_fetch_options(false, true, false)).unwrap();
@@ -1351,8 +1354,8 @@ mod tests {
         let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1"}"#).unwrap();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
 
@@ -1378,8 +1381,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
 
@@ -1406,8 +1409,8 @@ mod tests {
         let tags = serde_json::from_str(r#"{"tag_name_1":"tag_value_1", "tag_name_2":"tag_value_2", "~tag_name_3":"tag_value_3"}"#).unwrap();
         let wallet_service = WalletService::new();
 
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
 
@@ -1431,8 +1434,8 @@ mod tests {
 
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
 
@@ -1459,8 +1462,8 @@ mod tests {
 
         let wallet_service = WalletService::new();
 
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
 
@@ -1487,8 +1490,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, type_, name, value, &tags).unwrap();
 
@@ -1507,8 +1510,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.add_record(wallet_handle, "type", "key2", "value2", &HashMap::new()).unwrap();
@@ -1530,8 +1533,8 @@ mod tests {
         let wallet_service = WalletService::new();
         _register_inmem_wallet(&wallet_service);
 
-        wallet_service.create_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.add_record(wallet_handle, "type", "key2", "value2", &HashMap::new()).unwrap();
@@ -1554,8 +1557,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
@@ -1571,7 +1574,7 @@ mod tests {
         wallet_service.close_wallet(wallet_handle).unwrap();
 
         // Access failed for old key
-        let res = wallet_service.open_wallet(&_config(), &_credentials_raw());
+        let res = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL);
         assert_match!(Err(WalletError::AccessFailed(_)), res);
 
         // Works ok with new key when reopening
@@ -1586,8 +1589,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
@@ -1603,7 +1606,7 @@ mod tests {
         wallet_service.close_wallet(wallet_handle).unwrap();
 
         // Access failed for old key
-        let res = wallet_service.open_wallet(&_config(), &_credentials_raw());
+        let res = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL);
         assert_match!(Err(WalletError::AccessFailed(_)), res);
 
         // Works ok with new key when reopening
@@ -1618,8 +1621,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         let record = wallet_service.get_record(wallet_handle, "type", "key1", &_fetch_options(true, true, true)).unwrap();
@@ -1635,7 +1638,7 @@ mod tests {
         wallet_service.close_wallet(wallet_handle).unwrap();
 
         // Access failed for old key
-        let res = wallet_service.open_wallet(&_config(), &_credentials_raw());
+        let res = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL);
         assert_match!(Err(WalletError::AccessFailed(_)), res);
 
         // Works ok with new key when reopening
@@ -1650,8 +1653,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         let export_config = _export_config();
         wallet_service.export_wallet(wallet_handle, &export_config, 0, _export_key()).unwrap();
@@ -1664,8 +1667,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
@@ -1680,8 +1683,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
@@ -1696,8 +1699,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
@@ -1719,8 +1722,8 @@ mod tests {
         assert!(_export_file_path().exists());
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         let res = wallet_service.export_wallet(wallet_handle, &_export_config(), 0, _export_key());
         assert_match!(Err(WalletError::CommonError(CommonError::IOError(_))), res);
@@ -1731,8 +1734,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         let res = wallet_service.export_wallet(wallet_handle + 1, &_export_config(), 0, _export_key());
         assert_match!(Err(WalletError::InvalidHandle(_)), res);
@@ -1744,8 +1747,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
@@ -1754,10 +1757,10 @@ mod tests {
         assert!(_export_file_path().exists());
 
         wallet_service.close_wallet(wallet_handle).unwrap();
-        wallet_service.delete_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.delete_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
-        wallet_service.import_wallet(&_config(), &_credentials_raw(), &_export_config_moderate()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.import_wallet(&_config(), &RAW_CREDENTIAL, &_export_config()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
     }
 
@@ -1766,8 +1769,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
@@ -1776,10 +1779,10 @@ mod tests {
         assert!(_export_file_path().exists());
 
         wallet_service.close_wallet(wallet_handle).unwrap();
-        wallet_service.delete_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.delete_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
-        wallet_service.import_wallet(&_config(), &_credentials_raw(), &_export_config_moderate()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.import_wallet(&_config(), &RAW_CREDENTIAL, &_export_config()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
     }
 
@@ -1788,8 +1791,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
@@ -1798,10 +1801,10 @@ mod tests {
         assert!(_export_file_path().exists());
 
         wallet_service.close_wallet(wallet_handle).unwrap();
-        wallet_service.delete_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.delete_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
-        wallet_service.import_wallet(&_config(), _credentials_moderate().0, &_export_config_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), _credentials_moderate().0).unwrap();
+        wallet_service.import_wallet(&_config(), &ARGON_MOD_CREDENTIAL, &_export_config_raw()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &ARGON_MOD_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
     }
 
@@ -1810,8 +1813,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), _credentials_interactive()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), _credentials_interactive().0).unwrap();
+        wallet_service.create_wallet(&_config(), &ARGON_INT_CREDENTIAL, _keys_interactive()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &ARGON_INT_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
@@ -1820,10 +1823,10 @@ mod tests {
         assert!(_export_file_path().exists());
 
         wallet_service.close_wallet(wallet_handle).unwrap();
-        wallet_service.delete_wallet(&_config(), _credentials_interactive().0).unwrap();
+        wallet_service.delete_wallet(&_config(), &ARGON_INT_CREDENTIAL).unwrap();
 
-        wallet_service.import_wallet(&_config(), &_credentials_raw(), &_export_config_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.import_wallet(&_config(), &ARGON_MOD_CREDENTIAL, &_export_config()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &ARGON_MOD_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
     }
 
@@ -1832,8 +1835,8 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.add_record(wallet_handle, "type", "key1", "value1", &HashMap::new()).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
@@ -1842,10 +1845,10 @@ mod tests {
         assert!(_export_file_path().exists());
 
         wallet_service.close_wallet(wallet_handle).unwrap();
-        wallet_service.delete_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.delete_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
-        wallet_service.import_wallet(&_config(), &_credentials_interactive(), &_export_config_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_interactive()).unwrap();
+        wallet_service.import_wallet(&_config(), &ARGON_INT_CREDENTIAL, &_export_config()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &ARGON_INT_CREDENTIAL).unwrap();
         wallet_service.get_record(wallet_handle, "type", "key1", "{}").unwrap();
     }
 
@@ -1854,17 +1857,17 @@ mod tests {
         _cleanup();
 
         let wallet_service = WalletService::new();
-        wallet_service.create_wallet(&_config(), &_credentials_raw()).unwrap();
-        let wallet_handle = wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, _keys()).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
         wallet_service.export_wallet(wallet_handle, &_export_config(), 0, _export_key()).unwrap();
         assert!(_export_file_path().exists());
 
         wallet_service.close_wallet(wallet_handle).unwrap();
-        wallet_service.delete_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.delete_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
 
-        wallet_service.import_wallet(&_config(), &_credentials_raw(), &_export_config_raw()).unwrap();
-        wallet_service.open_wallet(&_config(), &_credentials_raw()).unwrap();
+        wallet_service.import_wallet(&_config(), &RAW_CREDENTIAL, &_export_config()).unwrap();
+        wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
     }
 
     #[test]
@@ -1873,10 +1876,10 @@ mod tests {
 
         let wallet_service = WalletService::new();
 
-        let res = wallet_service.import_wallet(&_config(), &_credentials_raw(), &_export_config_raw());
+        let res = wallet_service.import_wallet(&_config(), &RAW_CREDENTIAL, &_export_config());
         assert_match!(Err(WalletError::CommonError(CommonError::IOError(_))), res);
 
-        let res = wallet_service.open_wallet(&_config(), &_credentials_raw());
+        let res = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL);
         assert_match!(Err(_), res);
     }
 
@@ -1953,22 +1956,22 @@ mod tests {
         };
     }
 
-    fn _credentials_moderate() -> (&'static Credentials, KeyDerivationData, MasterKey) {
+    fn _keys_moderate() -> (KeyDerivationData, MasterKey) {
         let kdd = KeyDerivationData::from_passphrase_with_new_salt("my_key", &KeyDerivationMethod::ARGON2I_MOD);
         let master_key = kdd.calc_master_key().unwrap();
-        (&ARGON_MOD_CREDENTIAL, kdd, master_key)
+        (kdd, master_key)
     }
 
-    fn _credentials_interactive() -> (&'static Credentials, KeyDerivationData, MasterKey) {
+    fn _keys_interactive() -> (KeyDerivationData, MasterKey) {
         let kdd = KeyDerivationData::from_passphrase_with_new_salt("my_key", &KeyDerivationMethod::ARGON2I_INT);
         let master_key = kdd.calc_master_key().unwrap();
-        (&ARGON_INT_CREDENTIAL, kdd, master_key)
+        (kdd, master_key)
     }
 
-    fn _credentials() -> (&'static Credentials, KeyDerivationData, MasterKey) {
+    fn _keys() -> (KeyDerivationData, MasterKey) {
         let kdd = KeyDerivationData::from_passphrase_with_new_salt("6nxtSiXFvBd593Y2DCed2dYvRY1PGK9WMtxCBjLzKgbw", &KeyDerivationMethod::RAW);
         let master_key = kdd.calc_master_key().unwrap();
-        (&RAW_CREDENTIAL, kdd, master_key)
+        (kdd, master_key)
     }
 
     fn _credentials_invalid_raw() -> Credentials {

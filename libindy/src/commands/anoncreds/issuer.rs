@@ -243,10 +243,7 @@ impl IssuerCommandExecutor {
               type_: {:?}, config: {:?}", wallet_handle, issuer_did, schema, tag, type_, config);
 
         let (cred_def_config, schema_id, cred_def_id, signature_type) =
-            match self._prepare_create_and_store_credential_definition(wallet_handle, issuer_did, schema, tag, type_, config) {
-                Ok((cred_def_config, schema_id, cred_def_id, signature_type)) => (cred_def_config, schema_id, cred_def_id, signature_type),
-                Err(err) => return cb(Err(err))
-            };
+            try_cb!(self._prepare_create_and_store_credential_definition(wallet_handle, issuer_did, schema, tag, type_, config), cb);
 
         let cb_id = ::utils::sequence::get_next_id();
         self.pending_callbacks.borrow_mut().insert(cb_id, cb);
