@@ -201,8 +201,9 @@ pub mod tests {
     use std::thread;
     use std::time::Duration;
 
-    pub fn create_schema() -> (String, String) {
+    pub fn create_schema(attr_list: &str) -> (String, String) {
         let data = DEFAULT_SCHEMA_ATTRS.to_string();
+        let data = attr_list.to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
         let schema_version: String = format!("{}.{}", rand::thread_rng().gen::<u32>().to_string(),
                                              rand::thread_rng().gen::<u32>().to_string());
@@ -220,17 +221,17 @@ pub mod tests {
         let (payment_info, response) = ::utils::libindy::payments::pay_for_txn(&request, SCHEMA_TXN_TYPE).unwrap();
     }
 
-    pub fn create_and_write_test_schema() -> (String, String) {
-        let (schema_id, schema_json) = create_schema();
+    pub fn create_and_write_test_schema(attr_list: &str) -> (String, String) {
+        let (schema_id, schema_json) = create_schema(attr_list);
         let req = create_schema_req(&schema_json);
         write_schema(&req);
         thread::sleep(Duration::from_millis(1000));
         (schema_id, schema_json)
     }
 
-    pub fn create_and_store_credential_def() -> (String, String, String, String) {
+    pub fn create_and_store_credential_def(attr_list: &str) -> (String, String, String, String) {
         /* create schema */
-        let (schema_id, schema_json) = create_and_write_test_schema();
+        let (schema_id, schema_json) = create_and_write_test_schema(attr_list);
 
         let name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -250,23 +251,23 @@ pub mod tests {
         (schema_id, schema_json, cred_def_id, cred_def_json)
     }
 
-    pub fn create_credential_offer() -> (String, String, String, String, String) {
-        let (schema_id, schema_json, cred_def_id, cred_def_json) = create_and_store_credential_def();
+    pub fn create_credential_offer(attr_list: &str) -> (String, String, String, String, String) {
+        let (schema_id, schema_json, cred_def_id, cred_def_json) = create_and_store_credential_def(attr_list);
 
         let offer = ::utils::libindy::anoncreds::libindy_issuer_create_credential_offer(&cred_def_id).unwrap();
         (schema_id, schema_json, cred_def_id, cred_def_json, offer)
     }
 
-    pub fn create_credential_req() -> (String, String, String, String, String, String, String) {
-        let (schema_id, schema_json, cred_def_id, cred_def_json, offer) = create_credential_offer();
+    pub fn create_credential_req(attr_list: &str) -> (String, String, String, String, String, String, String) {
+        let (schema_id, schema_json, cred_def_id, cred_def_json, offer) = create_credential_offer(attr_list);
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (req, req_meta) = ::utils::libindy::anoncreds::libindy_prover_create_credential_req(&institution_did, &offer, &cred_def_json).unwrap();
         (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta)
     }
 
-    pub fn create_and_store_credential() -> (String, String, String, String, String, String, String, String) {
+    pub fn create_and_store_credential(attr_list: &str) -> (String, String, String, String, String, String, String, String) {
 
-        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta) = create_credential_req();
+        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta) = create_credential_req(attr_list);
 
         /* create cred */
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
@@ -279,7 +280,7 @@ pub mod tests {
 
     pub fn create_proof() -> (String, String, String, String) {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id) = create_and_store_credential();
+        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id) = create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS);
 
         let proof_req = json!({
            "nonce":"123432421212",

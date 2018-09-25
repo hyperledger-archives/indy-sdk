@@ -58,6 +58,7 @@ mod tests {
     }
 
     fn provision_agent() -> Result<String, u32> {
+        use vcx::settings;
         let mut rng = rand::thread_rng();
         let settings = get_details("consumer");
         let config = json!({
