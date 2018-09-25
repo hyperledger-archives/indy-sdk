@@ -148,14 +148,9 @@ build(){
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
         cargo clean
-        if [ "${ABSOLUTE_ARCH}" == "x86_64" ]; then
-            LD_LIBRARY_PATH=${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} \
-            RUSTFLAGS="-C link-args=-Wl,-rpath,${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -L${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/${TOOLCHAIN_SYSROOT_LIB} -lgnustl_shared" \
-            cargo build --release --target=${TRIPLET}
-        else
-        RUSTFLAGS="-L${TOOLCHAIN_DIR}/${TRIPLET}/lib -lgnustl_shared" \
-            cargo build --release --target=${TRIPLET}
-        fi
+        LD_LIBRARY_PATH=${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} \
+        RUSTFLAGS="-C link-args=-Wl,-rpath,${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -L${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/${TOOLCHAIN_SYSROOT_LIB} -lgnustl_shared" \
+        cargo build --release --target=${TRIPLET}
 
     popd
 }
