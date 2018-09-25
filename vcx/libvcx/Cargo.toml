@@ -45,7 +45,7 @@ rmp-serde = "0.13.7"
 base64 = "0.8.0"
 openssl = "0.10"
 num-traits = "0.2.0"
-rust-indy-sdk = {git = "https://github.com/mikelodder7/rust-indy-sdk.git", rev = "8c87350591758a36a33f2dca452fd718d00cde9e"}
+rust-libindy-wrapper = "0.2.13"
 log-panics = "2.0.0"
 tokio-threadpool = "0.1.6"
 futures = "0.1.23"
