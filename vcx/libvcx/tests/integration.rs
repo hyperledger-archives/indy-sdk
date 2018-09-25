@@ -1,7 +1,7 @@
 extern crate vcx;
 extern crate serde;
 extern crate rand;
-extern crate rust_indy_sdk;
+extern crate rust_libindy_wrapper;
 
 #[macro_use]
 extern crate serde_json;

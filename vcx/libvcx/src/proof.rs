@@ -364,7 +364,10 @@ pub fn update_state(handle: u32) -> Result<u32, ProofError> {
     PROOF_MAP.get_mut(handle,|p|{
         match p.update_state() {
             Ok(x) => Ok(x),
-            Err(x) => Ok(p.get_state()),
+            Err(x) => {
+                warn!("could not update state for proof {}: {}", p.get_source_id(), x);
+                Ok(p.get_state())
+            },
         }
     }).map_err(|ec|ProofError::CommonError(ec))
 }

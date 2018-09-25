@@ -555,7 +555,7 @@ pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
             Err(ConnectionError::CommonError(error::POST_MSG_FAILURE.code_num))
         }
         Ok(response) => {
-            debug!("update state response: {:?}", response);
+            debug!("connection {} update state response: {:?}", get_source_id(handle).unwrap_or_default(), response);
             if get_state(handle) == VcxStateType::VcxStateOfferSent as u32 || get_state(handle) == VcxStateType::VcxStateInitialized as u32{
                  for i in response {
                      if i.status_code == MessageAccepted.as_string() && i.msg_type == "connReqAnswer" {
