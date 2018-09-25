@@ -213,7 +213,7 @@ pub mod tests {
     #[test]
     fn test_local_env() {
         init!("ledger");
-        ::utils::libindy::anoncreds::tests::create_and_store_credential();
+        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS);
     }
 
     pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {
