@@ -67,9 +67,17 @@ pub enum Command {
                                               CredentialKeyCorrectnessProof), AnoncredsError>) + Send>)
 }
 
+lazy_static! {
+    static ref THREADPOOL: Mutex<ThreadPool> = Mutex::new(ThreadPool::new(4));
+}
+
+pub fn set_crypto_thread_pool_size(size: usize){
+    THREADPOOL.lock().unwrap().set_num_threads(size)
+}
+
 pub struct CommandExecutor {
     worker: Option<thread::JoinHandle<()>>,
-    sender: Sender<Command>,
+    sender: Sender<Command>
 }
 
 // Global (lazy inited) instance of CommandExecutor
@@ -84,7 +92,6 @@ impl CommandExecutor {
 
     fn new() -> CommandExecutor {
         let (sender, receiver) = channel();
-        let threadpool = ThreadPool::new(4);
 
         CommandExecutor {
             sender,
@@ -157,10 +164,10 @@ impl CommandExecutor {
                             break
                         }
                         Ok(Command::DeriveKey(key_data, cb)) => {
-                            threadpool.execute(move || cb(key_data.calc_master_key()));
+                            THREADPOOL.lock().unwrap().execute(move || cb(key_data.calc_master_key()));
                         }
                         Ok(Command::CreateCredentialDefinition(attr_names, support_revocation, cb)) => {
-                            threadpool.execute(move || cb(::services::anoncreds::issuer::Issuer::new_credential_definition(&attr_names, support_revocation)));
+                            THREADPOOL.lock().unwrap().execute(move || cb(::services::anoncreds::issuer::Issuer::new_credential_definition(&attr_names, support_revocation)));
                         }
                         Err(err) => {
                             error!("Failed to get command!");

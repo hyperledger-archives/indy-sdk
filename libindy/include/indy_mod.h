@@ -169,5 +169,7 @@ typedef enum
 
 } indy_error_t;
 
+extern indy_error_t indy_set_crypto_thread_pool_size(indy_u64_t  size);
+
 #endif
 

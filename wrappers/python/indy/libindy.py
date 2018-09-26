@@ -165,3 +165,13 @@ def _set_logger():
                  _set_logger.callbacks['flush_cb'])
 
     logger.debug("set_logger: <<<")
+
+
+def set_crypto_thread_pool_size(size: int):
+    logger = logging.getLogger(__name__)
+    logger.debug("set_crypto_thread_pool_size: >>>")
+
+    do_call_sync('indy_set_crypto_thread_pool_size',
+                 size)
+
+    logger.debug("set_crypto_thread_pool_size: <<<")

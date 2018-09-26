@@ -167,6 +167,8 @@ public abstract class LibIndy {
 		int indy_set_default_logger(String level);
 		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
 
+		int indy_set_crypto_thread_pool_size(int size);
+
 	}
 
 	/*
@@ -266,5 +268,9 @@ public abstract class LibIndy {
 
 	private static void initLogger() {
 		api.indy_set_logger(null, Logger.enabled, Logger.log, Logger.flush);
+	}
+
+	public static void setCryptoThreadPoolSize(int size) {
+		api.indy_set_crypto_thread_pool_size(size);
 	}
 }
