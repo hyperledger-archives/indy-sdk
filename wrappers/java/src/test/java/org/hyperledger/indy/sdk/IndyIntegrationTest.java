@@ -6,10 +6,10 @@ import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
@@ -93,17 +93,11 @@ public class IndyIntegrationTest {
 	@Rule
 	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
 
-	private static Boolean isWalletRegistered = false;
-
 	@Before
 	public void setUp() throws Exception {
 		InitHelper.init();
 		StorageUtils.cleanupStorage();
 		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
-//		if (! isWalletRegistered) { TODO:FIXME
-//			Wallet.registerWalletType("inmem", new InMemWalletType()).get();
-//		}
-		isWalletRegistered = true;
 	}
 
 	protected HashSet<Pool> openedPools = new HashSet<>();
@@ -118,5 +112,10 @@ public class IndyIntegrationTest {
 		});
 		openedPools.clear();
 		StorageUtils.cleanupStorage();
+	}
+
+	@Test
+	public void testSetCryptoThreadPoolSize() throws Exception {
+		LibIndy.setCryptoThreadPoolSize(2);
 	}
 }
