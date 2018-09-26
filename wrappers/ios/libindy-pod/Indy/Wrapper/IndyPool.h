@@ -99,4 +99,6 @@
 + (void)setProtocolVersion:(NSNumber *)protocolVersion
                 completion:(void (^)(NSError *error))completion;
 
++ (void)setCryptoThreadPoolSize:(NSNumber *)size;
+
 @end

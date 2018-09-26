@@ -2,7 +2,7 @@
 #import "IndyCallbacks.h"
 #import "IndyPool.h"
 #import "indy_core.h"
-#import "NSError+IndyError.h"
+#import "NSError+IndyError.h"#import "indy_mod.h"
 
 @implementation IndyPool
 
@@ -122,6 +122,10 @@
             completion([NSError errorFromIndyError:ret]);
         });
     }
+}
+
++ (void)setCryptoThreadPoolSize:(NSNumber *)size {
+    indy_set_crypto_thread_pool_size([size intValue]);
 }
 
 @end
