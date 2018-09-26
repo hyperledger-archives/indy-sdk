@@ -4,6 +4,9 @@ libvcx is library on top of libindy which fully implements the credentials excha
 
 This library is currently in experimental state.
 
+## Getting started guide
+The tutorial which introduces libvcx and explains how the whole ecosystem works, and how the functions in the SDK can be used to construct rich clients: [LibVCX Getting-Started Guide](docs/getting-started/getting-started.md)
+
 ## Linux
 1) Install rust and rustup (https://www.rust-lang.org/install.html).
 2) Install libindy_1.6.1 (https://repo.sovrin.org/sdk/deb/pool/xenial/stable/libi/libindy/)
@@ -17,6 +20,15 @@ This library is currently in experimental state.
 5) Currently developers are using intellij for IDE development (https://www.jetbrains.com/idea/download/) with the rust plugin (https://plugins.jetbrains.com/plugin/8182-rust).
 
 "Everything is awesome when you're part of a team!" #TeamOneDirection
+
+### Building ubuntu 16.04 package using docker
+Run these commands in vcx directory:
+
+    ```
+    docker build -f ci/ubuntu.dockerfile -t libvcx ..
+    docker run -v ${PWD}:/build/vcx -v /path/to/output:/build/output libvcx
+    ```
+Debian package will be created in output directory (replace /path/to/output).
 
 # Debians and Artifacts
 

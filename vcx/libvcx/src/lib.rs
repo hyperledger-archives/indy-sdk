@@ -1,3 +1,4 @@
+#![cfg_attr(feature = "fatal_warnings", deny(warnings))]
 #![allow(unused_variables)]
 #![allow(dead_code)]
 #![crate_name = "vcx"]

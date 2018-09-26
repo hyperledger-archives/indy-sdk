@@ -1,6 +1,9 @@
-libindy (1.6.5) unstable; urgency=medium
+libindy (1.6.6) unstable; urgency=medium
 
 [ Hyperledger ]
+
+* 1.6.6
+    * Fixed Android build rustflags. Now all architectures have same flags.
 
 * 1.6.5
     * Fixed `ARGON2I` constants usage to be compatible with the latest sodium.
