@@ -1,6 +1,8 @@
 #ifndef __indy__mod_included__
 #define __indy__mod_included__
 
+#include "indy_types.h"
+
 typedef enum
 {
     Success = 0,
@@ -168,6 +170,16 @@ typedef enum
     PaymentExtraFundsError = 705
 
 } indy_error_t;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+    extern indy_error_t indy_set_crypto_thread_pool_size(indy_u64_t  size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -225,3 +225,16 @@ pub enum ErrorCode
     // Extra funds on inputs
     PaymentExtraFundsError = 705
 }
+
+#[no_mangle]
+pub extern fn indy_set_crypto_thread_pool_size(size: usize) -> ErrorCode {
+    trace!("indy_set_crypto_thread_pool_size >>> size: {:?}", size);
+
+    ::commands::set_crypto_thread_pool_size(size);
+
+    let res = ErrorCode::Success;
+
+    trace!("indy_set_crypto_thread_pool_size: <<< res: {:?}", res);
+
+    res
+}
