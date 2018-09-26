@@ -18,8 +18,8 @@ pushd vcx/wrappers/java/android
        rm local.properties
     fi
 cat <<EOT >> local.properties
-ndk.dir=/home/vcx/android-sdk-linux/ndk-bundle
-sdk.dir=/home/vcx/android-sdk-linux
+ndk.dir=/home/android/android-sdk-linux/ndk-bundle
+sdk.dir=/home/android/android-sdk-linux
 EOT
     pushd ../ci
         ./buildAar.sh
