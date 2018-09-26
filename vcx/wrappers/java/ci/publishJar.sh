@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+set -e
 JAR_FOLDER=vcx/wrappers/java/artifacts/jar
 JAR_VERSION=$(find ${JAR_FOLDER} -type f -name 'com.evernym-vcx_*.jar'| perl -nle 'print $& if m{(?<=vcx_)(.*)(?=.jar)}' | head -1 | awk '{print $1}')
 echo "Uploading .jar with version number ==> ${JAR_VERSION}"
