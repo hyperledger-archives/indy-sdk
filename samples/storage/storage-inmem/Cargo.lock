@@ -277,7 +277,7 @@ dependencies = [
 
 [[package]]
 name = "indy"
-version = "1.6.5"
+version = "1.6.6"
 dependencies = [
  "android_logger 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -876,7 +876,7 @@ dependencies = [
  "etcommon-rlp 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "generic-array 0.8.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "indy 1.6.5",
+ "indy 1.6.6",
  "indy-crypto 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "int_traits 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
