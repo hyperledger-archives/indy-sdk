@@ -113,6 +113,17 @@ pub extern fn vcx_proof_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Get the current state of the proof object
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Proof handle that was provided during creation. Used to access proof object
+///
+/// cb: Callback that provides most current state of the proof and error status of request
+///
+/// #Returns
+/// Error code as a u32
 #[no_mangle]
 pub extern fn vcx_proof_get_state(command_handle: u32,
                                   proof_handle: u32,

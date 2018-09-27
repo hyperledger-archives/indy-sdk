@@ -377,6 +377,16 @@ pub extern fn vcx_credential_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Get the current state of the credential object
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Credential handle that was provided during creation.
+///
+/// cb: Callback that provides most current state of the credential and error status of request
+///
+/// #Returns
 #[no_mangle]
 pub extern fn vcx_credential_get_state(command_handle: u32,
                                        handle: u32,
