@@ -406,14 +406,14 @@ def ubuntuTesting() {
     }
 }
 
-
-def androidEmulatorTest(buildEnv) {
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
     dir('libindy') {
-        echo 'Building android binaries: Building docker image'
-        ANDROID_SCRIPT_PATH = 'android.test.sh'
-        echo 'Testing Libindy android files for arm'
-        buildEnv.inside {
-            sh "./${ANDROID_SCRIPT_PATH} arm"
+        sh 'chmod -R 777 ci/*.sh'
+        sh 'chmod -R 777 *.sh'
+
+        echo "${env_name} Libindy Test: Test on ARM emulator"
+        testEnv.inside("--network=${network_name}") {
+            sh "./android.test.sh arm"
         }
     }
 }
@@ -1026,7 +1026,39 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
     }
 }
 
+def linuxModuleTesting(file, env_name, network_name, module_tester) {
+    node('ubuntu') {
+        def poolInst
+        try {
+            echo "${env_name} Test: Checkout csm"
+            checkout scm
+
+            poolInst = openPool(env_name, network_name)
+
+            def testEnv
+
+            dir('libindy') {
+                echo "${env_name} Libindy Test: Build docker image"
+                testEnv = dockerBuild('libindy', file)
+            }
+
+            module_tester(env_name, network_name, testEnv)
+        } finally {
+            closePool(env_name, network_name, poolInst)
+        }
+    }
+}
+
 def androidTesting() {
+    env_name="android_on_linux"
+    network_name="pool_network"
+    parallel([
+            "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
+            "${env_name}-android-building" : { androidBuildAsTesting() }
+    ])
+}
+
+def androidBuildAsTesting() {
     def libindyVersion
 
     node('ubuntu') {
@@ -1042,8 +1074,6 @@ def androidTesting() {
                 sh 'chmod -R 777 libindy/'
                 sh 'chmod -R 777 libindy/ci/'
 
-                //TODO: IS-835 Enable emulator test when the unit test start passing on android device
-                //androidEmulatorTest(buildEnv)
                 buildAndroid(buildEnv, libindyVersion, libnullpayVersion)
             }
             finally {
