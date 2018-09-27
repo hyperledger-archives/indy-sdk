@@ -258,6 +258,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
 
         sh "cp libnullpay/target/release/libnullpay.so vcx/libvcx"
         sh "cp libindy/target/release/libindy.so vcx/libvcx"
+
         dir('vcx/libvcx') {
             testEnv.inside {
                 echo "${env_name} Libvcx Test: Build"
@@ -267,7 +268,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                 sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run'
 
                 echo "${env_name} Libvcx Test: Run tests"
-                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test  --release'
+                sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test --release'
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/libvcx.so', name: 'LibvcxUbuntuBuildResult'
