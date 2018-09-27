@@ -10,11 +10,7 @@ use error::ToErrorCode;
 use error::connection::ConnectionError;
 use connection::{get_source_id, build_connection, build_connection_with_invite, connect, to_string, get_state, release, is_valid_handle, update_state, from_string, get_invite_details, delete_connection};
 
-/**
- * connection object
- */
-
-/// -> Delete a Connection object and release its handle
+/// Delete a Connection object and release its handle
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -94,7 +90,7 @@ pub extern fn vcx_connection_create(command_handle: u32,
     error::SUCCESS.code_num
 }
 
-/// -> Create a Connection object from the given invite_details that provides a pairwise connection.
+/// Create a Connection object from the given invite_details that provides a pairwise connection.
 ///
 /// #Params
 /// command_handle: command handle to map callback to user context.
@@ -350,6 +346,16 @@ pub extern fn vcx_connection_update_state(command_handle: u32,
     error::SUCCESS.code_num
 }
 
+/// Get the current state of the connection object
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Connection handle that was provided during creation. Used to access connection object
+///
+/// cb: Callback that provides most current state of the connection and error status of request
+///
+/// #Returns
 #[no_mangle]
 pub extern fn vcx_connection_get_state(command_handle: u32,
                                        connection_handle: u32,

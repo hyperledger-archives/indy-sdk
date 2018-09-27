@@ -12,10 +12,6 @@ use std::ptr;
 use error::ToErrorCode;
 use utils::threadpool::spawn;
 
-/**
- * credential object
- */
-
 /// Create a Issuer Credential object that provides a credential for an enterprise's user
 /// Assumes a credential definition has been written to the ledger.
 ///
@@ -197,6 +193,18 @@ pub extern fn vcx_issuer_credential_update_state(command_handle: u32,
 
     error::SUCCESS.code_num
 }
+
+/// Get the current state of the issuer credential object
+///
+/// #Params
+/// command_handle: command handle to map callback to user context.
+///
+/// proof_handle: Issuer Credential handle that was provided during creation.
+///
+/// cb: Callback that provides most current state of the issuer credential and error status of request
+///
+/// #Returns
+/// Error code as a u32
 
 #[no_mangle]
 pub extern fn vcx_issuer_credential_get_state(command_handle: u32,
