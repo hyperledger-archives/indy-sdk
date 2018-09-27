@@ -1221,7 +1221,7 @@ pub mod sign_multi_command {
     }
 }
 
-fn set_request_fees(request: &mut String, wallet_handle: i32, submitter_did: Option<&str>, fees_inputs: &Option<Vec<&str>>, fees_outputs: &Option<Vec<String>>, extra: Option<&str>) -> Result<Option<String>, ()> {
+pub fn set_request_fees(request: &mut String, wallet_handle: i32, submitter_did: Option<&str>, fees_inputs: &Option<Vec<&str>>, fees_outputs: &Option<Vec<String>>, extra: Option<&str>) -> Result<Option<String>, ()> {
     let mut payment_method: Option<String> = None;
     if let &Some(ref inputs) = fees_inputs {
         let inputs_json = parse_payment_inputs(&inputs)?;
@@ -1280,7 +1280,7 @@ fn parse_payment_outputs(outputs: &Vec<String>) -> Result<String, ()> {
 }
 
 
-fn parse_response_with_fees(response: &str, payment_method: Option<String>) -> Result<Option<Vec<serde_json::Value>>, ()> {
+pub fn parse_response_with_fees(response: &str, payment_method: Option<String>) -> Result<Option<Vec<serde_json::Value>>, ()> {
     let receipts = if let Some(method) = payment_method {
         Some(Payment::parse_response_with_fees(&method, &response)
             .map_err(|err| handle_payment_error(err, Some(&method)))
@@ -1291,7 +1291,7 @@ fn parse_response_with_fees(response: &str, payment_method: Option<String>) -> R
     Ok(receipts)
 }
 
-fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Result<(), ()> {
+pub fn print_response_receipts(receipts: Option<Vec<serde_json::Value>>) -> Result<(), ()> {
     receipts.map(|receipt| {
         if !receipt.is_empty() {
             println_succ!("Following Receipts has been received.");
