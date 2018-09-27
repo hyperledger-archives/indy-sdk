@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.PoolApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(OpenPoolLedgerCompletedDelegate))]
 #endif
-        private static void OpenPoolLedgerCallback(int command_handle, int err, IntPtr pool_handle)
+        private static void OpenPoolLedgerCallbackMethod(int command_handle, int err, IntPtr pool_handle)
         {
             var taskCompletionSource = PendingCommands.Remove<Pool>(command_handle);
 
@@ -29,6 +29,7 @@ namespace Hyperledger.Indy.PoolApi
 
             taskCompletionSource.SetResult(new Pool(pool_handle));
         }
+        private static OpenPoolLedgerCompletedDelegate OpenPoolLedgerCallback = OpenPoolLedgerCallbackMethod;
 
         /// <summary>
         /// Callback to use when list pools command has completed.
@@ -36,7 +37,7 @@ namespace Hyperledger.Indy.PoolApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(ListPoolsCompletedDelegate))]
 #endif
-        private static void ListPoolsCallback(int command_handle, int err, string pools)
+        private static void ListPoolsCallbackMethod(int command_handle, int err, string pools)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(command_handle);
 
@@ -45,6 +46,7 @@ namespace Hyperledger.Indy.PoolApi
 
             taskCompletionSource.SetResult(pools);
         }
+        private static ListPoolsCompletedDelegate ListPoolsCallback = ListPoolsCallbackMethod;
 
         /// <summary>
         /// Creates a new local pool configuration with the specified name that can be used later to open a connection to 

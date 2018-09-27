@@ -1,0 +1,7 @@
+#!/bin/sh
+# postinst script for libvcx
+
+/sbin/ldconfig 
+
+ln -sf `ls -rt /usr/lib/libvcx.so.* | tail -n1` /usr/lib/libvcx.so
+

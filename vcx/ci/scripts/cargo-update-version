@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+import subprocess
+import os
+import sys
+from toml_utils import extract_version_from_file, update_major_minor_build_to_toml, \
+        update_revision, extract_revision
+from version_utils import get_revision_number
+from subprocess import Popen, PIPE
+import buildnum
+import json
+
+# This will generate new build number, and get the
+# revision number from a git commit has.
+# Then it writes the new numbers to the Cargo.toml
+# and also to the package.json for the wrapper.
+
+# This requires that you are in the ./libvcx 
+# directory.
+
+
+TOML_FILENAME = 'Cargo.toml'
+LIBVCX_DIR = 'libvcx'
+NPM_PACKAGE_JSON = '../wrappers/node/package.json'
+
+# Verify that we are in the correct directory 
+# and that the toml file exists.
+def verify_cwd(target_dir, toml_file):
+    dir_path = os.getcwd()
+    if os.path.basename(dir_path) != target_dir:
+        print('This command must run in the ./libvcx directory')
+        sys.exit(1)
+    for f in os.listdir(dir_path):
+        if f == toml_file:
+            return True
+    print(toml_file + ' not found in cwd')
+    sys.exit(1)
+
+
+def main():
+    verify_cwd(LIBVCX_DIR, TOML_FILENAME)
+    (major, minor) = extract_version_from_file(TOML_FILENAME)
+    build_number = buildnum.main()
+    print('build:\t\t%s ' % build_number)
+    revision_number = get_revision_number()
+    update_major_minor_build_to_toml(TOML_FILENAME, major, minor, build_number)
+    update_revision(TOML_FILENAME, revision_number)
+    full_version = "%s.%s.%s-%s" % (major, minor, build_number, revision_number)
+    update_npm_package(NPM_PACKAGE_JSON, full_version) 
+    
+
+def update_npm_package(package, version):
+    try: 
+        with open(package, 'r') as f_in:
+            o = f_in.read()
+
+        j = json.loads(o)
+        j['version'] = version
+        w = open(package, 'w')
+        j_to_write = json.dump(j,w, indent = 4)
+        w.close()
+    except IOError:
+        print(str(IOError)+ ' ' + package)
+
+    sys.exit(0)
+    
+if __name__ == '__main__':
+    main()
+
