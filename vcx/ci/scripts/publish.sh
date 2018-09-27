@@ -1,5 +1,6 @@
 #!/bin/bash
 set +x
+set -e
 if [ $# -ne 3 ]; then
     echo "USAGE: $0 CREDENTIALS FILE URL"
     exit 1
