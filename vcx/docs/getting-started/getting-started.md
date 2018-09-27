@@ -496,12 +496,14 @@ When **Thrift** inspects the received Proof he will see following structure:
 	    'predicate2_referent': {'sub_proof_index': 0}
 	}
     },
-    'proof' : [] # Validity Proof that Thrift can check
+    'proof' : { ... } # Validity Proof that Thrift can check
     'identifiers' : [ # Identifiers of credentials were used for Proof building
-	'schema_id': job_certificate_schema_id,
-	'cred_def_id': acme_job_certificate_cred_def_id,
-	'revoc_reg_seq_no': None,
-	'timestamp': None
+        {
+	    'schema_id': job_certificate_schema_id,
+	    'cred_def_id': acme_job_certificate_cred_def_id,
+	    'revoc_reg_seq_no': None,
+	    'timestamp': None
+        }
     ]
 }
 ```
@@ -611,7 +613,7 @@ When **Thrift** inspects the received Proof he will see following structure:
           'unrevealed_attrs': {},
           'predicates': {}
       },
-      'proof' : [] # Validity Proof that Thrift can check
+      'proof' : { ... } # Validity Proof that Thrift can check
       'identifiers' : [ # Identifiers of credentials were used for Proof building
           {
             'schema_id': transcript_schema_id,
