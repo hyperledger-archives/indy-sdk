@@ -229,7 +229,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                 sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run"
 
                 echo "${env_name} Libnullpay Test: Run tests"
-                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
@@ -248,10 +248,30 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                 sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run'
 
                 echo "${env_name} Indy Cli Test: Run tests"
-                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
+                }
+            }
+        }
+
+        sh "cp libnullpay/target/release/libnullpay.so vcx/libvcx"
+        sh "cp libindy/target/release/libindy.so vcx/libvcx"
+
+        dir('vcx/libvcx') {
+            testEnv.inside {
+                echo "${env_name} Libvcx Test: Build"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
+
+                echo "${env_name} Libvcx Test: Build Tests"
+                sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run'
+
+                echo "${env_name} Libvcx Test: Run tests"
+                sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test --release'
+
+                if (stashBuildResults) {
+                    stash includes: 'target/release/libvcx.so', name: 'LibvcxUbuntuBuildResult'
                 }
             }
         }
@@ -386,14 +406,14 @@ def ubuntuTesting() {
     }
 }
 
-
-def androidEmulatorTest(buildEnv) {
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
     dir('libindy') {
-        echo 'Building android binaries: Building docker image'
-        ANDROID_SCRIPT_PATH = 'android.test.sh'
-        echo 'Testing Libindy android files for arm'
-        buildEnv.inside {
-            sh "./${ANDROID_SCRIPT_PATH} arm"
+        sh 'chmod -R 777 ci/*.sh'
+        sh 'chmod -R 777 *.sh'
+
+        echo "${env_name} Libindy Test: Test on ARM emulator"
+        testEnv.inside("--network=${network_name}") {
+            sh "./android.test.sh arm"
         }
     }
 }
@@ -534,6 +554,7 @@ def ubuntuPublishing() {
                 javaWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
                 libnullpayDebPublishing(testEnv)
+                libvcxDebPublishing(testEnv)
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -678,6 +699,14 @@ def libnullpayDebPublishing(testEnv) {
     debPublishing(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "LibnullpayUbuntuBuildResult", "libnullpayDebs")
 }
 
+def libvcxDebPublishing(testEnv) {
+    echo 'Publish Libvcx deb files to Apt'
+
+    def libvcxVersion = getSrcVersion("vcx/libvcx")
+
+    debPublishing(testEnv, "vcx/libvcx", "libvcx", libvcxVersion, "LibvcxUbuntuBuildResult", "libvcxDebs")
+}
+
 def debPublishing(testEnv, directory, packageName, version, inStashName, outStashName) {
     dir("$directory/sovrin-packaging") {
         downloadPackagingUtils()
@@ -781,6 +810,9 @@ def publishingRCtoStable() {
                 echo 'Moving Ubuntu RC artifacts to Stable: libnullpay'
                 publishLibnullpayDebRCtoStable(testEnv)
 
+                echo 'Moving Ubuntu RC artifacts to Stable: libvcx'
+                publishLibvcxDebRCtoStable(testEnv)
+
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 publishLibindAndroidFilesRCtoStable(libindyVersion)
 
@@ -880,6 +912,11 @@ def publishLibnullpayDebRCtoStable(testEnv) {
     publishDebRCtoStable(testEnv, "libnullpay", "libnullpay", libnullpayVersion, "libnullpayDebs", false)
 }
 
+def publishLibvcxDebRCtoStable(testEnv) {
+    def libvcxVersion = getSrcVersion("vcx/libvcx")
+    publishDebRCtoStable(testEnv, "libvcx", "vcx/libvcx", libvcxVersion, "libvcxDebs", false)
+}
+
 def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveDevArtifacts) {
     testEnv.inside {
         rcFullVersion = "${version}~${env.BUILD_NUMBER}"
@@ -905,7 +942,7 @@ def downloadPackagingUtils() {
 }
 
 def setupRust() {
-    sh "rustup default 1.26.0"
+    sh "rustup default 1.27.0"
 }
 
 def androidPublishing() {
@@ -989,7 +1026,39 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
     }
 }
 
+def linuxModuleTesting(file, env_name, network_name, module_tester) {
+    node('ubuntu') {
+        def poolInst
+        try {
+            echo "${env_name} Test: Checkout csm"
+            checkout scm
+
+            poolInst = openPool(env_name, network_name)
+
+            def testEnv
+
+            dir('libindy') {
+                echo "${env_name} Libindy Test: Build docker image"
+                testEnv = dockerBuild('libindy', file)
+            }
+
+            module_tester(env_name, network_name, testEnv)
+        } finally {
+            closePool(env_name, network_name, poolInst)
+        }
+    }
+}
+
 def androidTesting() {
+    env_name="android_on_linux"
+    network_name="pool_network"
+    parallel([
+            "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
+            "${env_name}-android-building" : { androidBuildAsTesting() }
+    ])
+}
+
+def androidBuildAsTesting() {
     def libindyVersion
 
     node('ubuntu') {
@@ -1005,8 +1074,6 @@ def androidTesting() {
                 sh 'chmod -R 777 libindy/'
                 sh 'chmod -R 777 libindy/ci/'
 
-                //TODO: IS-835 Enable emulator test when the unit test start passing on android device
-                //androidEmulatorTest(buildEnv)
                 buildAndroid(buildEnv, libindyVersion, libnullpayVersion)
             }
             finally {

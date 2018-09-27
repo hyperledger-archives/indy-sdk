@@ -1082,7 +1082,7 @@ pub mod tests {
                           dir_c_str.as_ptr(),
                           backup_key_c_str.as_ptr(),
                           Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(5))).unwrap();
+        cb.receive(Some(Duration::from_secs(50))).unwrap();
 
         delete_wallet(&wallet_name).unwrap();
 
@@ -1098,7 +1098,7 @@ pub mod tests {
         assert_eq!(vcx_wallet_import(cb.command_handle,
                                      import_config_c.as_ptr(),
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
-        cb.receive(Some(Duration::from_secs(5))).unwrap();
+        cb.receive(Some(Duration::from_secs(50))).unwrap();
 
         let handle = setup_wallet_env(&wallet_name).unwrap();
 
