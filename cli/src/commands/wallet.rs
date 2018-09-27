@@ -351,6 +351,10 @@ pub mod detach_command {
             return Err(println_err!("Wallet \"{}\" isn't attached to CLI", id));
         }
 
+        if let Some((_, name)) = get_opened_wallet(ctx) {
+            if id == name { return Err(println_err!("Wallet \"{}\" is opened", id)); }
+        }
+
         _delete_wallet_config(id)
             .map_err(|err| println_err!("Cannot delete \"{}\" config file: {:?}", id, err))?;
 
