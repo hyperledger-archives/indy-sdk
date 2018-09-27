@@ -10,7 +10,7 @@ def vcx_nodejs
 // libvcx_<ver>.deb (Debian Installable Library) ----> published Debian to https://repo.corp.evernym.com/deb/pool/main/libv/libvcx/
 // vcx_<ver>.deb (Nodejs Wrapper Debian Package) ----> archived with Jenkins and Published to repo.corp.evernym.com/deb/pool
 // vcx_<ver>.tgz (Nodejs Wrapper Npm Installable Package) ----> published with Filely to https://repo.corp.evernym.com/filely/npm/
-// vcx_<ver>.tar.gz (Python Installable package) ----> archived with Jenkins
+// python3-vcx-wrapper-<ver>.tar.gz (Python Installable package) ----> published with Filely to https://kraken.corp.evernym.com/repo/python/upload
 // ********* OTHERS ********
 // DEPRECATED ( NO LONGER PRODUCED ) libvcx.tar.gz (libvcx.so file and provision_agent_keys.py) ----> archived with Jenkins
 
@@ -122,7 +122,10 @@ def mainUbuntu() {
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"libvcx*.deb\" https://kraken.corp.evernym.com/repo/agency_dev/upload"
 
                             // ******** Publish Npm Package to filely repo ********
-                            sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"*.tgz\" https://kraken.corp.evernym.com/repo/npm/upload"
+                            sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"node-vcx-wrapper*.tgz\" https://kraken.corp.evernym.com/repo/npm/upload"
+
+                            // ******** Publish Python Package to filely repo *********
+                            sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"python3-vcx-wrapper*.tar.gz\" https://kraken.corp.evernym.com/repo/python/upload"
 
                             // ******** Publish vcx Debian To Repo (NPM PACKAGES)
                             sh "vcx/ci/scripts/publish.sh \"${KRAKEN_CREDENTIALS}\" \"vcx_*.deb\" https://kraken.corp.evernym.com/repo/agency_dev/upload"
