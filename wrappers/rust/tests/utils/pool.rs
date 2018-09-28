@@ -41,6 +41,7 @@ pub fn test_genesis_config() -> (String, TempFile) {
     (config, genesis_file)
 }
 
+#[inline]
 pub fn test_pool_name() -> String {
     format!("TestPool{}", random_string(10))
 }

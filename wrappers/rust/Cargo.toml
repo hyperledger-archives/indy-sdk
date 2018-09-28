@@ -32,6 +32,7 @@ serde_derive = "1.0.76"
 serde = "1.0.76"
 rmp-serde = "0.13.6"
 byteorder = "1.0.0"
+dirs = "1.0.4"
 
 [build-dependencies]
 pkg-config = "0.3.9"
