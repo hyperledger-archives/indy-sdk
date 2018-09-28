@@ -223,6 +223,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
 
+    let schema_id = schema_id.unwrap();
+
     // Prover creates Proof
     let requested_credentials_json = json!({
              "self_attested_attributes": json!({}),
@@ -265,6 +267,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
     let get_schema_request = ledger::build_get_schema_request(Some(DID_MY1), &identifier.schema_id).unwrap();
     let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
+
+    let schema_id = schema_id.unwrap();
 
     // Verifier gets CredentialDefinition from Ledger
     let get_cred_def_request = ledger::build_get_cred_def_request(Some(DID_MY1), &identifier.cred_def_id).unwrap();
@@ -558,6 +562,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
     let get_schema_request = ledger::build_get_schema_request(Some(&prover_did), &schema_id).unwrap();
     let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
+
+    let schema_id = schema_id.unwrap();
 
     // Prover creates Proof
     let requested_credentials_json = json!({
@@ -903,6 +909,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
 
+    let schema_id = schema_id.unwrap();
+
     // Prover1 creates Proof
     let requested_credentials_json = json!({
              "self_attested_attributes": json!({}),
@@ -1179,6 +1187,8 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
     let get_schema_request = ledger::build_get_schema_request(Some(&prover1_did), &schema_id).unwrap();
     let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
     let (schema_id, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
+
+    let schema_id = schema_id.unwrap();
 
     // Prover1 creates Proof
     let requested_credentials_json = json!({

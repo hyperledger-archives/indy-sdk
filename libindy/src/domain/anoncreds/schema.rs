@@ -7,12 +7,24 @@ pub const SCHEMA_MARKER: &'static str = "2";
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SchemaV1 {
-    pub id: String,
-    pub name: String,
-    pub version: String,
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub version: Option<String>,
     #[serde(rename = "attrNames")]
     pub attr_names: AttributeNames,
     pub seq_no: Option<u32>,
+}
+
+impl Default for SchemaV1 {
+    fn default() -> SchemaV1 {
+        SchemaV1 {
+            id: None,
+            name: None,
+            version: None,
+            attr_names: AttributeNames::default(),
+            seq_no: None
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

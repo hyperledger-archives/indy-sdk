@@ -461,8 +461,8 @@ pub fn build_get_revoc_reg_delta_request(submitter_did: Option<&str>, rev_reg_de
     super::results::result_to_string(err, receiver)
 }
 
-pub fn parse_get_schema_response(get_schema_response: &str) -> Result<(String, String), ErrorCode> {
-    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_string_string();
+pub fn parse_get_schema_response(get_schema_response: &str) -> Result<(Option<String>, String), ErrorCode> {
+    let (receiver, command_handle, cb) = callback::_closure_to_cb_ec_opt_string_string();
 
     let get_schema_response = CString::new(get_schema_response).unwrap();
 
@@ -471,7 +471,7 @@ pub fn parse_get_schema_response(get_schema_response: &str) -> Result<(String, S
                                        get_schema_response.as_ptr(),
                                        cb);
 
-    super::results::result_to_string_string(err, receiver)
+    super::results::result_to_opt_string_string(err, receiver)
 }
 
 pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Result<(String, String), ErrorCode> {
@@ -567,6 +567,7 @@ pub fn post_entities() -> (&'static str, &'static str, &'static str) {
             let get_schema_request = build_get_schema_request(Some(&issuer_did), &schema_id).unwrap();
             let get_schema_response = submit_request_with_retries(pool_handle, &get_schema_request, &schema_response).unwrap();
             let (schema_id, schema_json) = parse_get_schema_response(&get_schema_response).unwrap();
+            let schema_id = schema_id.unwrap();
 
             let (cred_def_id, cred_def_json) = anoncreds::issuer_create_credential_definition(wallet_handle,
                                                                                               &issuer_did,

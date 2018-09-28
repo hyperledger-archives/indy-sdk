@@ -150,16 +150,21 @@ impl LedgerService {
     pub fn build_schema_request(&self, identifier: &str, schema: SchemaV1) -> Result<String, CommonError> {
         info!("build_schema_request >>> identifier: {:?}, schema: {:?}", identifier, schema);
 
-        let schema_data = SchemaOperationData::new(schema.name, schema.version, schema.attr_names);
+        if let (Some(schema_name), Some(schema_version)) = (schema.name, schema.version) {
+            let schema_data = SchemaOperationData::new(schema_name, schema_version, schema.attr_names);
 
-        let operation = SchemaOperation::new(schema_data);
+            let operation = SchemaOperation::new(schema_data);
 
-        let request = Request::build_request(Some(identifier), operation)
-            .map_err(|err| CommonError::InvalidState(format!("SCHEMA request json is invalid {:?}.", err)))?;
+            let request = Request::build_request(Some(identifier), operation)
+                .map_err(|err| CommonError::InvalidState(format!("SCHEMA request json is invalid {:?}.", err)))?;
 
-        info!("build_schema_request <<< request: {:?}", request);
+            info!("build_schema_request <<< request: {:?}", request);
 
-        Ok(request)
+            Ok(request)
+        }
+        else {
+            Err(CommonError::InvalidStructure("Invalid schema, name and version are not allowed to be None".to_string()))
+        }
     }
 
     pub fn build_get_schema_request(&self, identifier: Option<&str>, id: &str) -> Result<String, CommonError> {
@@ -411,26 +416,29 @@ impl LedgerService {
         Ok(request)
     }
 
-    pub fn parse_get_schema_response(&self, get_schema_response: &str) -> Result<(String, String), LedgerError> {
+    pub fn parse_get_schema_response(&self, get_schema_response: &str) -> Result<(Option<String>, String), LedgerError> {
         info!("parse_get_schema_response >>> get_schema_response: {:?}", get_schema_response);
 
-        let reply: Reply<GetSchemaReplyResult> = LedgerService::parse_response(get_schema_response)?;
-
-        let schema = match reply.result() {
-            GetSchemaReplyResult::GetSchemaReplyResultV0(res) => SchemaV1 {
-                name: res.data.name.clone(),
-                version: res.data.version.clone(),
-                attr_names: res.data.attr_names,
-                id: Schema::schema_id(&res.dest, &res.data.name, &res.data.version),
-                seq_no: Some(res.seq_no)
+        let schema = match LedgerService::parse_response(get_schema_response) {
+            Ok(reply) => {
+                match reply.result() {
+                    GetSchemaReplyResult::GetSchemaReplyResultV0(res) => SchemaV1 {
+                        name: Some(res.data.name.clone()),
+                        version: Some(res.data.version.clone()),
+                        attr_names: res.data.attr_names,
+                        id: Some(Schema::schema_id(&res.dest, &res.data.name, &res.data.version)),
+                        seq_no: Some(res.seq_no)
+                    },
+                    GetSchemaReplyResult::GetSchemaReplyResultV1(res) => SchemaV1 {
+                        name: Some(res.txn.data.schema_name),
+                        version: Some(res.txn.data.schema_version),
+                        attr_names: res.txn.data.value.attr_names,
+                        id: Some(res.txn.data.id),
+                        seq_no: Some(res.txn_metadata.seq_no)
+                    }
+                }
             },
-            GetSchemaReplyResult::GetSchemaReplyResultV1(res) => SchemaV1 {
-                name: res.txn.data.schema_name,
-                version: res.txn.data.schema_version,
-                attr_names: res.txn.data.value.attr_names,
-                id: res.txn.data.id,
-                seq_no: Some(res.txn_metadata.seq_no)
-            }
+            Err(_) => SchemaV1::default()
         };
 
         let res = (schema.id.clone(),
@@ -729,9 +737,9 @@ mod tests {
         attr_names.insert("male".to_string());
 
         let data = SchemaV1 {
-            id: Schema::schema_id(IDENTIFIER, "name", "1.0"),
-            name: "name".to_string(),
-            version: "1.0".to_string(),
+            id: Some(Schema::schema_id(IDENTIFIER, "name", "1.0")),
+            name: Some("name".to_string()),
+            version: Some("1.0".to_string()),
             attr_names,
             seq_no: None,
         };
@@ -747,6 +755,22 @@ mod tests {
 
         let request = ledger_service.build_schema_request(IDENTIFIER, data).unwrap();
         check_request(&request, expected_result);
+    }
+
+    #[test]
+    fn build_schema_request_works_for_null_schema() {
+        let ledger_service = LedgerService::new();
+
+        let data = SchemaV1 {
+            id: None,
+            name: None,
+            version: None,
+            attr_names: AttributeNames::new(),
+            seq_no: None,
+        };
+
+        let res = ledger_service.build_schema_request(IDENTIFIER, data);
+        assert_match!(Err(CommonError::InvalidStructure(_)), res);
     }
 
     #[test]

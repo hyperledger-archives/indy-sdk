@@ -3286,6 +3286,23 @@ mod medium_cases {
                                                            None).unwrap();
             wallet::close_wallet(wallet_handle).unwrap();
         }
+
+        #[test]
+        fn issuer_create_and_store_credential_def_works_for_null_schema() {
+            anoncreds::init_common_wallet();
+
+            let wallet_handle = wallet::open_wallet(ANONCREDS_WALLET_CONFIG, WALLET_CREDENTIALS).unwrap();
+
+            let res = anoncreds::issuer_create_credential_definition(wallet_handle,
+                                                                     ISSUER_DID,
+                                                                     &anoncreds::null_schema_json(),
+                                                                     TAG_1,
+                                                                     Some(SIGNATURE_TYPE),
+                                                                     Some(&anoncreds::default_cred_def_config()));
+            assert_eq!(res.unwrap_err(), ErrorCode::CommonInvalidStructure);
+
+            wallet::close_wallet(wallet_handle).unwrap();
+        }
     }
 
     mod issuer_create_credential_offer {

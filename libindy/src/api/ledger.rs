@@ -14,6 +14,7 @@ use utils::ctypes;
 
 use serde_json;
 use self::libc::c_char;
+use std::ptr;
 
 /// Signs and submits request message to validator pool.
 ///
@@ -724,11 +725,16 @@ pub extern fn indy_parse_get_schema_response(command_handle: i32,
         .send(Command::Ledger(LedgerCommand::ParseGetSchemaResponse(
             get_schema_response,
             Box::new(move |result| {
-                let (err, schema_id, schema_json) = result_to_err_code_2!(result, String::new(), String::new());
+                let (err, schema_id, schema_json) = result_to_err_code_2!(result, None, String::new());
                 trace!("indy_parse_get_schema_response: schema_id: {:?}, schema_json: {:?}", schema_id, schema_json);
-                let schema_id = ctypes::string_to_cstring(schema_id);
                 let schema_json = ctypes::string_to_cstring(schema_json);
-                cb(command_handle, err, schema_id.as_ptr(), schema_json.as_ptr())
+                match schema_id {
+                    Some(schema_id) => {
+                        let schema_id = ctypes::string_to_cstring(schema_id);
+                        cb(command_handle, err, schema_id.as_ptr(), schema_json.as_ptr())
+                    },
+                    None => cb(command_handle, err, ptr::null(), schema_json.as_ptr())
+                }
             })
         )));
 
