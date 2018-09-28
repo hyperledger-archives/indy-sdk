@@ -34,7 +34,7 @@ public class AnoncredsIntegrationTest {
 	static String issuer2GvtCredOffer;
 	static String issuer1GvtCredReq;
 	static String issuer1GvtCredReqMetadata;
-	String CREDENTIALS = "{\"key\": \"key\", \"key_derivation_method\": \"ARGON2I_INT\"}";
+	String CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
 	String masterSecretId = "master_secret_name";
 	String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
