@@ -26,25 +26,21 @@ use commands::non_secrets::{NonSecretsCommand, NonSecretsCommandExecutor};
 use commands::payments::{PaymentsCommand, PaymentsCommandExecutor};
 
 use errors::common::CommonError;
-use errors::anoncreds::AnoncredsError;
 
 use services::anoncreds::AnoncredsService;
 use services::blob_storage::BlobStorageService;
 use services::payments::PaymentsService;
 use services::pool::PoolService;
-use services::wallet::{WalletService, KeyDerivationData};
+use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
-use domain::anoncreds::credential_definition::CredentialDefinitionData;
 
-use indy_crypto::cl::{CredentialPrivateKey, CredentialKeyCorrectnessProof};
 
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
 use std::rc::Rc;
 use std::thread;
 use std::sync::{Mutex, MutexGuard};
-use std::collections::HashSet;
 
 pub enum Command {
     Exit,
@@ -57,21 +53,14 @@ pub enum Command {
     Wallet(WalletCommand),
     Pairwise(PairwiseCommand),
     NonSecrets(NonSecretsCommand),
-    Payments(PaymentsCommand),
-    DeriveKey(KeyDerivationData,
-              Box<Fn(Result<::utils::crypto::chacha20poly1305_ietf::Key, CommonError>) + Send>),
-    CreateCredentialDefinition(HashSet<String>,
-                               bool,
-                               Box<Fn(Result<(CredentialDefinitionData,
-                                              CredentialPrivateKey,
-                                              CredentialKeyCorrectnessProof), AnoncredsError>) + Send>)
+    Payments(PaymentsCommand)
 }
 
 lazy_static! {
     static ref THREADPOOL: Mutex<ThreadPool> = Mutex::new(ThreadPool::new(4));
 }
 
-pub fn set_crypto_thread_pool_size(size: usize){
+pub fn set_crypto_thread_pool_size(size: usize) {
     THREADPOOL.lock().unwrap().set_num_threads(size)
 }
 
@@ -163,12 +152,6 @@ impl CommandExecutor {
                         Ok(Command::Exit) => {
                             info!("Exit command received");
                             break
-                        }
-                        Ok(Command::DeriveKey(key_data, cb)) => {
-                            THREADPOOL.lock().unwrap().execute(move || cb(key_data.calc_master_key()));
-                        }
-                        Ok(Command::CreateCredentialDefinition(attr_names, support_revocation, cb)) => {
-                            THREADPOOL.lock().unwrap().execute(move || cb(::services::anoncreds::issuer::Issuer::new_credential_definition(&attr_names, support_revocation)));
                         }
                         Err(err) => {
                             error!("Failed to get command!");
