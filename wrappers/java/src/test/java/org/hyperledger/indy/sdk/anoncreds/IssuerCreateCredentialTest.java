@@ -6,7 +6,6 @@ import org.junit.*;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.assertNotNull;
 
 public class IssuerCreateCredentialTest extends AnoncredsIntegrationTest {
 

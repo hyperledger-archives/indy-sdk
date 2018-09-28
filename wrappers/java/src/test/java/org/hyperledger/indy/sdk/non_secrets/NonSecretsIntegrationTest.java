@@ -26,12 +26,12 @@ public class NonSecretsIntegrationTest extends IndyIntegrationTestWithSingleWall
 	String tagsEmpty = "{}";
 	String queryEmpty = "{}";
 	String optionsEmpty = "{}";
-	String optionsFull = "{\"retrieveType\":true, \"retrieveValue\":true, \"retrieveTags\":true}";
 	String tags =  "{\"tagName1\":\"str1\",\"tagName2\":\"5\",\"tagName3\":\"12\"}";
 	String tags2 = "{\"tagName1\":\"str2\",\"tagName2\":\"pre_str3\",\"tagName3\":\"2\"}";
 	String tags3 = "{\"tagName1\":\"str1\",\"tagName2\":\"str2\",\"tagName3\":\"str3\"}";
 
 	void checkRecordField(Wallet wallet, String type, String id, String field, String expectedValue) throws Exception {
+		String optionsFull = "{\"retrieveType\":true, \"retrieveValue\":true, \"retrieveTags\":true}";
 		String recordJson = WalletRecord.get(wallet, type, id, optionsFull).get();
 		JSONObject record = new JSONObject(recordJson);
 
