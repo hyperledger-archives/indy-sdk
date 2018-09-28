@@ -6,14 +6,12 @@ extern crate rust_libindy_wrapper as indy;
 #[macro_use]
 pub mod utils;
 
-use indy::wallet::Wallet;
-use utils::constants::{DEFAULT_CREDENTIALS, DID_1};
+use utils::constants::{DID_1};
 use utils::setup::{Setup, SetupConfig};
 use std::time::Duration;
 use std::sync::mpsc::channel;
 use indy::ErrorCode;
 use indy::pool::Pool;
-use utils::pool;
 
 #[cfg(test)]
 mod open_pool {
@@ -944,7 +942,7 @@ mod test_delete_config {
     use super::*;
 
     use std::sync::mpsc::channel;
-    use utils::pool::{PoolList, test_pool_name, create_default_pool};
+    use utils::pool::{PoolList, create_default_pool};
 
     const VALID_TIMEOUT: Duration = Duration::from_millis(250);
     const NON_EXISTENT_NAME: &str = "a_pool_name_which_does_not_exist";
@@ -1181,9 +1179,11 @@ mod test_pool_list {
         let name = create_default_pool();
         let (sender, receiver) = channel();
 
-        Pool::list_async(move |ec, result| sender.send(result).unwrap());
+        Pool::list_async(move |ec, result| sender.send((ec, result)).unwrap());
 
-        let pool_json = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+        let (ec, pool_json) = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
+
+        assert_eq!(ErrorCode::Success, ec);
         assert!(PoolList::from_json(&pool_json).pool_exists(&name));
 
         Pool::delete(&name).unwrap();
