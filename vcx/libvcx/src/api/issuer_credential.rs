@@ -44,13 +44,14 @@ pub extern fn vcx_issuer_create_credential(command_handle: u32,
                                       issuer_did: *const c_char,
                                       credential_data: *const c_char,
                                       credential_name: *const c_char,
-                                      price: u64,
+                                      price: *const c_char,
                                       cb: Option<extern fn(xcommand_handle: u32, err: u32, credential_handle: u32)>) -> u32 {
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(credential_data, error::INVALID_OPTION.code_num);
     check_useful_c_str!(credential_name, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(price, error::INVALID_OPTION.code_num);
     check_useful_c_str!(cred_def_id, error::INVALID_OPTION.code_num);
 
     let issuer_did: String = if !issuer_did.is_null() {
@@ -61,6 +62,11 @@ pub extern fn vcx_issuer_create_credential(command_handle: u32,
             Ok(x) => x,
             Err(x) => return x
         }
+    };
+
+    let price: u64 = match price.parse::<u64>() {
+        Ok(x) => x,
+        Err(_) => return error::INVALID_OPTION.code_num,
     };
 
     info!("vcx_issuer_create_credential(command_handle: {}, source_id: {}, cred_def_id: {}, issuer_did: {}, credential_data: {}, credential_name: {})",
@@ -499,7 +505,7 @@ mod tests {
                                            ptr::null(),
                                            CString::new(DEFAULT_ATTR).unwrap().into_raw(),
                                            CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                           1,
+                                           CString::new("1").unwrap().into_raw(),
                                            Some(cb.get_callback())), error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
@@ -514,7 +520,7 @@ mod tests {
                                                 ptr::null(),
                                                 ptr::null(),
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                1,
+                                                CString::new("1").unwrap().into_raw(),
                                                 Some(cb.get_callback())),
                    error::INVALID_OPTION.code_num);
 
@@ -531,7 +537,7 @@ mod tests {
                                            CString::new(DEFAULT_DID).unwrap().into_raw(),
                                            CString::new(DEFAULT_ATTR).unwrap().into_raw(),
                                            CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                           1,
+                                           CString::new("1").unwrap().into_raw(),
                                            Some(cb.get_callback())), error::SUCCESS.code_num);
         let handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
@@ -598,7 +604,7 @@ mod tests {
                                                 CString::new(DEFAULT_DID).unwrap().into_raw(),
                                                 CString::new(DEFAULT_ATTR).unwrap().into_raw(),
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                1,
+                                                CString::new("1").unwrap().into_raw(),
                                                 Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         let handle = cb.receive(Some(Duration::from_secs(10))).unwrap();
@@ -609,6 +615,22 @@ mod tests {
                                                    Some(cb.get_callback())),
                    error::SUCCESS.code_num);
         cb.receive(Some(Duration::from_secs(10))).unwrap();
+    }
+
+    #[test]
+    fn test_create_credential_invalid_price(){
+        init!("true");
+        settings::set_config_value(settings::CONFIG_INSTITUTION_DID, DEFAULT_DID);
+        let cb = return_types_u32::Return_U32_U32::new().unwrap();
+        assert_eq!(vcx_issuer_create_credential(cb.command_handle,
+                                                CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
+                                                CString::new(CRED_DEF_ID).unwrap().into_raw(),
+                                                CString::new(DEFAULT_DID).unwrap().into_raw(),
+                                                CString::new(DEFAULT_ATTR).unwrap().into_raw(),
+                                                CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
+                                                CString::new("-1").unwrap().into_raw(),
+                                                Some(cb.get_callback())),
+                   error::INVALID_OPTION.code_num);
     }
 
     #[test]
