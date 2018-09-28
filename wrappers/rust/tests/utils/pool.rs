@@ -1,5 +1,4 @@
 use super::environment;
-use super::indy;
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use indy::ErrorCode;
@@ -8,7 +7,6 @@ use rmp_serde;
 use serde_json;
 use std::fs;
 use std::io::Write;
-use std::path::{Path, PathBuf};
 use utils::rand::random_string;
 use utils::file::TempFile;
 
