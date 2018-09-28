@@ -92,19 +92,6 @@ pub fn tails_writer_config() -> String {
     serde_json::to_string(&c).unwrap()
 }
 
-pub fn export_path(wallet_name: &str) -> String {
-    tmp_file_path(wallet_name).to_str().unwrap().to_string()
-}
-
-pub fn export_config_json(wallet_name: &str) -> String {
-    let e = hashmap![
-        "key".to_string() => constants::EXPORT_KEY.to_string(),
-        "path".to_string() => export_path(wallet_name)
-    ];
-
-    serde_json::to_string(&e).unwrap()
-}
-
 pub fn indy_home_path() -> PathBuf {
     let mut path = env::home_dir().unwrap_or(PathBuf::from("/home/indy"));
     let mut indy_client_dir = ".indy_client";
