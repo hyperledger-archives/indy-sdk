@@ -20,6 +20,7 @@ use std::result;
 use std::collections::HashMap;
 
 type Result<T> = result::Result<T, IndyError>;
+type DeriveKeyResult<T> = result::Result<T, CommonError>;
 
 pub enum WalletCommand {
     RegisterWalletType(String, // type_
@@ -54,13 +55,13 @@ pub enum WalletCommand {
     CreateContinue(Config, // config
                    Credentials, // credentials
                    KeyDerivationData,
-                   result::Result<MasterKey, CommonError>, // derive_key_result
+                   DeriveKeyResult<MasterKey>, // derive_key_result
                    i32),
     Open(Config, // config
          Credentials, // credentials
          Box<Fn(Result<i32>) + Send>),
     OpenContinue(i32, // wallet handle
-                 result::Result<(MasterKey, Option<MasterKey>), CommonError>, // derive_key_result
+                 DeriveKeyResult<(MasterKey, Option<MasterKey>)>, // derive_key_result
     ),
     Close(i32, // handle
           Box<Fn(Result<()>) + Send>),
@@ -70,7 +71,7 @@ pub enum WalletCommand {
     DeleteContinue(Config, // config
                    Credentials, // credentials
                    Metadata, // credentials
-                   result::Result<MasterKey, CommonError>,
+                   DeriveKeyResult<MasterKey>,
                    i32),
     Export(i32, // wallet_handle
            ExportConfig, // export config
@@ -78,7 +79,7 @@ pub enum WalletCommand {
     ExportContinue(i32, // wallet_handle
                    ExportConfig, // export config
                    KeyDerivationData,
-                   result::Result<MasterKey, CommonError>,
+                   DeriveKeyResult<MasterKey>,
                    i32),
     Import(Config, // config
            Credentials, // credentials
@@ -86,11 +87,13 @@ pub enum WalletCommand {
            Box<Fn(Result<()>) + Send>),
     ImportContinue(Config, // config
                    Credentials, // credentials
-                   result::Result<(MasterKey, MasterKey), CommonError>, // derive_key_result
+                   DeriveKeyResult<(MasterKey, MasterKey)>, // derive_key_result
                    i32, // handle
     ),
     GenerateKey(Option<KeyConfig>, // config
                 Box<Fn(Result<String>) + Send>),
+    DeriveKey(KeyDerivationData,
+              Box<Fn(DeriveKeyResult<MasterKey>) + Send>),
 }
 
 macro_rules! get_cb {
@@ -201,6 +204,10 @@ impl WalletCommandExecutor {
                 debug!(target: "wallet_command_executor", "DeriveKey command received");
                 cb(self._generate_key(config.as_ref()));
             }
+            WalletCommand::DeriveKey(key_data, cb) => {
+                debug!(target: "wallet_command_executor", "DeriveKey command received");
+                ::commands::THREADPOOL.lock().unwrap().execute(move || cb(key_data.calc_master_key()));
+            }
         };
     }
 
@@ -259,19 +266,21 @@ impl WalletCommandExecutor {
         let config = config.clone();
         let credentials = credentials.clone();
 
-        CommandExecutor::instance().send(Command::DeriveKey(
-            key_data.clone(),
-            Box::new(move |master_key_res| {
-                CommandExecutor::instance().send(
-                    Command::Wallet(
-                        WalletCommand::CreateContinue(
-                            config.clone(),
-                            credentials.clone(),
-                            key_data.clone(),
-                            master_key_res,
-                            cb_id,
-                        ))).unwrap();
-            }))).unwrap();
+        CommandExecutor::instance().send(
+            Command::Wallet(WalletCommand::DeriveKey(
+                key_data.clone(),
+                Box::new(move |master_key_res| {
+                    CommandExecutor::instance().send(
+                        Command::Wallet(
+                            WalletCommand::CreateContinue(
+                                config.clone(),
+                                credentials.clone(),
+                                key_data.clone(),
+                                master_key_res,
+                                cb_id,
+                            ))).unwrap();
+                }))
+            )).unwrap();
 
         trace!("_create <<<");
     }
@@ -286,38 +295,40 @@ impl WalletCommandExecutor {
 
         self.open_callbacks.borrow_mut().insert(wallet_handle, cb);
 
-        CommandExecutor::instance().send(Command::DeriveKey(
-            key_derivation_data,
-            Box::new(move |key_result| {
-                let key_result = key_result.clone();
-                match (key_result, rekey_data.clone()) {
-                    (Ok(key_result), Some(rekey_data)) => {
-                        CommandExecutor::instance().send(
-                            Command::DeriveKey(
-                                rekey_data,
-                                Box::new(move |rekey_result| {
-                                    let key_result = key_result.clone();
-                                    CommandExecutor::instance().send(
-                                        Command::Wallet(WalletCommand::OpenContinue(
-                                            wallet_handle,
-                                            rekey_result.map(move |rekey_result| (key_result.clone(), Some(rekey_result))),
-                                        ))
-                                    ).unwrap();
-                                }),
-                            )
-                        ).unwrap();
+        CommandExecutor::instance().send(
+            Command::Wallet(WalletCommand::DeriveKey(
+                key_derivation_data,
+                Box::new(move |key_result| {
+                    let key_result = key_result.clone();
+                    match (key_result, rekey_data.clone()) {
+                        (Ok(key_result), Some(rekey_data)) => {
+                            CommandExecutor::instance().send(
+                                Command::Wallet(WalletCommand::DeriveKey(
+                                    rekey_data,
+                                    Box::new(move |rekey_result| {
+                                        let key_result = key_result.clone();
+                                        CommandExecutor::instance().send(
+                                            Command::Wallet(WalletCommand::OpenContinue(
+                                                wallet_handle,
+                                                rekey_result.map(move |rekey_result| (key_result.clone(), Some(rekey_result))),
+                                            ))
+                                        ).unwrap();
+                                    }),
+                                ))
+                            ).unwrap();
+                        }
+                        (key_result, _) => {
+                            CommandExecutor::instance().send(
+                                Command::Wallet(WalletCommand::OpenContinue(
+                                    wallet_handle,
+                                    key_result.map(|kr| (kr, None)),
+                                ))
+                            ).unwrap()
+                        }
                     }
-                    (key_result, _) => {
-                        CommandExecutor::instance().send(
-                            Command::Wallet(WalletCommand::OpenContinue(
-                                wallet_handle,
-                                key_result.map(|kr| (kr, None)),
-                            ))
-                        ).unwrap()
-                    }
-                }
-            }),
-        )).unwrap();
+                }),
+            ))
+        ).unwrap();
 
         let res = wallet_handle;
 
@@ -348,20 +359,22 @@ impl WalletCommandExecutor {
         let config = config.clone();
         let credentials = credentials.clone();
 
-        CommandExecutor::instance().send(Command::DeriveKey(
-            key_derivation_data,
-            Box::new(move |key_result| {
-                let key_result = key_result.clone();
-                CommandExecutor::instance().send(
-                    Command::Wallet(WalletCommand::DeleteContinue(
-                        config.clone(),
-                        credentials.clone(),
-                        metadata.clone(),
-                        key_result,
-                        cb_id)
-                    )).unwrap()
-            }),
-        )).unwrap();
+        CommandExecutor::instance().send(
+            Command::Wallet(WalletCommand::DeriveKey(
+                key_derivation_data,
+                Box::new(move |key_result| {
+                    let key_result = key_result.clone();
+                    CommandExecutor::instance().send(
+                        Command::Wallet(WalletCommand::DeleteContinue(
+                            config.clone(),
+                            credentials.clone(),
+                            metadata.clone(),
+                            key_result,
+                            cb_id)
+                        )).unwrap()
+                }),
+            ))
+        ).unwrap();
 
         trace!("_delete <<<");
     }
@@ -379,17 +392,20 @@ impl WalletCommandExecutor {
 
         let export_config = export_config.clone();
 
-        CommandExecutor::instance().send(Command::DeriveKey(
-            key_data.clone(),
-            Box::new(move |master_key_res| {
-                CommandExecutor::instance().send(Command::Wallet(WalletCommand::ExportContinue(
-                    wallet_handle,
-                    export_config.clone(),
-                    key_data.clone(),
-                    master_key_res,
-                    cb_id,
-                ))).unwrap();
-            }))).unwrap();
+        CommandExecutor::instance().send(
+            Command::Wallet(WalletCommand::DeriveKey(
+                key_data.clone(),
+                Box::new(move |master_key_res| {
+                    CommandExecutor::instance().send(Command::Wallet(WalletCommand::ExportContinue(
+                        wallet_handle,
+                        export_config.clone(),
+                        key_data.clone(),
+                        master_key_res,
+                        cb_id,
+                    ))).unwrap();
+                })
+            ))
+        ).unwrap();
 
         trace!("_export <<<");
     }
@@ -409,26 +425,30 @@ impl WalletCommandExecutor {
         let config = config.clone();
         let credentials = credentials.clone();
 
-        CommandExecutor::instance().send(Command::DeriveKey(
-            import_key_data,
-            Box::new(move |import_key_result| {
-                let config = config.clone();
-                let credentials = credentials.clone();
+        CommandExecutor::instance().send(
+            Command::Wallet(WalletCommand::DeriveKey(
+                import_key_data,
+                Box::new(move |import_key_result| {
+                    let config = config.clone();
+                    let credentials = credentials.clone();
 
-                CommandExecutor::instance().send(Command::DeriveKey(
-                    key_data.clone(),
-                    Box::new(move |key_result| {
-                        let import_key_result = import_key_result.clone();
-                        CommandExecutor::instance().send(Command::Wallet(WalletCommand::ImportContinue(
-                            config.clone(),
-                            credentials.clone(),
-                            import_key_result.and_then(|import_key| key_result.map(|key| (import_key, key))),
-                            wallet_handle,
-                        ))).unwrap();
-                    }),
-                )).unwrap();
-            }),
-        )).unwrap();
+                    CommandExecutor::instance().send(
+                        Command::Wallet(WalletCommand::DeriveKey(
+                            key_data.clone(),
+                            Box::new(move |key_result| {
+                                let import_key_result = import_key_result.clone();
+                                CommandExecutor::instance().send(Command::Wallet(WalletCommand::ImportContinue(
+                                    config.clone(),
+                                    credentials.clone(),
+                                    import_key_result.and_then(|import_key| key_result.map(|key| (import_key, key))),
+                                    wallet_handle,
+                                ))).unwrap();
+                            }),
+                        ))
+                    ).unwrap();
+                }),
+            ))
+        ).unwrap();
 
         trace!("_import <<<");
     }

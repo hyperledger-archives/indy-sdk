@@ -30,7 +30,8 @@ use domain::anoncreds::credential_definition::{
     CredentialDefinitionConfig,
     SignatureType,
     CredentialDefinitionPrivateKey,
-    CredentialDefinitionCorrectnessProof
+    CredentialDefinitionCorrectnessProof,
+    CredentialDefinitionData
 };
 use domain::anoncreds::revocation_registry_definition::{
     RevocationRegistryConfig,
@@ -55,6 +56,8 @@ use domain::anoncreds::credential_offer::CredentialOffer;
 use domain::anoncreds::credential_request::CredentialRequest;
 use domain::wallet::Tags;
 
+use indy_crypto::cl::{CredentialPrivateKey, CredentialKeyCorrectnessProof};
+
 use commands::{Command, CommandExecutor};
 
 use std::cell::RefCell;
@@ -74,6 +77,11 @@ pub enum IssuerCommand {
         Option<String>, // type
         Option<CredentialDefinitionConfig>, // config
         Box<Fn(Result<(String, String), IndyError>) + Send>),
+    CreateCredentialDefinition(AttributeNames,
+                               bool,
+                               Box<Fn(Result<(CredentialDefinitionData,
+                                              CredentialPrivateKey,
+                                              CredentialKeyCorrectnessProof), AnoncredsError>) + Send>),
     CreateAndStoreCredentialDefinitionContinue(
         i32, // config
         SchemaV1, // credentials
@@ -81,9 +89,9 @@ pub enum IssuerCommand {
         String,
         String,
         SignatureType,
-        Result<(::domain::anoncreds::credential_definition::CredentialDefinitionData,
-                indy_crypto::cl::CredentialPrivateKey,
-                indy_crypto::cl::CredentialKeyCorrectnessProof), ::errors::anoncreds::AnoncredsError>,
+        Result<(CredentialDefinitionData,
+                CredentialPrivateKey,
+                CredentialKeyCorrectnessProof), AnoncredsError>,
         i32),
     CreateAndStoreRevocationRegistry(
         i32, // wallet handle
@@ -159,6 +167,9 @@ impl IssuerCommandExecutor {
                 info!(target: "issuer_command_executor", "CreateAndStoreCredentialDefinition command received");
                 self.create_and_store_credential_definition(wallet_handle, &issuer_did, &SchemaV1::from(schema), &tag,
                                                             type_.as_ref().map(String::as_str), config.as_ref(), cb);
+            }
+            IssuerCommand::CreateCredentialDefinition(attr_names, support_revocation, cb) => {
+                ::commands::THREADPOOL.lock().unwrap().execute(move || cb(::services::anoncreds::issuer::Issuer::new_credential_definition(&attr_names, support_revocation)));
             }
             IssuerCommand::CreateAndStoreCredentialDefinitionContinue(wallet_handle, schema, schema_id, cred_def_id, tag, signature_type, result, cb_id) => {
                 debug!(target: "wallet_command_executor", "CreateAndStoreCredentialDefinitionContinue command received");
@@ -251,25 +262,29 @@ impl IssuerCommandExecutor {
         let tag = tag.to_string();
         let schema = schema.clone();
 
-        CommandExecutor::instance().send(Command::CreateCredentialDefinition(
-            schema.attr_names.clone(),
-            cred_def_config.support_revocation,
-            Box::new(move |res| {
-                CommandExecutor::instance().send(
-                    Command::Anoncreds(
-                        AnoncredsCommand::Issuer(
-                            IssuerCommand::CreateAndStoreCredentialDefinitionContinue(
-                                wallet_handle,
-                                schema.clone(),
-                                schema_id.clone(),
-                                cred_def_id.clone(),
-                                tag.clone(),
-                                signature_type.clone(),
-                                res,
-                                cb_id,
-                            ))
-                    )).unwrap();
-            }))).unwrap();
+        CommandExecutor::instance().send(Command::Anoncreds(
+            AnoncredsCommand::Issuer(
+                IssuerCommand::CreateCredentialDefinition(
+                    schema.attr_names.clone(),
+                    cred_def_config.support_revocation,
+                    Box::new(move |res| {
+                        CommandExecutor::instance().send(
+                            Command::Anoncreds(
+                                AnoncredsCommand::Issuer(
+                                    IssuerCommand::CreateAndStoreCredentialDefinitionContinue(
+                                        wallet_handle,
+                                        schema.clone(),
+                                        schema_id.clone(),
+                                        cred_def_id.clone(),
+                                        tag.clone(),
+                                        signature_type.clone(),
+                                        res,
+                                        cb_id,
+                                    ))
+                            )).unwrap();
+                    })
+                ))
+        )).unwrap();
     }
 
     fn _prepare_create_and_store_credential_definition(&self,
