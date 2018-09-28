@@ -16,6 +16,24 @@ use std::sync::mpsc::channel;
 use utils::time_it_out;
 use utils::constants::DEFAULT_CREDENTIALS;
 
+
+macro_rules! safe_wallet_create {
+    ($x:ident) => {
+        match Wallet::delete($x, r#"{"key":""}"#) {
+            Ok(..) => {},
+            Err(..) => {}
+        };
+        Wallet::create($x, r#"{"key":""}"#).unwrap();
+    }
+}
+
+macro_rules! wallet_cleanup {
+    ($x:ident, $y:ident) => {
+        Wallet::close($x).unwrap();
+        Wallet::delete($y, r#"{"key":""}"#).unwrap();
+    }
+}
+
 mod high_cases {
     use super::*;
 

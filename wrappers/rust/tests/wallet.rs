@@ -10,7 +10,6 @@ use indy::wallet::Wallet;
 use indy::ErrorCode;
 
 use std::path::{Path, PathBuf};
-use std::panic;
 use std::sync::mpsc::channel;
 use std::time::Duration;
 

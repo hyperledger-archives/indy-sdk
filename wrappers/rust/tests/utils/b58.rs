@@ -1,6 +1,6 @@
 extern crate bs58;
 
-use self::bs58::decode::{DecodeBuilder, DecodeError};
+use self::bs58::decode::{DecodeError};
 
 pub trait FromBase58 {
     fn from_base58(&self) -> Result<Vec<u8>, DecodeError>;
