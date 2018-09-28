@@ -22,7 +22,7 @@ class IssuerCredential(VcxStateful):
         self.logger.debug("Deleted {} obj: {}".format(IssuerCredential, self.handle))
 
     @staticmethod
-    async def create(source_id: str, attrs: dict, cred_def_id: str, name: str, price: int):
+    async def create(source_id: str, attrs: dict, cred_def_id: str, name: str, price: str):
         """
             Creates a Class representing an Issuer Credential
             :param source_id: Tag associated by user of sdk
@@ -46,7 +46,7 @@ class IssuerCredential(VcxStateful):
 
         c_source_id = c_char_p(source_id.encode('utf-8'))
         c_cred_def_id = c_char_p(cred_def_id.encode('utf-8'))
-        c_price = c_uint64(price)
+        c_price = c_char_p(price.encode('utf-8'))
         # default institution_did in config is used as issuer_did
         c_issuer_did = None
         c_data = c_char_p(json.dumps(attrs).encode('utf-8'))

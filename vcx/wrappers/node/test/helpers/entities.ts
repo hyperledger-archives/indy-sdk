@@ -198,7 +198,7 @@ export const dataIssuerCredentialCreate = (): IIssuerCredentialCreateData => ({
   },
   credDefId: 'testCredentialCredDefId',
   credentialName: 'Credential Name',
-  price: 1,
+  price: '1',
   sourceId: 'testCredentialSourceId'
 })
 

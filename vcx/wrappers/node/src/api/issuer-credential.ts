@@ -15,7 +15,7 @@ export interface IIssuerCredentialCreateData {
     [ index: string ]: string
   },
   credentialName: string,
-  price: number,
+  price: string,
 }
 
 export interface IIssuerCredentialVCXAttributes {
@@ -26,7 +26,7 @@ export interface IIssuerCredentialParams {
   credDefId: string,
   credentialName: string,
   attr: IIssuerCredentialVCXAttributes,
-  price: number
+  price: string
 }
 
 /**
@@ -43,7 +43,7 @@ export interface IIssuerCredentialData {
   state: StateType
   msg_uid: string
   cred_def_id: string
-  price: number
+  price: string
 }
 
 // tslint:disable max-classes-per-file
@@ -130,7 +130,7 @@ export class IssuerCredential extends VCXBaseWithState<IIssuerCredentialData> {
   private _credDefId: string
   private _credentialName: string
   private _attr: IIssuerCredentialVCXAttributes
-  private _price: number
+  private _price: string
 
   constructor (sourceId: string, { credDefId, credentialName, attr, price }: IIssuerCredentialParams) {
     super(sourceId)
