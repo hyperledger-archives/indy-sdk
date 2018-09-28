@@ -65,7 +65,7 @@ public class IndyIntegrationTest {
 			"    }";
 	protected static final String WALLET_CONFIG = "{ \"id\":\"" + WALLET + "\", \"storage_type\":\"" + TYPE + "\"}";
 
-	protected static final String WALLET_CREDENTIALS = "{ \"key\":\"key\", \"key_derivation_method\": \"ARGON2I_INT\"}";
+	protected static final String WALLET_CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
 
 	protected static final String PLUGGED_WALLET_CONFIG = "{ \"id\":\"" + WALLET + "\", \"storage_type\":\"unknown_type\"}";
 
