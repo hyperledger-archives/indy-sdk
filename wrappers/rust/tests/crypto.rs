@@ -13,9 +13,7 @@ use indy::ErrorCode;
 use std::time::Duration;
 use std::sync::mpsc::channel;
 
-use utils::time_it_out;
 use utils::constants::DEFAULT_CREDENTIALS;
-
 
 macro_rules! safe_wallet_create {
     ($x:ident) => {
@@ -32,6 +30,17 @@ macro_rules! wallet_cleanup {
         Wallet::close($x).unwrap();
         Wallet::delete($y, r#"{"key":""}"#).unwrap();
     }
+}
+
+pub fn time_it_out<F>(msg: &str, test: F) -> bool where F: Fn() -> bool {
+    for _ in 1..250 {
+        if test() {
+            return true;
+        }
+    }
+    // It tried to do a timeout test 250 times and the system was too fast, so just succeed
+    println!("{} - system too fast for timeout test", msg);
+    true
 }
 
 mod high_cases {
