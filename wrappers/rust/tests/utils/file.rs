@@ -1,6 +1,6 @@
 use std::env;
 use std::fs;
-use std::fs::{File, DirBuilder};
+use std::fs::{File};
 use std::io;
 use std::path::{Path, PathBuf};
 use utils::rand;
@@ -113,7 +113,7 @@ mod test_temp_file {
         path.push(name);
 
         {
-            let dir = TempDir::new(Some(name)).unwrap();
+            let _dir = TempDir::new(Some(name)).unwrap();
             assert!(path.exists());
         }
 

@@ -7,7 +7,6 @@ extern crate rust_libindy_wrapper as indy;
 mod utils;
 
 use utils::wallet::Wallet;
-use utils::setup::{Setup, SetupConfig};
 use utils::constants::{DID_TRUSTEE, VERKEY_TRUSTEE, METADATA, DID};
 
 use indy::ErrorCode;
@@ -419,7 +418,9 @@ mod list_pairwise {
         assert_eq!(ec, ErrorCode::Success);
 
         let (ec, res) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
+
         assert_eq!(ec, ErrorCode::WalletInvalidHandle);
+        assert_eq!("", res);
     }
 }
 
@@ -548,6 +549,7 @@ mod pairwise_exists {
 
         let (ec, exists) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::WalletInvalidHandle);
+        assert_eq!(false, exists);
     }
 }
 

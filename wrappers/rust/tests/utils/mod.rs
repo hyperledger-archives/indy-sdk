@@ -1,9 +1,10 @@
+#![allow(dead_code)]
+
 extern crate rust_libindy_wrapper as indy;
 
 use std::env;
 use std::path::PathBuf;
 use std::fs;
-use serde_json;
 
 pub mod b58;
 pub mod constants;
@@ -15,23 +16,7 @@ pub mod rand;
 pub mod setup;
 pub mod wallet;
 
-macro_rules! safe_wallet_create {
-    ($x:ident) => {
-        match Wallet::delete($x, r#"{"key":""}"#) {
-            Ok(..) => {},
-            Err(..) => {}
-        };
-        Wallet::create($x, r#"{"key":""}"#).unwrap();
-    }
-}
-
-macro_rules! wallet_cleanup {
-    ($x:ident, $y:ident) => {
-        Wallet::close($x).unwrap();
-        Wallet::delete($y, r#"{"key":""}"#).unwrap();
-    }
-}
-
+#[allow(unused_macros)]
 macro_rules! hashmap {
     ($( $key: expr => $val: expr ),*) => {
         {
@@ -42,54 +27,6 @@ macro_rules! hashmap {
             map
         }
     }
-}
-
-macro_rules! str_to_string {
-    ($x:ident) => {
-        match $x {
-            Some(s) => Some(s.to_string()),
-            None => None
-        }
-    }
-}
-
-pub fn trustee_identity_json() -> String {
-    my_did_json_parameter(None, constants::TRUSTEE_SEED, None, None)
-}
-
-pub fn my1_identity_json() -> String {
-    my_did_json_parameter(None, constants::MY1_SEED, None, None)
-}
-
-pub fn my1_identity_key_json() -> String {
-    my_crypto_json_parameter(constants::MY1_SEED, None)
-}
-
-pub fn my_did_json_parameter(did: Option<&str>, seed: &str, crypto_type: Option<&str>, cid: Option<&str>) -> String {
-    let d = hashmap![
-        "did".to_string() => str_to_string!(did),
-        "seed".to_string() => Some(seed.to_string()),
-        "crypto_type".to_string() => str_to_string!(crypto_type),
-        "cid".to_string() => str_to_string!(cid)
-        ];
-    serde_json::to_string(&d).unwrap()
-}
-
-pub fn my_crypto_json_parameter(seed: &str, crypto_type: Option<&str>) -> String {
-    let c = hashmap![
-        "seed".to_string() => Some(seed.to_string()),
-        "crypto_type".to_string() => str_to_string!(crypto_type)
-    ];
-    serde_json::to_string(&c).unwrap()
-}
-
-pub fn tails_writer_config() -> String {
-    let c = hashmap![
-        "base_dir".to_string() => Some(format!("{}/tails", indy_home_path().to_str().unwrap().to_string())),
-        "uri_pattern".to_string() => None
-    ];
-
-    serde_json::to_string(&c).unwrap()
 }
 
 pub fn indy_home_path() -> PathBuf {
@@ -119,7 +56,7 @@ pub fn tmp_file_path(file_name: &str) -> PathBuf {
     path
 }
 
-pub fn android_indy_client_dir_path() -> PathBuf{
+pub fn android_indy_client_dir_path() -> PathBuf {
     let external_storage= env::var("EXTERNAL_STORAGE");
     let android_dir :String;
     match external_storage {
@@ -132,7 +69,7 @@ pub fn android_indy_client_dir_path() -> PathBuf{
     PathBuf::from(android_dir)
 }
 
-pub fn android_create_indy_client_dir(){
+pub fn android_create_indy_client_dir() {
     //Creates directory only if it is not present.
     fs::create_dir_all(android_indy_client_dir_path().as_path()).unwrap();
 }

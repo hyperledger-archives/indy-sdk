@@ -1,9 +1,7 @@
-use serde_json;
 use super::indy;
 
 use std::ops::{Index, IndexMut};
 use std::iter::FromIterator;
-use std::collections::HashMap;
 use utils::constants::PROTOCOL_VERSION;
 use utils::wallet::Wallet;
 use utils::pool;
