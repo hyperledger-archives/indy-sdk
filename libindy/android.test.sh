@@ -15,6 +15,8 @@ if [ -z "${TARGET_ARCH}" ]; then
     exit 1
 fi
 
+set -e
+
 source ${CI_DIR}/setup.android.env.sh
 generate_arch_flags ${TARGET_ARCH}
 
@@ -25,9 +27,25 @@ declare -a EXE_ARRAY
 build_test_artifacts(){
     pushd ${WORKDIR}
 
+        set -e
+        # The libc.so in the standalone toolchains does not have FORTIFIED_SOURCE compatible symbols.
+        # We need to copy the libc.so from platforms folder into the standalone toolchain.
+        DEPS_TARGET_API_LEVEL=21 #FIXME remove it, should be same with TARGET_API. Probably deps (sodium and/or zmq) should be rebuilt
+        cp "${ANDROID_NDK_ROOT}/platforms/android-${DEPS_TARGET_API_LEVEL}/arch-${TARGET_ARCH}/usr/lib/libc.so" "${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB}"
+
         cargo clean
-        EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/lib -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-                    cargo test --target=${TRIPLET} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
+
+        # TODO empty for full testing SET_OF_TESTS=''
+        SET_OF_TESTS='--lib --test interaction'
+
+        # build - separate step to see origin build output
+        # TODO move RUSTFLAGS to cargo config and do not duplicate it here
+        RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+                    cargo test --release --target=${TRIPLET} ${SET_OF_TESTS} --no-run
+
+        # collect items to execute tests, uses resulting files from previous step
+        EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
+                    cargo test --release --target=${TRIPLET} ${SET_OF_TESTS} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
     popd
 }
 
@@ -62,7 +80,7 @@ execute_on_device(){
         adb shell "chmod 755 /data/local/tmp/$EXE_NAME"
         OUT="$(mktemp)"
         MARK="ADB_SUCCESS!"
-        adb shell "LD_LIBRARY_PATH=/data/local/tmp RUST_TEST_THREADS=1 RUST_LOG=debug /data/local/tmp/$EXE_NAME && echo $MARK" 2>&1 | tee $OUT
+        adb shell "TEST_POOL_IP=10.0.0.2 LD_LIBRARY_PATH=/data/local/tmp RUST_TEST_THREADS=1 RUST_LOG=debug /data/local/tmp/$EXE_NAME && echo $MARK" 2>&1 | tee $OUT
         grep $MARK $OUT
     done
 
