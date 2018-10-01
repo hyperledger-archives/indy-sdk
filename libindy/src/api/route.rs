@@ -96,28 +96,28 @@ pub fn indy_anon_pack_message(command_handle: i32,
     res
 }
 
-//return key for authcrypt
+//update function to return key used
 #[no_mangle]
 pub fn indy_unpack_message(command_handle: i32,
                   wallet_handle: i32,
-                  ames: *const c_char,
+                  ames_json: *const c_char,
                   my_vk: *const c_char,
                   cb: Option<extern fn(xcommand_handle: i32,
                                        err: ErrorCode,
                                        plaintext: *const c_char)>) -> ErrorCode {
     trace!("indy_unpack_message: >>> wallet_handle: {:?}, ames: {:?}, my_vk: {:?}",
-           wallet_handle, ames, my_vk);
+           wallet_handle, ames_json, my_vk);
 
     check_useful_c_str!(ames, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(my_vk, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 
     trace!("indy_unpack_message: entities >>> wallet_handle: {:?}, ames: {:?}, my_vk: {:?}",
-           wallet_handle, ames, my_vk);
+           wallet_handle, ames_json, my_vk);
 
     let result = CommandExecutor::instance()
     .send(Command::Route(RouteCommand::UnpackMessage(
-        ames,
+        ames_json,
         my_vk,
         wallet_handle,
         Box::new(move |result| {
