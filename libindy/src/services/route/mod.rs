@@ -43,16 +43,6 @@ impl RouteService {
         match recv_keys.len() {
             //handles plaintext case
             0 => Err(RouteError::PackError("No receiving keys provided".to_string())),
-            //handles single key case (compact serialization)
-            1 => {
-                serialize_jwm_compact(&recv_keys[0],
-                                           &encrypted_ceks[0],
-                                           my_vk,
-                                           &encode(&encrypted_payload.ciphertext),
-                                           &encode(&encrypted_payload.iv),
-                                           &encode(&encrypted_payload.tag),
-                                           auth)
-            },
             //handles multi key case (JSON Serialization)
             _ => {
                 json_serialize_jwm(&recv_keys,
@@ -198,17 +188,6 @@ impl RouteService {
     }
 }
 
-
-//
-//pub fn get_next_hop(did_with_key_frag: &str) -> (&str, &str) {
-////DID#key is a reference identifier to the next hop
-////their_vk is used to encrypt the message
-////endpoint is the endpoint which the message is being sent to.
-////called by send_msg()
-////returns (endpoint, their_vk)
-//
-//}
-
 #[cfg(test)]
 pub mod tests {
     use services::wallet::WalletService;
@@ -220,6 +199,29 @@ pub mod tests {
     use utils::inmem_wallet::InmemWallet;
     use utils::test::TestUtils;
     use std::rc::Rc;
+
+    //Component tests
+//    pub fn test_get_jwm_data_success() {
+//
+//    }
+//
+//    pub fn test_get_key_from_str_success() {
+//
+//    }
+//
+//    pub fn test_get_sym_key_success() {
+//
+//    }
+//
+//    pub fn test_encrypt_ceks_success() {
+//
+//    }
+
+
+    /* component test useful to identify if unpack is breaking or if pack is breaking. If unpack is
+    * breaking both this test and the tests below will fail. If only pack is breaking, only this test
+    * will fail.
+    */
 
     #[test]
     pub fn test_unpack_msg_success_multi_anoncrypt() {
@@ -255,6 +257,69 @@ pub mod tests {
         let (wallet_handle, _ , recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
         let plaintext = rs.unpack_msg(&jwm, &recv_key.verkey, wallet_handle, ws.clone(), cs.clone()).unwrap();
         assert_eq!(plaintext, "Hello World".to_string());
+    }
+
+    // Integration tests
+    #[test]
+    pub fn test_pack_msg_success_single_anoncrypt(){
+        _cleanup();
+        //setup generic data to test
+        let plaintext = "Hello World";
+        let auth = false;
+
+        //setup route_service
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+
+        //setup wallets
+        let (recv_wallet_handle, _, _) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let (send_wallet_handle , _, _) = _setup_send_wallet(ws.clone(), cs.clone());
+
+
+        //setup recv_keys to use with pack_msg
+        let (_ , recv_key) = _recv_did1(cs.clone());
+        let recv_keys = vec![recv_key.verkey.clone()];
+
+        //pack then unpack message
+        let packed_msg = rs.pack_msg(plaintext, &recv_keys,None, auth,
+                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
+        let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
+                                                    recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
+
+        //verify same plaintext goes in and comes out
+        assert_eq!(plaintext, &unpacked_msg);
+    }
+
+    #[test]
+    pub fn test_pack_msg_success_single_authcrypt(){
+        _cleanup();
+        //setup generic data to test
+        let plaintext = "Hello World";
+        let auth = true;
+
+        //setup route_service
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+
+        //setup wallets
+        let (recv_wallet_handle, _, _) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
+
+
+        //setup recv_keys to use with pack_msg
+        let (_ , recv_key) = _recv_did1(cs.clone());
+        let recv_keys = vec![recv_key.verkey.clone()];
+
+        //pack then unpack message
+        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), auth,
+                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
+        let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
+                                                    recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
+
+        //verify same plaintext goes in and comes out
+        assert_eq!(plaintext, &unpacked_msg);
     }
 
     #[test]
@@ -332,85 +397,6 @@ pub mod tests {
                                                      recv_wallet_handle2, ws.clone(), cs.clone()).unwrap();
         assert_eq!(plaintext, &unpacked_msg2);
     }
-
-    #[test]
-    pub fn test_pack_msg_success_single_anoncrypt(){
-        _cleanup();
-        //setup generic data to test
-        let plaintext = "Hello World";
-        let auth = false;
-
-        //setup route_service
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
-        let ws: Rc<WalletService> = Rc::new(WalletService::new());
-
-        //setup wallets
-        let (recv_wallet_handle, _, _) = _setup_recv_wallet1(ws.clone(), cs.clone());
-        let (send_wallet_handle , _, _) = _setup_send_wallet(ws.clone(), cs.clone());
-
-
-        //setup recv_keys to use with pack_msg
-        let (_ , recv_key) = _recv_did1(cs.clone());
-        let recv_keys = vec![recv_key.verkey.clone()];
-
-        //pack then unpack message
-        let packed_msg = rs.pack_msg(plaintext, &recv_keys,None, auth,
-                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
-        let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
-                                                    recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
-
-        //verify same plaintext goes in and comes out
-        assert_eq!(plaintext, &unpacked_msg);
-    }
-
-    #[test]
-    pub fn test_pack_msg_success_single_authcrypt(){
-        _cleanup();
-        //setup generic data to test
-        let plaintext = "Hello World";
-        let auth = true;
-
-        //setup route_service
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
-        let ws: Rc<WalletService> = Rc::new(WalletService::new());
-
-        //setup wallets
-        let (recv_wallet_handle, _, _) = _setup_recv_wallet1(ws.clone(), cs.clone());
-        let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
-
-
-        //setup recv_keys to use with pack_msg
-        let (_ , recv_key) = _recv_did1(cs.clone());
-        let recv_keys = vec![recv_key.verkey.clone()];
-
-        //pack then unpack message
-        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), auth,
-                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
-        let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
-                                                    recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
-
-        //verify same plaintext goes in and comes out
-        assert_eq!(plaintext, &unpacked_msg);
-    }
-
-    //TODO write these tests
-//    pub fn test_get_jwm_data_success() {
-//
-//    }
-//
-//    pub fn test_get_key_from_str_success() {
-//
-//    }
-//
-//    pub fn test_get_sym_key_success() {
-//
-//    }
-//
-//    pub fn test_encrypt_ceks_success() {
-//
-//    }
 
     fn _setup_send_wallet(ws: Rc<WalletService>, cs : Rc<CryptoService>) -> (i32, Did, Key) {
         let (did, key) = _send_did1(cs.clone());
