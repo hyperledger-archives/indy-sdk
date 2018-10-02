@@ -42,7 +42,7 @@ pub mod nym_command {
     command!(CommandMetadata::build("nym", "Send NYM transaction to the Ledger.")
                 .add_required_param("did", "DID of new identity")
                 .add_optional_param("verkey", "Verification key of new identity")
-                .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR, TGB or empty in case of blacklisting NYM")
+                .add_optional_param("role", "Role of identity. One of: STEWARD, TRUSTEE, TRUST_ANCHOR or empty in case of blacklisting NYM")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
@@ -1430,7 +1430,6 @@ fn get_role_title(role: &serde_json::Value) -> serde_json::Value {
     serde_json::Value::String(match role.as_str() {
         Some("0") => "TRUSTEE",
         Some("2") => "STEWARD",
-        Some("100") => "TGB",
         Some("101") => "TRUST_ANCHOR",
         _ => "-"
     }.to_string())
