@@ -148,6 +148,149 @@ async def register_wallet_storage(storage_type: str,
     logger.debug("register_wallet_storage: <<<")
 
 
+def convert_to_pointer(fn):
+    return fn
+
+def get_fn_pointer(lib, fn_name: str):
+    return getattr(lib, fn_name)
+
+async def register_wallet_storage_library(storage_type: str, c_library: str, fn_pfx: str):
+    """
+    Register a wallet storage provider
+
+    :return: Error code
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("register_wallet_storage_library: >>> type: %r",
+                 storage_type)
+
+    stg_lib = CDLL(c_library)
+    await register_wallet_storage(storage_type,
+                                  get_fn_pointer(stg_lib, fn_pfx + "create"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "open"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "close"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "delete"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "add_record"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "update_record_value"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "update_record_tags"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "add_record_tags"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "delete_record_tags"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "delete_record"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "get_record"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "get_record_id"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "get_record_type"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "get_record_value"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "get_record_tags"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "free_record"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "get_storage_metadata"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "set_storage_metadata"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "free_storage_metadata"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "search_records"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "search_all_records"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "get_search_total_count"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "fetch_search_next_record"),
+                                  get_fn_pointer(stg_lib, fn_pfx + "free_search"))
+
+    logger.debug("register_wallet_storage_library: <<<")
+
+
+async def register_wallet_storage(storage_type: str,
+                                  fn_create,
+                                  fn_open,
+                                  fn_close,
+                                  fn_delete,
+                                  fn_add_record,
+                                  fn_update_record_value,
+                                  fn_update_record_tags,
+                                  fn_add_record_tags,
+                                  fn_delete_record_tags,
+                                  fn_delete_record,
+                                  fn_get_record,
+                                  fn_get_record_id,
+                                  fn_get_record_type,
+                                  fn_get_record_value,
+                                  fn_get_record_tags,
+                                  fn_free_record,
+                                  fn_get_storage_metadata,
+                                  fn_set_storage_metadata,
+                                  fn_free_storage_metadata,
+                                  fn_search_records,
+                                  fn_search_all_records,
+                                  fn_get_search_total_count,
+                                  fn_fetch_search_next_record,
+                                  fn_free_search) -> None:
+    """
+    Register a wallet storage provider
+
+    :return: Error code
+    """
+
+    logger = logging.getLogger(__name__)
+    logger.debug("register_wallet_storage: >>> type: %r",
+                 storage_type)
+
+    if not hasattr(register_wallet_storage, "cb"):
+        logger.debug("register_wallet_storage: Creating callback")
+        register_wallet_storage.cb = create_cb(CFUNCTYPE(None, c_int32, c_int32))
+
+    c_storage_type = c_char_p(storage_type.encode('utf-8'))
+    c_fn_create = convert_to_pointer(fn_create)
+    c_fn_open = convert_to_pointer(fn_open)
+    c_fn_close = convert_to_pointer(fn_close)
+    c_fn_delete = convert_to_pointer(fn_delete)
+    c_fn_add_record = convert_to_pointer(fn_add_record)
+    c_fn_update_record_value = convert_to_pointer(fn_update_record_value)
+    c_fn_update_record_tags = convert_to_pointer(fn_update_record_tags)
+    c_fn_add_record_tags = convert_to_pointer(fn_add_record_tags)
+    c_fn_delete_record_tags = convert_to_pointer(fn_delete_record_tags)
+    c_fn_delete_record = convert_to_pointer(fn_delete_record)
+    c_fn_get_record = convert_to_pointer(fn_get_record)
+    c_fn_get_record_id = convert_to_pointer(fn_get_record_id)
+    c_fn_get_record_type = convert_to_pointer(fn_get_record_type)
+    c_fn_get_record_value = convert_to_pointer(fn_get_record_value)
+    c_fn_get_record_tags = convert_to_pointer(fn_get_record_tags)
+    c_fn_free_record = convert_to_pointer(fn_free_record)
+    c_fn_get_storage_metadata = convert_to_pointer(fn_get_storage_metadata)
+    c_fn_set_storage_metadata = convert_to_pointer(fn_set_storage_metadata)
+    c_fn_free_storage_metadata = convert_to_pointer(fn_free_storage_metadata)
+    c_fn_search_records = convert_to_pointer(fn_search_records)
+    c_fn_search_all_records = convert_to_pointer(fn_search_all_records)
+    c_fn_get_search_total_count = convert_to_pointer(fn_get_search_total_count)
+    c_fn_fetch_search_next_record = convert_to_pointer(fn_fetch_search_next_record)
+    c_fn_free_search = convert_to_pointer(fn_free_search)
+
+    await do_call('indy_register_wallet_storage',
+                  c_storage_type,
+                  c_fn_create,
+                  c_fn_open,
+                  c_fn_close,
+                  c_fn_delete,
+                  c_fn_add_record,
+                  c_fn_update_record_value,
+                  c_fn_update_record_tags,
+                  c_fn_add_record_tags,
+                  c_fn_delete_record_tags,
+                  c_fn_delete_record,
+                  c_fn_get_record,
+                  c_fn_get_record_id,
+                  c_fn_get_record_type,
+                  c_fn_get_record_value,
+                  c_fn_get_record_tags,
+                  c_fn_free_record,
+                  c_fn_get_storage_metadata,
+                  c_fn_set_storage_metadata,
+                  c_fn_free_storage_metadata,
+                  c_fn_search_records,
+                  c_fn_search_all_records,
+                  c_fn_get_search_total_count,
+                  c_fn_fetch_search_next_record,
+                  c_fn_free_search,
+                  register_wallet_storage.cb)
+
+    logger.debug("register_wallet_storage: <<<")
+
+
 async def create_wallet(config: str,
                         credentials: str) -> None:
     """
