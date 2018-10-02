@@ -461,6 +461,47 @@ pub mod import_command {
     }
 }
 
+pub mod register_command {
+    use super::*;
+
+    command!(CommandMetadata::build("register", "Register a new wallet storage type")
+                .add_main_param("name", "The name of new wallet storage type")
+                .add_required_param("so_file", "Path to shared library file containing the storage plug-in")
+                .add_optional_param("prefix", "Prefix for all exported functions within this plug-in")
+                .add_example("wallet register inmem so_file=inmem.so")
+                .add_example("wallet register postgres so_file=postgres.so prefix=postgres_fn_")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
+
+        let stg_type = get_str_param("name", params).map_err(error_err!())?;
+        let stg_lib = get_str_param("so_file", params).map_err(error_err!())?;
+        let fn_prefix = match get_opt_str_param("prefix", params).map_err(error_err!())? {
+            Some(s) => s,
+            None => ""
+        };
+
+        trace!("Wallet::register_wallet_storage try: stg_type {}, stg_lib {}", stg_type, stg_lib);
+
+        let res = Wallet::register_wallet_storage(stg_type,
+                                        stg_lib,
+                                        fn_prefix,
+        );
+
+        trace!("Wallet::register_wallet_storage return: {:?}", res);
+
+        let res = match res {
+            Ok(()) => Ok(println_succ!("Wallet storage type \"{}\" has been loaded", stg_type)),
+            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 fn _wallets_path() -> PathBuf {
     let mut path = EnvironmentUtils::indy_home_path();
     path.push("wallets");
@@ -1452,5 +1493,8 @@ pub mod tests {
         params.insert("export_path", path.to_string());
         params.insert("export_key", EXPORT_KEY.to_string());
         cmd.execute(&ctx, &params).unwrap()
+    }
+
+    pub fn register_and_load_storage(stg_type: &str, library_path: &str, fn_pfx: &str) {
     }
 }
