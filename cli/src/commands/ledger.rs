@@ -73,12 +73,10 @@ pub mod nym_command {
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let receipts = parse_response_with_fees(&response, payment_method)?;
-
-        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let mut response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         if let Some(result) = response.result.as_mut() {
@@ -93,6 +91,8 @@ pub mod nym_command {
                                                      &mut vec![("dest", "Did"),
                                                                ("verkey", "Verkey"),
                                                                ("role", "Role")]))?;
+
+        let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
         let res = print_response_receipts(receipts);
 
@@ -187,12 +187,10 @@ pub mod attrib_command {
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let receipts = parse_response_with_fees(&response, payment_method)?;
-
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         let attribute =
@@ -207,6 +205,8 @@ pub mod attrib_command {
                                                      "Attrib request has been sent to Ledger.",
                                                      None,
                                                      &[attribute]))?;
+
+        let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
         let res = print_response_receipts(receipts);
 
@@ -311,12 +311,10 @@ pub mod schema_command {
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let receipts = parse_response_with_fees(&response, payment_method)?;
-
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         handle_transaction_response(response)
@@ -326,6 +324,8 @@ pub mod schema_command {
                                                      &[("name", "Name"),
                                                          ("version", "Version"),
                                                          ("attr_names", "Attributes")]))?;
+
+        let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
         let res = print_response_receipts(receipts);
 
@@ -518,12 +518,10 @@ pub mod cred_def_command {
 
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&submitter_did), &fees_inputs, &fees_outputs, extra)?;
 
-        let response = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
+        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &submitter_did, &request)
             .map_err(|err| handle_transaction_error(err, Some(&submitter_did), Some(&pool_name), Some(&wallet_name)))?;
 
-        let receipts = parse_response_with_fees(&response, payment_method)?;
-
-        let response = serde_json::from_str::<Response<serde_json::Value>>(&response)
+        let response = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
         handle_transaction_response(response)
@@ -532,6 +530,8 @@ pub mod cred_def_command {
                                                      Some("data"),
                                                      &[("primary", "Primary Key"),
                                                          ("revocation", "Revocation Key")]))?;
+
+        let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
         let res = print_response_receipts(receipts);
 

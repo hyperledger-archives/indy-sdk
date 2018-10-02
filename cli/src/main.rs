@@ -1,5 +1,6 @@
 #![cfg_attr(feature = "fatal_warnings", deny(warnings))]
 
+extern crate atty;
 extern crate ansi_term;
 extern crate unescape;
 #[macro_use]
@@ -14,6 +15,7 @@ extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 extern crate prettytable;
+extern crate log4rs;
 
 #[macro_use]
 mod utils;
@@ -35,30 +37,35 @@ use std::io::BufReader;
 use std::rc::Rc;
 
 fn main() {
-    utils::logger::init();
+    #[cfg(target_os = "windows")]
+    ansi_term::enable_ansi_support().is_ok();
 
-    if env::args().find(|a| a == "-h" || a == "--help").is_some() {
-        return _print_help();
-    }
+    let mut args = env::args();
+    args.next(); // skip library
 
     let command_executor = build_executor();
 
-    if env::args().len() == 2 {
-        //batch mode
-        let mut args = env::args();
-        args.next(); //skip 0 param
-        return execute_batch(command_executor, Some(&args.next().unwrap()));
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "-h" | "--help" => return _print_help(),
+            "--logger-config" => {
+                let file = unwrap_or_return!(args.next(), println_err!("Logger config file is not specified"));
+                match utils::logger::IndyCliLogger::init(&file) {
+                    Ok(()) => println_succ!("Logger has been initialized according to the config file: \"{}\"", file),
+                    Err(err) => return println_err!("{}", err)
+                }
+            }
+            "--plugins" => {
+                let plugins = unwrap_or_return!(args.next(), println_err!("Plugins are not specified"));
+                _load_plugins(&command_executor, &plugins)
+            }
+            _ if args.len() == 0 => execute_batch(&command_executor, Some(&arg)),
+            _ => {
+                println_err!("Unknown option");
+                return _print_help();
+            }
+        }
     }
-
-    if env::args().find(|a| a == "--plugins").is_some() {
-        // load plugins
-        let mut args = env::args();
-        args.next(); //skip 0 param
-        args.next(); //skip 1 param
-
-        _load_plugins(&command_executor, Some(&args.next().unwrap()));
-    }
-
     execute_stdin(command_executor);
 }
 
@@ -69,6 +76,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(common::prompt_command::new())
         .add_command(common::show_command::new())
         .add_command(common::load_plugin_command::new())
+        .add_command(common::init_logger_command::new())
         .add_group(did::group::new())
         .add_command(did::new_command::new())
         .add_command(did::import_command::new())
@@ -86,10 +94,12 @@ fn build_executor() -> CommandExecutor {
         .finalize_group()
         .add_group(wallet::group::new())
         .add_command(wallet::create_command::new())
+        .add_command(wallet::attach_command::new())
         .add_command(wallet::open_command::new())
         .add_command(wallet::list_command::new())
         .add_command(wallet::close_command::new())
         .add_command(wallet::delete_command::new())
+        .add_command(wallet::detach_command::new())
         .add_command(wallet::export_command::new())
         .add_command(wallet::import_command::new())
         .finalize_group()
@@ -124,12 +134,9 @@ fn build_executor() -> CommandExecutor {
 }
 
 fn execute_stdin(command_executor: CommandExecutor) {
-    #[cfg(target_os = "windows")]
-    ansi_term::enable_ansi_support().is_ok();
-
     match Reader::new("indy-cli") {
         Ok(reader) => execute_interactive(command_executor, reader),
-        Err(_) => execute_batch(command_executor, None),
+        Err(_) => execute_batch(&command_executor, None),
     }
 }
 
@@ -154,7 +161,7 @@ fn execute_interactive<T>(command_executor: CommandExecutor, mut reader: Reader<
     }
 }
 
-fn execute_batch(command_executor: CommandExecutor, script_path: Option<&str>) {
+fn execute_batch(command_executor: &CommandExecutor, script_path: Option<&str>) {
     if let Some(script_path) = script_path {
         let file = match File::open(script_path) {
             Ok(file) => file,
@@ -167,25 +174,12 @@ fn execute_batch(command_executor: CommandExecutor, script_path: Option<&str>) {
     };
 }
 
-fn _load_plugins(command_executor: &CommandExecutor, plugins_str: Option<&str>) {
-    if plugins_str.is_none() {
-        return println_err!("Plugins not found");
-    }
-
-    let plugins = plugins_str.unwrap().split(",").collect::<Vec<&str>>();
-
-    for plugin in plugins {
+fn _load_plugins(command_executor: &CommandExecutor, plugins_str: &str) {
+    for plugin in plugins_str.split(",") {
         let parts: Vec<&str> = plugin.split(":").collect::<Vec<&str>>();
 
-        let name = match parts.get(0) {
-            Some(name) => name,
-            None => return println_err!("Plugin Name not found in {}", plugin)
-        };
-
-        let init_func = match parts.get(1) {
-            Some(name) => name,
-            None => return println_err!("Plugin Init function not found in {}", plugin)
-        };
+        let name = unwrap_or_return!(parts.get(0), println_err!("Plugin Name not found in {}", plugin));
+        let init_func = unwrap_or_return!(parts.get(1), println_err!("Plugin Init function not found in {}", plugin));
 
         common::load_plugin(command_executor.ctx(), name, init_func).ok();
     }
@@ -201,12 +195,16 @@ fn _print_help() {
     println_acc!("\tBatch - all commands will be read from text file or pipe and executed in series.");
     println_acc!("\tUsage: indy-cli <path-to-text-file>");
     println!();
+    println_acc!("Options:");
     println_acc!("\tLoad plugins in Libindy.");
     println_acc!("\tUsage: indy-cli --plugins <lib-1-name>:<init-func-1-name>,...,<lib-n-name>:<init-func-n-name>");
     println!();
+    println_acc!("\tInit logger according to a config file.");
+    println_acc!("\tUsage: indy-cli --logger-config <path-to-config-file>");
+    println!();
 }
 
-fn _iter_batch<T>(command_executor: CommandExecutor, reader: T) where T: std::io::BufRead {
+fn _iter_batch<T>(command_executor: &CommandExecutor, reader: T) where T: std::io::BufRead {
     let mut line_num = 1;
     for line in reader.lines() {
         let line = if let Ok(line) = line { line } else {

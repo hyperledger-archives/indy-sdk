@@ -1,0 +1,14 @@
+
+[profile.release]
+debug = false
+panic = 'abort'
+incremental = false
+lto = true
+rpath = false
+debug-assertions = false
+overflow-checks = false
+# codegen-units = 1
+# The opt-level "z" is still only available for nightly rustc/rustup builds
+# opt-level = "z"
+
+# strip -S -x -o ${BUILD_CACHE}/arch_libs/${library}-$arch-stripped.a -r ${BUILD_CACHE}/arch_libs/${library}_${arch}.a

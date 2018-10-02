@@ -1,0 +1,22 @@
+# Scan this file for changes every 30 seconds
+refresh_rate: 30 seconds
+
+appenders:
+  # An appender named "stdout" that writes to stdout
+  stdout:
+    kind: console
+    encoder:
+      pattern: "{l:>5}|{d(%Y-%m-%dT%H:%M:%S%.3f%z):<30}|{f:>35}:{L:<4}| {m}{n}"
+
+  file:
+    kind: file
+    path: "log/libvcx.log"
+    encoder:
+      pattern: "{l:>5}|{d(%Y-%m-%dT%H:%M:%S%.3f%z):<30}|{f:>35}:{L:<4}| {m}{n}"
+
+# Set the default logging level to "warn" and attach the "stdout" appender to the root
+root:
+  level: info
+  appenders:
+    - stdout
+    - file

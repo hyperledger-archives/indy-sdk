@@ -46,6 +46,24 @@ namespace Hyperledger.Indy.LedgerApi
         internal static extern int indy_submit_request(int command_handle, IntPtr pool_handle, string request_json, SubmitRequestCompletedDelegate cb);
 
         /// <summary>
+        /// Send action to particular nodes of validator pool.
+        ///
+        /// The list of requests can be send:
+        ///     POOL_RESTART
+        ///     GET_VALIDATOR_INFO
+        /// </summary>
+        /// <returns>The submit action.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="pool_handle">Pool handle.</param>
+        /// <param name="request_json">Request json.</param>
+        /// <param name="nodes">Nodes.</param>
+        /// <param name="timeout">Timeout.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_submit_action(int command_handle, IntPtr pool_handle, string request_json, string nodes, int timeout, SubmitRequestCompletedDelegate cb);
+
+
+        /// <summary>
         /// Signs a request.
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
@@ -56,6 +74,22 @@ namespace Hyperledger.Indy.LedgerApi
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_sign_request(int command_handle, IntPtr wallet_handle, string submitter_did, string request_json, SignRequestCompletedDelegate cb);
+
+        /// <summary>
+        /// Multi signs request message.
+        ///
+        /// Adds submitter information to passed request json, signs it with submitter
+        /// sign key (see wallet_sign).
+        /// </summary>
+        /// <returns>The multi sign request.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="wallet_handle">Wallet handle.</param>
+        /// <param name="submitter_did">Submitter did.</param>
+        /// <param name="request_json">Request json.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_multi_sign_request(int command_handle, IntPtr wallet_handle, string submitter_did, string request_json, SignRequestCompletedDelegate cb);
+
 
         /// <summary>
         /// Delegate to be used on completion of calls to indy_sign_request.
@@ -161,14 +195,8 @@ namespace Hyperledger.Indy.LedgerApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_parse_get_schema_response(int command_handle, string get_schema_response, ParseResponseCompletedDelegate cb);
 
-        /// <summary>
-        /// Parse response completed delegate.
-        /// </summary>
-        internal delegate void ParseResponseCompletedDelegate(int xcommand_handle, int err, string schema_id, string schema_json);
+        internal delegate void ParseResponseCompletedDelegate(int xcommand_handle, int err, string object_id, string object_json);
 
-        /// <summary>
-        /// Parse registry response completed delegate.
-        /// </summary>
         internal delegate void ParseRegistryResponseCompletedDelegate(int xcommand_handle, int err, string id, string object_json, ulong timestamp);
 
         /// <summary>

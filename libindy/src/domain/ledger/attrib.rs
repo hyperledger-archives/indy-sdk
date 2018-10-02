@@ -85,7 +85,7 @@ pub struct AttribData {
 
 #[derive(Serialize, Deserialize, Clone, Debug, NamedType)]
 pub struct Endpoint {
-    pub ha: String,
+    pub ha: String, // indy-node and indy-plenum restrict this to ip-address:port
     pub verkey: Option<String>
 }
 
