@@ -5,6 +5,7 @@ pub struct Payload {
     pub sym_key: Vec<u8>
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct AMESData {
     pub header: Header,
     pub cek: Vec<u8>,
@@ -37,27 +38,8 @@ pub struct Header {
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct AMESCompact {
-    pub header : Header,
-    pub cek : String,
-    pub iv : String,
-    pub ciphertext : String,
-    pub tag : String
-}
-
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct AMESCompact1 {
-    pub header : String,
-    pub cek : String,
-    pub iv : String,
-    pub ciphertext : String,
-    pub tag : String
-}
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum AMES {
-    AMESFull(AMESJson),
-    AMESCompact(AMESCompact),
-    AMESC(AMESCOmpact1)
+    AMESFull(AMESJson)
 }
 
 impl Header {

@@ -17,19 +17,21 @@ impl RouteService {
         RouteService {}
     }
 
-    pub fn pack_msg(&self, plaintext: &str, recv_keys: &Vec<String>, my_vk: Option<&str>, auth: bool,
+    pub fn pack_msg(&self, plaintext: &str, recv_keys: &Vec<String>, my_vk: Option<&str>, is_authcrypt: bool,
                     wallet_handle: i32, ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<String, RouteError> {
         //encrypt plaintext
         let encrypted_payload = encrypt_payload(plaintext);
 
         //convert str to Key
         let key = match my_vk {
-            Some(vk) => Some(self.get_key_from_str(vk, wallet_handle, ws.clone())?),
+            Some(vk) => Some(ws.get_indy_object(wallet_handle, vk,
+                                        &RecordOptions::id_value())
+                               .map_err(|err| RouteError::UnpackError(format!("Can't find key: {:?}", err)))?),
             None => None
         };
 
         //encrypt content_encryption_keys
-        let encrypted_ceks = self.encrypt_ceks(recv_keys, auth, key, &encrypted_payload.sym_key, cs.clone())?;
+        let encrypted_ceks = self.encrypt_ceks(recv_keys, is_authcrypt, key, &encrypted_payload.sym_key, cs.clone())?;
 
         //create jwm string
         match recv_keys.len() {
@@ -43,27 +45,32 @@ impl RouteService {
                                         &encode(&encrypted_payload.ciphertext),
                                         &encode(&encrypted_payload.iv),
                                         &encode(&encrypted_payload.tag),
-                                        auth)
+                                        is_authcrypt)
             }
         }
     }
 
-    pub fn unpack_msg(&self, json_jwm: &str, my_vk: &str, wallet_handle: i32, 
+    pub fn unpack_msg(&self, ames_json_str: &str, my_vk: &str, wallet_handle: i32,
                       ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<String, RouteError> {
-        //check if jwm or jwm_compact
-        let jwm_struct = match json_jwm.contains("recipients") {
-            true => json_deserialize_jwm(json_jwm)?,
-            false => deserialize_jwm_compact(json_jwm)?
-        };
+        //Deserialize AMESJson
+        let ames_json_struct = json_deserialize_jwm(ames_json_str)?;
 
-        let jwm_data = self.get_jwm_data(jwm_struct, my_vk)?;
-        let my_key = self.get_key_from_str(my_vk, wallet_handle, ws.clone())?;
-        let sym_key = self.get_sym_key(&my_key, &jwm_data.cek, jwm_data.header, cs.clone())?;
+        let my_key = ws.get_indy_object(wallet_handle, my_vk,
+                                        &RecordOptions::id_value())
+            .map_err(|err| RouteError::UnpackError(format!("Can't find key: {:?}", err)))?;
+
+        let ames_decrypt_data = self.get_ames_data_to_decrypt(ames_json_struct, my_vk)?;
+
+        let sym_key = self.get_sym_key(&my_key,
+                                       &ames_decrypt_data.cek,
+                                       ames_decrypt_data.header,
+                                       cs.clone())?;
+
         //format payload to decrypt
         let payload = Payload {
-            iv: jwm_data.iv,
-            tag: jwm_data.tag,
-            ciphertext: jwm_data.ciphertext,
+            iv: ames_decrypt_data.iv,
+            tag: ames_decrypt_data.tag,
+            ciphertext: ames_decrypt_data.ciphertext,
             sym_key
         };
 
@@ -71,51 +78,26 @@ impl RouteService {
         decrypt_payload(&payload)
     }
 
-    fn get_jwm_data(&self, jwm : AMES, my_vk: &str) -> Result<AMESData, RouteError> {
-        match jwm {
-            AMES::AMESFull(jwmf) => {
-                //finds the recipient index that matches the verkey passed in to the recipient verkey field
-                let recipient_index = jwmf.recipients.iter()
-                    .position(|ref recipient| recipient.header.kid == my_vk);
-                match recipient_index {
-                    Some(v) => {
-                        Ok(AMESData {
-                            header: jwmf.recipients[v].header.clone(),
-                            cek: decode(&jwmf.recipients[v].cek)?,
-                            ciphertext: decode(&jwmf.ciphertext)?,
-                            iv: decode(&jwmf.iv)?,
-                            tag: decode(&jwmf.tag)?
-                        })
-                    },
-                    //if no matching index is found return an error
-                    _ => Err(RouteError::UnpackError("The message doesn't include a header with this verkey".to_string()))
-                }
+
+    fn get_ames_data_to_decrypt(&self, jwm : AMESJson, my_vk: &str) -> Result<AMESData, RouteError> {
+        //finds the recipient index that matches the verkey passed in to the recipient verkey field
+        let recipient_index = jwm.recipients.iter()
+            .position(|ref recipient| recipient.header.kid == my_vk);
+        match recipient_index {
+            Some(v) => {
+                Ok(AMESData {
+                    header: jwm.recipients[v].header.clone(),
+                    cek: decode(&jwm.recipients[v].cek)?,
+                    ciphertext: decode(&jwm.ciphertext)?,
+                    iv: decode(&jwm.iv)?,
+                    tag: decode(&jwm.tag)?
+                })
             },
-    
-            AMES::AMESCompact(jwmc) => {
-                if jwmc.header.kid == my_vk {
-                    Ok(AMESData {
-                        header: jwmc.header,
-                        cek: decode(&jwmc.cek)?,
-                        ciphertext: decode(&jwmc.ciphertext)?,
-                        iv: decode(&jwmc.iv)?,
-                        tag: decode(&jwmc.tag)?
-                    })
-                } else {
-                    Err(RouteError::UnpackError("The message doesn't include a header with this verkey".to_string()))
-                }
-            }
+            //if no matching index is found return an error
+            _ => Err(RouteError::UnpackError("The message doesn't include a header with this verkey".to_string()))
         }
     }
-    
-    fn get_key_from_str(&self, my_vk : &str, wallet_handle: i32,
-                            wallet_service: Rc<WalletService>) -> Result<Key, RouteError> {
-        wallet_service.get_indy_object(wallet_handle,
-                                       my_vk,
-                                       &RecordOptions::id_value())
-        .map_err(|err| RouteError::UnpackError(format!("Can't find key: {:?}", err)))
-    }
-    
+
     fn get_sym_key(&self, key: &Key, cek: &[u8], header: Header,
                        crypto_service: Rc<CryptoService>) -> Result<Vec<u8>, RouteError> {
         match header.alg.as_ref() {
@@ -125,9 +107,9 @@ impl RouteService {
                 .map_err( | err | RouteError::EncryptionError(format ! ("Can't decrypt cek: {:?}", err)))?;
                 let parsed_msg = ComboBox::from_msg_pack(decrypted_header.as_slice())
                 .map_err( | err | RouteError::UnpackError(format !("Can't deserialize ComboBox: {:?}", err)))?;
-                let cek: Vec < u8 > = decode( &parsed_msg.msg)
+                let cek: Vec <u8> = decode( &parsed_msg.msg)
                 .map_err( | err | RouteError::UnpackError(format ! ("Can't decode cek msg filed from base64 {}", err)))?;
-                let nonce: Vec <u8 > = decode( & parsed_msg.nonce)
+                let nonce: Vec <u8> = decode( & parsed_msg.nonce)
                 .map_err( | err | RouteError::UnpackError(format ! ("Can't decode cek nonce from base64 {}", err)))?;
     
                 match &header.jwk {
@@ -147,11 +129,11 @@ impl RouteService {
         }
     }
     
-    fn encrypt_ceks(&self, recv_keys: &Vec<String>, auth: bool, key : Option<Key>, sym_key: &[u8],
+    fn encrypt_ceks(&self, recv_keys: &Vec<String>, is_authcrypt: bool, key : Option<Key>, sym_key: &[u8],
                         crypto_service: Rc<CryptoService>) -> Result<Vec<String>, RouteError>{
         let mut enc_ceks : Vec<(String)> = vec![];
     
-        if auth {
+        if is_authcrypt {
             // if authcrypting get key to encrypt, if there's not one throw error
             if key.is_some() {
                 let my_key = &key.unwrap();
@@ -183,7 +165,7 @@ impl RouteService {
 pub mod tests {
     use services::wallet::WalletService;
     use services::crypto::CryptoService;
-    use domain::crypto::key::Key;
+    use domain::crypto::key::*;
     use domain::crypto::did::{Did, MyDidInfo};
     use super::{RouteService};
     use std::collections::HashMap;
@@ -193,21 +175,77 @@ pub mod tests {
     use domain::wallet::Config;
     use domain::wallet::Credentials;
     use domain::wallet::KeyDerivationMethod;
+    use domain::route::*;
+    use utils::crypto::base64::decode;
 
     // TODO Fix texts so only one wallet is used to speed up tests
 
-    //Component tests
-//    pub fn test_get_jwm_data_success() {
-//
-//    }
-//
-//    pub fn test_get_key_from_str_success() {
-//
-//    }
-//
-//    pub fn test_get_sym_key_success() {
-//
-//    }
+    //unit tests
+    #[test]
+    pub fn test_get_ames_data_to_decrypt_success() {
+        let expected_recp_vk = "2M2U2FRSvkk5tHRALQn3Jy1YjjWtkpZ3xZyDjEuEZzko";
+        let expected_recp_cek = "0PkLL5bi04zuvIg5P6qnlct-aYIq_MD1ODnO-EE7XEyQHnSszh2uWfbiKUZs4pYppHy9yjEBB3JOe0reTHSkNuX46b6MyYjU_Ld4p4ISC7g=";
+        let expected_ciphertext = "-_Hdq304MkI9vOQ=";
+        let expected_iv = "jrsxpWDdn06GVlrK43qQZLf5t1n4wA4o";
+        let expected_tag = "k_HE0Mz0dBhaO5N-GgODYQ==";
+        let header = Header::new_anoncrypt_header(expected_recp_vk);
+        let recipient = Recipient::new(header.clone(), expected_recp_cek.to_string());
+
+        let ames_json = AMESJson{
+            recipients: vec![recipient],
+            ciphertext: expected_ciphertext.to_string(),
+            iv: expected_iv.to_string(),
+            tag: expected_tag.to_string()
+        };
+
+        let expected_output : AMESData = AMESData{
+            header,
+            cek: decode(expected_recp_cek).unwrap(),
+            ciphertext: decode(expected_ciphertext).unwrap(),
+            iv: decode(expected_iv).unwrap(),
+            tag: decode(expected_tag).unwrap()
+        };
+
+        let route_service = RouteService::new();
+        let ames_decrypt_data = route_service.get_ames_data_to_decrypt(ames_json, expected_recp_vk).unwrap();
+
+        assert_eq!(expected_output, ames_decrypt_data);
+    }
+
+        #[test]
+    pub fn test_get_ames_data_to_decrypt_failure() {
+        let bad_key = "BAD_KEY";
+        let expected_recp_vk = "2M2U2FRSvkk5tHRALQn3Jy1YjjWtkpZ3xZyDjEuEZzko";
+        let expected_recp_cek = "0PkLL5bi04zuvIg5P6qnlct-aYIq_MD1ODnO-EE7XEyQHnSszh2uWfbiKUZs4pYppHy9yjEBB3JOe0reTHSkNuX46b6MyYjU_Ld4p4ISC7g=";
+        let expected_ciphertext = "-_Hdq304MkI9vOQ=";
+        let expected_iv = "jrsxpWDdn06GVlrK43qQZLf5t1n4wA4o";
+        let expected_tag = "k_HE0Mz0dBhaO5N-GgODYQ==";
+        let header = Header::new_anoncrypt_header(expected_recp_vk);
+        let recipient = Recipient::new(header.clone(), expected_recp_cek.to_string());
+
+        let ames_json = AMESJson{
+            recipients: vec![recipient],
+            ciphertext: expected_ciphertext.to_string(),
+            iv: expected_iv.to_string(),
+            tag: expected_tag.to_string()
+        };
+
+        let rs = RouteService::new();
+        let ames_decrypt_data = rs.get_ames_data_to_decrypt(ames_json, bad_key);
+
+        assert!(ames_decrypt_data.is_err());
+    }
+
+    #[test]
+    pub fn test_get_sym_key_success() {
+        let rs = RouteService::new();
+        let cs = CryptoService::new();
+
+        //create key
+        let key_info = KeyInfo {seed: None, crypto_type: None };
+        let key = cs.create_key(&key_info)?;
+        rs.get_sym_key()
+    }
 //
 //    pub fn test_encrypt_ceks_success() {
 //
@@ -261,7 +299,7 @@ pub mod tests {
         _cleanup();
         //setup generic data to test
         let plaintext = "Hello World";
-        let auth = false;
+        let is_authcrypt = false;
 
         //setup route_service
         let rs: Rc<RouteService> = Rc::new(RouteService::new());
@@ -278,7 +316,7 @@ pub mod tests {
         let recv_keys = vec![recv_key.verkey.clone()];
 
         //pack then unpack message
-        let packed_msg = rs.pack_msg(plaintext, &recv_keys,None, auth,
+        let packed_msg = rs.pack_msg(plaintext, &recv_keys,None, is_authcrypt,
                                                 send_wallet_handle, ws.clone(), cs.clone()).unwrap();
         let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
                                                     recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
@@ -292,7 +330,7 @@ pub mod tests {
         _cleanup();
         //setup generic data to test
         let plaintext = "Hello World";
-        let auth = true;
+        let is_authcrypt = true;
 
         //setup route_service
         let rs: Rc<RouteService> = Rc::new(RouteService::new());
@@ -309,7 +347,7 @@ pub mod tests {
         let recv_keys = vec![recv_key.verkey.clone()];
 
         //pack then unpack message
-        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), auth,
+        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), is_authcrypt,
                                                 send_wallet_handle, ws.clone(), cs.clone()).unwrap();
         let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
                                                     recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
@@ -323,7 +361,7 @@ pub mod tests {
         _cleanup();
         //setup generic data to test
         let plaintext = "Hello World";
-        let auth = false;
+        let is_authcrypt = false;
 
         //setup route_service
         let rs: Rc<RouteService> = Rc::new(RouteService::new());
@@ -337,7 +375,7 @@ pub mod tests {
 
         //setup send wallet then pack message
         let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
-        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), auth,
+        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), is_authcrypt,
                                                 send_wallet_handle, ws.clone(), cs.clone()).unwrap();
         let _result1 = ws.close_wallet(send_wallet_handle);
 
@@ -361,7 +399,7 @@ pub mod tests {
         _cleanup();
         //setup generic data to test
         let plaintext = "Hello World";
-        let auth = true;
+        let is_authcrypt = true;
 
         //setup route_service
         let rs: Rc<RouteService> = Rc::new(RouteService::new());
@@ -375,7 +413,7 @@ pub mod tests {
 
         //setup send wallet then pack message
         let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
-        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), auth,
+        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), is_authcrypt,
                                                 send_wallet_handle, ws.clone(), cs.clone()).unwrap();
         let _result1 = ws.close_wallet(send_wallet_handle);
 

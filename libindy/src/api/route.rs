@@ -108,7 +108,7 @@ pub fn indy_unpack_message(command_handle: i32,
     trace!("indy_unpack_message: >>> wallet_handle: {:?}, ames: {:?}, my_vk: {:?}",
            wallet_handle, ames_json, my_vk);
 
-    check_useful_c_str!(ames, ErrorCode::CommonInvalidParam3);
+    check_useful_c_str!(ames_json, ErrorCode::CommonInvalidParam3);
     check_useful_c_str!(my_vk, ErrorCode::CommonInvalidParam4);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam5);
 

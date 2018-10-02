@@ -1,8 +1,6 @@
 use domain::route::*;
 use errors::route::RouteError;
 use utils::json::JsonDecodable;
-use utils::crypto::base64::{encode, decode_to_string};
-use serde_json::{from_str};
 use serde_json;
 
 pub fn json_serialize_jwm(recipient_vks : &Vec<String>,
@@ -26,9 +24,9 @@ pub fn json_serialize_jwm(recipient_vks : &Vec<String>,
         .map_err( | err | RouteError::EncodeError(format!("{}", err)))
 }
 
-pub fn json_deserialize_jwm(jwm : &str) -> Result<AMES, RouteError> {
-    Ok(AMES::AMESFull(AMESJson::from_json(jwm)
-        .map_err( | err | RouteError::DecodeError(format!("{}", err)))?))
+pub fn json_deserialize_jwm(jwm : &str) -> Result<AMESJson, RouteError> {
+    Ok(AMESJson::from_json(jwm)
+        .map_err( | err | RouteError::DecodeError(format!("{}", err)))?)
 }
 
 pub fn create_receipients(encrypted_keys : &Vec<String>,
@@ -63,9 +61,10 @@ pub mod tests {
     use super::*;
     use serde_json;
     use serde_json::{Value};
+    use domain::route::AMESJson;
 
 
-    //#[test]
+    #[test]
     fn test_json_serialize_jwm() {
         let encrypted_keys = vec!["made_up_cek_1".to_string(),
                                             "made_up_cek_2".to_string(),
@@ -127,7 +126,7 @@ pub mod tests {
         assert!(function_output.eq(&expected_output));
     }
 
-    //#[test]
+    #[test]
     fn test_json_deserialize_jwm() {
         let encrypted_keys = vec!["made_up_cek_1".to_string(),
                                             "made_up_cek_2".to_string(),
@@ -163,10 +162,10 @@ pub mod tests {
                                                    tag, auth).unwrap();
 
         let function_output = json_deserialize_jwm(&jwm_string).unwrap();
-        assert!(function_output == AMES::AMESFull(expected_jwm));
+        assert!(function_output == expected_jwm);
     }
 
-    //#[test]
+    #[test]
     fn test_create_recipients() {
         let encrypted_keys = vec!["made_up_cek_1".to_string(),
                                             "made_up_cek_2".to_string(),
