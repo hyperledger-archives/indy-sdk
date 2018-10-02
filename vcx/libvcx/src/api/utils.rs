@@ -12,17 +12,6 @@ use utils::error::error_string;
 use utils::threadpool::spawn;
 use std::thread;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Config {
-    agency_url: String,
-    agency_did: String,
-    agency_verkey: String,
-    wallet_name: Option<String>,
-    wallet_key: String,
-    agent_seed: Option<String>,
-    enterprise_seed: Option<String>,
-}
-
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateAgentInfo {
     id: String,
@@ -33,28 +22,16 @@ pub struct UpdateAgentInfo {
 /// NOTE: for asynchronous call use vcx_agent_provision_async
 ///
 /// #Params
-/// json: configuration
+/// config: configuration
 ///
 /// #Returns
 /// Configuration (wallet also populated), on error returns NULL
 
 #[no_mangle]
-pub extern fn vcx_provision_agent(json: *const c_char) -> *mut c_char {
-    check_useful_c_str!(json, ptr::null_mut());
-    let my_config: Config = match serde_json::from_str(&json) {
-        Ok(x) => x,
-        Err(x) => {
-            return ptr::null_mut()
-        },
-    };
+pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
+    check_useful_c_str!(config, ptr::null_mut());
 
-    match messages::agent_utils::connect_register_provision(&my_config.agency_url,
-                                                         &my_config.agency_did,
-                                                         &my_config.agency_verkey,
-                                                         my_config.wallet_name,
-                                                         my_config.agent_seed,
-                                                         my_config.enterprise_seed,
-                                                         &my_config.wallet_key, None, None, None) {
+    match messages::agent_utils::connect_register_provision(&config) {
         Err(e) => {
             error!("Provision Agent Error {}.", e);
             return ptr::null_mut();
@@ -74,7 +51,7 @@ pub extern fn vcx_provision_agent(json: *const c_char) -> *mut c_char {
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// json: configuration
+/// config: configuration
 ///
 /// cb: Callback that provides configuration or error status
 ///
@@ -83,29 +60,16 @@ pub extern fn vcx_provision_agent(json: *const c_char) -> *mut c_char {
 
 #[no_mangle]
 pub extern fn vcx_agent_provision_async(command_handle : u32,
-                               json: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: u32, err: u32, config: *const c_char)>) -> u32 {
+                               config: *const c_char,
+                               cb: Option<extern fn(xcommand_handle: u32, err: u32, _config: *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    check_useful_c_str!(json, error::INVALID_OPTION.code_num);
-
-    let my_config: Config = match serde_json::from_str(&json) {
-        Ok(x) => x,
-        Err(x) => {
-            return error::INVALID_JSON.code_num
-        },
-    };
+    check_useful_c_str!(config, error::INVALID_OPTION.code_num);
 
     info!("vcx_agent_provision_async(command_handle: {}, json: {})",
-          command_handle, json);
+          command_handle, config);
 
     thread::spawn(move|| {
-        match messages::agent_utils::connect_register_provision(&my_config.agency_url,
-                                                                &my_config.agency_did,
-                                                                &my_config.agency_verkey,
-                                                                my_config.wallet_name,
-                                                                my_config.agent_seed,
-                                                                my_config.enterprise_seed,
-                                                                &my_config.wallet_key, None, None, None) {
+        match messages::agent_utils::connect_register_provision(&config) {
             Err(e) => {
                 error!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: NULL", command_handle, error_string(e));
                 cb(command_handle, e, ptr::null_mut());
@@ -410,8 +374,10 @@ mod tests {
         let c_json = CString::new(json_string).unwrap().into_raw();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        assert_eq!(vcx_agent_provision_async(cb.command_handle, c_json, Some(cb.get_callback())),
-                   error::INVALID_JSON.code_num);
+        let result = vcx_agent_provision_async(cb.command_handle, c_json, Some(cb.get_callback()));
+        assert_eq!(0, result);
+        let result = cb.receive(Some(Duration::from_secs(2)));
+        assert_eq!(result, Err(error::INVALID_CONFIGURATION.code_num));
     }
 
     #[test]

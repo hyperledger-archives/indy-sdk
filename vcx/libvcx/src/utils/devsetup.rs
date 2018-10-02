@@ -159,30 +159,34 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
 
         let enterprise_wallet_name = format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
-        let enterprise_config = ::messages::agent_utils::connect_register_provision(AGENCY_ENDPOINT,
-                                                                                    AGENCY_DID,
-                                                                                    AGENCY_VERKEY,
-                                                                                    Some(enterprise_wallet_name.clone()),
-                                                                                    None,
-                                                                                    Some(TRUSTEE.to_string()),
-                                                                                    settings::DEFAULT_WALLET_KEY,
-                                                                                    Some("institution".to_string()),
-                                                                                    Some("http://www.logo.com".to_string()),
-                                                                                    Some(constants::GENESIS_PATH.to_string())).unwrap();
+        let config = json!({
+            "agency_url": AGENCY_ENDPOINT.to_string(),
+            "agency_did": AGENCY_DID.to_string(),
+            "agency_verkey": AGENCY_VERKEY.to_string(),
+            "wallet_name": enterprise_wallet_name,
+            "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
+            "enterprise_seed": TRUSTEE.to_string(),
+            "name": "institution".to_string(),
+            "logo": "http://www.logo.com".to_string(),
+            "path": constants::GENESIS_PATH.to_string()
+        }).to_string();
+        let enterprise_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
         ::api::vcx::vcx_shutdown(false);
 
         let consumer_wallet_name = format!("{}_{}", constants::CONSUMER_PREFIX, settings::DEFAULT_WALLET_NAME);
-        let consumer_config = ::messages::agent_utils::connect_register_provision(C_AGENCY_ENDPOINT,
-                                                                         C_AGENCY_DID,
-                                                                         C_AGENCY_VERKEY,
-                                                                         Some(consumer_wallet_name.clone()),
-                                                                         None,
-                                                                         Some(TRUSTEE.to_string()),
-                                                                         settings::DEFAULT_WALLET_KEY,
-                                                                         Some("consumer".to_string()),
-                                                                         Some("http://www.logo.com".to_string()),
-                                                                         Some(constants::GENESIS_PATH.to_string())).unwrap();
+        let config = json!({
+            "agency_url": C_AGENCY_ENDPOINT.to_string(),
+            "agency_did": C_AGENCY_DID.to_string(),
+            "agency_verkey": C_AGENCY_VERKEY.to_string(),
+            "wallet_name": consumer_wallet_name,
+            "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
+            "enterprise_seed": TRUSTEE.to_string(),
+            "name": "consumer".to_string(),
+            "logo": "http://www.logo.com".to_string(),
+            "path": constants::GENESIS_PATH.to_string()
+        }).to_string();
+        let consumer_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
 
         unsafe {
@@ -248,16 +252,16 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
 
-        let config = ::messages::agent_utils::connect_register_provision(AGENCY_ENDPOINT,
-                                                                         AGENCY_DID,
-                                                                         AGENCY_VERKEY,
-                                                                         None,
-                                                                         None,
-                                                                         None,
-                                                                         settings::DEFAULT_WALLET_KEY,
-                                                                         Some("another_institution".to_string()),
-                                                                         Some("http://www.logo.com".to_string()),
-                                                                         Some(constants::GENESIS_PATH.to_string())).unwrap();
+        let config = json!({
+            "agency_url": AGENCY_ENDPOINT.to_string(),
+            "agency_did": AGENCY_DID.to_string(),
+            "agency_verkey": AGENCY_VERKEY.to_string(),
+            "wallet_key": settings::DEFAULT_WALLET_KEY.to_string(),
+            "name": "another_institution".to_string(),
+            "logo": "http://www.logo.com".to_string(),
+            "path": constants::GENESIS_PATH.to_string()
+        }).to_string();
+        let config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
         unsafe {
             INSTITUTION_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&settings::DEFAULT_WALLET_NAME, &config)).unwrap();
