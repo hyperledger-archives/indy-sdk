@@ -1,0 +1,38 @@
+[package]
+name = "rust-libindy-wrapper"
+version = "0.2.13"
+description = "A library for assisting developers using LibIndy API"
+authors = ["Mike Lodder <redmike7@gmail.com>",
+           "Matt Raffel <matt.raffel@evernyn.com>",
+           "Darien Hess <darien.hess@evernym.com>",
+           "Stephen Felt <stephen.felt@evernym.com>",
+           "Cam Parra <camilo.parra@evernym.com>",
+           "Brent Zundel <brent.zundel@evernym.com>"]
+homepage = "https://github.com/evernym/rust-libindy-wrapper"
+repository = "https://github.com/evernym/rust-libindy-wrapper"
+categories = ["api-bindings", "development-tools"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+exclude = [
+    "tests/*",
+    ]
+build="build.rs"
+
+[dependencies]
+lazy_static = "0.2"
+log = "0.4"
+num-traits = "0.2"
+num-derive = "0.2"
+
+[dev-dependencies]
+bs58 = {version = "0.2.2", features = ["check"]}
+rand = "0.5.5"
+serde_json = "1.0.22"
+serde_derive = "1.0.76"
+serde = "1.0.76"
+rmp-serde = "0.13.6"
+byteorder = "1.0.0"
+
+[build-dependencies]
+pkg-config = "0.3.9"
+regex = "1.0.0"
