@@ -5,7 +5,7 @@ It expects all code to be used in each integration test.
 Without this, we are warned of all unused code in each integration test.
 */
 
-extern crate rust_libindy_wrapper as indy;
+extern crate indy;
 
 pub mod b58;
 pub mod constants;

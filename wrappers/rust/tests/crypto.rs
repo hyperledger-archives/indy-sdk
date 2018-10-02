@@ -1,4 +1,4 @@
-extern crate rust_libindy_wrapper as indy;
+extern crate indy;
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 extern crate rmp_serde;
