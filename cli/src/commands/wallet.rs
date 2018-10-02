@@ -1411,7 +1411,7 @@ pub mod tests {
             let ctx = CommandContext::new();
 
             let storage_type = "inmem-test";
-            let so_file = "libindystrginmem.dylib";
+            let so_file = "../samples/storage/storage-inmem/target/debug/libindystrginmem.so";
             let prefix = "inmemwallet_fn_";
 
             // try to create wallet with plug-in storage - should fail
@@ -1465,7 +1465,7 @@ pub mod tests {
             ensure_opened_wallet_handle(&ctx).unwrap();
 
             // close and delete wallet
-            delete_wallet(&ctx);
+            close_and_delete_wallet(&ctx);
 
             TestUtils::cleanup_storage();
         }
