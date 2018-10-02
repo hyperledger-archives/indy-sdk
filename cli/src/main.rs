@@ -17,6 +17,9 @@ extern crate serde_json;
 extern crate prettytable;
 extern crate log4rs;
 
+extern crate sharedlib;
+extern crate os_type;
+
 #[macro_use]
 mod utils;
 mod command_executor;
@@ -102,6 +105,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(wallet::detach_command::new())
         .add_command(wallet::export_command::new())
         .add_command(wallet::import_command::new())
+        .add_command(wallet::register_command::new())
         .finalize_group()
         .add_group(ledger::group::new())
         .add_command(ledger::nym_command::new())
