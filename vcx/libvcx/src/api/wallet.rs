@@ -700,9 +700,10 @@ pub extern fn vcx_wallet_export(command_handle: u32,
 /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
 /// in the future releases.
 ///
-/// config: "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":""}"
+/// config: "{"wallet_name":"","wallet_key":"","exported_wallet_path":"","backup_key":"","key_derivation":""}"
 /// exported_wallet_path: Path of the file that contains exported wallet content
 /// backup_key: Key used when creating the backup of the wallet (For encryption/decrption)
+/// Optional<key_derivation>: method of key derivation used by libindy. By default, libvcx uses ARGON2I_INT
 /// cb: Callback that provides the success/failure of the api call.
 /// #Returns
 /// Error code - success indicates that the api call was successfully created and execution

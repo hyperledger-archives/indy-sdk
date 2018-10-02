@@ -34,6 +34,7 @@ pub static CONFIG_WALLET_NAME: &'static str = "wallet_name";
 pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
 pub static CONFIG_WALLET_HANDLE: &'static str = "wallet_handle";
 pub static CONFIG_THREADPOOL_SIZE: &'static str = "threadpool_size";
+pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
 
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
@@ -50,6 +51,7 @@ pub static DEFAULT_WALLET_BACKUP_KEY: &str = "backup_wallet_key";
 pub static DEFAULT_WALLET_KEY: &str = "foobar1234";
 pub static DEFAULT_THREADPOOL_SIZE: usize = 8;
 pub static MASK_VALUE: &str = "********";
+pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "ARGON2I_INT";
 
 pub static MAX_THREADPOOL_SIZE: usize = 128;
 
@@ -211,8 +213,12 @@ pub fn set_config_value(key: &str, value: &str) {
 
 pub fn get_wallet_credentials() -> String {
     let key = get_config_value(CONFIG_WALLET_KEY).unwrap_or(UNINITIALIZED_WALLET_KEY.to_string());
+    let mut credentials = json!({"key": key});
 
-    format!("{{\"key\":\"{}\"}}", key)
+    let key_derivation = get_config_value(CONFIG_WALLET_KEY_DERIVATION).ok();
+    if let Some(_key) = key_derivation { credentials["key_derivation_method"] = json!(_key); }
+
+    credentials.to_string()
 }
 
 pub fn write_config_to_file(config: &str, path_string: &str) -> Result<(), u32> {
