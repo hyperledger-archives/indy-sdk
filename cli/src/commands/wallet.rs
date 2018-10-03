@@ -1416,6 +1416,75 @@ pub mod tests {
         }
     }
 
+    mod register {
+        use super::*;
+
+        #[test]
+        pub fn register_create_open_close_wallet_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let storage_type = "inmem-test";
+            let so_file = "libindystrginmem.dylib";
+            let prefix = "inmemwallet_fn_";
+
+            // try to create wallet with plug-in storage - should fail
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("storage_type", storage_type.to_string());
+                let _ = cmd.execute(&ctx, &params); //.unwrap(); ignore since we get an error
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(0, wallets.len());
+
+            // load storage plug-un (in-mem example)
+            {
+                let cmd = register_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", storage_type.to_string());
+                params.insert("so_file", so_file.to_string());
+                params.insert("prefix", prefix.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            // create and open wallet with in-mem plug-in
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("storage_type", storage_type.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(1, wallets.len());
+
+            assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
+            assert_eq!(wallets[0]["storage_type"].as_str().unwrap(), storage_type);
+
+            // open ...
+            {
+                let cmd = open_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            ensure_opened_wallet_handle(&ctx).unwrap();
+
+            // close and delete wallet
+            delete_wallet(&ctx);
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
     pub fn create_wallet(ctx: &CommandContext) {
         let create_cmd = create_command::new();
         let mut params = CommandParams::new();
@@ -1507,8 +1576,5 @@ pub mod tests {
         params.insert("export_path", path.to_string());
         params.insert("export_key", EXPORT_KEY.to_string());
         cmd.execute(&ctx, &params).unwrap()
-    }
-
-    pub fn register_and_load_storage(stg_type: &str, library_path: &str, fn_pfx: &str) {
     }
 }
