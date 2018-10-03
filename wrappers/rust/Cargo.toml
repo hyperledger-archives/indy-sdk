@@ -33,3 +33,6 @@ serde = "1.0.76"
 rmp-serde = "0.13.6"
 byteorder = "1.0.0"
 dirs = "1.0.4"
+
+[features]
+timeout_tests = []
