@@ -1228,7 +1228,7 @@ mod test_parse_get_schema_response {
 
 
     fn create_build_schema_request(did : &String) -> String {
-        format!("{}:2:schema_1234:1.0", did)
+        format!("{}:2:{}:1.0", did, SCHEMA_NAME)
     }
 
     fn build_schema(did: &String, pool_handle: i32) {
@@ -1372,8 +1372,6 @@ mod test_build_get_ddo_request {
 
         let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::Success, "build_get_ddo_request_async returned error_code {:?}", ec);
-
-
     }
 
     #[test]
@@ -1407,7 +1405,69 @@ mod test_build_get_ddo_request {
 
 #[cfg(test)]
 mod test_build_get_txn_request {
+    use super::*;
 
+    const LEDGER_TYPE : &str = "DOMAIN";
+
+    #[test]
+    pub fn build_get_txn_request_success() {
+        let wallet = Wallet::new();
+        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+
+        match Ledger::build_get_txn_request(Some(&did), Some(LEDGER_TYPE), 1) {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_get_txn_request failed error_code {:?}", ec);
+            }
+        }
+    }
+
+    #[test]
+    pub fn build_get_txn_request_async_success() {
+        let wallet = Wallet::new();
+        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+
+        let (sender, receiver) = channel();
+        let cb = move |ec, stuff| {
+            sender.send((ec, stuff)).unwrap();
+        };
+
+        let async_ec =  Ledger::build_get_txn_request_async(Some(&did), Some(LEDGER_TYPE), 1, cb);
+
+        assert_eq!(async_ec, ErrorCode::Success, "build_get_txn_request_async return error_code {:?}", async_ec);
+
+        let (ec, _) = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert_eq!(ec, ErrorCode::Success, "build_get_txn_request_async returned error_code {:?}", ec);
+
+    }
+
+    #[test]
+    pub fn build_get_txn_request_timeout_success() {
+        let wallet = Wallet::new();
+        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+
+        match Ledger::build_get_txn_request_timeout(Some(&did), Some(LEDGER_TYPE), 1, VALID_TIMEOUT) {
+            Ok(_) => {},
+            Err(ec) => {
+                assert!(false, "build_get_txn_request_timeout failed error_code {:?}", ec);
+            }
+        }
+    }
+
+    #[test]
+    pub fn build_get_txn_request_timeout_times_out() {
+        let wallet = Wallet::new();
+        let (did, _) = Did::new(wallet.handle, "{}").unwrap();
+
+        match Ledger::build_get_txn_request_timeout(Some(&did), Some(LEDGER_TYPE), 1, INVALID_TIMEOUT) {
+            Ok(_) => {
+                assert!(false, "build_get_txn_request_timeout failed to timeout");
+            },
+            Err(ec) => {
+                assert_eq!(ec, ErrorCode::CommonIOError, "build_get_txn_request_timeout failed error_code {:?}", ec);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
