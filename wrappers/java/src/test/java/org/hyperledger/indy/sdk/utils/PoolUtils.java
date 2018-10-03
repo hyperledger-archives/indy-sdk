@@ -14,28 +14,23 @@ import java.util.concurrent.ExecutionException;
 
 public class PoolUtils {
 
-	public static final String DEFAULT_POOL_NAME = "default_pool";
+	private static final String DEFAULT_POOL_NAME = "default_pool";
 	public static final int TEST_TIMEOUT_FOR_REQUEST_ENSURE = 20_000;
-	static final int RESUBMIT_REQUEST_TIMEOUT = 5_000;
-	static final int RESUBMIT_REQUEST_CNT = 3;
-
+	private static final int RESUBMIT_REQUEST_TIMEOUT = 5_000;
+	private static final int RESUBMIT_REQUEST_CNT = 3;
 
 	public static File createGenesisTxnFile(String filename) throws IOException {
-		return createGenesisTxnFile(filename, 4);
-	}
-
-	private static File createGenesisTxnFile(String filename, int nodesCnt) throws IOException {
 		String path = EnvironmentUtils.getTmpPath(filename);
 
 		File file = new File(path);
 
 		FileUtils.forceMkdirParent(file);
 
-		writeTransactions(file, nodesCnt);
+		writeTransactions(file);
 		return file;
 	}
 
-	public static void writeTransactions(File file, int nodesCnt) throws IOException {
+	public static void writeTransactions(File file) throws IOException {
 		String testPoolIp = EnvironmentUtils.getTestPoolIP();
 
 		// this data and pool_transactions_genesis must have the same data and IP addresses
@@ -47,8 +42,8 @@ public class PoolUtils {
 		};
 
 		FileWriter fw = new FileWriter(file);
-		for (int i = 0; i < defaultTxns.length; i++) {
-			fw.write(defaultTxns[i]);
+		for (String defaultTxn : defaultTxns) {
+			fw.write(defaultTxn);
 			fw.write("\n");
 		}
 
@@ -57,16 +52,12 @@ public class PoolUtils {
 	}
 
 	public static String createPoolLedgerConfig() throws InterruptedException, ExecutionException, IndyException, IOException {
-		return createPoolLedgerConfig(4);
-	}
-
-	public static String createPoolLedgerConfig(int nodesCnt) throws InterruptedException, ExecutionException, IndyException, IOException {
-		createPoolLedgerConfig(DEFAULT_POOL_NAME, nodesCnt);
+		createPoolLedgerConfig(DEFAULT_POOL_NAME);
 		return DEFAULT_POOL_NAME;
 	}
 
-	public static void createPoolLedgerConfig(String poolName, int nodesCnt) throws IOException, InterruptedException, java.util.concurrent.ExecutionException, IndyException {
-		File genesisTxnFile = createGenesisTxnFile("temp.txn", nodesCnt);
+	private static void createPoolLedgerConfig(String poolName) throws IOException, InterruptedException, java.util.concurrent.ExecutionException, IndyException {
+		File genesisTxnFile = createGenesisTxnFile("temp.txn");
 		PoolJSONParameters.CreatePoolLedgerConfigJSONParameter createPoolLedgerConfigJSONParameter
 				= new PoolJSONParameters.CreatePoolLedgerConfigJSONParameter(genesisTxnFile.getAbsolutePath());
 		Pool.createPoolLedgerConfig(poolName, createPoolLedgerConfigJSONParameter.toJson()).get();
