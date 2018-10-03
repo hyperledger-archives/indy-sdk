@@ -1472,7 +1472,12 @@ mod test_build_get_txn_request {
 
 #[cfg(test)]
 mod test_build_cred_def_request {
+    use super::*;
 
+    #[test]
+    pub fn test_build_cred_def_request_success(){
+        assert!(false)
+    }
 }
 
 #[cfg(test)]
