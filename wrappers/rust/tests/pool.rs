@@ -921,6 +921,7 @@ mod test_pool_create_config {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     /* Timeout occurs while creating config. Pool is still created. */
     fn config_timeout_timeouts() {
         let name = test_pool_name();
@@ -1052,6 +1053,7 @@ mod test_delete_config {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     /* Delete a pool with timeout that timeouts. */
     fn delete_pool_timeout_timeouts() {
         let pool_name = create_default_pool();
@@ -1153,6 +1155,7 @@ mod test_set_protocol_version {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     /* Setting protcol version with timeout timeouts. */
     fn set_protocol_version_timeout_timeouts() {
         let result = Pool::set_protocol_version_timeout(0, Duration::from_micros(1));
@@ -1201,6 +1204,7 @@ mod test_pool_list {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     /* List pools with timeout, timeouts. */
     fn list_pool_timeout_timeouts() {
         let result = Pool::list_timeout(Duration::from_micros(1));

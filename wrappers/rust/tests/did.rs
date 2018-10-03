@@ -210,6 +210,7 @@ mod create_new_did {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn create_did_timeout_timeouts() {
         let wallet = Wallet::new();
         let config = json!({"seed": SEED_1}).to_string();
@@ -392,6 +393,7 @@ mod replace_keys_start {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn replace_keys_start_timeout_timeouts() {
         let wallet = Wallet::new();
         let (did, _verkey) = Did::new(wallet.handle, "{}").unwrap();
@@ -527,6 +529,7 @@ mod replace_keys_apply {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn replace_keys_apply_timeout_timeouts() {
         let result = Did::replace_keys_apply_timeout(
             INVALID_HANDLE,
@@ -752,6 +755,7 @@ mod test_store_their_did {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn store_their_did_timeout_timeouts() {
         let config = json!({"did": DID_1, "verkey": VERKEY_1}).to_string();
 
@@ -868,6 +872,7 @@ mod test_get_verkey_local {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn get_verkey_local_timeout_timeouts() {
         let result = Did::get_ver_key_local_timeout(
             INVALID_HANDLE,
@@ -1037,6 +1042,7 @@ mod test_get_verkey_ledger {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn get_verkey_timeout_timeouts() {
         let result = Did::get_ver_key_timeout(
             -1,
@@ -1202,6 +1208,7 @@ mod test_set_metadata {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn set_metadata_timeout_timeouts() {
         let result = Did::set_metadata_timeout(
             INVALID_HANDLE,
@@ -1342,6 +1349,7 @@ mod test_get_metadata {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn get_metadata_timeout_timeouts() {
         let result = Did::get_metadata_timeout(
             INVALID_HANDLE,
@@ -1759,6 +1767,7 @@ mod test_abbreviate_verkey {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn abbreviate_verkey_timeout_timeouts() {
         let result = Did::abbreviate_verkey_timeout(
             DID_1,
@@ -1931,6 +1940,7 @@ mod test_list_with_metadata {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn list_with_metadata_timeout_timeouts() {
         let result = Did::list_with_metadata_timeout(INVALID_HANDLE, INVALID_TIMEOUT);
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
