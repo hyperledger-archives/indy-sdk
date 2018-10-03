@@ -11,16 +11,18 @@ use std::fmt::Display;
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Receiver};
 
-use native::{ResponseEmptyCB,
-          ResponseI32CB,
-          ResponseI32UsizeCB,
-          ResponseStringCB,
-          ResponseStringStringCB,
-          ResponseStringStringStringCB,
-          ResponseStringStringU64CB,
-          ResponseSliceCB,
-          ResponseStringSliceCB,
-          ResponseBoolCB};
+use indy::{
+    indy_empty_cb,
+    indy_handle_cb,
+    indy_handle_u32_cb,
+    indy_str_cb,
+    indy_str_str_cb,
+    indy_str_str_str_cb,
+    indy_str_str_long_cb,
+    indy_slice_cb,
+    indy_bool_cb,
+    indy_str_slice_cb,
+};
 
 fn log_error<T: Display>(e: T) {
     warn!("Unable to send through libindy callback: {}", e);
@@ -29,7 +31,7 @@ fn log_error<T: Display>(e: T) {
 pub struct ClosureHandler {}
 
 impl ClosureHandler {
-    pub fn cb_ec() -> (Receiver<ErrorCode>, IndyHandle, Option<ResponseEmptyCB>) {
+    pub fn cb_ec() -> (Receiver<ErrorCode>, IndyHandle, indy_empty_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err| {
@@ -41,7 +43,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec(closure: Box<FnMut(ErrorCode) + Send>) -> (IndyHandle, Option<ResponseEmptyCB>) {
+    pub fn convert_cb_ec(closure: Box<FnMut(ErrorCode) + Send>) -> (IndyHandle, indy_empty_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
         }
@@ -58,7 +60,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_i32() -> (Receiver<(ErrorCode, IndyHandle)>, IndyHandle, Option<ResponseI32CB>) {
+    pub fn cb_ec_i32() -> (Receiver<(ErrorCode, IndyHandle)>, IndyHandle, indy_handle_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val| {
@@ -70,7 +72,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_i32(closure: Box<FnMut(ErrorCode, IndyHandle) + Send>) -> (IndyHandle, Option<ResponseI32CB>) {
+    pub fn convert_cb_ec_i32(closure: Box<FnMut(ErrorCode, IndyHandle) + Send>) -> (IndyHandle, indy_handle_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, IndyHandle) + Send>>> = Default::default();
         }
@@ -88,7 +90,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_i32_usize() -> (Receiver<(ErrorCode, IndyHandle, usize)>, IndyHandle, Option<ResponseI32UsizeCB>) {
+    pub fn cb_ec_i32_usize() -> (Receiver<(ErrorCode, IndyHandle, usize)>, IndyHandle, indy_handle_u32_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val1, val2| {
@@ -100,15 +102,15 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_i32_usize(closure: Box<FnMut(ErrorCode, IndyHandle, usize) + Send>) -> (IndyHandle, Option<ResponseI32UsizeCB>) {
+    pub fn convert_cb_ec_i32_usize(closure: Box<FnMut(ErrorCode, IndyHandle, usize) + Send>) -> (IndyHandle, indy_handle_u32_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, IndyHandle, usize) + Send>>> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: i32, val1: i32, val2: usize) {
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, val1: i32, val2: u32) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
-            cb(ErrorCode::from(err), val1, val2)
+            cb(ErrorCode::from(err), val1, val2 as usize)
         }
 
         let mut callbacks = CALLBACKS.lock().unwrap();
@@ -118,7 +120,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_string() -> (Receiver<(ErrorCode, String)>, IndyHandle, Option<ResponseStringCB>) {
+    pub fn cb_ec_string() -> (Receiver<(ErrorCode, String)>, IndyHandle, indy_str_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val| {
@@ -130,7 +132,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_string(closure: Box<FnMut(ErrorCode, String) + Send>) -> (IndyHandle, Option<ResponseStringCB>) {
+    pub fn convert_cb_ec_string(closure: Box<FnMut(ErrorCode, String) + Send>) -> (IndyHandle, indy_str_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String) + Send>>> = Default::default();
         }
@@ -149,7 +151,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_string_string() -> (Receiver<(ErrorCode, String, String)>, IndyHandle, Option<ResponseStringStringCB>) {
+    pub fn cb_ec_string_string() -> (Receiver<(ErrorCode, String, String)>, IndyHandle, indy_str_str_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val1, val2| {
@@ -161,7 +163,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_string_string(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (IndyHandle, Option<ResponseStringStringCB>) {
+    pub fn convert_cb_ec_string_string(closure: Box<FnMut(ErrorCode, String, String) + Send>) -> (IndyHandle, indy_str_str_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, String) + Send>>> = Default::default();
         }
@@ -181,7 +183,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_string_opt_string() -> (Receiver<(ErrorCode, String, Option<String>)>, IndyHandle, Option<ResponseStringStringCB>) {
+    pub fn cb_ec_string_opt_string() -> (Receiver<(ErrorCode, String, Option<String>)>, IndyHandle, indy_str_str_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val1, val2| {
@@ -193,7 +195,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_string_opt_string(closure: Box<FnMut(ErrorCode, String, Option<String>) + Send>) -> (IndyHandle, Option<ResponseStringStringCB>) {
+    pub fn convert_cb_ec_string_opt_string(closure: Box<FnMut(ErrorCode, String, Option<String>) + Send>) -> (IndyHandle, indy_str_str_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, Option<String>) + Send>>> = Default::default();
         }
@@ -213,7 +215,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_string_string_string() -> (Receiver<(ErrorCode, String, String, String)>, IndyHandle, Option<ResponseStringStringStringCB>) {
+    pub fn cb_ec_string_string_string() -> (Receiver<(ErrorCode, String, String, String)>, IndyHandle, indy_str_str_str_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val1, val2, val3| {
@@ -224,7 +226,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_string_string_string(closure: Box<FnMut(ErrorCode, String, String, String) + Send>) -> (IndyHandle, Option<ResponseStringStringStringCB>) {
+    pub fn convert_cb_ec_string_string_string(closure: Box<FnMut(ErrorCode, String, String, String) + Send>) -> (IndyHandle, indy_str_str_str_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, String, String) + Send>>> = Default::default();
         }
@@ -245,7 +247,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_string_opt_string_opt_string() -> (Receiver<(ErrorCode, String, Option<String>, Option<String>)>, IndyHandle, Option<ResponseStringStringStringCB>) {
+    pub fn cb_ec_string_opt_string_opt_string() -> (Receiver<(ErrorCode, String, Option<String>, Option<String>)>, IndyHandle, indy_str_str_str_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val1, val2, val3| {
@@ -256,7 +258,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_string_opt_string_opt_string(closure: Box<FnMut(ErrorCode, String, Option<String>, Option<String>) + Send>) -> (IndyHandle, Option<ResponseStringStringStringCB>) {
+    pub fn convert_cb_ec_string_opt_string_opt_string(closure: Box<FnMut(ErrorCode, String, Option<String>, Option<String>) + Send>) -> (IndyHandle, indy_str_str_str_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, Option<String>, Option<String>) + Send>>> = Default::default();
         }
@@ -277,7 +279,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_string_string_u64() -> (Receiver<(ErrorCode, String, String, u64)>, IndyHandle, Option<ResponseStringStringU64CB>) {
+    pub fn cb_ec_string_string_u64() -> (Receiver<(ErrorCode, String, String, u64)>, IndyHandle, indy_str_str_long_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, val1, val2, val3| {
@@ -289,7 +291,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_string_string_u64(closure: Box<FnMut(ErrorCode, String, String, u64) + Send>) -> (IndyHandle, Option<ResponseStringStringU64CB>) {
+    pub fn convert_cb_ec_string_string_u64(closure: Box<FnMut(ErrorCode, String, String, u64) + Send>) -> (IndyHandle, indy_str_str_long_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex <HashMap<i32, Box<FnMut(ErrorCode, String, String, u64) + Send>>> = Default::default();
         }
@@ -309,7 +311,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_slice() -> (Receiver<(ErrorCode, Vec<u8>)>, IndyHandle, Option<ResponseSliceCB>) {
+    pub fn cb_ec_slice() -> (Receiver<(ErrorCode, Vec<u8>)>, IndyHandle, indy_slice_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, sig| {
@@ -321,7 +323,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_slice(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (IndyHandle, Option<ResponseSliceCB>) {
+    pub fn convert_cb_ec_slice(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (IndyHandle, indy_slice_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, Vec<u8>) + Send>>> = Default::default();
         }
@@ -340,7 +342,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_string_slice() -> (Receiver<(ErrorCode, String, Vec<u8>)>, IndyHandle, Option<ResponseStringSliceCB>) {
+    pub fn cb_ec_string_slice() -> (Receiver<(ErrorCode, String, Vec<u8>)>, IndyHandle, indy_str_slice_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, key, msg| {
@@ -352,7 +354,7 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_string_slice(closure: Box<FnMut(ErrorCode, String, Vec<u8>) + Send>) -> (IndyHandle, Option<ResponseStringSliceCB>) {
+    pub fn convert_cb_ec_string_slice(closure: Box<FnMut(ErrorCode, String, Vec<u8>) + Send>) -> (IndyHandle, indy_str_slice_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, String, Vec<u8>) + Send> >> = Default::default();
         }
@@ -372,7 +374,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, IndyHandle, Option<ResponseBoolCB>) {
+    pub fn cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, IndyHandle, indy_bool_cb) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, v| {
@@ -384,12 +386,12 @@ impl ClosureHandler {
         (receiver, command_handle, cb)
     }
 
-    pub fn convert_cb_ec_bool(closure: Box<FnMut(ErrorCode, bool) + Send>) -> (IndyHandle, Option<ResponseBoolCB>) {
+    pub fn convert_cb_ec_bool(closure: Box<FnMut(ErrorCode, bool) + Send>) -> (IndyHandle, indy_bool_cb) {
         lazy_static! {
             static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, bool) + Send> >> = Default::default();
         }
 
-        extern "C" fn _callback(command_handle: IndyHandle, err: i32, valid: u8) {
+        extern "C" fn _callback(command_handle: IndyHandle, err: i32, valid: u32) {
             let mut callbacks = CALLBACKS.lock().unwrap();
             let mut cb = callbacks.remove(&command_handle).unwrap();
             let v = valid > 0;
@@ -417,7 +419,7 @@ mod test {
 
         let test_vec: Vec<u8> = vec![250, 251, 252, 253, 254, 255];
         let callback = cb.unwrap();
-        callback(command_handle, 0, test_vec.as_ptr(), test_vec.len() as u32);
+        unsafe {callback(command_handle, 0, test_vec.as_ptr(), test_vec.len() as u32)};
 
         let (err, slice1) = receiver.recv().unwrap();
         assert_eq!(err, ErrorCode::Success);
@@ -429,7 +431,7 @@ mod test {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string();
 
         let callback = cb.unwrap();
-        callback(command_handle, 0, CString::new("This is a test").unwrap().as_ptr(), null());
+        unsafe {callback(command_handle, 0, CString::new("This is a test").unwrap().as_ptr(), null())};
 
         let (err, str1, str2) = receiver.recv().unwrap();
         assert_eq!(err, ErrorCode::Success);
@@ -442,7 +444,7 @@ mod test {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string();
 
         let callback = cb.unwrap();
-        callback(command_handle, 0, CString::new("This is a test").unwrap().as_ptr(), CString::new("The second string has something").unwrap().as_ptr());
+        unsafe {callback(command_handle, 0, CString::new("This is a test").unwrap().as_ptr(), CString::new("The second string has something").unwrap().as_ptr())};
 
         let (err, str1, str2) = receiver.recv().unwrap();
         assert_eq!(err, ErrorCode::Success);

@@ -5,12 +5,10 @@ use std::ptr::null;
 use std::time::Duration;
 
 use utils::results::ResultHandler;
+
 use utils::callbacks::ClosureHandler;
 
-use native::pool;
-use native::{ResponseEmptyCB,
-          ResponseStringCB,
-          ResponseI32CB};
+use indy;
 
 pub struct Pool {}
 
@@ -56,18 +54,18 @@ impl Pool {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn create_ledger_config_async<F: 'static>(pool_name: &str, pool_config: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Pool::_create_ledger_config(command_handle, pool_name, pool_config, cb)
     }
 
-    fn _create_ledger_config(command_handle: IndyHandle, pool_name: &str, pool_config: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _create_ledger_config(command_handle: IndyHandle, pool_name: &str, pool_config: Option<&str>, cb: indy::indy_empty_cb) -> ErrorCode {
         let pool_name = c_str!(pool_name);
         let pool_config_str = opt_c_str!(pool_config);
 
-        ErrorCode::from(unsafe { pool::indy_create_pool_ledger_config(command_handle, pool_name.as_ptr(), opt_c_ptr!(pool_config, pool_config_str), cb) })
+        ErrorCode::from(unsafe { indy::indy_create_pool_ledger_config(command_handle, pool_name.as_ptr(), opt_c_ptr!(pool_config, pool_config_str), cb) })
     }
 
     /// Opens pool ledger and performs connecting to pool nodes.
@@ -150,24 +148,24 @@ impl Pool {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn open_ledger_async<F: 'static>(pool_name: &str, config: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, IndyHandle) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
 
         Pool::_open_ledger(command_handle, pool_name, config, cb)
     }
 
-    fn _open_ledger(command_handle: IndyHandle, pool_name: &str, config: Option<&str>, cb: Option<ResponseI32CB>) -> ErrorCode {
+    fn _open_ledger(command_handle: IndyHandle, pool_name: &str, config: Option<&str>, cb: indy::indy_handle_cb) -> ErrorCode {
         let pool_name = c_str!(pool_name);
         let config_str = opt_c_str!(config);
 
-        ErrorCode::from(unsafe { pool::indy_open_pool_ledger(command_handle, pool_name.as_ptr(), opt_c_ptr!(config, config_str), cb) })
+        ErrorCode::from(unsafe { indy::indy_open_pool_ledger(command_handle, pool_name.as_ptr(), opt_c_ptr!(config, config_str), cb) })
     }
 
     /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
     ///
     /// # Arguments
-    /// * `handle` - pool handle returned by Pool::open_ledger
+    /// * `handle` - pool handle returned by open_ledger
     pub fn refresh(pool_handle: IndyHandle) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -179,7 +177,7 @@ impl Pool {
     /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
     ///
     /// # Arguments
-    /// * `handle` - pool handle returned by Pool::open_ledger
+    /// * `handle` - pool handle returned by open_ledger
     /// * `timeout` - the maximum time this function waits for a response
     pub fn refresh_timeout(pool_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
@@ -192,19 +190,19 @@ impl Pool {
     /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
     ///
     /// # Arguments
-    /// * `handle` - pool handle returned by Pool::open_ledger
+    /// * `handle` - pool handle returned by open_ledger
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn refresh_async<F: 'static>(pool_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Pool::_refresh(command_handle, pool_handle, cb)
     }
 
-    fn _refresh(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-        ErrorCode::from(unsafe { pool::indy_refresh_pool_ledger(command_handle, pool_handle, cb) })
+    fn _refresh(command_handle: IndyHandle, pool_handle: IndyHandle, cb: indy::indy_empty_cb) -> ErrorCode {
+        ErrorCode::from(unsafe { indy::indy_refresh_pool_ledger(command_handle, pool_handle, cb) })
     }
 
     /// Lists names of created pool ledgers
@@ -230,21 +228,21 @@ impl Pool {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn list_async<F: 'static>(closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Pool::_list(command_handle, cb)
     }
 
-    fn _list(command_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
-        ErrorCode::from(unsafe { pool::indy_list_pools(command_handle, cb) })
+    fn _list(command_handle: IndyHandle, cb: indy::indy_str_cb) -> ErrorCode {
+        ErrorCode::from(unsafe { indy::indy_list_pools(command_handle, cb) })
     }
 
     /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
     ///
     /// # Arguments
-    /// * `handle` - pool handle returned by Pool::open_ledger.
+    /// * `handle` - pool handle returned by open_ledger.
     pub fn close(pool_handle: IndyHandle) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -256,7 +254,7 @@ impl Pool {
     /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
     ///
     /// # Arguments
-    /// * `handle` - pool handle returned by Pool::open_ledger.
+    /// * `handle` - pool handle returned by open_ledger.
     /// * `timeout` - the maximum time this function waits for a response
     pub fn close_timeout(pool_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
@@ -269,19 +267,19 @@ impl Pool {
     /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
     ///
     /// # Arguments
-    /// * `handle` - pool handle returned by Pool::open_ledger.
+    /// * `handle` - pool handle returned by open_ledger.
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn close_async<F: 'static>(pool_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Pool::_close(command_handle, pool_handle, cb)
     }
 
-    fn _close(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-        ErrorCode::from(unsafe { pool::indy_close_pool_ledger(command_handle, pool_handle, cb) })
+    fn _close(command_handle: IndyHandle, pool_handle: IndyHandle, cb: indy::indy_empty_cb) -> ErrorCode {
+        ErrorCode::from(unsafe { indy::indy_close_pool_ledger(command_handle, pool_handle, cb) })
     }
 
     /// Deletes created pool ledger configuration.
@@ -316,17 +314,17 @@ impl Pool {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn delete_async<F: 'static>(pool_name: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Pool::_delete(command_handle, pool_name, cb)
     }
 
-    fn _delete(command_handle: IndyHandle, pool_name: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _delete(command_handle: IndyHandle, pool_name: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let pool_name = c_str!(pool_name);
 
-        ErrorCode::from(unsafe { pool::indy_delete_pool_ledger_config(command_handle, pool_name.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_delete_pool_ledger_config(command_handle, pool_name.as_ptr(), cb) })
     }
 
     /// Set PROTOCOL_VERSION to specific version.
@@ -382,17 +380,16 @@ impl Pool {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn set_protocol_version_async<F: 'static>(protocol_version: usize, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Pool::_set_protocol_version(command_handle, protocol_version, cb)
     }
 
-    fn _set_protocol_version(command_handle: IndyHandle, protocol_version: usize, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-
+    fn _set_protocol_version(command_handle: IndyHandle, protocol_version: usize, cb: indy::indy_empty_cb) -> ErrorCode {
         ErrorCode::from(unsafe {
-          pool::indy_set_protocol_version(command_handle, protocol_version, cb)
+            indy::indy_set_protocol_version(command_handle, protocol_version as u64, cb)
         })
     }
 }

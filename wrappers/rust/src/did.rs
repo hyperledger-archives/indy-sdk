@@ -3,13 +3,11 @@ use {ErrorCode, IndyHandle};
 use std::ffi::CString;
 use std::time::Duration;
 
-use native::did;
-use native::{ResponseEmptyCB,
-          ResponseStringCB,
-          ResponseStringStringCB};
+use utils::callbacks::{ClosureHandler};
 
-use utils::callbacks::ClosureHandler;
 use utils::results::ResultHandler;
+
+use indy;
 
 pub struct Did {}
 
@@ -108,17 +106,17 @@ impl Did {
     /// }
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn new_async<F: 'static>(wallet_handle: IndyHandle, did_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
         Did::_new(command_handle, wallet_handle, did_json, cb)
     }
 
-    fn _new(command_handle: IndyHandle, wallet_handle: IndyHandle, did_json: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+    fn _new(command_handle: IndyHandle, wallet_handle: IndyHandle, did_json: &str, cb: indy::indy_str_str_cb) -> ErrorCode {
         let did_json = c_str!(did_json);
 
-        ErrorCode::from(unsafe { did::indy_create_and_store_my_did(command_handle, wallet_handle, did_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_create_and_store_my_did(command_handle, wallet_handle, did_json.as_ptr(), cb) })
     }
 
     /// Generated temporary keys (signing and encryption keys) for an existing
@@ -129,7 +127,7 @@ impl Did {
     /// * `tgt_did` - DID to replace keys.
     /// * `identity_json` - Identity information as json.
     /// # Example
-    /// * `identity_json`- 
+    /// * `identity_json`-
     /// {
     ///     "seed": string, (optional; if not provide then a random one will be created)
     ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
@@ -156,7 +154,7 @@ impl Did {
     /// * `timeout` - the maximum time this function waits for a response
     ///
     /// # Example
-    /// * `identity_json`- 
+    /// * `identity_json`-
     /// {
     ///     "seed": string, (optional; if not provide then a random one will be created)
     ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
@@ -183,7 +181,7 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Example
-    /// * `identity_json`- 
+    /// * `identity_json`-
     /// {
     ///     "seed": string, (optional; if not provide then a random one will be created)
     ///     "crypto_type": string, (optional; if not set then ed25519 curve is used;
@@ -191,18 +189,18 @@ impl Did {
     /// }
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn replace_keys_start_async<F: 'static>(wallet_handle: IndyHandle, tgt_did: &str, identity_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_replace_keys_start(command_handle, wallet_handle, tgt_did, identity_json, cb)
     }
 
-    fn _replace_keys_start(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, identity_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _replace_keys_start(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, identity_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
         let identity_json = c_str!(identity_json);
 
-        ErrorCode::from(unsafe { did::indy_replace_keys_start(command_handle, wallet_handle, tgt_did.as_ptr(), identity_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_replace_keys_start(command_handle, wallet_handle, tgt_did.as_ptr(), identity_json.as_ptr(), cb) })
     }
 
     /// Apply temporary keys as main for an existing DID (owned by the caller of the library).
@@ -240,17 +238,17 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn replace_keys_apply_async<F: 'static>(wallet_handle: IndyHandle, tgt_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Did::_replace_keys_apply(command_handle, wallet_handle, tgt_did, cb)
     }
-    
-    fn _replace_keys_apply(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+
+    fn _replace_keys_apply(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
 
-        ErrorCode::from(unsafe { did::indy_replace_keys_apply(command_handle, wallet_handle, tgt_did.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_replace_keys_apply(command_handle, wallet_handle, tgt_did.as_ptr(), cb) })
     }
 
     /// Saves their DID for a pairwise connection in a secured Wallet,
@@ -309,30 +307,30 @@ impl Did {
     ///     }
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn store_their_did_async<F: 'static>(wallet_handle: IndyHandle, identity_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Did::_store_their_did(command_handle, wallet_handle, identity_json, cb)
     }
 
-    fn _store_their_did(command_handle: IndyHandle, wallet_handle: IndyHandle, identity_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _store_their_did(command_handle: IndyHandle, wallet_handle: IndyHandle, identity_json: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let identity_json = c_str!(identity_json);
 
-        ErrorCode::from(unsafe { did::indy_store_their_did(command_handle, wallet_handle, identity_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_store_their_did(command_handle, wallet_handle, identity_json.as_ptr(), cb) })
     }
 
     /// Returns ver key (key id) for the given DID.
     ///
-    /// "Did::get_ver_key" call follow the idea that we resolve information about their DID from
+    /// "get_ver_key" call follow the idea that we resolve information about their DID from
     /// the ledger with cache in the local wallet. The "indy_Wallet::open" call has freshness parameter
     /// that is used for checking the freshness of cached pool value.
     ///
     /// Note if you don't want to resolve their DID info from the ledger you can use
-    /// "Did::get_ver_key" call instead that will look only to the local wallet and skip
+    /// "get_ver_key" call instead that will look only to the local wallet and skip
     /// freshness checking.
     ///
-    /// Note that "Did::new" makes similar wallet record as "Key::create".
+    /// Note that "new" makes similar wallet record as "Key::create".
     /// As result we can use returned ver key in all generic crypto and messaging functions.
     ///
     /// # Arguments
@@ -352,15 +350,15 @@ impl Did {
 
     /// Returns ver key (key id) for the given DID.
     ///
-    /// "Did::get_ver_key" call follow the idea that we resolve information about their DID from
+    /// "get_ver_key" call follow the idea that we resolve information about their DID from
     /// the ledger with cache in the local wallet. The "indy_Wallet::open" call has freshness parameter
     /// that is used for checking the freshness of cached pool value.
     ///
     /// Note if you don't want to resolve their DID info from the ledger you can use
-    /// "Did::get_ver_key" call instead that will look only to the local wallet and skip
+    /// "get_ver_key" call instead that will look only to the local wallet and skip
     /// freshness checking.
     ///
-    /// Note that "Did::new" makes similar wallet record as "Key::create".
+    /// Note that "new" makes similar wallet record as "Key::create".
     /// As result we can use returned ver key in all generic crypto and messaging functions.
     ///
     /// # Arguments
@@ -381,15 +379,15 @@ impl Did {
 
     /// Returns ver key (key id) for the given DID.
     ///
-    /// "Did::get_ver_key" call follow the idea that we resolve information about their DID from
+    /// "get_ver_key" call follow the idea that we resolve information about their DID from
     /// the ledger with cache in the local wallet. The "indy_Wallet::open" call has freshness parameter
     /// that is used for checking the freshness of cached pool value.
     ///
     /// Note if you don't want to resolve their DID info from the ledger you can use
-    /// "Did::get_ver_key" call instead that will look only to the local wallet and skip
+    /// "get_ver_key" call instead that will look only to the local wallet and skip
     /// freshness checking.
     ///
-    /// Note that "Did::new" makes similar wallet record as "Key::create".
+    /// Note that "new" makes similar wallet record as "Key::create".
     /// As result we can use returned ver key in all generic crypto and messaging functions.
     ///
     /// # Arguments
@@ -399,28 +397,28 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn get_ver_key_async<F: 'static>(pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_get_ver_key(command_handle, pool_handle, wallet_handle, did, cb)
     }
-    
-    fn _get_ver_key(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+
+    fn _get_ver_key(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let did = c_str!(did);
 
-        ErrorCode::from(unsafe { did::indy_key_for_did(command_handle, pool_handle, wallet_handle, did.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_key_for_did(command_handle, pool_handle, wallet_handle, did.as_ptr(), cb) })
     }
 
     /// Returns ver key (key id) for the given DID.
     ///
-    /// "Did::get_ver_key_did" call looks data stored in the local wallet only and skips freshness
+    /// "get_ver_key_did" call looks data stored in the local wallet only and skips freshness
     /// checking.
     ///
-    /// Note if you want to get fresh data from the ledger you can use "Did::get_ver_key" call
+    /// Note if you want to get fresh data from the ledger you can use "get_ver_key" call
     /// instead.
     ///
-    /// Note that "Did::new" makes similar wallet record as "Key::create".
+    /// Note that "new" makes similar wallet record as "Key::create".
     /// As result we can use returned ver key in all generic crypto and messaging functions.
     ///
     /// # Arguments
@@ -439,13 +437,13 @@ impl Did {
 
     /// Returns ver key (key id) for the given DID.
     ///
-    /// "Did::get_ver_key_did" call looks data stored in the local wallet only and skips freshness
+    /// "get_ver_key_did" call looks data stored in the local wallet only and skips freshness
     /// checking.
     ///
-    /// Note if you want to get fresh data from the ledger you can use "Did::get_ver_key" call
+    /// Note if you want to get fresh data from the ledger you can use "get_ver_key" call
     /// instead.
     ///
-    /// Note that "Did::new" makes similar wallet record as "Key::create".
+    /// Note that "new" makes similar wallet record as "Key::create".
     /// As result we can use returned ver key in all generic crypto and messaging functions.
     ///
     /// # Arguments
@@ -465,13 +463,13 @@ impl Did {
 
     /// Returns ver key (key id) for the given DID.
     ///
-    /// "Did::get_ver_key_did" call looks data stored in the local wallet only and skips freshness
+    /// "get_ver_key_did" call looks data stored in the local wallet only and skips freshness
     /// checking.
     ///
-    /// Note if you want to get fresh data from the ledger you can use "Did::get_ver_key" call
+    /// Note if you want to get fresh data from the ledger you can use "get_ver_key" call
     /// instead.
     ///
-    /// Note that "Did::new" makes similar wallet record as "Key::create".
+    /// Note that "new" makes similar wallet record as "Key::create".
     /// As result we can use returned ver key in all generic crypto and messaging functions.
     ///
     /// # Arguments
@@ -480,17 +478,17 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn get_ver_key_local_async<F: 'static>(wallet_handle: IndyHandle, did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_get_ver_key_local(command_handle, wallet_handle, did, cb)
     }
-    
-    fn _get_ver_key_local(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+
+    fn _get_ver_key_local(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let did = c_str!(did);
 
-        ErrorCode::from(unsafe { did::indy_key_for_local_did(command_handle, wallet_handle, did.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_key_for_local_did(command_handle, wallet_handle, did.as_ptr(), cb) })
     }
 
     /// Set/replaces endpoint information for the given DID.
@@ -534,19 +532,19 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn set_endpoint_async<F: 'static>(wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Did::_set_endpoint(command_handle, wallet_handle, did, address, transport_key, cb)
     }
-    
-    fn _set_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+
+    fn _set_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let did = c_str!(did);
         let address = c_str!(address);
         let transport_key = c_str!(transport_key);
 
-        ErrorCode::from(unsafe { did::indy_set_endpoint_for_did(command_handle, wallet_handle, did.as_ptr(), address.as_ptr(), transport_key.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_set_endpoint_for_did(command_handle, wallet_handle, did.as_ptr(), address.as_ptr(), transport_key.as_ptr(), cb) })
     }
 
     /// Returns endpoint information for the given DID.
@@ -592,17 +590,17 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn get_endpoint_async<F: 'static>(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Option<String>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_opt_string(Box::new(closure));
 
         Did::_get_endpoint(command_handle, wallet_handle, pool_handle, did, cb)
     }
-    
-    fn _get_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+
+    fn _get_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, cb: indy::indy_str_str_cb) -> ErrorCode {
         let did = c_str!(did);
 
-        ErrorCode::from(unsafe { did::indy_get_endpoint_for_did(command_handle, wallet_handle, pool_handle, did.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_get_endpoint_for_did(command_handle, wallet_handle, pool_handle, did.as_ptr(), cb) })
     }
 
     /// Saves/replaces the meta information for the giving DID in the wallet.
@@ -643,18 +641,18 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn set_metadata_async<F: 'static>(wallet_handle: IndyHandle, tgt_did: &str, metadata: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Did::_set_metadata(command_handle, wallet_handle, tgt_did, metadata, cb)
     }
-    
-    fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+
+    fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, metadata: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
         let metadata = c_str!(metadata);
 
-        ErrorCode::from(unsafe { did::indy_set_did_metadata(command_handle, wallet_handle, tgt_did.as_ptr(), metadata.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_set_did_metadata(command_handle, wallet_handle, tgt_did.as_ptr(), metadata.as_ptr(), cb) })
     }
 
     /// Retrieves the meta information for the giving DID in the wallet.
@@ -698,17 +696,17 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn get_metadata_async<F: 'static>(wallet_handle: IndyHandle, tgt_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_get_metadata(command_handle, wallet_handle, tgt_did, cb)
     }
-    
-    fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+
+    fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
 
-        ErrorCode::from(unsafe { did::indy_get_did_metadata(command_handle, wallet_handle, tgt_did.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_get_did_metadata(command_handle, wallet_handle, tgt_did.as_ptr(), cb) })
     }
 
     /// Retrieves the information about the giving DID in the wallet.
@@ -760,17 +758,17 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn get_my_metadata_async<F: 'static>(wallet_handle: IndyHandle, my_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_get_my_metadata(command_handle, wallet_handle, my_did, cb)
     }
-    
-    fn _get_my_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, my_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+
+    fn _get_my_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, my_did: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let my_did = c_str!(my_did);
 
-        ErrorCode::from(unsafe { did::indy_get_my_did_with_meta(command_handle, wallet_handle, my_did.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_get_my_did_with_meta(command_handle, wallet_handle, my_did.as_ptr(), cb) })
     }
 
     /// Retrieves the information about all DIDs stored in the wallet.
@@ -819,15 +817,15 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn list_with_metadata_async<F: 'static>(wallet_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_list_with_metadata(command_handle, wallet_handle, cb)
     }
-    
-    fn _list_with_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
-        ErrorCode::from(unsafe { did::indy_list_my_dids_with_meta(command_handle, wallet_handle, cb) })
+
+    fn _list_with_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: indy::indy_str_cb) -> ErrorCode {
+        ErrorCode::from(unsafe { indy::indy_list_my_dids_with_meta(command_handle, wallet_handle, cb) })
     }
 
     /// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
@@ -871,17 +869,17 @@ impl Did {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn abbreviate_verkey_async<F: 'static>(tgt_did: &str, verkey: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_abbreviate_verkey(command_handle, tgt_did, verkey, cb)
     }
-    
-    fn _abbreviate_verkey(command_handle: IndyHandle, tgt_did: &str, verkey: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+
+    fn _abbreviate_verkey(command_handle: IndyHandle, tgt_did: &str, verkey: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
         let verkey = c_str!(verkey);
 
-        ErrorCode::from(unsafe { did::indy_abbreviate_verkey(command_handle, tgt_did.as_ptr(), verkey.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_abbreviate_verkey(command_handle, tgt_did.as_ptr(), verkey.as_ptr(), cb) })
     }
 }

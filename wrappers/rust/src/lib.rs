@@ -7,6 +7,8 @@ extern crate num_traits;
 #[macro_use]
 extern crate num_derive;
 
+extern crate indy_sys as indy;
+
 #[macro_use]
 mod macros;
 
@@ -20,7 +22,6 @@ pub mod pairwise;
 pub mod pool;
 pub mod wallet;
 pub mod utils;
-pub mod native;
 
 use std::sync::mpsc;
 
@@ -68,7 +69,7 @@ pub enum ErrorCode
     // Caller passed invalid value as param 11 (null, invalid json and etc..)
     CommonInvalidParam11 = 110,
 
-    // Caller passed invalid value as param 11 (null, invalid json and etc..)
+    // Caller passed invalid value as param 12 (null, invalid json and etc..)
     CommonInvalidParam12 = 111,
 
     // Invalid library state was detected in runtime. It signals library bug
@@ -181,7 +182,7 @@ pub enum ErrorCode
     // Pool ledger terminated
     PoolLedgerTerminated = 302,
 
-    // No concensus during ledger operation
+    // No consensus during ledger operation
     LedgerNoConsensusError = 303,
 
     // Attempt to parse invalid transaction response
@@ -203,7 +204,7 @@ pub enum ErrorCode
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
-    AnoncredsInvalidUserRevocIndex = 401,
+    AnoncredsInvalidUserRevocId = 401,
 
     // Attempt to generate master secret with duplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,
@@ -212,10 +213,10 @@ pub enum ErrorCode
 
     AnoncredsCredentialRevoked = 406,
 
-    // Attempt to create credential definition with duplicated did schema pair
+    // Attempt to create credential definition with duplicated id
     AnoncredsCredDefAlreadyExistsError = 407,
 
-    // Signus errors
+    // Crypto errors
     // Unknown format of DID entity keys
     UnknownCryptoTypeError = 500,
 
@@ -223,10 +224,10 @@ pub enum ErrorCode
     DidAlreadyExistsError = 600,
 
     // Unknown payment method was given
-    UnknownPaymentMethod = 700,
+    PaymentUnknownMethodError = 700,
 
     //No method were scraped from inputs/outputs or more than one were scraped
-    IncompatiblePaymentError = 701,
+    PaymentIncompatibleMethodsError = 701,
 
     // Insufficient funds on inputs
     PaymentInsufficientFundsError = 702,
@@ -234,8 +235,11 @@ pub enum ErrorCode
     // No such source on a ledger
     PaymentSourceDoesNotExistError = 703,
 
+    // Operation is not supported for payment method
+    PaymentOperationNotSupportedError = 704,
+
     // Extra funds on inputs
-    PaymentExtraFundsError = 705,
+    PaymentExtraFundsError = 705
 }
 
 impl ErrorCode {
@@ -324,7 +328,7 @@ impl ErrorCode {
 
     pub fn try_err(&self) -> Result<(), ErrorCode> {
         if self.is_err() {
-            return Err(*self)
+            return Err(*self);
         }
         Ok(())
     }
@@ -353,7 +357,7 @@ impl From<mpsc::RecvTimeoutError> for ErrorCode {
             mpsc::RecvTimeoutError::Timeout => {
                 warn!("Timed out waiting for libindy to call back");
                 ErrorCode::CommonIOError
-            },
+            }
             mpsc::RecvTimeoutError::Disconnected => {
                 warn!("Channel to libindy was disconnected unexpectedly");
                 ErrorCode::CommonIOError

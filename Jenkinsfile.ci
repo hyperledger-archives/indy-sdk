@@ -478,6 +478,22 @@ def linuxCLITesting(env_name, network_name, testEnv) {
     }
 }
 
+def linuxRustTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyRustSO${env_name}"
+
+    sh "cp -r libindy/include/* wrappers/rust/libindy-sys/"
+
+    dir('wrappers/rust') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Indy Rust wrapper Test: Build"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run'
+
+            echo "${env_name} Indy Rust wrupper Test: Run tests"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
+        }
+    }
+}
+
 def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
     if (pool_type != null && plenum_ver != null && anoncreds_ver != null && node_ver != null) {
         return "--build-arg=indy_stream=${pool_type} --build-arg indy_plenum_ver=${plenum_ver} --build-arg indy_anoncreds_ver=${anoncreds_ver} --build-arg indy_node_ver=${node_ver}"

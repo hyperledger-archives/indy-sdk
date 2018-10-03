@@ -50,7 +50,9 @@ RUN apt-get update && apt-get install openjdk-8-jdk -y
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
 RUN apt-get update && apt-get install -y maven
 
-RUN apt-get install -y zip
+RUN apt-get install -y \
+                   zip \
+                   clang
 
 RUN useradd -ms /bin/bash -u $uid indy
 USER indy

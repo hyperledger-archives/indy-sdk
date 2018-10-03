@@ -4,13 +4,11 @@ use std::ffi::CString;
 use std::time::Duration;
 use std::ptr::null;
 
-use utils::callbacks::ClosureHandler;
 use utils::results::ResultHandler;
 
-use native::pairwise;
-use native::{ResponseEmptyCB,
-          ResponseStringCB,
-          ResponseBoolCB};
+use utils::callbacks::ClosureHandler;
+
+use indy;
 
 pub struct Pairwise {}
 
@@ -35,18 +33,18 @@ impl Pairwise {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn does_exist_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
 
         Pairwise::_does_exist(command_handle, wallet_handle, their_did, cb)
     }
 
-    fn _does_exist(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, cb: Option<ResponseBoolCB>) -> ErrorCode {
+    fn _does_exist(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, cb: indy::indy_bool_cb) -> ErrorCode {
         let their_did = c_str!(their_did);
 
         ErrorCode::from(unsafe {
-            pairwise::indy_is_pairwise_exists(command_handle, wallet_handle, their_did.as_ptr(), cb)
+            indy::indy_is_pairwise_exists(command_handle, wallet_handle, their_did.as_ptr(), cb)
         })
     }
 
@@ -70,20 +68,20 @@ impl Pairwise {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn create_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Pairwise::_create(command_handle, wallet_handle, their_did, my_did, metadata, cb)
     }
 
-    fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, cb: indy::indy_empty_cb) -> ErrorCode {
         let their_did = c_str!(their_did);
         let my_did = c_str!(my_did);
         let metadata_str = opt_c_str!(metadata);
 
         ErrorCode::from(unsafe {
-            pairwise::indy_create_pairwise(command_handle, wallet_handle, their_did.as_ptr(), my_did.as_ptr(), opt_c_ptr!(metadata, metadata_str), cb)
+            indy::indy_create_pairwise(command_handle, wallet_handle, their_did.as_ptr(), my_did.as_ptr(), opt_c_ptr!(metadata, metadata_str), cb)
         })
     }
 
@@ -107,16 +105,16 @@ impl Pairwise {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn list_async<F: 'static>(wallet_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Pairwise::_list(command_handle, wallet_handle, cb)
     }
 
-    fn _list(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _list(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: indy::indy_str_cb) -> ErrorCode {
         ErrorCode::from(unsafe {
-            pairwise::indy_list_pairwise(command_handle, wallet_handle, cb)
+            indy::indy_list_pairwise(command_handle, wallet_handle, cb)
         })
     }
 
@@ -140,18 +138,18 @@ impl Pairwise {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn get_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Pairwise::_get(command_handle, wallet_handle, their_did, cb)
     }
 
-    fn _get(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _get(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let their_did = c_str!(their_did);
 
         ErrorCode::from(unsafe {
-            pairwise::indy_get_pairwise(command_handle, wallet_handle, their_did.as_ptr(), cb)
+            indy::indy_get_pairwise(command_handle, wallet_handle, their_did.as_ptr(), cb)
         })
     }
 
@@ -175,19 +173,19 @@ impl Pairwise {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn set_metadata_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Pairwise::_set_metadata(command_handle, wallet_handle, their_did, metadata, cb)
     }
 
-    fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, cb: indy::indy_empty_cb) -> ErrorCode {
         let their_did = c_str!(their_did);
         let metadata_str = opt_c_str!(metadata);
 
         ErrorCode::from(unsafe {
-            pairwise::indy_set_pairwise_metadata(command_handle, wallet_handle, their_did.as_ptr(), opt_c_ptr!(metadata, metadata_str), cb)
+            indy::indy_set_pairwise_metadata(command_handle, wallet_handle, their_did.as_ptr(), opt_c_ptr!(metadata, metadata_str), cb)
         })
     }
 }

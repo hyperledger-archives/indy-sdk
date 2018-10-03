@@ -4,6 +4,12 @@
 #include "indy_mod.h"
 #include "indy_types.h"
 
+
+typedef indy_error_t (*indyLedgerCustomTransactionParserCb)(const char*   reply_from_node,
+                                                            const char*   parsed_sp);
+
+typedef indy_error_t (*indyLedgerCustomFreeCb)(const char*   reply_from_node);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,10 +42,7 @@ extern "C" {
                                                      indy_handle_t wallet_handle,
                                                      const char *  submitter_did,
                                                      const char *  request_json,
-
-                                                     void           (*cb)(indy_handle_t xcommand_handle,
-                                                                          indy_error_t  err,
-                                                                          const char*   request_result_json)
+                                                     indy_str_cb str
                                                      );
     
     /// Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
@@ -62,10 +65,7 @@ extern "C" {
     extern indy_error_t indy_submit_request(indy_handle_t command_handle,
                                             indy_handle_t pool_handle,
                                             const char *  request_json,
-
-                                            void           (*cb)(indy_handle_t xcommand_handle,
-                                                                 indy_error_t  err,
-                                                                 const char*   request_result_json)
+                                            indy_str_cb str
                                            );
 
     /// Send action to particular nodes of validator pool.
@@ -98,10 +98,7 @@ extern "C" {
                                            const char *  request_json,
                                            const char *  nodes,
                                            indy_i32_t    timeout,
-
-                                           void           (*cb)(indy_handle_t xcommand_handle,
-                                                                indy_error_t  err,
-                                                                const char*   request_result_json)
+                                           indy_str_cb str
                                            );
 
     /// Signs request message.
@@ -129,10 +126,7 @@ extern "C" {
                                          indy_handle_t  wallet_handle,
                                          const char *   submitter_did,
                                          const char *   request_json,
-
-                                         void           (*cb)(indy_handle_t xcommand_handle,
-                                                              indy_error_t  err,
-                                                              const char*   signed_request_json)
+                                          indy_str_cb str
                                          );
 
 
@@ -161,10 +155,7 @@ extern "C" {
                                                 indy_handle_t  wallet_handle,
                                                 const char *   submitter_did,
                                                 const char *   request_json,
-
-                                                void           (*cb)(indy_handle_t xcommand_handle,
-                                                                     indy_error_t  err,
-                                                                     const char*   signed_request_json)
+                                                indy_str_cb str
                                                 );
 
     /// Builds a request to get a DDO.
@@ -184,10 +175,7 @@ extern "C" {
     extern indy_error_t indy_build_get_ddo_request(indy_handle_t command_handle,
                                                    const char *  submitter_did,
                                                    const char *  target_did,
-
-                                                   void           (*cb)(indy_handle_t xcommand_handle,
-                                                                        indy_error_t  err,
-                                                                        const char*   request_result_json)
+                                                   indy_str_cb str
                                                   );
     
     /// Builds a NYM request. Request to create a new NYM record for a specific user.
@@ -218,10 +206,7 @@ extern "C" {
                                                const char *  verkey,
                                                const char *  alias,
                                                const char *  role,
-
-                                               void           (*cb)(indy_handle_t xcommand_handle,
-                                                                    indy_error_t  err,
-                                                                    const char*   request_json)
+                                               indy_str_cb str
                                               );
 
     /// Builds an ATTRIB request. Request to add attribute to a NYM record.
@@ -247,10 +232,7 @@ extern "C" {
                                                   const char *  hash,
                                                   const char *  raw,
                                                   const char *  enc,
-
-                                                  void           (*cb)(indy_handle_t xcommand_handle,
-                                                                       indy_error_t  err,
-                                                                       const char*   request_json)
+                                                  indy_str_cb str
                                                   );
 
     /// Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
@@ -276,10 +258,7 @@ extern "C" {
                                                       const char *  hash,
                                                       const char *  raw,
                                                       const char *  enc,
-
-                                                      void           (*cb)(indy_handle_t xcommand_handle,
-                                                                           indy_error_t  err,
-                                                                           const char*   request_json)
+                                                       indy_str_cb str
                                                      );
 
     /// Builds a GET_NYM request. Request to get information about a DID (NYM).
@@ -299,10 +278,7 @@ extern "C" {
     extern indy_error_t indy_build_get_nym_request(indy_handle_t command_handle,
                                                    const char *  submitter_did,
                                                    const char *  target_did,
-
-                                                   void           (*cb)(indy_handle_t xcommand_handle,
-                                                                        indy_error_t  err,
-                                                                        const char*   request_json)
+                                                   indy_str_cb str
                                                   );
 
     /// Builds a SCHEMA request. Request to add Credential's schema.
@@ -329,10 +305,7 @@ extern "C" {
     extern indy_error_t indy_build_schema_request(indy_handle_t command_handle,
                                                   const char *  submitter_did,
                                                   const char *  data,
-
-                                                  void           (*cb)(indy_handle_t xcommand_handle,
-                                                                       indy_error_t  err,
-                                                                       const char*   request_json)
+                                                   indy_str_cb str
                                                  );
 
     /// Builds a GET_SCHEMA request. Request to get Credential's Schema.
@@ -352,10 +325,7 @@ extern "C" {
     extern indy_error_t indy_build_get_schema_request(indy_handle_t command_handle,
                                                       const char *  submitter_did,
                                                       const char *  id,
-
-                                                      void           (*cb)(indy_handle_t xcommand_handle,
-                                                                           indy_error_t  err,
-                                                                           const char*   request_json)
+                                                      indy_str_cb str
                                                      );
 
     /// Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API.
@@ -380,11 +350,7 @@ extern "C" {
 
     extern indy_error_t indy_parse_get_schema_response(indy_handle_t command_handle,
                                                        const char *  get_schema_response,
-
-                                                       void           (*cb)(indy_handle_t xcommand_handle,
-                                                                            indy_error_t  err,
-                                                                            const char*   schema_id,
-                                                                            const char*   schema_json)
+                                                        indy_str_str_cb str
                                                        );
     
     /// Builds an CRED_DEF request. Request to add a Credential Definition (in particular, public key),
@@ -416,10 +382,7 @@ extern "C" {
     extern indy_error_t indy_build_cred_def_request(indy_handle_t command_handle,
                                                     const char *  submitter_did,
                                                     const char *  data,
-
-                                                    void           (*cb)(indy_handle_t xcommand_handle,
-                                                                         indy_error_t  err,
-                                                                         const char*   request_json)
+                                                    indy_str_cb str
                                                     );
     
     /// Builds a GET_CRED_DEF request. Request to get a Credential Definition (in particular, public key),
@@ -440,10 +403,7 @@ extern "C" {
      extern indy_error_t indy_build_get_cred_def_request(indy_handle_t command_handle,
                                                          const char *  submitter_did,
                                                          const char *  id,
-
-                                                         void           (*cb)(indy_handle_t xcommand_handle,
-                                                                              indy_error_t  err,
-                                                                              const char*   request_json)
+                                                         indy_str_cb str
                                                          );
 
     /// Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.
@@ -472,10 +432,7 @@ extern "C" {
 
      extern indy_error_t indy_parse_get_cred_def_response(indy_handle_t command_handle,
                                                           const char *  get_cred_def_response,
-                                                          void           (*cb)(indy_handle_t xcommand_handle,
-                                                                               indy_error_t  err,
-                                                                               const char*   cred_def_id,
-                                                                               const char*   cred_def_json)
+                                                          indy_str_str_cb str
                                                           );
 
     /// Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
@@ -506,10 +463,7 @@ extern "C" {
                                                 const char *  submitter_did,
                                                 const char *  target_did,
                                                 const char *  data,
-
-                                                void           (*cb)(indy_handle_t xcommand_handle,
-                                                                     indy_error_t  err,
-                                                                     const char*   request_json)
+                                                indy_str_cb str
                                                );
 
         /// Builds a GET_VALIDATOR_INFO request.
@@ -527,9 +481,7 @@ extern "C" {
 
         extern indy_error_t indy_build_get_validator_info_request(indy_handle_t command_handle,
                                                        const char *  submitter_did,
-                                                       void           (*cb)(indy_handle_t xcommand_handle,
-                                                                            indy_error_t  err,
-                                                                            const char*   request_json)
+                                                        indy_str_cb str
                                                        );
 
 
@@ -556,10 +508,7 @@ extern "C" {
                                                    const char *  submitter_did,
                                                    const char *  ledger_type,
                                                    indy_i32_t    data,
-
-                                                   void           (*cb)(indy_handle_t xcommand_handle,
-                                                                        indy_error_t  err,
-                                                                        const char*   request_json)
+                                                   indy_str_cb str
                                                    );
 
     /// Builds a POOL_CONFIG request. Request to change Pool's configuration.
@@ -583,10 +532,7 @@ extern "C" {
                                                        const char *  submitter_did,
                                                        indy_bool_t    writes,
                                                        indy_bool_t    force,
-
-                                                       void           (*cb)(indy_handle_t xcommand_handle,
-                                                                            indy_error_t  err,
-                                                                            const char*   request_json)
+                                                        indy_str_cb str
                                                        );
 
     /// Builds a POOL_RESTART request.
@@ -608,9 +554,7 @@ extern "C" {
                                                         const char *  submitter_did,
                                                         const char *  action,
                                                         const char *  datetime,
-                                                        void           (*cb)(indy_handle_t xcommand_handle,
-                                                                             indy_error_t  err,
-                                                                             const char*   request_json)
+                                                        indy_str_cb str
                                                         );
 
     /// Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
@@ -651,10 +595,7 @@ extern "C" {
                                                         indy_bool_t   reinstall,
                                                         indy_bool_t   force,
                                                         const char *  package_,
-
-                                                        void           (*cb)(indy_handle_t xcommand_handle,
-                                                                             indy_error_t  err,
-                                                                             const char*   request_json)
+                                                        indy_str_cb str
                                                         );
 
     /// Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
@@ -689,10 +630,7 @@ extern "C" {
     extern indy_error_t indy_build_revoc_reg_def_request(indy_handle_t command_handle,
                                                          const char *  submitter_did,
                                                          const char *  data,
-
-                                                         void           (*cb)(indy_handle_t xcommand_handle,
-                                                                              indy_error_t  err,
-                                                                              const char*   request_json)
+                                                          indy_str_cb str
                                                          );
 
     /// Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
@@ -713,10 +651,7 @@ extern "C" {
     extern indy_error_t indy_build_get_revoc_reg_def_request(indy_handle_t command_handle,
                                                              const char *  submitter_did,
                                                              const char *  id,
-
-                                                             void           (*cb)(indy_handle_t xcommand_handle,
-                                                                                  indy_error_t  err,
-                                                                                  const char*   request_json)
+                                                             indy_str_cb str
                                                             );
 
     /// Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format
@@ -749,11 +684,7 @@ extern "C" {
 
     extern indy_error_t indy_parse_get_revoc_reg_def_response(indy_handle_t command_handle,
                                                               const char *  get_revoc_ref_def_response,
-
-                                                              void           (*cb)(indy_handle_t xcommand_handle,
-                                                                                   indy_error_t  err,
-                                                                                   const char*   revoc_reg_def_id,
-                                                                                   const char*   revoc_reg_def_json)
+                                                              indy_str_str_cb str
                                                              );
 
     /// Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
@@ -789,10 +720,7 @@ extern "C" {
                                                            const char *  revoc_reg_def_id,
                                                            const char *  rev_def_type,
                                                            const char *  value,
-
-                                                           void           (*cb)(indy_handle_t xcommand_handle,
-                                                                                indy_error_t  err,
-                                                                                const char*   request_json)
+                                                           indy_str_cb str
                                                           );
 
     /// Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
@@ -815,10 +743,7 @@ extern "C" {
                                                          const char *  submitter_did,
                                                          const char *  revoc_reg_def_id,
                                                          long long    timestamp,
-
-                                                         void           (*cb)(indy_handle_t xcommand_handle,
-                                                                              indy_error_t  err,
-                                                                              const char*   request_json)
+                                                         indy_str_cb str
                                                         );
 
     /// Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.
@@ -842,12 +767,7 @@ extern "C" {
 
     extern indy_error_t indy_parse_get_revoc_reg_response(indy_handle_t command_handle,
                                                           const char *  get_revoc_reg_response,
-
-                                                          void           (*cb)(indy_handle_t xcommand_handle,
-                                                                               indy_error_t  err,
-                                                                               const char*   revoc_reg_def_id,
-                                                                               const char*   revoc_reg_json,
-                                                                               unsigned long long      timestamp)
+                                                          indy_str_str_long_cb cb
                                                          );
 
     /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
@@ -873,10 +793,7 @@ extern "C" {
                                                                const char *  revoc_reg_def_id,
                                                                long long    from,
                                                                long long    to,
-
-                                                               void           (*cb)(indy_handle_t xcommand_handle,
-                                                                                    indy_error_t  err,
-                                                                                    const char*   request_json)
+                                                               indy_str_cb cb
                                                               );
 
     /// Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
@@ -903,12 +820,28 @@ extern "C" {
 
     extern indy_error_t indy_parse_get_revoc_reg_delta_response(indy_handle_t command_handle,
                                                                 const char *  get_revoc_reg_delta_response,
+                                                                indy_str_str_long_cb cb
+                                                               );
 
-                                                                void           (*cb)(indy_handle_t xcommand_handle,
-                                                                                     indy_error_t  err,
-                                                                                     const char*   revoc_reg_def_id,
-                                                                                     const char*   revoc_reg_delta_json,
-                                                                                     unsigned long long      timestamp)
+    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
+    ///
+    /// # params
+    /// command_handle: command handle to map callback to caller context.
+    /// txn_type: type of transaction to apply `parse` callback.
+    /// parse: required callback to parse reply for state proof.
+    /// free: required callback to deallocate memory.
+    /// cb: Callback that takes command result as parameter.
+    ///
+    /// # returns
+    /// Status of callbacks registration.
+    ///
+    /// # errors
+    /// Common*
+    extern indy_error_t indy_register_transaction_parser_for_sp(indy_handle_t command_handle,
+                                                                const char *  txn_type,
+                                                                indyLedgerCustomTransactionParserCb parse_fn,
+                                                                indyLedgerCustomFreeCb free_rn,
+                                                                indy_empty_cb cb
                                                                );
 
 #ifdef __cplusplus

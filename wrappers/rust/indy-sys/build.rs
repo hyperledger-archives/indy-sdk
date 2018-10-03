@@ -1,3 +1,4 @@
+extern crate bindgen;
 extern crate pkg_config;
 #[cfg(target_env = "msvc")]
 extern crate vcpkg;
@@ -48,6 +49,17 @@ fn main() {
             }
         }
     };
+
+    let bindings = bindgen::Builder::default()
+        .trust_clang_mangling(false)
+        .header("wrapper.h")
+        .generate()
+        .expect("Unable to generate bindings");
+
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("indy_bindings.rs"))
+        .expect("Couldn't write bindings!");
 }
 
 fn try_pkg_config() {

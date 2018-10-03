@@ -33,10 +33,7 @@ extern "C" {
     extern indy_error_t indy_create_key(indy_handle_t     command_handle,
                                         indy_handle_t     wallet_handle,
                                         const char *const key_json,
-
-                                        void              (*cb)(indy_handle_t     command_handle,
-                                                                indy_error_t      err,
-                                                                const char *const vk)
+                                        indy_str_cb cb
                                        );
 
     /// Saves/replaces the meta information for the giving key in the wallet.
@@ -62,9 +59,7 @@ extern "C" {
                                               indy_handle_t     wallet_handle,
                                               const char *const verkey,
                                               const char *const metadata,
-
-                                              void              (*cb)(indy_handle_t     command_handle,
-                                                                      indy_error_t      err)
+                                              indy_empty_cb cb
                                               );
 
     /// Retrieves the meta information for the giving key in the wallet.
@@ -89,10 +84,7 @@ extern "C" {
     extern indy_error_t indy_get_key_metadata(indy_handle_t     command_handle,
                                               indy_handle_t     wallet_handle,
                                               const char *const verkey,
-
-                                              void              (*cb)(indy_handle_t     command_handle,
-                                                                      indy_error_t      err,
-                                                                      const char *const metadata)
+                                              indy_str_cb cb
                                              );
 
 
@@ -123,11 +115,7 @@ extern "C" {
                                          const char *       signer_vk,
                                          const indy_u8_t *  message_raw,
                                          indy_u32_t         message_len,
-
-                                         void           (*cb)(indy_handle_t    xcommand_handle,
-                                                              indy_error_t     err,
-                                                              const indy_u8_t* signature_raw,
-                                                              indy_u32_t       signature_len)
+                                         indy_slice_cb cb
                                         );
 
     /// Verify a signature with a verkey.
@@ -158,10 +146,7 @@ extern "C" {
                                            indy_u32_t         message_len,
                                            const indy_u8_t *  signature_raw,
                                            indy_u32_t         signature_len,
-
-                                           void           (*cb)(indy_handle_t xcommand_handle,
-                                                                indy_error_t  err,
-                                                                indy_bool_t   valid )
+                                           indy_bool_cb cb
                                           );
 
     /// Encrypt a message by authenticated-encryption scheme.
@@ -198,11 +183,7 @@ extern "C" {
                                                const char *       recipient_vk,
                                                const indy_u8_t *  message_raw,
                                                indy_u32_t         message_len,
-
-                                               void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                    indy_error_t      err,
-                                                                    const indy_u8_t*  encrypted_msg_raw,
-                                                                    indy_u32_t        encrypted_msg_len)
+                                               indy_slice_cb cb
                                               );
 
     /// Decrypt a message by authenticated-encryption scheme.
@@ -236,12 +217,7 @@ extern "C" {
                                                  const char *       recipient_vk,
                                                  const indy_u8_t*   encrypted_msg_raw,
                                                  indy_u32_t         encrypted_msg_len,
-
-                                                 void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                      indy_error_t      err,
-                                                                      const char *      sender_vk,
-                                                                      const indy_u8_t*  decrypted_msg_raw,
-                                                                      indy_u32_t        decrypted_msg_len)
+                                                 indy_str_slice_cb cb
                                                 );
 
 
@@ -273,11 +249,7 @@ extern "C" {
                                                const char *       recipient_vk,
                                                const indy_u8_t *  message_raw,
                                                indy_u32_t         message_len,
-
-                                               void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                    indy_error_t      err,
-                                                                    const indy_u8_t*  encrypted_msg_raw,
-                                                                    indy_u32_t        encrypted_msg_len)
+                                               indy_slice_cb cb
                                                );
 
     /// Decrypts a message by anonymous-encryption scheme.
@@ -309,11 +281,7 @@ extern "C" {
                                                  const char *       recipient_vk,
                                                  const indy_u8_t*   encrypted_msg,
                                                  indy_u32_t         encrypted_len,
-
-                                                 void           (*cb)(indy_handle_t     xcommand_handle,
-                                                                      indy_error_t      err,
-                                                                      const indy_u8_t*  decrypted_msg_raw,
-                                                                      indy_u32_t        decrypted_msg_len)
+                                                indy_slice_cb cb
                                                  );
 
 #ifdef __cplusplus

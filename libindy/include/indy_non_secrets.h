@@ -31,8 +31,7 @@ extern "C" {
                                                const char*    id,
                                                const char*    value,
                                                const char*    tags_json,
-                                               void           (*fn)(indy_handle_t xcommand_handle,
-                                                                    indy_error_t err)
+                                               indy_empty_cb cb
                                               );
 
     /// Update a non-secret wallet record value
@@ -49,8 +48,7 @@ extern "C" {
                                                         const char*    type_,
                                                         const char*    id,
                                                         const char*    value,
-                                                        void           (*fn)(indy_handle_t xcommand_handle,
-                                                                             indy_error_t err)
+                                                        indy_empty_cb cb
                                                        );
 
 /// Update a non-secret wallet record tags
@@ -76,8 +74,7 @@ extern "C" {
                                                        const char*    type_,
                                                        const char*    id,
                                                        const char*    tags_json,
-                                                       void           (*fn)(indy_handle_t xcommand_handle,
-                                                                            indy_error_t err)
+                                                       indy_empty_cb cb
                                                       );
 
     /// Add new tags to the wallet record
@@ -105,8 +102,7 @@ extern "C" {
                                                     const char*    type_,
                                                     const char*    id,
                                                     const char*    tags_json,
-                                                    void           (*fn)(indy_handle_t xcommand_handle,
-                                                                         indy_error_t err)
+                                                    indy_empty_cb cb
                                                    );
 
     /// Delete tags from the wallet record
@@ -124,8 +120,7 @@ extern "C" {
                                                        const char*    type_,
                                                        const char*    id,
                                                        const char*    tag_names_json,
-                                                       void           (*fn)(indy_handle_t xcommand_handle,
-                                                                            indy_error_t err)
+                                                       indy_empty_cb cb
                                                       );
 
     /// Delete an existing wallet record in the wallet
@@ -140,8 +135,7 @@ extern "C" {
                                                   indy_handle_t  wallet_handle,
                                                   const char*    type_,
                                                   const char*    id,
-                                                  void           (*fn)(indy_handle_t xcommand_handle,
-                                                                       indy_error_t err)
+                                                  indy_empty_cb cb
                                                  );
 
     /// Get an wallet record by id
@@ -171,9 +165,7 @@ extern "C" {
                                                const char*    type_,
                                                const char*    id,
                                                const char*    options_json,
-                                               void           (*fn)(indy_handle_t xcommand_handle,
-                                                                    indy_error_t  err,
-                                                                    const char*   record_json)
+                                               indy_str_cb cb
                                               );
 
     /// Search for wallet records.
@@ -210,9 +202,7 @@ extern "C" {
                                                 const char*    type_,
                                                 const char*    query_json,
                                                 const char*    options_json,
-                                                void           (*fn)(indy_handle_t xcommand_handle,
-                                                                     indy_error_t err,
-                                                                     indy_handle_t search_handle)
+                                                indy_handle_cb cb
                                                );
 
     /// Get an wallet record by id
@@ -241,9 +231,7 @@ extern "C" {
                                                               indy_handle_t  wallet_handle,
                                                               indy_handle_t  wallet_search_handle,
                                                               indy_u32_t   count,
-                                                              void           (*fn)(indy_handle_t xcommand_handle,
-                                                                                   indy_error_t  err,
-                                                                                   const char*   records_json)
+                                                              indy_str_cb cb
                                                              );
 
     /// Close wallet search (make search handle invalid)
@@ -253,8 +241,7 @@ extern "C" {
 
     extern indy_error_t indy_close_wallet_search(indy_handle_t  command_handle,
                                                  indy_handle_t  wallet_search_handle,
-                                                 void           (*fn)(indy_handle_t xcommand_handle,
-                                                                      indy_error_t  err)
+                                                 indy_empty_cb cb
                                                 );
 
 #ifdef __cplusplus

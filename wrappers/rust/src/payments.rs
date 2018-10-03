@@ -4,87 +4,85 @@ use std::ffi::CString;
 use std::time::Duration;
 use std::ptr::null;
 
-use native::payments;
-use native::{ResponseEmptyCB,
-          ResponseStringCB,
-          ResponseStringStringCB};
-
 use utils::callbacks::ClosureHandler;
+
 use utils::results::ResultHandler;
+
+use indy;
 
 pub struct Payment {}
 
 impl Payment {
     pub fn register_method(payment_method: &str,
-                           create_payment_address: Option<payments::CreatePaymentAddressCB>,
-                           add_request_fees: Option<payments::AddRequestFeesCB>,
-                           parse_response_with_fees: Option<payments::ParseResponseWithFeesCB>,
-                           build_get_payment_sources_request: Option<payments::BuildGetPaymentSourcesRequestCB>,
-                           parse_get_payment_sources_response: Option<payments::ParseGetPaymentSourcesResponseCB>,
-                           build_payment_req: Option<payments::BuildPaymentReqCB>,
-                           parse_payment_response: Option<payments::ParsePaymentResponseCB>,
-                           build_mint_req: Option<payments::BuildMintReqCB>,
-                           build_set_txn_fees_req: Option<payments::BuildSetTxnFeesReqCB>,
-                           build_get_txn_fees_req: Option<payments::BuildGetTxnFeesReqCB>,
-                           parse_get_txn_fees_response: Option<payments::ParseGetTxnFeesResponseCB>,
-                           build_verify_payment_req: Option<payments::BuildVerifyPaymentReqCB>,
-                           parse_verify_payment_response: Option<payments::ParseVerifyPaymentResponseCB>) -> Result<(), ErrorCode> {
+                           create_payment_address: indy::indyCreatePaymentAddressCB,
+                           add_request_fees: indy::indyAddRequestFeesCB,
+                           parse_response_with_fees: indy::indyParseResponseWithFeesCB,
+                           build_get_payment_sources_request: indy::indyBuildGetPaymentSourcesRequestCB,
+                           parse_get_payment_sources_response: indy::indyParseGetPaymentSourcesResponseCB,
+                           build_payment_req: indy::indyBuildPaymentReqCB,
+                           parse_payment_response: indy::indyParsePaymentResponseCB,
+                           build_mint_req: indy::indyBuildMintReqCB,
+                           build_set_txn_fees_req: indy::indyBuildSetTxnFeesReqCB,
+                           build_get_txn_fees_req: indy::indyBuildGetTxnFeesReqCB,
+                           parse_get_txn_fees_response: indy::indyParseGetTxnFeesResponseCB,
+                           build_verify_payment_req: indy::indyBuildVerifyPaymentReqCB,
+                           parse_verify_payment_response: indy::indyParseVerifyPaymentResponseCB) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Payment::_register_method(command_handle,
-                                                      payment_method,
-                                                      create_payment_address,
-                                                      add_request_fees,
-                                                      parse_response_with_fees,
-                                                      build_get_payment_sources_request,
-                                                      parse_get_payment_sources_response,
-                                                      build_payment_req,
-                                                      parse_payment_response,
-                                                      build_mint_req,
-                                                      build_set_txn_fees_req,
-                                                      build_get_txn_fees_req,
-                                                      parse_get_txn_fees_response,
-                                                      build_verify_payment_req,
-                                                      parse_verify_payment_response,
-                                                      cb);
+                                            payment_method,
+                                            create_payment_address,
+                                            add_request_fees,
+                                            parse_response_with_fees,
+                                            build_get_payment_sources_request,
+                                            parse_get_payment_sources_response,
+                                            build_payment_req,
+                                            parse_payment_response,
+                                            build_mint_req,
+                                            build_set_txn_fees_req,
+                                            build_get_txn_fees_req,
+                                            parse_get_txn_fees_response,
+                                            build_verify_payment_req,
+                                            parse_verify_payment_response,
+                                            cb);
 
         ResultHandler::empty(err, receiver)
     }
 
     /// * `timeout` - the maximum time this function waits for a response
     pub fn register_method_timeout(payment_method: &str,
-                                   create_payment_address: Option<payments::CreatePaymentAddressCB>,
-                                   add_request_fees: Option<payments::AddRequestFeesCB>,
-                                   parse_response_with_fees: Option<payments::ParseResponseWithFeesCB>,
-                                   build_get_payment_sources_request: Option<payments::BuildGetPaymentSourcesRequestCB>,
-                                   parse_get_payment_sources_response: Option<payments::ParseGetPaymentSourcesResponseCB>,
-                                   build_payment_req: Option<payments::BuildPaymentReqCB>,
-                                   parse_payment_response: Option<payments::ParsePaymentResponseCB>,
-                                   build_mint_req: Option<payments::BuildMintReqCB>,
-                                   build_set_txn_fees_req: Option<payments::BuildSetTxnFeesReqCB>,
-                                   build_get_txn_fees_req: Option<payments::BuildGetTxnFeesReqCB>,
-                                   parse_get_txn_fees_response: Option<payments::ParseGetTxnFeesResponseCB>,
-                                   build_verify_payment_req: Option<payments::BuildVerifyPaymentReqCB>,
-                                   parse_verify_payment_response: Option<payments::ParseVerifyPaymentResponseCB>,
+                                   create_payment_address: indy::indyCreatePaymentAddressCB,
+                                   add_request_fees: indy::indyAddRequestFeesCB,
+                                   parse_response_with_fees: indy::indyParseResponseWithFeesCB,
+                                   build_get_payment_sources_request: indy::indyBuildGetPaymentSourcesRequestCB,
+                                   parse_get_payment_sources_response: indy::indyParseGetPaymentSourcesResponseCB,
+                                   build_payment_req: indy::indyBuildPaymentReqCB,
+                                   parse_payment_response: indy::indyParsePaymentResponseCB,
+                                   build_mint_req: indy::indyBuildMintReqCB,
+                                   build_set_txn_fees_req: indy::indyBuildSetTxnFeesReqCB,
+                                   build_get_txn_fees_req: indy::indyBuildGetTxnFeesReqCB,
+                                   parse_get_txn_fees_response: indy::indyParseGetTxnFeesResponseCB,
+                                   build_verify_payment_req: indy::indyBuildVerifyPaymentReqCB,
+                                   parse_verify_payment_response: indy::indyParseVerifyPaymentResponseCB,
                                    timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Payment::_register_method(command_handle,
-                                                      payment_method,
-                                                      create_payment_address,
-                                                      add_request_fees,
-                                                      parse_response_with_fees,
-                                                      build_get_payment_sources_request,
-                                                      parse_get_payment_sources_response,
-                                                      build_payment_req,
-                                                      parse_payment_response,
-                                                      build_mint_req,
-                                                      build_set_txn_fees_req,
-                                                      build_get_txn_fees_req,
-                                                      parse_get_txn_fees_response,
-                                                      build_verify_payment_req,
-                                                      parse_verify_payment_response,
-                                                      cb);
+                                            payment_method,
+                                            create_payment_address,
+                                            add_request_fees,
+                                            parse_response_with_fees,
+                                            build_get_payment_sources_request,
+                                            parse_get_payment_sources_response,
+                                            build_payment_req,
+                                            parse_payment_response,
+                                            build_mint_req,
+                                            build_set_txn_fees_req,
+                                            build_get_txn_fees_req,
+                                            parse_get_txn_fees_response,
+                                            build_verify_payment_req,
+                                            parse_verify_payment_response,
+                                            cb);
 
         ResultHandler::empty_timeout(err, receiver, timeout)
     }
@@ -92,21 +90,21 @@ impl Payment {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn register_method_async<F: 'static>(payment_method: &str,
-                                             create_payment_address: Option<payments::CreatePaymentAddressCB>,
-                                             add_request_fees: Option<payments::AddRequestFeesCB>,
-                                             parse_response_with_fees: Option<payments::ParseResponseWithFeesCB>,
-                                             build_get_payment_sources_request: Option<payments::BuildGetPaymentSourcesRequestCB>,
-                                             parse_get_payment_sources_response: Option<payments::ParseGetPaymentSourcesResponseCB>,
-                                             build_payment_req: Option<payments::BuildPaymentReqCB>,
-                                             parse_payment_response: Option<payments::ParsePaymentResponseCB>,
-                                             build_mint_req: Option<payments::BuildMintReqCB>,
-                                             build_set_txn_fees_req: Option<payments::BuildSetTxnFeesReqCB>,
-                                             build_get_txn_fees_req: Option<payments::BuildGetTxnFeesReqCB>,
-                                             parse_get_txn_fees_response: Option<payments::ParseGetTxnFeesResponseCB>,
-                                             build_verify_payment_req: Option<payments::BuildVerifyPaymentReqCB>,
-                                             parse_verify_payment_response: Option<payments::ParseVerifyPaymentResponseCB>,
+                                             create_payment_address: indy::indyCreatePaymentAddressCB,
+                                             add_request_fees: indy::indyAddRequestFeesCB,
+                                             parse_response_with_fees: indy::indyParseResponseWithFeesCB,
+                                             build_get_payment_sources_request: indy::indyBuildGetPaymentSourcesRequestCB,
+                                             parse_get_payment_sources_response: indy::indyParseGetPaymentSourcesResponseCB,
+                                             build_payment_req: indy::indyBuildPaymentReqCB,
+                                             parse_payment_response: indy::indyParsePaymentResponseCB,
+                                             build_mint_req: indy::indyBuildMintReqCB,
+                                             build_set_txn_fees_req: indy::indyBuildSetTxnFeesReqCB,
+                                             build_get_txn_fees_req: indy::indyBuildGetTxnFeesReqCB,
+                                             parse_get_txn_fees_response: indy::indyParseGetTxnFeesResponseCB,
+                                             build_verify_payment_req: indy::indyBuildVerifyPaymentReqCB,
+                                             parse_verify_payment_response: indy::indyParseVerifyPaymentResponseCB,
                                              closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
@@ -130,38 +128,38 @@ impl Payment {
 
     fn _register_method(command_handle: IndyHandle,
                         payment_method: &str,
-                        create_payment_address: Option<payments::CreatePaymentAddressCB>,
-                        add_request_fees: Option<payments::AddRequestFeesCB>,
-                        parse_response_with_fees: Option<payments::ParseResponseWithFeesCB>,
-                        build_get_payment_sources_request: Option<payments::BuildGetPaymentSourcesRequestCB>,
-                        parse_get_payment_sources_response: Option<payments::ParseGetPaymentSourcesResponseCB>,
-                        build_payment_req: Option<payments::BuildPaymentReqCB>,
-                        parse_payment_response: Option<payments::ParsePaymentResponseCB>,
-                        build_mint_req: Option<payments::BuildMintReqCB>,
-                        build_set_txn_fees_req: Option<payments::BuildSetTxnFeesReqCB>,
-                        build_get_txn_fees_req: Option<payments::BuildGetTxnFeesReqCB>,
-                        parse_get_txn_fees_response: Option<payments::ParseGetTxnFeesResponseCB>,
-                        build_verify_payment_req: Option<payments::BuildVerifyPaymentReqCB>,
-                        parse_verify_payment_response: Option<payments::ParseVerifyPaymentResponseCB>,
-                        cb: Option<ResponseEmptyCB>) -> ErrorCode {
+                        create_payment_address: indy::indyCreatePaymentAddressCB,
+                        add_request_fees: indy::indyAddRequestFeesCB,
+                        parse_response_with_fees: indy::indyParseResponseWithFeesCB,
+                        build_get_payment_sources_request: indy::indyBuildGetPaymentSourcesRequestCB,
+                        parse_get_payment_sources_response: indy::indyParseGetPaymentSourcesResponseCB,
+                        build_payment_req: indy::indyBuildPaymentReqCB,
+                        parse_payment_response: indy::indyParsePaymentResponseCB,
+                        build_mint_req: indy::indyBuildMintReqCB,
+                        build_set_txn_fees_req: indy::indyBuildSetTxnFeesReqCB,
+                        build_get_txn_fees_req: indy::indyBuildGetTxnFeesReqCB,
+                        parse_get_txn_fees_response: indy::indyParseGetTxnFeesResponseCB,
+                        build_verify_payment_req: indy::indyBuildVerifyPaymentReqCB,
+                        parse_verify_payment_response: indy::indyParseVerifyPaymentResponseCB,
+                        cb: indy::indy_empty_cb) -> ErrorCode {
         let payment_method = c_str!(payment_method);
 
         ErrorCode::from(unsafe {
-          payments::indy_register_payment_method(command_handle,
-                                                 payment_method.as_ptr(),
-                                                 create_payment_address,
-                                                 add_request_fees,
-                                                 parse_response_with_fees,
-                                                 build_get_payment_sources_request,
-                                                 parse_get_payment_sources_response,
-                                                 build_payment_req, parse_payment_response,
-                                                 build_mint_req,
-                                                 build_set_txn_fees_req,
-                                                 build_get_txn_fees_req,
-                                                 parse_get_txn_fees_response,
-                                                 build_verify_payment_req,
-                                                 parse_verify_payment_response,
-                                                 cb)
+            indy::indy_register_payment_method(command_handle,
+                                               payment_method.as_ptr(),
+                                               create_payment_address,
+                                               add_request_fees,
+                                               parse_response_with_fees,
+                                               build_get_payment_sources_request,
+                                               parse_get_payment_sources_response,
+                                               build_payment_req, parse_payment_response,
+                                               build_mint_req,
+                                               build_set_txn_fees_req,
+                                               build_get_txn_fees_req,
+                                               parse_get_txn_fees_response,
+                                               build_verify_payment_req,
+                                               parse_verify_payment_response,
+                                               cb)
         })
     }
 
@@ -248,18 +246,18 @@ impl Payment {
     /// }
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn create_payment_address_async<F: 'static>(wallet_handle: IndyHandle, payment_method: &str, config: &str, closure: F) -> ErrorCode where F:FnMut(ErrorCode, String) + Send {
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
+    pub fn create_payment_address_async<F: 'static>(wallet_handle: IndyHandle, payment_method: &str, config: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_create_payment_address(command_handle, wallet_handle, payment_method, config, cb)
     }
 
-    fn _create_payment_address(command_handle: IndyHandle, wallet_handle: IndyHandle, payment_method: &str, config: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _create_payment_address(command_handle: IndyHandle, wallet_handle: IndyHandle, payment_method: &str, config: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let payment_method = c_str!(payment_method);
         let config = c_str!(config);
 
-        ErrorCode::from(unsafe { payments::indy_create_payment_address(command_handle, wallet_handle, payment_method.as_ptr(), config.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_create_payment_address(command_handle, wallet_handle, payment_method.as_ptr(), config.as_ptr(), cb) })
     }
 
     /// Lists all payment addresses that are stored in the wallet
@@ -300,15 +298,15 @@ impl Payment {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn list_payment_addresses_async<F: 'static>(wallet_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_list_payment_addresses(command_handle, wallet_handle, cb)
     }
 
-    fn _list_payment_addresses(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
-        ErrorCode::from(unsafe { payments::indy_list_payment_addresses(command_handle, wallet_handle, cb) })
+    fn _list_payment_addresses(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: indy::indy_str_cb) -> ErrorCode {
+        ErrorCode::from(unsafe { indy::indy_list_payment_addresses(command_handle, wallet_handle, cb) })
     }
 
     /// Modifies Indy request by adding information how to pay fees for this transaction
@@ -443,7 +441,7 @@ impl Payment {
     ///   }]
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn add_request_fees_async<F: 'static>(wallet_handle: IndyHandle,
                                               submitter_did: Option<&str>,
                                               req_json: &str,
@@ -463,7 +461,7 @@ impl Payment {
                          inputs_json: &str,
                          outputs_json: &str,
                          extra: Option<&str>,
-                         cb: Option<ResponseStringStringCB>) -> ErrorCode {
+                         cb: indy::indy_str_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let req_json = c_str!(req_json);
         let inputs_json = c_str!(inputs_json);
@@ -471,14 +469,14 @@ impl Payment {
         let extra_str = opt_c_str!(extra);
 
         ErrorCode::from(unsafe {
-            payments::indy_add_request_fees(command_handle,
-                                            wallet_handle,
-                                            opt_c_ptr!(submitter_did, submitter_did_str),
-                                            req_json.as_ptr(),
-                                            inputs_json.as_ptr(),
-                                            outputs_json.as_ptr(),
-                                            opt_c_ptr!(extra, extra_str),
-                                            cb)
+            indy::indy_add_request_fees(command_handle,
+                                        wallet_handle,
+                                        opt_c_ptr!(submitter_did, submitter_did_str),
+                                        req_json.as_ptr(),
+                                        inputs_json.as_ptr(),
+                                        outputs_json.as_ptr(),
+                                        opt_c_ptr!(extra, extra_str),
+                                        cb)
         })
     }
 
@@ -542,17 +540,17 @@ impl Payment {
     ///   Note: this param will be used to determine payment_method
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn parse_response_with_fees_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
         Payment::_parse_response_with_fees(command_handle, payment_method, resp_json, cb)
     }
 
-    fn _parse_response_with_fees(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _parse_response_with_fees(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let payment_method = c_str!(payment_method);
         let resp_json = c_str!(resp_json);
 
-        ErrorCode::from(unsafe { payments::indy_parse_response_with_fees(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_parse_response_with_fees(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
     }
 
     /// Builds Indy request for getting UTXO list for payment address
@@ -606,17 +604,17 @@ impl Payment {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_payment_sources_request_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_address: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
         Payment::_build_get_payment_sources_request(command_handle, wallet_handle, submitter_did, payment_address, cb)
     }
 
-    fn _build_get_payment_sources_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_address: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+    fn _build_get_payment_sources_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_address: &str, cb: indy::indy_str_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let payment_address = c_str!(payment_address);
 
-        ErrorCode::from(unsafe { payments::indy_build_get_payment_sources_request(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_address.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_get_payment_sources_request(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_address.as_ptr(), cb) })
     }
 
     /// Parses response for Indy request for getting UTXO list.
@@ -675,18 +673,18 @@ impl Payment {
     ///   Note: this param will be used to determine payment_method
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn parse_get_payment_sources_response_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send{
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
+    pub fn parse_get_payment_sources_response_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_parse_get_payment_sources_response(command_handle, payment_method, resp_json, cb)
     }
 
-    fn _parse_get_payment_sources_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _parse_get_payment_sources_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let payment_method = c_str!(payment_method);
         let resp_json = c_str!(resp_json);
 
-        ErrorCode::from(unsafe { payments::indy_parse_get_payment_sources_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_parse_get_payment_sources_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
     }
 
     /// Builds Indy request for doing tokens payment
@@ -712,10 +710,10 @@ impl Payment {
     ///
     /// # Returns
     /// * `payment_req_json` - Indy request for doing tokens payment
-    /// * `payment_method` 
+    /// * `payment_method`
     pub fn build_payment_req(wallet_handle: IndyHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
-        
+
         let err = Payment::_build_payment_req(command_handle, wallet_handle, submitter_did, inputs, outputs, extra, cb);
 
         ResultHandler::two(err, receiver)
@@ -745,10 +743,10 @@ impl Payment {
     ///
     /// # Returns
     /// * `payment_req_json` - Indy request for doing tokens payment
-    /// * `payment_method` 
+    /// * `payment_method`
     pub fn build_payment_req_timeout(wallet_handle: IndyHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
-        
+
         let err = Payment::_build_payment_req(command_handle, wallet_handle, submitter_did, inputs, outputs, extra, cb);
 
         ResultHandler::two_timeout(err, receiver, timeout)
@@ -777,35 +775,35 @@ impl Payment {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_payment_req_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
-        
+
         Payment::_build_payment_req(command_handle, wallet_handle, submitter_did, inputs, outputs, extra, cb)
     }
 
-    fn _build_payment_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+    fn _build_payment_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, cb: indy::indy_str_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let inputs = c_str!(inputs);
         let outputs = c_str!(outputs);
         let extra_str = opt_c_str!(extra);
 
         ErrorCode::from(unsafe {
-            payments::indy_build_payment_req(command_handle,
-                                             wallet_handle,
-                                             opt_c_ptr!(submitter_did, submitter_did_str),
-                                             inputs.as_ptr(),
-                                             outputs.as_ptr(),
-                                             opt_c_ptr!(extra, extra_str),
-                                             cb)
+            indy::indy_build_payment_req(command_handle,
+                                         wallet_handle,
+                                         opt_c_ptr!(submitter_did, submitter_did_str),
+                                         inputs.as_ptr(),
+                                         outputs.as_ptr(),
+                                         opt_c_ptr!(extra, extra_str),
+                                         cb)
         })
     }
 
     /// Parses response for Indy request for payment txn.
     ///
     /// # Arguments
-    /// * `command_handle` 
-    /// * `payment_method` 
+    /// * `command_handle`
+    /// * `payment_method`
     /// * `resp_json` - response for Indy request for payment txn
     ///   Note: this param will be used to determine payment_method
     ///
@@ -827,8 +825,8 @@ impl Payment {
     /// Parses response for Indy request for payment txn.
     ///
     /// # Arguments
-    /// * `command_handle` 
-    /// * `payment_method` 
+    /// * `command_handle`
+    /// * `payment_method`
     /// * `resp_json` - response for Indy request for payment txn
     /// * `timeout` - the maximum time this function waits for a response
     ///   Note: this param will be used to determine payment_method
@@ -851,26 +849,25 @@ impl Payment {
     /// Parses response for Indy request for payment txn.
     ///
     /// # Arguments
-    /// * `command_handle` 
-    /// * `payment_method` 
+    /// * `command_handle`
+    /// * `payment_method`
     /// * `resp_json` - response for Indy request for payment txn
     /// * `closure` - the closure that is called when finished
     ///   Note: this param will be used to determine payment_method
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn parse_payment_response_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_parse_payment_response(command_handle, payment_method, resp_json, cb)
     }
 
-    fn _parse_payment_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _parse_payment_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let payment_method = c_str!(payment_method);
         let resp_json = c_str!(resp_json);
 
-        ErrorCode::from(unsafe { payments::indy_parse_payment_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
-
+        ErrorCode::from(unsafe { indy::indy_parse_payment_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
     }
 
     /// Builds Indy request for doing tokens minting
@@ -888,7 +885,7 @@ impl Payment {
     ///
     /// # Returns
     /// * `mint_req_json`  - Indy request for doing tokens minting
-    /// * `payment_method` 
+    /// * `payment_method`
     pub fn build_mint_req(wallet_handle: IndyHandle, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -913,7 +910,7 @@ impl Payment {
     ///
     /// # Returns
     /// * `mint_req_json`  - Indy request for doing tokens minting
-    /// * `payment_method` 
+    /// * `payment_method`
     pub fn build_mint_req_timeout(wallet_handle: IndyHandle, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -937,19 +934,19 @@ impl Payment {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_mint_req_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
         Payment::_build_mint_req(command_handle, wallet_handle, submitter_did, outputs_json, extra, cb)
     }
 
-    fn _build_mint_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+    fn _build_mint_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>, cb: indy::indy_str_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let outputs_json = c_str!(outputs_json);
         let extra_str = opt_c_str!(extra);
 
-        ErrorCode::from(unsafe { payments::indy_build_mint_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), outputs_json.as_ptr(), opt_c_ptr!(extra, extra_str), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_mint_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), outputs_json.as_ptr(), opt_c_ptr!(extra, extra_str), cb) })
     }
 
     /// Builds Indy request for setting fees for transactions in the ledger
@@ -957,7 +954,7 @@ impl Payment {
     /// # Arguments
     /// * `wallet_handle` - wallet handle
     /// * `submitter_did` - DID of request sender
-    /// * `payment_method` 
+    /// * `payment_method`
     /// * `fees_json` - {
     ///   txnType1: amount1,
     ///   txnType2: amount2,
@@ -980,7 +977,7 @@ impl Payment {
     /// # Arguments
     /// * `wallet_handle` - wallet handle
     /// * `submitter_did` - DID of request sender
-    /// * `payment_method` 
+    /// * `payment_method`
     /// * `fees_json` - {
     ///   txnType1: amount1,
     ///   txnType2: amount2,
@@ -1004,7 +1001,7 @@ impl Payment {
     /// # Arguments
     /// * `wallet_handle` - wallet handle
     /// * `submitter_did` - DID of request sender
-    /// * `payment_method` 
+    /// * `payment_method`
     /// * `fees_json` - {
     ///   txnType1: amount1,
     ///   txnType2: amount2,
@@ -1014,35 +1011,35 @@ impl Payment {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_set_txn_fees_req_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, fees_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_build_set_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, fees_json, cb)
     }
 
-    fn _build_set_txn_fees_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, fees_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_set_txn_fees_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, fees_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let payment_method = c_str!(payment_method);
         let fees_json = c_str!(fees_json);
 
-        ErrorCode::from(unsafe { payments::indy_build_set_txn_fees_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_method.as_ptr(), fees_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_set_txn_fees_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_method.as_ptr(), fees_json.as_ptr(), cb) })
     }
 
     /// Builds Indy get request for getting fees for transactions in the ledger
     ///
     /// # Arguments
-    /// * `command_handle` 
+    /// * `command_handle`
     /// * `wallet_handle` - wallet handle
     /// * `submitter_did`  - DID of request sender
-    /// * `payment_method` 
+    /// * `payment_method`
     ///
     /// # Returns
     /// * `get_txn_fees_json` - Indy request for getting fees for transactions in the ledger
     pub fn build_get_txn_fees_req(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let err = Payment::_build_get_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, cb); 
+        let err = Payment::_build_get_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, cb);
 
         ResultHandler::one(err, receiver)
     }
@@ -1050,10 +1047,10 @@ impl Payment {
     /// Builds Indy get request for getting fees for transactions in the ledger
     ///
     /// # Arguments
-    /// * `command_handle` 
+    /// * `command_handle`
     /// * `wallet_handle` - wallet handle
     /// * `submitter_did`  - DID of request sender
-    /// * `payment_method` 
+    /// * `payment_method`
     /// * `timeout` - the maximum time this function waits for a response
     ///
     /// # Returns
@@ -1061,7 +1058,7 @@ impl Payment {
     pub fn build_get_txn_fees_req_timeout(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
-        let err = Payment::_build_get_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, cb); 
+        let err = Payment::_build_get_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, cb);
 
         ResultHandler::one_timeout(err, receiver, timeout)
     }
@@ -1069,31 +1066,31 @@ impl Payment {
     /// Builds Indy get request for getting fees for transactions in the ledger
     ///
     /// # Arguments
-    /// * `command_handle` 
+    /// * `command_handle`
     /// * `wallet_handle` - wallet handle
     /// * `submitter_did`  - DID of request sender
-    /// * `payment_method` 
+    /// * `payment_method`
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_txn_fees_req_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
         Payment::_build_get_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, cb)
     }
 
-    fn _build_get_txn_fees_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_get_txn_fees_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let payment_method = c_str!(payment_method);
 
-        ErrorCode::from(unsafe { payments::indy_build_get_txn_fees_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_method.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_get_txn_fees_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), payment_method.as_ptr(), cb) })
     }
 
     /// Parses response for Indy request for getting fees
     ///
     /// # Arguments
-    /// * `command_handle` 
-    /// * `payment_method` 
+    /// * `command_handle`
+    /// * `payment_method`
     /// * `resp_json` - response for Indy request for getting fees
     ///
     /// # Returns
@@ -1114,8 +1111,8 @@ impl Payment {
     /// Parses response for Indy request for getting fees
     ///
     /// # Arguments
-    /// * `command_handle` 
-    /// * `payment_method` 
+    /// * `command_handle`
+    /// * `payment_method`
     /// * `resp_json` - response for Indy request for getting fees
     /// * `timeout` - the maximum time this function waits for a response
     ///
@@ -1137,24 +1134,24 @@ impl Payment {
     /// Parses response for Indy request for getting fees
     ///
     /// # Arguments
-    /// * `command_handle` 
-    /// * `payment_method` 
+    /// * `command_handle`
+    /// * `payment_method`
     /// * `resp_json` - response for Indy request for getting fees
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn parse_get_txn_fees_response_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_parse_get_txn_fees_response(command_handle, payment_method, resp_json, cb)
     }
 
-    fn _parse_get_txn_fees_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _parse_get_txn_fees_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let payment_method = c_str!(payment_method);
         let resp_json = c_str!(resp_json);
 
-        ErrorCode::from(unsafe { payments::indy_parse_get_txn_fees_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_parse_get_txn_fees_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb) })
     }
 
     pub fn build_verify_req(wallet_handle: IndyHandle, submitter_did: Option<&str>, receipt: &str) -> Result<(String, String), ErrorCode> {
@@ -1177,19 +1174,19 @@ impl Payment {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_verify_req_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, receipt: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
         Payment::_build_verify_req(command_handle, wallet_handle, submitter_did, receipt, cb)
     }
 
-    fn _build_verify_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, receipt: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+    fn _build_verify_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, receipt: &str, cb: indy::indy_str_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let receipt = c_str!(receipt);
 
         ErrorCode::from(unsafe {
-          payments::indy_build_verify_payment_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), receipt.as_ptr(), cb)
+            indy::indy_build_verify_payment_req(command_handle, wallet_handle, opt_c_ptr!(submitter_did, submitter_did_str), receipt.as_ptr(), cb)
         })
     }
 
@@ -1213,19 +1210,19 @@ impl Payment {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn parse_verify_response_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_parse_verify_response(command_handle, payment_method, resp_json, cb)
     }
 
-    fn _parse_verify_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _parse_verify_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let payment_method = c_str!(payment_method);
         let resp_json = c_str!(resp_json);
 
         ErrorCode::from(unsafe {
-          payments::indy_parse_verify_payment_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb)
+            indy::indy_parse_verify_payment_response(command_handle, payment_method.as_ptr(), resp_json.as_ptr(), cb)
         })
     }
 }

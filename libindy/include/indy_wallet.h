@@ -1,6 +1,324 @@
 #ifndef __indy__wallet__included__
 #define __indy__wallet__included__
 
+#include "indy_mod.h"
+#include "indy_types.h"
+
+/// Create the wallet storage (For example, database creation)
+///
+/// #Params
+/// name: wallet storage name (the same as wallet name)
+/// config: wallet storage config (For example, database config)
+/// credentials_json: wallet storage credentials (For example, database credentials)
+/// metadata: wallet metadata (For example encrypted keys).
+typedef indy_error_t (*indyCreateWalletCb)(const char* name,
+                                           const char* config,
+                                           const char* credentials_json,
+                                           const char* metadata);
+
+/// Open the wallet storage (For example, opening database connection)
+///
+/// #Params
+/// name: wallet storage name (the same as wallet name)
+/// config: wallet storage config (For example, database config)
+/// credentials_json: wallet storage credentials (For example, database credentials)
+/// storage_handle_p: pointer to store opened storage handle
+typedef indy_error_t (*indyOpenWalletCb)(const char* name,
+                                         const char* config,
+                                         const char* credentials,
+                                         indy_handle_t* handle);
+
+/// Close the opened walled storage (For example, closing database connection)
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+typedef indy_error_t (*indyCloseWalletCb)(indy_handle_t handle);
+
+/// Delete the wallet storage (For example, database deletion)
+///
+/// #Params
+/// name: wallet storage name (the same as wallet name)
+/// config: wallet storage config (For example, database config)
+/// credentials_json: wallet storage credentials (For example, database credentials)
+typedef indy_error_t (*indyDeleteWalletCb)(const char* name,
+                                           const char* config,
+                                           const char* credentials);
+
+/// Create a new record in the wallet storage
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// value: the value of record (pointer to buffer)
+/// value_len: the value of record (buffer size)
+/// tags_json: the record tags used for search and storing meta information as json:
+///   {
+///     "tagName1": "tag value 1", // string value
+///     "tagName2": 123, // numeric value
+///   }
+///   Note that null means no tags
+typedef indy_error_t (*indyWalletAddRecordCb)(indy_handle_t handle,
+                                              const char* type_,
+                                              const char* id,
+                                              const indy_u8_t *  value,
+                                              indy_u32_t         value_len,
+                                              const char* tags_json);
+
+/// Update a record value
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// value: the value of record (pointer to buffer)
+/// value_len: the value of record (buffer size)
+typedef indy_error_t (*indyWalletUpdateRecordValueCb)(indy_handle_t handle,
+                                                      const char* type_,
+                                                      const char* id,
+                                                      const indy_u8_t *  value,
+                                                      indy_u32_t         value_len);
+
+/// Update a record tags
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// tags_json: the new record tags used for search and storing meta information as json:
+///   {
+///     "tagName1": "tag value 1", // string value
+///     "tagName2": 123, // numeric value
+///   }
+///   Note that null means no tags
+typedef indy_error_t (*indyWalletUpdateRecordTagsCb)(indy_handle_t handle,
+                                                     const char* type_,
+                                                     const char* id,
+                                                     const char* tags_json);
+
+/// Add new tags to the record
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// tags_json: the additional record tags as json:
+///   {
+///     "tagName1": "tag value 1", // string value
+///     "tagName2": 123, // numeric value,
+///     ...
+///   }
+///   Note that null means no tags
+///   Note if some from provided tags already assigned to the record than
+///     corresponding tags values will be replaced
+typedef indy_error_t (*indyWalletAddRecordTagsCb)(indy_handle_t handle,
+                                                  const char* type_,
+                                                  const char* id,
+                                                  const char* tags_json);
+
+/// Delete tags from the record
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// tag_names_json: the list of tag names to remove from the record as json array:
+///   ["tagName1", "tagName2", ...]
+///   Note that null means no tag names
+typedef indy_error_t (*indyWalletDeleteRecordTagsCb)(indy_handle_t handle,
+                                                     const char* type_,
+                                                     const char* id,
+                                                     const char* tags_names);
+
+/// Delete an existing record in the wallet storage
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// type_: record type
+/// id: the id of record
+typedef indy_error_t (*indyWalletDeleteRecordCb)(indy_handle_t handle,
+                                                 const char* type_,
+                                                 const char* id);
+
+/// Get an wallet storage record by id
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// type_: allows to separate different record types collections
+/// id: the id of record
+/// options_json: //TODO: FIXME: Think about replacing by bitmask
+///  {
+///    retrieveType: (optional, false by default) Retrieve record type,
+///    retrieveValue: (optional, true by default) Retrieve record value,
+///    retrieveTags: (optional, true by default) Retrieve record tags
+///  }
+/// record_handle_p: pointer to store retrieved record handle
+typedef indy_error_t (*indyWalletGetRecordCb)(indy_handle_t handle,
+                                              const char* type_,
+                                              const char* id,
+                                              const char* options_json,
+                                              int32_t* record_handle);
+
+/// Get an id for retrieved wallet storage record
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// record_handle: retrieved record handle (See get_record handler)
+///
+/// returns: record id
+///          Note that pointer lifetime the same as retrieved record lifetime
+///            (until record_free called)
+typedef indy_error_t (*indyWalletGetRecordIdCb)(indy_handle_t handle,
+                                                indy_handle_t record_handle,
+                                                char* id);
+
+/// Get an type for retrieved wallet storage record
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// record_handle: retrieved record handle (See get_record handler)
+///
+/// returns: record type
+///          Note that pointer lifetime the same as retrieved record lifetime
+///            (until record_free called)
+typedef indy_error_t (*indyWalletGetRecordTypeCb)(indy_handle_t handle,
+                                                indy_handle_t record_handle,
+                                                char* type_);
+
+/// Get an value for retrieved wallet storage record
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// record_handle: retrieved record handle (See get_record handler)
+///
+/// returns: record value
+///          Note that pointer lifetime the same as retrieved record lifetime
+///            (until record_free called)
+///          Note that null be returned if no value retrieved
+typedef indy_error_t (*indyWalletGetRecordValueCb)(indy_handle_t handle,
+                                                   indy_handle_t record_handle,
+                                                   indy_u8_t *  value,
+                                                   indy_u32_t         value_len);
+
+/// Get an tags for retrieved wallet record
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// record_handle: retrieved record handle (See get_record handler)
+///
+/// returns: record tags as json
+///          Note that pointer lifetime the same as retrieved record lifetime
+///            (until record_free called)
+///          Note that null be returned if no tags retrieved
+typedef indy_error_t (*indyWalletGetRecordTagsCb)(indy_handle_t handle,
+                                                  indy_handle_t record_handle,
+                                                  char* tags_json);
+
+/// Free retrieved wallet record (make retrieved record handle invalid)
+///
+/// #Params
+/// storage_handle: opened storage handle (See open_wallet_storage)
+/// record_handle: retrieved record handle (See wallet_storage_get_wallet_record)
+typedef indy_error_t (*indyWalletFreeRecordCb)(indy_handle_t handle,
+                                               indy_handle_t record_handle);
+
+/// Get storage metadata
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+///
+/// returns: metadata as base64 value
+///          Note that pointer lifetime is static
+typedef indy_error_t (*indyWalletGetStorageMetadataCb)(indy_handle_t handle,
+                                                       char* metadata,
+                                                       indy_handle_t metadata_handle);
+
+/// Set storage metadata
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// metadata_p: base64 value of metadata
+///
+///   Note if storage already have metadata record it will be overwritten.
+typedef indy_error_t (*indyWalletSetStorageMetadataCb)(indy_handle_t handle,
+                                                       const char* metadata);
+
+/// Free retrieved storage metadata record (make retrieved storage metadata handle invalid)
+///
+/// #Params
+/// storage_handle: opened storage handle (See open_wallet_storage)
+/// metadata_handle: retrieved record handle (See wallet_storage_get_storage_metadata)
+typedef indy_error_t (*indyWalletFreeStorageMetadataCb)(indy_handle_t handle,
+                                                        indy_handle_t metadata_handle);
+
+/// Search for wallet storage records
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// type_: allows to separate different record types collections
+/// query_json: MongoDB style query to wallet record tags:
+///  {
+///    "tagName": "tagValue",
+///    $or: {
+///      "tagName2": { $regex: 'pattern' },
+///      "tagName3": { $gte: 123 },
+///    },
+///  }
+/// options_json: //TODO: FIXME: Think about replacing by bitmask
+///  {
+///    retrieveRecords: (optional, true by default) If false only "counts" will be calculated,
+///    retrieveTotalCount: (optional, false by default) Calculate total count,
+///    retrieveType: (optional, false by default) Retrieve record type,
+///    retrieveValue: (optional, true by default) Retrieve record value,
+///    retrieveTags: (optional, true by default) Retrieve record tags,
+///  }
+/// search_handle_p: pointer to store wallet search handle
+typedef indy_error_t (*indyWalletOpenSearchCb)(indy_handle_t handle,
+                                               const char* type_,
+                                               const char* query,
+                                               const char* options,
+                                               int32_t* search_handle);
+
+/// Search for all wallet storage records
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// search_handle_p: pointer to store wallet search handle
+typedef indy_error_t (*indyWalletOpenSearchAllCb)(indy_handle_t handle,
+                                                  indy_handle_t search_handle);
+
+/// Get total count of records that corresponds to wallet storage search query
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// search_handle: wallet search handle (See search_records handler)
+///
+/// returns: total count of records that corresponds to wallet storage search query
+///          Note -1 will be returned if retrieveTotalCount set to false for search_records
+typedef indy_error_t (*indyWalletGetSearchTotalCountCb)(indy_handle_t handle,
+                                                        indy_handle_t search_handle,
+                                                        indy_u32_t*         total_count);
+
+/// Get the next wallet storage record handle retrieved by this wallet search.
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// search_handle: wallet search handle (See search_records handler)
+///
+/// returns: record handle (the same as for get_record handler)
+///          Note if no more records WalletNoRecords error will be returned
+typedef indy_error_t (*indyWalletFetchSearchNextRecordsCb)(indy_handle_t handle,
+                                                           indy_handle_t search_handle,
+                                                           indy_handle_t record_handle);
+
+/// Free wallet search (make search handle invalid)
+///
+/// #Params
+/// storage_handle: opened storage handle (See open handler)
+/// search_handle: wallet search handle (See search_records handler)
+typedef indy_error_t (*indyWalletFreeSearchCb)(indy_handle_t handle,
+                                               indy_handle_t search_handle);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,112 +355,36 @@ extern "C" {
     ///
     /// #Returns
     /// Error code
-    
 
-    extern indy_error_t indy_register_wallet_type(indy_handle_t  command_handle,
-                                                  const char*    type_,
-                                                  indy_error_t (*createFn)(const char* name,
-                                                                           const char* config,
-                                                                           const char* credentials_json,
-                                                                           const char* metadata),
 
-                                                  indy_error_t (*openFn)(const char* name,
-                                                                           const char* config,
-                                                                           const char* credentials,
-                                                                           indy_handle_t* handle),
-
-                                                  indy_error_t (*closeFn)(indy_handle_t handle),
-
-                                                  indy_error_t (*deleteFn)(const char* name,
-                                                                           const char* config,
-                                                                           const char* credentials),
-
-                                                  indy_error_t (*addRecordFn)(indy_handle_t handle,
-                                                                           const char* type_,
-                                                                           const char* id,
-                                                                           const indy_u8_t *  value,
-                                                                           indy_u32_t         value_len,
-                                                                           const char* tags_json),
-
-                                                  indy_error_t (*updateRecordValueFn)(indy_handle_t handle,
-                                                                           const char* type_,
-                                                                           const char* id,
-                                                                           const indy_u8_t *  value,
-                                                                           indy_u32_t         value_len),
-
-                                                  indy_error_t (*updateRecordTagsFn)(indy_handle_t handle,
-                                                                           const char* type_,
-                                                                           const char* id,
-                                                                           const char* tags_json),
-
-                                                  indy_error_t (*addRecordTagsFn)(indy_handle_t handle,
-                                                                           const char* type_,
-                                                                           const char* id,
-                                                                           const char* tags_json),
-
-                                                  indy_error_t (*deleteRecordTagsFn)(indy_handle_t handle,
-                                                                           const char* type_,
-                                                                           const char* id,
-                                                                           const char* tags_names),
-
-                                                  indy_error_t (*deleteRecordFn)(indy_handle_t handle,
-                                                                           const char* type_,
-                                                                           const char* id),
-
-                                                  indy_error_t (*getRecordFn)(indy_handle_t handle,
-                                                                           const char* type_,
-                                                                           const char* id,
-                                                                           const char* options_json,
-                                                                           int32_t* record_handle),
-
-                                                  indy_error_t (*getRecordIdFn)(indy_handle_t handle,
-                                                                           indy_handle_t record_handle,
-                                                                           char* id),
-
-                                                  indy_error_t (*getRecordValueFn)(indy_handle_t handle,
-                                                                           indy_handle_t record_handle,
-                                                                           indy_u8_t *  value,
-                                                                           indy_u32_t         value_len),
-
-                                                  indy_error_t (*getRecordTagsFn)(indy_handle_t handle,
-                                                                           indy_handle_t record_handle,
-                                                                           char* tags_json),
-
-                                                  indy_error_t (*freeRecordFn)(indy_handle_t handle,
-                                                                           indy_handle_t record_handle),
-
-                                                  indy_error_t (*getStorageMetadataFn)(indy_handle_t handle,
-                                                                           char* metadata,
-                                                                           indy_handle_t metadata_handle),
-
-                                                  indy_error_t (*setStorageMetadataFn)(indy_handle_t handle,
-                                                                           const char* metadata),
-
-                                                  indy_error_t (*freeStorageMetadataFn)(indy_handle_t handle,
-                                                                           indy_handle_t metadata_handle),
-
-                                                  indy_error_t (*openSearchFn)(indy_handle_t handle,
-                                                                           const char* type_,
-                                                                           const char* query,
-                                                                           const char* options,
-                                                                           int32_t* search_handle),
-
-                                                  indy_error_t (*openSearchAllFn)(indy_handle_t handle,
-                                                                           indy_handle_t search_handle),
-
-                                                  indy_error_t (*getSearchTotalCountFn)(indy_handle_t handle,
-                                                                           indy_handle_t search_handle,
-                                                                           indy_u32_t*         total_count),
-
-                                                  indy_error_t (*fetchSearchNextRecordsFn)(indy_handle_t handle,
-                                                                           indy_handle_t search_handle,
-                                                                           indy_handle_t record_handle),
-
-                                                  indy_error_t (*freeSearchFn)(indy_handle_t handle,
-                                                                           indy_handle_t search_handle),
-
-                                                  void         (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
-                                                  );
+    extern indy_error_t indy_register_wallet_storage(indy_handle_t  command_handle,
+                                                      const char*    type_,
+                                                      indyCreateWalletCb create_wallet_cb,
+                                                      indyOpenWalletCb open_wallet_cb,
+                                                      indyCloseWalletCb close_wallet_cb,
+                                                      indyDeleteWalletCb delete_wallet_cb,
+                                                      indyWalletAddRecordCb add_record_cb,
+                                                      indyWalletUpdateRecordValueCb update_record_value,
+                                                      indyWalletUpdateRecordTagsCb update_record_tags_cb,
+                                                      indyWalletAddRecordTagsCb add_record_tags_cb,
+                                                      indyWalletDeleteRecordTagsCb delete_record_tags_cb,
+                                                      indyWalletDeleteRecordCb delete_record_cb,
+                                                      indyWalletGetRecordCb get_record_cb,
+                                                      indyWalletGetRecordIdCb get_record_id_cb,
+                                                      indyWalletGetRecordTypeCb get_record_type_cb,
+                                                      indyWalletGetRecordValueCb get_record_value_cb,
+                                                      indyWalletGetRecordTagsCb get_records_tags_cb,
+                                                      indyWalletFreeRecordCb free_record_cb,
+                                                      indyWalletGetStorageMetadataCb get_storage_metadata_cb,
+                                                      indyWalletSetStorageMetadataCb set_storage_metadata_cb,
+                                                      indyWalletFreeStorageMetadataCb free_storage_metadata_cb,
+                                                      indyWalletOpenSearchCb open_search_cb,
+                                                      indyWalletOpenSearchAllCb open_search_all_cb,
+                                                      indyWalletGetSearchTotalCountCb get_search_total_count_cb,
+                                                      indyWalletFetchSearchNextRecordsCb fetch_search_next_record_cb,
+                                                      indyWalletFreeSearchCb free_search_cb,
+                                                      indy_empty_cb cb
+                                                      );
 
     /// Create a new secure wallet.
     ///
@@ -187,7 +429,7 @@ extern "C" {
     extern indy_error_t indy_create_wallet(indy_handle_t  command_handle,
                                            const char*    config,
                                            const char*    credentials,
-                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                           indy_empty_cb cb
                                           );
 
     /// Open the wallet.
@@ -243,7 +485,7 @@ extern "C" {
     extern indy_error_t indy_open_wallet(indy_handle_t  command_handle,
                                          const char*    config,
                                          const char*    credentials,
-                                         void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err, indy_handle_t handle)
+                                         indy_handle_cb cb
                                         );
 
     /// Exports opened wallet
@@ -272,7 +514,7 @@ extern "C" {
     extern indy_error_t indy_export_wallet(indy_handle_t  command_handle,
                                            indy_handle_t  wallet_handle,
                                            const char*    export_config_json,
-                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                           indy_empty_cb cb
                                            );
 
 
@@ -327,7 +569,7 @@ extern "C" {
                                            const char*    config,
                                            const char*    credentials,
                                            const char*    import_config_json,
-                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                           indy_empty_cb cb
                                            );
 
     /// Closes opened wallet and frees allocated resources.
@@ -344,7 +586,7 @@ extern "C" {
 
     extern indy_error_t indy_close_wallet(indy_handle_t  command_handle,
                                           indy_handle_t  wallet_handle,
-                                          void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                          indy_empty_cb cb
                                          );
 
     /// Deletes created wallet.
@@ -390,7 +632,7 @@ extern "C" {
     extern indy_error_t indy_delete_wallet(indy_handle_t  command_handle,
                                            const char*    config,
                                            const char*    credentials,
-                                           void           (*fn)(indy_handle_t xcommand_handle, indy_error_t err)
+                                           indy_empty_cb cb
                                           );
 
     /// Generate wallet master key.
@@ -411,10 +653,7 @@ extern "C" {
     /// Wallet*
     extern indy_error_t indy_generate_wallet_key(indy_handle_t     command_handle,
                                                  const char *const config,
-
-                                                 void              (*cb)(indy_handle_t     command_handle,
-                                                                         indy_error_t      err,
-                                                                         const char *const key)
+                                                 indy_str_cb cb
                                                 );
 
 #ifdef __cplusplus

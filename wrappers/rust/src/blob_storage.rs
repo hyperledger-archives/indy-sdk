@@ -3,8 +3,7 @@ use {ErrorCode, IndyHandle};
 use std::ffi::CString;
 use std::time::Duration;
 
-use native::blob_storage;
-use native::ResponseI32CB;
+use indy;
 
 use utils::results::ResultHandler;
 use utils::callbacks::ClosureHandler;
@@ -34,11 +33,11 @@ impl Blob {
         Blob::_open_reader(command_handle, xtype, config_json, cb)
     }
 
-    fn _open_reader(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
+    fn _open_reader(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: indy::indy_handle_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
         let config_json = c_str!(config_json);
 
-        ErrorCode::from(unsafe { blob_storage::indy_open_blob_storage_reader(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_open_blob_storage_reader(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
     }
 
     pub fn open_writer(xtype: &str, config_json: &str) -> Result<IndyHandle, ErrorCode> {
@@ -63,10 +62,10 @@ impl Blob {
         Blob::_open_writer(command_handle, xtype, config_json, cb)
     }
 
-    fn _open_writer(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
+    fn _open_writer(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: indy::indy_handle_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
         let config_json = c_str!(config_json);
 
-        ErrorCode::from(unsafe { blob_storage::indy_open_blob_storage_writer(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_open_blob_storage_writer(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
     }
 }

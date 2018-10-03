@@ -1,8 +1,10 @@
 #ifndef __indy__mod_included__
 #define __indy__mod_included__
 
-typedef enum
+typedef enum indy_error_t
 {
+    Neg = -1, // TODO: FIXME
+
     Success = 0,
 
     // Common errors
@@ -52,6 +54,51 @@ typedef enum
     // IO Error
     CommonIOError = 114,
 
+    // Caller passed invalid value as param 13 (null, invalid json and etc..)
+    CommonInvalidParam13 = 115,
+
+    // Caller passed invalid value as param 14 (null, invalid json and etc..)
+    CommonInvalidParam14 = 116,
+
+    // Caller passed invalid value as param 15 (null, invalid json and etc..)
+    CommonInvalidParam15 = 117,
+
+    // Caller passed invalid value as param 16 (null, invalid json and etc..)
+    CommonInvalidParam16 = 118,
+
+    // Caller passed invalid value as param 17 (null, invalid json and etc..)
+    CommonInvalidParam17 = 119,
+
+    // Caller passed invalid value as param 18 (null, invalid json and etc..)
+    CommonInvalidParam18 = 120,
+
+    // Caller passed invalid value as param 19 (null, invalid json and etc..)
+    CommonInvalidParam19 = 121,
+
+    // Caller passed invalid value as param 20 (null, invalid json and etc..)
+    CommonInvalidParam20 = 122,
+
+    // Caller passed invalid value as param 21 (null, invalid json and etc..)
+    CommonInvalidParam21 = 123,
+
+    // Caller passed invalid value as param 22 (null, invalid json and etc..)
+    CommonInvalidParam22 = 124,
+
+    // Caller passed invalid value as param 23 (null, invalid json and etc..)
+    CommonInvalidParam23 = 125,
+
+    // Caller passed invalid value as param 24 (null, invalid json and etc..)
+    CommonInvalidParam24 = 126,
+
+    // Caller passed invalid value as param 25 (null, invalid json and etc..)
+    CommonInvalidParam25 = 127,
+
+    // Caller passed invalid value as param 26 (null, invalid json and etc..)
+    CommonInvalidParam26 = 128,
+
+    // Caller passed invalid value as param 27 (null, invalid json and etc..)
+    CommonInvalidParam27 = 129,
+
     // Wallet errors
     // Caller passed invalid wallet handle
     WalletInvalidHandle = 200,
@@ -90,7 +137,7 @@ typedef enum
     WalletEncryptionError = 211,
 
     // Requested wallet item not found
-     WalletItemNotFound = 212,
+    WalletItemNotFound = 212,
 
     // Returned if wallet's add_record operation is used with record name that already exists
     WalletItemAlreadyExists = 213,
@@ -108,7 +155,7 @@ typedef enum
     // Pool ledger terminated
     PoolLedgerTerminated = 302,
 
-    // No concensus during ledger operation
+    // No consensus during ledger operation
     LedgerNoConsensusError = 303,
 
     // Attempt to parse invalid transaction response
@@ -132,14 +179,14 @@ typedef enum
 
     AnoncredsInvalidUserRevocId = 401,
 
-    // Attempt to generate master secret with dupplicated name
+    // Attempt to generate master secret with duplicated name
     AnoncredsMasterSecretDuplicateNameError = 404,
 
     AnoncredsProofRejected = 405,
 
     AnoncredsCredentialRevoked = 406,
 
-    // Attempt to create credential definition with duplicated did schema pair
+    // Attempt to create credential definition with duplicated id
     AnoncredsCredDefAlreadyExistsError = 407,
 
     // Crypto errors

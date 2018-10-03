@@ -4,13 +4,11 @@ use std::ffi::CString;
 use std::ptr::null;
 use std::time::Duration;
 
-use utils::callbacks::ClosureHandler;
 use utils::results::ResultHandler;
 
-use native::{wallet, non_secrets};
-use native::{ResponseEmptyCB,
-          ResponseStringCB,
-          ResponseI32CB};
+use utils::callbacks::ClosureHandler;
+
+use indy;
 
 pub struct Wallet {}
 
@@ -32,30 +30,30 @@ impl Wallet {
     /// * `delete` - WalletType delete operation handler
     /// * `free` - Handler that allows to de-allocate strings allocated in caller code
     pub fn register_storage(xtype: &str,
-                            create: Option<wallet::WalletCreate>,
-                            open: Option<wallet::WalletOpen>,
-                            close: Option<wallet::WalletClose>,
-                            delete: Option<wallet::WalletDelete>,
-                            add_record: Option<wallet::WalletAddRecord>,
-                            update_record_value: Option<wallet::WalletUpdateRecordValue>,
-                            update_record_tags: Option<wallet::WalletUpdateRecordTags>,
-                            add_record_tags: Option<wallet::WalletAddRecordTags>,
-                            delete_record_tags: Option<wallet::WalletDeleteRecordTags>,
-                            delete_record: Option<wallet::WalletDeleteRecord>,
-                            get_record: Option<wallet::WalletGetRecord>,
-                            get_record_id: Option<wallet::WalletGetRecordId>,
-                            get_record_type: Option<wallet::WalletGetRecordType>,
-                            get_record_value: Option<wallet::WalletGetRecordValue>,
-                            get_record_tags: Option<wallet::WalletGetRecordTags>,
-                            free_record: Option<wallet::WalletFreeRecord>,
-                            get_storage_metadata: Option<wallet::WalletGetStorageMetadata>,
-                            set_storage_metadata: Option<wallet::WalletSetStorageMetadata>,
-                            free_storage_metadata: Option<wallet::WalletFreeStorageMetadata>,
-                            search_records: Option<wallet::WalletSearchRecords>,
-                            search_all_records: Option<wallet::WalletSearchAllRecords>,
-                            get_search_total_count: Option<wallet::WalletGetSearchTotalCount>,
-                            fetch_search_next_record: Option<wallet::WalletFetchSearchNextRecord>,
-                            free_search: Option<wallet::WalletFreeSearch>) -> Result<(), ErrorCode> {
+                            create: indy::indyCreateWalletCb,
+                            open: indy::indyOpenWalletCb,
+                            close: indy::indyCloseWalletCb,
+                            delete: indy::indyDeleteWalletCb,
+                            add_record: indy::indyWalletAddRecordCb,
+                            update_record_value: indy::indyWalletUpdateRecordValueCb,
+                            update_record_tags: indy::indyWalletUpdateRecordTagsCb,
+                            add_record_tags: indy::indyWalletAddRecordTagsCb,
+                            delete_record_tags: indy::indyWalletDeleteRecordTagsCb,
+                            delete_record: indy::indyWalletDeleteRecordCb,
+                            get_record: indy::indyWalletGetRecordCb,
+                            get_record_id: indy::indyWalletGetRecordIdCb,
+                            get_record_type: indy::indyWalletGetRecordTypeCb,
+                            get_record_value: indy::indyWalletGetRecordValueCb,
+                            get_record_tags: indy::indyWalletGetRecordTagsCb,
+                            free_record: indy::indyWalletFreeRecordCb,
+                            get_storage_metadata: indy::indyWalletGetStorageMetadataCb,
+                            set_storage_metadata: indy::indyWalletSetStorageMetadataCb,
+                            free_storage_metadata: indy::indyWalletFreeStorageMetadataCb,
+                            search_records: indy::indyWalletOpenSearchCb,
+                            search_all_records: indy::indyWalletOpenSearchAllCb,
+                            get_search_total_count: indy::indyWalletGetSearchTotalCountCb,
+                            fetch_search_next_record: indy::indyWalletFetchSearchNextRecordsCb,
+                            free_search: indy::indyWalletFreeSearchCb) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Wallet::_register_storage(command_handle,
@@ -107,30 +105,30 @@ impl Wallet {
     /// * `free` - Handler that allows to de-allocate strings allocated in caller code
     /// * `timeout` - the maximum time this function waits for a response
     pub fn register_storage_timeout(xtype: &str,
-                                    create: Option<wallet::WalletCreate>,
-                                    open: Option<wallet::WalletOpen>,
-                                    close: Option<wallet::WalletClose>,
-                                    delete: Option<wallet::WalletDelete>,
-                                    add_record: Option<wallet::WalletAddRecord>,
-                                    update_record_value: Option<wallet::WalletUpdateRecordValue>,
-                                    update_record_tags: Option<wallet::WalletUpdateRecordTags>,
-                                    add_record_tags: Option<wallet::WalletAddRecordTags>,
-                                    delete_record_tags: Option<wallet::WalletDeleteRecordTags>,
-                                    delete_record: Option<wallet::WalletDeleteRecord>,
-                                    get_record: Option<wallet::WalletGetRecord>,
-                                    get_record_id: Option<wallet::WalletGetRecordId>,
-                                    get_record_type: Option<wallet::WalletGetRecordType>,
-                                    get_record_value: Option<wallet::WalletGetRecordValue>,
-                                    get_record_tags: Option<wallet::WalletGetRecordTags>,
-                                    free_record: Option<wallet::WalletFreeRecord>,
-                                    get_storage_metadata: Option<wallet::WalletGetStorageMetadata>,
-                                    set_storage_metadata: Option<wallet::WalletSetStorageMetadata>,
-                                    free_storage_metadata: Option<wallet::WalletFreeStorageMetadata>,
-                                    search_records: Option<wallet::WalletSearchRecords>,
-                                    search_all_records: Option<wallet::WalletSearchAllRecords>,
-                                    get_search_total_count: Option<wallet::WalletGetSearchTotalCount>,
-                                    fetch_search_next_record: Option<wallet::WalletFetchSearchNextRecord>,
-                                    free_search: Option<wallet::WalletFreeSearch>,
+                                    create: indy::indyCreateWalletCb,
+                                    open: indy::indyOpenWalletCb,
+                                    close: indy::indyCloseWalletCb,
+                                    delete: indy::indyDeleteWalletCb,
+                                    add_record: indy::indyWalletAddRecordCb,
+                                    update_record_value: indy::indyWalletUpdateRecordValueCb,
+                                    update_record_tags: indy::indyWalletUpdateRecordTagsCb,
+                                    add_record_tags: indy::indyWalletAddRecordTagsCb,
+                                    delete_record_tags: indy::indyWalletDeleteRecordTagsCb,
+                                    delete_record: indy::indyWalletDeleteRecordCb,
+                                    get_record: indy::indyWalletGetRecordCb,
+                                    get_record_id: indy::indyWalletGetRecordIdCb,
+                                    get_record_type: indy::indyWalletGetRecordTypeCb,
+                                    get_record_value: indy::indyWalletGetRecordValueCb,
+                                    get_record_tags: indy::indyWalletGetRecordTagsCb,
+                                    free_record: indy::indyWalletFreeRecordCb,
+                                    get_storage_metadata: indy::indyWalletGetStorageMetadataCb,
+                                    set_storage_metadata: indy::indyWalletSetStorageMetadataCb,
+                                    free_storage_metadata: indy::indyWalletFreeStorageMetadataCb,
+                                    search_records: indy::indyWalletOpenSearchCb,
+                                    search_all_records: indy::indyWalletOpenSearchAllCb,
+                                    get_search_total_count: indy::indyWalletGetSearchTotalCountCb,
+                                    fetch_search_next_record: indy::indyWalletFetchSearchNextRecordsCb,
+                                    free_search: indy::indyWalletFreeSearchCb,
                                     timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -184,32 +182,32 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn register_storage_async<F: 'static>(xtype: &str,
-                                              create: Option<wallet::WalletCreate>,
-                                              open: Option<wallet::WalletOpen>,
-                                              close: Option<wallet::WalletClose>,
-                                              delete: Option<wallet::WalletDelete>,
-                                              add_record: Option<wallet::WalletAddRecord>,
-                                              update_record_value: Option<wallet::WalletUpdateRecordValue>,
-                                              update_record_tags: Option<wallet::WalletUpdateRecordTags>,
-                                              add_record_tags: Option<wallet::WalletAddRecordTags>,
-                                              delete_record_tags: Option<wallet::WalletDeleteRecordTags>,
-                                              delete_record: Option<wallet::WalletDeleteRecord>,
-                                              get_record: Option<wallet::WalletGetRecord>,
-                                              get_record_id: Option<wallet::WalletGetRecordId>,
-                                              get_record_type: Option<wallet::WalletGetRecordType>,
-                                              get_record_value: Option<wallet::WalletGetRecordValue>,
-                                              get_record_tags: Option<wallet::WalletGetRecordTags>,
-                                              free_record: Option<wallet::WalletFreeRecord>,
-                                              get_storage_metadata: Option<wallet::WalletGetStorageMetadata>,
-                                              set_storage_metadata: Option<wallet::WalletSetStorageMetadata>,
-                                              free_storage_metadata: Option<wallet::WalletFreeStorageMetadata>,
-                                              search_records: Option<wallet::WalletSearchRecords>,
-                                              search_all_records: Option<wallet::WalletSearchAllRecords>,
-                                              get_search_total_count: Option<wallet::WalletGetSearchTotalCount>,
-                                              fetch_search_next_record: Option<wallet::WalletFetchSearchNextRecord>,
-                                              free_search: Option<wallet::WalletFreeSearch>,
+                                              create: indy::indyCreateWalletCb,
+                                              open: indy::indyOpenWalletCb,
+                                              close: indy::indyCloseWalletCb,
+                                              delete: indy::indyDeleteWalletCb,
+                                              add_record: indy::indyWalletAddRecordCb,
+                                              update_record_value: indy::indyWalletUpdateRecordValueCb,
+                                              update_record_tags: indy::indyWalletUpdateRecordTagsCb,
+                                              add_record_tags: indy::indyWalletAddRecordTagsCb,
+                                              delete_record_tags: indy::indyWalletDeleteRecordTagsCb,
+                                              delete_record: indy::indyWalletDeleteRecordCb,
+                                              get_record: indy::indyWalletGetRecordCb,
+                                              get_record_id: indy::indyWalletGetRecordIdCb,
+                                              get_record_type: indy::indyWalletGetRecordTypeCb,
+                                              get_record_value: indy::indyWalletGetRecordValueCb,
+                                              get_record_tags: indy::indyWalletGetRecordTagsCb,
+                                              free_record: indy::indyWalletFreeRecordCb,
+                                              get_storage_metadata: indy::indyWalletGetStorageMetadataCb,
+                                              set_storage_metadata: indy::indyWalletSetStorageMetadataCb,
+                                              free_storage_metadata: indy::indyWalletFreeStorageMetadataCb,
+                                              search_records: indy::indyWalletOpenSearchCb,
+                                              search_all_records: indy::indyWalletOpenSearchAllCb,
+                                              get_search_total_count: indy::indyWalletGetSearchTotalCountCb,
+                                              fetch_search_next_record: indy::indyWalletFetchSearchNextRecordsCb,
+                                              free_search: indy::indyWalletFreeSearchCb,
                                               closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
@@ -244,35 +242,35 @@ impl Wallet {
 
     fn _register_storage(command_handle: IndyHandle,
                          xtype: &str,
-                         create: Option<wallet::WalletCreate>,
-                         open: Option<wallet::WalletOpen>,
-                         close: Option<wallet::WalletClose>,
-                         delete: Option<wallet::WalletDelete>,
-                         add_record: Option<wallet::WalletAddRecord>,
-                         update_record_value: Option<wallet::WalletUpdateRecordValue>,
-                         update_record_tags: Option<wallet::WalletUpdateRecordTags>,
-                         add_record_tags: Option<wallet::WalletAddRecordTags>,
-                         delete_record_tags: Option<wallet::WalletDeleteRecordTags>,
-                         delete_record: Option<wallet::WalletDeleteRecord>,
-                         get_record: Option<wallet::WalletGetRecord>,
-                         get_record_id: Option<wallet::WalletGetRecordId>,
-                         get_record_type: Option<wallet::WalletGetRecordType>,
-                         get_record_value: Option<wallet::WalletGetRecordValue>,
-                         get_record_tags: Option<wallet::WalletGetRecordTags>,
-                         free_record: Option<wallet::WalletFreeRecord>,
-                         get_storage_metadata: Option<wallet::WalletGetStorageMetadata>,
-                         set_storage_metadata: Option<wallet::WalletSetStorageMetadata>,
-                         free_storage_metadata: Option<wallet::WalletFreeStorageMetadata>,
-                         search_records: Option<wallet::WalletSearchRecords>,
-                         search_all_records: Option<wallet::WalletSearchAllRecords>,
-                         get_search_total_count: Option<wallet::WalletGetSearchTotalCount>,
-                         fetch_search_next_record: Option<wallet::WalletFetchSearchNextRecord>,
-                         free_search: Option<wallet::WalletFreeSearch>,
-                         cb: Option<ResponseEmptyCB>) -> ErrorCode {
+                         create: indy::indyCreateWalletCb,
+                         open: indy::indyOpenWalletCb,
+                         close: indy::indyCloseWalletCb,
+                         delete: indy::indyDeleteWalletCb,
+                         add_record: indy::indyWalletAddRecordCb,
+                         update_record_value: indy::indyWalletUpdateRecordValueCb,
+                         update_record_tags: indy::indyWalletUpdateRecordTagsCb,
+                         add_record_tags: indy::indyWalletAddRecordTagsCb,
+                         delete_record_tags: indy::indyWalletDeleteRecordTagsCb,
+                         delete_record: indy::indyWalletDeleteRecordCb,
+                         get_record: indy::indyWalletGetRecordCb,
+                         get_record_id: indy::indyWalletGetRecordIdCb,
+                         get_record_type: indy::indyWalletGetRecordTypeCb,
+                         get_record_value: indy::indyWalletGetRecordValueCb,
+                         get_record_tags: indy::indyWalletGetRecordTagsCb,
+                         free_record: indy::indyWalletFreeRecordCb,
+                         get_storage_metadata: indy::indyWalletGetStorageMetadataCb,
+                         set_storage_metadata: indy::indyWalletSetStorageMetadataCb,
+                         free_storage_metadata: indy::indyWalletFreeStorageMetadataCb,
+                         search_records: indy::indyWalletOpenSearchCb,
+                         search_all_records: indy::indyWalletOpenSearchAllCb,
+                         get_search_total_count: indy::indyWalletGetSearchTotalCountCb,
+                         fetch_search_next_record: indy::indyWalletFetchSearchNextRecordsCb,
+                         free_search: indy::indyWalletFreeSearchCb,
+                         cb: indy::indy_empty_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
 
         ErrorCode::from(unsafe {
-          wallet::indy_register_wallet_storage(command_handle,
+            indy::indy_register_wallet_storage(command_handle,
                                                xtype.as_ptr(),
                                                create,
                                                open,
@@ -343,19 +341,19 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn create_async<F: 'static>(config: &str, credentials: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_create(command_handle, config, credentials, cb)
     }
 
-    fn _create(command_handle: IndyHandle, config: &str, credentials: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _create(command_handle: IndyHandle, config: &str, credentials: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let config = c_str!(config);
         let credentials = c_str!(credentials);
 
         ErrorCode::from(unsafe {
-          wallet::indy_create_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), cb)
+            indy::indy_create_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), cb)
         })
     }
 
@@ -424,19 +422,19 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn open_async<F: 'static>(config: &str, credentials: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, i32) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
 
         Wallet::_open(command_handle, config, credentials, cb)
     }
 
-    fn _open(command_handle: IndyHandle, config: &str, credentials: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
+    fn _open(command_handle: IndyHandle, config: &str, credentials: &str, cb: indy::indy_handle_cb) -> ErrorCode {
         let config = c_str!(config);
         let credentials = c_str!(credentials);
 
         ErrorCode::from(unsafe {
-          wallet::indy_open_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), cb)
+            indy::indy_open_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), cb)
         })
     }
 
@@ -496,24 +494,24 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn export_async<F: 'static>(wallet_handle: IndyHandle, export_config: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_export(command_handle, wallet_handle, export_config, cb)
     }
 
-    fn _export(command_handle: IndyHandle, wallet_handle: IndyHandle, export_config: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _export(command_handle: IndyHandle, wallet_handle: IndyHandle, export_config: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let export_config = c_str!(export_config);
 
         ErrorCode::from(unsafe {
-          wallet::indy_export_wallet(command_handle, wallet_handle, export_config.as_ptr(), cb)
+            indy::indy_export_wallet(command_handle, wallet_handle, export_config.as_ptr(), cb)
         })
     }
 
     /// Creates a new secure wallet with the given unique name and then imports its content
     /// according to fields provided in import_config
-    /// This can be seen as an Wallet::create call with additional content import
+    /// This can be seen as an create call with additional content import
     ///
     /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
     /// in the future releases.
@@ -544,7 +542,7 @@ impl Wallet {
 
     /// Creates a new secure wallet with the given unique name and then imports its content
     /// according to fields provided in import_config
-    /// This can be seen as an Wallet::create call with additional content import
+    /// This can be seen as an create call with additional content import
     ///
     /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
     /// in the future releases.
@@ -576,7 +574,7 @@ impl Wallet {
 
     /// Creates a new secure wallet with the given unique name and then imports its content
     /// according to fields provided in import_config
-    /// This can be seen as an Wallet::create call with additional content import
+    /// This can be seen as an create call with additional content import
     ///
     /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
     /// in the future releases.
@@ -600,20 +598,20 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn import_async<F: 'static>(config: &str, credentials: &str, import_config: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_import(command_handle, config, credentials, import_config, cb)
     }
 
-    fn _import(command_handle: IndyHandle, config: &str, credentials: &str, import_config: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _import(command_handle: IndyHandle, config: &str, credentials: &str, import_config: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let config = c_str!(config);
         let credentials = c_str!(credentials);
         let import_config = c_str!(import_config);
 
         ErrorCode::from(unsafe {
-          wallet::indy_import_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), import_config.as_ptr(), cb)
+            indy::indy_import_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), import_config.as_ptr(), cb)
         })
     }
 
@@ -644,26 +642,26 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn delete_async<F: 'static>(config: &str, credentials: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_delete(command_handle, config, credentials, cb)
     }
 
-    fn _delete(command_handle: IndyHandle, config: &str, credentials: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _delete(command_handle: IndyHandle, config: &str, credentials: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let config = c_str!(config);
         let credentials = c_str!(credentials);
 
         ErrorCode::from(unsafe {
-          wallet::indy_delete_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), cb)
+            indy::indy_delete_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), cb)
         })
     }
 
     /// Closes opened wallet and frees allocated resources.
     ///
     /// # Arguments
-    /// * `handle` - wallet handle returned by Wallet::open.
+    /// * `handle` - wallet handle returned by open.
     pub fn close(wallet_handle: IndyHandle) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -675,7 +673,7 @@ impl Wallet {
     /// Closes opened wallet and frees allocated resources.
     ///
     /// # Arguments
-    /// * `handle` - wallet handle returned by Wallet::open.
+    /// * `handle` - wallet handle returned by open.
     /// * `timeout` - the maximum time this function waits for a response
     pub fn close_timeout(wallet_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
@@ -688,19 +686,19 @@ impl Wallet {
     /// Closes opened wallet and frees allocated resources.
     ///
     /// # Arguments
-    /// * `handle` - wallet handle returned by Wallet::open.
+    /// * `handle` - wallet handle returned by open.
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn close_async<F: 'static>(wallet_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_close(command_handle, wallet_handle, cb)
     }
 
-    fn _close(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-        ErrorCode::from(unsafe { wallet::indy_close_wallet(command_handle, wallet_handle, cb) })
+    fn _close(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: indy::indy_empty_cb) -> ErrorCode {
+        ErrorCode::from(unsafe { indy::indy_close_wallet(command_handle, wallet_handle, cb) })
     }
 
     /// Create a new non-secret record in the wallet
@@ -777,26 +775,26 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn add_record_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, tags_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_add_record(command_handle, wallet_handle, xtype, id, value, tags_json, cb)
     }
 
-    fn _add_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, tags_json: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _add_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, tags_json: Option<&str>, cb: indy::indy_empty_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
         let id = c_str!(id);
         let value = c_str!(value);
         let tags_json_str = opt_c_str!(tags_json);
         ErrorCode::from(unsafe {
-            non_secrets::indy_add_wallet_record(command_handle,
-                                                wallet_handle,
-                                                xtype.as_ptr(),
-                                                id.as_ptr(),
-                                                value.as_ptr(),
-                                                opt_c_ptr!(tags_json, tags_json_str),
-                                                 cb)
+            indy::indy_add_wallet_record(command_handle,
+                                         wallet_handle,
+                                         xtype.as_ptr(),
+                                         id.as_ptr(),
+                                         value.as_ptr(),
+                                         opt_c_ptr!(tags_json, tags_json_str),
+                                         cb)
         })
     }
 
@@ -841,25 +839,25 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn update_record_value_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_update_record_value(command_handle, wallet_handle, xtype, id, value, cb)
     }
 
-    fn _update_record_value(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _update_record_value(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
         let id = c_str!(id);
         let value = c_str!(value);
 
-        ErrorCode::from(unsafe{
-            non_secrets::indy_update_wallet_record_value(command_handle,
-                                                         wallet_handle,
-                                                         xtype.as_ptr(),
-                                                         id.as_ptr(),
-                                                         value.as_ptr(),
-                                                         cb)
+        ErrorCode::from(unsafe {
+            indy::indy_update_wallet_record_value(command_handle,
+                                                  wallet_handle,
+                                                  xtype.as_ptr(),
+                                                  id.as_ptr(),
+                                                  value.as_ptr(),
+                                                  cb)
         })
     }
 
@@ -931,20 +929,20 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn update_record_tags_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_update_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb)
     }
 
-    fn _update_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _update_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
         let id = c_str!(id);
         let tags_json = c_str!(tags_json);
 
         ErrorCode::from(unsafe {
-          non_secrets::indy_update_wallet_record_tags(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), tags_json.as_ptr(), cb)
+            indy::indy_update_wallet_record_tags(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), tags_json.as_ptr(), cb)
         })
     }
 
@@ -1022,20 +1020,20 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn add_record_tags_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_add_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb)
     }
 
-    fn _add_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _add_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
         let id = c_str!(id);
         let tags_json = c_str!(tags_json);
 
         ErrorCode::from(unsafe {
-          non_secrets::indy_add_wallet_record_tags(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), tags_json.as_ptr(), cb)
+            indy::indy_add_wallet_record_tags(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), tags_json.as_ptr(), cb)
         })
     }
 
@@ -1083,20 +1081,20 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn delete_record_tags_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, tag_names_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_delete_record_tags(command_handle, wallet_handle, xtype, id, tag_names_json, cb)
     }
 
-    fn _delete_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tag_names_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _delete_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tag_names_json: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
         let id = c_str!(id);
         let tag_names_json = c_str!(tag_names_json);
 
         ErrorCode::from(unsafe {
-          non_secrets::indy_delete_wallet_record_tags(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), tag_names_json.as_ptr(), cb)
+            indy::indy_delete_wallet_record_tags(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), tag_names_json.as_ptr(), cb)
         })
     }
 
@@ -1138,19 +1136,19 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn delete_record_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_delete_record(command_handle, wallet_handle, xtype, id, cb)
     }
 
-    fn _delete_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _delete_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, cb: indy::indy_empty_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
         let id = c_str!(id);
 
         ErrorCode::from(unsafe {
-          non_secrets::indy_delete_wallet_record(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), cb)
+            indy::indy_delete_wallet_record(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), cb)
         })
     }
 
@@ -1226,20 +1224,20 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn get_record_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Wallet::_get_record(command_handle, wallet_handle, xtype, id, options_json, cb)
     }
 
-    fn _get_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _get_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
         let id = c_str!(id);
         let options_json = c_str!(options_json);
 
         ErrorCode::from(unsafe {
-          non_secrets::indy_get_wallet_record(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), options_json.as_ptr(), cb)
+            indy::indy_get_wallet_record(command_handle, wallet_handle, xtype.as_ptr(), id.as_ptr(), options_json.as_ptr(), cb)
         })
     }
 
@@ -1344,20 +1342,20 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn open_search_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, IndyHandle) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
 
         Wallet::_open_search(command_handle, wallet_handle, xtype, query_json, options_json, cb)
     }
 
-    fn _open_search(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
+    fn _open_search(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str, cb: indy::indy_handle_cb) -> ErrorCode {
         let xtype = c_str!(xtype);
         let query_json = c_str!(query_json);
         let options_json = c_str!(options_json);
 
         ErrorCode::from(unsafe {
-          non_secrets::indy_open_wallet_search(command_handle, wallet_handle, xtype.as_ptr(), query_json.as_ptr(), options_json.as_ptr(), cb)
+            indy::indy_open_wallet_search(command_handle, wallet_handle, xtype.as_ptr(), query_json.as_ptr(), options_json.as_ptr(), cb)
         })
     }
 
@@ -1429,16 +1427,16 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn fetch_search_next_records_async<F: 'static>(wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Wallet::_fetch_search_next_records(command_handle, wallet_handle, wallet_search_handle, count, cb)
     }
 
-    fn _fetch_search_next_records(command_handle: IndyHandle, wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _fetch_search_next_records(command_handle: IndyHandle, wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize, cb: indy::indy_str_cb) -> ErrorCode {
         ErrorCode::from(unsafe {
-          non_secrets::indy_fetch_wallet_search_next_records(command_handle, wallet_handle, wallet_search_handle, count, cb)
+            indy::indy_fetch_wallet_search_next_records(command_handle, wallet_handle, wallet_search_handle, count as u32, cb)
         })
     }
 
@@ -1474,16 +1472,16 @@ impl Wallet {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn close_search_async<F: 'static>(wallet_search_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_close_search(command_handle, wallet_search_handle, cb)
     }
 
-    fn _close_search(command_handle: IndyHandle, wallet_search_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _close_search(command_handle: IndyHandle, wallet_search_handle: IndyHandle, cb: indy::indy_empty_cb) -> ErrorCode {
         ErrorCode::from(unsafe {
-          non_secrets::indy_close_wallet_search(command_handle, wallet_search_handle, cb)
+            indy::indy_close_wallet_search(command_handle, wallet_search_handle, cb)
         })
     }
 

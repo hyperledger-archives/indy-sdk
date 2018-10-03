@@ -20,13 +20,14 @@ use utils::file::{TempDir, TempFile};
 use utils::rand;
 
 const VALID_TIMEOUT: Duration = Duration::from_secs(5);
-const INVALID_TIMEOUT: Duration = Duration::from_micros(1);
+#[cfg(feature = "timeout_tests")]
+const INVALID_TIMEOUT: Duration = Duration::from_nanos(1);
 const EXPORT_KEY: &str = "TheScythesHangInTheAppleTrees";
 
 
 mod wallet_config {
     use super::*;
-    
+
     #[inline]
     pub fn new() -> String {
         json!({
@@ -55,7 +56,7 @@ mod wallet_config {
 
     pub mod export {
         use super::*;
-        
+
         #[inline]
         pub fn new<P: AsRef<Path>>(path: P, key: &str) -> String {
             json!({
@@ -89,7 +90,7 @@ mod test_wallet_create {
     #[test]
     fn create_default_wallet() {
         let config = wallet_config::with_storage("default");
-        
+
         let result = Wallet::create(&config, CREDENTIALS);
 
         assert_eq!((), result.unwrap());
@@ -168,7 +169,7 @@ mod test_wallet_create {
         );
 
         let ec = receiver.recv_timeout(VALID_TIMEOUT).unwrap();
-        
+
         assert_eq!(ErrorCode::Success, ec);
 
         Wallet::delete(&config, CREDENTIALS).unwrap();
@@ -219,6 +220,7 @@ mod test_wallet_create {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn create_wallet_timeout_timeouts() {
         let config = wallet_config::with_storage("unknown");
 
@@ -275,7 +277,7 @@ mod test_wallet_delete {
         Wallet::close(handle).unwrap();
 
         let result = Wallet::delete(&config, DEFAULT_CREDENTIALS);
-        
+
         assert_eq!((), result.unwrap());
         assert_wallet_deleted(&config, DEFAULT_CREDENTIALS);
     }
@@ -288,7 +290,7 @@ mod test_wallet_delete {
         let handle = Wallet::open(&config, DEFAULT_CREDENTIALS).unwrap();
 
         let result = Wallet::delete(&config, DEFAULT_CREDENTIALS);
-        
+
         assert_eq!(ErrorCode::CommonInvalidState, result.unwrap_err());
 
         Wallet::close(handle).unwrap();
@@ -395,6 +397,7 @@ mod test_wallet_delete {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn delete_wallet_timeout_timeouts() {
         let config = wallet_config::new();
 
@@ -411,7 +414,7 @@ mod test_wallet_delete {
 #[cfg(test)]
 mod test_wallet_open {
     use super::*;
-    
+
     #[test]
     fn open_wallet() {
         let config = wallet_config::new();
@@ -446,7 +449,7 @@ mod test_wallet_open {
         let config = wallet_config::new();
 
         let result = Wallet::open(&config, DEFAULT_CREDENTIALS);
-        
+
         assert_eq!(ErrorCode::WalletNotFoundError, result.unwrap_err());
     }
 
@@ -595,6 +598,7 @@ mod test_wallet_open {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn open_wallet_timeout_timeouts() {
         let config = wallet_config::new();
         Wallet::create(&config, DEFAULT_CREDENTIALS).unwrap();
@@ -612,7 +616,7 @@ mod test_wallet_open {
 #[cfg(test)]
 mod test_wallet_close {
     use super::*;
-    
+
     #[test]
     fn close_wallet() {
         let config = wallet_config::new();
@@ -694,6 +698,7 @@ mod test_wallet_close {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn close_wallet_timeout_timeouts() {
         let result = Wallet::close_timeout(INVALID_HANDLE, INVALID_TIMEOUT);
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
@@ -715,7 +720,7 @@ mod test_wallet_export {
         let result = Wallet::export(handle, &config_export);
 
         assert_eq!((), result.unwrap());
-        
+
         assert!(path.exists());
 
         Wallet::close(handle).unwrap();
@@ -734,7 +739,7 @@ mod test_wallet_export {
         let result = Wallet::export(handle, &config_export);
 
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
-        
+
         Wallet::close(handle).unwrap();
         Wallet::delete(&config_wallet, DEFAULT_CREDENTIALS).unwrap();
     }
@@ -839,6 +844,7 @@ mod test_wallet_export {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn export_wallet_timeout_timeouts() {
         let (config_export, path, _dir) = wallet_config::export::with_defaults();
 

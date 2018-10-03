@@ -4,6 +4,34 @@
 #include "indy_mod.h"
 #include "indy_types.h"
 
+typedef indy_bool_t (*indyLoggerEnabledCb)(const void*  context,
+                                           indy_u32_t level,
+                                           const char* target);
+
+typedef void (*indyLoggerLogCb)(const void*  context,
+                                indy_u32_t level,
+                                const char* target,
+                                const char* message,
+                                const char* module_path,
+                                const char* file,
+                                indy_u32_t line);
+
+typedef void (*indyLoggerFlushCb)(const void*  context);
+
+typedef indy_bool_t (**indyGetLoggerEnabledCb)(const void*  context,
+                                               indy_u32_t level,
+                                               const char* target);
+
+typedef void (**indyGetLoggerLogCb)(const void*  context,
+                                    indy_u32_t level,
+                                    const char* target,
+                                    const char* message,
+                                    const char* module_path,
+                                    const char* file,
+                                    indy_u32_t line);
+
+typedef void (**indyGetLoggerFlushCb)(const void*  context);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,17 +50,9 @@ extern "C" {
     /// Error code
 
     extern indy_error_t indy_set_logger(const void*  context,
-                                        indy_bool_t (*enabledFn)(const void*  context,
-                                                                 indy_u32_t level,
-                                                                 const char* target),
-                                        void (*logFn)(const void*  context,
-                                                      indy_u32_t level,
-                                                      const char* target,
-                                                      const char* message,
-                                                      const char* module_path,
-                                                      const char* file,
-                                                      indy_u32_t line),
-                                        void (*flushFn)(const void*  context)
+                                        indyLoggerEnabledCb enabled_cb,
+                                        indyLoggerLogCb log_cb,
+                                        indyLoggerFlushCb flush_cb
                                                   );
 
     /// Set default logger implementation.
@@ -64,17 +84,9 @@ extern "C" {
     /// Error code
 
     extern indy_error_t indy_get_logger(const void*  indy_get_logger,
-                                        indy_bool_t (**enabledFn)(const void*  context,
-                                                                 indy_u32_t level,
-                                                                 const char* target),
-                                        void (**logFn)(const void*  context,
-                                                      indy_u32_t level,
-                                                      const char* target,
-                                                      const char* message,
-                                                      const char* module_path,
-                                                      const char* file,
-                                                      indy_u32_t line),
-                                        void (**flushFn)(const void*  context)
+                                        indyLoggerEnabledCb enabled_cb,
+                                        indyLoggerLogCb log_cb,
+                                        indyLoggerFlushCb flush_cb
                                                   );
 
 #ifdef __cplusplus

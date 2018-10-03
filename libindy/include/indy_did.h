@@ -43,11 +43,7 @@ extern "C" {
     extern indy_error_t indy_create_and_store_my_did(indy_handle_t command_handle,
                                                      indy_handle_t wallet_handle,
                                                      const char *  did_json,
-
-                                                     void          (*cb)(indy_handle_t  xcommand_handle,
-                                                                          indy_error_t  err,
-                                                                          const char *const   did,
-                                                                          const char *const   verkey)
+                                                     indy_str_str_cb cb
                                                     );
 
     /// Generated temporary keys (signing and encryption keys) for an existing
@@ -81,10 +77,7 @@ extern "C" {
                                                 indy_handle_t wallet_handle,
                                                 const char *  did,
                                                 const char *  identity_json,
-
-                                                void           (*cb)(indy_handle_t xcommand_handle,
-                                                                     indy_error_t  err,
-                                                                     const char *const   verkey)
+                                                indy_str_cb cb
                                                );
 
     /// Apply temporary keys as main for an existing DID (owned by the caller of the library).
@@ -109,9 +102,7 @@ extern "C" {
     extern indy_error_t indy_replace_keys_apply(indy_handle_t command_handle,
                                                 indy_handle_t wallet_handle,
                                                 const char *  did,
-
-                                                void           (*cb)(indy_handle_t xcommand_handle,
-                                                                     indy_error_t  err)
+                                                indy_empty_cb cb
                                                );
 
     /// Saves their DID for a pairwise connection in a secured Wallet,
@@ -141,9 +132,7 @@ extern "C" {
    extern indy_error_t indy_store_their_did(indy_handle_t command_handle,
                                             indy_handle_t wallet_handle,
                                             const char *  identity_json,
-
-                                            void           (*cb)(indy_handle_t xcommand_handle,
-                                                                 indy_error_t  err)
+                                            indy_empty_cb cb
                                            );
 
     /// Returns ver key (key id) for the given DID.
@@ -180,10 +169,7 @@ extern "C" {
                                          indy_handle_t     pool_handle,
                                          indy_handle_t     wallet_handle,
                                          const char *const did,
-
-                                         void              (*cb)(indy_handle_t     command_handle,
-                                                                 indy_error_t      err,
-                                                                 const char *const key)
+                                         indy_str_cb cb
                                         );
 
     /// Returns ver key (key id) for the given DID.
@@ -217,10 +203,7 @@ extern "C" {
     extern indy_error_t indy_key_for_local_did(indy_handle_t     command_handle,
                                               indy_handle_t     wallet_handle,
                                               const char *const did,
-
-                                              void              (*cb)(indy_handle_t     command_handle,
-                                                                      indy_error_t      err,
-                                                                     const char *const key)
+                                              indy_str_cb cb
                                              );
 
     /// Set/replaces endpoint information for the given DID.
@@ -248,9 +231,7 @@ extern "C" {
                                                   const char *const did,
                                                   const char *const address,
                                                   const char *const transport_key,
-
-                                                  void              (*cb)(indy_handle_t     command_handle,
-                                                                          indy_error_t      err)
+                                                  indy_empty_cb cb
                                                  );
 
     /// Returns endpoint information for the given DID.
@@ -277,11 +258,7 @@ extern "C" {
                                                   indy_handle_t     wallet_handle,
                                                   indy_handle_t     pool_handle,
                                                   const char *const did,
-
-                                                  void              (*cb)(indy_handle_t     command_handle,
-                                                                          indy_error_t      err,
-                                                                          const char *const address,
-                                                                          const char *const transport_vk)
+                                                  indy_str_str_cb cb
                                                  );
 
     /// Saves/replaces the meta information for the giving DID in the wallet.
@@ -307,9 +284,7 @@ extern "C" {
                                               indy_handle_t     wallet_handle,
                                               const char *const did,
                                               const char *const metadata,
-
-                                              void              (*cb)(indy_handle_t     command_handle,
-                                                                      indy_error_t      err)
+                                              indy_empty_cb cb
                                              );
 
     /// Retrieves the meta information for the giving DID in the wallet.
@@ -334,10 +309,7 @@ extern "C" {
     extern indy_error_t indy_get_did_metadata(indy_handle_t     command_handle,
                                               indy_handle_t     wallet_handle,
                                               const char *const did,
-
-                                              void              (*cb)(indy_handle_t     command_handle,
-                                                                      indy_error_t      err,
-                                                                      const char *const metadata)
+                                              indy_str_cb cb
                                              );
 
     /// Retrieves the information about the giving DID in the wallet.
@@ -366,7 +338,7 @@ extern "C" {
     extern indy_error_t indy_get_my_did_with_meta(indy_handle_t     command_handle,
                                                   indy_handle_t     wallet_handle,
                                                   const char *const my_did,
-                                                  void              (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const did_with_meta)
+                                                  indy_str_cb cb
                                                  );
 
     /// Retrieves the information about all DIDs stored in the wallet.
@@ -393,7 +365,7 @@ extern "C" {
     /// Crypto*
     extern indy_error_t indy_list_my_dids_with_meta(indy_handle_t command_handle,
                                                     indy_handle_t wallet_handle,
-                                                    void          (*fn)(indy_handle_t xcommand_handle, indy_error_t err, const char *const dids)
+                                                    indy_str_cb cb
                                                    );
 
     /// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
@@ -417,9 +389,7 @@ extern "C" {
     extern indy_error_t indy_abbreviate_verkey(indy_handle_t command_handle,
                                              const char *const did,
                                              const char *const full_verkey,
-                                             void          (*fn)(indy_handle_t xcommand_handle,
-                                                                 indy_error_t err,
-                                                                 const char *const verkey)
+                                             indy_str_cb cb
                                             );
 
 #ifdef __cplusplus

@@ -222,6 +222,19 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
             }
         }
 
+        sh "cp libindy/target/release/libindy.so wrappers/rust"
+        sh "cp -r libindy/include/* wrappers/rust/libindy-sys/"
+
+        dir('wrappers/rust') {
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Libnullpay Test: Build"
+                sh "LIBRARY_PATH=./  RUST_BACKTRACE=1 cargo test --release --no-run"
+
+                echo "${env_name} Indy Rust wrupper Test: Run tests"
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
+            }
+        }
+
         sh "cp libindy/target/release/libindy.so libnullpay"
         dir('libnullpay') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
@@ -565,6 +578,38 @@ def ubuntuPublishing() {
     return libindyVersion
 }
 
+def rustWrapperPublishing(testEnv, isRelease) {
+
+    def ver = getSrcVersion("wrappers/rust")
+    def suffix = getSuffix(isRelease, "Cargo")
+
+    echo 'Publish Libindy-Sys to Cargo'
+
+    sh "cp -r libindy/include/* wrappers/rust/libindy-sys/"
+    dir('wrappers/rust/libindy-sys') {
+        publishToCargo(testEnv, suffix, ver)
+    }
+
+    echo 'Publish Indy to Cargo'
+
+    dir('wrappers/rust') {
+        sh "sed -i -- 's/libindy-sys = { path =\"libindy-sys\", version = \"$ver\" }/libindy-sys = { path =\"libindy-sys\", version = \"$ver$suffix\" }/g' Cargo.toml"
+        publishToCargo(testEnv, suffix, ver)
+    }
+}
+
+def publishToCargo(testEnv, suffix, ver) {
+    testEnv.inside {
+        sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"$ver/version = \\\"$ver$suffix/\" Cargo.toml"
+
+        withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'LOGIN')]) {
+            sh 'cargo login $LOGIN'
+            sh 'cargo package --allow-dirty'
+            sh 'cargo publish --allow-dirty'
+        }
+    }
+}
+
 def windowsPublishing() {
     def libindyVersion
     node('ubuntu') {
@@ -888,7 +933,7 @@ def publishLibnullpayIOSFilesRCtoStable(version) {
     copyFilesFromRcToStable(src, target)
 }
 
-def fullVersion(version){
+def fullVersion(version) {
     return "${version}-${env.BUILD_NUMBER}"
 }
 
@@ -1050,11 +1095,11 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
 }
 
 def androidTesting() {
-    env_name="android_on_linux"
-    network_name="pool_network"
+    env_name = "android_on_linux"
+    network_name = "pool_network"
     parallel([
             "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
-            "${env_name}-android-building" : { androidBuildAsTesting() }
+            "${env_name}-android-building": { androidBuildAsTesting() }
     ])
 }
 

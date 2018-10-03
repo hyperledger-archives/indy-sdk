@@ -4,14 +4,11 @@ use std::ffi::CString;
 use std::time::Duration;
 use std::ptr::null;
 
-use native::ledger;
-use native::{ResponseEmptyCB,
-          ResponseStringCB,
-          ResponseStringStringCB,
-          ResponseStringStringU64CB};
+use utils::callbacks::ClosureHandler;
 
 use utils::results::ResultHandler;
-use utils::callbacks::ClosureHandler;
+
+use indy;
 
 pub struct Ledger {}
 
@@ -75,28 +72,28 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn sign_and_submit_request_async<F: 'static>(pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_sign_and_submit_request(command_handle, pool_handle, wallet_handle, submitter_did, request_json, cb)
     }
 
-    fn _sign_and_submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _sign_and_submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let request_json = c_str!(request_json);
 
         ErrorCode::from(unsafe {
-            ledger::indy_sign_and_submit_request(command_handle,
-                                                 pool_handle,
-                                                 wallet_handle,
-                                                 submitter_did.as_ptr(),
-                                                 request_json.as_ptr(),
-                                                 cb)
+            indy::indy_sign_and_submit_request(command_handle,
+                                               pool_handle,
+                                               wallet_handle,
+                                               submitter_did.as_ptr(),
+                                               request_json.as_ptr(),
+                                               cb)
         })
     }
 
-    /// Publishes request message to validator pool (no signing, unlike Ledger::sign_and_submit_request).
+    /// Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
     ///
     /// The request is sent to the validator pool as is. It's assumed that it's already prepared.
     ///
@@ -114,7 +111,7 @@ impl Ledger {
         ResultHandler::one(err, receiver)
     }
 
-    /// Publishes request message to validator pool (no signing, unlike Ledger::sign_and_submit_request).
+    /// Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
     ///
     /// The request is sent to the validator pool as is. It's assumed that it's already prepared.
     ///
@@ -133,7 +130,7 @@ impl Ledger {
         ResultHandler::one_timeout(err, receiver, timeout)
     }
 
-    /// Publishes request message to validator pool (no signing, unlike Ledger::sign_and_submit_request).
+    /// Publishes request message to validator pool (no signing, unlike sign_and_submit_request).
     ///
     /// The request is sent to the validator pool as is. It's assumed that it's already prepared.
     ///
@@ -143,17 +140,17 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn submit_request_async<F: 'static>(pool_handle: IndyHandle, request_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_submit_request(command_handle, pool_handle, request_json, cb)
     }
 
-    fn _submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let request_json = c_str!(request_json);
 
-        ErrorCode::from(unsafe { ledger::indy_submit_request(command_handle, pool_handle, request_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_submit_request(command_handle, pool_handle, request_json.as_ptr(), cb) })
     }
 
     pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32) -> Result<String, ErrorCode> {
@@ -176,19 +173,19 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn submit_action_async<F: 'static>(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb)
     }
 
-    fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, cb: indy::indy_str_cb) -> ErrorCode {
         let request_json = c_str!(request_json);
         let nodes = c_str!(nodes);
 
         ErrorCode::from(unsafe {
-          ledger::indy_submit_action(command_handle, pool_handle, request_json.as_ptr(), nodes.as_ptr(), wait_timeout, cb)
+            indy::indy_submit_action(command_handle, pool_handle, request_json.as_ptr(), nodes.as_ptr(), wait_timeout, cb)
         })
     }
 
@@ -245,18 +242,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn sign_request_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb)
     }
 
-    fn _sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let request_json = c_str!(request_json);
 
-        ErrorCode::from(unsafe { ledger::indy_sign_request(command_handle, wallet_handle, submitter_did.as_ptr(), request_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_sign_request(command_handle, wallet_handle, submitter_did.as_ptr(), request_json.as_ptr(), cb) })
     }
 
     /// Multi signs request message.
@@ -312,18 +309,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn multi_sign_request_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_multi_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb)
     }
 
-    fn _multi_sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _multi_sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let request_json = c_str!(request_json);
 
-        ErrorCode::from(unsafe { ledger::indy_multi_sign_request(command_handle, wallet_handle, submitter_did.as_ptr(), request_json.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_multi_sign_request(command_handle, wallet_handle, submitter_did.as_ptr(), request_json.as_ptr(), cb) })
     }
 
     /// Builds a request to get a DDO.
@@ -367,18 +364,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_ddo_request_async<F: 'static>(submitter_did: Option<&str>, target_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_get_ddo_request(command_handle, submitter_did, target_did, cb)
     }
 
-    fn _build_get_ddo_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_get_ddo_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let target_did = c_str!(target_did);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_ddo_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), target_did.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_get_ddo_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), target_did.as_ptr(), cb) })
     }
 
     /// Builds a NYM request. Request to create a new NYM record for a specific user.
@@ -446,7 +443,7 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_nym_request_async<F: 'static>(submitter_did: &str, target_did: &str, verkey: Option<&str>, data: Option<&str>, role: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
@@ -459,7 +456,7 @@ impl Ledger {
                           verkey: Option<&str>,
                           data: Option<&str>,
                           role: Option<&str>,
-                          cb: Option<ResponseStringCB>) -> ErrorCode {
+                          cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let target_did = c_str!(target_did);
 
@@ -468,13 +465,13 @@ impl Ledger {
         let role_str = opt_c_str!(role);
 
         ErrorCode::from(unsafe {
-            ledger::indy_build_nym_request(command_handle,
-                                           submitter_did.as_ptr(),
-                                           target_did.as_ptr(),
-                                           opt_c_ptr!(verkey, verkey_str),
-                                           opt_c_ptr!(data, data_str),
-                                           opt_c_ptr!(role, role_str),
-                                           cb)
+            indy::indy_build_nym_request(command_handle,
+                                         submitter_did.as_ptr(),
+                                         target_did.as_ptr(),
+                                         opt_c_ptr!(verkey, verkey_str),
+                                         opt_c_ptr!(data, data_str),
+                                         opt_c_ptr!(role, role_str),
+                                         cb)
         })
     }
 
@@ -519,18 +516,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_nym_request_async<F: 'static>(submitter_did: Option<&str>, target_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_get_nym_request(command_handle, submitter_did, target_did, cb)
     }
 
-    fn _build_get_nym_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_get_nym_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let target_did = c_str!(target_did);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_nym_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), target_did.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_get_nym_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), target_did.as_ptr(), cb) })
     }
 
     /// Builds a GET_TXN request. Request to get any transaction by its seq_no.
@@ -549,7 +546,7 @@ impl Ledger {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb);
-    
+
         ResultHandler::one(err, receiver)
     }
 
@@ -570,7 +567,7 @@ impl Ledger {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb);
-    
+
         ResultHandler::one_timeout(err, receiver, timeout)
     }
 
@@ -586,18 +583,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_txn_request_async<F: 'static>(submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb)
     }
 
-    fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, cb: Option<ResponseStringCB>) ->  ErrorCode {
+    fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let ledger_type_str = opt_c_str!(ledger_type);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_txn_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), opt_c_ptr!(ledger_type, ledger_type_str), seq_no, cb) })
+        ErrorCode::from(unsafe { indy::indy_build_get_txn_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), opt_c_ptr!(ledger_type, ledger_type_str), seq_no, cb) })
     }
 
     /// Builds an ATTRIB request. Request to add attribute to a NYM record.
@@ -650,14 +647,14 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_attrib_request_async<F: 'static>(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_attrib_request(command_handle, submitter_did, target_did, hash, raw, enc, cb)
     }
 
-    fn _build_attrib_request(command_handle: IndyHandle, submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_attrib_request(command_handle: IndyHandle, submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let target_did = c_str!(target_did);
 
@@ -666,13 +663,13 @@ impl Ledger {
         let enc_str = opt_c_str!(enc);
 
         ErrorCode::from(unsafe {
-            ledger::indy_build_attrib_request(command_handle,
-                                              submitter_did.as_ptr(),
-                                              target_did.as_ptr(),
-                                              opt_c_ptr!(hash, hash_str),
-                                              opt_c_ptr!(raw, raw_str),
-                                              opt_c_ptr!(enc, enc_str),
-                                              cb)
+            indy::indy_build_attrib_request(command_handle,
+                                            submitter_did.as_ptr(),
+                                            target_did.as_ptr(),
+                                            opt_c_ptr!(hash, hash_str),
+                                            opt_c_ptr!(raw, raw_str),
+                                            opt_c_ptr!(enc, enc_str),
+                                            cb)
         })
     }
 
@@ -726,14 +723,14 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_attrib_request_async<F: 'static>(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_get_attrib_request(command_handle, submitter_did, target_did, raw, hash, enc, cb)
     }
 
-    fn _build_get_attrib_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_get_attrib_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let target_did = c_str!(target_did);
 
@@ -742,13 +739,13 @@ impl Ledger {
         let enc_str = opt_c_str!(enc);
 
         ErrorCode::from(unsafe {
-            ledger::indy_build_get_attrib_request(command_handle,
-                                                  opt_c_ptr!(submitter_did, submitter_did_str),
-                                                  target_did.as_ptr(),
-                                                  opt_c_ptr!(raw, raw_str),
-                                                  opt_c_ptr!(hash, hash_str),
-                                                  opt_c_ptr!(enc, enc_str),
-                                                  cb)
+            indy::indy_build_get_attrib_request(command_handle,
+                                                opt_c_ptr!(submitter_did, submitter_did_str),
+                                                target_did.as_ptr(),
+                                                opt_c_ptr!(raw, raw_str),
+                                                opt_c_ptr!(hash, hash_str),
+                                                opt_c_ptr!(enc, enc_str),
+                                                cb)
         })
     }
 
@@ -814,18 +811,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_schema_request_async<F: 'static>(submitter_did: &str, data: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_schema_request(command_handle, submitter_did, data, cb)
     }
 
-    fn _build_schema_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_schema_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let data = c_str!(data);
 
-        ErrorCode::from(unsafe { ledger::indy_build_schema_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_schema_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) })
     }
 
     /// Builds a GET_SCHEMA request. Request to get Credential's Schema.
@@ -869,18 +866,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_schema_request_async<F: 'static>(submitter_did: Option<&str>, id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_get_schema_request(command_handle, submitter_did, id, cb)
     }
 
-    fn _build_get_schema_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_get_schema_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let id = c_str!(id);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_schema_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), id.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_get_schema_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), id.as_ptr(), cb) })
     }
 
     /// Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API.
@@ -935,17 +932,17 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn parse_get_schema_response_async<F: 'static>(get_schema_response: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
         Ledger::_parse_get_schema_response(command_handle, get_schema_response, cb)
     }
 
-    fn _parse_get_schema_response(command_handle: IndyHandle, get_schema_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+    fn _parse_get_schema_response(command_handle: IndyHandle, get_schema_response: &str, cb: indy::indy_str_str_cb) -> ErrorCode {
         let get_schema_response = c_str!(get_schema_response);
 
-        ErrorCode::from(unsafe { ledger::indy_parse_get_schema_response(command_handle, get_schema_response.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_parse_get_schema_response(command_handle, get_schema_response.as_ptr(), cb) })
     }
 
     /// Builds an CRED_DEF request. Request to add a Credential Definition (in particular, public key),
@@ -1025,18 +1022,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_cred_def_request_async<F: 'static>(submitter_did: &str, data: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_cred_def_request(command_handle, submitter_did, data, cb)
     }
 
-    fn _build_cred_def_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_cred_def_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let data = c_str!(data);
 
-        ErrorCode::from(unsafe { ledger::indy_build_cred_def_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_cred_def_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) })
     }
 
     /// Builds a GET_CRED_DEF request. Request to get a Credential Definition (in particular, public key),
@@ -1083,18 +1080,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_cred_def_request_async<F: 'static>(submitter_did: Option<&str>, id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_get_cred_def_request(command_handle, submitter_did, id, cb)
     }
 
-    fn _build_get_cred_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_get_cred_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let id = c_str!(id);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_cred_def_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), id.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_get_cred_def_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), id.as_ptr(), cb) })
     }
 
     /// Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.
@@ -1157,17 +1154,17 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn parse_get_cred_def_response_async<F: 'static>(get_cred_def_response: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
         Ledger::_parse_get_cred_def_response(command_handle, get_cred_def_response, cb)
     }
 
-    fn _parse_get_cred_def_response(command_handle: IndyHandle, get_cred_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+    fn _parse_get_cred_def_response(command_handle: IndyHandle, get_cred_def_response: &str, cb: indy::indy_str_str_cb) -> ErrorCode {
         let get_cred_def_response = c_str!(get_cred_def_response);
 
-        ErrorCode::from(unsafe { ledger::indy_parse_get_cred_def_response(command_handle, get_cred_def_response.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_parse_get_cred_def_response(command_handle, get_cred_def_response.as_ptr(), cb) })
     }
 
     /// Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
@@ -1238,19 +1235,19 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_node_request_async<F: 'static>(submitter_did: &str, target_did: &str, data: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_node_request(command_handle, submitter_did, target_did, data, cb)
     }
 
-    fn _build_node_request(command_handle: IndyHandle, submitter_did: &str, target_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_node_request(command_handle: IndyHandle, submitter_did: &str, target_did: &str, data: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let target_did = c_str!(target_did);
         let data = c_str!(data);
 
-        ErrorCode::from(unsafe { ledger::indy_build_node_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), data.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_node_request(command_handle, submitter_did.as_ptr(), target_did.as_ptr(), data.as_ptr(), cb) })
     }
 
     /// Builds a GET_VALIDATOR_INFO request.
@@ -1291,18 +1288,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_validator_info_request_async<F: 'static>(submitter_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_get_validator_info_request(command_handle, submitter_did, cb)
     }
 
-    fn _build_get_validator_info_request(command_handle: IndyHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_get_validator_info_request(command_handle: IndyHandle, submitter_did: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
 
         ErrorCode::from(unsafe {
-          ledger::indy_build_get_validator_info_request(command_handle, submitter_did.as_ptr(), cb)
+            indy::indy_build_get_validator_info_request(command_handle, submitter_did.as_ptr(), cb)
         })
     }
 
@@ -1356,25 +1353,25 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_pool_config_request_async<F: 'static>(submitter_did: &str, writes: bool, force: bool, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_pool_config_request(command_handle, submitter_did, writes, force, cb)
     }
 
-    fn _build_pool_config_request(command_handle: IndyHandle, submitter_did: &str, writes: bool, force: bool, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_pool_config_request(command_handle: IndyHandle, submitter_did: &str, writes: bool, force: bool, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
 
-        ErrorCode::from(unsafe { ledger::indy_build_pool_config_request(command_handle, submitter_did.as_ptr(), writes, force, cb) })
+        ErrorCode::from(unsafe { indy::indy_build_pool_config_request(command_handle, submitter_did.as_ptr(), writes as u32, force as u32, cb) })
     }
 
     /// Builds a POOL_RESTART request.
     ///
     /// # Arguments
     /// * `submitter_did` - Id of Identity stored in secured Wallet.
-    /// * `action`- 
-    /// * `datetime`- 
+    /// * `action`-
+    /// * `datetime`-
     ///
     /// # Returns
     /// Request result as json.
@@ -1390,8 +1387,8 @@ impl Ledger {
     ///
     /// # Arguments
     /// * `submitter_did` - Id of Identity stored in secured Wallet.
-    /// * `action`- 
-    /// * `datetime`- 
+    /// * `action`-
+    /// * `datetime`-
     /// * `timeout` - the maximum time this function waits for a response
     ///
     /// # Returns
@@ -1408,29 +1405,29 @@ impl Ledger {
     ///
     /// # Arguments
     /// * `submitter_did` - Id of Identity stored in secured Wallet.
-    /// * `action`- 
-    /// * `datetime`- 
+    /// * `action`-
+    /// * `datetime`-
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_pool_restart_request_async<F: 'static>(submitter_did: &str, action: &str, datetime: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_pool_restart_request(command_handle, submitter_did, action, datetime, cb)
     }
 
-    fn _build_pool_restart_request(command_handle: IndyHandle, submitter_did: &str, action: &str, datetime: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_pool_restart_request(command_handle: IndyHandle, submitter_did: &str, action: &str, datetime: Option<&str>, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let action = c_str!(action);
         let datetime = opt_c_str!(datetime);
 
         ErrorCode::from(unsafe {
-            ledger::indy_build_pool_restart_request(command_handle,
-                                                    submitter_did.as_ptr(),
-                                                    action.as_ptr(),
-                                                    datetime.as_ptr(),
-                                                    cb)
+            indy::indy_build_pool_restart_request(command_handle,
+                                                  submitter_did.as_ptr(),
+                                                  action.as_ptr(),
+                                                  datetime.as_ptr(),
+                                                  cb)
         })
     }
 
@@ -1529,7 +1526,7 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_pool_upgrade_request_async<F: 'static>(submitter_did: &str,
                                                         name: &str,
                                                         version: &str,
@@ -1559,7 +1556,7 @@ impl Ledger {
                                    reinstall: bool,
                                    force: bool,
                                    package: Option<&str>,
-                                   cb: Option<ResponseStringCB>) -> ErrorCode {
+                                   cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let name = c_str!(name);
         let version = c_str!(version);
@@ -1572,19 +1569,19 @@ impl Ledger {
         let package_str = opt_c_str!(package);
 
         ErrorCode::from(unsafe {
-            ledger::indy_build_pool_upgrade_request(command_handle,
-                                                    submitter_did.as_ptr(),
-                                                    name.as_ptr(),
-                                                    version.as_ptr(),
-                                                    action.as_ptr(),
-                                                    sha256.as_ptr(),
-                                                    upgrade_timeout,
-                                                    opt_c_ptr!(schedule, schedule_str),
-                                                    opt_c_ptr!(justification, justification_str),
-                                                    reinstall,
-                                                    force,
-                                                    opt_c_ptr!(package, package_str),
-                                                    cb)
+            indy::indy_build_pool_upgrade_request(command_handle,
+                                                  submitter_did.as_ptr(),
+                                                  name.as_ptr(),
+                                                  version.as_ptr(),
+                                                  action.as_ptr(),
+                                                  sha256.as_ptr(),
+                                                  upgrade_timeout,
+                                                  opt_c_ptr!(schedule, schedule_str),
+                                                  opt_c_ptr!(justification, justification_str),
+                                                  reinstall as u32,
+                                                  force as u32,
+                                                  opt_c_ptr!(package, package_str),
+                                                  cb)
         })
     }
 
@@ -1674,18 +1671,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_revoc_reg_def_request_async<F: 'static>(submitter_did: &str, data: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_revoc_reg_def_request(command_handle, submitter_did, data, cb)
     }
 
-    fn _build_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let data = c_str!(data);
 
-        ErrorCode::from(unsafe { ledger::indy_build_revoc_reg_def_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_revoc_reg_def_request(command_handle, submitter_did.as_ptr(), data.as_ptr(), cb) })
     }
 
     /// Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
@@ -1732,18 +1729,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_revoc_reg_def_request_async<F: 'static>(submitter_did: Option<&str>, id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_get_revoc_reg_def_request(command_handle, submitter_did, id, cb)
     }
 
-    fn _build_get_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_get_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let id = c_str!(id);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_def_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), id.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_get_revoc_reg_def_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), id.as_ptr(), cb) })
     }
 
     /// Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format
@@ -1815,17 +1812,17 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn parse_get_revoc_reg_def_response_async<F: 'static>(get_revoc_reg_def_response: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
         Ledger::_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response, cb)
     }
 
-    fn _parse_get_revoc_reg_def_response(command_handle: IndyHandle, get_revoc_reg_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
+    fn _parse_get_revoc_reg_def_response(command_handle: IndyHandle, get_revoc_reg_def_response: &str, cb: indy::indy_str_str_cb) -> ErrorCode {
         let get_revoc_reg_def_response = c_str!(get_revoc_reg_def_response);
 
-        ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response.as_ptr(), cb) })
     }
 
     /// Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
@@ -1911,20 +1908,20 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_revoc_reg_entry_request_async<F: 'static>(submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_revoc_reg_entry_request(command_handle, submitter_did, revoc_reg_def_id, rev_def_type, value, cb)
     }
 
-    fn _build_revoc_reg_entry_request(command_handle: IndyHandle, submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_revoc_reg_entry_request(command_handle: IndyHandle, submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
         let revoc_reg_def_id = c_str!(revoc_reg_def_id);
         let rev_def_type = c_str!(rev_def_type);
         let value = c_str!(value);
 
-        ErrorCode::from(unsafe { ledger::indy_build_revoc_reg_entry_request(command_handle, submitter_did.as_ptr(), revoc_reg_def_id.as_ptr(), rev_def_type.as_ptr(), value.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_build_revoc_reg_entry_request(command_handle, submitter_did.as_ptr(), revoc_reg_def_id.as_ptr(), rev_def_type.as_ptr(), value.as_ptr(), cb) })
     }
 
     /// Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
@@ -1974,18 +1971,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_revoc_reg_request_async<F: 'static>(submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_get_revoc_reg_request(command_handle, submitter_did, revoc_reg_def_id, timestamp, cb)
     }
 
-    fn _build_get_revoc_reg_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_get_revoc_reg_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let revoc_reg_def_id = c_str!(revoc_reg_def_id);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), revoc_reg_def_id.as_ptr(), timestamp, cb) })
+        ErrorCode::from(unsafe { indy::indy_build_get_revoc_reg_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), revoc_reg_def_id.as_ptr(), timestamp, cb) })
     }
 
     /// Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.
@@ -2038,17 +2035,17 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn parse_get_revoc_reg_response_async<F: 'static>(get_revoc_reg_response: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String, u64) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string_u64(Box::new(closure));
 
         Ledger::_parse_get_revoc_reg_response(command_handle, get_revoc_reg_response, cb)
     }
 
-    fn _parse_get_revoc_reg_response(command_handle: IndyHandle, get_revoc_reg_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
+    fn _parse_get_revoc_reg_response(command_handle: IndyHandle, get_revoc_reg_response: &str, cb: indy::indy_str_str_long_cb) -> ErrorCode {
         let get_revoc_reg_response = c_str!(get_revoc_reg_response);
 
-        ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_response(command_handle,get_revoc_reg_response.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_parse_get_revoc_reg_response(command_handle, get_revoc_reg_response.as_ptr(), cb) })
     }
 
     /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
@@ -2104,18 +2101,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn build_get_revoc_reg_delta_request_async<F: 'static>(submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Ledger::_build_get_revoc_reg_delta_request(command_handle, submitter_did, revoc_reg_def_id, from, to, cb)
     }
 
-    fn _build_get_revoc_reg_delta_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
+    fn _build_get_revoc_reg_delta_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, cb: indy::indy_str_cb) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
         let revoc_reg_def_id = c_str!(revoc_reg_def_id);
 
-        ErrorCode::from(unsafe { ledger::indy_build_get_revoc_reg_delta_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), revoc_reg_def_id.as_ptr(), from, to, cb) })
+        ErrorCode::from(unsafe { indy::indy_build_get_revoc_reg_delta_request(command_handle, opt_c_ptr!(submitter_did, submitter_did_str), revoc_reg_def_id.as_ptr(), from, to, cb) })
     }
 
     /// Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
@@ -2174,20 +2171,20 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
     pub fn parse_get_revoc_reg_delta_response_async<F: 'static>(get_revoc_reg_delta_response: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String, u64) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string_u64(Box::new(closure));
 
         Ledger::_parse_get_revoc_reg_delta_response(command_handle, get_revoc_reg_delta_response, cb)
     }
 
-    fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg_delta_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
+    fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg_delta_response: &str, cb: indy::indy_str_str_long_cb) -> ErrorCode {
         let get_revoc_reg_delta_response = c_str!(get_revoc_reg_delta_response);
 
-        ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) })
+        ErrorCode::from(unsafe { indy::indy_parse_get_revoc_reg_delta_response(command_handle, get_revoc_reg_delta_response.as_ptr(), cb) })
     }
 
-    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
+    /// Register callbacks (see type description for `indy::indyLedgerCustomTransactionParserCb` and `indy::indyLedgerCustomFreeCb`
     ///
     /// # Arguments
     /// * `txn_type` - type of transaction to apply `parse` callback.
@@ -2196,7 +2193,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Status of callbacks registration.
-    pub fn register_transaction_parser_for_sp(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>) -> Result<(), ErrorCode> {
+    pub fn register_transaction_parser_for_sp(txn_type: &str, parser: indy::indyLedgerCustomTransactionParserCb, free: indy::indyLedgerCustomFreeCb) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb);
@@ -2204,7 +2201,7 @@ impl Ledger {
         ResultHandler::empty(err, receiver)
     }
 
-    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
+    /// Register callbacks (see type description for `indy::indyLedgerCustomTransactionParserCb` and `indy::indyLedgerCustomFreeCb`
     ///
     /// # Arguments
     /// * `txn_type` - type of transaction to apply `parse` callback.
@@ -2214,7 +2211,7 @@ impl Ledger {
     ///
     /// # Returns
     /// Status of callbacks registration.
-    pub fn register_transaction_parser_for_sp_timeout(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, timeout: Duration) -> Result<(), ErrorCode> {
+    pub fn register_transaction_parser_for_sp_timeout(txn_type: &str, parser: indy::indyLedgerCustomTransactionParserCb, free: indy::indyLedgerCustomFreeCb, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb);
@@ -2222,7 +2219,7 @@ impl Ledger {
         ResultHandler::empty_timeout(err, receiver, timeout)
     }
 
-    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
+    /// Register callbacks (see type description for `indy::indyLedgerCustomTransactionParserCb` and `indy::indyLedgerCustomFreeCb`
     ///
     /// # Arguments
     /// * `txn_type` - type of transaction to apply `parse` callback.
@@ -2231,18 +2228,18 @@ impl Ledger {
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn register_transaction_parser_for_sp_async<F: 'static>(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
+    /// * `errorcode` - errorcode from calling indy function. The closure receives the return result
+    pub fn register_transaction_parser_for_sp_async<F: 'static>(txn_type: &str, parser: indy::indyLedgerCustomTransactionParserCb, free: indy::indyLedgerCustomFreeCb, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb)
     }
 
-    fn _register_transaction_parser_for_sp(command_handle: IndyHandle, txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
+    fn _register_transaction_parser_for_sp(command_handle: IndyHandle, txn_type: &str, parser: indy::indyLedgerCustomTransactionParserCb, free: indy::indyLedgerCustomFreeCb, cb: indy::indy_empty_cb) -> ErrorCode {
         let txn_type = c_str!(txn_type);
 
         ErrorCode::from(unsafe {
-          ledger::indy_register_transaction_parser_for_sp(command_handle, txn_type.as_ptr(), parser, free, cb)
+            indy::indy_register_transaction_parser_for_sp(command_handle, txn_type.as_ptr(), parser, free, cb)
         })
     }
 }
