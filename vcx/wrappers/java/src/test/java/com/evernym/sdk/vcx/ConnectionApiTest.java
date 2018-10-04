@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.ExecutionException;
 
 import static com.evernym.sdk.vcx.TestHelper._createConnection;
-import static junit.framework.Assert.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 class ConnectionApiTest {
 

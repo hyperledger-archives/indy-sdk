@@ -5,18 +5,18 @@ import com.evernym.sdk.vcx.credential.GetCredentialCreateMsgidResult;
 import com.evernym.sdk.vcx.credential.InvalidCredentialHandleException;
 import com.evernym.sdk.vcx.vcx.InvalidOptionException;
 import com.evernym.sdk.vcx.vcx.VcxApi;
-import org.json.simple.JSONArray;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import static junit.framework.Assert.assertNotSame;
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+
 
 class CredentialApiTest {
     @BeforeEach
@@ -30,7 +30,7 @@ class CredentialApiTest {
 
     @Test
     @DisplayName("create a credential with a offer")
-    void createCredential() throws VcxException, ExecutionException, InterruptedException, ParseException {
+    void createCredential() throws VcxException, ExecutionException, InterruptedException {
         int credential = TestHelper._createCredential();
         assertNotSame(0, credential);
     }
@@ -58,11 +58,10 @@ class CredentialApiTest {
 
     @Test
     @DisplayName("serialize credential")
-    void serializeCredential() throws InterruptedException, VcxException, ParseException, ExecutionException {
+    void serializeCredential() throws InterruptedException, VcxException, ExecutionException {
         int credential = TestHelper._createCredential();
         assertNotSame(0, credential);
         String serializedCredential = TestHelper.getResultFromFuture(CredentialApi.credentialSerialize(credential));
-        JSONParser parser = new JSONParser();
         assert (serializedCredential.contains(TestHelper.address1InOffer));
 
     }
@@ -77,7 +76,7 @@ class CredentialApiTest {
 
     @Test
     @DisplayName("deserialize credential")
-    void deserializeCredential() throws InterruptedException, VcxException, ParseException, ExecutionException {
+    void deserializeCredential() throws InterruptedException, VcxException, ExecutionException {
         int credential = TestHelper._createCredential();
         assertNotSame(0, credential);
         String serializedCredential = TestHelper.getResultFromFuture(CredentialApi.credentialSerialize(credential));
@@ -99,7 +98,7 @@ class CredentialApiTest {
 
     @Test
     @DisplayName("update state of credential")
-    void updateState() throws VcxException, ExecutionException, InterruptedException, ParseException {
+    void updateState() throws VcxException, ExecutionException, InterruptedException {
         int credential = TestHelper._createCredential();
         assertNotSame(0, credential);
         TestHelper.getResultFromFuture(CredentialApi.credentialUpdateState(credential));
@@ -109,7 +108,7 @@ class CredentialApiTest {
 
     @Test
     @DisplayName("send credential request")
-    void sendRequest() throws VcxException, ExecutionException, InterruptedException, ParseException {
+    void sendRequest() throws VcxException, ExecutionException, InterruptedException {
         int credential = TestHelper._createCredential();
         int connection = TestHelper._createConnection();
         assertNotSame(0, credential);
@@ -133,13 +132,13 @@ class CredentialApiTest {
 
     @Test
     @DisplayName("get credential offers for a connection")
-    void getOffers() throws VcxException, ExecutionException, InterruptedException, ParseException {
+    void getOffers() throws VcxException, ExecutionException, InterruptedException {
         int connection = TestHelper._createConnection();
         String offers = TestHelper.getResultFromFuture(CredentialApi.credentialGetOffers(connection));
         assert (offers != null);
-        JSONArray array = (JSONArray) new JSONParser().parse(offers);
-        assert (!array.isEmpty());
-        int credential = TestHelper.getResultFromFuture(CredentialApi.credentialCreateWithOffer("0", array.get(0).toString()));
+        List<String> credentialOffer = JsonPath.read(offers,"$.[0]");
+        assert (!credentialOffer.isEmpty());
+        int credential = TestHelper.getResultFromFuture(CredentialApi.credentialCreateWithOffer("0", JsonPath.parse(credentialOffer).jsonString()));
         assertNotSame(0, credential);
     }
 
