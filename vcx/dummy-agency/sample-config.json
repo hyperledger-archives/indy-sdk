@@ -1,0 +1,17 @@
+{
+  "agency": {
+    "wallet_id": "agency_wallet_id",
+    "wallet_passphrase": "agency_wallet_passphrase",
+    "did": "VsKV7grR1BUE29mG2Fm2kX",
+    "did_seed": "00000000000000000000000000000My1",
+    "storage_type": null,
+    "storage_config": null,
+    "storage_credentials": null
+  },
+  "server": {
+    "addresses": [
+      "127.0.0.1:8080",
+      "127.0.0.1:8081"
+    ]
+  }
+}

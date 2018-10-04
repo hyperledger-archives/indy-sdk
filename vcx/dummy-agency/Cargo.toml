@@ -1,0 +1,21 @@
+[package]
+name = "indy-dummy-agency"
+version = "0.1.0"
+authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
+
+[dependencies]
+actix = "0.7"
+actix-web = "0.7"
+error-chain = "0.12.0"
+futures = "0.1.24"
+lazy_static = "0.2"
+log = "0.4.5"
+pretty_env_logger = "0.2.4"
+serde = "1.0.79"
+serde_derive = "1.0.79"
+serde_json = "1.0.28"
+rmp-serde = "0.13.7"
+rust-base58 = "0.0.4"
+
+[dev-dependencies]
+tokio-core = "0.1.17"
