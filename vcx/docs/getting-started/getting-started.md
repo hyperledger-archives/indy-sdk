@@ -481,27 +481,29 @@ await proof.generate_proof(credentials, {})
 await proof.send_proof(connection_to_thrift)
 ```
 
-When **Thrift** inspects the received Proof he will see following structure:
+When **Thrift** inspects the received Proof he will see the following structure:
 ```
 # Thrift Agent
 {
     'requested_proof': {
-	'revealed_attributess': {
-	    'attr1_referent': {'sub_proof_index': 0, 'raw':'Permanent', 'encoded':'2143135425425143112321314321'},
-	},
-	'self_attested_attrs': {},
-	'unrevealed_attrs': {},
-	'predicates': {
-	    'predicate1_referent': {'sub_proof_index': 0},
-	    'predicate2_referent': {'sub_proof_index': 0}
-	}
+        'revealed_attrs': {
+            'attr1_referent': {'sub_proof_index': 0, 'raw':'Permanent', 'encoded':'2143135425425143112321314321'},
+        },
+        'self_attested_attrs': {},
+        'unrevealed_attrs': {},
+        'predicates': {
+            'predicate1_referent': {'sub_proof_index': 0},
+            'predicate2_referent': {'sub_proof_index': 0}
+        }
     },
-    'proof' : [] # Validity Proof that Thrift can check
+    'proof' : { ... } # Validity Proof that Thrift can check
     'identifiers' : [ # Identifiers of credentials were used for Proof building
-	'schema_id': job_certificate_schema_id,
-	'cred_def_id': acme_job_certificate_cred_def_id,
-	'revoc_reg_seq_no': None,
-	'timestamp': None
+            {
+            'schema_id': job_certificate_schema_id,
+                'cred_def_id': acme_job_certificate_cred_def_id,
+                'revoc_reg_seq_no': None,
+                'timestamp': None
+        }
     ]
 }
 ```
@@ -562,11 +564,11 @@ Alice has two credentials that meets the proof requirements for this **Loan-Appl
     'schema_key': job_certificate_schema_id,
     'cred_def_id': acme_job_certificate_cred_def_id,
     'attrs': {
-	'employee_status': 'Permanent',
-	'last_name': 'Garcia',
-	'experience': '10',
-	'first_name': 'Alice',
-	'salary': '2400'
+        'employee_status': 'Permanent',
+        'last_name': 'Garcia',
+        'experience': '10',
+        'first_name': 'Alice',
+        'salary': '2400'
     },
     'rev_reg_id': None,
     'revoc_reg_seq_no': None
@@ -597,12 +599,12 @@ await proof.generate_proof(credentials, {})
 await proof.send_proof(connection_to_thrift)
 ```
 
-When **Thrift** inspects the received Proof he will see following structure:
+When **Thrift** inspects the received Proof he will see the following structure:
 ```
   # Thrift Agent
   {
       'requested_proof': {
-          'revealed_attributes': {
+          'revealed_attrs': {
               'attr1_referent': {'sub_proof_index': 0, 'raw':'123-45-6789', 'encoded':'3124141231422543541'},
               'attr1_referent': {'sub_proof_index': 1, 'raw':'Alice', 'encoded':'245712572474217942457235975012103335'},
               'attr1_referent': {'sub_proof_index': 1, 'raw':'Garcia', 'encoded':'312643218496194691632153761283356127'},
@@ -611,7 +613,7 @@ When **Thrift** inspects the received Proof he will see following structure:
           'unrevealed_attrs': {},
           'predicates': {}
       },
-      'proof' : [] # Validity Proof that Thrift can check
+      'proof' : { ... } # Validity Proof that Thrift can check
       'identifiers' : [ # Identifiers of credentials were used for Proof building
           {
             'schema_id': transcript_schema_id,
@@ -633,7 +635,7 @@ When **Thrift** inspects the received Proof he will see following structure:
 ```python
 # Thrift Agent
 
-# Process the proof provided by alice
+# Process the proof provided by Alice
 await proof.get_proof(connection_to_alice)
 
 # Check if proof is valid
