@@ -3,8 +3,8 @@ use {ErrorCode, IndyHandle};
 use std::ffi::CString;
 use std::time::Duration;
 
-use native::crypto;
-use native::{ResponseEmptyCB,
+use ffi::crypto;
+use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseSliceCB,
           ResponseBoolCB,

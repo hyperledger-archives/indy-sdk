@@ -3,8 +3,8 @@ use {ErrorCode, IndyHandle};
 use std::ffi::CString;
 use std::time::Duration;
 
-use native::blob_storage;
-use native::ResponseI32CB;
+use ffi::blob_storage;
+use ffi::ResponseI32CB;
 
 use utils::results::ResultHandler;
 use utils::callbacks::ClosureHandler;

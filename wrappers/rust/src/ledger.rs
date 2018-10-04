@@ -4,8 +4,8 @@ use std::ffi::CString;
 use std::time::Duration;
 use std::ptr::null;
 
-use native::ledger;
-use native::{ResponseEmptyCB,
+use ffi::ledger;
+use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseStringStringCB,
           ResponseStringStringU64CB};

@@ -1,8 +1,9 @@
 use super::*;
 
-use native::{BString, CString, Error, Handle};
+use {BString, CString, Error, Handle};
 
 extern {
+
     #[no_mangle]
     pub fn indy_register_wallet_storage(command_handle: Handle,
                                         type_: CString,
@@ -31,36 +32,47 @@ extern {
                                         fetch_search_next_record: Option<WalletFetchSearchNextRecord>,
                                         free_search: Option<WalletFreeSearch>,
                                         cb: Option<ResponseEmptyCB>) -> Error;
+
     #[no_mangle]
     pub fn indy_create_wallet(command_handle: Handle,
                               config: CString,
                               credentials: CString,
                               cb: Option<ResponseEmptyCB>) -> Error;
+
     #[no_mangle]
     pub fn indy_open_wallet(command_handle: Handle,
                             config: CString,
                             credentials: CString,
                             cb: Option<ResponseI32CB>) -> Error;
+
     #[no_mangle]
     pub fn indy_export_wallet(command_handle: Handle,
                               wallet_handle: Handle,
                               export_config: CString,
                               cb: Option<ResponseEmptyCB>) -> Error;
+
     #[no_mangle]
     pub fn indy_import_wallet(command_handle: Handle,
                               config: CString,
                               credentials: CString,
                               import_config: CString,
                               cb: Option<ResponseEmptyCB>) -> Error;
+
     #[no_mangle]
     pub fn indy_close_wallet(command_handle: Handle,
                              wallet_handle: Handle,
                              cb: Option<ResponseEmptyCB>) -> Error;
+
     #[no_mangle]
     pub fn indy_delete_wallet(command_handle: Handle,
                               config: CString,
                               credentials: CString,
                               cb: Option<ResponseEmptyCB>) -> Error;
+
+    #[no_mangle]
+    pub fn indy_generate_wallet_key(command_handle: Handle,
+                                    config: CString,
+                                    cb: Option<ResponseStringCB>) -> Error;
 }
 
 pub type WalletCreate = extern fn(name: CString,

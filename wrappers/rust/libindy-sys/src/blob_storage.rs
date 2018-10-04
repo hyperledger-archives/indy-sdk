@@ -1,8 +1,9 @@
 use super::*;
 
-use native::{Error, Handle, CString};
+use {CString, Error, Handle};
 
 extern {
+
     #[no_mangle]
     pub fn indy_open_blob_storage_reader(command_handle: Handle,
                                          type_: CString,
@@ -15,3 +16,4 @@ extern {
                                          config_json: CString,
                                          cb: Option<ResponseI32CB>) -> Error;
 }
+

@@ -3,8 +3,8 @@ use {ErrorCode, IndyHandle};
 use std::ffi::CString;
 use std::time::Duration;
 
-use native::did;
-use native::{ResponseEmptyCB,
+use ffi::did;
+use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseStringStringCB};
 

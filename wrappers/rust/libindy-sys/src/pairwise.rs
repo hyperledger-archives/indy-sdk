@@ -1,8 +1,9 @@
 use super::*;
 
-use native::{Error, Handle, CString};
+use {CString, Error, Handle};
 
 extern {
+
     #[no_mangle]
     pub fn indy_is_pairwise_exists(command_handle: Handle,
                                    wallet_handle: Handle,
@@ -35,3 +36,4 @@ extern {
                                       metadata: CString,
                                       cb: Option<ResponseEmptyCB>) -> Error;
 }
+

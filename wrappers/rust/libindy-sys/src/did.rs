@@ -1,18 +1,20 @@
-use native::{Error, Handle, CString};
 use super::*;
 
+use {CString, Error, Handle};
+
 extern {
+
     #[no_mangle]
     pub fn indy_create_and_store_my_did(command_handle: Handle,
                                         wallet_handle: Handle,
-                                        did_json: CString,
+                                        did_info: CString,
                                         cb: Option<ResponseStringStringCB>) -> Error;
 
     #[no_mangle]
     pub fn indy_replace_keys_start(command_handle: Handle,
                                    wallet_handle: Handle,
                                    did: CString,
-                                   identity_json: CString,
+                                   key_info: CString,
                                    cb: Option<ResponseStringCB>) -> Error;
 
     #[no_mangle]
@@ -39,6 +41,7 @@ extern {
                                   wallet_handle: Handle,
                                   did: CString,
                                   cb: Option<ResponseStringCB>) -> Error;
+
     #[no_mangle]
     pub fn indy_set_endpoint_for_did(command_handle: Handle,
                                      wallet_handle: Handle,
@@ -60,6 +63,7 @@ extern {
                                  did: CString,
                                  metadata: CString,
                                  cb: Option<ResponseEmptyCB>) -> Error;
+
     #[no_mangle]
     pub fn indy_get_did_metadata(command_handle: Handle,
                                  wallet_handle: Handle,
@@ -76,9 +80,11 @@ extern {
     pub fn indy_list_my_dids_with_meta(command_handle: Handle,
                                        wallet_handle: Handle,
                                        cb: Option<ResponseStringCB>) -> Error;
+
     #[no_mangle]
     pub fn indy_abbreviate_verkey(command_handle: Handle,
                                   did: CString,
                                   full_verkey: CString,
                                   cb: Option<ResponseStringCB>) -> Error;
 }
+

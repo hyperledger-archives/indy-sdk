@@ -8,9 +8,11 @@ pub mod pairwise;
 pub mod payments;
 pub mod pool;
 pub mod wallet;
+pub mod logger;
 
-use std::os::raw::c_char;
+use std::os::raw::{c_void, c_char};
 
+pub type CVoid = c_void;
 pub type BString = *const u8;
 pub type CString = *const c_char;
 pub type Handle = i32;

@@ -56,7 +56,7 @@ while ($text =~ m/\bpub\s+extern\s+fn\s+(indy_\w+\s*\(.+?\)\s+->\s+Error)/sgo)
     my ($len) = $fn =~ m/^([^(]+)/go;
     my $whitespace = ' ' x (length($len) + length("    pub fn  "));
     $fn =~ s/^\s+(?=\w)/$whitespace/mgo;
-
+    say "";
     say "    #[no_mangle]";
     say "    pub fn $fn;";
 }
