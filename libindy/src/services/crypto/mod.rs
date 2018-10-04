@@ -1,6 +1,9 @@
 mod ed25519;
 
+extern crate hex;
+
 use self::ed25519::ED25519CryptoType;
+use self::hex::FromHex;
 
 use errors::common::CommonError;
 use errors::crypto::CryptoError;
@@ -15,6 +18,7 @@ use utils::crypto::ed25519_box;
 
 use std::collections::HashMap;
 use std::str;
+use std::error::Error;
 
 pub const DEFAULT_CRYPTO_TYPE: &'static str = "ed25519";
 
@@ -64,7 +68,6 @@ impl CryptoService {
         let (vk, sk) = crypto_type.create_key(seed.as_ref())?;
         let mut vk = base58::encode(&vk[..]);
         let sk = base58::encode(&sk[..]);
-
         if !crypto_type_name.eq(DEFAULT_CRYPTO_TYPE) {
             // Use suffix with crypto type name to store crypto type inside of vk
             vk = format!("{}:{}", vk, crypto_type_name);
@@ -348,22 +351,33 @@ impl CryptoService {
     pub fn convert_seed(&self, seed: Option<&str>) -> Result<Option<ed25519_sign::Seed>, CryptoError> {
         trace!("convert_seed >>> seed: {:?}", seed);
 
-        let res = match seed {
-            Some(ref seed) => {
-                let seed = if seed.ends_with('=') {
-                    base64::decode(&seed)
-                        .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Seed from Base64 string: {:?}", err)))?
-                } else {
-                    seed.as_bytes().to_vec()
-                };
-                Some(ed25519_sign::Seed::from_slice(&seed)?)
-            }
-            None => None
+        if seed.is_none() {
+            trace!("convert_seed <<< res: None");
+            return Ok(None);
+        }
+
+        let seed = seed.unwrap();
+
+        let bytes = if seed.as_bytes().len() == ed25519_sign::SEEDBYTES {
+            // is acceptable seed length
+            seed.as_bytes().to_vec()
+        } else if seed.ends_with('=') {
+            // is base64 string
+            base64::decode(&seed)
+                .map_err(|err| CommonError::InvalidStructure(format!("Can't deserialize Seed from Base64 string: {:?}", err)))?
+        } else if seed.as_bytes().len() == ed25519_sign::SEEDBYTES * 2 {
+            // is hex string
+            Vec::from_hex(seed)
+                .map_err(|err| CommonError::InvalidStructure(err.description().to_string()))?
+        } else {
+            return Err(CryptoError::CommonError(CommonError::InvalidStructure("Invalid bytes for Seed".to_string())))
         };
+
+        let res = ed25519_sign::Seed::from_slice(bytes.as_slice())?;
 
         trace!("convert_seed <<< res: {:?}", res);
 
-        Ok(res)
+        Ok(Some(res))
     }
 
     pub fn validate_key(&self, vk: &str) -> Result<(), CryptoError> {
