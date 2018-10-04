@@ -9,7 +9,6 @@ use domain::anoncreds::revocation_registry_definition::RevocationRegistryDefinit
 
 use self::indy_crypto::cl::{Tail, RevocationTailsAccessor, RevocationTailsGenerator};
 use self::indy_crypto::errors::IndyCryptoError;
-use self::digest::Input;
 
 use self::rust_base58::{ToBase58, FromBase58};
 
