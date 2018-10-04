@@ -1,4 +1,12 @@
 # Changelog
+
+## 1.6.7
+* Supported setting fees in `did rotate-key` CLI command.
+* Supported hexadecimal seed for did and key creation. 
+* Removed TGB role.
+* Added EXPERIMENTAL Rust wrapper for Libindy.
+* Bugfixes.
+
 ## 1.6.6
 * Fixed Android build rustflags. Now all architectures have same flags.
 

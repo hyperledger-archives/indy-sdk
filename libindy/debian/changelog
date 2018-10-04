@@ -1,6 +1,11 @@
-libindy (1.6.6) unstable; urgency=medium
+libindy (1.6.7) unstable; urgency=medium
 
 [ Hyperledger ]
+
+* 1.6.7
+    * Supported hexadecimal seed for did and key creation.
+    * Removed TGB role.
+    * Bugfixes.
 
 * 1.6.6
     * Fixed Android build rustflags. Now all architectures have same flags.
