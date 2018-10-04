@@ -11,10 +11,11 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestCreatePoolWorksForNullConfig()
         {
-            var file = File.Create("testCreatePoolWorks.txn");
+            string poolConfigName = "testCreatePoolWorks";
+            var file = File.Create(string.Format("{0}.txn", poolConfigName));
             PoolUtils.WriteTransactions(file, 1);
 
-            await Pool.CreatePoolLedgerConfigAsync("testCreatePoolWorks", null);
+            await Pool.CreatePoolLedgerConfigAsync(poolConfigName, null);
         }
 
         [TestMethod]

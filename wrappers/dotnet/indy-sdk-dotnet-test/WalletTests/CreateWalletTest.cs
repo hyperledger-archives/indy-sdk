@@ -1,5 +1,6 @@
 ﻿using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
 
@@ -11,56 +12,23 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestCreateWalletWorks()
         {
-            await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
-        }
+            WalletConfig config = new WalletConfig() { id = WALLET };
+            Credentials cred = new Credentials() { key = WALLET_KEY };
 
-        [TestMethod]
-        public async Task TestCreateWalletWorksForPlugged()
-        {
-            await Wallet.CreateWalletAsync(POOL, "pluggedWalletCreate", "inmem", null, null);
-        }
-
-        [TestMethod]
-        public async Task TestCreateWalletWorksForEmptyType()
-        {
-            await Wallet.CreateWalletAsync(POOL, WALLET, null, null, null);
-        }
-
-        [TestMethod]
-        public async Task TestCreateWalletWorksForConfigJson()
-        {
-            await Wallet.CreateWalletAsync(POOL, WALLET, null, "{\"freshness_time\":1000}", null);
-        }
-
-        [TestMethod]
-        public async Task TestCreateWalletWorksForUnknownType()
-        {
-            var ex = await Assert.ThrowsExceptionAsync<UnknownWalletTypeException>(() =>
-                Wallet.CreateWalletAsync(POOL, WALLET, "unknown_type", null, null)
-            );
-        }
-
-        [TestMethod]
-        public async Task TestCreateWalletWorksForEmptyName()
-        {
-            var ex = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
-                Wallet.CreateWalletAsync(POOL, string.Empty, TYPE, null, null)
-            );
-
-            Assert.AreEqual("name", ex.ParamName);
+            await Wallet.CreateWalletAsync(config, cred);
         }
 
         [TestMethod]
         public async Task TestCreateWalletFailsForDuplicateName()
         {
-            await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
+            WalletConfig config = new WalletConfig() { id = WALLET };
+            Credentials cred = new Credentials() { key = WALLET_KEY };
 
-            var ex = await Assert.ThrowsExceptionAsync<WalletExistsException>(() =>
-                Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null)
+            await Wallet.CreateWalletAsync(config, cred);
+
+            var ex = await Assert.ThrowsExceptionAsync<WalletExistsException>(async () => 
+                await Wallet.CreateWalletAsync(config, cred)
             );
         }
-
-        
-
     }
 }
