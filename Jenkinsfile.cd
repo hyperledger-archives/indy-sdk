@@ -565,22 +565,27 @@ def ubuntuPublishing() {
 }
 
 def rustWrapperPublishing(testEnv, isRelease) {
+
+    def ver = getSrcVersion("wrappers/rust")
     def suffix = getSuffix(isRelease, "Cargo")
 
+    echo 'Publish Indy-Sys to Cargo'
+
     dir('wrappers/rust/libindy-sys') {
-        echo 'Publish Libindy-Sys to Cargo'
-        publishToCargo(testEnv, suffix)
+        publishToCargo(testEnv, suffix, ver)
     }
 
+    echo 'Publish Indy to Cargo'
+
     dir('wrappers/rust') {
-        echo 'Publish Indy to Cargo'
-        publishToCargo(testEnv, suffix)
+        sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"$ver\" }/indy-sys = { path =\"indy-sys\", version = \"$ver$suffix\" }/g' Cargo.toml"
+        publishToCargo(testEnv, suffix, ver)
     }
 }
 
-def publishToCargo(testEnv, suffix){
+def publishToCargo(testEnv, suffix, ver) {
     testEnv.inside {
-        sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"([0-9,.]+)/version = \\\"\\1$suffix/\" Cargo.toml"
+        sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"$ver/version = \\\"$ver$suffix/\" Cargo.toml"
 
         withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'LOGIN')]) {
             sh 'cargo login $LOGIN'
@@ -905,7 +910,7 @@ def publishLibnullpayIOSFilesRCtoStable(version) {
     copyFilesFromRcToStable(src, target)
 }
 
-def fullVersion(version){
+def fullVersion(version) {
     return "${version}-${env.BUILD_NUMBER}"
 }
 
@@ -1062,11 +1067,11 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
 }
 
 def androidTesting() {
-    env_name="android_on_linux"
-    network_name="pool_network"
+    env_name = "android_on_linux"
+    network_name = "pool_network"
     parallel([
             "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
-            "${env_name}-android-building" : { androidBuildAsTesting() }
+            "${env_name}-android-building": { androidBuildAsTesting() }
     ])
 }
 

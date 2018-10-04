@@ -1,10 +1,10 @@
 [package]
-name = "libindy-sys"
-version = "0.2.0"
-authors = ["Mike Lodder <redmike7@gmail.com"]
+name = "indy-sys"
+description = "FFI bindings to Libindy C API"
+version = "1.6.6"
+authors = ["Mike Lodder <redmike7@gmail.com>"]
 build = "build.rs"
 links = "indy"
-description = "FFI bindings for IndySDK. This is for those callers who don't link indy-sdk crate"
 license = "MIT/Apache-2.0"
 
 [build-dependencies]
