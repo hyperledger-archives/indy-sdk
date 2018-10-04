@@ -21,7 +21,8 @@ impl<F> FutureChainErr<F::Item> for F
     }
 }
 
-/// Like `try`, but returns an SFuture instead of a Result.
+/// Like `try`, but returns an BoxedFuture instead of a Result.
+/// #[warn(unused_macros)]
 macro_rules! ftry {
     ($e:expr) => {
         match $e {

@@ -1,3 +1,5 @@
+use serde_json::Value;
+
 #[derive(Deserialize)]
 pub struct Config {
     pub agency: AgencyConfig,
@@ -17,9 +19,9 @@ pub struct AgencyConfig {
     // Storage type for agency and agents wallets
     pub storage_type: Option<String>,
     // Storage config for agency and agents wallets
-    pub storage_config: Option<String>,
+    pub storage_config: Option<Value>,
     // Storage credentials for agency and agents wallets
-    pub storage_credentials: Option<String>,
+    pub storage_credentials: Option<Value>,
 }
 
 #[derive(Deserialize)]

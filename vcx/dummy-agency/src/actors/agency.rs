@@ -2,85 +2,77 @@ use actix::prelude::*;
 use domain::config::AgencyConfig;
 use errors::*;
 use futures::*;
-use utils::{did, wallet};
+use indy::{did, wallet};
+use indy::errors::{Error as IndyError, ErrorKind as IndyErrorKind};
 
 #[allow(unused)] // TODO: FIXME: Remove
 pub struct Agency {
     // Agency wallet handle
     wallet_handle: i32,
-    // Agency did
-    did: String,
-    // Agency did verkey
-    did_verkey: String,
-    // Storage type for agency and agents wallets
-    storage_type: Option<String>,
-    // Storage config for agency and agents wallets
-    storage_config: Option<String>,
-    // Storage credentials for agency and agents wallets
-    storage_credentials: Option<String>,
+    // Agency verkey
+    verkey: String,
+    // Agency config
+    config: AgencyConfig,
 }
 
 impl Agency {
     pub fn new(config: AgencyConfig) -> BoxedFuture<Self> {
+        let wallet_config = json!({
+            "id": config.wallet_id,
+            "storage_type": config.storage_type,
+            "storage_config": config.storage_config,
+         })
+            .to_string();
+
+        let wallet_credentials = json!({
+            "key": config.wallet_passphrase,
+            "storage_credentials": config.storage_credentials,
+        })
+            .to_string();
+
+        let did_info = json!({
+            "did": config.did,
+            "seed": config.did_seed,
+        })
+            .to_string();
+
         let res = f_ok(())
             .and_then(move |_| {
-                wallet::ensure_created(config.wallet_id
-                                           .as_ref(),
-                                       config.wallet_passphrase
-                                           .as_ref(),
-                                       config.storage_type
-                                           .as_ref()
-                                           .map(String::as_str),
-                                       config.storage_config
-                                           .as_ref()
-                                           .map(String::as_str),
-                                       config.storage_credentials
-                                           .as_ref()
-                                           .map(String::as_str))
-                    .map(|_| config)
+                wallet::create_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
+                    .then(|res| {
+                        match res {
+                            Err(IndyError(IndyErrorKind::WalletAlreadyExistsError, _)) => Ok(()),
+                            r => r,
+                        }
+                    })
+                    .map(|_| (wallet_config, wallet_credentials))
                     .chain_err(|| "Can't ensure agency wallet created")
             })
-            .and_then(move |config| {
-                wallet::open(config.wallet_id
-                                 .as_ref(),
-                             config.wallet_passphrase
-                                 .as_ref(),
-                             config.storage_type
-                                 .as_ref()
-                                 .map(String::as_str),
-                             config.storage_config
-                                 .as_ref()
-                                 .map(String::as_str),
-                             config.storage_credentials
-                                 .as_ref()
-                                 .map(String::as_str))
-                    .map(|wallet_handle| (config, wallet_handle))
+            .and_then(|(wallet_config, wallet_credentials)| {
+                wallet::open_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
                     .chain_err(|| "Can't open agency wallet ")
             })
-            .and_then(move |(config, wallet_handle)| {
-                did::ensure_created(wallet_handle,
-                                    config.did
-                                        .as_ref(),
-                                    config.did_seed
-                                        .as_ref()
-                                        .map(String::as_str))
-                    .map(move |_| (config, wallet_handle))
-                    .chain_err(|| "Can't open agency wallet")
+            .and_then(move |wallet_handle| {
+                did::create_and_store_my_did(wallet_handle, did_info.as_ref())
+                    .then(|res| match res {
+                        Ok(_) => Ok(()),
+                        Err(IndyError(IndyErrorKind::DidAlreadyExistsError, _)) => Ok(()), // Already exists
+                        Err(err) => Err(err),
+                    })
+                    .map(move |_| wallet_handle)
+                    .chain_err(|| "Can't create did")
             })
-            .and_then(move |(config, wallet_handle)| {
+            .and_then(move |wallet_handle| {
                 did::key_for_local_did(wallet_handle,
                                        config.did.as_ref())
-                    .map(move |did_verkey| (config, wallet_handle, did_verkey))
+                    .map(move |verkey| (wallet_handle, verkey, config))
                     .chain_err(|| "Can't get agency did key")
             })
-            .map(move |(config, wallet_handle, did_verkey)| {
+            .map(move |(wallet_handle, verkey, config)| {
                 Agency {
                     wallet_handle,
-                    did: config.did,
-                    did_verkey,
-                    storage_type: config.storage_type,
-                    storage_config: config.storage_config,
-                    storage_credentials: config.storage_credentials,
+                    verkey,
+                    config,
                 }
             });
 
@@ -97,7 +89,7 @@ pub struct Get {}
 #[derive(Serialize)]
 pub struct GetResponse {
     did: String,
-    did_verkey: String,
+    verkey: String,
 }
 
 impl Message for Get {
@@ -109,8 +101,8 @@ impl Handler<Get> for Agency {
 
     fn handle(&mut self, _: Get, _: &mut Self::Context) -> Self::Result {
         let res = GetResponse {
-            did: self.did.clone(),
-            did_verkey: self.did_verkey.clone(),
+            did: self.config.did.clone(),
+            verkey: self.verkey.clone(),
         };
 
         Ok(res)
@@ -133,8 +125,9 @@ impl Handler<Post> for Agency {
 
         // FIXME: Just to illustrate async handler
 
-        let res = did::key_for_local_did(self.wallet_handle, self.did.as_ref())
-            .map(|key| PostResponse(key));
+        let res = did::key_for_local_did(self.wallet_handle, self.config.did.as_ref())
+            .map(|key| PostResponse(key))
+            .chain_err(|| "Can't get agency did");
 
         Box::new(res)
     }
