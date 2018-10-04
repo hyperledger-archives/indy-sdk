@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "declaration": true,
+    "baseUrl": "./",
+    "strict": true,
+    "strictFunctionTypes": false,
+    "noUnusedLocals": true,
+    "preserveConstEnums": true
+  },
+  "include": [
+    "./src/*"
+  ]
+}

@@ -19,3 +19,7 @@ sudo add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master"
 sudo apt-get update
 sudo apt-get install -y libnullpay
 ```
+
+### Logs
+Null Payment plugin doesn't the ability to set or configure own logger. 
+It inheritances Libindy logger implementation during plugin initialization.
