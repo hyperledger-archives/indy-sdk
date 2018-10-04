@@ -5,7 +5,6 @@ use futures::*;
 use indy::{did, wallet};
 use indy::errors::{Error as IndyError, ErrorKind as IndyErrorKind};
 
-#[allow(unused)] // TODO: FIXME: Remove
 pub struct Agency {
     // Agency wallet handle
     wallet_handle: i32,
@@ -84,23 +83,25 @@ impl Actor for Agency {
     type Context = Context<Self>;
 }
 
-pub struct Get {}
+pub struct GetAgencyDetail {}
 
-#[derive(Serialize)]
-pub struct GetResponse {
-    did: String,
-    verkey: String,
+#[derive(Serialize, Debug)]
+pub struct AgencyDetail {
+    #[serde(rename = "DID")]
+    pub did: String,
+    #[serde(rename = "verKey")]
+    pub verkey: String,
 }
 
-impl Message for Get {
-    type Result = Result<GetResponse>;
+impl Message for GetAgencyDetail {
+    type Result = Result<AgencyDetail>;
 }
 
-impl Handler<Get> for Agency {
-    type Result = Result<GetResponse>;
+impl Handler<GetAgencyDetail> for Agency {
+    type Result = Result<AgencyDetail>;
 
-    fn handle(&mut self, _: Get, _: &mut Self::Context) -> Self::Result {
-        let res = GetResponse {
+    fn handle(&mut self, _: GetAgencyDetail, _: &mut Self::Context) -> Self::Result {
+        let res = AgencyDetail {
             did: self.config.did.clone(),
             verkey: self.verkey.clone(),
         };

@@ -33,15 +33,15 @@ extern crate tokio_core;
 pub(crate) mod errors;
 
 #[macro_use]
-pub mod futures;
+pub(crate) mod futures;
 
 #[macro_use]
-pub mod utils;
+pub(crate) mod utils;
 
-pub mod actors;
-pub mod domain;
-pub mod endpoints;
-pub mod indy;
+pub(crate) mod actors;
+pub(crate) mod domain;
+pub(crate) mod endpoints;
+pub(crate) mod indy;
 
 use actix::prelude::*;
 use actix_web::{http, middleware, server, App};
@@ -125,7 +125,7 @@ fn _start_app(agency: Addr<Agency>) -> App<AppState> {
     let res = App::with_state(AppState { agency })
         .middleware(middleware::Logger::default()) // enable logger
         .resource("/agency", |r| r.method(http::Method::GET).with(endpoints::get))
-        .resource("/agency", |r| r.method(http::Method::POST).with(endpoints::post));
+        .resource("/agency/msg", |r| r.method(http::Method::POST).with(endpoints::post_msg));
 
     info!("App started!");
     res

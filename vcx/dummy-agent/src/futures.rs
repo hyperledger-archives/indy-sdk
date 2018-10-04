@@ -22,7 +22,7 @@ impl<F> FutureChainErr<F::Item> for F
 }
 
 /// Like `try`, but returns an BoxedFuture instead of a Result.
-/// #[warn(unused_macros)]
+#[allow(unused_macros)] // FIXME: ASAP
 macro_rules! ftry {
     ($e:expr) => {
         match $e {
@@ -32,18 +32,21 @@ macro_rules! ftry {
     }
 }
 
+#[allow(unused)] // FIXME: ASAP
 pub fn f_res<T, E: ::std::convert::Into<Error>>(t: ::std::result::Result<T, E>) -> BoxedFuture<T>
     where T: 'static,
 {
     Box::new(::futures::future::result(t.map_err(Into::into)))
 }
 
+#[allow(unused)] // FIXME: ASAP
 pub fn f_ok<T>(t: T) -> BoxedFuture<T>
     where T: 'static,
 {
     Box::new(::futures::future::ok(t))
 }
 
+#[allow(unused)] // FIXME: ASAP
 pub fn f_err<T, E>(e: E) -> BoxedFuture<T>
     where T: 'static,
           E: Into<Error>,
