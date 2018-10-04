@@ -54,6 +54,7 @@ hex = "0.2.0"
 libc = "0.2.21"
 log = "0.4.1"
 derivative = "1.0.0"
+dirs = "1.0.4"
 openssl = { version = "=0.9.24", optional = true }
 owning_ref = "0.3.3"
 rand = "0.3"
