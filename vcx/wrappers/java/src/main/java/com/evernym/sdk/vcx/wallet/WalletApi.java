@@ -128,30 +128,31 @@ public class WalletApi extends VcxJava.API {
 
     private static Callback vcxGetRecordWalletCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err, String walletHandle) {
+        public void callback(int commandHandle, int err, String recordValue) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], recordValue = [" + recordValue + "]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             // if nonzero errorcode, ignore walletHandle (null)
             // if error fail
             // if error = 0 then send the result
-            future.complete(walletHandle);
+            future.complete(recordValue);
         }
     };
 
     public static CompletableFuture<String> getRecordWallet(
             String recordType,
             String recordId,
-            String recordValue
+            String optionsJson
     ) throws VcxException {
         ParamGuard.notNull(recordType, "recordType");
         ParamGuard.notNull(recordId, "recordId");
-        ParamGuard.notNull(recordValue, "recordValue");
-        logger.debug("getRecordWallet() called with: recordType = [" + recordType + "], recordId = [" + recordId + "], recordValue = [" + recordValue + "]");
+        ParamGuard.notNull(optionsJson, "optionsJson");
+        logger.debug("getRecordWallet() called with: recordType = [" + recordType + "], recordId = [" + recordId + "], optionsJson = [" + optionsJson + "]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
-        String recordTag = "{}";
+        if (optionsJson.isEmpty()) optionsJson = "{}";
 
-        int result = LibVcx.api.vcx_wallet_get_record(commandHandle, recordType, recordId, recordTag, vcxGetRecordWalletCB);
+        int result = LibVcx.api.vcx_wallet_get_record(commandHandle, recordType, recordId, optionsJson, vcxGetRecordWalletCB);
         checkResult(result);
 
         return future;

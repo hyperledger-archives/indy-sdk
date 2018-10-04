@@ -5,7 +5,6 @@ import com.sun.jna.Callback;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLibrary;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,7 @@ public abstract class LibVcx {
         /**
          * Creates a schema from a json string. Populates a handle to the new schema.
          */
-        public int vcx_schema_create(int command_handle, String source_id, String schema_name, String schema_data, Callback cb);
+        public int vcx_schema_create(int command_handle, String source_id, String schema_name, String version, String schema_data, int payment_handle, Callback cb);
 
         /**
          * Populates status with the current State of this claim.
@@ -64,7 +63,7 @@ public abstract class LibVcx {
         /**
          * Populates data with the contents of the schema handle.
          */
-        public int vcx_schema_get_attributes(int command_handle, String source_id, int sequence_no, Callback cb);
+        public int vcx_schema_get_attributes(int command_handle, String source_id, String schema_id, Callback cb);
 
         /**
          * Populates sequence_no with the actual sequence number of the schema on the sovrin ledger.
@@ -362,7 +361,7 @@ public abstract class LibVcx {
         public int vcx_wallet_delete_record(int command_handle, String recordType, String recordId, Callback cb);
 
         /** Get a record from wallet */
-        public int vcx_wallet_get_record(int command_handle, String recordType, String recordId, String recordTag, Callback cb);
+        public int vcx_wallet_get_record(int command_handle, String recordType, String recordId, String optionsJson, Callback cb);
 
         /** Update a record in wallet */
         public int vcx_wallet_update_record_value(int command_handle, String recordType, String recordId, String recordValue, Callback cb);
