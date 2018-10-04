@@ -77,17 +77,13 @@ pub fn store_tails_from_generator(service: Rc<BlobStorageService>,
                                   rtg: &mut RevocationTailsGenerator) -> Result<(String, String), CommonError> {
     debug!("store_tails_from_generator >>> writer_handle: {:?}",writer_handle);
 
-    let mut hasher = sha2::Sha256::default();
-
-    let blob_handle = service.create_blob(writer_handle, hasher)?;
+    let blob_handle = service.create_blob(writer_handle)?;
 
     let version = vec![0u8, TAILS_BLOB_TAG_SZ];
-    hasher.process(version.as_slice());
     service.append(blob_handle, version.as_slice())?;
 
     while let Some(tail) = rtg.next()? {
         let tail_bytes = tail.to_bytes()?;
-        hasher.process(tail_bytes.as_slice());
         service.append(blob_handle, tail_bytes.as_slice())?;
     }
 
