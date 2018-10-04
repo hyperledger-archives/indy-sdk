@@ -230,6 +230,17 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
             }
         }
 
+        sh "cp libindy/target/release/libindy.so wrappers/rust"
+        dir('wrappers/rust') {
+            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+                echo "${env_name} Libnullpay Test: Build"
+                sh "LIBRARY_PATH=./  RUST_BACKTRACE=1 cargo test --release --no-run"
+
+                echo "${env_name} Indy Rust wrupper Test: Run tests"
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
+            }
+        }
+
         sh "cp libindy/target/release/libindy.so libnullpay"
         dir('libnullpay') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
@@ -540,6 +551,7 @@ def ubuntuPublishing() {
                 libindyDebPublishing(testEnv, libindyVersion)
                 pythonWrapperPublishing(testEnv, false)
                 javaWrapperPublishing(testEnv, false)
+                rustWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
                 libnullpayDebPublishing(testEnv)
             }
@@ -550,6 +562,32 @@ def ubuntuPublishing() {
         }
     }
     return libindyVersion
+}
+
+def rustWrapperPublishing(testEnv, isRelease) {
+    def suffix = getSuffix(isRelease, "Cargo")
+
+    dir('wrappers/rust/libindy-sys') {
+        echo 'Publish Libindy-Sys to Cargo'
+        publishToCargo(testEnv, suffix)
+    }
+
+    dir('wrappers/rust') {
+        echo 'Publish Indy to Cargo'
+        publishToCargo(testEnv, suffix)
+    }
+}
+
+def publishToCargo(testEnv, suffix){
+    testEnv.inside {
+        sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"([0-9,.]+)/version = \\\"\\1$suffix/\" Cargo.toml"
+
+        withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'LOGIN')]) {
+            sh 'cargo login $LOGIN'
+            sh 'cargo package --allow-dirty'
+            sh 'cargo publish --allow-dirty'
+        }
+    }
 }
 
 def windowsPublishing() {
@@ -776,6 +814,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
+
+                echo 'Moving Ubuntu RC artifacts to Stable: rust wrapper'
+                rustWrapperPublishing(testEnv, true)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: indy-cli'
                 publishLibindyCliDebRCtoStable(testEnv, libindyVersion)

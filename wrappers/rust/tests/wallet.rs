@@ -20,7 +20,7 @@ use utils::file::{TempDir, TempFile};
 use utils::rand;
 
 const VALID_TIMEOUT: Duration = Duration::from_secs(5);
-const INVALID_TIMEOUT: Duration = Duration::from_micros(1);
+const INVALID_TIMEOUT: Duration = Duration::from_micros(0);
 const EXPORT_KEY: &str = "TheScythesHangInTheAppleTrees";
 
 

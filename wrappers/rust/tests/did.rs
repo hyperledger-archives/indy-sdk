@@ -23,7 +23,7 @@ use utils::setup::{Setup, SetupConfig};
 use utils::wallet::Wallet;
 
 const VALID_TIMEOUT: Duration = Duration::from_secs(5);
-const INVALID_TIMEOUT: Duration = Duration::from_micros(1);
+const INVALID_TIMEOUT: Duration = Duration::from_nanos(1);
 
 #[inline]
 fn assert_verkey_len(verkey: &str) {
