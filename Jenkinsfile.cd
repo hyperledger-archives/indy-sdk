@@ -97,6 +97,14 @@ def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
     }
 }
 
+def getUserUid() {
+    return sh(returnStdout: true, script: 'id -u').trim()
+}
+
+def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
+    return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
+}
+
 def dockerClean(env_name, network_name) {
     try {
         try {
