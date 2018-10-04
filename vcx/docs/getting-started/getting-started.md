@@ -486,7 +486,7 @@ When **Thrift** inspects the received Proof he will see the following structure:
 # Thrift Agent
 {
     'requested_proof': {
-        'revealed_attributes': {
+        'revealed_attrs': {
             'attr1_referent': {'sub_proof_index': 0, 'raw':'Permanent', 'encoded':'2143135425425143112321314321'},
         },
         'self_attested_attrs': {},
@@ -604,7 +604,7 @@ When **Thrift** inspects the received Proof he will see the following structure:
   # Thrift Agent
   {
       'requested_proof': {
-          'revealed_attributes': {
+          'revealed_attrs': {
               'attr1_referent': {'sub_proof_index': 0, 'raw':'123-45-6789', 'encoded':'3124141231422543541'},
               'attr1_referent': {'sub_proof_index': 1, 'raw':'Alice', 'encoded':'245712572474217942457235975012103335'},
               'attr1_referent': {'sub_proof_index': 1, 'raw':'Garcia', 'encoded':'312643218496194691632153761283356127'},
