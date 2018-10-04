@@ -38,7 +38,7 @@ public class ProofApi extends VcxJava.API {
         logger.debug("proofCreate() called with: sourceId = [" + sourceId + "], requestedAttrs = [" + requestedAttrs + "], requestedPredicates = [" + requestedPredicates + "], name = [" + name + "]");
         CompletableFuture<Integer> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
-
+        if (requestedPredicates.isEmpty()) requestedPredicates = "[]";
         int result = LibVcx.api.vcx_proof_create(commandHandle, sourceId, requestedAttrs, requestedPredicates, name, vcxProofCreateCB);
         checkResult(result);
 
@@ -170,12 +170,12 @@ public class ProofApi extends VcxJava.API {
         }
     };
 
-    public static CompletableFuture<Integer> proofSerialize(
+    public static CompletableFuture<String> proofSerialize(
             int proofHandle
     ) throws VcxException {
         ParamGuard.notNull(proofHandle, "proofHandle");
         logger.debug("proofSerialize() called with: proofHandle = [" + proofHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
+        CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
 
         int result = LibVcx.api.vcx_proof_serialize(commandHandle, proofHandle, vcxProofSerializeCB);
@@ -208,17 +208,15 @@ public class ProofApi extends VcxJava.API {
         return future;
     }
 
-    public static CompletableFuture<Integer> proofRelease(
+    public static Integer proofRelease(
             int proofHandle
     ) throws VcxException {
         ParamGuard.notNull(proofHandle, "proofHandle");
         logger.debug("proofRelease() called with: proofHandle = [" + proofHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<>();
 
         int result = LibVcx.api.vcx_proof_release(proofHandle);
-        checkResult(result);
 
-        return future;
+        return result;
     }
 
 }

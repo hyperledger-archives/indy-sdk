@@ -21,6 +21,7 @@ import com.evernym.sdk.vcx.proof.InvalidProofCredentialDataException;
 import com.evernym.sdk.vcx.proof.InvalidProofException;
 import com.evernym.sdk.vcx.proof.InvalidProofHandleException;
 import com.evernym.sdk.vcx.proof.InvalidSelfAttestedValueException;
+import com.evernym.sdk.vcx.token.InsufficientTokenAmountException;
 import com.evernym.sdk.vcx.utils.InvalidConfigurationException;
 import com.evernym.sdk.vcx.utils.PostMsgFailureException;
 import com.evernym.sdk.vcx.vcx.AlreadyInitializedException;
@@ -225,6 +226,8 @@ public class VcxException extends Exception {
                 return new CreateCredentialRequestErrorException();
             case CREATE_PROOF_ERROR:
                 return new CreateProofErrorException();
+            case INSUFFICIENT_TOKEN_AMOUNT:
+                return new InsufficientTokenAmountException();
             case UNIDENTIFIED_ERROR_CODE:
                 String message = String.format("An unmapped error with the code '%s' was returned by the SDK.", sdkErrorCode);
                 return new VcxException(message, sdkErrorCode);

@@ -4,10 +4,8 @@ package com.evernym.sdk.vcx;
 import com.evernym.sdk.vcx.connection.ConnectionApi;
 import com.evernym.sdk.vcx.credential.CredentialApi;
 import com.evernym.sdk.vcx.credentialDef.CredentialDefApi;
+import com.jayway.jsonpath.JsonPath;
 import java9.util.concurrent.CompletableFuture;
-import org.json.simple.JSONArray;
-import org.json.simple.parser.ParseException;
-import org.json.simple.parser.JSONParser;
 import org.awaitility.Awaitility;
 
 import java.util.concurrent.ExecutionException;
@@ -54,6 +52,7 @@ class TestHelper {
             "                'claim_id': 'defaultCredentialId',\n" +
             "                'msg_ref_id': '',\n" +
             "    }]";
+
     static int _createConnection() throws VcxException {
         CompletableFuture<Integer> futureResult = ConnectionApi.vcxConnectionCreate(TestHelper.getConnectionId());
         Awaitility.await().until(futureResult::isDone);
@@ -67,10 +66,8 @@ class TestHelper {
         }
 
     }
-    static int _createCredential() throws VcxException, ExecutionException, InterruptedException, ParseException {
-        JSONParser parser = new JSONParser();
-        JSONArray obj = (JSONArray) parser.parse(convertToValidJson(offer));
-        CompletableFuture<Integer> futureResult = CredentialApi.credentialCreateWithOffer("1",obj.toJSONString());
+    static int _createCredential() throws VcxException, ExecutionException, InterruptedException {
+        CompletableFuture<Integer> futureResult = CredentialApi.credentialCreateWithOffer("1",JsonPath.read(offer,"$").toString());
         Awaitility.await().until(futureResult::isDone);
         return futureResult.get();
     }

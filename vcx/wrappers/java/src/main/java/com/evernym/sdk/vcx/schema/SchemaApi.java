@@ -29,11 +29,13 @@ public class SchemaApi extends VcxJava.API {
 
     public static CompletableFuture<Integer> schemaCreate(String sourceId,
                                                           String schemaName,
-                                                          String schemaDate) throws VcxException {
+                                                          String version,
+                                                          String data,
+                                                          int paymentHandle) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
         ParamGuard.notNullOrWhiteSpace(sourceId, "schemaName");
-        ParamGuard.notNullOrWhiteSpace(sourceId, "schemaDate");
-        logger.debug("schemaCreate() called with: sourceId = [" + sourceId + "], schemaName = [" + schemaName + "], schemaDate = [" + schemaDate + "]");
+        ParamGuard.notNullOrWhiteSpace(sourceId, "version");
+        logger.debug("schemaCreate() called with: sourceId = [" + sourceId + "], schemaName = [" + schemaName + "], version = [" + version + "]" + " data = <" + data + ">" + " payment_handle = <" + paymentHandle + ">");
         CompletableFuture<Integer> future = new CompletableFuture<Integer>();
         int commandHandle = addFuture(future);
 
@@ -41,7 +43,9 @@ public class SchemaApi extends VcxJava.API {
                 commandHandle,
                 sourceId,
                 schemaName,
-                schemaDate,
+                version,
+                data,
+                paymentHandle,
                 schemaCreateCB
         );
         checkResult(result);
@@ -114,20 +118,20 @@ public class SchemaApi extends VcxJava.API {
 
     private static Callback schemaGetAttributesCB = new Callback() {
         @SuppressWarnings({"unused", "unchecked"})
-        public void callback(int commandHandle, int err, String schemaAttributes) {
-            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], schemaAttributes = [" + schemaAttributes + "]");
+        public void callback(int commandHandle, int err,int schemaHandle, String schemaAttributes) {
+            logger.debug("callback() called with: commandHandle = [" + commandHandle + "], err = [" + err + "], schemaHandle = [" + schemaHandle +  "],  schemaAttributes = [" + schemaAttributes + "]");
             CompletableFuture<String> future = (CompletableFuture<String>) removeFuture(commandHandle);
             if (!checkCallback(future, err)) return;
             future.complete(schemaAttributes);
         }
     };
 
-    public static CompletableFuture<String> schemaGetAttributes( String sourceId, int sequenceNo) throws VcxException {
+    public static CompletableFuture<String> schemaGetAttributes( String sourceId, String schemaId) throws VcxException {
         ParamGuard.notNullOrWhiteSpace(sourceId, "sourceId");
-        logger.debug("schemaGetAttributes() called with: sourceId = [" + sourceId + "], sequenceNo = [" + sequenceNo + "]");
+        logger.debug("schemaGetAttributes() called with: sourceId = [" + sourceId + "], schemaHandle = [" + schemaId + "]");
         CompletableFuture<String> future = new CompletableFuture<>();
         int commandHandle = addFuture(future);
-        int result = LibVcx.api.vcx_schema_get_attributes(commandHandle, sourceId,sequenceNo, schemaGetSchemaID);
+        int result = LibVcx.api.vcx_schema_get_attributes(commandHandle, sourceId,schemaId, schemaGetAttributesCB);
         checkResult(result);
         return future;
     }
@@ -152,16 +156,12 @@ public class SchemaApi extends VcxJava.API {
         return future;
     }
 
-    public static CompletableFuture<Integer> schemaRelease(
+    public static int schemaRelease(
             int schemaHandle
     ) throws VcxException {
         ParamGuard.notNull(schemaHandle, "schemaHandle");
         logger.debug("schemaRelease() called with: schemaHandle = [" + schemaHandle + "]");
-        CompletableFuture<Integer> future = new CompletableFuture<Integer>();
 
-        int result = LibVcx.api.vcx_schema_release(schemaHandle);
-        checkResult(result);
-
-        return future;
+        return LibVcx.api.vcx_schema_release(schemaHandle);
     }
 }
