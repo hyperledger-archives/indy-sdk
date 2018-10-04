@@ -15,10 +15,7 @@ public class JsonObjectSimilar {
      */
     public static boolean similar(JSONObject me, Object other) {
         try {
-            if (!(other instanceof JSONObject)) {
-                return false;
-            }
-            return similar(me, (JSONObject)other);
+            return other instanceof JSONObject && similar(me, (JSONObject) other);
         } catch (Throwable exception) {
             return false;
         }
@@ -26,12 +23,12 @@ public class JsonObjectSimilar {
 
     public static boolean similar(JSONObject me, JSONObject other) {
         try {
-            if (!me.keySet().equals(((JSONObject)other).keySet())) {
+            if (!me.keySet().equals(other.keySet())) {
                 return false;
             }
             for (final String name : me.keySet()) {
                 Object valueThis = me.get(name);
-                Object valueOther = ((JSONObject)other).get(name);
+                Object valueOther = other.get(name);
                 if(valueThis == valueOther) {
                 	continue;
                 }
@@ -62,21 +59,18 @@ public class JsonObjectSimilar {
      * @param other The other JSONArray
      * @return true if they are equal
      */
-    public static boolean similar(JSONArray me, Object other) {
-        if (!(other instanceof JSONArray)) {
-            return false;
-        }
-        return similar(me, (JSONArray)other);
+    private static boolean similar(JSONArray me, Object other) {
+        return other instanceof JSONArray && similar(me, (JSONArray) other);
     }
 
-    public static boolean similar(JSONArray me, JSONArray other) {
+    private static boolean similar(JSONArray me, JSONArray other) {
         int len = me.length();
-        if (len != ((JSONArray)other).length()) {
+        if (len != other.length()) {
             return false;
         }
         for (int i = 0; i < len; i += 1) {
             Object valueThis = me.get(i);
-            Object valueOther = ((JSONArray)other).get(i);
+            Object valueOther = other.get(i);
             if(valueThis == valueOther) {
             	continue;
             }
