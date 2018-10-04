@@ -7,7 +7,7 @@ extern crate num_traits;
 #[macro_use]
 extern crate num_derive;
 
-extern crate libindy_sys as ffi;
+extern crate indy_sys as ffi;
 
 #[macro_use]
 mod macros;
