@@ -83,13 +83,13 @@ impl BlobStorageService {
         Ok(config_handle)
     }
 
-    pub fn create_blob(&self, config_handle: i32, hasher : Sha256) -> Result<i32, CommonError> {
+    pub fn create_blob(&self, config_handle: i32) -> Result<i32, CommonError> {
         let blob_handle = sequence::get_next_id();
         let writer = self.writer_configs.try_borrow()?
             .get(&config_handle).ok_or(CommonError::InvalidStructure("Unknown BlobStorage Writer".to_owned()))?
             .create(blob_handle)?;
 
-        self.writer_blobs.try_borrow_mut()?.insert(blob_handle, (writer, hasher));
+        self.writer_blobs.try_borrow_mut()?.insert(blob_handle, (writer, Sha256::default()));
 
         Ok(blob_handle)
     }
