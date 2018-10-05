@@ -108,7 +108,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                      For 'default' storage type configuration is:
 	 *   {
 	 *     "path": optional["string"], Path to the directory with wallet files.
-	 *             Defaults to $HOME/.indy_client/wallets.
+	 *             Defaults to $HOME/.indy_client/wallet.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
 	 * }
@@ -161,7 +161,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                      For 'default' storage type configuration is:
 	 *   {
 	 *     "path": optional["string"], Path to the directory with wallet files.
-	 *             Defaults to $HOME/.indy_client/wallets.
+	 *             Defaults to $HOME/.indy_client/wallet.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
 	 * }
@@ -249,7 +249,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                      For 'default' storage type configuration is:
 	 *   {
 	 *     "path": optional["string"], Path to the directory with wallet files.
-	 *             Defaults to $HOME/.indy_client/wallets.
+	 *             Defaults to $HOME/.indy_client/wallet.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
 	 * }
@@ -347,7 +347,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                      For 'default' storage type configuration is:
 	 *   {
 	 *     "path": optional["string"], Path to the directory with wallet files.
-	 *             Defaults to $HOME/.indy_client/wallets.
+	 *             Defaults to $HOME/.indy_client/wallet.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
 	 * }

@@ -308,7 +308,7 @@ async def create_wallet(config: str,
                           For 'default' storage type configuration is:
        {
          "path": optional<string>, Path to the directory with wallet files.
-                 Defaults to $HOME/.indy_client/wallets.
+                 Defaults to $HOME/.indy_client/wallet.
                  Wallet will be stored in the file {path}/{id}/sqlite.db
        }
      }
@@ -368,7 +368,7 @@ async def open_wallet(config: str,
                           For 'default' storage type configuration is:
            {
               "path": optional<string>, Path to the directory with wallet files.
-                      Defaults to $HOME/.indy_client/wallets.
+                      Defaults to $HOME/.indy_client/wallet.
                       Wallet will be stored in the file {path}/{id}/sqlite.db
            }
 
@@ -456,7 +456,7 @@ async def delete_wallet(config: str,
                           For 'default' storage type configuration is:
        {
          "path": optional<string>, Path to the directory with wallet files.
-                 Defaults to $HOME/.indy_client/wallets.
+                 Defaults to $HOME/.indy_client/wallet.
                  Wallet will be stored in the file {path}/{id}/sqlite.db
        }
      }
@@ -555,7 +555,7 @@ async def import_wallet(config: str,
                          For 'default' storage type configuration is:
        {
          "path": optional<string>, Path to the directory with wallet files.
-                 Defaults to $HOME/.indy_client/wallets.
+                 Defaults to $HOME/.indy_client/wallet.
                  Wallet will be stored in the file {path}/{id}/sqlite.db
        }
      }
