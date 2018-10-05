@@ -110,24 +110,24 @@ impl Handler<GetForwardDetail> for ForwardAgent {
     }
 }
 
-pub struct Post(pub String); // FIXME: Just to illustrate async handler
+pub struct ForwardMessage(pub Vec<u8>);
 
 #[derive(Serialize)]
-pub struct PostResponse(String); // FIXME: Just to illustrate async handler
+pub struct ForwardMessageResponse(pub Vec<u8>);
 
-impl Message for Post {
-    type Result = Result<PostResponse>;
+impl Message for ForwardMessage {
+    type Result = Result<ForwardMessageResponse>;
 }
 
-impl Handler<Post> for ForwardAgent {
-    type Result = BoxedFuture<PostResponse>;
+impl Handler<ForwardMessage> for ForwardAgent {
+    type Result = BoxedFuture<ForwardMessageResponse>;
 
-    fn handle(&mut self, _: Post, _: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _: ForwardMessage, _: &mut Self::Context) -> Self::Result {
 
         // FIXME: Just to illustrate async handler
 
         let res = did::key_for_local_did(self.wallet_handle, self.config.did.as_ref())
-            .map(|key| PostResponse(key))
+            .map(|key| ForwardMessageResponse(key.as_bytes().to_owned()))
             .chain_err(|| "Can't get Forward Agent did");
 
         Box::new(res)
