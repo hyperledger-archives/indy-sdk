@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-pub const DEFAULT_CREDENTIALS: &str = r#"{"key":""}"#;
+pub const DEFAULT_CREDENTIALS: &str = r#"{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method":"RAW"}"#;
 pub const DID: &str = "8wZcEriaNLNKtteJvx7f8i";
 pub const DID_1: &str = "VsKV7grR1BUE29mG2Fm2kX";
 pub const DID_TRUSTEE: &str = "V4SGRU86Z58d6TV7PBUe6f";

@@ -2,11 +2,7 @@ use super::indy;
 use indy::ErrorCode;
 use utils::rand::random_string;
 
-static USEFUL_CREDENTIALS : &'static str = r#"
-   {
-       "key": "12345678901234567890123456789012"
-   }
-"#;
+static USEFUL_CREDENTIALS : &'static str =  r#"{"key":"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY", "key_derivation_method":"RAW"}"#;
 
 /**
 A test wallet that deletees itself when it leaves scope.

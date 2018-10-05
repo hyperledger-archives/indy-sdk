@@ -17,18 +17,18 @@ use utils::constants::DEFAULT_CREDENTIALS;
 
 macro_rules! safe_wallet_create {
     ($x:ident) => {
-        match Wallet::delete($x, r#"{"key":""}"#) {
+        match Wallet::delete($x, DEFAULT_CREDENTIALS) {
             Ok(..) => {},
             Err(..) => {}
         };
-        Wallet::create($x, r#"{"key":""}"#).unwrap();
+        Wallet::create($x, DEFAULT_CREDENTIALS).unwrap();
     }
 }
 
 macro_rules! wallet_cleanup {
     ($x:ident, $y:ident) => {
         Wallet::close($x).unwrap();
-        Wallet::delete($y, r#"{"key":""}"#).unwrap();
+        Wallet::delete($y, DEFAULT_CREDENTIALS).unwrap();
     }
 }
 
