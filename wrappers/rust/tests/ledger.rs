@@ -1219,6 +1219,7 @@ use super::*;
 }
 
 #[cfg(test)]
+#[cfg(feature = "tests_to_fix")]
 mod test_parse_get_schema_response {
 
     use super::*;
