@@ -3,7 +3,7 @@
 set -e
 ANDROID_JNI_LIB=vcx/wrappers/java/android/src/main/jniLibs
 
-for arch in arm arm64 armv7 x86 x86_64
+for arch in arm armv7 x86
 do
     arch_folder=${arch}
     if [ "${arch}" = "armv7" ]; then
