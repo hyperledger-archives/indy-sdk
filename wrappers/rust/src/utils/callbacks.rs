@@ -11,7 +11,7 @@ use std::fmt::Display;
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Receiver};
 
-use native::{ResponseEmptyCB,
+use ffi::{ResponseEmptyCB,
           ResponseI32CB,
           ResponseI32UsizeCB,
           ResponseStringCB,

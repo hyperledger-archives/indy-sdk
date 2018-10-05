@@ -20,7 +20,8 @@ use utils::file::{TempDir, TempFile};
 use utils::rand;
 
 const VALID_TIMEOUT: Duration = Duration::from_secs(5);
-const INVALID_TIMEOUT: Duration = Duration::from_micros(1);
+#[cfg(feature = "timeout_tests")]
+const INVALID_TIMEOUT: Duration = Duration::from_micros(0);
 const EXPORT_KEY: &str = "TheScythesHangInTheAppleTrees";
 
 
@@ -219,6 +220,7 @@ mod test_wallet_create {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn create_wallet_timeout_timeouts() {
         let config = wallet_config::with_storage("unknown");
 
@@ -395,6 +397,7 @@ mod test_wallet_delete {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn delete_wallet_timeout_timeouts() {
         let config = wallet_config::new();
 
@@ -595,6 +598,7 @@ mod test_wallet_open {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn open_wallet_timeout_timeouts() {
         let config = wallet_config::new();
         Wallet::create(&config, DEFAULT_CREDENTIALS).unwrap();
@@ -694,6 +698,7 @@ mod test_wallet_close {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn close_wallet_timeout_timeouts() {
         let result = Wallet::close_timeout(INVALID_HANDLE, INVALID_TIMEOUT);
         assert_eq!(ErrorCode::CommonIOError, result.unwrap_err());
@@ -839,6 +844,7 @@ mod test_wallet_export {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     fn export_wallet_timeout_timeouts() {
         let (config_export, path, _dir) = wallet_config::export::with_defaults();
 
