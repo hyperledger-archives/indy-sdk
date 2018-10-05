@@ -1,5 +1,6 @@
 pub mod environment;
 
+#[allow(unused_macros)]
 #[macro_use]
 pub mod ctypes;
 
@@ -25,3 +26,13 @@ pub mod test;
 
 #[macro_use]
 pub mod try;
+
+pub mod json;
+
+pub mod serialization;
+
+pub mod option;
+
+//TODO remove this after unpack/pack feature changed to support new key and nonce structs
+#[macro_use]
+pub mod byte_array;

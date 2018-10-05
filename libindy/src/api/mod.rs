@@ -11,6 +11,7 @@ pub mod blob_storage;
 pub mod non_secrets;
 pub mod payments;
 pub mod logger;
+pub mod route;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
@@ -223,5 +224,26 @@ pub enum ErrorCode
     PaymentOperationNotSupportedError = 704,
 
     // Extra funds on inputs
-    PaymentExtraFundsError = 705
+    PaymentExtraFundsError = 705,
+
+    // Failed to perform Encryption or Decryption while routing messages
+    RouteEncryptionError = 800,
+
+    // Failed to Encode the data properly while routing messages
+    RouteEncodeError = 801,
+
+    //Failed to Decode the data properly while routing messages
+    RouteDecodeError = 802,
+
+    // Failed to unpack the JWM
+    RouteUnpackError = 803,
+
+    // Failed to pack the JWM
+    RoutePackError = 804,
+
+    // Key was included when it shouldn't have been
+    RouteMissingKeyError = 805,
+
+    // Failed to serialize a JWM based on the parameters provided
+    RouteSerializationError = 806
 }

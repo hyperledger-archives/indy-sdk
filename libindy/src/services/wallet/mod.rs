@@ -1,10 +1,10 @@
-mod storage;
+pub mod storage;
 mod encryption;
 mod query_encryption;
 mod iterator;
-mod language;
+pub mod language;
 mod export_import;
-mod wallet;
+pub mod wallet;
 
 use serde_json;
 use std::cell::RefCell;

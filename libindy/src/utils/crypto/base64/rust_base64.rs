@@ -3,11 +3,11 @@ extern crate base64;
 use errors::common::CommonError;
 
 pub fn encode(doc: &[u8]) -> String {
-    base64::encode(doc)
+    base64::encode_config(doc, base64::URL_SAFE)
 }
 
 pub fn decode(doc: &str) -> Result<Vec<u8>, CommonError> {
-    base64::decode(doc)
+    base64::decode_config(doc, base64::URL_SAFE)
         .map_err(|err| CommonError::InvalidStructure(format!("{}", err)))
 }
 
