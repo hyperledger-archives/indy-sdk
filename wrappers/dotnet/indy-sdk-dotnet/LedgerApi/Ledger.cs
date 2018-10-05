@@ -445,9 +445,11 @@ namespace Hyperledger.Indy.LedgerApi
         /// "ip", "port", and "keys":
         /// <code>
         /// {
+        ///     "id": "id",
         ///     "name":"access",
         ///     "version":"1.0",
-        ///     "attr_names":["ip","port","keys"]
+        ///     "attrNames":["ip","port","keys"],
+        ///     "ver":"1.0"      // note: this must always be 1.0
         /// }
         /// </code>
         /// </para>
@@ -644,10 +646,15 @@ namespace Hyperledger.Indy.LedgerApi
         /// Builds a GET_TXN request
         /// </summary>
         /// <param name="submitterDid">The DID of the submitter.</param>
+        /// <param name="ledgerType">(Optional) type of the ledger the requested transaction belongs to:
+        ///     DOMAIN - used default,
+        ///     POOL,
+        ///     CONFIG
+        ///     any number</param>
         /// <param name="data">seq_no of transaction in ledger</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="string"/> 
         /// containing the request JSON. </returns>
-        public static Task<string> BuildGetTxnRequestAsync(string submitterDid, int data)
+        public static Task<string> BuildGetTxnRequestAsync(string submitterDid, string ledgerType, int data)
         {
             ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
 
@@ -657,6 +664,7 @@ namespace Hyperledger.Indy.LedgerApi
             var result = NativeMethods.indy_build_get_txn_request(
                 commandHandle,
                 submitterDid,
+                ledgerType,
                 data,
                 BuildRequestCallback);
 
