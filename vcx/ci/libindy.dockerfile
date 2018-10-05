@@ -62,12 +62,13 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 && \
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial master" && \
     add-apt-repository "deb https://repo.sovrin.org/sdk/deb xenial stable" && \
     add-apt-repository 'deb https://repo.sovrin.org/deb xenial master' && \
+    add-apt-repository 'deb https://repo.sovrin.org/deb xenial stable' && \
     add-apt-repository 'deb https://repo.corp.evernym.com/deb evernym-agency-dev-ubuntu main' && \
     curl https://repo.corp.evernym.com/repo.corp.evenym.com-sig.key | apt-key add -
 
 ARG LIBINDY_VER="1.6.6"
 ARG LIBNULL_VER="1.6.6"
-ARG LIBSOVTOKEN_VER="0.9.2+1.90"
+ARG LIBSOVTOKEN_VER="0.9.3+5.4"
 
 RUN apt-get update && apt-get install -y \
     libsovtoken=${LIBSOVTOKEN_VER} \
