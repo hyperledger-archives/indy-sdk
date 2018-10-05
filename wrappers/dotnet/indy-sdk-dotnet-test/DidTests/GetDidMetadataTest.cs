@@ -29,7 +29,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestGetDidMetadataWorksForNoMetadata()
         {
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                Did.GetDidMetadataAsync(wallet, DID1)
            );
         }
