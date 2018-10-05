@@ -240,7 +240,15 @@ pub mod rotate_key_command {
         let payment_method = set_request_fees(&mut request, wallet_handle, Some(&did), &fees_inputs, &fees_outputs, extra)?;
 
         let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
-            .map_err(|err| handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name)))?;
+            .map_err(|err| {
+                match err {
+                    ErrorCode::PoolLedgerTimeout => {
+                        println_err!("Transaction response has not been received.");
+                        println_err!("Use command `did complete-key-rotation new-verkey={}` to complete.", new_verkey)
+                    }
+                    err => handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))
+                }
+            })?;
 
         let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
             .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
@@ -249,15 +257,7 @@ pub mod rotate_key_command {
 
         let receipts = parse_response_with_fees(&response_json, payment_method)?;
 
-        match Did::replace_keys_apply(wallet_handle, &did)
-            .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
-            Ok(vk) => Ok({
-                println_succ!("Verkey for did \"{}\" has been updated", did);
-                println_succ!("New verkey is \"{}\"", vk)
-            }),
-            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
-        }?;
+        _replace_keys_apply(wallet_handle, &did, &new_verkey)?;
 
         let res = print_response_receipts(receipts);
 
@@ -265,6 +265,63 @@ pub mod rotate_key_command {
         res
     }
 }
+
+fn _replace_keys_apply(wallet_handle: i32, did: &str, verkey: &str) -> Result<(), ()> {
+    match Did::replace_keys_apply(wallet_handle, did)
+        .and_then(|_| Did::abbreviate_verkey(did, &verkey)) {
+        Ok(vk) => Ok({
+            println_succ!("Verkey for did \"{}\" has been updated", did);
+            println_succ!("New verkey is \"{}\"", vk)
+        }),
+        Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
+        Err(_) => Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+    }
+}
+
+pub mod complete_key_rotation_command {
+    use super::*;
+
+    command!(CommandMetadata::build("complete-key-rotation", "Complete key rotation failed on sending NYM to Ledger")
+                .add_required_param("new-verkey", "Temporary verkey")
+                .add_example("did rotate-key verkey=kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn")
+                .finalize());
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
+
+        let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
+        let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
+        let did = ensure_active_did(&ctx)?;
+
+        let new_verkey = get_str_param("new-verkey", params).map_err(error_err!())?;
+
+        let verkey = _get_current_verkey(pool_handle, &pool_name, wallet_handle, &wallet_name, &did)?;
+
+        let res = if verkey.is_some() && new_verkey == verkey.clone().unwrap() {
+            _replace_keys_apply(wallet_handle, &did, &new_verkey)
+        } else {
+            Err(println!("New verkey: {:?} doesn't correspond to verkey in Ledger: {:?}", new_verkey, verkey))
+        }?;
+
+        trace!("execute << {:?}", res);
+        Ok(res)
+    }
+}
+
+fn _get_current_verkey(pool_handle: i32, pool_name: &str, wallet_handle: i32, wallet_name: &str, did: &str) -> Result<Option<String>, ()> {
+    let response_json = Ledger::build_get_nym_request(Some(did), did)
+        .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, did, &request))
+        .map_err(|err| handle_transaction_error(err, Some(did), Some(pool_name), Some(wallet_name)))?;
+
+    let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+        .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+    let result = handle_transaction_response(response)?;
+    let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or("")).unwrap();
+    let verkey = data["verkey"].as_str().map(String::from);
+    Ok(verkey)
+}
+
 
 pub mod list_command {
     use super::*;
@@ -599,6 +656,7 @@ pub mod tests {
 
             let did_info = get_did_info(wallet_handle, DID_MY2);
             assert_eq!(did_info["verkey"].as_str().unwrap(), VERKEY_MY2);
+
             {
                 let cmd = rotate_key_command::new();
                 let params = CommandParams::new();
@@ -663,6 +721,45 @@ pub mod tests {
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod complete_key_rotation {
+        use super::*;
+
+        #[test]
+        pub fn complete_key_rotation_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+            let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
+
+            new_did(&ctx, SEED_TRUSTEE);
+            use_did(&ctx, DID_TRUSTEE);
+
+            let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
+
+            send_nym(&ctx, &did, &verkey, None);
+
+            let new_verkey = Did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
+
+            let request = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None).unwrap();;
+            Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request).unwrap();
+
+            use_did(&ctx, &did);
+
+            {
+                let cmd = complete_key_rotation_command::new();
+                let mut params = CommandParams::new();
+                params.insert("new-verkey", did.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);
             TestUtils::cleanup_storage();
