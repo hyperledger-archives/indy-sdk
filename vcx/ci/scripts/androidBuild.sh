@@ -64,10 +64,15 @@ generate_flags(){
         export ARCH="arm"
         export TRIPLET="arm-linux-androideabi"
         export PLATFORM="16"
-        export ABI="armeabi-v7a"
-    fi
-
-    if [ $1 == "x86" ]; then
+    elif [ $1 == "arm64" ]; then
+        export ARCH="arm64"
+        export TRIPLET="aarch64-linux-android"
+        export PLATFORM="21"
+    elif [ $1 == "armv7" ]; then
+        export ARCH="arm"
+        export TRIPLET="armv7-linux-androideabi"
+        export PLATFORM="16"
+    elif [ $1 == "x86" ]; then
         export ARCH="x86"
         export TRIPLET="i686-linux-android"
         export PLATFORM="16"

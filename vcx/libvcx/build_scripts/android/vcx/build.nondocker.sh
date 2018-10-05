@@ -4,6 +4,7 @@ WORKDIR=${PWD}
 TARGET_ARCH=$1
 TARGET_API=$2
 CROSS_COMPILE=$3
+NDK_LIB_DIR="lib"
 
 if [ -z "${TARGET_ARCH}" ]; then
     echo STDERR "Missing TARGET_ARCH argument"
@@ -24,6 +25,10 @@ if [ -z "${CROSS_COMPILE}" ]; then
     echo STDERR "e.g. i686-linux-android"
     echo "Sample : ./build.nondocker.sh x86 16 i686-linux-android openssl_x86 libsodium_x86 libzmq_x86 libindy"
     exit 1
+fi
+
+if [ "${TARGET_ARCH}" = "x86_64" ]; then
+    NDK_LIB_DIR="lib64"
 fi
 
 
@@ -192,15 +197,15 @@ LIBVCX_BUILDS=${WORKDIR}/libvcx_${TARGET_ARCH}
 mkdir -p ${LIBVCX_BUILDS}
 $CC -v -shared -o ${LIBVCX_BUILDS}/libvcx.so -Wl,--whole-archive \
 ${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a \
-${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so \
-${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a \
-${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so \
+${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libz.so \
+${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
+${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/liblog.so \
 ${LIBINDY_DIR}/libindy.a \
 ${LIBSOVTOKEN_DIR}/libsovtoken.a \
-${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libgnustl_shared.so \
-${OPENSSL_DIR}/lib/libssl.a \
-${OPENSSL_DIR}/lib/libcrypto.a \
+${TOOLCHAIN_DIR}/${CROSS_COMPILE}/${NDK_LIB_DIR}/libgnustl_shared.so \
+${OPENSSL_DIR}/${NDK_LIB_DIR}/libssl.a \
+${OPENSSL_DIR}/${NDK_LIB_DIR}/libcrypto.a \
 ${SODIUM_LIB_DIR}/libsodium.a \
 ${LIBZMQ_LIB_DIR}/libzmq.a \
-${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libgnustl_shared.so -Wl,--no-whole-archive -z muldefs
+${TOOLCHAIN_DIR}/${CROSS_COMPILE}/${NDK_LIB_DIR}/libgnustl_shared.so -Wl,--no-whole-archive -z muldefs
 cp "${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a" ${LIBVCX_BUILDS}/
