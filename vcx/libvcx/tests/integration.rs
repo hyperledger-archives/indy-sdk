@@ -1,7 +1,7 @@
 extern crate vcx;
 extern crate serde;
 extern crate rand;
-extern crate dirs;
+extern crate rust_indy_sdk;
 
 #[macro_use]
 extern crate serde_json;
@@ -43,8 +43,7 @@ mod tests {
         }
     }
 
-    pub fn create_genesis_txn_file() {
-        let test_pool_ip = "127.0.0.1".to_string();
+    pub fn create_genesis_txn_file(test_pool_ip:&str) {
 
         let node_txns = vec![
             format!(r#"{{"reqSignature":{{}},"txn":{{"data":{{"data":{{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","client_ip":"{}","client_port":9702,"node_ip":"{}","node_port":9701,"services":["VALIDATOR"]}},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"}},"metadata":{{"from":"Th7MpTaRZVRYnPiabds81Y"}},"type":"0"}},"txnMetadata":{{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"}},"ver":"1"}}"#, test_pool_ip, test_pool_ip),
@@ -127,14 +126,18 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap();
     }
 
-    fn send_tokens(amt:u32) {
+    fn send_tokens(amt:u32, addr: Option<&str>) -> Result<Option<String>, u32> {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let dest_addr = match addr {
+            Some(a) => a,
+            None => "pay:sov:22UFLTPu1MagmX6b6g2ZXy9n98dA52Kd1VH8Hjjf82L7zZEnC5",
+        };
         wallet::vcx_wallet_send_tokens(cb.command_handle,
                                        0,
                                        CString::new(amt.to_string()).unwrap().as_ptr(),
-                                       CString::new("pay:sov:22UFLTPu1MagmX6b6g2ZXy9n98dA52Kd1VH8Hjjf82L7zZEnC5").unwrap().as_ptr(),
+                                       CString::new(dest_addr).unwrap().as_ptr(),
                                        Some(cb.get_callback()));
-        cb.receive(Some(Duration::from_secs(10))).unwrap();
+        cb.receive(Some(Duration::from_secs(10)))
     }
 
     fn import_wallet(path: std::path::PathBuf) {
@@ -166,6 +169,13 @@ mod tests {
         path
     }
 
+    fn get_fees() -> Result<Option<String>, u32> {
+        use vcx::api::utils::vcx_ledger_get_fees;
+        let cb = return_types_u32::Return_U32_STR::new().unwrap();
+        let _err = vcx_ledger_get_fees(cb.command_handle, Some(cb.get_callback()));
+        cb.receive(Some(Duration::from_secs(10)))
+    }
+
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
@@ -174,7 +184,7 @@ mod tests {
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
         delete_indy_client();
-        create_genesis_txn_file();
+        create_genesis_txn_file("127.0.0.1");
         let vcx_config = provision_agent().unwrap();
         init_vcx(&vcx_config).unwrap();
         vcx_shutdown(false);
@@ -189,11 +199,11 @@ mod tests {
     fn test_token_balance() {
         use vcx::api::vcx::vcx_mint_tokens;
         delete_indy_client();
-        create_genesis_txn_file();
+        create_genesis_txn_file("127.0.0.1");
         let vcx_config = provision_agent().unwrap();
         init_vcx(&vcx_config).unwrap();
         vcx_mint_tokens(ptr::null_mut(),ptr::null_mut());
-        send_tokens(1500);
+        send_tokens(1500, None).unwrap();
         let token_info2 = get_token_info();
         let path = create_path_and_file_name();
         export_wallet(path.clone());
@@ -205,5 +215,39 @@ mod tests {
         let token_info2: serde_json::Value = serde_json::from_str(&token_info2).unwrap();
         let token_info3: serde_json::Value = serde_json::from_str(&token_info3).unwrap();
         assert_eq!(token_info2["balance_str"], token_info3["balance_str"]);
+    }
+
+/// This will mint the standard amount of sovatoms into your wallet (500000000) and
+/// then you can send those to an address.
+/// Provide the ip address of your ledger (for the generic genesis txn file), the
+/// payment address to receive the sovatoms, and the amout of sovatoms you wish
+/// to send to the address.
+    #[ignore]
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "sovtoken")]
+    #[test]
+    fn test_sandbox_token_balance() {
+        use vcx::api::vcx::vcx_mint_tokens;
+        let sovatoms = 1234567890;
+        let receiving_address = Some("pay:sov:jsPfjNn9GULzrhSqDWC3swx1uFjUgutSHwr32GTSMZ8kwA7VT");
+        let ip = "34.212.206.9";
+        create_genesis_txn_file(ip);
+        let vcx_config = provision_agent().unwrap();
+        init_vcx(&vcx_config).unwrap();
+        vcx_mint_tokens(ptr::null_mut(),ptr::null_mut());
+        send_tokens(sovatoms, receiving_address).unwrap();
+    }
+
+    /// this will simply get fees from a ledger at the given ip address
+    #[ignore]
+    #[cfg(feature = "sovtoken")]
+    #[cfg(feature = "agency")]
+    #[test]
+    fn test_get_fees() {
+        let ip="127.0.0.1";
+        create_genesis_txn_file(ip);
+        let vcx_config = provision_agent().unwrap();
+        init_vcx(&vcx_config).unwrap();
+        println!("{:?}", get_fees().unwrap());
     }
 }
