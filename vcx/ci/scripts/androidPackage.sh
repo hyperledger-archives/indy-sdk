@@ -3,12 +3,15 @@
 set -e
 ANDROID_JNI_LIB=vcx/wrappers/java/android/src/main/jniLibs
 
-mkdir -p ${ANDROID_JNI_LIB}/arm
-mkdir -p ${ANDROID_JNI_LIB}/x86
-mkdir -p ${ANDROID_JNI_LIB}/arm64
-cp -v runtime_android_build/libvcx_arm/libvcx.so ${ANDROID_JNI_LIB}/arm/libvcx.so
-cp -v runtime_android_build/libvcx_x86/libvcx.so ${ANDROID_JNI_LIB}/x86
-cp -v runtime_android_build/libvcx_arm64/libvcx.so ${ANDROID_JNI_LIB}/arm64
+for arch in arm arm64 armv7 x86 x86_64
+do
+    arch_folder=${arch}
+    if [ "${arch}" = "arm" ]; then
+        arch_folder="armeabi-v7a"
+    fi
+    mkdir -p ${ANDROID_JNI_LIB}/${arch_folder}
+    cp -v runtime_android_build/libvcx_${arch}/libvcx.so ${ANDROID_JNI_LIB}/${arch_folder}/libvcx.so
+done
 
 pushd vcx/wrappers/java/android
     if [ -e local.properties ]; then
