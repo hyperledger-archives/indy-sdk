@@ -60,6 +60,7 @@ serde_derive = "1.0"
 
 [dev-dependencies]
 tempfile = "2.2"
+dirs = "1.0.4"
 
 [package.metadata.deb]
 maintainer = "Evernym, Inc."
