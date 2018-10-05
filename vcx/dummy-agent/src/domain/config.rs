@@ -2,25 +2,25 @@ use serde_json::Value;
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub agency: AgencyConfig,
+    pub agent: AgentConfig,
     pub server: ServerConfig,
 }
 
 #[derive(Deserialize)]
-pub struct AgencyConfig {
-    // Agency wallet id
+pub struct AgentConfig {
+    // Forward Agent wallet id
     pub wallet_id: String,
-    // Agency wallet passphrase
+    // Forward Agent wallet passphrase
     pub wallet_passphrase: String,
-    // Agency DID
+    // Forward Agent DID
     pub did: String,
-    // Seed for deterministic generation of agency did key
+    // Seed for deterministic generation of Forward Agent did key
     pub did_seed: Option<String>,
-    // Storage type for agency and agents wallets
+    // Storage type for Forward Agent and agents wallets
     pub storage_type: Option<String>,
-    // Storage config for agency and agents wallets
+    // Storage config for Forward Agent and agents wallets
     pub storage_config: Option<Value>,
-    // Storage credentials for agency and agents wallets
+    // Storage credentials for Forward Agent and agents wallets
     pub storage_credentials: Option<Value>,
 }
 

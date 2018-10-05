@@ -1,21 +1,21 @@
 use actix::prelude::*;
-use domain::config::AgencyConfig;
+use domain::config::AgentConfig;
 use errors::*;
 use futures::*;
 use indy::{did, wallet};
 use indy::errors::{Error as IndyError, ErrorKind as IndyErrorKind};
 
-pub struct Agency {
+pub struct ForwardAgent {
     // Agency wallet handle
     wallet_handle: i32,
     // Agency verkey
     verkey: String,
     // Agency config
-    config: AgencyConfig,
+    config: AgentConfig,
 }
 
-impl Agency {
-    pub fn new(config: AgencyConfig) -> BoxedFuture<Self> {
+impl ForwardAgent {
+    pub fn new(config: AgentConfig) -> BoxedFuture<Self> {
         let wallet_config = json!({
             "id": config.wallet_id,
             "storage_type": config.storage_type,
@@ -68,7 +68,7 @@ impl Agency {
                     .chain_err(|| "Can't get agency did key")
             })
             .map(move |(wallet_handle, verkey, config)| {
-                Agency {
+                ForwardAgent {
                     wallet_handle,
                     verkey,
                     config,
@@ -79,29 +79,29 @@ impl Agency {
     }
 }
 
-impl Actor for Agency {
+impl Actor for ForwardAgent {
     type Context = Context<Self>;
 }
 
-pub struct GetAgencyDetail {}
+pub struct GetForwardDetail {}
 
 #[derive(Serialize, Debug)]
-pub struct AgencyDetail {
+pub struct ForwardDetail {
     #[serde(rename = "DID")]
     pub did: String,
     #[serde(rename = "verKey")]
     pub verkey: String,
 }
 
-impl Message for GetAgencyDetail {
-    type Result = Result<AgencyDetail>;
+impl Message for GetForwardDetail {
+    type Result = Result<ForwardDetail>;
 }
 
-impl Handler<GetAgencyDetail> for Agency {
-    type Result = Result<AgencyDetail>;
+impl Handler<GetForwardDetail> for ForwardAgent {
+    type Result = Result<ForwardDetail>;
 
-    fn handle(&mut self, _: GetAgencyDetail, _: &mut Self::Context) -> Self::Result {
-        let res = AgencyDetail {
+    fn handle(&mut self, _: GetForwardDetail, _: &mut Self::Context) -> Self::Result {
+        let res = ForwardDetail {
             did: self.config.did.clone(),
             verkey: self.verkey.clone(),
         };
@@ -119,7 +119,7 @@ impl Message for Post {
     type Result = Result<PostResponse>;
 }
 
-impl Handler<Post> for Agency {
+impl Handler<Post> for ForwardAgent {
     type Result = BoxedFuture<PostResponse>;
 
     fn handle(&mut self, _: Post, _: &mut Self::Context) -> Self::Result {
@@ -144,7 +144,7 @@ mod tests {
         let mut core = Core::new().unwrap();
 
         let res = core.run(
-            Agency::new(AgencyConfig {
+            ForwardAgent::new(AgentConfig {
                 wallet_id: "agency_wallet_id".into(),
                 wallet_passphrase: "agency_wallet_passphrase".into(),
                 did: "VsKV7grR1BUE29mG2Fm2kX".into(),
