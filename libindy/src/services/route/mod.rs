@@ -25,13 +25,11 @@ impl RouteService {
         RouteService {}
     }
 
-    pub fn auth_pack_msg(&self, plaintext: &str, recv_keys: Vec<&str>, sender_vk: &str, is_authcrypt: bool,
+    pub fn auth_pack_msg(&self, message: &str, recv_keys: Vec<&str>, sender_vk: &str,
                     wallet_handle: i32, ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<String> {
 
-        //encrypt plaintext
-        let sym_key = create_key();
-        let iv = gen_nonce();
-        let ciphertext = xsalsa20::encrypt(&sym_key, &iv, plaintext.as_bytes());
+        //encrypt ciphertext
+        let (sym_key, iv, ciphertext) = self.encrypt_ciphertext(message);
 
         //convert sender_vk to Key
         let my_key = &ws.get_indy_object(wallet_handle,
@@ -45,8 +43,8 @@ impl RouteService {
         for their_vk in recv_keys {
             auth_recipients.push(self.auth_encrypt_recipient(my_key,
                                                              their_vk,
-                                                             sym_key,
-                                                             cs)
+                                                             sym_key.clone(),
+                                                             cs.clone())
                 .map_err(|err| RouteError::PackError(format!("Failed to push auth recipient {}", err)))?);
         };
 
@@ -62,18 +60,15 @@ impl RouteService {
             .map_err(|err| RouteError::PackError(format!("Failed to serialize authAMES {}", err)))
     }
 
-    pub fn anon_pack_msg(&self, plaintext: &str, recv_keys: Vec<&str>, wallet_handle: i32,
-                      ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<String> {
+    pub fn anon_pack_msg(&self, message: &str, recv_keys: Vec<&str>, cs: Rc<CryptoService>) -> Result<String> {
 
-         //encrypt plaintext
-        let sym_key = create_key();
-        let iv = gen_nonce();
-        let ciphertext = xsalsa20::encrypt(&sym_key, &iv, plaintext.as_bytes());
+        //encrypt ciphertext
+        let (sym_key, iv, ciphertext) = self.encrypt_ciphertext(message);
 
         //encrypt ceks
         let mut anon_recipients :Vec<AnonRecipient> = vec![];
         for their_vk in recv_keys {
-            let anon_recipient = self.anon_encrypt_recipient(their_vk, sym_key, cs)?;
+            let anon_recipient = self.anon_encrypt_recipient(their_vk, sym_key.clone(), cs.clone())?;
             anon_recipients.push( anon_recipient);
         }
 
@@ -90,7 +85,7 @@ impl RouteService {
     }
 
     pub fn unpack_msg(&self, ames_json_str: &str, my_vk: &str, wallet_handle: i32,
-                  ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<(String, Option<String>)> {
+                  ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<(String, String)> {
 
         //check if authAMES or anonAMES
         if ames_json_str.contains("AuthAMES/1.0/") {
@@ -103,7 +98,7 @@ impl RouteService {
     }
 
     fn auth_unpack(&self, ames_json_str: &str, my_vk: &str, wallet_handle: i32,
-                    ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<(String, Option<String>)>{
+                    ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<(String, String)>{
 
         //deserialize json string to struct
         let auth_ames_struct : AuthAMES = serde_json::from_str(ames_json_str)
@@ -123,9 +118,37 @@ impl RouteService {
 
         let message = self.decrypt_ciphertext(&auth_ames_struct.ciphertext, &auth_ames_struct.iv, &ephem_sym_key)?;
 
-        Ok((message, Some(sender_vk)))
+        Ok((message, sender_vk))
     }
 
+    fn anon_unpack(&self, ames_json_str: &str, my_vk: &str, wallet_handle: i32,
+                    ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<(String, String)> {
+
+       //deserialize json string to struct
+        let auth_ames_struct : AnonAMES = serde_json::from_str(ames_json_str)
+                .map_err(|err| RouteError::SerializationError(format!("Failed to deserialize auth ames {}", err)))?;
+
+        //get recipient struct that matches my_vk parameter
+        let recipient_struct = self.get_anon_recipient_header(my_vk, auth_ames_struct.recipients)?;
+
+        //get key to use for decryption
+        let my_key: &Key = &ws.get_indy_object(wallet_handle,
+                                         my_vk,
+                                         &RecordOptions::id_value())
+            .map_err(|err| RouteError::UnpackError(format!("Can't find my_key: {:?}", err)))?;
+
+        //decrypt recipient header
+        let ephem_sym_key = self.anon_decrypt_recipient(my_key, recipient_struct, cs)?;
+
+        //decrypt message
+        let message = self.decrypt_ciphertext(&auth_ames_struct.ciphertext, &auth_ames_struct.iv, &ephem_sym_key)?;
+
+        //return message and no key
+        Ok((message, "".to_string()))
+    }
+
+
+    /* Authcrypt helper function section */
     fn auth_encrypt_recipient(&self, my_key: &Key, recp_vk: &str, sym_key: xsalsa20::Key, cs: Rc<CryptoService>) -> Result<AuthRecipient> {
 
         //encrypt sym_key for recipient
@@ -133,7 +156,7 @@ impl RouteService {
             .map_err(|err| RouteError::EncryptionError(format!("Failed to auth encrypt cek {}", err)))?;
 
         //serialize enc_header
-        let enc_header_struct = EncHeader { from: my_key.verkey, cek_nonce };
+        let enc_header_struct = EncHeader { from: my_key.verkey.to_string(), cek_nonce };
         let enc_header_serialized_bytes = serde_json::to_vec(&enc_header_struct)
             .map_err(|err| RouteError::SerializationError(format!("Failed to serialize cek {}", err)))?;
 
@@ -168,7 +191,7 @@ impl RouteService {
 
         //convert to secretbox key
         let sym_key = xsalsa20::Key::from_slice(&decrypted_cek[..])
-            .map_err(|err| RouteError::EncryptionError(format!("Failed to unpack sym_key")))?;
+            .map_err(|err| RouteError::EncryptionError(format!("Failed to unpack sym_key {}", err)))?;
 
         //TODO Verify key is in DID Doc
 
@@ -186,33 +209,7 @@ impl RouteService {
         return Err(RouteError::UnpackError(format!("Failed to find a matching header")))
     }
 
-    //TODO Finish this function
-    fn anon_unpack(&self, ames_json_str: &str, my_vk: &str, wallet_handle: i32,
-                    ws: Rc<WalletService>, cs: Rc<CryptoService>) -> Result<(String, Option<String>)> {
-
-       //deserialize json string to struct
-        let auth_ames_struct : AnonAMES = serde_json::from_str(ames_json_str)
-                .map_err(|err| RouteError::SerializationError(format!("Failed to deserialize auth ames {}", err)))?;
-
-        //get recipient struct that matches my_vk parameter
-        let recipient_struct = self.get_anon_recipient_header(my_vk, auth_ames_struct.recipients)?;
-
-        //get key to use for decryption
-        let my_key: &Key = &ws.get_indy_object(wallet_handle,
-                                         my_vk,
-                                         &RecordOptions::id_value())
-            .map_err(|err| RouteError::UnpackError(format!("Can't find my_key: {:?}", err)))?;
-
-        //decrypt recipient header
-        let ephem_sym_key = self.anon_decrypt_recipient(my_key, recipient_struct, cs)?;
-
-        //decrypt message
-        let message = self.decrypt_ciphertext(&auth_ames_struct.ciphertext, &auth_ames_struct.iv, &ephem_sym_key)?;
-
-        //return message and no key
-        Ok((message, None))
-    }
-
+    /* Authcrypt helper function section */
     fn anon_encrypt_recipient(&self, recp_vk: &str, sym_key: xsalsa20::Key, cs:Rc<CryptoService>) -> Result<AnonRecipient> {
 
         //encrypt cek
@@ -234,7 +231,7 @@ impl RouteService {
 
         //convert to secretbox key
         let sym_key = xsalsa20::Key::from_slice(&decrypted_cek[..])
-            .map_err(|err| RouteError::EncryptionError(format!("Failed to unpack sym_key")))?;
+            .map_err(|err| RouteError::EncryptionError(format!("Failed to unpack sym_key {}", err)))?;
 
         //return key
         Ok(sym_key)
@@ -250,9 +247,29 @@ impl RouteService {
         return Err(RouteError::UnpackError(format!("Failed to find a matching header")))
     }
 
-    //TODO Finish this function
+    /* ciphertext helper functions*/
     fn decrypt_ciphertext(&self, ciphertext: &str, iv: &str, sym_key: &xsalsa20::Key) -> Result<String> {
 
+        //convert IV from &str to &Nonce
+        let nonce = xsalsa20::Nonce::from_slice(iv.as_bytes())
+            .map_err(|err| RouteError::UnpackError(format!("Failed to convert IV to Nonce type {}", err)))?;
+
+        //decrypt message
+        let plaintext_bytes = xsalsa20::decrypt(sym_key, &nonce, ciphertext.as_bytes())
+            .map_err(|err| RouteError::EncryptionError(format!("Failed to decrypt ciphertext {}", err)))?;
+
+        //convert message to readable (UTF-8) string
+        String::from_utf8(plaintext_bytes)
+            .map_err(|err | RouteError::DecodeError(format!("Failed to convert message to UTF-8 {}", err)))
+
+    }
+
+    fn encrypt_ciphertext(&self, ciphertext: &str) -> (xsalsa20::Key, xsalsa20::Nonce, Vec<u8>){
+        let sym_key = create_key();
+        let iv = gen_nonce();
+        let message = xsalsa20::encrypt(&sym_key, &iv, ciphertext.as_bytes());
+
+        (sym_key, iv, message)
     }
 
 }

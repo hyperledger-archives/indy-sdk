@@ -28,6 +28,4 @@ pub mod try;
 
 pub mod json;
 
-pub mod serialization;
-
 pub mod option;
