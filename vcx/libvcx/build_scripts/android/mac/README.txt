@@ -10,11 +10,11 @@ and then change "wget" to "wget --no-check-certificate" and save the file
 also you may need to change "curl" to "curl --insecure" and save the file
 OR
 run sudo ./vcx/ci/scripts/installCert.sh
-LIBINDY_VERSION="1.6.4" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh x86; \
-LIBINDY_VERSION="1.6.4" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh x86_64; \
-LIBINDY_VERSION="1.6.4" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh arm; \
-LIBINDY_VERSION="1.6.4" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh armv7; \
-LIBINDY_VERSION="1.6.4" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh arm64
+LIBINDY_VERSION="1.6.5" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh x86; \
+LIBINDY_VERSION="1.6.5" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh x86_64; \
+LIBINDY_VERSION="1.6.5" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh arm; \
+LIBINDY_VERSION="1.6.5" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh armv7; \
+LIBINDY_VERSION="1.6.5" LIBINDY_BRANCH="stable" ./vcx/ci/scripts/androidBuild.sh arm64
 chmod a+x ./vcx/ci/scripts/androidPackage.sh
 vi ./vcx/ci/scripts/androidPackage.sh
 and then change /home/vcx/android-sdk-linux
