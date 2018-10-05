@@ -546,7 +546,8 @@ pub extern fn indy_delete_wallet(command_handle: i32,
 /// #Params
 /// config: (optional) key configuration json.
 /// {
-///   "seed": optional<string> Seed that allows deterministic key creation (if not set random one will be used).
+///   "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+///                              Can be UTF-8, base64 or hex string.
 /// }
 ///
 /// #Returns
