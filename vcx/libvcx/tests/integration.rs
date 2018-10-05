@@ -87,8 +87,9 @@ mod tests {
 
     fn delete_indy_client(){
         use std::fs::remove_dir_all;
+        use std::env::home_dir;
         use std::path::PathBuf;
-        let p = match dirs::home_dir() {
+        let p = match home_dir() {
             Some(path) => path,
             None => panic!("Cannot find home directory"),
         };
