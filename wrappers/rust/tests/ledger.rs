@@ -316,8 +316,6 @@ mod test_submit_action {
 
     const NODES : &str = "[\"Node1\", \"Node2\"]";
 
-    // This test needs to be researched as a possible bug in libindy.  No errors are returned, it hangs forever,
-    // ignoring the timeout
     #[test]
     pub fn submit_action_this_hangs_indefinitely() {
 
@@ -337,16 +335,9 @@ mod test_submit_action {
         let validator_request = Ledger::build_get_validator_info_request(&did).unwrap();
         let signed_request = Ledger::sign_request(wallet.handle, &did, &validator_request).unwrap();
 
-        let result = Ledger::submit_action(pool_handle, &signed_request, "[]", 5);
+        Ledger::submit_action(pool_handle, &signed_request, "[]", 5).unwrap_err();
 
         Pool::close(pool_handle).unwrap();
-
-        match result {
-            Ok(_) => {},
-            Err(ec) => {
-                assert!(false, "submit_action_success failed with {:?} extra {:?}", ec, signed_request);
-            }
-        }
     }
 
     #[test]
