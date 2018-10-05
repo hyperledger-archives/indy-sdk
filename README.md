@@ -255,7 +255,6 @@ to simplify their transition to API of Libindy 1.4.0.
 * [v1.5.0 → v1.6.x](doc/migration-guide-1.5.0-1.6.0.md)
 
 ## How to Contribute
-
 * We'd love your help; see these [instructions on how to contribute](http://bit.ly/2ugd0bq).
 * You may also want to read this info about [maintainers](MAINTAINERS.md) and our process.
 * We use developer certificate of origin (DCO) in all hyperledger repositories,
