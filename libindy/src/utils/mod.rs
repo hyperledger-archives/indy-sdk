@@ -29,10 +29,4 @@ pub mod try;
 
 pub mod json;
 
-pub mod serialization;
-
 pub mod option;
-
-//TODO remove this after unpack/pack feature changed to support new key and nonce structs
-#[macro_use]
-pub mod byte_array;

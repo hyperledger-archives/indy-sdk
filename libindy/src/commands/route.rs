@@ -2,7 +2,6 @@ use errors::route::RouteError;
 use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use services::route::RouteService;
-use utils::option::OptionDeref;
 use std::result;
 use std::rc::Rc;
 use serde_json;
@@ -21,13 +20,12 @@ pub enum RouteCommand {
     AnonPackMessage(
         String, // plaintext message
         String, // list of receiving keys
-        i32, // wallet_handle
         Box<Fn(Result<String/*JWM serialized as string*/>) + Send>),
     UnpackMessage(
         String, // AMES either JSON or Compact Serialization
         String, // my verkey
         i32, // wallet handle
-        Box<Fn(Result<(String /*plaintext*/)>) + Send>),
+        Box<Fn(Result<(String /*plaintext*/, String /*if authcrypt return sender_vk else null string*/)>) + Send>),
 }
 
 pub struct RouteCommandExecutor {
@@ -54,13 +52,13 @@ impl RouteCommandExecutor {
                 info!("PackMessage command received");
                 cb(self.auth_pack_msg(&message, &recv_keys_json, my_vk, wallet_handle));
             }
-            RouteCommand::AnonPackMessage(plaintext, recv_keys_json, wallet_handle, cb) => {
+            RouteCommand::AnonPackMessage(message, recv_keys_json, cb) => {
                 info!("PackMessage command received");
-                cb(self.anon_pack_msg(&message, &recv_keys_json, wallet_handle));
+                cb(self.anon_pack_msg(&message, &recv_keys_json));
             }
-            RouteCommand::UnpackMessage(ames, my_vk, wallet_handle, cb) => {
+            RouteCommand::UnpackMessage(ames_json_str, my_vk, wallet_handle, cb) => {
                 info!("UnpackMessage command received");
-                cb(self.unpack_msg(&ames, &my_vk, wallet_handle));
+                cb(self.unpack_msg(&ames_json_str, &my_vk, wallet_handle));
             }
         };
     }
@@ -71,14 +69,15 @@ impl RouteCommandExecutor {
         let recv_keys : Vec<&str> = serde_json::from_str(recv_keys_json)
             .map_err(|err| RouteError::SerializationError(format!("Failed to serialize recv_keys {:?}", err)))?;
 
-        self.route_service.pack_msg(message, recv_keys,
-                                    my_vk.as_deref(),
-                                    auth, wallet_handle,
+        self.route_service.auth_pack_msg(message,
+                                    recv_keys,
+                                    &my_vk,
+                                    wallet_handle,
                                     self.wallet_service.clone(),
                                     self.crypto_service.clone())
     }
 
-    pub fn anon_pack_msg(&self, message: &str, recv_keys_json: &str, wallet_handle: i32) -> Result<String> {
+    pub fn anon_pack_msg(&self, message: &str, recv_keys_json: &str) -> Result<String> {
 
         //convert type from json array to Vec<&str>
         let recv_keys : Vec<&str> = serde_json::from_str(recv_keys_json)
@@ -86,13 +85,11 @@ impl RouteCommandExecutor {
 
         self.route_service.anon_pack_msg(message,
                                          recv_keys,
-                                         wallet_handle,
-                                         self.wallet_service.clone(),
                                          self.crypto_service.clone())
     }
 
-    pub fn unpack_msg(&self, ames: &str, my_vk: &str, wallet_handle: i32) -> Result<(String, Option<String>)> {
-        self.route_service.unpack_msg(ames_as_string,
+    pub fn unpack_msg(&self, ames_json_str: &str, my_vk: &str, wallet_handle: i32) -> Result<(String, String)> {
+        self.route_service.unpack_msg(ames_json_str,
                                       my_vk,
                                       wallet_handle,
                                       self.wallet_service.clone(),
