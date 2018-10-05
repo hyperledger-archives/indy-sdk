@@ -28,10 +28,10 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                'redhat-test' : { rhelTesting() },
-                'android-test': { androidTesting() },
-                'windows-test': { windowsTesting() },
-                'ios-test'    : { iosTesting() }
+                 'redhat-test' : { rhelTesting() },
+                 'android-test': { androidTesting() },
+                 'windows-test': { windowsTesting() },
+                 'ios-test'    : { iosTesting() }
         ])
     }
 }
@@ -246,16 +246,16 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                     }
                 },
                 "${env_name}-java-test"      : {
-                    linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting, stashBuildResults)
                 },
                 "${env_name}-python-test"    : {
-                    linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting, stashBuildResults)
                 },
                 "${env_name}-cli-test"       : {
-                    linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting, stashBuildResults)
                 },
                 "${env_name}-vcx-test"       : {
-                    linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting)
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting, stashBuildResults)
                 }
         ])
     }
@@ -264,7 +264,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
     }
 }
 
-def linuxJavaTesting(env_name, network_name, testEnv) {
+def linuxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
     unstash name: "LibindyJavaSO${env_name}"
     dir('wrappers/java') {
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
@@ -275,7 +275,7 @@ def linuxJavaTesting(env_name, network_name, testEnv) {
     }
 }
 
-def linuxPythonTesting(env_name, network_name, testEnv) {
+def linuxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
     unstash name: "LibindyPythonSO${env_name}"
     dir('wrappers/python') {
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
@@ -289,7 +289,7 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
     }
 }
 
-def linuxVCXTesting(env_name, network_name, testEnv) {
+def linuxVCXTesting(env_name, network_name, testEnv, stashBuildResults) {
     unstash name: "LibindyVCXSO${env_name}"
     unstash name: "LibnullpayVCXSO${env_name}"
 
@@ -311,7 +311,7 @@ def linuxVCXTesting(env_name, network_name, testEnv) {
     }
 }
 
-def linuxCLITesting(env_name, network_name, testEnv) {
+def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
     unstash name: "LibindyCliSO${env_name}"
     unstash name: "LibnullpayCliSO${env_name}"
 
@@ -1078,7 +1078,7 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
     }
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester) {
+def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults) {
     node('ubuntu') {
         def poolInst
         try {
@@ -1094,7 +1094,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
                 testEnv = dockerBuild('libindy', file)
             }
 
-            module_tester(env_name, network_name, testEnv)
+            module_tester(env_name, network_name, testEnv, stashBuildResults)
         } finally {
             closePool(env_name, network_name, poolInst)
         }
