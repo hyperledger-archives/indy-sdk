@@ -24,7 +24,8 @@ impl Key {
     /// # Example
     /// my_key_json
     /// {
-    ///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+    ///     "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+    ///                                Can be UTF-8, base64 or hex string.
     ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
     /// }
     /// # Returns
@@ -46,7 +47,8 @@ impl Key {
     /// # Example
     /// my_key_json
     /// {
-    ///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+    ///     "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+    ///                                Can be UTF-8, base64 or hex string.
     ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
     /// }
     /// # Returns
@@ -68,7 +70,8 @@ impl Key {
     /// # Example
     /// my_key_json
     /// {
-    ///     "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+    ///     "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+    ///                                Can be UTF-8, base64 or hex string.
     ///     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
     /// }
     /// # Returns
