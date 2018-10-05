@@ -319,6 +319,7 @@ mod test_submit_action {
     // This test needs to be researched as a possible bug in libindy.  No errors are returned, it hangs forever,
     // ignoring the timeout
     #[test]
+    #[ignore] // TODO: restore after IS-1027 will be fixed
     pub fn submit_action_this_hangs_indefinitely() {
 
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
