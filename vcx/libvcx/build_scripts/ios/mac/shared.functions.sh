@@ -1,7 +1,7 @@
 #!/bin/sh
 
-export LIBSOVTOKEN_IOS_BUILD_URL="https://repo.corp.evernym.com/filely/ios/libsovtoken_0.9.2-201809042322-b51bfba_all.zip"
-export LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/stable/libindy-core/1.6.4/libindy.tar.gz"
+export LIBSOVTOKEN_IOS_BUILD_URL="https://repo.corp.evernym.com/filely/ios/libsovtoken_0.9.1-201808311521-ca7b339_all.zip"
+export LIBINDY_IOS_BUILD_URL="https://repo.sovrin.org/ios/libindy/stable/libindy-core/1.6.3/libindy.tar.gz"
 export LIBSOVTOKEN_FILE=$(basename ${LIBSOVTOKEN_IOS_BUILD_URL})
 export LIBSOVTOKEN_VERSION=$(echo ${LIBSOVTOKEN_FILE} | cut -d'_' -f 2)
 export LIBINDY_FILE=$(basename ${LIBINDY_IOS_BUILD_URL})
