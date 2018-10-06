@@ -1,13 +1,8 @@
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct EncHeader {
-    pub from: String,
-    pub cek_nonce: Vec<u8>
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct AuthRecipient {
-    pub enc_header : String,
-    pub cek: String,
+    pub enc_from : String,
+    pub e_cek: String,
+    pub cek_nonce: String,
     pub to : String
 }
 
