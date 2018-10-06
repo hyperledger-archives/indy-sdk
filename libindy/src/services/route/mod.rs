@@ -9,7 +9,8 @@ use domain::crypto::key::Key;
 use errors::route::RouteError;
 use services::crypto::CryptoService;
 use services::wallet::{WalletService, RecordOptions};
-use utils::crypto::base64::encode;
+use utils::crypto::base64;
+use utils::crypto::base58;
 use utils::crypto::xsalsa20;
 use utils::crypto::xsalsa20::{create_key, gen_nonce};
 use serde_json;
@@ -53,8 +54,8 @@ impl RouteService {
             recipients: auth_recipients,
             ver: "AuthAMES/1.0/".to_string(),
             enc: "xsalsa20poly1305".to_string(),
-            ciphertext: encode(ciphertext.as_slice()),
-            iv: encode(&iv[..])
+            ciphertext: base64::encode(ciphertext.as_slice()),
+            iv: base64::encode(&iv[..])
         };
         serde_json::to_string(&auth_ames_struct)
             .map_err(|err| RouteError::PackError(format!("Failed to serialize authAMES {}", err)))
@@ -77,8 +78,8 @@ impl RouteService {
             recipients: anon_recipients,
             ver: "AnonAMES/1.0/".to_string(),
             enc: "xsalsa20poly1305".to_string(),
-            ciphertext: encode(ciphertext.as_slice()),
-            iv : encode(&iv[..])
+            ciphertext: base64::encode(ciphertext.as_slice()),
+            iv : base64::encode(&iv[..])
         };
         serde_json::to_string(&anon_ames_struct)
             .map_err(|err| RouteError::PackError(format!("Failed to serialize anonAMES {}", err)))
@@ -152,22 +153,22 @@ impl RouteService {
     fn auth_encrypt_recipient(&self, my_key: &Key, recp_vk: &str, sym_key: xsalsa20::Key, cs: Rc<CryptoService>) -> Result<AuthRecipient> {
 
         //encrypt sym_key for recipient
-        let (cek, cek_nonce) = cs.encrypt(my_key, recp_vk, &sym_key[..])
+        let (e_cek, cek_nonce) = cs.encrypt(my_key, recp_vk, &sym_key[..])
             .map_err(|err| RouteError::EncryptionError(format!("Failed to auth encrypt cek {}", err)))?;
 
         //serialize enc_header
-        let enc_header_struct = EncHeader { from: my_key.verkey.to_string(), cek_nonce };
-        let enc_header_serialized_bytes = serde_json::to_vec(&enc_header_struct)
+        let sender_vk_bytes = serde_json::to_vec(my_key.verkey.to_string())
             .map_err(|err| RouteError::SerializationError(format!("Failed to serialize cek {}", err)))?;
 
         //encrypt enc_from
-        let enc_header = cs.encrypt_sealed(recp_vk, enc_header_serialized_bytes.as_slice())
+        let enc_from = cs.encrypt_sealed(recp_vk, sender_vk_bytes.as_slice())
             .map_err(|err| RouteError::EncryptionError(format!("Failed to encrypt sender verkey {}", err)))?;;
 
         //create struct
         let auth_recipient = AuthRecipient {
-            enc_header: encode(enc_header.as_slice()),
-            cek: encode(cek.as_slice()),
+            enc_from: base64::encode(enc_from.as_slice()),
+            e_cek: base64::encode(e_cek.as_slice()),
+            cek_nonce: base64::encode(cek_nonce.as_slice())
             to: recp_vk.to_string()
         };
 
@@ -178,16 +179,20 @@ impl RouteService {
     fn auth_decrypt_recipient(&self, my_key: &Key, auth_recipient: AuthRecipient, cs:Rc<CryptoService>) -> Result<(xsalsa20::Key, String)> {
 
         //decrypt enc_header
-        let enc_header_as_vec = cs.decrypt_sealed(my_key, auth_recipient.enc_header.as_ref())
-        .map_err(|err| RouteError::EncryptionError(format!("Failed to decrypt sender verkey {}", err)))?;;
-        let enc_header_struct : EncHeader = serde_json::from_slice(enc_header_as_vec.as_ref())
-            .map_err(|err| RouteError::SerializationError(format!("Failed to deserialize enc_header {}", err)))?;
+        let sender_vk_as_vec = cs.decrypt_sealed(my_key, auth_recipient.enc_from.as_ref())
+        .map_err(|err| RouteError::EncryptionError(format!("Failed to decrypt sender verkey {}", err)))?;
+
+        //serial sender_vk to base58;
+        let sender_vk = base58::encode(sender_vk_as_vec.as_ref());
+
+        //decode e_cek
+        base64::decode()
 
         //decrypt cek
         let decrypted_cek = cs.decrypt(my_key,
-                                 &enc_header_struct.from,
-                                 auth_recipient.cek.as_bytes(),
-                                 enc_header_struct.cek_nonce.as_ref()).map_err(|err| RouteError::EncryptionError(format!("Failed to auth decrypt cek {}", err)))?;
+                                 &sender_vk,
+                                 auth_recipient.e_cek,
+                                 auth_recipient.cek_nonce.as_ref()).map_err(|err| RouteError::EncryptionError(format!("Failed to auth decrypt cek {}", err)))?;
 
         //convert to secretbox key
         let sym_key = xsalsa20::Key::from_slice(&decrypted_cek[..])
@@ -219,7 +224,7 @@ impl RouteService {
         //generate struct
         let anon_recipient = AnonRecipient {
             to : recp_vk.to_string(),
-            cek : encode(cek.as_slice())
+            cek : base64::encode(cek.as_slice())
         };
 
         Ok(anon_recipient)
@@ -296,7 +301,29 @@ pub mod tests {
     // TODO Fix texts so only one wallet is used to speed up tests
 
     //unit tests
+    #[test]
+    pub fn test_auth_encrypt_recipient() {
+        //create services
+        let cs = Rc::new(CryptoService::new());
+        let route_service = RouteService::new();
 
+        //create keys
+        let (s_key, _) = _send_did1(cs);
+        let (r_key, _) = _recv_did1(cs);
+        let sym_key = xsalsa20::create_key();
+
+        let expected_auth_recipient = AuthRecipient {
+            enc_from: "ENCRYPTED_FROM_VERKEY".to_string(),
+            e_cek: "ENCRYPTED_SYM_KEY".to_string(),
+            cek_nonce: "NONCE_TO_DECRYPT_E_CEK".to_string(),
+            to: "RECIPIENT_VERKEY".to_string()
+        };
+
+        //consume function
+        let auth_recipient : AuthRecipient = route_service.auth_encrypt_recipient(s_key, r_key.verkey, sym_key, cs).unwrap();
+
+        assert_eq!(auth_recipient, expected_auth_recipient);
+    }
 
 
     /* component test useful to identify if unpack is breaking or if pack is breaking. If unpack is
@@ -372,39 +399,39 @@ pub mod tests {
 //        assert_eq!(plaintext, &unpacked_msg);
 //    }
 
-    #[test]
-    pub fn test_pack_msg_success_single_authcrypt(){
-        _cleanup();
-        //setup generic data to test
-        let expected_message = "Hello World";
+    // #[test]
+    // pub fn test_pack_msg_success_single_authcrypt(){
+    //     _cleanup();
+    //     //setup generic data to test
+    //     let expected_message = "Hello World";
 
-        //setup route_service
-        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
-        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+    //     //setup route_service
+    //     let rs: Rc<RouteService> = Rc::new(RouteService::new());
+    //     let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
+    //     let ws: Rc<WalletService> = Rc::new(WalletService::new());
 
-        //setup wallets
-        let (recv_wallet_handle, _, _) = _setup_recv_wallet1(ws.clone(), cs.clone());
-        let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
+    //     //setup wallets
+    //     let (recv_wallet_handle, _, _) = _setup_recv_wallet1(ws.clone(), cs.clone());
+    //     let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
 
 
-        //setup recv_keys to use with pack_msg
-        let (_ , recv_key) = _recv_did1(cs.clone());
-        let recv_keys : Vec<&str> = vec![recv_key.verkey.as_ref()];
+    //     //setup recv_keys to use with pack_msg
+    //     let (_ , recv_key) = _recv_did1(cs.clone());
+    //     let recv_keys : Vec<&str> = vec![recv_key.verkey.as_ref()];
 
-        //pack then unpack message
-        let packed_msg = rs.auth_pack_msg(expected_message, recv_keys, &send_key.verkey,
-                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
-        //let (message, sender_vk) = rs.unpack_msg(&packed_msg, &recv_key.verkey,
-        //                                            recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
+    //     //pack then unpack message
+    //     let packed_msg = rs.auth_pack_msg(expected_message, recv_keys, &send_key.verkey,
+    //                                             send_wallet_handle, ws.clone(), cs.clone()).unwrap();
+    //     //let (message, sender_vk) = rs.unpack_msg(&packed_msg, &recv_key.verkey,
+    //     //                                            recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
 
-        println!("packed_msg {}", packed_msg);
-        //println!("message: {}", message);
-        //println!("sender_vk: {}", sender_vk);
-        assert!(false);
-        //verify same plaintext goes in and comes out
-        //assert_eq!(expected_message.to_string(), message );
-    }
+    //     println!("packed_msg {}", packed_msg);
+    //     //println!("message: {}", message);
+    //     //println!("sender_vk: {}", sender_vk);
+    //     assert!(false);
+    //     //verify same plaintext goes in and comes out
+    //     //assert_eq!(expected_message.to_string(), message );
+    // }
 //
 //    //#[test]
 //    pub fn test_pack_and_unpack_msg_success_multi_anoncrypt(){
