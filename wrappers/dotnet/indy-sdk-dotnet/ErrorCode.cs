@@ -209,6 +209,11 @@
         /// </summary>
         AnoncredsClaimRevoked = 406,
 
+        /// <summary>
+        /// Credential definition already exists
+        /// </summary>
+        AnoncredsCredDefAlreadyExists = 407,
+
         // Signus errors
         // 
         /// <summary>

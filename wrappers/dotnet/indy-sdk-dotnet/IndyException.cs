@@ -94,6 +94,8 @@ namespace Hyperledger.Indy
                     return new ProofRejectedException();
                 case ErrorCode.AnoncredsClaimRevoked:
                     return new ClaimRevokedException();
+                case ErrorCode.AnoncredsCredDefAlreadyExists:
+                    return new CredentialDefinitionAlreadyExistsException();
                 case ErrorCode.SignusUnknownCryptoError:
                     return new UnknownCryptoException();
                 case ErrorCode.WalletItemNotFoundError:
