@@ -44,27 +44,5 @@ namespace Hyperledger.Indy.Test.PoolTests
                Pool.OpenPoolLedgerAsync(poolName, null)
             );
         }
-
-        [TestMethod]
-        public async Task TestOpenPoolWorksForTwoNodes()
-        {
-            var poolName = PoolUtils.CreatePoolLedgerConfig(2);
-
-            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
-
-            Assert.IsNotNull(pool);
-            openedPools.Add(pool);
-        }
-
-        [TestMethod]
-        public async Task TestOpenPoolWorksForThreeNodes()
-        {
-            var poolName = PoolUtils.CreatePoolLedgerConfig(3);
-
-            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
-
-            Assert.IsNotNull(pool);
-            openedPools.Add(pool);
-        }
     }
 }

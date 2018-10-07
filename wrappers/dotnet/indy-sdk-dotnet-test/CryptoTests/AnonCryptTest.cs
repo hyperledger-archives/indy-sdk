@@ -10,7 +10,8 @@ namespace Hyperledger.Indy.Test.CryptoTests
         [TestMethod] 
         public async Task TestAnonCryptWorks()
         {
-            await Crypto.AnonCryptAsync(VERKEY_MY1, MESSAGE);
+            byte[] encryptedMsg = await Crypto.AnonCryptAsync(VERKEY_MY1, MESSAGE);
+            Assert.IsNotNull(encryptedMsg);
         }
 
         [TestMethod]

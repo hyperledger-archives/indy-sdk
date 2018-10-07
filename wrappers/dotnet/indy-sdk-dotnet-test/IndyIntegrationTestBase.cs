@@ -35,10 +35,36 @@ namespace Hyperledger.Indy.Test
         protected readonly static byte[] ENCRYPTED_MESSAGE = (byte[])(Array)new sbyte[] { -105, 30, 89, 75, 76, 28, -59, -45, 105, -46, 20, 124, -85, -13, 109, 29, -88, -82, -8, -6, -50, -84, -53, -48, -49, 56, 124, 114, 82, 126, 74, 99, -72, -78, -117, 96, 60, 119, 50, -40, 121, 21, 57, -68, 89 };
         protected readonly static byte[] NONCE = (byte[])(Array)new sbyte[] { -14, 102, -41, -57, 1, 4, 75, -46, -91, 87, 14, 41, -39, 48, 42, -126, -121, 84, -58, 59, -27, 51, -32, -23 };
 
+        protected const string DEFAULT_CRED_DEF_CONFIG = "{\"support_revocation\":false}";
+        protected const string TAG = "tag1";
+        protected const string GVT_SCHEMA_NAME = "gvt";
+        protected const string XYZ_SCHEMA_NAME = "xyz";
+        protected const string SCHEMA_VERSION = "1.0";
+        protected const string GVT_SCHEMA_ATTRIBUTES = "[\"name\", \"age\", \"sex\", \"height\"]";
+        protected const string XYZ_SCHEMA_ATTRIBUTES = "[\"status\", \"period\"]";
+        protected const string REVOC_REG_TYPE = "CL_ACCUM";
+        protected const string SIGNATURE_TYPE = "CL";
+        protected readonly static string TAILS_WRITER_CONFIG = string.Format("{{\"base_dir\":\"{0}\", \"uri_pattern\":\"\"}}", EnvironmentUtils.GetIndyHomePath("tails").Replace('\\', '/'));
+        protected const string REV_CRED_DEF_CONFIG = "{\"support_revocation\":true}";
+        // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
+        protected const string GVT_CRED_VALUES = "{\n" +
+                "        \"sex\": {\"raw\": \"male\", \"encoded\": \"5944657099558967239210949258394887428692050081607692519917050\"},\n" +
+                "        \"name\": {\"raw\": \"Alex\", \"encoded\": \"1139481716457488690172217916278103335\"},\n" +
+                "        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
+                "        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
+                "    }";
+        protected readonly static string WALLET_CONFIG = string.Format("{{\"id\":\"{0}\", \"storage_type\":\"{1}\"}}", WALLET, TYPE);
+	    protected const string WALLET_CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
+	    protected int PROTOCOL_VERSION = 2;
+
 
         protected readonly static string TRUSTEE_IDENTITY_JSON = string.Format("{{\"seed\":\"{0}\"}}", TRUSTEE_SEED);
         protected readonly static string MY1_IDENTITY_JSON = string.Format("{{\"seed\":\"{0}\"}}", MY1_SEED);
         protected readonly static string MY1_IDENTITY_KEY_JSON = string.Format("{{\"seed\":\"{0}\"}}", MY1_SEED);
+
+        private const string EXPORT_KEY = "export_key";
+	    protected readonly static string EXPORT_PATH = EnvironmentUtils.GetTmpPath("export_wallet");
+        protected readonly static string EXPORT_CONFIG_JSON = string.Format("{{\"key\":\"{0}\", \"path\":\"{1}\"}}", EXPORT_KEY, EXPORT_PATH);
 
         protected HashSet<Pool> openedPools = new HashSet<Pool>();
 
@@ -47,6 +73,7 @@ namespace Hyperledger.Indy.Test
         {
             await InitHelper.InitAsync();
             StorageUtils.CleanupStorage();
+            await Pool.SetProtocolVersionAsync(PROTOCOL_VERSION);
         }
 
         [TestCleanup]

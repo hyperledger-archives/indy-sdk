@@ -11,15 +11,15 @@ namespace Hyperledger.Indy.Test
         [TestInitialize]
         public async Task CreateWallet()
         {
-            await Wallet.CreateWalletAsync(POOL, WALLET, TYPE, null, null);
-            wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+            wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
         }
 
         [TestCleanup]
         public async Task DeleteWallet()
         {
             await wallet.CloseAsync();
-            await Wallet.DeleteWalletAsync(WALLET, null);
+            await Wallet.DeleteWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
         }
     }
 

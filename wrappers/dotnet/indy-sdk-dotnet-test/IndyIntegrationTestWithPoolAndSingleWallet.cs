@@ -17,8 +17,8 @@ namespace Hyperledger.Indy.Test
             poolName = PoolUtils.CreatePoolLedgerConfig();
             pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 
-            await Wallet.CreateWalletAsync(poolName, WALLET, TYPE, null, null);
-            wallet = await Wallet.OpenWalletAsync(WALLET, null, null);
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+            wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
         }
 
         [TestCleanup]
@@ -26,7 +26,7 @@ namespace Hyperledger.Indy.Test
         {
             await pool.CloseAsync();
             await wallet.CloseAsync();
-            await Wallet.DeleteWalletAsync(WALLET, null);
+            await Wallet.DeleteWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
         }
     }
 }

@@ -20,9 +20,9 @@ namespace Hyperledger.Indy.Test.CryptoTests
         }
 
         [TestMethod]
-        public async Task TestSignFailsIfKeyNotInWallet()
+        public async Task TestSignFailsForUnknownSigner()
         {
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                Crypto.SignAsync(wallet, VERKEY_TRUSTEE, MESSAGE)
            );
         }
