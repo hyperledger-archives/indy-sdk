@@ -1,11 +1,12 @@
 extern crate libc;
 
+use serde_json;
+use serde_json::{ map::Map, Value};
 use settings;
-use utils::constants::{ LIBINDY_CRED_OFFER };
-use utils::libindy::mock_libindy_rc;
-use utils::libindy::wallet::get_wallet_handle;
+use utils::constants::{ LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, ATTRS};
+use utils::error::{ INVALID_PROOF_REQUEST, INVALID_ATTRIBUTES_STRUCTURE, INVALID_CONFIGURATION } ;
+use utils::libindy::{ error_codes::map_rust_indy_sdk_error_code, mock_libindy_rc, wallet::get_wallet_handle };
 use utils::timeout::TimeoutUtils;
-use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 use indy::anoncreds::{ Verifier, Prover, Issuer };
 
 pub fn libindy_verifier_verify_proof(proof_req_json: &str,
@@ -85,11 +86,57 @@ pub fn libindy_prover_create_proof(proof_req_json: &str,
         .map_err(map_rust_indy_sdk_error_code)
 }
 
-pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> Result<String, u32> {
+fn fetch_credentials(search_handle: i32, requested_attributes: Map<String, Value>) -> Result<String, u32> {
+    let mut v: Value = json!({});
+    for item_referent in requested_attributes.keys().into_iter() {
+        v[ATTRS][item_referent] = serde_json::from_str(&Prover::_fetch_credentials_for_proof_req(search_handle, item_referent, 100)
+            .map_err(map_rust_indy_sdk_error_code)?)
+            .map_err(|_| {
+                error!("Invalid Json Parsing of Object Returned from Libindy. Did Libindy change its structure?");
+                INVALID_CONFIGURATION.code_num
+            })?
+    }
+    Ok(v.to_string())
+}
 
-    Prover::get_credentials_for_proof_req(get_wallet_handle(),
-                                          proof_req)
-        .map_err(map_rust_indy_sdk_error_code)
+fn close_search_handle(search_handle: i32) -> Result<(), u32> {
+    Prover::_close_credentials_search_for_proof_req(search_handle).map_err(|ec| {
+        error!("Error closing search handle");
+        map_rust_indy_sdk_error_code(ec)
+    })
+}
+
+pub fn libindy_prover_get_credentials_for_proof_req(proof_req: &str) -> Result<String, u32> {
+    let wallet_handle = get_wallet_handle();
+
+    // this may be too redundant since Prover::search_credentials will validate the proof reqeuest already.
+    let proof_request_json:Map<String, Value> = serde_json::from_str(proof_req).map_err(|_| INVALID_PROOF_REQUEST.code_num)?;
+
+    // since the search_credentials_for_proof request validates that the proof_req is properly structured, this get()
+    // fn should never fail, unless libindy changes their formats.
+    let requested_attributes:Option<Map<String,Value>> = proof_request_json.get(REQUESTED_ATTRIBUTES).and_then(|v| {
+        serde_json::from_value(v.clone()).map_err(|_| {
+            error!("Invalid Json Parsing of Requested Attributes Retrieved From Libindy. Did Libindy change its structure?");
+        }).ok()
+    });
+
+    match requested_attributes {
+        Some(attrs) => {
+            let search_handle = Prover::search_credentials_for_proof_req(wallet_handle, proof_req, None).map_err(|ec| {
+                error!("Opening Indy Search for Credentials Failed");
+                map_rust_indy_sdk_error_code(ec)
+            })?;
+            let creds: String = fetch_credentials(search_handle, attrs)?;
+            // should an error on closing a search handle throw an error, or just a warning?
+            // for now we're are just outputting to the user that there is an issue, and continuing on.
+            let _ = close_search_handle(search_handle);
+            Ok(creds)
+        },
+        None => {
+            Err(INVALID_ATTRIBUTES_STRUCTURE.code_num)
+        }
+    }
+
 }
 
 pub fn libindy_prover_create_credential_req(prover_did: &str,
@@ -142,6 +189,7 @@ pub fn libindy_issuer_create_schema(issuer_did: &str,
         .map_err(map_rust_indy_sdk_error_code)
 }
 
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -153,8 +201,9 @@ pub mod tests {
     use std::thread;
     use std::time::Duration;
 
-    pub fn create_schema() -> (String, String) {
+    pub fn create_schema(attr_list: &str) -> (String, String) {
         let data = DEFAULT_SCHEMA_ATTRS.to_string();
+        let data = attr_list.to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
         let schema_version: String = format!("{}.{}", rand::thread_rng().gen::<u32>().to_string(),
                                              rand::thread_rng().gen::<u32>().to_string());
@@ -172,17 +221,17 @@ pub mod tests {
         let (payment_info, response) = ::utils::libindy::payments::pay_for_txn(&request, SCHEMA_TXN_TYPE).unwrap();
     }
 
-    pub fn create_and_write_test_schema() -> (String, String) {
-        let (schema_id, schema_json) = create_schema();
+    pub fn create_and_write_test_schema(attr_list: &str) -> (String, String) {
+        let (schema_id, schema_json) = create_schema(attr_list);
         let req = create_schema_req(&schema_json);
         write_schema(&req);
         thread::sleep(Duration::from_millis(1000));
         (schema_id, schema_json)
     }
 
-    pub fn create_and_store_credential_def() -> (String, String, String, String) {
+    pub fn create_and_store_credential_def(attr_list: &str) -> (String, String, String, String) {
         /* create schema */
-        let (schema_id, schema_json) = create_and_write_test_schema();
+        let (schema_id, schema_json) = create_and_write_test_schema(attr_list);
 
         let name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -202,23 +251,23 @@ pub mod tests {
         (schema_id, schema_json, cred_def_id, cred_def_json)
     }
 
-    pub fn create_credential_offer() -> (String, String, String, String, String) {
-        let (schema_id, schema_json, cred_def_id, cred_def_json) = create_and_store_credential_def();
+    pub fn create_credential_offer(attr_list: &str) -> (String, String, String, String, String) {
+        let (schema_id, schema_json, cred_def_id, cred_def_json) = create_and_store_credential_def(attr_list);
 
         let offer = ::utils::libindy::anoncreds::libindy_issuer_create_credential_offer(&cred_def_id).unwrap();
         (schema_id, schema_json, cred_def_id, cred_def_json, offer)
     }
 
-    pub fn create_credential_req() -> (String, String, String, String, String, String, String) {
-        let (schema_id, schema_json, cred_def_id, cred_def_json, offer) = create_credential_offer();
+    pub fn create_credential_req(attr_list: &str) -> (String, String, String, String, String, String, String) {
+        let (schema_id, schema_json, cred_def_id, cred_def_json, offer) = create_credential_offer(attr_list);
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (req, req_meta) = ::utils::libindy::anoncreds::libindy_prover_create_credential_req(&institution_did, &offer, &cred_def_json).unwrap();
         (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta)
     }
 
-    pub fn create_and_store_credential() -> (String, String, String, String, String, String, String, String) {
+    pub fn create_and_store_credential(attr_list: &str) -> (String, String, String, String, String, String, String, String) {
 
-        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta) = create_credential_req();
+        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta) = create_credential_req(attr_list);
 
         /* create cred */
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
@@ -231,7 +280,7 @@ pub mod tests {
 
     pub fn create_proof() -> (String, String, String, String) {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id) = create_and_store_credential();
+        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id) = create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS);
 
         let proof_req = json!({
            "nonce":"123432421212",
@@ -331,11 +380,7 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_prover_verify_proof() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet_name = "test_verify_proof";
-        ::utils::libindy::wallet::delete_wallet(wallet_name).unwrap_or(());
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         let (schemas, cred_defs, proof_req, proof) = create_proof();
 
         let result = libindy_verifier_verify_proof(
@@ -347,9 +392,38 @@ pub mod tests {
             "{}",
         );
 
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
         assert!(result.is_ok());
         let proof_validation = result.unwrap();
         assert!(proof_validation, true);
     }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn tests_libindy_prover_get_credentials() {
+        init!("ledger");
+        let proof_req = "{";
+        let result = libindy_prover_get_credentials_for_proof_req(&proof_req);
+        assert_eq!(result.err(), Some(INVALID_PROOF_REQUEST.code_num));
+        let proof_req = json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": json!({
+               "address1_1": json!({
+                   "name":"address1",
+               }),
+               "zip_2": json!({
+                   "name":"zip",
+               }),
+           }),
+           "requested_predicates": json!({}),
+        }).to_string();
+        let result = libindy_prover_get_credentials_for_proof_req(&proof_req);
+        let result_malformed_json = libindy_prover_get_credentials_for_proof_req("{}");
+        let wallet_handle = get_wallet_handle();
+        let proof_req_str:String = serde_json::to_string(&proof_req).unwrap();
+        assert!(result.is_ok());
+        assert_eq!(result_malformed_json.err(), Some(INVALID_ATTRIBUTES_STRUCTURE.code_num));
+    }
+
 }

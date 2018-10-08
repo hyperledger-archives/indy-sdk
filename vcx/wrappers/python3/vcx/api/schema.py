@@ -121,7 +121,7 @@ class Schema(VcxBase):
             schema.schema_id = await schema.get_schema_id()
             return schema
         except KeyError:
-            raise VcxError(ErrorCode.InvalidSchema, error_message(ErrorCode.InvalidSchema))
+            raise VcxError(ErrorCode.InvalidSchema)
 
     @staticmethod
     async def lookup(source_id: str, schema_id: str):

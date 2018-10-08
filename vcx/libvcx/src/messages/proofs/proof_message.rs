@@ -1,6 +1,6 @@
 extern crate serde_json;
 
-use utils::{ error };
+use utils::{ error, serde_utils };
 use serde_json::Value;
 use error::proof::ProofError;
 
@@ -52,21 +52,15 @@ impl ProofMessage {
             .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
         if let Value::Array(ref identifiers) = credentials["identifiers"] {
-
             for identifier in identifiers {
-                let schema_id = match identifier.get("schema_id") {
-                    Some(i) => if i.is_string() { i.as_str().unwrap() } else { return Err(ProofError::CommonError(error::INVALID_JSON.code_num))},
-                    None => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
-                };
-
-                let cred_def_id = match identifier.get("cred_def_id") {
-                    Some(i) => if i.is_string() { i.as_str().unwrap() } else { return Err(ProofError::CommonError(error::INVALID_JSON.code_num))},
-                    None => return Err(ProofError::CommonError(error::INVALID_JSON.code_num)),
-                };
-                //Todo: handle rev_reg_id
-                let rev_reg_id = String::new();
-
-                rtn.push((schema_id.to_string(), cred_def_id.to_string(), rev_reg_id));
+                let reg_rev_id = String::new();
+                rtn.push((
+                    serde_utils::get_value_to_string("schema_id", identifier)
+                        .map_err(|e| ProofError::CommonError(e))?,
+                    serde_utils::get_value_to_string("cred_def_id", identifier)
+                        .map_err(|e| ProofError::CommonError(e))?,
+                    reg_rev_id
+                ));
             }
         }
 
@@ -90,7 +84,7 @@ pub mod tests {
 
     #[test]
     fn test_proof_struct(){
-        ::settings::set_defaults();
+        init!("true");
         let offer = create_default_proof();
         assert_eq!(offer.from_did, Some(::settings::get_config_value(::settings::CONFIG_INSTITUTION_DID).unwrap()));
     }
@@ -105,7 +99,7 @@ pub mod tests {
 
     #[test]
     fn test_get_credential_data() {
-        ::settings::set_defaults();
+        init!("true");
         let proof = create_default_proof();
         let credential_data = proof.get_credential_info().unwrap();
         assert_eq!(&credential_data[0].0, "NcYxiDXkpYi6ov5FcYDi1e:2:gvt:1.0");

@@ -58,7 +58,7 @@ pub fn libindy_parse_get_cred_def_response(get_cred_def_response: &str) -> Resul
 }
 
 pub fn libindy_build_get_credential_def_txn(cred_def_id: &str)  -> Result<String, u32>{
-    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
     Ledger::build_get_cred_def_request(&submitter_did, cred_def_id).map_err(map_rust_indy_sdk_error_code)
 }
 
