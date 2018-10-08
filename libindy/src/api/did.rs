@@ -417,7 +417,7 @@ pub extern fn indy_set_endpoint_for_did(command_handle: i32,
     trace!("indy_set_endpoint_for_did: entities >>> wallet_handle: {:?}, did: {:?}, address: {:?}, transport_key: {:?}",
            wallet_handle, did, address, transport_key);
 
-    let endpoint = Endpoint::new(address.to_string(), Some(transport_key.to_string()));
+    let endpoint = Endpoint::new(address, Some(transport_key));
 
     let result = CommandExecutor::instance()
         .send(Command::Did(DidCommand::SetEndpointForDid(
