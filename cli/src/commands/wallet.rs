@@ -161,13 +161,7 @@ pub mod open_command {
             update_json_map_opt_key!(json, "rekey", rekey);
             json.insert("rekey_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(rekey_derivation_method)?.to_string()));
 
-            match storage_credentials {
-                Some(creds) => {
-                    json.insert("storage_credentials".to_string(), creds);
-                    ()
-                },
-                _ => ()
-            }
+            storage_credentials.map(|creds| json.insert("storage_credentials".to_string(), creds));
 
             JSONValue::from(json).to_string()
         };
