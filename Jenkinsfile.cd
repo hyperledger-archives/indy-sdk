@@ -558,11 +558,12 @@ def ubuntuPublishing() {
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 libindyDebPublishing(testEnv, libindyVersion)
-                pythonWrapperPublishing(testEnv, false)
+                pythonWrapperPublishing(testEnv, false, 'wrappers/python')
                 javaWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
                 libnullpayDebPublishing(testEnv)
                 libvcxDebPublishing(testEnv)
+                pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3')
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -740,8 +741,8 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
 }
 
 
-def pythonWrapperPublishing(testEnv, isRelease) {
-    dir('wrappers/python') {
+def pythonWrapperPublishing(testEnv, isRelease, directory) {
+    dir(directory) {
         def suffix = getSuffix(isRelease, "Pypi")
 
         testEnv.inside {
@@ -801,7 +802,7 @@ def publishingRCtoStable() {
                 publishLibindyDebRCtoStable(testEnv, libindyVersion)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: python wrapper'
-                pythonWrapperPublishing(testEnv, true)
+                pythonWrapperPublishing(testEnv, true, 'wrappers/python')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
@@ -820,6 +821,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving Ubuntu RC artifacts to Stable: libvcx'
                 publishLibvcxDebRCtoStable(testEnv)
+
+                echo 'Moving Ubuntu RC artifacts to Stable: vcx python wrapper'
+                pythonWrapperPublishing(testEnv, true, 'vcx/wrappers/python3')
 
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 publishLibindAndroidFilesRCtoStable(libindyVersion)

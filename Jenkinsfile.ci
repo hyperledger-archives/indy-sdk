@@ -148,11 +148,11 @@ def macosTesting() {
 }
 
 def androidTesting() {
-    env_name="android_on_linux"
-    network_name="pool_network"
+    env_name = "android_on_linux"
+    network_name = "pool_network"
     parallel([
             "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
-            "${env_name}-android-building" : { androidBuildAsTesting() }
+            "${env_name}-android-building": { androidBuildAsTesting() }
     ])
 }
 
@@ -309,6 +309,7 @@ def linuxTesting(file, env_name, network_name) {
         sh "cp libindy/target/debug/libindy.so cli"
         sh "cp libindy/target/debug/libindy.so libnullpay"
         sh "cp libindy/target/debug/libindy.so vcx/libvcx"
+        sh "cp libindy/target/debug/libindy.so vcx/wrappers/python3"
 
         dir('libnullpay') {
             echo "${env_name} Libnullpay Test: Build docker image"
@@ -321,6 +322,18 @@ def linuxTesting(file, env_name, network_name) {
 
         sh "cp libnullpay/target/debug/libnullpay.so cli"
         sh "cp libnullpay/target/debug/libnullpay.so vcx/libvcx"
+        sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/python3"
+
+        dir('vcx/libvcx') {
+            testEnv.inside {
+                echo "${env_name} Libvcx Test: Test"
+
+                echo "${env_name} Libvcx Test: Build"
+                sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
+            }
+        }
+
+        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/python3"
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
@@ -329,6 +342,9 @@ def linuxTesting(file, env_name, network_name) {
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
         stash includes: 'vcx/libvcx/libindy.so', name: "LibindyVCXSO${env_name}"
         stash includes: 'vcx/libvcx/libnullpay.so', name: "LibnullpayVCXSO${env_name}"
+        stash includes: 'vcx/wrappers/python3/libindy.so', name: "LibindyVcxPythonSO${env_name}"
+        stash includes: 'vcx/wrappers/python3/libnullpay.so', name: "LibnullpayVcxPythonSO${env_name}"
+        stash includes: 'vcx/wrappers/python3/libvcx.so', name: "LibvcxPythonSO${env_name}"
 
         parallel([
                 "${env_name}-libindy-test"   : {
@@ -361,7 +377,8 @@ def linuxTesting(file, env_name, network_name) {
                 "${env_name}-python-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
                 "${env_name}-nodejs-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
                 "${env_name}-cli-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) },
-                "${env_name}-vcx-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting) }
+                "${env_name}-vcx-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting) },
+                "${env_name}-vcx-python-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting) },
         ])
     }
     finally {
@@ -459,6 +476,23 @@ def linuxVCXTesting(env_name, network_name, testEnv) {
 
             echo "${env_name} Libvcx Test: Run tests"
             sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test'
+        }
+    }
+}
+
+def linuxVcxPythonTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyVcxPythonSO${env_name}"
+    unstash name: "LibvcxPythonSO${env_name}"
+    unstash name: "LibnullpayVcxPythonSO${env_name}"
+
+    dir('vcx/wrappers/python3') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Vcx Test: Test python wrapper"
+
+            sh '''
+                    python3.5 -m pip install --user pytest==3.4.2 qrcode pytest-asyncio
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+            '''
         }
     }
 }

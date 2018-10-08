@@ -1,12 +1,13 @@
 from ctypes import *
 
 import asyncio
+import sys
 import itertools
 import logging
 import os
 from .error import VcxError, ErrorCode
 
-LIBRARY = "libvcx.so"
+LIBRARY = "vcx"
 _futures = {}
 _futures_counter = itertools.count()
 
@@ -141,10 +142,21 @@ def _cdll() -> CDLL:
 
 
 def _load_cdll() -> CDLL:
-    file_dir = '/usr'
-    path = os.path.join(file_dir, "lib", LIBRARY)
+    prefix_mapping = {"darwin": "lib", "linux": "lib", "linux2": "lib", "win32": ""}
+    suffix_mapping = {"darwin": ".dylib", "linux": ".so", "linux2": ".so", "win32": ".dll"}
+
+    os_name = sys.platform
+
     try:
-        res = CDLL(path)
+        prefix = prefix_mapping[os_name]
+        suffix = suffix_mapping[os_name]
+    except KeyError:
+        raise OSError("OS isn't supported: %s", os_name)
+
+    library_name = "{0}{1}{2}".format(prefix, LIBRARY, suffix)
+
+    try:
+        res = CDLL(library_name)
         return res
     except OSError as e:
         raise e
