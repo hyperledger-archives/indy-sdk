@@ -148,6 +148,15 @@ def macosTesting() {
 }
 
 def androidTesting() {
+    env_name="android_on_linux"
+    network_name="pool_network"
+    parallel([
+            "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
+            "${env_name}-android-building" : { androidBuildAsTesting() }
+    ])
+}
+
+def androidBuildAsTesting() {
 
     node('ubuntu') {
         stage('Android Test') {
@@ -161,26 +170,14 @@ def androidTesting() {
                     testEnv = dockerBuild('libindy', "ci/ubuntu.dockerfile ci")
                     sh 'chmod -R 777 ci/*.sh'
                     sh 'chmod -R 777 *.sh'
-                    //TODO: IS-835 Tests on emulator fails as of now. Enable device testing when all tests starts passing
-                    //androidTestingOnEmulator(testEnv)
 
-                    //Meanwhile use "build success" as test
                     buildAndroid(testEnv)
                 }
             }
             finally {
-                echo 'Building Android binaries: Cleanup'
                 step([$class: 'WsCleanup'])
             }
         }
-    }
-}
-
-def androidTestingOnEmulator(testEnv) {
-    ANDROID_SCRIPT_PATH = 'android.test.sh'
-    echo 'Testing Libindy android files for arm'
-    testEnv.inside {
-        sh "./${ANDROID_SCRIPT_PATH} arm"
     }
 }
 
@@ -395,6 +392,18 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
     }
 }
 
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
+    dir('libindy') {
+        sh 'chmod -R 777 ci/*.sh'
+        sh 'chmod -R 777 *.sh'
+
+        echo "${env_name} Libindy Test: Test on ARM emulator"
+        testEnv.inside("--network=${network_name}") {
+            sh "./android.test.sh arm"
+        }
+    }
+}
+
 def linuxJavaTesting(env_name, network_name, testEnv) {
     unstash name: "LibindyJavaSO${env_name}"
     dir('wrappers/java') {
@@ -449,7 +458,7 @@ def linuxVCXTesting(env_name, network_name, testEnv) {
             sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
 
             echo "${env_name} Libvcx Test: Run tests"
-            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 cargo test'
+            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test'
         }
     }
 }

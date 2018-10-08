@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.AnonCredsApi;
+using Hyperledger.Indy.Test.Util;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
@@ -8,6 +9,9 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
     public abstract class AnonCredsIntegrationTestBase 
     {
+        private const string WALLET_NAME = "commonWallet";
+        private const string WALLET_KEY = "commonWalletKey";
+
         protected static Wallet commonWallet;
         protected static string claimDef;
         protected static string masterSecretName = "master_secret_name";
@@ -49,16 +53,15 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             StorageUtils.CleanupStorage();
 
-            var walletName = "anoncredsCommonWallet";
+            await WalletUtils.CreateWallet(WALLET_NAME, WALLET_KEY);
+            commonWallet = await WalletUtils.OpenWallet(WALLET_NAME, WALLET_KEY);
 
-            await Wallet.CreateWalletAsync("default", walletName, "default", null, null);
-            commonWallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            IssuerCreateAndStoreCredentialDefResult claimDefType = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(commonWallet, issuerDid, schema, null, null, null);
+            claimDef = claimDefType.CredDefJson;
 
-            claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(commonWallet, issuerDid, schema, null, false);
-
-            await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid, 1));
-            await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid, 2));
-            await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid2, 2));
+            await AnonCreds.ProverStoreCredentialAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid, 1), null, null, null, null);
+            // TODO await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid, 2), null, null, null, null);
+            // TODO await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid2, 2), null, null, null, null);
 
             await AnonCreds.ProverCreateMasterSecretAsync(commonWallet, masterSecretName);
 
@@ -72,10 +75,11 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                     "                 \"age\":[\"28\",\"28\"]\n" +
                     "        }";
 
-            var createClaimResult = await AnonCreds.IssuerCreateCredentialAsync(commonWallet, claimRequest, claim, -1);
-            var claimJson = createClaimResult.ClaimJson;
+            //TODO var createClaimResult = await AnonCreds.IssuerCreateCredentialAsync(commonWallet, claimRequest, claim, -1);
 
-            await AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson, createClaimResult.RevocRegUpdateJson);
+            //TODO var claimJson = createClaimResult.ClaimJson;
+
+            //TODO await AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson, createClaimResult.RevocRegUpdateJson);
 
             _walletOpened = true;
         }

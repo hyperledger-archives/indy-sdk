@@ -10,8 +10,10 @@ nullpay_plugin = []
 fatal_warnings = []
 
 [dependencies]
+atty = "0.2"
 ansi_term = "0.11"
 chrono = "0.4"
+dirs = "1.0.4"
 unescape = "0.1"
 lazy_static = "0.2"
 libc = "0.2"
