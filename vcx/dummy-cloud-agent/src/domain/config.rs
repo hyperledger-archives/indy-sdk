@@ -1,30 +1,37 @@
 use serde_json::Value;
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
-    pub agent: AgentConfig,
+    pub app: AppConfig,
+    pub forward_agent: ForwardAgentConfig,
     pub server: ServerConfig,
 }
 
-#[derive(Deserialize)]
-pub struct AgentConfig {
-    // Forward Agent wallet id
-    pub wallet_id: String,
-    // Forward Agent wallet passphrase
-    pub wallet_passphrase: String,
+#[derive(Clone, Debug, Deserialize)]
+pub struct ForwardAgentConfig {
     // Forward Agent DID
     pub did: String,
     // Seed for deterministic generation of Forward Agent did key
     pub did_seed: Option<String>,
-    // Storage type for Forward Agent and agents wallets
-    pub storage_type: Option<String>,
-    // Storage config for Forward Agent and agents wallets
-    pub storage_config: Option<Value>,
-    // Storage credentials for Forward Agent and agents wallets
-    pub storage_credentials: Option<Value>,
+    // Forward Agent wallet id
+    pub wallet_id: String,
+    // Forward Agent wallet passphrase
+    pub wallet_passphrase: String,
+    // Wallet storage type for Forward Agent and agents wallets
+    pub wallet_storage_type: Option<String>,
+    // Wallet storage config for Forward Agent and agents wallets
+    pub wallet_storage_config: Option<Value>,
+    // Wallet storage credentials for Forward Agent and agents wallets
+    pub wallet_storage_credentials: Option<Value>,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
+pub struct AppConfig {
+    // Http application prefix
+    pub prefix: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct ServerConfig {
     // List of ip:port to bind
     pub addresses: Vec<String>
