@@ -37,12 +37,12 @@ struct UpdateMessagesResponse {
 impl UpdateMessages{
 
     pub fn send_secure(&mut self) -> Result<(), u32> {
-        let data = encode::to_vec_named(&self).unwrap();
+        let data = encode::to_vec_named(&self).or(Err(error::UNKNOWN_ERROR.code_num))?;
         trace!("update_message content: {:?}", data);
 
         let msg = Bundled::create(data).encode()?;
 
-        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap();
+        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
         let data = bundle_for_agency(msg, &to_did)?;
 
         if settings::test_agency_mode_enabled() {
@@ -114,12 +114,11 @@ mod tests {
         use super::*;
         use std::thread;
         use std::time::Duration;
-        settings::set_defaults();
-        ::utils::devsetup::tests::setup_local_env("test_update_agency_messages");
+        init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
-        let (schema_id, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
+        let (schema_id, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
         let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_id.clone(),
                                                                              "1".to_string(),
@@ -141,6 +140,6 @@ mod tests {
         let updated = ::messages::get_message::download_messages(None, Some(vec!["MS-106".to_string()]), None).unwrap();
         assert_eq!(pending[0].msgs[0].uid, updated[0].msgs[0].uid);
 
-        ::utils::devsetup::tests::cleanup_dev_env("test_update_agency_messages");
+        teardown!("agency");
     }
 }

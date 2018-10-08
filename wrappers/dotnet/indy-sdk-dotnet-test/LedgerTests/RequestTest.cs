@@ -4,6 +4,7 @@ using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
+using Hyperledger.Indy.Test.Util;
 
 namespace Hyperledger.Indy.Test.LedgerTests
 {
@@ -69,8 +70,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
         {
             var walletName = "incompatibleWallet";
 
-            await Wallet.CreateWalletAsync("otherPoolName", walletName, "default", null, null);
-            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            await WalletUtils.CreateWallet(walletName, "walletKey1");
+            var wallet = await WalletUtils.OpenWallet(walletName, "walletKey1");
 
             var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
