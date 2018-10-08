@@ -101,7 +101,7 @@ namespace Hyperledger.Indy.WalletApi
         ///                     For 'default' storage type configuration is:
         ///   {
         ///     "path": optional&lt;string>, Path to the directory with wallet files.
-        ///             Defaults to $HOME/.indy_client/wallets.
+        ///             Defaults to $HOME/.indy_client/wallet.
         ///             Wallet will be stored in the file {path}/{id}/sqlite.db
         ///   }
         /// }
@@ -158,7 +158,7 @@ namespace Hyperledger.Indy.WalletApi
         ///                     For 'default' storage type configuration is:
         ///   {
         ///     "path": optional&lt;string>, Path to the directory with wallet files.
-        ///             Defaults to $HOME/.indy_client/wallets.
+        ///             Defaults to $HOME/.indy_client/wallet.
         ///             Wallet will be stored in the file {path}/{id}/sqlite.db
         ///   }
         /// }
@@ -254,7 +254,7 @@ namespace Hyperledger.Indy.WalletApi
         ///                     For 'default' storage type configuration is:
         ///   {
         ///     "path": optional&lt;string>, Path to the directory with wallet files.
-        ///             Defaults to $HOME/.indy_client/wallets.
+        ///             Defaults to $HOME/.indy_client/wallet.
         ///             Wallet will be stored in the file {path}/{id}/sqlite.db
         ///   }
         /// }
