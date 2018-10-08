@@ -5,9 +5,9 @@ extern crate actix;
 extern crate actix_web;
 
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 
-extern crate futures as futures_rs;
+extern crate futures;
 
 #[macro_use]
 extern crate lazy_static;
@@ -30,12 +30,6 @@ extern crate rmp_serde;
 extern crate tokio_core;
 
 #[macro_use]
-pub(crate) mod errors;
-
-#[macro_use]
-pub(crate) mod futures;
-
-#[macro_use]
 pub(crate) mod utils;
 
 pub(crate) mod actors;
@@ -48,6 +42,7 @@ use actix_web::{http, middleware, server, App};
 use actix_web::server::Server;
 use actors::forward_agent::ForwardAgent;
 use domain::config::{AgentConfig, Config, ServerConfig};
+use failure::Error;
 use futures::*;
 use endpoints::AppState;
 use std::env;
@@ -94,18 +89,18 @@ fn _start(config_path: &str) {
     let _ = sys.run();
 }
 
-fn _start_forward_agent(config: AgentConfig) -> BoxedFuture<Addr<ForwardAgent>> {
+fn _start_forward_agent(config: AgentConfig) -> ResponseFuture<Addr<ForwardAgent>, Error> {
     let res = ForwardAgent::new(config)
         .and_then(|forward_agent| {
             let res = forward_agent.start();
             info!("Dummy Agent started!");
-            f_ok(res)
+            future::ok(res)
         });
 
     Box::new(res)
 }
 
-fn _start_server(config: ServerConfig, forward_agent: Addr<ForwardAgent>) -> BoxedFuture<Addr<Server>> {
+fn _start_server(config: ServerConfig, forward_agent: Addr<ForwardAgent>) -> ResponseFuture<Addr<Server>, Error> {
     let mut server = server::new(move || {
         _start_app(forward_agent.clone())
     });
@@ -118,14 +113,15 @@ fn _start_server(config: ServerConfig, forward_agent: Addr<ForwardAgent>) -> Box
 
     let res = server.start();
     info!("Server started!");
-    f_ok(res)
+
+    Box::new(future::ok(res))
 }
 
 fn _start_app(forward_agent: Addr<ForwardAgent>) -> App<AppState> {
     let res = App::with_state(AppState { forward_agent })
         .middleware(middleware::Logger::default()) // enable logger
         .resource("/forward_agent", |r| r.method(http::Method::GET).with(endpoints::get))
-        .resource("/forward_agent/msg", |r| r.method(http::Method::POST).with(endpoints::post_msg));
+        .resource("/forward_agent/msg", |r| r.method(http::Method::GET).with(endpoints::post_msg));
 
     info!("App started!");
     res

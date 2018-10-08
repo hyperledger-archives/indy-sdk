@@ -1,4 +1,4 @@
-use super::errors::*;
+use super::IndyError;
 use futures::*;
 use futures::sync::oneshot;
 use utils::sequence;
@@ -6,9 +6,9 @@ use std::collections::HashMap;
 use std::os::raw::c_char;
 use std::sync::Mutex;
 
-pub fn create_and_store_my_did(wallet_handle: i32, did_info: &str) -> Box<Future<Item=(String, String), Error=Error>> {
+pub fn create_and_store_my_did(wallet_handle: i32, did_info: &str) -> Box<Future<Item=(String, String), Error=IndyError>> {
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<(String, String)>>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<(String, String), IndyError>>>> = Default::default();
     }
 
     extern fn callback(command_handle: i32, err: i32, str1: *const c_char, str2: *const c_char) {
@@ -16,7 +16,7 @@ pub fn create_and_store_my_did(wallet_handle: i32, did_info: &str) -> Box<Future
         let tx = callbacks.remove(&command_handle).unwrap();
 
         let res = if err != 0 {
-            Err(ErrorKind::from_err_code(err).into())
+            Err(IndyError::from_err_code(err))
         } else {
             Ok((rust_str!(str1), rust_str!(str2)))
         };
@@ -38,17 +38,17 @@ pub fn create_and_store_my_did(wallet_handle: i32, did_info: &str) -> Box<Future
     if err != 0 {
         let mut callbacks = CALLBACKS.lock().unwrap();
         callbacks.remove(&0).unwrap();
-        Box::new(done(Err(ErrorKind::from_err_code(err).into())))
+        Box::new(done(Err(IndyError::from_err_code(err))))
     } else {
         Box::new(rx
-            .map_err(|_| "channel error!".into())
+            .map_err(|_| panic!("channel error!"))
             .and_then(|res| done(res)))
     }
 }
 
-pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Box<Future<Item=String, Error=Error>> {
+pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Box<Future<Item=String, Error=IndyError>> {
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<(String)>>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<String, IndyError>>>> = Default::default();
     }
 
     extern fn callback(command_handle: i32, err: i32, str1: *const c_char) {
@@ -56,7 +56,7 @@ pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Box<Future<Item=Strin
         let tx = callbacks.remove(&command_handle).unwrap();
 
         let res = if err != 0 {
-            Err(ErrorKind::from_err_code(err).into())
+            Err(IndyError::from_err_code(err))
         } else {
             Ok(rust_str!(str1))
         };
@@ -78,10 +78,10 @@ pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Box<Future<Item=Strin
     if err != 0 {
         let mut callbacks = CALLBACKS.lock().unwrap();
         callbacks.remove(&0).unwrap();
-        Box::new(done(Err(ErrorKind::from_err_code(err).into())))
+        Box::new(done(Err(IndyError::from_err_code(err))))
     } else {
         Box::new(rx
-            .map_err(|_| "channel error!".into())
+            .map_err(|_| panic!("channel error!"))
             .and_then(|res| done(res)))
     }
 }

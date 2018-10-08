@@ -1,21 +1,19 @@
 use actix::prelude::*;
 use domain::config::AgentConfig;
-use errors::*;
+use failure::{Error, Fail};
 use futures::*;
-use indy::{did, wallet};
-use indy::errors::{Error as IndyError, ErrorKind as IndyErrorKind};
+use indy::{did, wallet, IndyError};
+use utils::futures::*;
 
 pub struct ForwardAgent {
-    // Agent wallet handle
     wallet_handle: i32,
-    // Agent verkey
     verkey: String,
-    // Agent config
     config: AgentConfig,
 }
 
 impl ForwardAgent {
-    pub fn new(config: AgentConfig) -> BoxedFuture<Self> {
+    pub fn new(config: AgentConfig) -> ResponseFuture<Self, Error> {
+
         let wallet_config = json!({
             "id": config.wallet_id,
             "storage_type": config.storage_type,
@@ -35,37 +33,37 @@ impl ForwardAgent {
         })
             .to_string();
 
-        let res = f_ok(())
+        future::ok(())
             .and_then(move |_| {
                 wallet::create_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
                     .then(|res| {
                         match res {
-                            Err(IndyError(IndyErrorKind::WalletAlreadyExistsError, _)) => Ok(()),
-                            r => r,
+                            Err(IndyError::WalletAlreadyExistsError) => Ok(()),
+                            r => r
                         }
                     })
                     .map(|_| (wallet_config, wallet_credentials))
-                    .chain_err(|| "Can't ensure Forward Agent wallet created")
+                    .map_err(|err| err.context("Can't ensure Forward Agent wallet created.").into())
             })
             .and_then(|(wallet_config, wallet_credentials)| {
                 wallet::open_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
-                    .chain_err(|| "Can't open Forward Agent wallet ")
+                    .map_err(|err| err.context("Can't open Forward Agent wallet.`").into())
             })
             .and_then(move |wallet_handle| {
                 did::create_and_store_my_did(wallet_handle, did_info.as_ref())
                     .then(|res| match res {
                         Ok(_) => Ok(()),
-                        Err(IndyError(IndyErrorKind::DidAlreadyExistsError, _)) => Ok(()), // Already exists
+                        Err(IndyError::DidAlreadyExistsError) => Ok(()), // Already exists
                         Err(err) => Err(err),
                     })
                     .map(move |_| wallet_handle)
-                    .chain_err(|| "Can't create Forward Agent did")
+                    .map_err(|err| err.context("Can't create Forward Agent did.").into())
             })
             .and_then(move |wallet_handle| {
                 did::key_for_local_did(wallet_handle,
                                        config.did.as_ref())
                     .map(move |verkey| (wallet_handle, verkey, config))
-                    .chain_err(|| "Can't get Forward Agent did key")
+                    .map_err(|err| err.context("Can't get Forward Agent did key").into())
             })
             .map(move |(wallet_handle, verkey, config)| {
                 ForwardAgent {
@@ -73,9 +71,8 @@ impl ForwardAgent {
                     verkey,
                     config,
                 }
-            });
-
-        Box::new(res)
+            })
+            .into_box()
     }
 }
 
@@ -94,13 +91,14 @@ pub struct ForwardDetail {
 }
 
 impl Message for GetForwardDetail {
-    type Result = Result<ForwardDetail>;
+    type Result = Result<ForwardDetail, Error>;
 }
 
 impl Handler<GetForwardDetail> for ForwardAgent {
-    type Result = Result<ForwardDetail>;
+    type Result = Result<ForwardDetail, Error>;
 
     fn handle(&mut self, _: GetForwardDetail, _: &mut Self::Context) -> Self::Result {
+
         let res = ForwardDetail {
             did: self.config.did.clone(),
             verkey: self.verkey.clone(),
@@ -116,21 +114,19 @@ pub struct ForwardMessage(pub Vec<u8>);
 pub struct ForwardMessageResponse(pub Vec<u8>);
 
 impl Message for ForwardMessage {
-    type Result = Result<ForwardMessageResponse>;
+    type Result = Result<ForwardMessageResponse, Error>;
 }
 
 impl Handler<ForwardMessage> for ForwardAgent {
-    type Result = BoxedFuture<ForwardMessageResponse>;
+    type Result = ResponseFuture<ForwardMessageResponse, Error>;
 
     fn handle(&mut self, _: ForwardMessage, _: &mut Self::Context) -> Self::Result {
 
         // FIXME: Just to illustrate async handler
-
-        let res = did::key_for_local_did(self.wallet_handle, self.config.did.as_ref())
+        did::key_for_local_did(self.wallet_handle, self.config.did.as_ref())
             .map(|key| ForwardMessageResponse(key.as_bytes().to_owned()))
-            .chain_err(|| "Can't get Forward Agent did");
-
-        Box::new(res)
+            .map_err(|err| err.context("Can't get Forward Agent did").into())
+            .into_box()
     }
 }
 

@@ -1,4 +1,4 @@
-use super::errors::*;
+use super::IndyError;
 use futures::*;
 use futures::sync::oneshot;
 use utils::sequence;
@@ -6,9 +6,9 @@ use std::collections::HashMap;
 use std::os::raw::c_char;
 use std::sync::Mutex;
 
-pub fn create_wallet(config: &str, credentials: &str) -> Box<Future<Item=(), Error=Error>> {
+pub fn create_wallet(config: &str, credentials: &str) -> Box<Future<Item=(), Error=IndyError>> {
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<()>>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<(), IndyError>>>> = Default::default();
     }
 
     extern fn callback(command_handle: i32, err: i32) {
@@ -16,7 +16,7 @@ pub fn create_wallet(config: &str, credentials: &str) -> Box<Future<Item=(), Err
         let tx = callbacks.remove(&command_handle).unwrap();
 
         let res = if err != 0 {
-            Err(ErrorKind::from_err_code(err).into())
+            Err(IndyError::from_err_code(err))
         } else {
             Ok(())
         };
@@ -39,17 +39,17 @@ pub fn create_wallet(config: &str, credentials: &str) -> Box<Future<Item=(), Err
     if err != 0 {
         let mut callbacks = CALLBACKS.lock().unwrap();
         callbacks.remove(&0).unwrap();
-        Box::new(done(Err(ErrorKind::from_err_code(err).into())))
+        Box::new(done(Err(IndyError::from_err_code(err))))
     } else {
         Box::new(rx
-            .map_err(|_| "channel error!".into())
+            .map_err(|_| panic!("channel error!"))
             .and_then(|res| done(res)))
     }
 }
 
-pub fn open_wallet(config: &str, credentials: &str) -> Box<Future<Item=i32, Error=Error>> {
+pub fn open_wallet(config: &str, credentials: &str) -> Box<Future<Item=i32, Error=IndyError>> {
     lazy_static! {
-        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<i32>>>> = Default::default();
+        static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<i32, IndyError>>>> = Default::default();
     }
 
     extern fn callback(command_handle: i32, err: i32, wallet_handle: i32) {
@@ -57,7 +57,7 @@ pub fn open_wallet(config: &str, credentials: &str) -> Box<Future<Item=i32, Erro
         let tx = callbacks.remove(&command_handle).unwrap();
 
         let res = if err != 0 {
-            Err(ErrorKind::from_err_code(err).into())
+            Err(IndyError::from_err_code(err))
         } else {
             Ok(wallet_handle)
         };
@@ -80,10 +80,10 @@ pub fn open_wallet(config: &str, credentials: &str) -> Box<Future<Item=i32, Erro
     if err != 0 {
         let mut callbacks = CALLBACKS.lock().unwrap();
         callbacks.remove(&0).unwrap();
-        Box::new(done(Err(ErrorKind::from_err_code(err).into())))
+        Box::new(done(Err(IndyError::from_err_code(err))))
     } else {
         Box::new(rx
-            .map_err(|_| "channel error!".into())
+            .map_err(|_| panic!("channel error!"))
             .and_then(|res| done(res)))
     }
 }
