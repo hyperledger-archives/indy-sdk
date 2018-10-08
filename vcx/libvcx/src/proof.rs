@@ -66,7 +66,7 @@ impl Proof {
                            rev_regs_json: &str) -> Result<u32, ProofError> {
         if settings::test_indy_mode_enabled() {return Ok(error::SUCCESS.code_num);}
 
-        debug!("starting libindy proof verification");
+        debug!("starting libindy proof verification for {}", self.source_id);
         let valid = libindy_verifier_verify_proof(proof_req_json,
                                                   proof_json,
                                                   schemas_json,
@@ -79,27 +79,29 @@ impl Proof {
         })?;
 
         if !valid {
-            warn!("indy returned false when validating proof");
+            warn!("indy returned false when validating proof {}", self.source_id);
             self.proof_state = ProofStateType::ProofInvalid;
             return Ok(error::SUCCESS.code_num)
         }
-        debug!("Indy validated Proof: {}", self.source_id);
+        debug!("Indy validated proof: {}", self.source_id);
         self.proof_state = ProofStateType::ProofValidated;
         Ok(error::SUCCESS.code_num)
     }
 
     fn build_credential_defs_json(&self, credential_data: &Vec<(String, String, String)>) -> Result<String, ProofError> {
-        debug!("building credentialdef json for proof validation");
+        debug!("{} building credentialdef json for proof validation", self.source_id);
         let mut credential_json: HashMap<String, serde_json::Value> = HashMap::new();
 
         for &(_, ref cred_def_id, _) in credential_data.iter() {
-            let (_, credential_def) = retrieve_credential_def(cred_def_id)
-                .map_err(|ec| ProofError::CommonError(ec.to_error_code()))?;
+            if !credential_json.contains_key(cred_def_id) {
+                let (_, credential_def) = retrieve_credential_def(cred_def_id)
+                    .map_err(|ec| ProofError::CommonError(ec.to_error_code()))?;
 
-            let credential_def = serde_json::from_str(&credential_def)
-                .or(Err(ProofError::InvalidCredData()))?;
+                let credential_def = serde_json::from_str(&credential_def)
+                    .or(Err(ProofError::InvalidCredData()))?;
 
-            credential_json.insert(cred_def_id.to_string(), credential_def);
+                credential_json.insert(cred_def_id.to_string(), credential_def);
+            }
         }
 
         serde_json::to_string(&credential_json).map_err(|err| {
@@ -108,7 +110,7 @@ impl Proof {
     }
 
     fn build_proof_json(&self) -> Result<String, ProofError> {
-        debug!("building proof json for proof validation");
+        debug!("{} building proof json for proof validation", self.source_id);
         match self.proof {
             Some(ref x) => Ok(x.libindy_proof.clone()),
             None => Err(ProofError::InvalidProof()),
@@ -116,25 +118,27 @@ impl Proof {
     }
 
     fn build_schemas_json(&self, credential_data: &Vec<(String, String, String)>) -> Result<String, ProofError> {
-        debug!("building schemas json for proof validation");
+        debug!("{} building schemas json for proof validation", self.source_id);
 
         let mut schema_json: HashMap<String, serde_json::Value> = HashMap::new();
 
         for &(ref schema_id, _, _) in credential_data.iter() {
-            let schema = LedgerSchema::new_from_ledger(schema_id)
-                .or(Err(ProofError::InvalidSchema()))?;
+            if !schema_json.contains_key(schema_id) {
+                let schema = LedgerSchema::new_from_ledger(schema_id)
+                    .or(Err(ProofError::InvalidSchema()))?;
 
-            let schema_val = serde_json::from_str(&schema.schema_json)
-                .or(Err(ProofError::InvalidSchema()))?;
+                let schema_val = serde_json::from_str(&schema.schema_json)
+                    .or(Err(ProofError::InvalidSchema()))?;
 
-            schema_json.insert(schema_id.to_string(), schema_val);
+                schema_json.insert(schema_id.to_string(), schema_val);
+            }
         }
 
         serde_json::to_string(&schema_json).or(Err(ProofError::InvalidSchema()))
     }
 
     fn build_proof_req_json(&self) -> Result<String, ProofError> {
-        debug!("building proof request json for proof validation");
+        debug!("{} building proof request json for proof validation", self.source_id);
         match self.proof_request {
             Some(ref x) => {
                 Ok(x.get_proof_request_data())
@@ -214,7 +218,7 @@ impl Proof {
 
         self.proof_request = Some(proof_obj);
         let data = connection::generate_encrypted_payload(&self.prover_vk, &self.remote_vk, &proof_request, "PROOF_REQUEST").map_err(|_| ProofError::ProofConnectionError())?;
-        let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).unwrap(), self.name);
+        let title = format!("{} wants you to share {}", settings::get_config_value(settings::CONFIG_INSTITUTION_NAME).map_err(|e| ProofError::CommonError(e))?, self.name);
 
         match messages::send_message().to(&self.prover_did)
             .to_vk(&self.prover_vk)
@@ -231,7 +235,7 @@ impl Proof {
                 return Ok(error::SUCCESS.code_num)
             },
             Err(x) => {
-                warn!("could not send proofReq: {}", x);
+                warn!("{} could not send proofReq: {}", self.source_id, x);
                 return Err(ProofError::ProofMessageError(x));
             }
         }
@@ -242,7 +246,7 @@ impl Proof {
     }
 
     fn get_proof_request_status(&mut self) -> Result<u32, ProofError> {
-        debug!("updating state for proof {}", self.source_id);
+        debug!("updating state for proof {} with msg_id {:?}", self.source_id, self.msg_uid);
         if self.state == VcxStateType::VcxStateAccepted {
             return Ok(self.get_state());
         }
@@ -364,7 +368,10 @@ pub fn update_state(handle: u32) -> Result<u32, ProofError> {
     PROOF_MAP.get_mut(handle,|p|{
         match p.update_state() {
             Ok(x) => Ok(x),
-            Err(x) => Ok(p.get_state()),
+            Err(x) => {
+                warn!("could not update state for proof {}: {}", p.get_source_id(), x);
+                Ok(p.get_state())
+            },
         }
     }).map_err(|ec|ProofError::CommonError(ec))
 }
@@ -429,7 +436,7 @@ fn get_proof_details(response: &str) -> Result<String, ProofError> {
         Ok(json) => {
             let json: serde_json::Value = json;
             let detail = match json["uids"].as_array() {
-                Some(x) => x[0].as_str().unwrap(),
+                Some(x) => x[0].as_str().ok_or(ProofError::CommonError(error::INVALID_JSON.code_num))?,
                 None => {
                     warn!("response had no uid");
                     return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
@@ -489,11 +496,6 @@ mod tests {
         println!("successfully called create_cb")
     }
 
-    fn set_default_and_enable_test_mode() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-    }
-
     fn create_boxed_proof() -> Box<Proof> {
         Box::new(Proof {
             source_id: "12".to_string(),
@@ -519,7 +521,7 @@ mod tests {
 
     #[test]
     fn test_create_proof_succeeds() {
-        set_default_and_enable_test_mode();
+        init!("true");
 
         create_proof("1".to_string(),
                      REQUESTED_ATTRS.to_owned(),
@@ -535,7 +537,7 @@ mod tests {
 
     #[test]
     fn test_to_string_succeeds() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
@@ -548,7 +550,7 @@ mod tests {
 
     #[test]
     fn test_from_string_succeeds() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
@@ -564,7 +566,7 @@ mod tests {
 
     #[test]
     fn test_release_proof() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
@@ -575,8 +577,7 @@ mod tests {
 
     #[test]
     fn test_send_proof_request() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let connection_handle = build_connection("test_send_proof_request").unwrap();
         connection::set_agent_verkey(connection_handle, VERKEY).unwrap();
@@ -598,8 +599,7 @@ mod tests {
         //This test has 2 purposes:
         //1. when send_proof_request fails, Ok(c.send_proof_request(connection_handle)?) returns error instead of Ok(_)
         //2. Test that when no PW connection exists, send message fails on invalid did
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let connection_handle = build_connection("test_send_proof_request").unwrap();
         connection::set_pw_did(connection_handle, "").unwrap();
@@ -614,7 +614,7 @@ mod tests {
 
     #[test]
     fn test_get_proof_fails_with_no_proof() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
@@ -625,8 +625,7 @@ mod tests {
 
     #[test]
     fn test_update_state_with_pending_proof() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let connection_handle = build_connection("test_send_proof_request").unwrap();
 
@@ -660,8 +659,7 @@ mod tests {
 
     #[test]
     fn test_get_proof_returns_proof_when_proof_state_invalid() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let connection_handle = build_connection("test_send_proof_request").unwrap();
 
@@ -702,8 +700,7 @@ mod tests {
 
     #[test]
     fn test_build_credential_defs_json_with_multiple_credentials() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
         let proof = create_boxed_proof();
 
         let cred1 = ("schema_key1".to_string(), "cred_def_key1".to_string(), "".to_string());
@@ -719,8 +716,7 @@ mod tests {
 
     #[test]
     fn test_build_schemas_json_with_multiple_schemas() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
         let proof = create_boxed_proof();
         let cred1 = ("schema_key1".to_string(), "cred_def_key1".to_string(), "".to_string());
         let cred2 = ("schema_key2".to_string(), "cred_def_key2".to_string(), "".to_string());
@@ -735,8 +731,7 @@ mod tests {
 
     #[test]
     fn test_get_proof() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let mut proof_msg_obj = ProofMessage::new();
         proof_msg_obj.libindy_proof = PROOF_JSON.to_string();
@@ -750,8 +745,7 @@ mod tests {
 
     #[test]
     fn test_release_all() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
         let h1 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
         let h2 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
         let h3 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
@@ -769,8 +763,7 @@ mod tests {
     #[test]
     fn test_proof_validation_with_predicate() {
         use utils::constants::{PROOF_LIBINDY, PROOF_REQUEST};
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        init!("false");
         pool::tests::open_sandbox_pool();
         //Generated proof from a script using libindy's python wrapper
 
@@ -808,8 +801,7 @@ mod tests {
     #[ignore]
     #[test]
     fn test_send_proof_request_can_be_retried() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let connection_handle = build_connection("test_send_proof_request").unwrap();
         connection::set_agent_verkey(connection_handle, VERKEY).unwrap();
@@ -833,11 +825,9 @@ mod tests {
 
     #[test]
     fn test_get_proof_request_status_can_be_retried() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let connection_handle = build_connection("test_send_proof_request").unwrap();
-
 
         let new_handle = 1;
 
@@ -866,11 +856,8 @@ mod tests {
     #[test]
     fn test_proof_errors() {
         use utils::error::{ INVALID_JSON, POST_MSG_FAILURE };
-        use utils::libindy::wallet;
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
+        init!("false");
 
-        let my_wallet = wallet::init_wallet("proof_errors").unwrap();
         let mut proof = create_boxed_proof();
 
         assert_eq!(proof.validate_proof_indy("{}", "{}", "{}", "{}","", "").err(),
@@ -897,16 +884,13 @@ mod tests {
         assert_eq!(from_string(empty).err(), Some(ProofError::CommonError(INVALID_JSON.code_num)));
         let mut proof_good = create_boxed_proof();
         assert_eq!(proof_good.get_proof_request_status().err(), Some(ProofError::ProofMessageError(POST_MSG_FAILURE.code_num)));
-
-        wallet::delete_wallet("proof_errors").unwrap();
     }
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_proof_verification() {
-        let wallet_name = "test_proof_verification";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (schemas, cred_defs, proof_req, proof) = ::utils::libindy::anoncreds::tests::create_proof();
 
@@ -921,7 +905,6 @@ mod tests {
         proof.proof_request = Some(proof_req_obj);
 
         let rc = proof.proof_validation();
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
 
         println!("{}", serde_json::to_string(&proof).unwrap());
         assert!(rc.is_ok());
@@ -932,8 +915,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_self_attested_proof_verification() {
-        let wallet_name = "test_self_attested_proof_verification";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (proof_req, proof) = ::utils::libindy::anoncreds::tests::create_self_attested_proof();
 
@@ -948,7 +930,6 @@ mod tests {
         proof.proof_request = Some(proof_req_obj);
 
         let rc = proof.proof_validation();
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
 
         println!("{}", serde_json::to_string(&proof).unwrap());
         assert!(rc.is_ok());

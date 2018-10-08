@@ -7,6 +7,9 @@ pub mod cstring;
 #[macro_use]
 pub mod version_constants;
 
+#[macro_use]
+pub mod devsetup;
+
 pub mod error;
 pub mod httpclient;
 pub mod constants;
@@ -14,7 +17,8 @@ pub mod timeout;
 pub mod openssl;
 pub mod json;
 pub mod libindy;
-pub mod devsetup;
+pub mod threadpool;
+pub mod serde_utils;
 
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 lazy_static! {

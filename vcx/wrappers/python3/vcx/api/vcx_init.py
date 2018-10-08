@@ -2,6 +2,7 @@ from ctypes import *
 import logging
 from vcx.common import do_call, create_cb
 
+__all__ = ["vcx_init", "vcx_init_with_config"]
 
 async def vcx_init(config_path: str) -> None:
     """

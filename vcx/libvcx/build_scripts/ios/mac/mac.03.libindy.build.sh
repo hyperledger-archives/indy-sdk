@@ -1,5 +1,6 @@
 #!/bin/sh
 
+set -e
 source ./shared.functions.sh
 
 START_DIR=$PWD
