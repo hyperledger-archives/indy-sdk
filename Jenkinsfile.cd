@@ -571,7 +571,7 @@ def rustWrapperPublishing(testEnv, isRelease) {
 
     echo 'Publish Indy-Sys to Cargo'
 
-    dir('wrappers/rust/libindy-sys') {
+    dir('wrappers/rust/indy-sys') {
         publishToCargo(testEnv, suffix, ver)
     }
 
