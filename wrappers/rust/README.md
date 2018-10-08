@@ -12,7 +12,7 @@
 - Add **indy** to Cargo.toml 
 ```
 [dependencies]
-indy = "1.6.6"
+indy = "1.6.7"
 ```
 
 # Note
