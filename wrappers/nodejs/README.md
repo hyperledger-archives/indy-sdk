@@ -2277,7 +2277,7 @@ Create a new secure wallet.
                     For 'default' storage type configuration is:
   {
     "path": optional<string>, Path to the directory with wallet files.
-            Defaults to $HOME/.indy_client/wallets.
+            Defaults to $HOME/.indy_client/wallet.
             Wallet will be stored in the file {path}/{id}/sqlite.db
   }
 }
@@ -2317,7 +2317,7 @@ Wallet must be previously created with createWallet method.
                         For 'default' storage type configuration is:
           {
              "path": optional<string>, Path to the directory with wallet files.
-                     Defaults to $HOME/.indy_client/wallets.
+                     Defaults to $HOME/.indy_client/wallet.
                      Wallet will be stored in the file {path}/{id}/sqlite.db
           }
   }
@@ -2381,7 +2381,7 @@ This can be seen as an createWallet call with additional content import
                     For 'default' storage type configuration is:
   {
     "path": optional<string>, Path to the directory with wallet files.
-            Defaults to $HOME/.indy_client/wallets.
+            Defaults to $HOME/.indy_client/wallet.
             Wallet will be stored in the file {path}/{id}/sqlite.db
   }
 }
@@ -2435,7 +2435,7 @@ Deletes created wallet.
                     For 'default' storage type configuration is:
   {
     "path": optional<string>, Path to the directory with wallet files.
-            Defaults to $HOME/.indy_client/wallets.
+            Defaults to $HOME/.indy_client/wallet.
             Wallet will be stored in the file {path}/{id}/sqlite.db
   }
 }

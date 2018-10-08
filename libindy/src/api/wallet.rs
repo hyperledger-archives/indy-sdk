@@ -158,7 +158,7 @@ pub extern fn indy_register_wallet_storage(command_handle: i32,
 ///                     For 'default' storage type configuration is:
 ///   {
 ///     "path": optional<string>, Path to the directory with wallet files.
-///             Defaults to $HOME/.indy_client/wallets.
+///             Defaults to $HOME/.indy_client/wallet.
 ///             Wallet will be stored in the file {path}/{id}/sqlite.db
 ///   }
 /// }
@@ -231,7 +231,7 @@ pub extern fn indy_create_wallet(command_handle: i32,
 ///                         For 'default' storage type configuration is:
 ///           {
 ///              "path": optional<string>, Path to the directory with wallet files.
-///                      Defaults to $HOME/.indy_client/wallets.
+///                      Defaults to $HOME/.indy_client/wallet.
 ///                      Wallet will be stored in the file {path}/{id}/sqlite.db
 ///           }
 ///
@@ -366,7 +366,7 @@ pub extern fn indy_export_wallet(command_handle: i32,
 ///                     For 'default' storage type configuration is:
 ///   {
 ///     "path": optional<string>, Path to the directory with wallet files.
-///             Defaults to $HOME/.indy_client/wallets.
+///             Defaults to $HOME/.indy_client/wallet.
 ///             Wallet will be stored in the file {path}/{id}/sqlite.db
 ///   }
 /// }
@@ -484,7 +484,7 @@ pub extern fn indy_close_wallet(command_handle: i32,
 ///                     For 'default' storage type configuration is:
 ///   {
 ///     "path": optional<string>, Path to the directory with wallet files.
-///             Defaults to $HOME/.indy_client/wallets.
+///             Defaults to $HOME/.indy_client/wallet.
 ///             Wallet will be stored in the file {path}/{id}/sqlite.db
 ///   }
 /// }
