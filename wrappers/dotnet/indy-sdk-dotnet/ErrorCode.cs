@@ -125,9 +125,44 @@
         WalletAlreadyOpenedError = 206,
 
         /// <summary>
+        /// Attempt to open encrypted wallet with invalid credentials
+        /// </summary>
+        WalletAccessFailed = 207,
+
+        /// <summary>
+        /// Input provided to wallet operations is considered not valid
+        /// </summary>
+        WalletInputError = 208,
+
+        /// <summary>
+        /// Decoding of wallet data during input/output failed
+        /// </summary>
+        WalletDecodingError = 209,
+
+        /// <summary>
+        /// Storage error occurred during wallet operation
+        /// </summary>
+        WalletStorageError = 210,
+
+        /// <summary>
+        /// Error during encryption-related operations
+        /// </summary>
+        WalletEncryptionError = 211,
+
+        /// <summary>
         /// No value with the specified key exists in the wallet from which it was requested.
         /// </summary>
         WalletItemNotFoundError = 212,
+
+        /// <summary>
+        /// A wallet item with the specified key already exists in the wallet.
+        /// </summary>
+        WalletItemAlreadyExists = 213,
+
+        /// <summary>
+        /// The wallet query was invalid.
+        /// </summary>
+        WalletQueryError = 214,
 
         // Ledger errors
 

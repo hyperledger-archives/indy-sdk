@@ -61,11 +61,13 @@ namespace Hyperledger.Indy
                 case ErrorCode.WalletAlreadyExistsError:
                     return new WalletExistsException();
                 case ErrorCode.WalletNotFoundError:
-                    return new WalletValueNotFoundException();
+                    return new WalletNotFoundException();
                 case ErrorCode.WalletIncompatiblePoolError:
                     return new WrongWalletForPoolException();
                 case ErrorCode.WalletAlreadyOpenedError:
                     return new WalletAlreadyOpenedException();
+                case ErrorCode.WalletAccessFailed:
+                    return new WalletAccessFailedException();
                 case ErrorCode.PoolLedgerNotCreatedError:
                     return new PoolConfigNotCreatedException();
                 case ErrorCode.PoolLedgerInvalidPoolHandle:
@@ -100,6 +102,8 @@ namespace Hyperledger.Indy
                     return new UnknownCryptoException();
                 case ErrorCode.WalletItemNotFoundError:
                     return new WalletItemNotFoundException();
+                case ErrorCode.WalletQueryError:
+                    return new WalletInvalidQueryException();
                 default:
                     var message = $"An unmapped error with the code '{sdkErrorCode}' was returned by the SDK.";
                     return new IndyException(message, sdkErrorCode);
