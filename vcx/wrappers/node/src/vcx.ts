@@ -23,5 +23,8 @@ export class VCXRuntime {
     this.ffi = ffi.Library(libraryPath, FFIConfiguration)
   }
 
-  private _initializeBasepath = (): string => this._config.basepath || path.resolve(__dirname, '/usr/lib/libvcx.so')
+  private _initializeBasepath = (): string => {
+    const library = 'libvcx.so' // TODO: FIXME provide better way to resolve library
+    return process.env.LIBVCX_PATH + library || this._config.basepath || path.resolve(__dirname, '/usr/lib/' + library)
+  }
 }
