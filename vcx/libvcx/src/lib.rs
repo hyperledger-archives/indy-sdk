@@ -7,7 +7,7 @@ extern crate rand;
 extern crate reqwest;
 extern crate url;
 extern crate openssl;
-extern crate rust_libindy_wrapper as indy;
+extern crate indy;
 
 #[macro_use]
 extern crate log;

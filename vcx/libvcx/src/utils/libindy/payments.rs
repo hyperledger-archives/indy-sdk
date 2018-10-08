@@ -147,7 +147,7 @@ pub fn get_address_info(address: &str) -> Result<AddressInfo, u32> {
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
 
-    let (txn, _) = Payment::build_get_payment_sources_request(get_wallet_handle() as i32, &did, address)
+    let (txn, _) = Payment::build_get_payment_sources_request(get_wallet_handle() as i32, Some(&did), address)
         .map_err(map_rust_indy_sdk_error_code)?;
 
     let response = libindy_sign_and_submit_request(&did, &txn)?;
@@ -195,7 +195,7 @@ pub fn get_ledger_fees() -> Result<String, u32> {
 
     let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).or(Err(error::INVALID_CONFIGURATION.code_num))?;
 
-    let response = match Payment::build_get_txn_fees_req(get_wallet_handle() as i32, &did, PAYMENT_METHOD_NAME) {
+    let response = match Payment::build_get_txn_fees_req(get_wallet_handle() as i32, Some(&did), PAYMENT_METHOD_NAME) {
         Ok(txn) => libindy_sign_and_submit_request(&did, &txn)?,
         Err(x) => return Err(map_rust_indy_sdk_error_code(x)),
     };
@@ -233,7 +233,7 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
     let req = libindy_sign_request(&did, req)?;
 
     let (response, payment_method) = match Payment::add_request_fees(get_wallet_handle(),
-                                                                     &did,
+                                                                     Some(&did),
                                                                      &req,
                                                                      &inputs,
                                                                      &outputs,
@@ -264,7 +264,7 @@ pub fn pay_a_payee(price: u64, address: &str) -> Result<(PaymentTxn, String), Pa
 
     if settings::test_indy_mode_enabled() { return Ok((PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1, false).unwrap(), SUBMIT_SCHEMA_RESPONSE.to_string())); }
 
-    match Payment::build_payment_req(get_wallet_handle(), &my_did, &input, &output, None) {
+    match Payment::build_payment_req(get_wallet_handle(), Some(&my_did), &input, &output, None) {
         Ok((request, payment_method)) => {
             let result = libindy_submit_request( &request).map_err(|ec| PaymentError::CommonError(ec))?;
             Ok((payment, result))
@@ -367,7 +367,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
         ).collect();
         let outputs = serde_json::to_string(&mint).unwrap();
 
-        let (req, _) = Payment::build_mint_req(get_wallet_handle() as i32, &did_1, &outputs, None).unwrap();
+        let (req, _) = Payment::build_mint_req(get_wallet_handle() as i32, Some(&did_1), &outputs, None).unwrap();
 
         let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &req).unwrap();
         let sign2 = ::utils::libindy::ledger::multisign_request(&did_2, &sign1).unwrap();
@@ -381,7 +381,7 @@ pub fn mint_tokens_and_set_fees(number_of_addresses: Option<u32>, tokens_per_add
     }
 
     if fees.is_some() {
-        let txn = Payment::build_set_txn_fees_req(get_wallet_handle() as i32, &did_1, PAYMENT_METHOD_NAME, fees.unwrap())
+        let txn = Payment::build_set_txn_fees_req(get_wallet_handle() as i32, Some(&did_1), PAYMENT_METHOD_NAME, fees.unwrap())
             .map_err(map_rust_indy_sdk_error_code)?;
 
         let sign1 = ::utils::libindy::ledger::multisign_request(&did_1, &txn).unwrap();

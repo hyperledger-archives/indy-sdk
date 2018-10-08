@@ -35,7 +35,7 @@ pub fn libindy_submit_request(request_json: &str) -> Result<String, u32> {
 }
 
 pub fn libindy_build_get_txn_request(submitter_did: &str, sequence_num: i32) -> Result<String, u32> {
-    Ledger::build_get_txn_request(submitter_did, None, sequence_num)
+    Ledger::build_get_txn_request(Some(submitter_did), None, sequence_num)
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -45,7 +45,7 @@ pub fn libindy_build_schema_request(submitter_did: &str, data: &str) -> Result<S
 }
 
 pub fn libindy_build_get_schema_request(submitter_did: &str, schema_id: &str) -> Result<String, u32> {
-    Ledger::build_get_schema_request(submitter_did, schema_id)
+    Ledger::build_get_schema_request(Some(submitter_did), schema_id)
         .map_err(map_rust_indy_sdk_error_code)
 }
 
@@ -59,7 +59,7 @@ pub fn libindy_parse_get_cred_def_response(get_cred_def_response: &str) -> Resul
 
 pub fn libindy_build_get_credential_def_txn(cred_def_id: &str)  -> Result<String, u32>{
     let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
-    Ledger::build_get_cred_def_request(&submitter_did, cred_def_id).map_err(map_rust_indy_sdk_error_code)
+    Ledger::build_get_cred_def_request(Some(&submitter_did), cred_def_id).map_err(map_rust_indy_sdk_error_code)
 }
 
 pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
