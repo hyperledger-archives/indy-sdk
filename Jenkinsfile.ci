@@ -148,11 +148,13 @@ def macosTesting() {
 }
 
 def androidTesting() {
-    env_name="android_on_linux"
-    network_name="pool_network"
+    env_name = "android_on_linux"
+    network_name = "pool_network"
     parallel([
-            "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
-            "${env_name}-android-building" : { androidBuildAsTesting() }
+            "${env_name}-android-test"    : {
+                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting)
+            },
+            "${env_name}-android-building": { androidBuildAsTesting() }
     ])
 }
 
@@ -342,9 +344,9 @@ def linuxTesting(file, env_name, network_name) {
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
         stash includes: 'vcx/libvcx/libindy.so', name: "LibindyVCXSO${env_name}"
         stash includes: 'vcx/libvcx/libnullpay.so', name: "LibnullpayVCXSO${env_name}"
-        stash includes: 'vcx/wrappers/java/libindy.so', name: "LibindyVcxJavaSO${env_name}"
-        stash includes: 'vcx/wrappers/java/libvcx.so', name: "LibvcxJavaSO${env_name}"
-        stash includes: 'vcx/wrappers/java/libnullpay.so', name: "LibnullpayVcxJavaSO${env_name}"
+        stash includes: 'vcx/wrappers/java/libindy.so,' +
+                'vcx/wrappers/java/libvcx.so,' +
+                'vcx/wrappers/java/libnullpay.so', name: "VcxJavaDependenciesSO${env_name}"
 
         parallel([
                 "${env_name}-libindy-test"   : {
@@ -373,13 +375,24 @@ def linuxTesting(file, env_name, network_name) {
                         }
                     }
                 },
-                "${env_name}-java-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
-                "${env_name}-python-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
-                "${env_name}-nodejs-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
-                "${env_name}-cli-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) },
-                "${env_name}-vcx-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting) },
-                "${env_name}-vcx-nodejs-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting) }
-                "${env_name}-vcx-java-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting) }
+                "${env_name}-java-test"      : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
+                },
+                "${env_name}-python-test"    : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                },
+                "${env_name}-nodejs-test"    : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
+                },
+                "${env_name}-cli-test"       : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
+                },
+                "${env_name}-vcx-test"       : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting)
+                },
+                "${env_name}-vcx-java-test"  : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
+                }
         ])
     }
     finally {
@@ -482,15 +495,13 @@ def linuxVCXTesting(env_name, network_name, testEnv) {
 }
 
 def linuxVcxJavaTesting(env_name, network_name, testEnv) {
-    unstash name: "LibindyVcxJavaSO${env_name}"
-    unstash name: "LibvcxJavaSO${env_name}"
-    unstash name: "LibnullpayVcxJavaSO${env_name}"
+    unstash name: "VcxJavaDependenciesSO${env_name}"
 
     dir('vcx/wrappers/java') {
         echo "${env_name} Vcx Test: Test java wrapper"
 
         testEnv.inside("--network=${network_name}") {
-            sh "TEST_POOL_IP=10.0.0.2 ./gradlew --no-daemon test"
+            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH}  ./gradlew --no-daemon test'
         }
     }
 }
