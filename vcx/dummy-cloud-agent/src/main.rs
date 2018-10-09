@@ -60,7 +60,7 @@ fn main() {
 fn _start(config_path: &str) {
     info!("Starting Indy Dummy Agent with config: {}", config_path);
 
-    Config {
+    let Config {
         app: app_config,
         forward_agent: forward_agent_config,
         server: server_config,

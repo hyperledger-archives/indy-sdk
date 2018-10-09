@@ -10,6 +10,10 @@ pub fn start<F, U, H>(config: ServerConfig, factory: F) -> Addr<Server>
 
     let mut server = server::new(factory);
 
+    if let Some(workers) = config.workers {
+        server = server.workers(workers);
+    }
+
     for address in config.addresses {
         server = server
             .bind(address)

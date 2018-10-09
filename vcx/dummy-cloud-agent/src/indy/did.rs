@@ -88,13 +88,13 @@ pub fn key_for_local_did(wallet_handle: i32, did: &str) -> Box<Future<Item=Strin
 
 extern {
     #[no_mangle]
-    pub fn indy_create_and_store_my_did(command_handle: i32,
+    fn indy_create_and_store_my_did(command_handle: i32,
                                         wallet_handle: i32,
                                         did_info: *const c_char,
                                         cb: Option<extern fn(xcommand_handle: i32, err: i32, str1: *const c_char, str2: *const c_char)>) -> i32;
 
     #[no_mangle]
-    pub fn indy_key_for_local_did(command_handle: i32,
+    fn indy_key_for_local_did(command_handle: i32,
                                   wallet_handle: i32,
                                   did: *const c_char,
                                   cb: Option<extern fn(xcommand_handle: i32, err: i32, str1: *const c_char)>) -> i32;

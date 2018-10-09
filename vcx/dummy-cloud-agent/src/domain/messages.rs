@@ -3,8 +3,8 @@ use serde::de;
 use serde_json::Value;
 
 #[derive(Deserialize, Debug)]
-pub struct AgentMsgsBundle {
-    bundled: Vec<AgentMsg>,
+pub struct Bundle {
+    bundled: Vec<u8>,
 }
 
 #[derive(Debug)]

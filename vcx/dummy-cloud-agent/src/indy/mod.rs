@@ -13,8 +13,13 @@ macro_rules! rust_str {
     }
 }
 
+macro_rules! rust_slice {
+    ($x:ident, $y:ident) => {
+        unsafe { ::std::slice::from_raw_parts($x, $y as usize) }
+    }
+}
 
-
+pub mod crypto;
 pub mod did;
 pub mod wallet;
 

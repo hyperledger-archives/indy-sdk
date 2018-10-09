@@ -34,5 +34,7 @@ pub struct AppConfig {
 #[derive(Clone, Debug, Deserialize)]
 pub struct ServerConfig {
     // List of ip:port to bind
-    pub addresses: Vec<String>
+    pub addresses: Vec<String>,
+    // Amount of http workers (instances of app). By default amount of logical CPU cores.
+    pub workers: Option<usize>,
 }
