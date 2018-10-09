@@ -491,7 +491,7 @@ def linuxVcxPythonTesting(env_name, network_name, testEnv) {
 
             sh '''
                     python3.5 -m pip install --user pytest==3.4.2 qrcode pytest-asyncio
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest
             '''
         }
     }

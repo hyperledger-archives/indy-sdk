@@ -1,13 +1,12 @@
 from ctypes import *
 
 import asyncio
-import sys
 import itertools
 import logging
 import os
 from .error import VcxError, ErrorCode
+from vcx.cdll import _cdll, LIBRARY
 
-LIBRARY = "vcx"
 _futures = {}
 _futures_counter = itertools.count()
 
@@ -29,7 +28,7 @@ def do_call(name: str, *args):
 
     if err != ErrorCode.Success:
         logger.warning("_do_call: Function %s returned error %i", name, err)
-        future.set_exception(VcxError(ErrorCode(err), error_message(err)))
+        future.set_exception(VcxError(ErrorCode(err)))
 
     logger.debug("do_call: <<< %s", future)
     return future
@@ -44,8 +43,7 @@ def release(name, handle):
 
     if err != ErrorCode.Success:
         logger.warning("release: Function %s returned error %i", name, err)
-        raise VcxError(ErrorCode(err), error_message(err))
-
+        raise VcxError(ErrorCode(err))
 
 def error_message(error_code: int) -> str:
     logger = logging.getLogger(__name__)
@@ -58,6 +56,7 @@ def error_message(error_code: int) -> str:
     logger.debug("error_message: Function %s returned error_message: %s", name, err_msg)
 
     return err_msg
+
 
 
 def get_version() -> str:
@@ -122,7 +121,7 @@ def _cxs_loop_callback(command_handle: int, err, *args):
         print("_indy_loop_callback: Future was cancelled earlier")
     else:
         if err != ErrorCode.Success:
-            future.set_exception(VcxError(ErrorCode(err), error_message(err)))
+            future.set_exception(VcxError(ErrorCode(err)))
         else:
             if len(args) == 0:
                 res = None
@@ -132,32 +131,4 @@ def _cxs_loop_callback(command_handle: int, err, *args):
                 res = args
 
             future.set_result(res)
-
-
-def _cdll() -> CDLL:
-    if not hasattr(_cdll, "cdll"):
-        _cdll.cdll = _load_cdll()
-
-    return _cdll.cdll
-
-
-def _load_cdll() -> CDLL:
-    prefix_mapping = {"darwin": "lib", "linux": "lib", "linux2": "lib", "win32": ""}
-    suffix_mapping = {"darwin": ".dylib", "linux": ".so", "linux2": ".so", "win32": ".dll"}
-
-    os_name = sys.platform
-
-    try:
-        prefix = prefix_mapping[os_name]
-        suffix = suffix_mapping[os_name]
-    except KeyError:
-        raise OSError("OS isn't supported: %s", os_name)
-
-    library_name = "{0}{1}{2}".format(prefix, LIBRARY, suffix)
-
-    try:
-        res = CDLL(library_name)
-        return res
-    except OSError as e:
-        raise e
 

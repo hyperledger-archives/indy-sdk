@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 VERSION = 'VCX_VERSION'
-
+PKG_NAME = os.environ['PACKAGE_NAME'] or 'python3-wrapper-vcx'
 
 def get_version():
     try:
@@ -11,9 +11,9 @@ def get_version():
 
 
 setup(
-    name='vcx',
+    name=PKG_NAME,
     version=get_version(),
-    description='Wrapper for libcxs',
+    description='Python 3 wrapper for libcxs',
     long_description='None...for now',
     author='Devin Fisher, Ryan Marsh, Mark Hadley, Doug Wightman',
     author_email='ryan.marsh@evernym.com',
