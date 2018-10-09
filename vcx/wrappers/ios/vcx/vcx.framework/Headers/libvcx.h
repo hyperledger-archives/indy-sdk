@@ -341,6 +341,11 @@ vcx_error_t vcx_messages_download( vcx_command_handle_t command_handle, const ch
 /** Update Message status */
 vcx_error_t vcx_messages_update_status( vcx_command_handle_t command_handle, const char *message_status, const char *msg_json, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t err));
 
+/**
+ * utils object
+ */
+vcx_error_t vcx_ledger_get_fees(vcx_command_handle_t command_handle, void(*cb)(vcx_command_handle_t xhandle, vcx_error_t error, const char *fees));
+
 /** For testing purposes only */
 void vcx_set_next_agency_response(int);
 #ifdef __cplusplus

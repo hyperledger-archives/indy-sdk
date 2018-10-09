@@ -18,7 +18,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
         [TestMethod]
         public async Task TestAuthCryptWorksForUnknownCoder()
         {
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                  Crypto.AuthCryptAsync(wallet, VERKEY_MY1, VERKEY_MY2, MESSAGE)
            );
         }

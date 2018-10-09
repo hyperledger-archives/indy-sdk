@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.AnonCredsApi;
+using Hyperledger.Indy.Test.Util;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
@@ -10,23 +11,19 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
     [TestClass]
     public class IssuerCreateAndStoreClaimDefinitionTest : AnonCredsIntegrationTestBase
     {
+        private const string DEFAULT_SIGNATURE_TYPE = "CL";
+        private const string WALLET_NAME = "createMasterSecretWallet";
+        private const string WALLET_KEY = "issuerKey";
         private  Wallet _wallet;
         private const string _walletName = "createAndStoreClaimDefWallet";
         private const string _issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
-        private const string _gvtSchemaJson = "{\n" +
-                "                    \"seqNo\":1,\n" +
-                "                    \"data\": {\n" +
-                "                        \"name\":\"gvt\",\n" +
-                "                        \"version\":\"1.0\",\n" +
-                "                        \"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]\n" +
-                "                    }\n" +
-                "                 }";
+        private const string _gvtSchemaJson = "{\"id\":\"id\",\"name\":\"gvt\",\"version\":\"1.0\",\"ver\":\"1.0\",\"attrNames\":[\"age\",\"sex\",\"height\",\"name\"]}";
 
         [TestInitialize]
         public async Task CreateWallet()
         {
-            await Wallet.CreateWalletAsync("default", _walletName, "default", null, null);
-            _wallet = await Wallet.OpenWalletAsync(_walletName, null, null);
+            await WalletUtils.CreateWallet(WALLET_NAME, WALLET_KEY);
+            _wallet = await WalletUtils.OpenWallet(WALLET_NAME, WALLET_KEY);
         }
 
         [TestCleanup]
@@ -35,33 +32,32 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             if(_wallet != null)
                 await _wallet.CloseAsync();
 
-            await Wallet.DeleteWalletAsync(_walletName, null);            
+            await WalletUtils.DeleteWallet(WALLET_NAME, WALLET_KEY);           
         }
 
         [TestMethod]
-        public async Task TestIssuerCreateAndStoreClaimDefWorks()
+        public async Task TestIssuerCreateAndStoreClaimDefWorksBob()
         {
-            var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, _gvtSchemaJson, null, false);
-            Assert.IsNotNull(claimDef);
+            IssuerCreateAndStoreCredentialDefResult claimDefType = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(_wallet, _issuerDid, _gvtSchemaJson, DEFAULT_SIGNATURE_TYPE, null, null);
+            Assert.IsNotNull(claimDefType);
 
-            var claimDefObject = JObject.Parse(claimDef);
-            var primary = claimDefObject["data"]["primary"];
+            var claimDefObject = JObject.Parse(claimDefType.CredDefJson);
+            var primary = claimDefObject["value"]["primary"];
 
-            Assert.AreEqual(((JObject)primary["r"]).Count, 4);
-            Assert.IsTrue(primary.Value<string>("n").Length > 0);
-            Assert.IsTrue(primary.Value<string>("s").Length > 0);
-            Assert.IsTrue(primary.Value<string>("z").Length > 0);
-            Assert.IsTrue(primary.Value<string>("rms").Length > 0);
-            Assert.IsTrue(primary.Value<string>("rctxt").Length > 0);
+            Assert.AreEqual(((JObject)primary["r"]).Count, 5, "length of primary.r didn't match");
+            Assert.IsTrue(primary.Value<string>("n").Length > 0, "n had zero length");
+            Assert.IsTrue(primary.Value<string>("s").Length > 0, "s had zero length");
+            Assert.IsTrue(primary.Value<string>("z").Length > 0, "z had zero length");
+            Assert.IsTrue(primary.Value<string>("rctxt").Length > 0, "rctxt had zero length");
         }
 
         [TestMethod]
         public async Task TestIssuerCreateAndStoreClaimDefWorksForInvalidSchemaJson()
         {
             var schema = "{\"seqNo\":1, \"name\":\"name\",\"version\":\"1.0\", \"attr_names\":[\"name\"]}";
-           
+
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, schema, null, false)
+                AnonCreds.IssuerCreateAndStoreCredentialDefAsync(_wallet, _issuerDid, schema, DEFAULT_SIGNATURE_TYPE, null, null)
             );
         }
 
@@ -78,32 +74,32 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
                 "                 }";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, schema, null, false)
+                AnonCreds.IssuerCreateAndStoreCredentialDefAsync(_wallet, _issuerDid, schema, DEFAULT_SIGNATURE_TYPE, null, null)
             );
         }
 
         [TestMethod]
         public async Task TestIssuerCreateAndStoreClaimDefWorksForCorrectCryptoType()
         {
-            var claimDef = await AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, _gvtSchemaJson, "CL", false);
-            Assert.IsNotNull(claimDef);
+            IssuerCreateAndStoreCredentialDefResult claimDefType = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(_wallet, _issuerDid, _gvtSchemaJson, DEFAULT_SIGNATURE_TYPE, null, null);
+            Assert.IsNotNull(claimDefType);
 
-            var claimDefObject = JObject.Parse(claimDef);
-            var primary = claimDefObject["data"]["primary"];
+            var claimDefObject = JObject.Parse(claimDefType.CredDefJson);
+            var primary = claimDefObject["value"]["primary"];
 
-            Assert.AreEqual(((JObject)primary["r"]).Count, 4);
-            Assert.IsTrue(primary.Value<string>("n").Length > 0);
-            Assert.IsTrue(primary.Value<string>("s").Length > 0);
-            Assert.IsTrue(primary.Value<string>("z").Length > 0);
-            Assert.IsTrue(primary.Value<string>("rms").Length > 0);
-            Assert.IsTrue(primary.Value<string>("rctxt").Length > 0);
+            Assert.AreEqual(((JObject)primary["r"]).Count, 5, "length of primary.r didn't match");
+            Assert.IsTrue(primary.Value<string>("n").Length > 0, "n had zero length");
+            Assert.IsTrue(primary.Value<string>("s").Length > 0, "s had zero length");
+            Assert.IsTrue(primary.Value<string>("z").Length > 0, "z had zero length");
+            Assert.IsTrue(primary.Value<string>("rctxt").Length > 0, "rctxt had zero length");
+
         }
 
         [TestMethod]
         public async Task TestIssuerCreateAndStoreClaimDefWorksForInvalidCryptoType()
         {
-            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                AnonCreds.IssuerCreateAndStoreClaimDefAsync(_wallet, _issuerDid, _gvtSchemaJson, "type", false)
+            var ex = await Assert.ThrowsExceptionAsync<InvalidParameterException>(() =>
+                AnonCreds.IssuerCreateAndStoreCredentialDefAsync(_wallet, _issuerDid, _gvtSchemaJson, null, "GG", null)
             );
         }
     }

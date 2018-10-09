@@ -108,7 +108,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                      For 'default' storage type configuration is:
 	 *   {
 	 *     "path": optional["string"], Path to the directory with wallet files.
-	 *             Defaults to $HOME/.indy_client/wallets.
+	 *             Defaults to $HOME/.indy_client/wallet.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
 	 * }
@@ -161,7 +161,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                      For 'default' storage type configuration is:
 	 *   {
 	 *     "path": optional["string"], Path to the directory with wallet files.
-	 *             Defaults to $HOME/.indy_client/wallets.
+	 *             Defaults to $HOME/.indy_client/wallet.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
 	 * }
@@ -249,7 +249,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                      For 'default' storage type configuration is:
 	 *   {
 	 *     "path": optional["string"], Path to the directory with wallet files.
-	 *             Defaults to $HOME/.indy_client/wallets.
+	 *             Defaults to $HOME/.indy_client/wallet.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
 	 * }
@@ -347,7 +347,7 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *                      For 'default' storage type configuration is:
 	 *   {
 	 *     "path": optional["string"], Path to the directory with wallet files.
-	 *             Defaults to $HOME/.indy_client/wallets.
+	 *             Defaults to $HOME/.indy_client/wallet.
 	 *             Wallet will be stored in the file {path}/{id}/sqlite.db
 	 *   }
 	 * }
@@ -401,7 +401,8 @@ public class Wallet extends IndyJava.API implements AutoCloseable {
 	 *
 	 * @param config (optional) key configuration json.
 	 * {
-	 *   seed": optional[string] Seed that allows deterministic key creation (if not set random one will be used).
+	 *   "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+	 *                              Can be UTF-8, base64 or hex string.
 	 * }
 	 *   
 	 * @return A future that resolves to key.
