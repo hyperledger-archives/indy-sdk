@@ -25,14 +25,7 @@ pub enum RouteCommand {
         String, // AMES either JSON or Compact Serialization
         String, // my verkey
         i32,    // wallet handle
-        Box<
-            Fn(
-                    Result<(
-                        String, /*plaintext*/
-                        String, /*if authcrypt return sender_vk else null string*/
-                    )>,
-                ) + Send,
-        >,
+        Box<Fn(Result<(String, /*plaintext*/ String, /*sender_vk*/)>) + Send>,
     ),
 }
 
