@@ -325,9 +325,9 @@ def linuxTesting(file, env_name, network_name) {
         sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/python3"
 
         dir('vcx/libvcx') {
-            testEnv.inside {
-                echo "${env_name} Libvcx Test: Test"
+            echo "${env_name} Libvcx Test: Build docker image"
 
+            testEnv.inside {
                 echo "${env_name} Libvcx Test: Build"
                 sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
             }

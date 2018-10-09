@@ -211,6 +211,17 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
         sh "cp libnullpay/target/release/libnullpay.so vcx/libvcx"
         sh "cp libnullpay/target/release/libnullpay.so vcx/wrappers/python3"
 
+        dir('vcx/libvcx') {
+            echo "${env_name} Libvcx Test: Build docker image"
+
+            testEnv.inside {
+                echo "${env_name} Libvcx Test: Build"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
+            }
+        }
+
+        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/python3"
+
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
         stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
@@ -301,9 +312,6 @@ def linuxVCXTesting(env_name, network_name, testEnv, stashBuildResults) {
 
     dir('vcx/libvcx') {
         testEnv.inside {
-            echo "${env_name} Libvcx Test: Build"
-            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
-
             echo "${env_name} Libvcx Test: Build Tests"
             sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run'
 
