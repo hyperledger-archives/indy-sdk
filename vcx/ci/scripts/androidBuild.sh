@@ -8,7 +8,7 @@ setup() {
     export PATH=$PATH:/opt/gradle/gradle-3.4.1/bin
     export PATH=${PATH}:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools:$ANDROID_HOME/build-tools/25.0.2/
     export PATH=${HOME}/.cargo/bin:${PATH}
-    export EVERNYM_REPO=https://repo.corp.evernym.com/filely/android
+    export SOVRIN_REPO=https://repo.sovrin.org/android/libsovtoken/stable
     export VCX_BASE=../vcx
     # For docker
     # export VCX_BASE=${HOME}/vcx
@@ -64,10 +64,15 @@ generate_flags(){
         export ARCH="arm"
         export TRIPLET="arm-linux-androideabi"
         export PLATFORM="16"
-        export ABI="armeabi-v7a"
-    fi
-
-    if [ $1 == "x86" ]; then
+    elif [ $1 == "arm64" ]; then
+        export ARCH="arm64"
+        export TRIPLET="aarch64-linux-android"
+        export PLATFORM="21"
+    elif [ $1 == "armv7" ]; then
+        export ARCH="armv7"
+        export TRIPLET="armv7-linux-androideabi"
+        export PLATFORM="16"
+    elif [ $1 == "x86" ]; then
         export ARCH="x86"
         export TRIPLET="i686-linux-android"
         export PLATFORM="16"
@@ -107,10 +112,10 @@ get_libsovtoken() {
     set -xv
     # Todo: This artifact was manually uploaded to this repo. Eventually, the file format will change. That is why it is hardcoded
     if [ -z ${LIBSOVTOKEN_DIR} ]; then
-        LIBSOVTOKEN_ZIP=libsovtoken_0.9.0-201808150545-5fb8db8_android.zip
+        LIBSOVTOKEN_ZIP=libsovtoken_0.9.3-201809211729-2d02370_all.zip
         if [ ! -d "libsovtoken" ]; then
             echo "retrieving libsovtoken prebuilt library"
-            wget ${EVERNYM_REPO}/${LIBSOVTOKEN_ZIP}
+            wget ${SOVRIN_REPO}/${LIBSOVTOKEN_ZIP}
             unzip ${LIBSOVTOKEN_ZIP}
         fi
         export LIBSOVTOKEN_DIR="${PWD}/libsovtoken/${TRIPLET}"

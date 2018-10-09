@@ -7,59 +7,66 @@ namespace Hyperledger.Indy.Test.WalletTests
     [TestClass]
     public class OpenWalletTest : IndyIntegrationTestBase
     {
+        private const string OPEN_WALLET_NAME = "OpenWallet";
+        private Wallet _openWallet = null;
+
+        [TestCleanup]
+        public async Task CleanupWallet()
+        {
+            if (null == _openWallet) return;
+
+            try 
+            {
+                _openWallet.CloseAsync();
+                _openWallet.Dispose();
+
+            }
+            catch
+            {
+                // the point of cleanup is to make sure everything is cleaned up
+                // if it fails, it means no clean up was needed, most likely due
+                // to test failing.  so its not imperative to do anything
+                // with exceptions during clean up
+            }
+        }
+
         [TestMethod]
         public async Task TestOpenWalletWorks()
         {
-            var walletName = "openWalletWorks";
+            WalletConfig config = new WalletConfig() { id = OPEN_WALLET_NAME };
+            Credentials cred = new Credentials() { key = WALLET_KEY };
 
-            await Wallet.CreateWalletAsync(POOL, walletName, TYPE, null, null);
-            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            await Wallet.CreateWalletAsync(config, cred);
+            _openWallet = await Wallet.OpenWalletAsync(config, cred);
 
-            Assert.IsNotNull(wallet);
+            Assert.IsNotNull(_openWallet);
         }
 
-        [TestMethod]
-        public async Task TestOpenWalletWorksForConfig()
-        {
-            var walletName = "openWalletWorksForConfig";
-
-            await Wallet.CreateWalletAsync(POOL, walletName, TYPE, null, null);
-            var wallet = await Wallet.OpenWalletAsync(walletName, "{\"freshness_time\":1000}", null);
-
-            Assert.IsNotNull(wallet);
-        }
-
-        [TestMethod]
-        public async Task TestOpenWalletWorksForPlugged()
-        {
-            var walletName = "testOpenWalletWorksForPlugged";
-
-            await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
-            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
-            Assert.IsNotNull(wallet);
-        }
-        
         [TestMethod]
         public async Task TestOpenWalletWorksForNotCreated()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
-               Wallet.OpenWalletAsync("testOpenWalletWorksForNotCreated", null, null)
+            WalletConfig config = new WalletConfig() { id = OPEN_WALLET_NAME };
+            Credentials cred = new Credentials() { key = WALLET_KEY };
+
+            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+               Wallet.OpenWalletAsync(config, cred)
             );
         }
-        
+
         [TestMethod]
         public async Task TestOpenWalletWorksForTwice()
         {
-            var walletName = "openWalletWorksForTwice";
+            WalletConfig config = new WalletConfig() { id = OPEN_WALLET_NAME };
+            Credentials cred = new Credentials() { key = WALLET_KEY };
 
-            await Wallet.CreateWalletAsync(POOL, walletName, TYPE, null, null);
-            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            await Wallet.CreateWalletAsync(config, cred);
+            _openWallet = await Wallet.OpenWalletAsync(config, cred);
 
             var ex = await Assert.ThrowsExceptionAsync<WalletAlreadyOpenedException>(() =>
-               Wallet.OpenWalletAsync(walletName, null, null)
+               Wallet.OpenWalletAsync(config, cred)
             );
         }
 
-        
+
     }
 }

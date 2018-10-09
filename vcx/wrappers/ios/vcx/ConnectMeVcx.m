@@ -989,4 +989,20 @@ withConnectionHandle:(vcx_connection_handle_t)connection_handle
     }
 }
 
+- (void) getLedgerFees:(void(^)(NSError *error, NSString *fees)) completion
+{
+    vcx_error_t ret;
+    vcx_command_handle_t handle = [[VcxCallbacks sharedInstance] createCommandHandleFor:completion];
+    ret = vcx_ledger_get_fees(handle, VcxWrapperCommonStringCallback);
+    
+    if (ret != 0)
+    {
+        [[VcxCallbacks sharedInstance] deleteCommandHandleFor: handle];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion([NSError errorFromVcxError: ret], nil);
+        });
+    }
+}
+
 @end

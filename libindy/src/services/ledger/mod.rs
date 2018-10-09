@@ -2,7 +2,7 @@ pub mod merkletree;
 
 use errors::common::CommonError;
 use errors::ledger::LedgerError;
-use domain::ledger::constants::{NYM, ROLE_REMOVE, STEWARD, TRUSTEE, TRUST_ANCHOR, TGB, POOL_RESTART, GET_VALIDATOR_INFO};
+use domain::ledger::constants::{NYM, ROLE_REMOVE, STEWARD, TRUSTEE, TRUST_ANCHOR, POOL_RESTART, GET_VALIDATOR_INFO};
 use domain::ledger::request::Request;
 use domain::ledger::nym::GetNymOperation;
 use domain::ledger::attrib::{AttribOperation, GetAttribOperation};
@@ -65,7 +65,6 @@ impl LedgerService {
                     "STEWARD" => STEWARD,
                     "TRUSTEE" => TRUSTEE,
                     "TRUST_ANCHOR" => TRUST_ANCHOR,
-                    "TGB" => TGB,
                     role @ _ => return Err(CommonError::InvalidStructure(format!("Invalid role: {}", role)))
                 }.to_string())
             }
