@@ -312,8 +312,16 @@ impl RouteService {
         anon_recipient: AnonRecipient,
         cs: Rc<CryptoService>,
     ) -> Result<xsalsa20::Key> {
+        let cek_as_vec = base64::decode(&anon_recipient.cek).map_err(|err| {
+            RouteError::DecodeError(format!(
+                "Failed to decode cek for anon_decrypt_recipient {}",
+                err
+            ))
+        })?;
+        let cek_as_bytes = cek_as_vec.as_ref();
+
         let decrypted_cek = cs
-            .decrypt_sealed(my_key, anon_recipient.cek.as_bytes())
+            .decrypt_sealed(my_key, cek_as_bytes)
             .map_err(|err| RouteError::EncryptionError(format!("Failed to decrypt cek {}", err)))?;
 
         //convert to secretbox key
@@ -389,7 +397,6 @@ pub mod tests {
     use super::RouteService;
     use domain::crypto::did::{Did, MyDidInfo};
     use domain::crypto::key::Key;
-    use domain::route::*;
     use domain::wallet::Config;
     use domain::wallet::Credentials;
     use domain::wallet::KeyDerivationMethod;
@@ -397,7 +404,6 @@ pub mod tests {
     use services::wallet::WalletService;
     use std::collections::HashMap;
     use std::rc::Rc;
-    use utils::crypto::base64::decode;
     use utils::crypto::xsalsa20;
     use utils::inmem_wallet::InmemWallet;
     use utils::test;
@@ -414,18 +420,17 @@ pub mod tests {
 
         //setup wallets
         let (_, _, recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
-        let (_, _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
+        let (_, _, expected_send_key) = _setup_send_wallet(ws.clone(), cs.clone());
 
         //setup recv_keys to use with pack_msg
         let recv_verkey: &str = recv_key.verkey.as_ref();
-        let recv_keys: Vec<&str> = vec![recv_verkey];
 
         //sym_key
         let sym_key = xsalsa20::create_key();
 
         //pack then unpack message
         let auth_recipient = rs
-            .auth_encrypt_recipient(&send_key, &recv_key.verkey, &sym_key, cs.clone())
+            .auth_encrypt_recipient(&expected_send_key, &recv_verkey, &sym_key, cs.clone())
             .unwrap();
         let (expected_sym_key, sender_vk) = rs
             .auth_decrypt_recipient(&recv_key, auth_recipient, cs.clone())
@@ -433,6 +438,7 @@ pub mod tests {
 
         //verify same plaintext goes in and comes out
         assert_eq!(expected_sym_key, sym_key);
+        assert_eq!(expected_send_key.verkey, sender_vk);
     }
 
     /* component test useful to identify if unpack is breaking or if pack is breaking. If unpack is
@@ -440,76 +446,46 @@ pub mod tests {
      * will fail.
      */
 
-    //    //#[test]
-    //    pub fn test_unpack_msg_success_multi_anoncrypt() {
-    //        _cleanup();
-    //
-    //        let jwm = json!({"recipients":[
-    //        {"header":
-    //            {"typ":"x-b64nacl",
-    //            "alg":"x-anon",
-    //            "enc":"xsalsa20poly1305",
-    //            "kid":"2M2U2FRSvkk5tHRALQn3Jy1YjjWtkpZ3xZyDjEuEZzko",
-    //            "jwk": null},
-    //        "cek":"0PkLL5bi04zuvIg5P6qnlct-aYIq_MD1ODnO-EE7XEyQHnSszh2uWfbiKUZs4pYppHy9yjEBB3JOe0reTHSkNuX46b6MyYjU_Ld4p4ISC7g="
-    //        },
-    //        {"header":
-    //            {"typ":"x-b64nacl",
-    //            "alg":"x-anon",
-    //            "enc":"xsalsa20poly1305",
-    //            "kid":"H9teBJHh4YUrbzpSMJyWRJcCQnuu4gzppbx9owvWFv8c",
-    //            "jwk":null},
-    //        "cek":"ivudsdb1tbK78ih3rbFbutlK9jpV2y_20vHDBRq-Ijo2VrJRruvTqu2wIyuqI0gfq5fOcEAvSuKNEMS0msJbhsVhQ_pmu5hcab7THda-yfM="
-    //        }],
-    //        "ciphertext":"-_Hdq304MkI9vOQ=",
-    //        "iv":"jrsxpWDdn06GVlrK43qQZLf5t1n4wA4o",
-    //        "tag":"k_HE0Mz0dBhaO5N-GgODYQ=="}).to_string();
-    //
-    //        //setup services
-    //        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-    //        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
-    //        let ws: Rc<WalletService> = Rc::new(WalletService::new());
-    //
-    //        //run tests
-    //        let (wallet_handle, _ , recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
-    //        let plaintext = rs.unpack_msg(&jwm, &recv_key.verkey, wallet_handle, ws.clone(), cs.clone()).unwrap();
-    //        assert_eq!(plaintext, "Hello World".to_string());
-    //    }
-    //
-    //    // Integration tests
-    //    //#[test]
-    //    pub fn test_pack_msg_success_single_anoncrypt(){
-    //        _cleanup();
-    //        //setup generic data to test
-    //        let plaintext = "Hello World";
-    //        let is_authcrypt = false;
-    //
-    //        //setup route_service
-    //        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-    //        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
-    //        let ws: Rc<WalletService> = Rc::new(WalletService::new());
-    //
-    //        //setup wallets
-    //        let (recv_wallet_handle, _, _) = _setup_recv_wallet1(ws.clone(), cs.clone());
-    //        let (send_wallet_handle , _, _) = _setup_send_wallet(ws.clone(), cs.clone());
-    //
-    //
-    //        //setup recv_keys to use with pack_msg
-    //        let (_ , recv_key) = _recv_did1(cs.clone());
-    //        let recv_keys = vec![recv_key.verkey.clone()];
-    //
-    //        //pack then unpack message
-    //        let packed_msg = rs.pack_msg(plaintext, &recv_keys,None, is_authcrypt,
-    //                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
-    //        let unpacked_msg = rs.unpack_msg(&packed_msg, &recv_key.verkey,
-    //                                                    recv_wallet_handle, ws.clone(), cs.clone()).unwrap();
-    //
-    //        //verify same plaintext goes in and comes out
-    //        assert_eq!(plaintext, &unpacked_msg);
-    //    }
+    // Integration tests
+    #[test]
+    pub fn test_single_anon_pack_message_and_unpack_msg_success() {
+        _cleanup();
+        //setup generic data to test
+        let expected_message = "Hello World";
+
+        //setup route_service
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+
+        //setup wallets
+        let (recv_wallet_handle, _, recv_key) = _setup_recv_wallet1(ws.clone(), cs.clone());
+
+        //setup recv_keys list
+        let recv_verkey: &str = recv_key.verkey.as_ref();
+        let recv_keys: Vec<&str> = vec![recv_verkey];
+
+        //pack then unpack message
+        let packed_msg = rs
+            .anon_pack_msg(expected_message, recv_keys, cs.clone())
+            .unwrap();
+
+        let (message, _) = rs
+            .unpack_msg(
+                &packed_msg,
+                &recv_key.verkey,
+                recv_wallet_handle,
+                ws.clone(),
+                cs.clone(),
+            )
+            .unwrap();
+
+        //verify same plaintext goes in and comes out
+        assert_eq!(expected_message.to_string(), message);
+    }
 
     #[test]
-    pub fn test_pack_msg_success_single_authcrypt() {
+    pub fn test_single_auth_pack_msg_and_unpack_msg_success() {
         _cleanup();
         //setup generic data to test
         let expected_message = "Hello World";
@@ -551,83 +527,124 @@ pub mod tests {
 
         //verify same plaintext goes in and comes out
         assert_eq!(expected_message.to_string(), message);
+        assert_eq!(sender_vk, send_key.verkey);
     }
 
-    //    //#[test]
-    //    pub fn test_pack_and_unpack_msg_success_multi_anoncrypt(){
-    //        _cleanup();
-    //        //setup generic data to test
-    //        let plaintext = "Hello World";
-    //        let is_authcrypt = false;
-    //
-    //        //setup route_service
-    //        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-    //        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
-    //        let ws: Rc<WalletService> = Rc::new(WalletService::new());
-    //
-    //        //setup recv_keys to use with pack_msg
-    //        let (_, recv_key1_before_wallet_setup) = _recv_did1(cs.clone());
-    //        let (_, recv_key2_before_wallet_setup) = _recv_did2(cs.clone());
-    //        let recv_keys = vec![recv_key1_before_wallet_setup.verkey, recv_key2_before_wallet_setup.verkey];
-    //
-    //        //setup send wallet then pack message
-    //        let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
-    //        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), is_authcrypt,
-    //                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
-    //        let _result1 = ws.close_wallet(send_wallet_handle);
-    //
-    //        //setup recv_wallet1 and unpack message then verify plaintext
-    //        let (recv_wallet_handle1, _, recv_key1) = _setup_recv_wallet1(ws.clone(), cs.clone());
-    //        let unpacked_msg1 = rs.unpack_msg(&packed_msg, &recv_key1.verkey,
-    //                                                     recv_wallet_handle1, ws.clone(), cs.clone()).unwrap();
-    //        assert_eq!(plaintext, &unpacked_msg1);
-    //        let _result2 = ws.close_wallet(recv_wallet_handle1);
-    //
-    //
-    //        //setup recv_wallet2 and unpack message then verify plaintext
-    //        let (recv_wallet_handle2, _, recv_key2) = _setup_recv_wallet2(ws.clone(), cs.clone());
-    //        let unpacked_msg2 = rs.unpack_msg(&packed_msg, &recv_key2.verkey,
-    //                                                     recv_wallet_handle2, ws.clone(), cs.clone()).unwrap();
-    //        assert_eq!(plaintext, &unpacked_msg2);
-    //    }
-    //
-    //    //#[test]
-    //    pub fn test_pack_and_unpack_msg_success_multi_authcrypt(){
-    //        _cleanup();
-    //        //setup generic data to test
-    //        let plaintext = "Hello World";
-    //        let is_authcrypt = true;
-    //
-    //        //setup route_service
-    //        let rs: Rc<RouteService> = Rc::new(RouteService::new());
-    //        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
-    //        let ws: Rc<WalletService> = Rc::new(WalletService::new());
-    //
-    //        //setup recv_keys to use with pack_msg
-    //        let (_, recv_key1_before_wallet_setup) = _recv_did1(cs.clone());
-    //        let (_, recv_key2_before_wallet_setup) = _recv_did2(cs.clone());
-    //        let recv_keys = vec![recv_key1_before_wallet_setup.verkey, recv_key2_before_wallet_setup.verkey];
-    //
-    //        //setup send wallet then pack message
-    //        let (send_wallet_handle , _, send_key) = _setup_send_wallet(ws.clone(), cs.clone());
-    //        let packed_msg = rs.pack_msg(plaintext, &recv_keys,Some(&send_key.verkey), is_authcrypt,
-    //                                                send_wallet_handle, ws.clone(), cs.clone()).unwrap();
-    //        let _result1 = ws.close_wallet(send_wallet_handle);
-    //
-    //        //setup recv_wallet1 and unpack message then verify plaintext
-    //        let (recv_wallet_handle1, _, recv_key1) = _setup_recv_wallet1(ws.clone(), cs.clone());
-    //        let unpacked_msg1 = rs.unpack_msg(&packed_msg, &recv_key1.verkey,
-    //                                                     recv_wallet_handle1, ws.clone(), cs.clone()).unwrap();
-    //        assert_eq!(plaintext, &unpacked_msg1);
-    //        let _result2 = ws.close_wallet(recv_wallet_handle1);
-    //
-    //
-    //        //setup recv_wallet2 and unpack message then verify plaintext
-    //        let (recv_wallet_handle2, _, recv_key2) = _setup_recv_wallet2(ws.clone(), cs.clone());
-    //        let unpacked_msg2 = rs.unpack_msg(&packed_msg, &recv_key2.verkey,
-    //                                                     recv_wallet_handle2, ws.clone(), cs.clone()).unwrap();
-    //        assert_eq!(plaintext, &unpacked_msg2);
-    //    }
+    #[test]
+    pub fn test_pack_and_unpack_msg_success_multi_anoncrypt() {
+        _cleanup();
+        //setup generic data to test
+        let plaintext = "Hello World";
+
+        //setup route_service
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+
+        //setup recv_keys to use with pack_msg
+        let (_, recv_key1_before_wallet_setup) = _recv_did1(cs.clone());
+        let (_, recv_key2_before_wallet_setup) = _recv_did2(cs.clone());
+        let recv_keys = vec![
+            recv_key1_before_wallet_setup.verkey.as_ref(),
+            recv_key2_before_wallet_setup.verkey.as_ref(),
+        ];
+
+        //setup send wallet then pack message
+        let (send_wallet_handle, _, _) = _setup_send_wallet(ws.clone(), cs.clone());
+        let packed_msg = rs.anon_pack_msg(plaintext, recv_keys, cs.clone()).unwrap();
+        let _result1 = ws.close_wallet(send_wallet_handle);
+
+        //setup recv_wallet1 and unpack message then verify plaintext
+        let (recv_wallet_handle1, _, recv_key1) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let (unpacked_msg1, _) = rs
+            .unpack_msg(
+                &packed_msg,
+                &recv_key1.verkey,
+                recv_wallet_handle1,
+                ws.clone(),
+                cs.clone(),
+            )
+            .unwrap();
+
+        //test first recipient
+        assert_eq!(plaintext.to_string(), unpacked_msg1);
+        let _result2 = ws.close_wallet(recv_wallet_handle1);
+
+        //setup recv_wallet2 and unpack message then verify plaintext
+        let (recv_wallet_handle2, _, recv_key2) = _setup_recv_wallet2(ws.clone(), cs.clone());
+        let (unpacked_msg2, _) = rs
+            .unpack_msg(
+                &packed_msg,
+                &recv_key2.verkey,
+                recv_wallet_handle2,
+                ws.clone(),
+                cs.clone(),
+            )
+            .unwrap();
+
+        //test second recipient
+        assert_eq!(plaintext, &unpacked_msg2);
+        let _result2 = ws.close_wallet(recv_wallet_handle2);
+    }
+
+    #[test]
+    pub fn test_pack_and_unpack_msg_success_multi_authcrypt() {
+        _cleanup();
+        //setup generic data to test
+        let plaintext = "Hello World";
+
+        //setup route_service
+        let rs: Rc<RouteService> = Rc::new(RouteService::new());
+        let cs: Rc<CryptoService> = Rc::new(CryptoService::new());
+        let ws: Rc<WalletService> = Rc::new(WalletService::new());
+
+        //setup recv_keys to use with pack_msg
+        let (_, recv_key1_before_wallet_setup) = _recv_did1(cs.clone());
+        let (_, recv_key2_before_wallet_setup) = _recv_did2(cs.clone());
+        let recv_keys = vec![
+            recv_key1_before_wallet_setup.verkey.as_ref(),
+            recv_key2_before_wallet_setup.verkey.as_ref(),
+        ];
+
+        //setup send wallet then pack message
+        let (send_wallet_handle, _, expected_send_key) = _setup_send_wallet(ws.clone(), cs.clone());
+        let packed_msg = rs.auth_pack_msg(plaintext, recv_keys, &expected_send_key.verkey, send_wallet_handle, ws.clone(), cs.clone()).unwrap();
+        let _result1 = ws.close_wallet(send_wallet_handle);
+
+        //setup recv_wallet1 and unpack message then verify plaintext
+        let (recv_wallet_handle1, _, recv_key1) = _setup_recv_wallet1(ws.clone(), cs.clone());
+        let (unpacked_msg1, send_vk_1) = rs
+            .unpack_msg(
+                &packed_msg,
+                &recv_key1.verkey,
+                recv_wallet_handle1,
+                ws.clone(),
+                cs.clone(),
+            )
+            .unwrap();
+
+        //test first recipient
+        assert_eq!(plaintext.to_string(), unpacked_msg1);
+        assert_eq!(&expected_send_key.verkey, &send_vk_1);
+        let _result2 = ws.close_wallet(recv_wallet_handle1);
+
+        //setup recv_wallet2 and unpack message then verify plaintext
+        let (recv_wallet_handle2, _, recv_key2) = _setup_recv_wallet2(ws.clone(), cs.clone());
+        let (unpacked_msg2, send_vk_2) = rs
+            .unpack_msg(
+                &packed_msg,
+                &recv_key2.verkey,
+                recv_wallet_handle2,
+                ws.clone(),
+                cs.clone(),
+            )
+            .unwrap();
+
+        //test second recipient
+        assert_eq!(plaintext, &unpacked_msg2);
+        assert_eq!(&expected_send_key.verkey, &send_vk_2);
+        let _result2 = ws.close_wallet(recv_wallet_handle2);
+    }
 
     fn _setup_send_wallet(ws: Rc<WalletService>, cs: Rc<CryptoService>) -> (i32, Did, Key) {
         let (did, key) = _send_did1(cs.clone());
