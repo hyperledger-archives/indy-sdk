@@ -75,6 +75,7 @@ fn build_executor() -> CommandExecutor {
         .add_command(did::use_command::new())
         .add_command(did::rotate_key_command::new())
         .add_command(did::list_command::new())
+        .add_command(did::complete_key_rotation_command::new())
         .finalize_group()
         .add_group(pool::group::new())
         .add_command(pool::create_command::new())

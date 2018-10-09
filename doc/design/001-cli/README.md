@@ -233,6 +233,12 @@ Rotate keys for used DID. Sends NYM to the ledger with updated keys. Requires op
 indy> did rotate-key [seed=<UTF-8, base64 or hex string>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
+#### Complete key rotation
+Complete key rotation failed on sending NYM to Ledger. Requires opened wallet and connection to pool:
+```
+indy> did complete-key-rotation new-verkey=<verkey>
+```
+
 ### Ledger transactions/messages
 ```
 indy> ledger <subcommand>
