@@ -32,7 +32,7 @@ pub mod new_command {
 
     command!(CommandMetadata::build("new", "Create new DID")
                 .add_optional_param("did", "Known DID for new wallet instance")
-                .add_optional_deferred_param("seed", "Seed for creating DID key-pair")
+                .add_optional_deferred_param("seed", "Seed for creating DID key-pair (UTF-8, base64 or hex)")
                 .add_optional_param("metadata", "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
@@ -108,7 +108,7 @@ pub mod import_command {
             \"version\": 1,
             \"dids\": [{
                 \"did\": \"did\",
-                \"seed\": \"UTF-8 or base64 seed string\"
+                \"seed\": \"UTF-8, base64 or hex string\"
             }]
         }")
                 .add_main_param("file", "Path to file with DIDs")
@@ -201,7 +201,7 @@ pub mod rotate_key_command {
     use super::*;
 
     command!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
-                .add_optional_deferred_param("seed", "If not provide then a random one will be created")
+                .add_optional_deferred_param("seed", "If not provide then a random one will be created (UTF-8, base64 or hex)")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")

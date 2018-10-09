@@ -251,7 +251,8 @@
 
  @param configJson  (optional) key configuration json.
    {
-     "seed": optional<string> Seed that allows deterministic key creation (if not set random one will be used).
+      "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+                                 Can be UTF-8, base64 or hex string.
     }
  @param completion Completion callback that returns error code.
  */
