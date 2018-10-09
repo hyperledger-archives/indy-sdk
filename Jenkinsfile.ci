@@ -151,7 +151,9 @@ def androidTesting() {
     env_name = "android_on_linux"
     network_name = "pool_network"
     parallel([
-            "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
+            "${env_name}-android-test"    : {
+                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting)
+            },
             "${env_name}-android-building": { androidBuildAsTesting() }
     ])
 }
@@ -342,9 +344,9 @@ def linuxTesting(file, env_name, network_name) {
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
         stash includes: 'vcx/libvcx/libindy.so', name: "LibindyVCXSO${env_name}"
         stash includes: 'vcx/libvcx/libnullpay.so', name: "LibnullpayVCXSO${env_name}"
-        stash includes: 'vcx/wrappers/node/libindy.so', name: "LibindyVcxNodeSO${env_name}"
-        stash includes: 'vcx/wrappers/node/libvcx.so', name: "LibvcxNodeSO${env_name}"
-        stash includes: 'vcx/wrappers/node/libnullpay.so', name: "LibnullpayVcxNodeSO${env_name}"
+        stash includes: 'vcx/wrappers/node/libindy.so,' +
+                'vcx/wrappers/node/libvcx.so,' +
+                'vcx/wrappers/node/libnullpay.so', name: "VcxNodeDependenciesSO${env_name}"
 
         parallel([
                 "${env_name}-libindy-test"   : {
@@ -373,12 +375,24 @@ def linuxTesting(file, env_name, network_name) {
                         }
                     }
                 },
-                "${env_name}-java-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
-                "${env_name}-python-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
-                "${env_name}-nodejs-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
-                "${env_name}-cli-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) },
-                "${env_name}-vcx-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting) },
-                "${env_name}-vcx-nodejs-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting) }
+                "${env_name}-java-test"      : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
+                },
+                "${env_name}-python-test"    : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                },
+                "${env_name}-nodejs-test"    : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
+                },
+                "${env_name}-cli-test"       : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
+                },
+                "${env_name}-vcx-test"       : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting)
+                },
+                "${env_name}-vcx-nodejs-test": {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
+                }
         ])
     }
     finally {
@@ -461,18 +475,15 @@ def linuxNodejsTesting(env_name, network_name, testEnv) {
 }
 
 def linuxVcxNodejsTesting(env_name, network_name, testEnv) {
-    unstash name: "LibindyVcxNodeSO${env_name}"
-    unstash name: "LibvcxNodeSO${env_name}"
-    unstash name: "LibnullpayVcxNodeSO${env_name}"
+    unstash name: "VcxNodeDependenciesSO${env_name}"
 
     testEnv.inside("--network=${network_name}") {
         echo "${env_name} Vcx Test: Test nodejs wrapper"
         sh '''
             cd vcx/wrappers/node/
             npm i
-            npm run lint
             npm run compile
-            LIBVCX_PATH=./ TEST_POOL_IP=10.0.0.2 npm test
+            LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} LIBVCX_PATH=./ npm test
         '''
     }
 }
