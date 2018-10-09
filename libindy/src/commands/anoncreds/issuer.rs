@@ -188,9 +188,9 @@ impl IssuerCommandExecutor {
         let schema_id = Schema::schema_id(issuer_did, name, version);
 
         let schema = Schema::SchemaV1(SchemaV1 {
-            id: schema_id.clone(),
-            name: name.to_string(),
-            version: version.to_string(),
+            id: Some(schema_id.clone()),
+            name: Some(name.to_string()),
+            version: Some(version.to_string()),
             attr_names: attrs,
             seq_no: None
         });
@@ -213,6 +213,11 @@ impl IssuerCommandExecutor {
         debug!("create_and_store_credential_definition >>> wallet_handle: {:?}, issuer_did: {:?}, schema: {:?}, tag: {:?}, \
               type_: {:?}, config: {:?}", wallet_handle, issuer_did, schema, tag, type_, config);
 
+        let schema_id_original = match schema.id {
+            Some(ref id) => id,
+            None => return Err(IndyError::CommonError(CommonError::InvalidStructure(format!("Invalid schema: {:?}", schema))))
+        };
+
         self.crypto_service.validate_did(issuer_did)?;
 
         let default_cred_def_config = CredentialDefinitionConfig::default();
@@ -227,7 +232,7 @@ impl IssuerCommandExecutor {
             .map_err(|err| CommonError::InvalidStructure(format!("Cannot deserialize Signature Type: {:?}", err)))?
             .unwrap_or(SignatureType::CL);
 
-        let schema_id = schema.seq_no.map(|n| n.to_string()).unwrap_or(schema.id.clone());
+        let schema_id = schema.seq_no.map(|n| n.to_string()).unwrap_or(schema_id_original.clone());
 
         let cred_def_id = CredentialDefinition::cred_def_id(issuer_did, &schema_id, &signature_type.to_str(), tag);
 
@@ -260,7 +265,7 @@ impl IssuerCommandExecutor {
         self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def_priv_key, &HashMap::new())?;
         self.wallet_service.add_indy_object(wallet_handle, &cred_def_id, &cred_def_correctness_proof, &HashMap::new())?;
 
-        self._wallet_set_schema_id(wallet_handle, &cred_def_id, &schema.id)?; // TODO: FIXME delete temporary storing of schema id
+        self._wallet_set_schema_id(wallet_handle, &cred_def_id, schema_id_original)?; // TODO: FIXME delete temporary storing of schema id
 
         debug!("create_and_store_credential_definition <<< cred_def_id: {:?}, cred_def_json: {:?}", cred_def_id, cred_def_json);
         Ok((cred_def_id, cred_def_json))

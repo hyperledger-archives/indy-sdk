@@ -457,9 +457,9 @@ pub fn gvt_schema_id() -> String {
 
 pub fn gvt_schema() -> SchemaV1 {
     SchemaV1 {
-        id: gvt_schema_id().to_string(),
-        version: SCHEMA_VERSION.to_string(),
-        name: GVT_SCHEMA_NAME.to_string(),
+        id: Some(gvt_schema_id().to_string()),
+        version: Some(SCHEMA_VERSION.to_string()),
+        name: Some(GVT_SCHEMA_NAME.to_string()),
         attr_names: serde_json::from_str::<HashSet<String>>(GVT_SCHEMA_ATTRIBUTES).unwrap(),
         seq_no: None
     }
@@ -469,15 +469,19 @@ pub fn gvt_schema_json() -> String {
     serde_json::to_string(&Schema::SchemaV1(gvt_schema())).unwrap()
 }
 
+pub fn null_schema_json() -> String {
+    serde_json::to_string(&Schema::SchemaV1(SchemaV1::default())).unwrap()
+}
+
 pub fn xyz_schema_id() -> String {
     Schema::schema_id(ISSUER_DID, XYZ_SCHEMA_NAME, SCHEMA_VERSION)
 }
 
 pub fn xyz_schema() -> SchemaV1 {
     SchemaV1 {
-        id: xyz_schema_id().to_string(),
-        version: SCHEMA_VERSION.to_string(),
-        name: XYZ_SCHEMA_NAME.to_string(),
+        id: Some(xyz_schema_id().to_string()),
+        version: Some(SCHEMA_VERSION.to_string()),
+        name: Some(XYZ_SCHEMA_NAME.to_string()),
         attr_names: serde_json::from_str::<HashSet<String>>(XYZ_SCHEMA_ATTRIBUTES).unwrap(),
         seq_no: None
     }

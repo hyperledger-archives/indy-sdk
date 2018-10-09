@@ -96,7 +96,7 @@ pub enum LedgerCommand {
         Box<Fn(Result<String, IndyError>) + Send>),
     ParseGetSchemaResponse(
         String, // get schema response json
-        Box<Fn(Result<(String, String), IndyError>) + Send>),
+        Box<Fn(Result<(Option<String>, String), IndyError>) + Send>),
     BuildCredDefRequest(
         String, // submitter did
         CredentialDefinition, // data
@@ -617,7 +617,7 @@ impl LedgerCommandExecutor {
     }
 
     fn parse_get_schema_response(&self,
-                                 get_schema_response: &str) -> Result<(String, String), IndyError> {
+                                 get_schema_response: &str) -> Result<(Option<String>, String), IndyError> {
         debug!("parse_get_schema_response >>> get_schema_response: {:?}", get_schema_response);
 
         let res = self.ledger_service.parse_get_schema_response(get_schema_response)?;

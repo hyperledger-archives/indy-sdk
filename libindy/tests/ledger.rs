@@ -722,7 +722,7 @@ mod high_cases {
             let get_schema_request = ledger::build_get_schema_request(None, &schema_id).unwrap();
             let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
             let (_, schema_json) = ledger::parse_get_schema_response(&get_schema_response).unwrap();
-
+            
             let _schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
@@ -1891,7 +1891,16 @@ mod medium_cases {
             let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_schema_response(&get_schema_response);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            let (schema_id, schema_json) = res.unwrap();
+            assert!(schema_id.is_none());
+
+            let schema: SchemaV1 = serde_json::from_str(&schema_json).unwrap();
+
+            assert!(schema.id.is_none());
+            assert!(schema.name.is_none());
+            assert!(schema.version.is_none());
+            assert!(schema.attr_names.is_empty());
+            assert!(schema.seq_no.is_none());
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
