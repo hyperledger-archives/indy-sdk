@@ -4,14 +4,9 @@ import org.hyperledger.indy.sdk.IndyIntegrationTestWithPoolAndSingleWallet;
 import org.hyperledger.indy.sdk.did.Did;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.did.DidResults;
-import org.hyperledger.indy.sdk.wallet.Wallet;
-import org.hyperledger.indy.sdk.wallet.WrongWalletForPoolException;
 import org.json.JSONObject;
 import org.junit.*;
 
-import java.util.concurrent.ExecutionException;
-
-import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
 public class RequestsTest extends IndyIntegrationTestWithPoolAndSingleWallet {

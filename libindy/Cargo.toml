@@ -1,6 +1,6 @@
 [package]
 name = "indy"
-version = "1.6.5"
+version = "1.6.6"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
   "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
@@ -54,7 +54,8 @@ hex = "0.2.0"
 libc = "0.2.21"
 log = "0.4.1"
 derivative = "1.0.0"
-openssl = { version = "=0.9.24", optional = true }
+dirs = "1.0.4"
+openssl = { version = "=0.10.12", optional = true }
 owning_ref = "0.3.3"
 rand = "0.3"
 rusqlite = "0.13.0" # Make sure rusqlite for android is also bumped with this. Rusqlite for android is at the bottom of this document.

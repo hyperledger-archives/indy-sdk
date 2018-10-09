@@ -1,5 +1,6 @@
 #!/bin/sh
 
+set -e
 source ./shared.functions.sh
 
 START_DIR=$PWD
@@ -55,7 +56,8 @@ rm lib/libvcx.a
 rm -rf vcx.framework.previousbuild
 
 mkdir -p vcx.framework/lib
-cp -v lib/${COMBINED_LIB}.a vcx.framework/lib/libvcx.a
+# IMPORTANT: DO NOT PUT THE libvcx.a FILE INSIDE THE cocoapod AT ALL!!!!!
+#cp -v lib/${COMBINED_LIB}.a vcx.framework/lib/libvcx.a
 
 mkdir -p vcx.framework/Headers
 cp -v ConnectMeVcx.h vcx.framework/Headers
@@ -67,8 +69,8 @@ fi
 mkdir -p $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/
 cp -rvp vcx.framework $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/
 cd $VCX_SDK/vcx/wrappers/ios/vcx/tmp
-cp $WORK_DIR/evernym.vcx-sdk.git.commit.log $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/
-cp $WORK_DIR/hyperledger.indy-sdk.git.commit.log $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/
+cp $WORK_DIR/evernym.vcx-sdk.git.commit.log $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/ || true
+cp $WORK_DIR/hyperledger.indy-sdk.git.commit.log $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx/ || true
 
 zip -r vcx.${COMBINED_LIB}_${DATETIME}_universal.zip vcx
 mkdir -p ~/IOSBuilds/${COMBINED_LIB}
@@ -76,4 +78,4 @@ cp $VCX_SDK/vcx/wrappers/ios/vcx/tmp/vcx.${COMBINED_LIB}_${DATETIME}_universal.z
 
 #curl --insecure -u normjarvis -X POST -F file=@./vcx.${COMBINED_LIB}_${DATETIME}_universal.zip https://kraken.corp.evernym.com/repo/ios/upload
 # Download the file at https://repo.corp.evernym.com/filely/ios/vcx.${COMBINED_LIB}_${DATETIME}_universal.zip
-#sudo cp ./vcx.${COMBINED_LIB}_${DATETIME}_universal.zip  /usr/local/var/www/download/ios
+#hyperledger.indy-sdk.git.commit.logsudo cp ./vcx.${COMBINED_LIB}_${DATETIME}_universal.zip  /usr/local/var/www/download/ios

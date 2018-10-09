@@ -577,7 +577,7 @@ mod high_cases {
 
             let mut ctx = Hasher::new(MessageDigest::sha256()).unwrap();
             ctx.update(&ATTRIB_RAW_DATA.as_bytes()).unwrap();
-            let hashed_attr = ctx.finish2().unwrap().as_ref().to_hex();
+            let hashed_attr = ctx.finish().unwrap().as_ref().to_hex();
 
             let attrib_request = ledger::build_attrib_request(&trustee_did,
                                                               &trustee_did,
@@ -1270,7 +1270,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
+        #[cfg(all(feature = "local_nodes_pool", target_pointer_width = "64"))] //FIXME: fix AMCL hex serializing
         fn indy_build_revoc_reg_def_request() {
             let data = json!({
                 "ver": "1.0",
@@ -1355,7 +1355,7 @@ mod high_cases {
         use super::*;
 
         #[test]
-        #[cfg(feature = "local_nodes_pool")]
+        #[cfg(all(feature = "local_nodes_pool", target_pointer_width = "64"))] //FIXME: fix AMCL hex serializing
         fn indy_build_revoc_reg_entry_request() {
             let expected_result = json!({
                 "type": constants::REVOC_REG_ENTRY,
