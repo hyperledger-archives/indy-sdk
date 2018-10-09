@@ -23,7 +23,7 @@ pub mod group {
 pub mod create_command {
     use super::*;
 
-    command!(CommandMetadata::build("create", "Create new wallet with specified name")
+    command!(CommandMetadata::build("create", "Create new wallet and attach to Indy CLI")
                 .add_main_param("name", "Identifier of the wallet")
                 .add_required_deferred_param("key", "Key or passphrase used for wallet key derivation.
                                                Look to key_derivation_method param for information about supported key derivation methods.")
@@ -51,6 +51,10 @@ pub mod create_command {
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
         let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)? }).to_string();
 
+        if _wallet_config_path(id).exists() {
+            return Err(println_err!("Wallet \"{}\" is already attached to CLI", id));
+        }
+
         trace!("Wallet::create_wallet try: config {}", config);
 
         let res = Wallet::create_wallet(config.as_str(),
@@ -77,11 +81,46 @@ pub mod create_command {
     }
 }
 
+pub mod attach_command {
+    use super::*;
+
+    command!(CommandMetadata::build("attach", "Attach existing wallet to Indy CLI")
+                .add_main_param("name", "Identifier of the wallet")
+                .add_optional_param("storage_type", "Type of the wallet storage.")
+                .add_optional_param("storage_config", "The list of key:value pairs defined by storage type.")
+                .add_example("wallet attach wallet1")
+                .add_example("wallet attach wallet1 storage_type=default")
+                .add_example(r#"wallet attach wallet1 storage_type=default storage_config={"key1":"value1","key2":"value2"}"#)
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
+
+        let id = get_str_param("name", params).map_err(error_err!())?;
+        let storage_type = get_opt_str_param("storage_type", params).map_err(error_err!())?.unwrap_or("default");
+        let storage_config = get_opt_object_param("storage_config", params).map_err(error_err!())?;
+
+        if _wallet_config_path(id).exists() {
+            return Err(println_err!("Wallet \"{}\" is already attached to CLI", id));
+        }
+
+        let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
+
+        _store_wallet_config(id, &config)
+            .map_err(|err| println_err!("Cannot store wallet \"{}\" config file: {:?}", id, err))?;
+
+        let res = Ok(println_succ!("Wallet \"{}\" has been attached", id));
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
 pub mod open_command {
     use super::*;
 
-    command_with_cleanup!(CommandMetadata::build("open", "Open wallet with specified name. Also close previously opened.")
-                            .add_main_param("name", "The name of wallet")
+    command_with_cleanup!(CommandMetadata::build("open", "Open wallet. Also close previously opened.")
+                            .add_main_param("name", "Identifier of the wallet")
                             .add_required_deferred_param("key", "Key or passphrase used for wallet key derivation.
                                                Look to key_derivation_method param for information about supported key derivation methods.")
                             .add_optional_param("key_derivation_method", "Algorithm to use for wallet key derivation. One of:
@@ -107,7 +146,7 @@ pub mod open_command {
         let rekey_derivation_method = get_opt_str_param("rekey_derivation_method", params).map_err(error_err!())?;
 
         let config = _read_wallet_config(id)
-            .map_err(|_| println_err!("Wallet \"{}\" not found or unavailable", id))?;
+            .map_err(|_| println_err!("Wallet \"{}\" isn't attached to CLI", id))?;
 
         let credentials = {
             let mut json = JSONMap::new();
@@ -176,7 +215,7 @@ pub mod open_command {
 pub mod list_command {
     use super::*;
 
-    command!(CommandMetadata::build("list", "List existing wallets.")
+    command!(CommandMetadata::build("list", "List attached wallets.")
                 .finalize()
     );
 
@@ -238,8 +277,8 @@ pub mod close_command {
 pub mod delete_command {
     use super::*;
 
-    command!(CommandMetadata::build("delete", "Delete wallet with specified name")
-                .add_main_param("name", "The name of deleted wallet")
+    command!(CommandMetadata::build("delete", "Delete wallet.")
+                .add_main_param("name", "Identifier of the wallet")
                 .add_required_deferred_param("key", "Key or passphrase used for wallet key derivation.
                                                Look to key_derivation_method param for information about supported key derivation methods.")
                 .add_optional_param("key_derivation_method", "Algorithm to use for wallet key derivation. One of:
@@ -258,7 +297,7 @@ pub mod delete_command {
         let key_derivation_method = get_opt_str_param("key_derivation_method", params).map_err(error_err!())?;
 
         let config = _read_wallet_config(id)
-            .map_err(|_| println_err!("Wallet \"{}\" not found or unavailable", id))?;
+            .map_err(|_| println_err!("Wallet \"{}\" isn't attached to CLI", id))?;
 
         let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)? }).to_string();
 
@@ -277,6 +316,37 @@ pub mod delete_command {
             Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod detach_command {
+    use super::*;
+
+    command!(CommandMetadata::build("detach", "Detach wallet from Indy CLI")
+                .add_main_param("name", "Identifier of the wallet")
+                .add_example("wallet detach wallet1")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx: {:?} params {:?}", ctx, secret!(params));
+
+        let id = get_str_param("name", params).map_err(error_err!())?;
+
+        if !_wallet_config_path(id).exists() {
+            return Err(println_err!("Wallet \"{}\" isn't attached to CLI", id));
+        }
+
+        if let Some((_, name)) = get_opened_wallet(ctx) {
+            if id == name { return Err(println_err!("Wallet \"{}\" is opened", id)); }
+        }
+
+        _delete_wallet_config(id)
+            .map_err(|err| println_err!("Cannot delete \"{}\" config file: {:?}", id, err))?;
+
+        let res = Ok(println_succ!("Wallet \"{}\" has been detached", id));
         trace!("execute << {:?}", res);
         res
     }
@@ -305,7 +375,6 @@ pub mod export_command {
         let export_path = get_str_param("export_path", params).map_err(error_err!())?;
         let export_key = get_str_param("export_key", params).map_err(error_err!())?;
         let export_key_derivation_method = get_opt_str_param("export_key_derivation_method", params).map_err(error_err!())?;
-
         let export_config: String = json!({ "path": export_path.clone(), "key": export_key.clone(), "key_derivation_method": map_key_derivation_method(export_key_derivation_method)? }).to_string();
 
         trace!("Wallet::export_wallet try: wallet_name {}, export_path {}", wallet_name, export_path);
@@ -330,7 +399,7 @@ pub mod export_command {
 pub mod import_command {
     use super::*;
 
-    command!(CommandMetadata::build("import", "Create new wallet and then import content from the specified file")
+    command!(CommandMetadata::build("import", "Create new wallet, attach to Indy CLI and then import content from the specified file")
                 .add_main_param("name", "The name of new wallet")
                 .add_required_deferred_param("key", "Key or passphrase used for wallet key derivation.
                                                Look to key_derivation_method param for information about supported key derivation methods.")
@@ -361,6 +430,10 @@ pub mod import_command {
         let config: String = json!({ "id": id.clone(), "storage_type": storage_type, "storage_config": storage_config }).to_string();
         let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)? }).to_string();
         let import_config: String = json!({ "path": export_path.clone(), "key": export_key.clone()}).to_string();
+
+        if _wallet_config_path(id).exists() {
+            return Err(println_err!("Wallet \"{}\" is already attached to CLI", id));
+        }
 
         trace!("Wallet::import_wallet try: config {}, import_config {}", config, import_config);
 
@@ -617,6 +690,90 @@ pub mod tests {
         }
     }
 
+    mod attach {
+        use super::*;
+
+        #[test]
+        pub fn attach_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            {
+                let cmd = attach_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(1, wallets.len());
+            assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn attach_works_for_twice() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            attach_wallet(&ctx);
+            {
+                let cmd = attach_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn attach_works_for_type() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let storage_type = "default";
+            {
+                let cmd = attach_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("storage_type", storage_type.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(1, wallets.len());
+
+            assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
+            assert_eq!(wallets[0]["storage_type"].as_str().unwrap(), storage_type);
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn attach_for_config() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+            let config = r#"{"key":"value","key2":"value2"}"#;
+            {
+                let cmd = attach_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("storage_config", config.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(1, wallets.len());
+
+            assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
+            assert_eq!(wallets[0]["storage_config"].as_object().unwrap(),
+                       serde_json::from_str::<serde_json::Value>(config).unwrap().as_object().unwrap());
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
     mod open {
         use super::*;
 
@@ -849,6 +1006,57 @@ pub mod tests {
                 params.insert("key", "other_key".to_string());
                 cmd.execute(&ctx, &params).unwrap_err();
             }
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod detach {
+        use super::*;
+
+        #[test]
+        pub fn detach_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_wallet(&ctx);
+            {
+                let cmd = detach_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                cmd.execute(&CommandContext::new(), &params).unwrap();
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(0, wallets.len());
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn detach_works_for_not_attached() {
+            TestUtils::cleanup_storage();
+
+            let cmd = detach_command::new();
+            let mut params = CommandParams::new();
+            params.insert("name", WALLET.to_string());
+            cmd.execute(&CommandContext::new(), &params).unwrap_err();
+
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn detach_works_for_opened() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            create_and_open_wallet(&ctx);
+            {
+                let cmd = delete_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            close_and_delete_wallet(&ctx);
             TestUtils::cleanup_storage();
         }
     }
@@ -1158,6 +1366,13 @@ pub mod tests {
         let mut params = CommandParams::new();
         params.insert("name", WALLET.to_string());
         params.insert("key", WALLET_KEY.to_string());
+        create_cmd.execute(&ctx, &params).unwrap();
+    }
+
+    pub fn attach_wallet(ctx: &CommandContext) {
+        let create_cmd = attach_command::new();
+        let mut params = CommandParams::new();
+        params.insert("name", WALLET.to_string());
         create_cmd.execute(&ctx, &params).unwrap();
     }
 

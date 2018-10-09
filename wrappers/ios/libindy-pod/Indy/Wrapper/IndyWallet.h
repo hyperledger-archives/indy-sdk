@@ -5,37 +5,12 @@
 
 #import <Foundation/Foundation.h>
 #import "IndyTypes.h"
-#import "IndyWalletProtocols.h"
 
 
 @interface IndyWallet : NSObject
 
 + (IndyWallet *)sharedInstance;
 
-/**
- 
- Registers custom wallet implementation.
- 
- @warning Only one custom implementation can be registered. Any other will be ignored.
- 
- @param type
-        Wallet type name associated with provided implementation.
- @param implementation 
-        Class which conforms to protocol IndyWalletProtocol.
- @param completion Completion callback with errord code indicating result.
-*/
-- (void)registerWalletType:(NSString *)type
-        withImplementation:(Class <IndyWalletProtocol>)implementation
-                completion:(void (^)(NSError *error))completion;
-
-/**
- Register Keychain Wallet type with default implementation
-
- @param type Wallet type name associated with provided implementation.
- @param completion Completion callback with errord code indicating result.
-*/
-- (void)registerIndyKeychainWalletType:(NSString *)type
-                            completion:(void (^)(NSError *error))completion;
 
 /**
  Creates a new secure wallet with the given unique name.
@@ -259,11 +234,6 @@
 + (void)generateWalletKeyForConfig:(NSString *)configJson
                         completion:(void (^)(NSError *error,
                                 NSString *key))completion;
-
-/**
- Delete all keychain wallets from Keychain.
- */
-- (void)cleanupIndyKeychainWallet;
 
 @end
 

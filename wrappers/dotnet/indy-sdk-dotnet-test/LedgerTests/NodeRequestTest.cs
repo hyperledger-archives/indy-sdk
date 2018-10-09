@@ -15,7 +15,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
                 "\"client_port\":911," +
                 "\"alias\":\"some\"," +
                 "\"services\":[\"VALIDATOR\"]," +
-                "\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
+                "\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\"," +
+                "\"blskey_pop\":\"RahHYiCvoNCtPTrVtP7nMC5eTYrsUA8WjXbdhNc8debh1agE9bGiJxWBXYNFbnJXoXhWFMvyqhqhRoq737YQemH5ik9oL7R4NTTCz2LEZhkgLJzB3QRQqJyBNyv7acbdHrAT8nQ9UkLbaVL9NBpnWXBTw4LEMePaSHEw66RzPNdAX1\"" +
+                "}";
 
         private string _stewardDidJson = string.Format("{{\"seed\":\"{0}\"}}", "000000000000000000000000Steward1");
                 
@@ -35,6 +37,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestSendNodeRequestWorksWithoutSignature()
         {
             var didResult = await Did.CreateAndStoreMyDidAsync(wallet, _stewardDidJson);
@@ -48,7 +51,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        public async Task TestBuildNodeRequestWorksForWrongServiceType()
+        public async Task TestBuildNodeRequestInvalidStructureExceptionForWrongServiceType()
         {
             var data = "{\"node_ip\":\"10.0.0.100\"," +
                     "\"node_port\":910," +
@@ -78,7 +81,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        public async Task TestSendNodeRequestWorksForWrongRole()
+        public async Task TestSendNodeRequestReturnsReqNackForWrongRole()
         {
             var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var did = didResult.Did;
@@ -89,17 +92,19 @@ namespace Hyperledger.Indy.Test.LedgerTests
                  "\"client_port\":911," +
                  "\"alias\":\"some\"," +
                  "\"services\":[\"VALIDATOR\"]," +
-                    "\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
+                 "\"blskey\":\"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba\"," +
+                 "\"blskey_pop\":\"RahHYiCvoNCtPTrVtP7nMC5eTYrsUA8WjXbdhNc8debh1agE9bGiJxWBXYNFbnJXoXhWFMvyqhqhRoq737YQemH5ik9oL7R4NTTCz2LEZhkgLJzB3QRQqJyBNyv7acbdHrAT8nQ9UkLbaVL9NBpnWXBTw4LEMePaSHEw66RzPNdAX1\"" +
+                 "}";
+
 
             var nodeRequest = await Ledger.BuildNodeRequestAsync(did, did, data);
+            var result = await Ledger.SignAndSubmitRequestAsync(pool, wallet, did, nodeRequest);
 
-            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-                Ledger.SignAndSubmitRequestAsync(pool, wallet, did, nodeRequest)
-            );
+            Assert.IsTrue(result.Contains("\"op\":\"REJECT\""));
+            Assert.IsTrue(result.Contains("UnauthorizedClientRequest"));
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestSendNodeRequestWorksForNewSteward()
         {
             var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);

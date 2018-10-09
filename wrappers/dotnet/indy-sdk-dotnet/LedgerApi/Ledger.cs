@@ -48,7 +48,7 @@ namespace Hyperledger.Indy.LedgerApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(SubmitRequestCompletedDelegate))]
 #endif
-        private static void SubmitRequestCallback(int xcommand_handle, int err, string response_json)
+        private static void SubmitRequestCallbackMethod(int xcommand_handle, int err, string response_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -57,6 +57,7 @@ namespace Hyperledger.Indy.LedgerApi
 
             taskCompletionSource.SetResult(response_json);
         }
+        private static SubmitRequestCompletedDelegate SubmitRequestCallback = SubmitRequestCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when a command that builds a request completes.
@@ -64,7 +65,7 @@ namespace Hyperledger.Indy.LedgerApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(BuildRequestCompletedDelegate))]
 #endif
-        private static void BuildRequestCallback(int xcommand_handle, int err, string request_json)
+        private static void BuildRequestCallbackMethod(int xcommand_handle, int err, string request_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -73,11 +74,12 @@ namespace Hyperledger.Indy.LedgerApi
 
             taskCompletionSource.SetResult(request_json);
         }
+        private static BuildRequestCompletedDelegate BuildRequestCallback = BuildRequestCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(ParseResponseCompletedDelegate))]
 #endif
-        private static void ParseResponseCallback(int xcommand_handle, int err, string id, string object_json)
+        private static void ParseResponseCallbackMethod(int xcommand_handle, int err, string id, string object_json)
         {
             var taskCompletionSource = PendingCommands.Remove<ParseResponseResult>(xcommand_handle);
 
@@ -86,11 +88,12 @@ namespace Hyperledger.Indy.LedgerApi
 
             taskCompletionSource.SetResult(new ParseResponseResult(id, object_json));
         }
+        private static ParseResponseCompletedDelegate ParseResponseCallback = ParseResponseCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(ParseRegistryResponseCompletedDelegate))]
 #endif
-        private static void ParseRegistryResponseCallback(int xcommand_handle, int err, string id, string object_json, ulong timestamp)
+        private static void ParseRegistryResponseCallbackMethod(int xcommand_handle, int err, string id, string object_json, ulong timestamp)
         {
             var taskCompletionSource = PendingCommands.Remove<ParseRegistryResponseResult>(xcommand_handle);
 
@@ -99,6 +102,7 @@ namespace Hyperledger.Indy.LedgerApi
 
             taskCompletionSource.SetResult(new ParseRegistryResponseResult(id, object_json, timestamp));
         }
+        private static ParseRegistryResponseCompletedDelegate ParseRegistryResponseCallback = ParseRegistryResponseCallbackMethod;
 
         /// <summary>
         /// Gets the callback to use when the command for SignRequestAsync has completed.
@@ -106,7 +110,7 @@ namespace Hyperledger.Indy.LedgerApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(SignRequestCompletedDelegate))]
 #endif
-        private static void SignRequestCallback(int xcommand_handle, int err, string signed_request_json)
+        private static void SignRequestCallbackMethod(int xcommand_handle, int err, string signed_request_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -115,6 +119,7 @@ namespace Hyperledger.Indy.LedgerApi
 
             taskCompletionSource.SetResult(signed_request_json);
         }
+        private static SignRequestCompletedDelegate SignRequestCallback = SignRequestCallbackMethod;
 
         /// <summary>
         /// Signs a request message.
@@ -440,9 +445,11 @@ namespace Hyperledger.Indy.LedgerApi
         /// "ip", "port", and "keys":
         /// <code>
         /// {
+        ///     "id": "id",
         ///     "name":"access",
         ///     "version":"1.0",
-        ///     "attr_names":["ip","port","keys"]
+        ///     "attrNames":["ip","port","keys"],
+        ///     "ver":"1.0"      // note: this must always be 1.0
         /// }
         /// </code>
         /// </para>
@@ -639,10 +646,15 @@ namespace Hyperledger.Indy.LedgerApi
         /// Builds a GET_TXN request
         /// </summary>
         /// <param name="submitterDid">The DID of the submitter.</param>
+        /// <param name="ledgerType">(Optional) type of the ledger the requested transaction belongs to:
+        ///     DOMAIN - used default,
+        ///     POOL,
+        ///     CONFIG
+        ///     any number</param>
         /// <param name="data">seq_no of transaction in ledger</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="string"/> 
         /// containing the request JSON. </returns>
-        public static Task<string> BuildGetTxnRequestAsync(string submitterDid, int data)
+        public static Task<string> BuildGetTxnRequestAsync(string submitterDid, string ledgerType, int data)
         {
             ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
 
@@ -652,6 +664,7 @@ namespace Hyperledger.Indy.LedgerApi
             var result = NativeMethods.indy_build_get_txn_request(
                 commandHandle,
                 submitterDid,
+                ledgerType,
                 data,
                 BuildRequestCallback);
 

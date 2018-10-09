@@ -151,10 +151,6 @@
     return @"default";
 }
 
-+ (NSString *)keychainType {
-    return @"keychain";
-}
-
 + (NSString *)gvtSchema {
     return @"{\"id\":\"id\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
 }

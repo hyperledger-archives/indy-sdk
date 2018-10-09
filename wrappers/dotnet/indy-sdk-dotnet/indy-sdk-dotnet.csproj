@@ -5,7 +5,7 @@
     <AssemblyName>Hyperledger.Indy.Sdk</AssemblyName>
     <RootNamespace>Hyperledger.Indy</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.6.2</Version>
+    <Version>1.6.4</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Authors>Symon Rottem, Tomislav Markovski</Authors>
     <Company>Hyperledger Indy</Company>
@@ -19,8 +19,8 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
     <PackageTags>hyperledger indy sdk</PackageTags>
     <PackageLicenseUrl>https://github.com/hyperledger/indy-sdk/blob/master/LICENSE</PackageLicenseUrl>
     <PackageIconUrl></PackageIconUrl>
-    <AssemblyVersion>1.6.2</AssemblyVersion>
-    <FileVersion>1.6.2</FileVersion>
+    <AssemblyVersion>1.6.4</AssemblyVersion>
+    <FileVersion>1.6.4</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -29,4 +29,7 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
     <WarningsAsErrors></WarningsAsErrors>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
 use super::environment;
+use super::logger;
 
 use std::fs;
 
@@ -19,4 +20,13 @@ pub fn cleanup_temp() {
 pub fn cleanup_storage() {
     cleanup_indy_home();
     cleanup_temp();
+}
+
+pub fn setup() {
+    cleanup_storage();
+    logger::set_default_indy_logger();
+}
+
+pub fn tear_down() {
+    cleanup_storage();
 }

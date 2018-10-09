@@ -1,0 +1,19 @@
+[target.aarch64-linux-android]
+ar = "$NDK_DIR/arm64/bin/aarch64-linux-android-ar"
+linker = "$NDK_DIR/arm64/bin/aarch64-linux-android-clang"
+
+[target.armv7-linux-androideabi]
+ar = "$NDK_DIR/arm/bin/arm-linux-androideabi-ar"
+linker = "$NDK_DIR/arm/bin/arm-linux-androideabi-clang"
+
+[target.arm-linux-androideabi]
+ar = "$NDK_DIR/arm/bin/arm-linux-androideabi-ar"
+linker = "$NDK_DIR/arm/bin/arm-linux-androideabi-clang"
+
+[target.i686-linux-android]
+ar = "$NDK_DIR/x86/bin/i686-linux-android-ar"
+linker = "$NDK_DIR/x86/bin/i686-linux-android-clang"
+
+[target.x86_64-linux-android]
+ar = "$NDK_DIR/x86_64/bin/x86_64-linux-android-ar"
+linker = "$NDK_DIR/x86_64/bin/x86_64-linux-android-clang"

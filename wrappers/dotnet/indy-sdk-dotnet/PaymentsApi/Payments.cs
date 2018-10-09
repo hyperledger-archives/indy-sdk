@@ -17,7 +17,7 @@ namespace Hyperledger.Indy.PaymentsApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(CreatePaymentAddressDelegate))]
 #endif
-        static void CreatePaymentAddressCallback(int xcommand_handle, int err, string payment_address)
+        static void CreatePaymentAddressCallbackMethod(int xcommand_handle, int err, string payment_address)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -26,11 +26,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(payment_address);
         }
+        static CreatePaymentAddressDelegate CreatePaymentAddressCallback = CreatePaymentAddressCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(ListPaymentAddressesDelegate))]
 #endif
-        static void ListPaymentAddressesCallback(int xcommand_handle, int err, string payment_addressed_json)
+        static void ListPaymentAddressesCallbackMethod(int xcommand_handle, int err, string payment_addressed_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -39,11 +40,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(payment_addressed_json);
         }
+        static ListPaymentAddressesDelegate ListPaymentAddressesCallback = ListPaymentAddressesCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(AddRequestFeesDelegate))]
 #endif
-        static void AddRequestFeesCallback(int xcommand_handle, int err, string req_with_fees_json, string payment_method)
+        static void AddRequestFeesCallbackMethod(int xcommand_handle, int err, string req_with_fees_json, string payment_method)
         {
             var taskCompletionSource = PendingCommands.Remove<PaymentResult>(xcommand_handle);
 
@@ -52,11 +54,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(new PaymentResult(req_with_fees_json, payment_method));
         }
+        static AddRequestFeesDelegate AddRequestFeesCallback = AddRequestFeesCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(ParseResponseWithFeesDelegate))]
 #endif
-        static void ParseResponseWithFeesCallback(int xcommand_handle, int err, string utxo_json)
+        static void ParseResponseWithFeesCallbackMethod(int xcommand_handle, int err, string utxo_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -65,11 +68,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(utxo_json);
         }
+        static ParseResponseWithFeesDelegate ParseResponseWithFeesCallback = ParseResponseWithFeesCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(BuildGetUtxoRequstDelegate))]
 #endif
-        static void BuildGetUtxoRequestCallback(int xcommand_handle, int err, string get_utxo_txn_json, string payment_method)
+        static void BuildGetUtxoRequestCallbackMethod(int xcommand_handle, int err, string get_utxo_txn_json, string payment_method)
         {
             var taskCompletionSource = PendingCommands.Remove<PaymentResult>(xcommand_handle);
 
@@ -78,11 +82,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(new PaymentResult(get_utxo_txn_json, payment_method));
         }
+        static BuildGetUtxoRequstDelegate BuildGetUtxoRequestCallback = BuildGetUtxoRequestCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(ParseGetUtxoResponseDelegate))]
 #endif
-        static void ParseGetUtxoResponseCallback(int xcommand_handle, int err, string utxo_json)
+        static void ParseGetUtxoResponseCallbackMethod(int xcommand_handle, int err, string utxo_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -91,11 +96,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(utxo_json);
         }
+        static ParseGetUtxoResponseDelegate ParseGetUtxoResponseCallback = ParseGetUtxoResponseCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(BuildPaymentRequestDelegate))]
 #endif
-        static void BuildPaymentRequestCallback(int xcommand_handle, int err, string payment_req_json, string payment_method)
+        static void BuildPaymentRequestCallbackMethod(int xcommand_handle, int err, string payment_req_json, string payment_method)
         {
             var taskCompletionSource = PendingCommands.Remove<PaymentResult>(xcommand_handle);
 
@@ -104,11 +110,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(new PaymentResult(payment_req_json, payment_method));
         }
+        static BuildPaymentRequestDelegate BuildPaymentRequestCallback = BuildPaymentRequestCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(ParsePaymentResponseDelegate))]
 #endif
-        static void ParsePaymentResponseCallback(int xcommand_handle, int err, string utxo_json)
+        static void ParsePaymentResponseCallbackMethod(int xcommand_handle, int err, string utxo_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -117,11 +124,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(utxo_json);
         }
+        static ParsePaymentResponseDelegate ParsePaymentResponseCallback = ParsePaymentResponseCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(BuildMintReqDelegate))]
 #endif
-        static void BuildMintRequestCallback(int xcommand_handle, int err, string mint_req_json, string payment_method)
+        static void BuildMintRequestCallbackMethod(int xcommand_handle, int err, string mint_req_json, string payment_method)
         {
             var taskCompletionSource = PendingCommands.Remove<PaymentResult>(xcommand_handle);
 
@@ -130,11 +138,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(new PaymentResult(mint_req_json, payment_method));
         }
+        static BuildMintReqDelegate BuildMintRequestCallback = BuildMintRequestCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(BuildSetTxnFeesReqDelegate))]
 #endif
-        static void BuildSetTxnFeesReqCallback(int xcommand_handle, int err, string set_txn_fees_json)
+        static void BuildSetTxnFeesReqCallbackMethod(int xcommand_handle, int err, string set_txn_fees_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -143,11 +152,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(set_txn_fees_json);
         }
+        static BuildSetTxnFeesReqDelegate BuildSetTxnFeesReqCallback = BuildSetTxnFeesReqCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(BuildGetTxnFeesReqDelegate))]
 #endif
-        static void BuildGetTxnFeesReqCallback(int xcommand_handle, int err, string get_txn_fees_json)
+        static void BuildGetTxnFeesReqCallbackMethod(int xcommand_handle, int err, string get_txn_fees_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -156,11 +166,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(get_txn_fees_json);
         }
+        static BuildGetTxnFeesReqDelegate BuildGetTxnFeesReqCallback = BuildGetTxnFeesReqCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(ParseGetTxnFeesResponseDelegate))]
 #endif
-        static void ParseGetTxnFeesResponseCallback(int xcommand_handle, int err, string get_txn_fees_json)
+        static void ParseGetTxnFeesResponseCallbackMethod(int xcommand_handle, int err, string get_txn_fees_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -169,11 +180,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(get_txn_fees_json);
         }
+        static ParseGetTxnFeesResponseDelegate ParseGetTxnFeesResponseCallback = ParseGetTxnFeesResponseCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(BuildVerifyPaymentRequestDelegate))]
 #endif
-        static void BuildVerifyPaymentRequestCallback(int xcommand_handle, int err, string verify_txn_json, string payment_method)
+        static void BuildVerifyPaymentRequestCallbackMethod(int xcommand_handle, int err, string verify_txn_json, string payment_method)
         {
             var taskCompletionSource = PendingCommands.Remove<PaymentResult>(xcommand_handle);
 
@@ -182,11 +194,12 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(new PaymentResult(verify_txn_json, payment_method));
         }
+        static BuildVerifyPaymentRequestDelegate BuildVerifyPaymentRequestCallback = BuildVerifyPaymentRequestCallbackMethod;
 
 #if __IOS__
         [MonoPInvokeCallback(typeof(ParseVerifyPaymentResponseDelegate))]
 #endif
-        static void ParseVerifyPaymentResponseDelegate(int xcommand_handle, int err, string txn_json)
+        static void ParseVerifyPaymentResponseDelegateMethod(int xcommand_handle, int err, string txn_json)
         {
             var taskCompletionSource = PendingCommands.Remove<string>(xcommand_handle);
 
@@ -195,6 +208,7 @@ namespace Hyperledger.Indy.PaymentsApi
 
             taskCompletionSource.SetResult(txn_json);
         }
+        static ParseVerifyPaymentResponseDelegate ParseVerifyPaymentResponseDelegate = ParseVerifyPaymentResponseDelegateMethod;
 
         /// <summary>
         /// Create the payment address for this payment method.

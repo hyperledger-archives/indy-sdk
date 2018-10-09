@@ -2,10 +2,7 @@ package org.hyperledger.indy.sdk;
 
 import java.io.File;
 
-import com.sun.jna.Callback;
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.NativeLibrary;
+import com.sun.jna.*;
 
 public abstract class LibIndy {
 
@@ -31,12 +28,6 @@ public abstract class LibIndy {
 
 		// wallet.rs
 
-		public int indy_register_wallet_storage(int command_handle, String type, Callback create, Callback open, Callback close,
-		                                        Callback delete, Callback add_record, Callback update_record_value, Callback update_record_tags,
-		                                        Callback add_record_tags, Callback delete_record_tags, Callback delete_record,
-		                                        Callback get_record, Callback get_record_id, Callback get_record_type, Callback get_record_value,
-		                                        Callback get_record_tags, Callback free_record, Callback search_records, Callback search_all_records,
-		                                        Callback get_search_total_count, Callback fetch_search_next_record, Callback free_search, Callback cb);
 		public int indy_create_wallet(int command_handle, String config, String credentials, Callback cb);
 		public int indy_open_wallet(int command_handle, String config, String credentials, Callback cb);
 		public int indy_close_wallet(int command_handle, int handle, Callback cb);
@@ -173,6 +164,9 @@ public abstract class LibIndy {
 		int indy_build_verify_payment_req(int command_handle, int wallet_handle, String submitter_did, String receipt, Callback cb);
 		int indy_parse_verify_payment_response(int command_handle, String payment_method, String resp_json, Callback cb);
 
+		int indy_set_default_logger(String level);
+		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
+
 	}
 
 	/*
@@ -221,6 +215,7 @@ public abstract class LibIndy {
 	public static void init() {
 
 		api = Native.loadLibrary(LIBRARY_NAME, API.class);
+		initLogger();
 	}
 
 	/**
@@ -231,5 +226,45 @@ public abstract class LibIndy {
 	public static boolean isInitialized() {
 
 		return api != null;
+	}
+
+	private static class Logger {
+		private static Callback enabled = null;
+
+		private static Callback log = new Callback() {
+
+			@SuppressWarnings({"unused", "unchecked"})
+			public void callback(Pointer context, int level, String target, String message, String module_path, String file, int line) {
+				 org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(String.format("%s.native.%s", LibIndy.class.getName(), target.replace("::", ".")));
+
+				String logMessage = String.format("%s:%d | %s", file, line, message);
+
+				switch (level) {
+					case 1:
+						logger.error(logMessage);
+						break;
+					case 2:
+						logger.warn(logMessage);
+						break;
+					case 3:
+						logger.info(logMessage);
+						break;
+					case 4:
+						logger.debug(logMessage);
+						break;
+					case 5:
+						logger.trace(logMessage);
+						break;
+					default:
+						break;
+				}
+			}
+		};
+
+		private static Callback flush = null;
+	}
+
+	private static void initLogger() {
+		api.indy_set_logger(null, Logger.enabled, Logger.log, Logger.flush);
 	}
 }
