@@ -3,6 +3,7 @@ using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.AnonCredsTests
@@ -12,44 +13,44 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
     {
         private static bool _walletOpened = false;
 
-        static Wallet wallet;
-        static string gvtSchemaId;
-        static string gvtSchema;
-        static string xyzSchemaId;
-        static string xyzSchema;
-        static string issuer1gvtCredDefId;
-        static string issuer1gvtCredDef;
-        static string issuer1xyzCredDef;
-        static string issuer1GvtCredOffer;
-        static string issuer2GvtCredOffer;
-        static string issuer1GvtCredReq;
-        static string issuer1GvtCredReqMetadata;
-        string CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
-        string masterSecretId = "master_secret_name";
+        protected static Wallet wallet;
+        protected static string gvtSchemaId;
+        protected static string gvtSchema;
+        protected static string xyzSchemaId;
+        protected static string xyzSchema;
+        protected static string issuer1gvtCredDefId;
+        protected static string issuer1gvtCredDef;
+        protected static string issuer1xyzCredDef;
+        protected static string issuer1GvtCredOffer;
+        protected static string issuer2GvtCredOffer;
+        protected static string issuer1GvtCredReq;
+        protected static string issuer1GvtCredReqMetadata;
+        protected static string CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
+        protected static string masterSecretId = "master_secret_name";
 
         protected static string issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
         protected static string proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
 
 
-        string defaultCredentialDefinitionConfig = "{\"support_revocation\":false}";
-        string tag = "tag1";
-        string gvtSchemaName = "gvt";
-        string schemaVersion = "1.0";
-        string gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
-        string credentialId1 = "id1";
-        string credentialId2 = "id2";
+        protected static string defaultCredentialDefinitionConfig = "{\"support_revocation\":false}";
+        protected static string tag = "tag1";
+        protected static string gvtSchemaName = "gvt";
+        protected static string schemaVersion = "1.0";
+        protected static string gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
+        protected static string credentialId1 = "id1";
+        protected static string credentialId2 = "id2";
         // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
-        string gvtCredentialValuesJson = JObject.Parse("{\n" +
+        protected static string gvtCredentialValuesJson = JObject.Parse("{\n" +
                 "               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
                 "               \"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},\n" +
                 "               \"height\":{\"raw\":\"175\",\"encoded\":\"175\"},\n" +
                 "               \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
                 "        }").ToString();
-        string xyzCredentialValuesJson = JObject.Parse("{\n" +
+        protected static string xyzCredentialValuesJson = JObject.Parse("{\n" +
                 "               \"status\":{\"raw\":\"partial\",\"encoded\":\"51792877103171595686471452153480627530895\"},\n" +
                 "               \"period\":{\"raw\":\"8\",\"encoded\":\"8\"}\n" +
                 "        }").ToString();
-        string proofRequest = JObject.Parse("{\n" +
+        protected static string proofRequest = JObject.Parse("{\n" +
                 "                   \"nonce\":\"123432421212\",\n" +
                 "                   \"name\":\"proof_req_1\",\n" +
                 "                   \"version\":\"0.1\", " +
@@ -71,8 +72,6 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             await InitCommonWallet();
         }
 
-
-
         protected async Task InitCommonWallet()
         {
             if (_walletOpened)
@@ -80,7 +79,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
             StorageUtils.CleanupStorage();
 
-            var walletConfig = JsonConvert.SerializeObject(new { id = "anoncredsCommonWallet" });
+            var walletConfig = JsonConvert.SerializeObject(new { id = Guid.NewGuid() });
 
             await Wallet.CreateWalletAsync(walletConfig, CREDENTIALS);
             wallet = await Wallet.OpenWalletAsync(walletConfig, CREDENTIALS);
