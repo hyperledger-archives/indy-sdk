@@ -142,11 +142,7 @@ impl WalletCommandExecutor {
             }
             WalletCommand::CreateContinue(config, credentials, key_data, key_result, cb_id) => {
                 debug!(target: "wallet_command_executor", "CreateContinue command received");
-                let cb = get_cb!(self, cb_id);
-                cb(key_result
-                    .map_err(WalletError::from)
-                    .and_then(|key| self.wallet_service.create_wallet(&config, &credentials, (key_data, key)))
-                    .map_err(IndyError::from))
+                self._create_continue(cb_id, &config, &credentials, key_data, key_result)
             }
             WalletCommand::Open(config, credentials, cb) => {
                 debug!(target: "wallet_command_executor", "Open command received");
@@ -154,11 +150,7 @@ impl WalletCommandExecutor {
             }
             WalletCommand::OpenContinue(wallet_handle, key_result) => {
                 debug!(target: "wallet_command_executor", "OpenContinue command received");
-                let cb = self.open_callbacks.borrow_mut().remove(&wallet_handle).unwrap();
-                cb(key_result
-                    .map_err(WalletError::from)
-                    .and_then(|key| self.wallet_service.open_wallet_continue(wallet_handle, key))
-                    .map_err(IndyError::from))
+                self._open_continue(wallet_handle, key_result)
             }
             WalletCommand::Close(handle, cb) => {
                 debug!(target: "wallet_command_executor", "Close command received");
@@ -170,11 +162,7 @@ impl WalletCommandExecutor {
             }
             WalletCommand::DeleteContinue(config, credentials, metadata, key_result, cb_id) => {
                 debug!(target: "wallet_command_executor", "DeleteContinue command received");
-                let cb = get_cb!(self, cb_id);
-                cb(key_result
-                    .map_err(WalletError::from)
-                    .and_then(|key| self.wallet_service.delete_wallet_continue(&config, &credentials, &metadata, key))
-                    .map_err(IndyError::from))
+                self._delete_continue(cb_id, &config, &credentials, &metadata, key_result)
             }
             WalletCommand::Export(wallet_handle, export_config, cb) => {
                 debug!(target: "wallet_command_executor", "Export command received");
@@ -182,11 +170,7 @@ impl WalletCommandExecutor {
             }
             WalletCommand::ExportContinue(wallet_handle, export_config, key_data, key_result, cb_id) => {
                 debug!(target: "wallet_command_executor", "ExportContinue command received");
-                let cb = get_cb!(self, cb_id);
-                cb(key_result
-                    .map_err(WalletError::from)
-                    .and_then(|key| self.wallet_service.export_wallet(wallet_handle, &export_config, 0, (key_data, key)))
-                    .map_err(IndyError::from)) // TODO - later add proper versioning
+                self._export_continue(cb_id, wallet_handle, &export_config, key_data, key_result)
             }
             WalletCommand::Import(config, credentials, import_config, cb) => {
                 debug!(target: "wallet_command_executor", "Import command received");
@@ -194,11 +178,7 @@ impl WalletCommandExecutor {
             }
             WalletCommand::ImportContinue(config, credential, key_result, wallet_handle) => {
                 debug!(target: "wallet_command_executor", "ImportContinue command received");
-                let cb = get_cb!(self, wallet_handle);
-                cb(key_result
-                    .map_err(WalletError::from)
-                    .and_then(|key| self.wallet_service.import_wallet_continue(wallet_handle, &config, &credential, key))
-                    .map_err(IndyError::from))
+                self._import_continue(wallet_handle, &config, &credential, key_result);
             }
             WalletCommand::GenerateKey(config, cb) => {
                 debug!(target: "wallet_command_executor", "DeriveKey command received");
@@ -206,7 +186,7 @@ impl WalletCommandExecutor {
             }
             WalletCommand::DeriveKey(key_data, cb) => {
                 debug!(target: "wallet_command_executor", "DeriveKey command received");
-                ::commands::THREADPOOL.lock().unwrap().execute(move || cb(key_data.calc_master_key()));
+                self._derive_key(key_data, cb);
             }
         };
     }
@@ -285,6 +265,19 @@ impl WalletCommandExecutor {
         trace!("_create <<<");
     }
 
+    fn _create_continue(&self,
+                        cb_id: i32,
+                        config: &Config,
+                        credentials: &Credentials,
+                        key_data: KeyDerivationData,
+                        key_result: DeriveKeyResult<MasterKey>) {
+        let cb = get_cb!(self, cb_id );
+        cb(key_result
+            .map_err(WalletError::from)
+            .and_then(|key| self.wallet_service.create_wallet(config, credentials, (key_data, key)))
+            .map_err(IndyError::from))
+    }
+
     fn _open(&self,
              config: &Config,
              credentials: &Credentials,
@@ -299,31 +292,13 @@ impl WalletCommandExecutor {
             Command::Wallet(WalletCommand::DeriveKey(
                 key_derivation_data,
                 Box::new(move |key_result| {
-                    let key_result = key_result.clone();
                     match (key_result, rekey_data.clone()) {
                         (Ok(key_result), Some(rekey_data)) => {
-                            CommandExecutor::instance().send(
-                                Command::Wallet(WalletCommand::DeriveKey(
-                                    rekey_data,
-                                    Box::new(move |rekey_result| {
-                                        let key_result = key_result.clone();
-                                        CommandExecutor::instance().send(
-                                            Command::Wallet(WalletCommand::OpenContinue(
-                                                wallet_handle,
-                                                rekey_result.map(move |rekey_result| (key_result.clone(), Some(rekey_result))),
-                                            ))
-                                        ).unwrap();
-                                    }),
-                                ))
-                            ).unwrap();
+                            WalletCommandExecutor::_derive_rekey_and_continue(wallet_handle, key_result, rekey_data)
                         }
                         (key_result, _) => {
-                            CommandExecutor::instance().send(
-                                Command::Wallet(WalletCommand::OpenContinue(
-                                    wallet_handle,
-                                    key_result.map(|kr| (kr, None)),
-                                ))
-                            ).unwrap()
+                            let key_result = key_result.map(|kr| (kr, None));
+                            WalletCommandExecutor::_send_open_continue(wallet_handle, key_result)
                         }
                     }
                 }),
@@ -333,6 +308,38 @@ impl WalletCommandExecutor {
         let res = wallet_handle;
 
         trace!("_open <<< res: {:?}", res);
+    }
+
+    fn _derive_rekey_and_continue(wallet_handle: i32, key_result: MasterKey, rekey_data: KeyDerivationData) {
+        CommandExecutor::instance().send(
+            Command::Wallet(WalletCommand::DeriveKey(
+                rekey_data,
+                Box::new(move |rekey_result| {
+                    let key_result = key_result.clone();
+                    let key_result = rekey_result.map(move |rekey_result| (key_result, Some(rekey_result)));
+                    WalletCommandExecutor::_send_open_continue(wallet_handle, key_result)
+                }),
+            ))
+        ).unwrap();
+    }
+
+    fn _send_open_continue(wallet_handle: i32, key_result: DeriveKeyResult<(MasterKey, Option<MasterKey>)>) {
+        CommandExecutor::instance().send(
+            Command::Wallet(WalletCommand::OpenContinue(
+                wallet_handle,
+                key_result,
+            ))
+        ).unwrap();
+    }
+
+    fn _open_continue(&self,
+                      wallet_handle: i32,
+                      key_result: DeriveKeyResult<(MasterKey, Option<MasterKey>)>) {
+        let cb = self.open_callbacks.borrow_mut().remove(&wallet_handle).unwrap();
+        cb(key_result
+            .map_err(WalletError::from)
+            .and_then(|key| self.wallet_service.open_wallet_continue(wallet_handle, key))
+            .map_err(IndyError::from))
     }
 
     fn _close(&self,
@@ -379,6 +386,19 @@ impl WalletCommandExecutor {
         trace!("_delete <<<");
     }
 
+    fn _delete_continue(&self,
+                        cb_id: i32,
+                        config: &Config,
+                        credentials: &Credentials,
+                        metadata: &Metadata,
+                        key_result: DeriveKeyResult<MasterKey>) {
+        let cb = get_cb!(self, cb_id);
+        cb(key_result
+            .map_err(WalletError::from)
+            .and_then(|key| self.wallet_service.delete_wallet_continue(config, credentials, metadata, key))
+            .map_err(IndyError::from))
+    }
+
     fn _export(&self,
                wallet_handle: i32,
                export_config: &ExportConfig,
@@ -408,6 +428,19 @@ impl WalletCommandExecutor {
         ).unwrap();
 
         trace!("_export <<<");
+    }
+
+    fn _export_continue(&self,
+                        cb_id: i32,
+                        wallet_handle: i32,
+                        export_config: &ExportConfig,
+                        key_data: KeyDerivationData,
+                        key_result: DeriveKeyResult<MasterKey>) {
+        let cb = get_cb!(self, cb_id);
+        cb(key_result
+            .map_err(WalletError::from)
+            .and_then(|key| self.wallet_service.export_wallet(wallet_handle, export_config, 0, (key_data, key)))
+            .map_err(IndyError::from)) // TODO - later add proper versioning
     }
 
     fn _import(&self,
@@ -453,6 +486,18 @@ impl WalletCommandExecutor {
         trace!("_import <<<");
     }
 
+    fn _import_continue(&self,
+                        wallet_handle: i32,
+                        config: &Config,
+                        credential: &Credentials,
+                        key_result: DeriveKeyResult<(MasterKey, MasterKey)>) {
+        let cb = get_cb!(self, wallet_handle);
+        cb(key_result
+            .map_err(WalletError::from)
+            .and_then(|key| self.wallet_service.import_wallet_continue(wallet_handle, &config, &credential, key))
+            .map_err(IndyError::from))
+    }
+
     fn _generate_key(&self,
                      config: Option<&KeyConfig>) -> Result<String> {
         trace!("_generate_key >>>config: {:?}", secret!(config));
@@ -468,5 +513,9 @@ impl WalletCommandExecutor {
 
         trace!("_generate_key <<< res: {:?}", res);
         Ok(res)
+    }
+
+    fn _derive_key(&self, key_data: KeyDerivationData, cb: Box<Fn(DeriveKeyResult<MasterKey>) + Send>){
+        ::commands::THREADPOOL.lock().unwrap().execute(move || cb(key_data.calc_master_key()));
     }
 }
