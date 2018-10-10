@@ -15,7 +15,7 @@ use super::{WalletError, Wallet, WalletRecord};
 
 const CHUNK_SIZE: usize = 1024;
 
-pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: KeyDerivationData) -> Result<(), WalletError> {
+pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> Result<(), WalletError> {
     let nonce = chacha20poly1305_ietf::gen_nonce();
     let chunk_size = CHUNK_SIZE;
 
@@ -208,7 +208,7 @@ mod tests {
         let key_data = KeyDerivationData::from_passphrase_with_new_salt(passphrase, key_derivation_method);
         let key = key_data.calc_master_key()?;
 
-        export_continue(wallet, writer, version, key, key_data)
+        export_continue(wallet, writer, version, key, &key_data)
     }
 
     #[test]
