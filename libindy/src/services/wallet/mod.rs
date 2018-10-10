@@ -195,7 +195,8 @@ impl WalletService {
     }
 
     pub fn open_wallet_continue(&self, wallet_handle: i32, master_key: (MasterKey, Option<MasterKey>)) -> Result<i32, WalletError> {
-        let (id, storage, metadata, rekey_data) = self.pending_for_open.borrow_mut().remove(&wallet_handle).expect("FIXME INVALID STATE");
+        let (id, storage, metadata, rekey_data) = self.pending_for_open.borrow_mut().remove(&wallet_handle)
+            .ok_or(WalletError::CommonError(CommonError::InvalidState("Open data not found".to_string())))?;
 
         let (master_key, rekey) = master_key;
         let keys = self._restore_keys(&metadata, &master_key)?;
@@ -457,7 +458,7 @@ impl WalletService {
 
         let (import_key, master_key) = key;
 
-        let master_key_d = master_key.clone(); // TODO: FIXME
+        let master_key_stashed = master_key.clone(); // TODO: FIXME
 
         let keys = self._create_wallet(config, credentials, (key_data, master_key))?;
 
@@ -475,10 +476,10 @@ impl WalletService {
             let metadata: Metadata = serde_json::from_slice(&metadata)
                 .map_err(|err| CommonError::InvalidState(format!("Cannot deserialize metadata: {:?}", err)))?;
 
-            self.delete_wallet_continue(config, credentials, &metadata, master_key_d)?;
+            self.delete_wallet_continue(config, credentials, &metadata, master_key_stashed)?;
         }
 
-//        self.close_wallet(wallet_handle)?;
+        //        self.close_wallet(wallet_handle)?;
 
         trace!("import_wallet <<<");
 
