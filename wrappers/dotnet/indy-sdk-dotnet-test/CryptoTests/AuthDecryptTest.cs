@@ -27,7 +27,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
         }
 
         [TestMethod]
-        public async Task testAuthDecryptWorksForInvalidMessage()
+        public async Task TestAuthDecryptWorksForInvalidMessage()
         {
             var result = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             var recipientDid = result.Did;

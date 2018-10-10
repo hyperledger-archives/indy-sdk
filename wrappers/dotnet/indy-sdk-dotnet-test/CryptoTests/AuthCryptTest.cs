@@ -47,7 +47,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
         }
 
         [TestMethod]
-        public async Task TestAuthCryptWorksForUnknownCoder()
+        public async Task TestAuthCryptWorksForInvalidTheirVk()
         {
             var myVk = await Crypto.CreateKeyAsync(wallet, MY1_IDENTITY_KEY_JSON);
 
