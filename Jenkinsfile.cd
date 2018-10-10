@@ -28,10 +28,10 @@ def testing() {
     stage('Testing') {
         parallel([
                 'ubuntu-test' : { ubuntuTesting() },
-                 'redhat-test' : { rhelTesting() },
-                 'android-test': { androidTesting() },
-                 'windows-test': { windowsTesting() },
-                 'ios-test'    : { iosTesting() }
+                'redhat-test' : { rhelTesting() },
+                'android-test': { androidTesting() },
+                'windows-test': { windowsTesting() },
+                'ios-test'    : { iosTesting() }
         ])
     }
 }
@@ -191,6 +191,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
 
         sh "cp libindy/target/release/libindy.so wrappers/java/lib"
         sh "cp libindy/target/release/libindy.so wrappers/python"
+        sh "cp libindy/target/release/libindy.so wrappers/rust"
         sh "cp libindy/target/release/libindy.so cli"
         sh "cp libindy/target/release/libindy.so libnullpay"
         sh "cp libindy/target/release/libindy.so vcx/libvcx"
@@ -224,6 +225,7 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
+        stash includes: 'wrappers/rust/libindy.so', name: "LibindyRustSO${env_name}"
         stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
         stash includes: 'vcx/libvcx/libindy.so', name: "LibindyVCXSO${env_name}"
@@ -269,6 +271,9 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                 },
                 "${env_name}-cli-test"       : {
                     linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting, stashBuildResults)
+                },
+                "${env_name}-rust-test"      : {
+                    linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting, stashBuildResults)
                 },
                 "${env_name}-vcx-test"       : {
                     linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting, stashBuildResults)
@@ -343,6 +348,20 @@ def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
             if (stashBuildResults) {
                 stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
             }
+        }
+    }
+}
+
+def linuxRustTesting(env_name, network_name, testEnv, stashBuildResults) {
+    unstash name: "LibindyRustSO${env_name}"
+
+    dir('wrappers/rust') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Indy Rust wrapper Test: Build"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run'
+
+            echo "${env_name} Indy Rust wrapper Test: Run tests"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
         }
     }
 }
@@ -489,7 +508,7 @@ def ubuntuTesting() {
     }
 }
 
-def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv, stashBuildResult) {
     dir('libindy') {
         sh 'chmod -R 777 ci/*.sh'
         sh 'chmod -R 777 *.sh'
@@ -635,6 +654,7 @@ def ubuntuPublishing() {
                 libindyDebPublishing(testEnv, libindyVersion)
                 pythonWrapperPublishing(testEnv, false, 'wrappers/python')
                 javaWrapperPublishing(testEnv, false)
+                rustWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
                 libnullpayDebPublishing(testEnv)
                 libvcxDebPublishing(testEnv)
@@ -647,6 +667,37 @@ def ubuntuPublishing() {
         }
     }
     return libindyVersion
+}
+
+def rustWrapperPublishing(testEnv, isRelease) {
+
+    def ver = getSrcVersion("wrappers/rust")
+    def suffix = getSuffix(isRelease, "Cargo")
+
+    echo 'Publish Indy-Sys to Cargo'
+
+    dir('wrappers/rust/indy-sys') {
+        publishToCargo(testEnv, suffix, ver)
+    }
+
+    echo 'Publish Indy to Cargo'
+
+    dir('wrappers/rust') {
+        sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"$ver\" }/indy-sys = { path =\"indy-sys\", version = \"$ver$suffix\" }/g' Cargo.toml"
+        publishToCargo(testEnv, suffix, ver)
+    }
+}
+
+def publishToCargo(testEnv, suffix, ver) {
+    testEnv.inside {
+        sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"$ver/version = \\\"$ver$suffix/\" Cargo.toml"
+
+        withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'LOGIN')]) {
+            sh 'cargo login $LOGIN'
+            sh 'cargo package --allow-dirty'
+            sh 'cargo publish --allow-dirty'
+        }
+    }
 }
 
 def windowsPublishing() {
@@ -881,6 +932,9 @@ def publishingRCtoStable() {
 
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
+
+                echo 'Moving Ubuntu RC artifacts to Stable: rust wrapper'
+                rustWrapperPublishing(testEnv, true)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: indy-cli'
                 publishLibindyCliDebRCtoStable(testEnv, libindyVersion)
@@ -1141,7 +1195,7 @@ def androidTesting() {
     network_name = "pool_network"
     parallel([
             "${env_name}-android-test"    : {
-                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting)
+                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, false)
             },
             "${env_name}-android-building": { androidBuildAsTesting() }
     ])
