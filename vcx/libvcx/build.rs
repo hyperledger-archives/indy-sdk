@@ -1,6 +1,7 @@
 use std::env;
 use std::io::prelude::*;
 use std::fs::File;
+use std::fs;
 use std::path::Path;
 
 extern crate toml;
@@ -120,6 +121,46 @@ fn main() {
           println!("cargo:rustc-link-lib=nullpay");
         } else if cfg!(feature = "sovtoken") {
             println!("cargo:rustc-link-lib=sovtoken");
+        }
+    } else if target.contains("-windows-") {
+        println!("cargo:rustc-link-lib=indy.dll");
+
+        let profile = env::var("PROFILE").unwrap();
+        println!("profile={}", profile);
+
+        let indy_dir = env::var("INDY_DIR").unwrap_or(format!("..\\..\\libindy\\target\\{}", profile));
+        println!("indy_dir={}", indy_dir);
+        println!("cargo:rustc-link-search=native={}",indy_dir);
+        let indy_dir = Path::new(indy_dir.as_str());
+
+        println!("cargo:rustc-flags=-L {}", indy_dir.as_os_str().to_str().unwrap());
+
+        let output_dir = env::var("OUT_DIR").unwrap();
+        println!("output_dir={}", output_dir);
+        let output_dir = Path::new(output_dir.as_str());
+
+        let dst = output_dir.join("..\\..\\..");
+        println!("cargo:rustc-flags=-L {}", indy_dir.as_os_str().to_str().unwrap());
+
+        let files = vec!["indy.dll", "libeay32md.dll", "libsodium.dll", "libzmq.dll", "ssleay32md.dll"];
+        for f in files.iter() {
+            if let Ok(_) = fs::copy(&indy_dir.join(f), &dst.join(f)) {
+                println!("copy {} -> {}", &indy_dir.join(f).display(), &dst.join(f).display());
+            }
+        }
+
+        if cfg!(feature = "nullpay") {
+            let libnullpay_lib_path = env::var("LIBNULLPAY_DIR").unwrap_or(format!("..\\..\\libnullpay\\target\\{}", profile));
+
+            println!("cargo:rustc-link-search=native={}",libnullpay_lib_path);
+
+            let libnullpay_lib_path = Path::new(libnullpay_lib_path.as_str());
+
+            let f = "nullpay.dll";
+            if let Ok(_) = fs::copy(&libnullpay_lib_path.join(f), &dst.join(f)) {
+                println!("copy {} -> {}", &libnullpay_lib_path.join(f).display(), &dst.join(f).display());
+            }
+
         }
     }
 
