@@ -7,6 +7,7 @@ namespace Hyperledger.Indy.Test.WalletTests
     [TestClass]
     public class CloseWalletTest : IndyIntegrationTestBase
     {
+
         [TestMethod]
         public async Task TestCloseWalletWorks()
         {

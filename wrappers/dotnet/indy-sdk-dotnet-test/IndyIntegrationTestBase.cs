@@ -25,9 +25,7 @@ namespace Hyperledger.Indy.Test
         protected const string IDENTITY_JSON_TEMPLATE = "{{\"did\":\"{0}\",\"verkey\":\"{1}\"}}";
         protected readonly static byte[] MESSAGE = Encoding.UTF8.GetBytes("{\"reqId\":1496822211362017764}");
         protected const string SCHEMA_DATA = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"attr_names\": [\"name\", \"male\"]}";
-        protected const string POOL = "Pool1";
-        protected const string WALLET = "Wallet1";
-        protected const string TYPE = "default";
+
         protected const string METADATA = "some metadata";
         protected const string ENDPOINT = "127.0.0.1:9700";
         protected const string CRYPTO_TYPE = "ed25519";
@@ -53,7 +51,7 @@ namespace Hyperledger.Indy.Test
                 "        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
                 "        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
                 "    }";
-        protected readonly static string WALLET_CONFIG = string.Format("{{\"id\":\"{0}\", \"storage_type\":\"{1}\"}}", WALLET, TYPE);
+        
 	    protected const string WALLET_CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
 	    protected int PROTOCOL_VERSION = 2;
 
@@ -67,26 +65,19 @@ namespace Hyperledger.Indy.Test
         protected readonly static string EXPORT_CONFIG_JSON = string.Format("{{\"key\":\"{0}\", \"path\":\"{1}\"}}", EXPORT_KEY, EXPORT_PATH);
 
         protected HashSet<Pool> openedPools = new HashSet<Pool>();
+        protected string WALLET_CONFIG;
 
         [TestInitialize]
         public async Task SetUp()
         {
             await InitHelper.InitAsync();
-            StorageUtils.CleanupStorage();
             await Pool.SetProtocolVersionAsync(PROTOCOL_VERSION);
+            WALLET_CONFIG = WalletUtils.GetWalletConfig();
         }
 
         [TestCleanup]
         public async Task TearDown()
         {
-            foreach (var pool in openedPools)
-            {
-                if (pool != null)
-                    await pool.CloseAsync();
-            }
-
-            openedPools.Clear();
-            StorageUtils.CleanupStorage();
         }
     }
 }

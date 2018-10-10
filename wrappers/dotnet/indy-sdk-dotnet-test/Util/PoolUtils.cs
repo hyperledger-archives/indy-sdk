@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.PoolApi;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -7,7 +8,7 @@ namespace Hyperledger.Indy.Test
     class PoolUtils
     {
 
-        public const string DEFAULT_POOL_NAME = "default_pool";
+        //public const string DEFAULT_POOL_NAME = "default_pool";
         public const int TEST_TIMEOUT_FOR_REQUEST_ENSURE = 20_000;
         private const int RESUBMIT_REQUEST_TIMEOUT = 5_000;
         private const int RESUBMIT_REQUEST_CNT = 3;
@@ -43,8 +44,10 @@ namespace Hyperledger.Indy.Test
 
         public static string CreatePoolLedgerConfig()
         {
-            CreatePoolLedgerConfig(DEFAULT_POOL_NAME);
-            return DEFAULT_POOL_NAME;
+            var poolName = Guid.NewGuid().ToString();
+
+            CreatePoolLedgerConfig(poolName);
+            return poolName;
         }
 
         public async static void CreatePoolLedgerConfig(string poolName)

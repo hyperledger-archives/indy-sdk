@@ -18,7 +18,7 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestCreateWalletWorksForEmptyType()
         {
-            var config = JsonConvert.SerializeObject(new { id = WALLET });
+            var config = JsonConvert.SerializeObject(new { id = WalletUtils.GetWalletId() });
             await Wallet.CreateWalletAsync(config, WALLET_CREDENTIALS);
         }
 
@@ -27,7 +27,7 @@ namespace Hyperledger.Indy.Test.WalletTests
         public async Task TestCreateWalletWorksForUnknownType()
         {
             var config = JsonConvert.SerializeObject(new {
-                id = WALLET,
+                id = WalletUtils.GetWalletId(),
                 storage_type = "unknown_type"
             });
 

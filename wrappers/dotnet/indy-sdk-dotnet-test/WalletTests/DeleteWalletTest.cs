@@ -41,7 +41,9 @@ namespace Hyperledger.Indy.Test.WalletTests
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStateException>(() =>
                 Wallet.DeleteWalletAsync(config, WALLET_CREDENTIALS)
-            );           
+            );
+
+            await wallet.CloseAsync();
         }
 
         [TestMethod]
