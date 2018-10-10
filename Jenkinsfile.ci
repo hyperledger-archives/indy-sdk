@@ -308,6 +308,7 @@ def linuxTesting(file, env_name, network_name) {
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
         sh "cp libindy/target/debug/libindy.so wrappers/python"
         sh "cp libindy/target/debug/libindy.so wrappers/nodejs"
+        sh "cp libindy/target/debug/libindy.so wrappers/rust"
         sh "cp libindy/target/debug/libindy.so cli"
         sh "cp libindy/target/debug/libindy.so libnullpay"
         sh "cp libindy/target/debug/libindy.so vcx/libvcx"
@@ -340,6 +341,7 @@ def linuxTesting(file, env_name, network_name) {
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
         stash includes: 'wrappers/nodejs/libindy.so', name: "LibindyNodejsSO${env_name}"
+        stash includes: 'wrappers/rust/libindy.so', name: "LibindyRustSO${env_name}"
         stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
         stash includes: 'vcx/libvcx/libindy.so', name: "LibindyVCXSO${env_name}"
@@ -375,24 +377,13 @@ def linuxTesting(file, env_name, network_name) {
                         }
                     }
                 },
-                "${env_name}-java-test"      : {
-                    linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
-                },
-                "${env_name}-python-test"    : {
-                    linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
-                },
-                "${env_name}-nodejs-test"    : {
-                    linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
-                },
-                "${env_name}-cli-test"       : {
-                    linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
-                },
-                "${env_name}-vcx-test"       : {
-                    linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting)
-                },
-                "${env_name}-vcx-nodejs-test": {
-                    linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting)
-                }
+                "${env_name}-java-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
+                "${env_name}-python-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
+                "${env_name}-nodejs-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
+                "${env_name}-cli-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) },
+                "${env_name}-rust-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting) },
+                "${env_name}-vcx-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting) },
+                "${env_name}-vcx-nodejs-test": { linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting) }
         ])
     }
     finally {
@@ -519,6 +510,20 @@ def linuxCLITesting(env_name, network_name, testEnv) {
 
             echo "${env_name} Indy Cli Test: Run tests"
             sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "nullpay_plugin"'
+        }
+    }
+}
+
+def linuxRustTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyRustSO${env_name}"
+
+    dir('wrappers/rust') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Indy Rust wrapper Test: Build"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run'
+
+            echo "${env_name} Indy Rust wrupper Test: Run tests"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
         }
     }
 }
