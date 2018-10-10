@@ -1,4 +1,5 @@
 ﻿using Hyperledger.Indy.Utils;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
@@ -70,7 +71,7 @@ namespace Hyperledger.Indy.WalletApi
         ///                     For 'default' storage type configuration is:
         ///   {
         ///     "path": optional&lt;string>, Path to the directory with wallet files.
-        ///             Defaults to $HOME/.indy_client/wallets.
+        ///             Defaults to $HOME/.indy_client/wallet.
         ///             Wallet will be stored in the file {path}/{id}/sqlite.db
         ///   }
         /// }
@@ -108,6 +109,20 @@ namespace Hyperledger.Indy.WalletApi
         }
 
         /// <summary>
+        /// Same as CreateWalletAsync(string config, string credentials)
+        /// </summary>
+        /// <returns>The wallet async.</returns>
+        /// <param name="config">Config.</param>
+        /// <param name="cred">Cred.</param>
+        public static Task CreateWalletAsync(WalletConfig config, Credentials cred) 
+        {
+            string configStr = JsonConvert.SerializeObject(config, Formatting.Indented); 
+            string credStr = JsonConvert.SerializeObject(cred, Formatting.Indented);
+
+            return CreateWalletAsync(configStr, credStr);
+        }
+
+        /// <summary>
         /// Open the wallet.
         ///
         /// Wallet must be previously created with <see cref="CreateWalletAsync(string, string)"/> method.
@@ -127,7 +142,7 @@ namespace Hyperledger.Indy.WalletApi
         ///                     For 'default' storage type configuration is:
         ///   {
         ///     "path": optional&lt;string>, Path to the directory with wallet files.
-        ///             Defaults to $HOME/.indy_client/wallets.
+        ///             Defaults to $HOME/.indy_client/wallet.
         ///             Wallet will be stored in the file {path}/{id}/sqlite.db
         ///   }
         /// }
@@ -163,6 +178,20 @@ namespace Hyperledger.Indy.WalletApi
             CallbackHelper.CheckResult(result);
 
             return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Same as OpenWalletAsync(string config, string credentials)
+        /// </summary>
+        /// <returns>The wallet async.</returns>
+        /// <param name="config">Config.</param>
+        /// <param name="cred">Cred.</param>
+        public static Task<Wallet> OpenWalletAsync(WalletConfig config, Credentials cred) 
+        {
+            string configStr = JsonConvert.SerializeObject(config, Formatting.Indented);
+            string credStr = JsonConvert.SerializeObject(cred, Formatting.Indented);
+
+            return OpenWalletAsync(configStr, credStr);
         }
 
         /// <summary>
@@ -223,7 +252,7 @@ namespace Hyperledger.Indy.WalletApi
         ///                     For 'default' storage type configuration is:
         ///   {
         ///     "path": optional&lt;string>, Path to the directory with wallet files.
-        ///             Defaults to $HOME/.indy_client/wallets.
+        ///             Defaults to $HOME/.indy_client/wallet.
         ///             Wallet will be stored in the file {path}/{id}/sqlite.db
         ///   }
         /// }

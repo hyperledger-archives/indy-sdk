@@ -1,4 +1,8 @@
+LIBRARY = "libvcx.so"
+from vcx.cdll import _cdll
 from enum import IntEnum
+from ctypes import c_char_p, cast, c_uint32
+import logging
 
 
 class ErrorCode(IntEnum):
@@ -90,12 +94,23 @@ class ErrorCode(IntEnum):
     InvalidLedgerResponse = 1082,
     DidAlreadyExistsInWallet = 1083,
     DuplicateMasterSecret = 1084,
-    ThreadError = 1085
+    ThreadError = 1085,
+    InvalidProofRequest = 1086,
 
 
 class VcxError(Exception):
     # error_code: ErrorCode
 
-    def __init__(self, error_code: ErrorCode, error_msg: str):
+    def __init__(self, error_code: ErrorCode):
         self.error_code = error_code
-        self.error_msg = error_msg
+        self.error_msg = error_message(error_code)
+
+
+def error_message(error_code: int) -> str:
+    logger = logging.getLogger(__name__)
+    name = 'vcx_error_c_message'
+    c_error_code = c_uint32(error_code)
+    c_err_msg = getattr(_cdll(), name)(c_error_code)
+    err_msg = cast(c_err_msg , c_char_p).value.decode()
+    logger.debug("error_message: Function %s[%s] returned error_message: %s", name, error_code, err_msg)
+    return err_msg

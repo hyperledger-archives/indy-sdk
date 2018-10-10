@@ -11,7 +11,7 @@ attrs = {'key': 'value', 'key2': 'value2', 'key3': 'value3'}
 name = 'Credential Name'
 issuer_did = '8XFh8yBzrpJQmNyZzgoTqB'
 phone_number = '8019119191'
-price = 1
+price = '1'
 req = {'libindy_cred_req': '', 'libindy_cred_req_meta': '', 'cred_def_id': '', 'tid': '', 'to_did': '', 'from_did': '',
        'version': '', 'mid': '', 'msg_ref_id': '123'}
 

@@ -37,7 +37,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         {
             var msg = "{\"reqId\":1496822211362017764}";
 
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                 Ledger.SignRequestAsync(wallet, DID1, msg)
             );
 
