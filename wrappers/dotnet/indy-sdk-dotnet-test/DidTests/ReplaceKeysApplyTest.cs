@@ -27,7 +27,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestReplaceKeysApplyWorksWithoutCallingReplaceStart()
         {
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                 Did.ReplaceKeysApplyAsync(wallet, _did)
             );
         }
@@ -37,7 +37,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         {
             await Did.ReplaceKeysStartAsync(wallet, _did, "{}");
 
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                 Did.ReplaceKeysApplyAsync(wallet, DID1)
             );
         }

@@ -1,6 +1,6 @@
 [package]
 name = "indy-cli"
-version = "1.6.6"
+version = "1.6.7"
 authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
 
 [features]
@@ -13,6 +13,7 @@ fatal_warnings = []
 atty = "0.2"
 ansi_term = "0.11"
 chrono = "0.4"
+dirs = "1.0.4"
 unescape = "0.1"
 lazy_static = "0.2"
 libc = "0.2"

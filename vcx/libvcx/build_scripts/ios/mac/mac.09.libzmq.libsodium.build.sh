@@ -1,5 +1,6 @@
 #!/bin/sh
 
+#For Evernym Mac Jenkins machines, rm the cache(~/.build_libvcx) and store libzmq-ios dir at /Users/jenkins
 source ./shared.functions.sh
 
 START_DIR=$PWD
@@ -10,9 +11,9 @@ WORK_DIR=$(abspath "$WORK_DIR")
 if [ -d $WORK_DIR/libzmq-ios ]; then
     rm -rf $WORK_DIR/libzmq-ios
 fi
-git clone https://github.com/azawawi/libzmq-ios.git $WORK_DIR/libzmq-ios
+git clone https://github.com/evernym/libzmq-ios.git $WORK_DIR/libzmq-ios
 cd $WORK_DIR/libzmq-ios
-git clone https://github.com/azawawi/libsodium-ios.git $WORK_DIR/libzmq-ios/libsodium-ios
+git clone https://github.com/evernym/libsodium-ios.git $WORK_DIR/libzmq-ios/libsodium-ios
 cd $WORK_DIR/libzmq-ios/libsodium-ios
 ./libsodium.rb
 cd ..
