@@ -32,7 +32,7 @@ pub mod new_command {
 
     command!(CommandMetadata::build("new", "Create new DID")
                 .add_optional_param("did", "Known DID for new wallet instance")
-                .add_optional_deferred_param("seed", "Seed for creating DID key-pair")
+                .add_optional_deferred_param("seed", "Seed for creating DID key-pair (UTF-8, base64 or hex)")
                 .add_optional_param("metadata", "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
@@ -108,7 +108,7 @@ pub mod import_command {
             \"version\": 1,
             \"dids\": [{
                 \"did\": \"did\",
-                \"seed\": \"UTF-8 or base64 seed string\"
+                \"seed\": \"UTF-8, base64 or hex string\"
             }]
         }")
                 .add_main_param("file", "Path to file with DIDs")
@@ -201,7 +201,7 @@ pub mod rotate_key_command {
     use super::*;
 
     command!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
-                .add_optional_deferred_param("seed", "If not provide then a random one will be created")
+                .add_optional_deferred_param("seed", "If not provide then a random one will be created (UTF-8, base64 or hex)")
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
@@ -334,8 +334,11 @@ pub mod tests {
     pub const DID_MY3: &'static str = "5Uu7YveFSGcT3dSzjpvPab";
     pub const VERKEY_MY3: &'static str = "3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4";
 
+    #[cfg(feature = "nullpay_plugin")]
     pub const SEED_MY4: &'static str = "00000000000000000000000000000My4";
+    #[cfg(feature = "nullpay_plugin")]
     pub const DID_MY4: &'static str = "QZAWuVCVYWEAbH8E2ipqtP";
+    #[cfg(feature = "nullpay_plugin")]
     pub const VERKEY_MY4: &'static str = "Dqc95QYYCot8XNLp9APubEP7omDqHHVU9frwFSUb9yBu";
 
     mod did_new {
@@ -393,6 +396,24 @@ pub mod tests {
             let did = get_did_info(wallet_handle, DID_TRUSTEE);
             assert_eq!(did["did"].as_str().unwrap(), DID_TRUSTEE);
             assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
+
+            close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn new_works_for_hex_seed() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            {
+                let cmd = new_command::new();
+                let mut params = CommandParams::new();
+                params.insert("seed", "94a823a6387cdd30d8f7687d95710ebab84c6e277b724790a5b221440beb7df6".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            get_did_info(wallet_handle, "HWvjYf77k1dqQAk6sE4gaS");
 
             close_and_delete_wallet(&ctx);
             TestUtils::cleanup_storage();
@@ -557,7 +578,9 @@ pub mod tests {
 
     mod did_rotate_key {
         use super::*;
+        #[cfg(feature = "nullpay_plugin")]
         use commands::common::tests::load_null_payment_plugin;
+        #[cfg(feature = "nullpay_plugin")]
         use commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
 
         #[test]
