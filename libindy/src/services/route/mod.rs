@@ -648,7 +648,7 @@ pub mod tests {
 
     fn _setup_send_wallet(ws: Rc<WalletService>, cs: Rc<CryptoService>) -> (i32, Did, Key) {
         let (did, key) = _send_did1(cs.clone());
-        ws.create_wallet(&_send_config(), &_credentials());
+        let _result = ws.create_wallet(&_send_config(), &_credentials());
         let wallet_handle = ws.open_wallet(&_send_config(), &_credentials()).unwrap();
         ws.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new())
             .unwrap();
@@ -659,7 +659,7 @@ pub mod tests {
 
     fn _setup_recv_wallet1(ws: Rc<WalletService>, cs: Rc<CryptoService>) -> (i32, Did, Key) {
         let (did, key) = _recv_did1(cs.clone());
-        ws.create_wallet(&_recv_config(), &_credentials());
+        let _result = ws.create_wallet(&_recv_config(), &_credentials());
         let wallet_handle = ws.open_wallet(&_recv_config(), &_credentials()).unwrap();
         ws.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new())
             .unwrap();
@@ -670,7 +670,7 @@ pub mod tests {
 
     fn _setup_recv_wallet2(ws: Rc<WalletService>, cs: Rc<CryptoService>) -> (i32, Did, Key) {
         let (did, key) = _recv_did2(cs.clone());
-        ws.create_wallet(&_recv_config(), &_credentials());
+        let _result = ws.create_wallet(&_recv_config(), &_credentials());
         let wallet_handle = ws.open_wallet(&_recv_config(), &_credentials()).unwrap();
         ws.add_indy_object(wallet_handle, &did.did, &did, &HashMap::new())
             .unwrap();
@@ -709,24 +709,42 @@ pub mod tests {
         service.create_my_did(&did_info).unwrap()
     }
 
-    fn _send_config() -> String {
-        json!({"id": "send1"}).to_string()
+    fn _send_config() -> Config {
+        Config {
+            id: "w1".to_string(),
+            storage_type: None,
+            storage_config: None,
+        }
     }
 
-    fn _recv_config() -> String {
-        json!({"id": "recv1"}).to_string()
+    fn _recv_config() -> Config {
+        Config {
+            id: "recv1".to_string(),
+            storage_type: None,
+            storage_config: None,
+        }
     }
 
-    fn _config() -> String {
-        json!({"id": "w1"}).to_string()
+    fn _config() -> Config {
+        Config {
+            id: "w1".to_string(),
+            storage_type: None,
+            storage_config: None,
+        }
     }
 
-    fn _credentials() -> String {
-        json!({"key": "my_key"}).to_string()
+    fn _credentials() -> Credentials {
+        Credentials {
+            key: "my_key".to_string(),
+            rekey: None,
+            storage_credentials: None,
+            key_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+            rekey_derivation_method: KeyDerivationMethod::ARGON2I_MOD,
+        }
     }
 
     fn _cleanup() {
-        TestUtils::cleanup_storage();
+        test::cleanup_storage();
         InmemWallet::cleanup();
     }
 

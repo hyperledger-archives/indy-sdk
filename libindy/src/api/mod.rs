@@ -224,7 +224,7 @@ pub enum ErrorCode
     PaymentOperationNotSupportedError = 704,
 
     // Extra funds on inputs
-    PaymentExtraFundsError = 705
+    PaymentExtraFundsError = 705,
 
     // Failed to perform Encryption or Decryption while routing messages
     RouteEncryptionError = 800,
