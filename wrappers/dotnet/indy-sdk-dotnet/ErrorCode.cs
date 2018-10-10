@@ -288,6 +288,11 @@
         /// </summary>
         PoolIncompatibleProtocolVersion = 308,
 
+        /// <summary>
+        /// Item not found on ledger.
+        /// </summary>
+        LedgerNotFound = 309,
+
         // Crypto errors
 
         /// <summary>

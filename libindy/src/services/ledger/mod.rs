@@ -547,7 +547,7 @@ impl LedgerService {
 
         let message: Message<T> = serde_json::from_str(&response)
             .map_err(|err|
-                LedgerError::InvalidTransaction(format!("Cannot deserialize transaction Response: {:?}", err)))?;
+                LedgerError::NotFound(format!("Cannot deserialize transaction Response: {:?}", err)))?;
 
         match message {
             Message::Reject(response) | Message::ReqNACK(response) =>

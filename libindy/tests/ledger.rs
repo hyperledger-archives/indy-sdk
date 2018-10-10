@@ -1891,7 +1891,7 @@ mod medium_cases {
             let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_schema_response(&get_schema_response);
-            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerNotFound);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
         }
