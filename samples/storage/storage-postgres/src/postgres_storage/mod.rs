@@ -1054,7 +1054,6 @@ impl WalletStorageType for PostgresStorageType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::Tag;
 
     use utils::test;
 
