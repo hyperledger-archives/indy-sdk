@@ -274,7 +274,7 @@ impl WalletCommandExecutor {
         let cb = get_cb!(self, cb_id );
         cb(key_result
             .map_err(WalletError::from)
-            .and_then(|key| self.wallet_service.create_wallet(config, credentials, (key_data, key)))
+            .and_then(|key| self.wallet_service.create_wallet(config, credentials, (&key_data,& key)))
             .map_err(IndyError::from))
     }
 
@@ -338,7 +338,7 @@ impl WalletCommandExecutor {
         let cb = self.open_callbacks.borrow_mut().remove(&wallet_handle).unwrap();
         cb(key_result
             .map_err(WalletError::from)
-            .and_then(|key| self.wallet_service.open_wallet_continue(wallet_handle, key))
+            .and_then(|(key, rekey)| self.wallet_service.open_wallet_continue(wallet_handle, (&key, rekey.as_ref())))
             .map_err(IndyError::from))
     }
 
@@ -395,7 +395,7 @@ impl WalletCommandExecutor {
         let cb = get_cb!(self, cb_id);
         cb(key_result
             .map_err(WalletError::from)
-            .and_then(|key| self.wallet_service.delete_wallet_continue(config, credentials, metadata, key))
+            .and_then(|key| self.wallet_service.delete_wallet_continue(config, credentials, metadata, &key))
             .map_err(IndyError::from))
     }
 
@@ -439,7 +439,7 @@ impl WalletCommandExecutor {
         let cb = get_cb!(self, cb_id);
         cb(key_result
             .map_err(WalletError::from)
-            .and_then(|key| self.wallet_service.export_wallet(wallet_handle, export_config, 0, (key_data, key)))
+            .and_then(|key| self.wallet_service.export_wallet(wallet_handle, export_config, 0, (&key_data,& key)))
             .map_err(IndyError::from)) // TODO - later add proper versioning
     }
 
