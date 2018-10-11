@@ -36,7 +36,7 @@ pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
 
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 pub static UNINITIALIZED_BACKUP_KEY: &str = "<KEY_IS_NOT_SET>";
-pub static DEFAULT_PROTOCOL_VERSION: usize = 1;
+pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
 pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
 pub static DEFAULT_EXPORTED_WALLET_PATH: &str = "/tmp/wallet.txn";
