@@ -13,15 +13,12 @@ use self::r2d2_postgres::{TlsMode, PostgresConnectionManager};
 use serde_json;
 
 use self::owning_ref::OwningHandle;
-use std::sync::Mutex;
-use std::sync::Arc;
 use std::rc::Rc;
 
 use indy::errors::wallet::WalletStorageError;
 use indy::errors::common::CommonError;
 
 use self::storage::{StorageIterator, WalletStorageType, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
-//use indy::services::wallet::{RecordOptions, SearchOptions};
 
 fn default_true() -> bool { true }
 
@@ -310,7 +307,6 @@ pub struct PostgresCredentials {
 
 #[derive(Debug)]
 pub struct PostgresStorage {
-    conn: Arc<Mutex<postgres::Connection>>,
     pool: r2d2::Pool<PostgresConnectionManager>,
 }
 
@@ -392,7 +388,8 @@ impl WalletStorage for PostgresStorage {
         } else {
             serde_json::from_str(options)?
         };
-        let conn = self.conn.lock().unwrap();
+        let pool = self.pool.clone();
+        let conn = pool.get().unwrap();
         let res: Result<(i64, Vec<u8>, Vec<u8>), WalletStorageError> = {
             let mut rows = conn.query(
                 "SELECT id, value, key FROM items where type = $1 AND name = $2",
@@ -468,7 +465,8 @@ impl WalletStorage for PostgresStorage {
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
     fn add(&self, type_: &[u8], id: &[u8], value: &EncryptedValue, tags: &[Tag]) -> Result<(), WalletStorageError> {
-        let conn = self.conn.lock().unwrap();
+        let pool = self.pool.clone();
+        let conn = pool.get().unwrap();
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
         let res = tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES ($1, $2, $3, $4) RETURNING id")?
             .query(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key]);
@@ -540,7 +538,8 @@ impl WalletStorage for PostgresStorage {
     }
 
     fn update(&self, type_: &[u8], id: &[u8], value: &EncryptedValue) -> Result<(), WalletStorageError> {
-        let conn = self.conn.lock().unwrap();
+        let pool = self.pool.clone();
+        let conn = pool.get().unwrap();
         let res = conn.prepare_cached("UPDATE items SET value = $1, key = $2 WHERE type = $3 AND name = $4")?
             .execute(&[&value.data, &value.key, &type_.to_vec(), &id.to_vec()]);
 
@@ -553,7 +552,8 @@ impl WalletStorage for PostgresStorage {
     }
 
     fn add_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError> {
-        let conn = self.conn.lock().unwrap();
+        let pool = self.pool.clone();
+        let conn = pool.get().unwrap();
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
 
         let res = {
@@ -614,7 +614,8 @@ impl WalletStorage for PostgresStorage {
     }
 
     fn update_tags(&self, type_: &[u8], id: &[u8], tags: &[Tag]) -> Result<(), WalletStorageError> {
-        let conn = self.conn.lock().unwrap();
+        let pool = self.pool.clone();
+        let conn = pool.get().unwrap();
         let tx: transaction::Transaction = transaction::Transaction::new(&conn)?;
 
         let res = {
@@ -652,7 +653,8 @@ impl WalletStorage for PostgresStorage {
     }
 
     fn delete_tags(&self, type_: &[u8], id: &[u8], tag_names: &[TagName]) -> Result<(), WalletStorageError> {
-        let conn = self.conn.lock().unwrap();
+        let pool = self.pool.clone();
+        let conn = pool.get().unwrap();
         let res = {
             let mut rows = conn.prepare_cached("SELECT id FROM items WHERE type =$1 AND name = $2")?
                 .query(&[&type_.to_vec(), &id.to_vec()]);
@@ -712,7 +714,8 @@ impl WalletStorage for PostgresStorage {
     ///  * `IOError("IO error during storage operation:...")` - Failed connection or SQL query
     ///
     fn delete(&self, type_: &[u8], id: &[u8]) -> Result<(), WalletStorageError> {
-        let conn = self.conn.lock().unwrap();
+        let pool = self.pool.clone();
+        let conn = pool.get().unwrap();
         let row_count = conn.execute(
             "DELETE FROM items where type = $1 AND name = $2",
             &[&type_.to_vec(), &id.to_vec()]
@@ -725,7 +728,8 @@ impl WalletStorage for PostgresStorage {
     }
 
     fn get_storage_metadata(&self) -> Result<Vec<u8>, WalletStorageError> {
-        let conn = self.conn.lock().unwrap();
+        let pool = self.pool.clone();
+        let conn = pool.get().unwrap();
         let res: Result<Vec<u8>, WalletStorageError> = {
             let mut rows = conn.query(
                 "SELECT value FROM metadata",
@@ -744,7 +748,8 @@ impl WalletStorage for PostgresStorage {
     }
 
     fn set_storage_metadata(&self, metadata: &[u8]) -> Result<(), WalletStorageError> {
-        let conn = self.conn.lock().unwrap();
+        let pool = self.pool.clone();
+        let conn = pool.get().unwrap();
         match conn.execute("UPDATE metadata SET value = $1", &[&metadata.to_vec()]) {
             Ok(_) => Ok(()),
             Err(error) => {
@@ -775,7 +780,8 @@ impl WalletStorage for PostgresStorage {
             Some(option_str) => serde_json::from_str(option_str)?
         };
 
-        let conn = self.conn.lock().unwrap();
+        let pool = self.pool.clone();
+        let conn = pool.get().unwrap();
         let total_count: Option<usize> = if search_options.retrieve_total_count {
             let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
 
@@ -816,7 +822,8 @@ impl WalletStorage for PostgresStorage {
     }
 
     fn close(&mut self) -> Result<(), WalletStorageError> {
-        //let conn = self.conn.lock().unwrap();
+        //let pool = self.pool.clone();
+        //let conn = pool.get().unwrap();
         //let _ret = conn.finish();
         Ok(())
     }
@@ -1061,7 +1068,8 @@ impl WalletStorageType for PostgresStorageType {
 
         let url = PostgresStorageType::_postgres_url(id, &config, &credentials);
 
-        let conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
+        // don't need a connection, but connect just to verify we can
+        let _conn = match postgres::Connection::connect(&url[..], postgres::TlsMode::None) {
             Ok(conn) => conn,
             Err(_) => return Err(WalletStorageError::NotFound)
         };
@@ -1076,7 +1084,6 @@ impl WalletStorageType for PostgresStorageType {
         };
 
         Ok(Box::new(PostgresStorage { 
-            conn: Arc::new(Mutex::new(conn)),
             pool: pool
         }))
     }
