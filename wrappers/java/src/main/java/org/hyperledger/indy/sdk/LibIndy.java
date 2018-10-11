@@ -167,7 +167,7 @@ public abstract class LibIndy {
 		int indy_set_default_logger(String level);
 		int indy_set_logger(Pointer context, Callback enabled, Callback log, Callback flush);
 
-		int indy_set_crypto_thread_pool_size(int size);
+		int indy_set_runtime_config(String config);
 
 	}
 
@@ -270,7 +270,14 @@ public abstract class LibIndy {
 		api.indy_set_logger(null, Logger.enabled, Logger.log, Logger.flush);
 	}
 
-	public static void setCryptoThreadPoolSize(int size) {
-		api.indy_set_crypto_thread_pool_size(size);
+	/**
+	 * Set libindy runtime configuration. Can be optionally called to change current params.
+	 *
+	 * @param config config: {
+	 *      "crypto_thread_pool_size": int - size of thread pool for the most expensive crypto operations. (4 by default)
+	 *  }
+	 */
+	public static void setRuntimeConfig(String config) {
+		api.indy_set_runtime_config(config);
 	}
 }

@@ -5,5 +5,5 @@ from indy import libindy
 
 # noinspection PyUnusedLocal
 @pytest.mark.sync
-def test_create_wallet_works_for_duplicate_name():
-    libindy.set_crypto_thread_pool_size(2)
+def test_set_runtime_config():
+    libindy.set_runtime_config('{"crypto_thread_pool_size": 2}')

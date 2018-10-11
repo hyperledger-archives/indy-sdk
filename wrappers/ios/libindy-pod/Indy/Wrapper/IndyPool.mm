@@ -124,9 +124,5 @@
     }
 }
 
-+ (void)setCryptoThreadPoolSize:(NSNumber *)size {
-    indy_set_crypto_thread_pool_size([size intValue]);
-}
-
 @end
 

@@ -35,6 +35,8 @@ use services::wallet::WalletService;
 use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 
+use domain::IndyConfig;
+
 
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
@@ -60,8 +62,8 @@ lazy_static! {
     static ref THREADPOOL: Mutex<ThreadPool> = Mutex::new(ThreadPool::new(4));
 }
 
-pub fn set_crypto_thread_pool_size(size: usize) {
-    THREADPOOL.lock().unwrap().set_num_threads(size)
+pub fn indy_set_runtime_config(config: IndyConfig) {
+    THREADPOOL.lock().unwrap().set_num_threads(config.crypto_thread_pool_size)
 }
 
 pub struct CommandExecutor {
