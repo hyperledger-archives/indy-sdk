@@ -2,7 +2,7 @@ use errors::common::CommonError;
 use errors::did::DidError;
 use errors::wallet::WalletError;
 use errors::indy::IndyError;
-use domain::crypto::key::KeyInfo;
+use domain::crypto::key::{KeyInfo, Key, TemporaryKey};
 use domain::crypto::did::{MyDidInfo, Did, TheirDidInfo, TheirDid, TemporaryDid, DidWithMeta, DidMetadata};
 use domain::ledger::response::Reply;
 use domain::ledger::nym::{GetNymReplyResult, GetNymResultDataV0};
@@ -220,11 +220,11 @@ impl DidCommandExecutor {
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
 
-        let temporary_key = self.crypto_service.create_key(&key_info)?;
+        let temporary_key = TemporaryKey::from(self.crypto_service.create_key(&key_info)?);
         let my_temporary_did = TemporaryDid { did: my_did.did, verkey: temporary_key.verkey.clone() };
 
         self.wallet_service.add_indy_object(wallet_handle, &temporary_key.verkey, &temporary_key, &HashMap::new())?;
-        self.wallet_service.add_indy_object(wallet_handle, &my_temporary_did.did, &my_temporary_did, &HashMap::new())?;
+        self.wallet_service.upsert_indy_object(wallet_handle, &my_temporary_did.did, &my_temporary_did)?;
 
         let res = my_temporary_did.verkey;
 
@@ -241,13 +241,17 @@ impl DidCommandExecutor {
         self.crypto_service.validate_did(my_did)?;
 
         let my_did = self._wallet_get_my_did(wallet_handle, my_did)?;
-        let my_temporary_did: TemporaryDid =
-            self.wallet_service.get_indy_object(wallet_handle, &my_did.did, &RecordOptions::id_value())?;
+        let my_temporary_did: TemporaryDid = self.wallet_service.get_indy_object(wallet_handle, &my_did.did, &RecordOptions::id_value())?;
+        let my_temporary_key: TemporaryKey = self.wallet_service.get_indy_object(wallet_handle, &my_temporary_did.verkey, &RecordOptions::id_value())?;
 
         let my_did = Did::from(my_temporary_did);
+        let my_verkey = Key::from(my_temporary_key);
 
         self.wallet_service.update_indy_object(wallet_handle, &my_did.did, &my_did)?;
+        self.wallet_service.add_indy_object(wallet_handle, &my_verkey.verkey, &my_verkey, &HashMap::new())?;
+
         self.wallet_service.delete_indy_record::<TemporaryDid>(wallet_handle, &my_did.did)?;
+        self.wallet_service.delete_indy_record::<TemporaryKey>(wallet_handle, &my_did.verkey)?;
 
         debug!("replace_keys_apply <<<");
 
@@ -279,7 +283,7 @@ impl DidCommandExecutor {
         let did_with_meta = DidWithMeta {
             did: did.did,
             verkey: did.verkey,
-            metadata: metadata.map(|m|m.value)
+            metadata: metadata.map(|m| m.value)
         };
 
         let res = serde_json::to_string(&did_with_meta)
@@ -311,7 +315,7 @@ impl DidCommandExecutor {
             let did_with_meta = DidWithMeta {
                 did: did.did,
                 verkey: did.verkey,
-                metadata: metadata.map(|m|m.value)
+                metadata: metadata.map(|m| m.value)
             };
 
             dids.push(did_with_meta);
