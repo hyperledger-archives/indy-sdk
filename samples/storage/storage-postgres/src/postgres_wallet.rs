@@ -78,22 +78,17 @@ pub struct PostgresWallet {}
 impl PostgresWallet {
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_create(id: *const c_char,
-                             _: *const c_char,
-                             _: *const c_char,
+                             config: *const c_char,
+                             credentials: *const c_char,
                              metadata: *const c_char) -> ErrorCode {
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(config, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(metadata, ErrorCode::CommonInvalidStructure);
 
-        // TODO start create Postgres database, create schema, and insert metadata
-        // TODO PostgresStorageType::create_storage()
-        let mut wallets = INMEM_WALLETS.lock().unwrap();
-        if wallets.contains_key(&id) {
-            // Invalid state as "already exists" case must be checked on service layer
-            return ErrorCode::CommonInvalidState;
-        }
-
-        wallets.insert(id.clone(), InmemWalletEntity { metadata: CString::new(metadata).unwrap(), records: HashMap::new() });
-        // TODO end
+        // create Postgres database, create schema, and insert metadata
+        let storage_type = ::postgres_storage::PostgresStorageType::new();
+        storage_type.create_storage(&id, Some(&config), Some(&credentials), &metadata.as_bytes()[..]).unwrap();
 
         ErrorCode::Success
     }
@@ -120,7 +115,12 @@ impl PostgresWallet {
 
         // open the wallet
         let storage_type = ::postgres_storage::PostgresStorageType::new();
-        let phandle = storage_type.open_storage(&id, Some(&config), Some(&credentials)).unwrap();
+        let phandle = match storage_type.open_storage(&id, Some(&config), Some(&credentials))  {
+            Ok(phandle) => phandle,
+            Err(_err) => {
+                return ErrorCode::WalletNotFoundError;
+            }
+        };
 
         // get a handle (to use to identify wallet for subsequent calls)
         let xhandle = SequenceUtils::get_next_id();
@@ -818,9 +818,8 @@ impl PostgresWallet {
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_close(xhandle: i32) -> ErrorCode {
-        // TODO start
-        // TODO PostgresStorage::close() from the handle
-        let mut handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        // PostgresStorage::close() from the handle
+        let mut handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
@@ -828,26 +827,21 @@ impl PostgresWallet {
 
         handles.remove(&xhandle);
         ErrorCode::Success
-        // TODO end
     }
 
 #[no_mangle]
-    pub extern "C" fn postgreswallet_fn_delete(name: *const c_char,
-                             _: *const c_char,
-                             _: *const c_char) -> ErrorCode {
-        check_useful_c_str!(name, ErrorCode::CommonInvalidStructure);
+    pub extern "C" fn postgreswallet_fn_delete(id: *const c_char,
+                             config: *const c_char,
+                             credentials: *const c_char) -> ErrorCode {
+        check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(config, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidStructure);
 
-        // TODO start
-        // TODO PostgresStorageType::delete_storage()
-        let mut wallets = INMEM_WALLETS.lock().unwrap();
+        // PostgresStorageType::delete_storage()
+        let storage_type = ::postgres_storage::PostgresStorageType::new();
+        storage_type.delete_storage(&id, Some(&config), Some(&credentials)).unwrap();
 
-        if !wallets.contains_key(&name) {
-            return ErrorCode::CommonInvalidState;
-        }
-
-        wallets.remove(&name);
         ErrorCode::Success
-        // TODO end
     }
 
     pub fn cleanup() {
@@ -857,4 +851,105 @@ impl PostgresWallet {
         let mut handles = INMEM_OPEN_WALLETS.lock().unwrap();
         handles.clear();
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::CString;
+    use std::ptr;
+    //use utils::test;
+
+    #[test]
+    fn postgres_wallet_crud_works() {
+        let id = _wallet_id();
+        let config = Some(_wallet_config());
+        let credentials = Some(_wallet_credentials());
+        let metadata = _metadata();
+
+        let id = CString::new(id).unwrap();
+        let config = config
+            .map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap();
+        let credentials = credentials
+            .map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap();
+
+        // open wallet - should return error
+        let mut handle: i32 = -1;
+        let err = PostgresWallet::postgreswallet_fn_open(id.as_ptr(), 
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            &mut handle);
+        assert_eq!(err, ErrorCode::WalletNotFoundError);
+        
+        // create wallet
+        //let err = wallet::postgreswallet_fn_create();
+        let err = PostgresWallet::postgreswallet_fn_create(id.as_ptr(), 
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            metadata.as_ptr());
+        assert_eq!(err, ErrorCode::Success);
+
+        // open wallet
+        let err = PostgresWallet::postgreswallet_fn_open(id.as_ptr(), 
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            &mut handle);
+        assert_eq!(err, ErrorCode::Success);
+
+        // close wallet
+        //let err = wallet::postgreswallet_fn_close();
+        let err = PostgresWallet::postgreswallet_fn_close(handle);
+        assert_eq!(err, ErrorCode::Success);
+
+        // delete wallet
+        //let err = wallet::postgreswallet_fn_delete();
+        let err = PostgresWallet::postgreswallet_fn_delete(id.as_ptr(), 
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
+        assert_eq!(err, ErrorCode::Success);
+
+        // open wallet - should return error
+        let err = PostgresWallet::postgreswallet_fn_open(id.as_ptr(), 
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            &mut handle);
+        assert_eq!(err, ErrorCode::WalletNotFoundError);
+    }
+
+    fn _wallet_id() -> &'static str {
+        "my_walle1"
+    }
+
+    fn _wallet_config() -> String {
+        let config = json!({
+            "url": "localhost:5432".to_owned()
+        }).to_string();
+        config
+    }
+
+    fn _wallet_credentials() -> String {
+        let creds = json!({
+            "account": "postgres".to_owned(),
+            "password": "mysecretpassword".to_owned(),
+            "admin_account": Some("postgres".to_owned()),
+            "admin_password": Some("mysecretpassword".to_owned())
+        }).to_string();
+        creds
+    }
+
+    fn _metadata() -> Vec<i8> {
+        return vec![
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8,
+            1, 2, 3, 4, 5, 6, 7, 8
+        ];
+    }
+
 }
