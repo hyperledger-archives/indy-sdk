@@ -4,11 +4,10 @@ extern crate indy;
 extern crate indy_crypto;
 extern crate serde_json;
 
-//use postgres_storage;
-
 use indy::api::ErrorCode;
-use utils::cstring::CStringUtils;
 use utils::sequence::SequenceUtils;
+use utils::ctypes;
+use postgres_storage::storage::WalletStorageType;
 
 use self::libc::c_char;
 
@@ -16,11 +15,18 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Mutex;
 
-
 // TODO replaced by PostgresStorage
 #[derive(Debug)]
 struct InmemWalletContext {
     id: String
+}
+
+struct PostgresStorageContext {
+    xhandle: i32,        // reference returned to client to track open wallet connection
+    id: String,          // wallet name
+    config: String,      // wallet config
+    credentials: String, // wallet credentials
+    phandle: Box<::postgres_storage::PostgresStorage>  // reference to a postgres database connection
 }
 
 #[derive(Debug, Clone)]
@@ -45,6 +51,11 @@ lazy_static! {
 lazy_static! {
     // TODO store a PostgresStorage object (contains a connection) instead of an InmemWalletContext
     static ref INMEM_OPEN_WALLETS: Mutex<HashMap<i32, InmemWalletContext>> = Default::default();
+}
+
+lazy_static! {
+    // store a PostgresStorage object (contains a connection) instead of an InmemWalletContext
+    static ref POSTGRES_OPEN_WALLETS: Mutex<HashMap<i32, PostgresStorageContext>> = Default::default();
 }
 
 lazy_static! {
@@ -89,34 +100,49 @@ impl PostgresWallet {
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_open(id: *const c_char,
-                           _: *const c_char,
-                           _: *const c_char,
+                           config: *const c_char,
+                           credentials: *const c_char,
                            handle: *mut i32) -> ErrorCode {
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(config, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(credentials, ErrorCode::CommonInvalidStructure);
 
-        // TODO start open wallet and return handle
-        // TODO PostgresStorageType::open_storage(), returns a PostgresStorage that goes into the handle
-        let wallets = INMEM_WALLETS.lock().unwrap();
+        // open wallet and return handle
+        // PostgresStorageType::open_storage(), returns a PostgresStorage that goes into the handle
+        let mut handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
-        if !wallets.contains_key(&id) {
-            return ErrorCode::CommonInvalidState;
+        // check if we have opened this wallet already
+        for (_key, value) in &*handles {
+            if value.id == id {
+                return ErrorCode::WalletAlreadyOpenedError;
+            }
         }
 
-        let mut handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        // open the wallet
+        let storage_type = ::postgres_storage::PostgresStorageType::new();
+        let phandle = storage_type.open_storage(&id, Some(&config), Some(&credentials)).unwrap();
+
+        // get a handle (to use to identify wallet for subsequent calls)
         let xhandle = SequenceUtils::get_next_id();
-        handles.insert(xhandle, InmemWalletContext {
-            id,
-        });
 
-        // TODO figure out how to pass wallet storage handle between indy-sdk and plug-in
-        // TODO postgres handle is returned from the open() function
+        // create a storage context (keep all info in case we need to recycle wallet connection)
+        let context = PostgresStorageContext {
+            xhandle,      // reference returned to client to track open wallet connection
+            id,           // wallet name
+            config,       // wallet config
+            credentials,  // wallet credentials
+            phandle       // reference to a postgres database connection
+        };
+
+        // add to our open wallet list
+        handles.insert(xhandle, context);
+
+        // return handle = index into our collection of open wallets
         unsafe { *handle = xhandle };
-        // TODO end
-
         ErrorCode::Success
     }
 
-    // TODO this is not required for postgres wallet
+    // TODO this is not required for postgres wallet (?)
     fn build_record_id(type_: &str, id: &str) -> String {
         format!("{}-{}", type_, id)
     }

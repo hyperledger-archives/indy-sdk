@@ -1,6 +1,7 @@
 
 use indy::errors::wallet::WalletStorageError;
 use postgres_storage::language;
+use postgres_storage::PostgresStorage;
 
 use indy::errors::common::CommonError;
 use utils::crypto::chacha20poly1305_ietf;
@@ -92,6 +93,6 @@ pub trait WalletStorage {
 
 pub trait WalletStorageType {
     fn create_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>, metadata: &[u8]) -> Result<(), WalletStorageError>;
-    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<WalletStorage>, WalletStorageError>;
+    fn open_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<Box<PostgresStorage>, WalletStorageError>;
     fn delete_storage(&self, id: &str, config: Option<&str>, credentials: Option<&str>) -> Result<(), WalletStorageError>;
 }

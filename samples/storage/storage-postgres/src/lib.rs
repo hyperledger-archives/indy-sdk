@@ -2,8 +2,8 @@
 
 extern crate base64;
 
-//#[macro_use]
-//extern crate log;
+#[macro_use]
+extern crate log;
 
 extern crate serde;
 
