@@ -148,6 +148,15 @@ def macosTesting() {
 }
 
 def androidTesting() {
+    env_name="android_on_linux"
+    network_name="pool_network"
+    parallel([
+            "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
+            "${env_name}-android-building" : { androidBuildAsTesting() }
+    ])
+}
+
+def androidBuildAsTesting() {
 
     node('ubuntu') {
         stage('Android Test') {
@@ -161,26 +170,14 @@ def androidTesting() {
                     testEnv = dockerBuild('libindy', "ci/ubuntu.dockerfile ci")
                     sh 'chmod -R 777 ci/*.sh'
                     sh 'chmod -R 777 *.sh'
-                    //TODO: IS-835 Tests on emulator fails as of now. Enable device testing when all tests starts passing
-                    //androidTestingOnEmulator(testEnv)
 
-                    //Meanwhile use "build success" as test
                     buildAndroid(testEnv)
                 }
             }
             finally {
-                echo 'Building Android binaries: Cleanup'
                 step([$class: 'WsCleanup'])
             }
         }
-    }
-}
-
-def androidTestingOnEmulator(testEnv) {
-    ANDROID_SCRIPT_PATH = 'android.test.sh'
-    echo 'Testing Libindy android files for arm'
-    testEnv.inside {
-        sh "./${ANDROID_SCRIPT_PATH} arm"
     }
 }
 
@@ -230,7 +227,7 @@ def iosTesting() {
                 setupRust()
                 setupRustIOS()
                 setupBrewPackages()
-                
+
                 sh 'chmod -R 777 ci'
                 echo "iOS Test: build libindy pod"
                 sh "ci/ios-build.sh libindy x86_64-apple-ios"
@@ -309,8 +306,10 @@ def linuxTesting(file, env_name, network_name) {
         sh "cp libindy/target/debug/libindy.so wrappers/java/lib"
         sh "cp libindy/target/debug/libindy.so wrappers/python"
         sh "cp libindy/target/debug/libindy.so wrappers/nodejs"
+        sh "cp libindy/target/debug/libindy.so wrappers/rust"
         sh "cp libindy/target/debug/libindy.so cli"
         sh "cp libindy/target/debug/libindy.so libnullpay"
+        sh "cp libindy/target/debug/libindy.so vcx/libvcx"
 
         dir('libnullpay') {
             echo "${env_name} Libnullpay Test: Build docker image"
@@ -322,12 +321,16 @@ def linuxTesting(file, env_name, network_name) {
         }
 
         sh "cp libnullpay/target/debug/libnullpay.so cli"
+        sh "cp libnullpay/target/debug/libnullpay.so vcx/libvcx"
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
         stash includes: 'wrappers/nodejs/libindy.so', name: "LibindyNodejsSO${env_name}"
+        stash includes: 'wrappers/rust/libindy.so', name: "LibindyRustSO${env_name}"
         stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
+        stash includes: 'vcx/libvcx/libindy.so', name: "LibindyVCXSO${env_name}"
+        stash includes: 'vcx/libvcx/libnullpay.so', name: "LibnullpayVCXSO${env_name}"
 
         parallel([
                 "${env_name}-libindy-test"   : {
@@ -356,10 +359,12 @@ def linuxTesting(file, env_name, network_name) {
                         }
                     }
                 },
-                "${env_name}-java-test"     : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
-                "${env_name}-python-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
-                "${env_name}-nodejs-test"   : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
-                "${env_name}-cli-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) }
+                "${env_name}-java-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
+                "${env_name}-python-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
+                "${env_name}-nodejs-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
+                "${env_name}-cli-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) },
+                "${env_name}-rust-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting) },
+                "${env_name}-vcx-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting) }
         ])
     }
     finally {
@@ -390,13 +395,25 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
     }
 }
 
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
+    dir('libindy') {
+        sh 'chmod -R 777 ci/*.sh'
+        sh 'chmod -R 777 *.sh'
+
+        echo "${env_name} Libindy Test: Test on ARM emulator"
+        testEnv.inside("--network=${network_name}") {
+            sh "./android.test.sh arm"
+        }
+    }
+}
+
 def linuxJavaTesting(env_name, network_name, testEnv) {
     unstash name: "LibindyJavaSO${env_name}"
     dir('wrappers/java') {
         testEnv.inside("--network=${network_name}") {
             echo "${env_name} Libindy Test: Test java wrapper"
 
-            sh "RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+            sh "TEST_POOL_IP=10.0.0.2 mvn clean test"
         }
     }
 }
@@ -409,7 +426,7 @@ def linuxPythonTesting(env_name, network_name, testEnv) {
 
             sh '''
                 python3.5 -m pip install --user -e .
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
             '''
         }
     }
@@ -429,6 +446,26 @@ def linuxNodejsTesting(env_name, network_name, testEnv) {
     }
 }
 
+def linuxVCXTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyVCXSO${env_name}"
+    unstash name: "LibnullpayVCXSO${env_name}"
+
+    dir('vcx/libvcx') {
+        testEnv.inside {
+            echo "${env_name} Libvcx Test: Test"
+
+            echo "${env_name} Libvcx Test: Build"
+            sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
+
+            echo "${env_name} Libvcx Test: Build Test"
+            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
+
+            echo "${env_name} Libvcx Test: Run tests"
+            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test'
+        }
+    }
+}
+
 def linuxCLITesting(env_name, network_name, testEnv) {
     unstash name: "LibindyCliSO${env_name}"
     unstash name: "LibnullpayCliSO${env_name}"
@@ -440,6 +477,20 @@ def linuxCLITesting(env_name, network_name, testEnv) {
 
             echo "${env_name} Indy Cli Test: Run tests"
             sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features "nullpay_plugin"'
+        }
+    }
+}
+
+def linuxRustTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyRustSO${env_name}"
+
+    dir('wrappers/rust') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Indy Rust wrapper Test: Build"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run'
+
+            echo "${env_name} Indy Rust wrupper Test: Run tests"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
         }
     }
 }
@@ -510,7 +561,7 @@ def closePool(env_name, network_name, poolInst) {
 }
 
 def setupRust() {
-    sh "rustup default 1.26.0"
+    sh "rustup default 1.27.0"
 }
 
 def setupRustIOS() {

@@ -302,7 +302,7 @@ impl Prover {
                        name: &str,
                        referent: &str,
                        restrictions: &Option<serde_json::Value>,
-                       extra_query: &Option<ProofRequestExtraQuery>) -> Result<String, CommonError> {
+                       extra_query: &Option<&ProofRequestExtraQuery>) -> Result<String, CommonError> {
         trace!("build_query >>> name: {:?}, referent: {:?}, restrictions: {:?}, extra_query: {:?}", name, referent, restrictions, extra_query);
 
         let mut sub_queries: Vec<serde_json::Value> = vec![];
@@ -587,7 +587,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -616,7 +616,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -710,7 +710,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &None, &Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": vec![
@@ -745,7 +745,7 @@ mod tests {
                     )
             );
 
-            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(extra_query)).unwrap();
+            let query = ps.build_query(ATTR_NAME, ATTR_REFERENT, &Some(restriction), &Some(&extra_query)).unwrap();
 
             let expected_query = json!({
                 "$and": [

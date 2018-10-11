@@ -36,11 +36,11 @@ check_if_emulator_is_running(){
 }
 
 kill_avd(){
-    adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done
+    adb devices | grep emulator | cut -f1 | while read line; do adb -s $line emu kill; done || true
 }
 delete_existing_avd(){
     kill_avd
-    avdmanager delete avd -n ${ARCH}
+    avdmanager delete avd -n ${ABSOLUTE_ARCH}
 }
 
 create_avd(){
@@ -57,12 +57,12 @@ create_avd(){
 
         echo "no" |
              avdmanager create avd \
-                --name ${TARGET_ARCH} \
+                --name ${ABSOLUTE_ARCH} \
                 --package "system-images;android-24;default;${ABI}" \
                 -f \
                 -c 1000M
 
-        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${TARGET_ARCH} -no-audio -no-window &
+        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${ABSOLUTE_ARCH} -no-audio -no-window &
 }
 
 download_sdk(){
@@ -71,7 +71,9 @@ download_sdk(){
         curl -sSLO https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
         echo "${GREEN}Done!${RESET}"
         unzip -qq sdk-tools-linux-4333796.zip
+        set +e
         delete_existing_avd
+        set -e
         create_avd
      popd
 }
@@ -162,6 +164,7 @@ create_standalone_toolchain_and_rust_target(){
     --arch ${TARGET_ARCH} \
     --api ${TARGET_API} \
     --stl=gnustl \
+    --force \
     --install-dir ${TOOLCHAIN_DIR}
 
     # add rust target

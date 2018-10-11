@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Hyperledger.Indy.Utils;
 using static Hyperledger.Indy.Utils.CallbackHelper;
 
 namespace Hyperledger.Indy.AnonCredsApi
@@ -50,14 +51,14 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="issuer_did">a DID of the issuer signing claim_def transaction to the Ledger</param>
         /// <param name="schema_json">schema as a json</param>
         /// <param name="tag">Allows to distinct between credential definitions for the same issuer and schema</param>
-        /// <param name="type_">Signature type (optional). Currently only 'CL' is supported.</param>
+        /// <param name="signature_type">Signature type (optional). Currently only 'CL' is supported.</param>
         /// <param name="config_json">type-specific configuration of credential definition as json:
         /// - 'CL':
         ///   - support_revocation: whether to request non-revocation credential (optional, default false)</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_create_and_store_credential_def(int command_handle, IntPtr wallet_handle, string issuer_did, string schema_json, string tag, string type_, string config_json, IssuerCreateAndStoreCredentialDefCompletedDelegate cb);
+        internal static extern int indy_issuer_create_and_store_credential_def(int command_handle, IntPtr wallet_handle, string issuer_did, string schema_json, string tag, string signature_type, string config_json, IssuerCreateAndStoreCredentialDefCompletedDelegate cb);
 
         /// <summary>
         /// Delegate for the function called back to by the indy_issuer_create_and_store_claim_def function.
@@ -75,18 +76,15 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="command_handle">Command handle.</param>
         /// <param name="wallet_handle">Wallet handle.</param>
         /// <param name="issuer_did">Issuer did.</param>
-        /// <param name="type_">Type.</param>
+        /// <param name="revoc_def_type">Type.</param>
         /// <param name="tag">Tag.</param>
         /// <param name="cred_def_id">Cred def identifier.</param>
         /// <param name="config_json">Config json.</param>
         /// <param name="tails_writer_handle">Tails writer handle.</param>
         /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_create_and_store_revoc_reg(int command_handle, IntPtr wallet_handle, string issuer_did, string type_, string tag, string cred_def_id, string config_json, int tails_writer_handle, IssuerCreateAndStoreRevocRegCompletedDelegate cb);
+        internal static extern int indy_issuer_create_and_store_revoc_reg(int command_handle, IntPtr wallet_handle, string issuer_did, string revoc_def_type, string tag, string cred_def_id, string config_json, int tails_writer_handle, IssuerCreateAndStoreRevocRegCompletedDelegate cb);
 
-        /// <summary>
-        /// Issuer create and store revoc reg completed delegate.
-        /// </summary>
         internal delegate void IssuerCreateAndStoreRevocRegCompletedDelegate(int xcommand_handle, int err, string revoc_reg_id, string revoc_reg_def_json, string revoc_reg_entry_json);
 
         /// <summary>
@@ -95,17 +93,11 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <returns>The issuer create credential offer.</returns>
         /// <param name="command_handle">Command handle.</param>
         /// <param name="wallet_handle">Wallet handle.</param>
-        /// <param name="credDefId">Cred def identifier.</param>
+        /// <param name="cred_def_id">Cred def identifier.</param>
         /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_issuer_create_credential_offer(int command_handle, IntPtr wallet_handle, string credDefId, IssuerCreateCredentialOfferCompletedDelegate cb);
+        internal static extern int indy_issuer_create_credential_offer(int command_handle, IntPtr wallet_handle, string cred_def_id, IssuerCreateCredentialOfferCompletedDelegate cb);
 
-        /// <summary>
-        ///  Delegate for the function called back to by the indy_issuer_create_claim_offer function.
-        /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="cred_offer_json">Claimn offer json</param>
         internal delegate void IssuerCreateCredentialOfferCompletedDelegate(int xcommand_handle, int err, string cred_offer_json);
 
         /// <summary>
@@ -123,21 +115,21 @@ namespace Hyperledger.Indy.AnonCredsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_issuer_create_credential(int command_handle, IntPtr wallet_handle, string cred_offer_json, string cred_req_json, string cred_values_json, string rev_reg_id, int blob_storage_reader_handle, IssuerCreateCredentialCompletedDelegate cb);
 
-        /// <summary>
-        /// Issuer create credential completed delegate.
-        /// </summary>
         internal delegate void IssuerCreateCredentialCompletedDelegate(int xcommand_handle, int err, string cred_json, string cred_revoc_id, string revoc_reg_delta_json);
 
-
+        /// <summary>
+        /// Revoke a credential identified by a cred_revoc_id (returned by indy_issuer_create_credential).
+        /// </summary>
+        /// <returns>The issuer revoke credential.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="wallet_handle">Wallet handle.</param>
+        /// <param name="blob_storage_reader_cfg_handle">BLOB storage reader cfg handle.</param>
+        /// <param name="rev_reg_id">Rev reg identifier.</param>
+        /// <param name="cred_revoc_id">Cred revoc identifier.</param>
+        /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_issuer_revoke_credential(int command_handle, IntPtr wallet_handle, int blob_storage_reader_cfg_handle, string rev_reg_id, string cred_revoc_id, IssuerRevokeCredentialCompletedDelegate cb);
 
-        /// <summary>
-        /// Delegate for the function called back to by the indy_issuer_revoke_credential function.
-        /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="revoc_reg_delta_json">Revocation registry update json with a revoked claim</param>
         internal delegate void IssuerRevokeCredentialCompletedDelegate(int xcommand_handle, int err, string revoc_reg_delta_json);
 
         /// <summary>
@@ -151,9 +143,6 @@ namespace Hyperledger.Indy.AnonCredsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_issuer_merge_revocation_registry_deltas(int command_handle, string rev_reg_delta_json, string other_rev_reg_delta_json, IssuerMergeRevocationRegistryDeltasCompletedDelegate cb);
 
-        /// <summary>
-        /// Issuer merge revocation registry deltas completed delegate.
-        /// </summary>
         internal delegate void IssuerMergeRevocationRegistryDeltasCompletedDelegate(int xcommand_handle, int err, string merged_rev_reg_delta);
 
         /// <summary>
@@ -167,9 +156,6 @@ namespace Hyperledger.Indy.AnonCredsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_create_master_secret(int command_handle, IntPtr wallet_handle, string master_secret_id, ProverCreateMasterSecretCompletedDelegate cb);
 
-        /// <summary>
-        /// Prover create master secret completed delegate.
-        /// </summary>
         internal delegate void ProverCreateMasterSecretCompletedDelegate(int xcommand_handle, int err, string out_master_secret_id);
 
         /// <summary>
@@ -186,9 +172,6 @@ namespace Hyperledger.Indy.AnonCredsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_create_credential_req(int command_handle, IntPtr wallet_handle, string prover_did, string cred_offer_json, string cred_def_json, string master_secret_id, ProverCreateCredentialReqCompletedDelegate cb);
 
-        /// <summary>
-        /// Prover create credential req completed delegate.
-        /// </summary>
         internal delegate void ProverCreateCredentialReqCompletedDelegate(int xcommand_handle, int err, string cred_req_json, string cred_req_metadata);
 
         /// <summary>
@@ -205,10 +188,21 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="cb">Cb.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_store_credential(int command_handle, IntPtr wallet_handle, string cred_id, string cred_req_metadata_json, string cred_json, string cred_def_json, string rev_reg_def_json, ProverStoreCredentialCompletedDelegate cb);
-        /// <summary>
-        /// Prover store credential completed delegate.
-        /// </summary>
+
         internal delegate void ProverStoreCredentialCompletedDelegate(int xcommand_handle, int err, string out_cred_id);
+
+        /// <summary>
+        /// Gets human readable credential by the given id.
+        /// </summary>
+        /// <returns>The prover get credential.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="wallet_handle">Wallet handle.</param>
+        /// <param name="cred_id">Cred identifier.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prover_get_credential(int command_handle, IntPtr wallet_handle, string cred_id, ProverGetCredentialCompletedDelegate cb);
+
+        internal delegate void ProverGetCredentialCompletedDelegate(int xcommand_handle, int err, string credential_json);
 
         /// <summary>
         /// Gets human readable claims according to the filter.
@@ -221,13 +215,44 @@ namespace Hyperledger.Indy.AnonCredsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_get_credentials(int command_handle, IntPtr wallet_handle, string filter_json, ProverGetCredentialsCompletedDelegate cb);
 
-        /// <summary>
-        /// Delegate for the function called back to by the indy_prover_get_claims function.
-        /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="matched_credentials_json">claims json</param>
         internal delegate void ProverGetCredentialsCompletedDelegate(int xcommand_handle, int err, string matched_credentials_json);
+
+        /// <summary>
+        /// Search for credentials stored in wallet.
+        /// Credentials can be filtered by tags created during saving of credential.
+        /// </summary>
+        /// <returns>The prover search credentials.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="wallet_handle">Wallet handle.</param>
+        /// <param name="query_json">Query json.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prover_search_credentials(int command_handle, IntPtr wallet_handle, string query_json, ProverSearchCredentialsCompletedDelegate cb);
+
+        internal delegate void ProverSearchCredentialsCompletedDelegate(int xcommand_handle, int err, IntPtr search_handle, int total_count);
+
+        /// <summary>
+        /// Fetch next credentials for search.
+        /// </summary>
+        /// <returns>The prover fetch credentials.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="search_handle">Search handle.</param>
+        /// <param name="count">Count.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prover_fetch_credentials(int command_handle, IntPtr search_handle, int count, ProverFetchCredentialsCompletedDelegate cb);
+
+        internal delegate void ProverFetchCredentialsCompletedDelegate(int xcommand_handle, int err, string credentials_json);
+
+        /// <summary>
+        /// Close credentials search (make search handle invalid)
+        /// </summary>
+        /// <returns>The prover close credentials search.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="search_handle">Search handle.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prover_close_credentials_search(int command_handle, IntPtr search_handle, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Gets human readable claims matching the given proof request.
@@ -240,13 +265,37 @@ namespace Hyperledger.Indy.AnonCredsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_get_credentials_for_proof_req(int command_handle, IntPtr wallet_handle, string proof_request_json, ProverGetCredentialsForProofCompletedDelegate cb);
 
-        /// <summary>
-        /// Delegate for the function called back to by the indy_prover_get_claims_for_proof_req function.
-        /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="credentials_json">json with claims for the given pool request.</param>
         internal delegate void ProverGetCredentialsForProofCompletedDelegate(int xcommand_handle, int err, string credentials_json);
+
+        /// <summary>
+        /// Search for credentials matching the given proof request.
+        /// </summary>
+        /// <returns>The prover search credentials for proof req.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="wallet_handle">Wallet handle.</param>
+        /// <param name="proof_request_json">Proof request json.</param>
+        /// <param name="extra_query_json">Extra query json.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prover_search_credentials_for_proof_req(int command_handle, IntPtr wallet_handle, string proof_request_json, string extra_query_json, ProverSearchCredentialsForProofReqCompletedDelegate cb);
+
+        internal delegate void ProverSearchCredentialsForProofReqCompletedDelegate(int xcommand_handle, int err, IntPtr search_handle);
+
+
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prover_fetch_credentials_for_proof_req(int command_handle, IntPtr search_handle, string item_referent, int count, ProverFetchCredentialsForProofReqCompletedDelegate cb);
+
+        internal delegate void ProverFetchCredentialsForProofReqCompletedDelegate(int xcommand_handle, int err, string credentials_json);
+
+        /// <summary>
+        /// Close credentials search (make search handle invalid)
+        /// </summary>
+        /// <returns>The prover close credentials search.</returns>
+        /// <param name="command_handle">Command handle.</param>
+        /// <param name="search_handle">Search handle.</param>
+        /// <param name="cb">Cb.</param>
+        [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+        internal static extern int indy_prover_close_credentials_search_for_proof_req(int command_handle, IntPtr search_handle, IndyMethodCompletedDelegate cb);
 
         /// <summary>
         /// Indies the prover create proof.
@@ -264,12 +313,6 @@ namespace Hyperledger.Indy.AnonCredsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_prover_create_proof(int command_handle, IntPtr wallet_handle, string proof_req_json, string requested_credentials_json, string master_secret_id, string schemas_json, string credential_defs_json, string rev_states_json, ProverCreateProofCompletedDelegate cb);
 
-        /// <summary>
-        /// Delegate for the function called back to by the indy_prover_create_proof function.
-        /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="proof_json">Proof json.</param>
         internal delegate void ProverCreateProofCompletedDelegate(int xcommand_handle, int err, string proof_json);
 
         /// <summary>
@@ -287,12 +330,6 @@ namespace Hyperledger.Indy.AnonCredsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_verifier_verify_proof(int command_handle, string proof_request_json, string proof_json, string schemas_json, string credential_defs_json, string rev_reg_defs_json, string rev_regs_json, VerifierVerifyProofCompletedDelegate cb);
 
-        /// <summary>
-        /// Delegate for the function called back to by the indy_verifier_verify_proof function.
-        /// </summary>
-        /// <param name="xcommand_handle">The handle for the command that initiated the callback.</param>
-        /// <param name="err">The outcome of execution of the command.</param>
-        /// <param name="valid">true if the proof is valid, otherwise false</param>
         internal delegate void VerifierVerifyProofCompletedDelegate(int xcommand_handle, int err, bool valid);
 
         /// <summary>
@@ -309,9 +346,6 @@ namespace Hyperledger.Indy.AnonCredsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_create_revocation_state(int command_handle, int blob_storage_reader_handle, string rev_reg_def_json, string rev_reg_delta_json, long timestamp, string cred_rev_id, CreateRevocationStateCompletedDelegate cb);
 
-        /// <summary>
-        /// Create revocation state completed delegate.
-        /// </summary>
         internal delegate void CreateRevocationStateCompletedDelegate(int xcommand_handle, int err, string rev_state_json);
 
         /// <summary>
@@ -329,9 +363,6 @@ namespace Hyperledger.Indy.AnonCredsApi
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_update_revocation_state(int command_handle, int blob_storage_reader_handle, string rev_state_json, string rev_reg_def_json, string rev_reg_delta_json, long timestamp, string cred_rev_id, UpdateRevocationStateCompletedDelegate cb);
 
-        /// <summary>
-        /// Update revocation state completed delegate.
-        /// </summary>
         internal delegate void UpdateRevocationStateCompletedDelegate(int xcommand_handle, int err, string updated_rev_state_json);
     }
 }

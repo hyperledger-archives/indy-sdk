@@ -13,8 +13,8 @@ async def create_key(wallet_handle: int,
     :param wallet_handle: Wallet handle (created by open_wallet).
     :param key_json: Key information as json. Example:
         {
-            "seed": string, // Optional (if not set random one will be used);
-                    Seed information that allows deterministic key creation.
+	        "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created).
+	                                   Can be UTF-8, base64 or hex string.
             "crypto_type": string, // Optional (if not set then ed25519 curve is used);
                     Currently only 'ed25519' value is supported for this field.
         }
@@ -169,7 +169,7 @@ async def crypto_verify(signer_vk: str,
     """
 
     logger = logging.getLogger(__name__)
-    logger.debug("crypto_verify: >>> my_vk: %r, signed_msg: %r",
+    logger.debug("crypto_verify: >>> my_vk: %r, signed_msg: %r, signature: %r",
                  signer_vk,
                  msg,
                  signature)

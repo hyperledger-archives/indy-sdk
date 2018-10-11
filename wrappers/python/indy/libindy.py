@@ -6,6 +6,9 @@ import asyncio
 import sys
 import itertools
 import logging
+from logging import ERROR, WARNING, INFO, DEBUG
+
+TRACE = 5
 
 _futures = {}
 _futures_counter = itertools.count()
@@ -32,6 +35,16 @@ def do_call(name: str, *args):
 
     logger.debug("do_call: <<< %s", future)
     return future
+
+
+def do_call_sync(name: str, *args):
+    logger = logging.getLogger(__name__)
+    logger.debug("do_call_sync: >>> name: %s, args: %s", name, args)
+
+    err = getattr(_cdll(), name)(*args)
+
+    logger.debug("do_call_sync: <<< %s", err)
+    return err
 
 
 def create_cb(cb_type: CFUNCTYPE, transform_fn=None):
@@ -88,6 +101,7 @@ def _indy_loop_callback(command_handle: int, err, *args):
 def _cdll() -> CDLL:
     if not hasattr(_cdll, "cdll"):
         _cdll.cdll = _load_cdll()
+        _set_logger()
 
     return _cdll.cdll
 
@@ -119,3 +133,35 @@ def _load_cdll() -> CDLL:
     except OSError as e:
         logger.error("_load_cdll: Can't load libindy: %s", e)
         raise e
+
+
+def _set_logger():
+    logger = logging.getLogger(__name__)
+    logging.addLevelName(TRACE, "TRACE")
+
+    logger.debug("set_logger: >>>")
+
+    def _log(context, level, target, message, module_path, file, line):
+        libindy_logger = logger.getChild('native.' + target.decode().replace('::', '.'))
+
+        level_mapping = {1: ERROR, 2: WARNING, 3: INFO, 4: DEBUG, 5: TRACE, }
+
+        libindy_logger.log(level_mapping[level],
+                           "\t%s:%d | %s",
+                           file.decode(),
+                           line,
+                           message.decode())
+
+    _set_logger.callbacks = {
+        'enabled_cb': None,
+        'log_cb': CFUNCTYPE(None, c_void_p, c_int, c_char_p, c_char_p, c_char_p, c_char_p, c_int)(_log),
+        'flush_cb': None
+    }
+
+    do_call_sync('indy_set_logger',
+                 None,
+                 _set_logger.callbacks['enabled_cb'],
+                 _set_logger.callbacks['log_cb'],
+                 _set_logger.callbacks['flush_cb'])
+
+    logger.debug("set_logger: <<<")

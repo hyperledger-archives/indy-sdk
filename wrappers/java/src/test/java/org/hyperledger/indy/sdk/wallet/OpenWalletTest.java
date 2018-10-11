@@ -6,7 +6,6 @@ import static org.hamcrest.CoreMatchers.isA;
 import static org.junit.Assert.assertNotNull;
 
 import org.json.JSONObject;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -42,16 +41,6 @@ public class OpenWalletTest extends IndyIntegrationTest {
 		wallet.closeWallet().get();
 
 		wallet = Wallet.openWallet(WALLET_CONFIG, "{\"key\": \"other_key\"}").get();
-		wallet.closeWallet().get();
-	}
-
-	@Test
-	@Ignore
-	public void testOpenWalletWorksForPlugged() throws Exception {
-		Wallet.createWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		Wallet wallet = Wallet.openWallet(PLUGGED_WALLET_CONFIG, WALLET_CREDENTIALS).get();
-		assertNotNull(wallet);
-
 		wallet.closeWallet().get();
 	}
 

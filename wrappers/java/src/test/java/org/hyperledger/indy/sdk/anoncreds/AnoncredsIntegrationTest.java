@@ -29,14 +29,12 @@ public class AnoncredsIntegrationTest {
 	static String xyzSchema;
 	static String issuer1gvtCredDefId;
 	static String issuer1gvtCredDef;
-	static String issuer1xyzCredDefId;
 	static String issuer1xyzCredDef;
 	static String issuer1GvtCredOffer;
 	static String issuer2GvtCredOffer;
 	static String issuer1GvtCredReq;
 	static String issuer1GvtCredReqMetadata;
-	static String issuer1GvtCredential;
-	protected String CREDENTIALS = "{\"key\": \"key\", \"key_derivation_method\": \"ARAGON2I_INT\"}";
+	String CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
 	String masterSecretId = "master_secret_name";
 	String issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
 	String proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
@@ -112,7 +110,7 @@ public class AnoncredsIntegrationTest {
 		//Issue XYZ issuer1GvtCredential by Issuer1
 		IssuerCreateAndStoreCredentialDefResult issuer1CreateXyzCredDefResult =
 				Anoncreds.issuerCreateAndStoreCredentialDef(wallet, issuerDid, xyzSchema, tag, null, defaultCredentialDefinitionConfig).get();
-		issuer1xyzCredDefId = issuer1CreateXyzCredDefResult.getCredDefId();
+		String issuer1xyzCredDefId = issuer1CreateXyzCredDefResult.getCredDefId();
 		issuer1xyzCredDef = issuer1CreateXyzCredDefResult.getCredDefJson();
 
 		//Issue GVT issuer1GvtCredential by Issuer2
@@ -135,7 +133,7 @@ public class AnoncredsIntegrationTest {
 
 		AnoncredsResults.IssuerCreateCredentialResult createCredResult =
 				Anoncreds.issuerCreateCredential(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, gvtCredentialValuesJson, null, - 1).get();
-		issuer1GvtCredential = createCredResult.getCredentialJson();
+		String issuer1GvtCredential = createCredResult.getCredentialJson();
 
 		Anoncreds.proverStoreCredential(wallet, credentialId1, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef, null).get();
 

@@ -1,6 +1,6 @@
 [package]
 name = "indy"
-version = "1.6.2"
+version = "1.6.7"
 authors = [
   "Sergej Pupykin <sergej.pupykin@dsr-company.com>",
   "Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>",
@@ -54,7 +54,8 @@ hex = "0.2.0"
 libc = "0.2.21"
 log = "0.4.1"
 derivative = "1.0.0"
-openssl = { version = "=0.9.24", optional = true }
+dirs = "1.0.4"
+openssl = { version = "=0.10.12", optional = true }
 owning_ref = "0.3.3"
 rand = "0.3"
 rusqlite = "0.13.0" # Make sure rusqlite for android is also bumped with this. Rusqlite for android is at the bottom of this document.
@@ -84,3 +85,10 @@ features = ["v4"]
 android_logger = "0.5"
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 rusqlite = { version = "0.13.0", features=["bundled"] }
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "wallet"
+harness = false

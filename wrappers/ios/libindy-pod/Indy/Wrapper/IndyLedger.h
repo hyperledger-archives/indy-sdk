@@ -121,7 +121,7 @@
 /**
  Builds a GET_NYM request. Request to get information about a DID (NYM).
  
- @param submitterDid DID of the read request sender.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param targetDid Target DID as base58-encoded string for 16 or 32 bit DID value.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
@@ -151,7 +151,7 @@
 /**
  Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
  
- @param submitterDid DID of the read request sender.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param targetDid Target DID as base58-encoded string for 16 or 32 bit DID value.
  @param raw (Optional) Requested attribute name.
  @param hash (Optional) Requested attribute hash.
@@ -199,7 +199,7 @@
 /**
  Builds a GET_SCHEMA request. Request to get Credential's Schema.
  
- @param submitterDid DID of the read request sender.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param id Schema ID in ledger
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
@@ -253,7 +253,7 @@
  Builds a GET_CRED_DEF request. Request to get a Credential Definition (in particular, public key),
  that Issuer creates for a particular Credential Schema.
  
- @param submitterDid DID of the read request sender.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param id Credential Definition ID in ledger
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
@@ -288,7 +288,7 @@
  Builds a request to get a DDO.
 
  
- @param submitterDid Id of Identity stored in secured Wallet.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param targetDid Id of Identity stored in secured Wallet.
  @param completion Callback that takes command result as parameter. Returns result as json.
  */
@@ -326,7 +326,7 @@
 /**
  Builds a GET_TXN request. Request to get any transaction by its seq_no.
 
- @param submitterDid DID of the request submitter.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param ledgerType (Optional) type of the ledger the requested transaction belongs to:
           DOMAIN - used default,
           POOL,
@@ -437,7 +437,7 @@
  Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
  that Issuer creates for a particular Credential Definition.
 
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param id ID of Revocation Registry Definition in ledger.
  @param completion Callback that takes command result as parameter. Returns request result as json.
  */
@@ -504,7 +504,7 @@
  Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
  by ID. The state is defined by the given timestamp.
 
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param revocRegDefId ID of the corresponding Revocation Registry Definition in ledger.
  @param timestamp Requested time represented as a total number of seconds from Unix Epoch
  @param completion Callback that takes command result as parameter. Returns request result as json.
@@ -536,7 +536,7 @@
  The Delta is defined by from and to timestamp fields.
  If from is not specified, then the whole state till to will be returned.
 
- @param submitterDid DID of the submitter stored in secured Wallet.
+ @param submitterDid (Optional) DID of the read request sender (if not provided then default Libindy DID will be used).
  @param revocRegDefId ID of the corresponding Revocation Registry Definition in ledger.
  @param from Requested time represented as a total number of seconds from Unix Epoch
  @param to Requested time represented as a total number of seconds from Unix Epoch

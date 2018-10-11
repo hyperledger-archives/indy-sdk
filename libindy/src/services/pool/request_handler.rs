@@ -249,13 +249,14 @@ impl<T: Networker> RequestSM<T> {
                         if let Some(nodes_to_send) = nodes_to_send {
                             match serde_json::from_str::<Vec<String>>(&nodes_to_send) {
                                 Ok(nodes_to_send) => {
-                                    let is_nodes_to_send_known = nodes_to_send.iter().all(|node| nodes.contains_key(node));
+                                    //TODO check empty list on API level?
+                                    let is_nodes_to_send_known = !nodes_to_send.is_empty() && nodes_to_send.iter().all(|node| nodes.contains_key(node));
                                     if is_nodes_to_send_known {
                                         state.networker.borrow_mut().process_event(Some(NetworkerEvent::SendAllRequest(msg, req_id, timeout, Some(nodes_to_send.clone()))));
                                         (RequestState::Full((Some(nodes_to_send), state).into()), None)
                                     } else {
                                         _send_replies(&cmd_ids, Err(PoolError::CommonError(CommonError::InvalidStructure(
-                                            format!("Unknown node present in list to send {:?}, known nodes are {:?}",
+                                            format!("There is no known node in list to send {:?}, known nodes are {:?}",
                                                     nodes_to_send, nodes.keys())
                                         ))));
                                         (RequestState::finish(), None)
@@ -711,7 +712,7 @@ pub mod tests {
     use services::pool::networker::MockNetworker;
     use services::pool::types::{ConsistencyProof, LedgerStatus, Reply, ReplyResultV1, ReplyTxnV1, ReplyV1, Response, ResponseMetadata, ResponseV1};
     use super::*;
-    use utils::test::TestUtils;
+    use utils::test;
 
     const MESSAGE: &'static str = "message";
     const REQ_ID: &'static str = "1";
@@ -821,12 +822,12 @@ pub mod tests {
 
     // required because of dumping txns to cache
     fn _create_pool(content: Option<String>) {
-        use utils::environment::EnvironmentUtils;
+        use utils::environment;
         use std::fs;
         use std::fs::File;
         use std::io::Write;
 
-        let mut path = EnvironmentUtils::pool_path(POOL);
+        let mut path = environment::pool_path(POOL);
 
         path.push(POOL);
         path.set_extension("txn");
@@ -892,6 +893,13 @@ pub mod tests {
             let mut request_handler = _request_handler(0, 1);
             request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, Some(format!(r#"["{}"]"#, NODE)))));
             assert_match!(RequestState::Full(_), request_handler.request_wrapper.unwrap().state);
+        }
+
+        #[test]
+        fn request_handler_process_consensus_full_req_event_from_start_works_for_empty_list_nodes() {
+            let mut request_handler = _request_handler(0, 1);
+            request_handler.process_event(Some(RequestEvent::CustomFullRequest(MESSAGE.to_string(), REQ_ID.to_string(), None, Some("[ ]".to_string()))));
+            assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
         }
 
         #[test]
@@ -1279,7 +1287,7 @@ pub mod tests {
 
         #[test]
         fn request_handler_process_catchup_reply_event_from_catchup_single_state_works() {
-            TestUtils::cleanup_indy_home();
+            test::cleanup_indy_home();
             _create_pool(None);
 
             let mut request_handler = _request_handler(0, 1);
@@ -1303,7 +1311,7 @@ pub mod tests {
 
             request_handler.process_event(Some(RequestEvent::CatchupRep(cr, "Node1".to_string())));
             assert_match!(RequestState::Finish(_), request_handler.request_wrapper.unwrap().state);
-            TestUtils::cleanup_indy_home();
+            test::cleanup_indy_home();
         }
 
         #[test]

@@ -1,11 +1,11 @@
 package org.hyperledger.indy.sdk;
 
+import org.apache.log4j.Logger;
 import org.hyperledger.indy.sdk.crypto.CryptoJSONParameters;
 import org.hyperledger.indy.sdk.pool.Pool;
 import org.hyperledger.indy.sdk.did.DidJSONParameters;
 import org.hyperledger.indy.sdk.utils.InitHelper;
 import org.hyperledger.indy.sdk.utils.StorageUtils;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,7 +38,6 @@ public class IndyIntegrationTest {
 	protected static final String IDENTITY_JSON_TEMPLATE = "{\"did\":\"%s\",\"verkey\":\"%s\"}";
 	protected static final byte[] MESSAGE = "{\"reqId\":1496822211362017764}".getBytes();
 	protected static final String SCHEMA_DATA = "{\"id\":\"id\", \"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\":[\"name\"],\"ver\":\"1.0\"}";
-	protected static final String POOL = "Pool1";
 	protected static final String WALLET = "Wallet1";
 	protected static final String TYPE = "default";
 	protected static final String METADATA = "some metadata";
@@ -46,7 +45,6 @@ public class IndyIntegrationTest {
 	protected static final String CRYPTO_TYPE = "ed25519";
 	protected byte[] SIGNATURE = {20, - 65, 100, - 43, 101, 12, - 59, - 58, - 53, 49, 89, - 36, - 51, - 64, - 32, - 35, 97, 77, - 36, - 66, 90, 60, - 114, 23, 16, - 16, - 67, - 127, 45, - 108, - 11, 8, 102, 95, 95, - 7, 100, 89, 41, - 29, - 43, 25, 100, 1, - 24, - 68, - 11, - 21, - 70, 21, 52, - 80, - 20, 11, 99, 70, - 101, - 97, 89, - 41, - 59, - 17, - 118, 5};
 	protected byte[] ENCRYPTED_MESSAGE = {- 105, 30, 89, 75, 76, 28, - 59, - 45, 105, - 46, 20, 124, - 85, - 13, 109, 29, - 88, - 82, - 8, - 6, - 50, - 84, - 53, - 48, - 49, 56, 124, 114, 82, 126, 74, 99, - 72, - 78, - 117, 96, 60, 119, 50, - 40, 121, 21, 57, - 68, 89};
-	protected byte[] NONCE = {- 14, 102, - 41, - 57, 1, 4, 75, - 46, - 91, 87, 14, 41, - 39, 48, 42, - 126, - 121, 84, - 58, 59, - 27, 51, - 32, - 23};
 	protected String DEFAULT_CRED_DEF_CONFIG = "{\"support_revocation\":false}";
 	protected String TAG = "tag1";
 	protected String GVT_SCHEMA_NAME = "gvt";
@@ -68,9 +66,7 @@ public class IndyIntegrationTest {
 			"    }";
 	protected static final String WALLET_CONFIG = "{ \"id\":\"" + WALLET + "\", \"storage_type\":\"" + TYPE + "\"}";
 
-	protected static final String WALLET_CREDENTIALS = "{ \"key\":\"key\", \"key_derivation_method\": \"ARAGON2I_INT\"}";
-
-	protected static final String PLUGGED_WALLET_CONFIG = "{ \"id\":\"" + WALLET + "\", \"storage_type\":\"unknown_type\"}";
+	protected static final String WALLET_CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
 
 	protected int PROTOCOL_VERSION = 2;
 
@@ -84,7 +80,7 @@ public class IndyIntegrationTest {
 	protected static final String MY1_IDENTITY_KEY_JSON =
 			new CryptoJSONParameters.CreateKeyJSONParameter(MY1_SEED, null).toJson();
 
-	protected static final String EXPORT_KEY = "export_key";
+	private static final String EXPORT_KEY = "export_key";
 	protected static final String EXPORT_PATH = getTmpPath("export_wallet");
 	protected static final String EXPORT_CONFIG_JSON = "{ \"key\":\"" + EXPORT_KEY + "\", \"path\":\"" + EXPORT_PATH + "\"}";
 
@@ -94,17 +90,11 @@ public class IndyIntegrationTest {
 	@Rule
 	public Timeout globalTimeout = new Timeout(1, TimeUnit.MINUTES);
 
-	private static Boolean isWalletRegistered = false;
-
 	@Before
 	public void setUp() throws Exception {
 		InitHelper.init();
 		StorageUtils.cleanupStorage();
 		Pool.setProtocolVersion(PROTOCOL_VERSION).get();
-//		if (! isWalletRegistered) { TODO:FIXME
-//			Wallet.registerWalletType("inmem", new InMemWalletType()).get();
-//		}
-		isWalletRegistered = true;
 	}
 
 	protected HashSet<Pool> openedPools = new HashSet<>();

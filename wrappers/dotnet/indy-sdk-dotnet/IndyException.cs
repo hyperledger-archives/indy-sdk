@@ -45,6 +45,21 @@ namespace Hyperledger.Indy
                 case ErrorCode.CommonInvalidParam10:
                 case ErrorCode.CommonInvalidParam11:
                 case ErrorCode.CommonInvalidParam12:
+                case ErrorCode.CommonInvalidParam13:
+                case ErrorCode.CommonInvalidParam14:
+                case ErrorCode.CommonInvalidParam15:
+                case ErrorCode.CommonInvalidParam16:
+                case ErrorCode.CommonInvalidParam17:
+                case ErrorCode.CommonInvalidParam18:
+                case ErrorCode.CommonInvalidParam19:
+                case ErrorCode.CommonInvalidParam20:
+                case ErrorCode.CommonInvalidParam21:
+                case ErrorCode.CommonInvalidParam22:
+                case ErrorCode.CommonInvalidParam23:
+                case ErrorCode.CommonInvalidParam24:
+                case ErrorCode.CommonInvalidParam25:
+                case ErrorCode.CommonInvalidParam26:
+                case ErrorCode.CommonInvalidParam27:
                     return new InvalidParameterException(sdkErrorCode);
                 case ErrorCode.CommonInvalidState:
                     return new InvalidStateException();
@@ -94,10 +109,12 @@ namespace Hyperledger.Indy
                     return new ProofRejectedException();
                 case ErrorCode.AnoncredsClaimRevoked:
                     return new ClaimRevokedException();
-                case ErrorCode.SignusUnknownCryptoError:
+                case ErrorCode.UnknownCryptoTypeError:
                     return new UnknownCryptoException();
+                case ErrorCode.WalletItemNotFoundError:
+                    return new WalletItemNotFoundException();
                 default:
-                    var message = string.Format("An unmapped error with the code '{0}' was returned by the SDK.", sdkErrorCode);
+                    var message = $"An unmapped error with the code '{sdkErrorCode}' was returned by the SDK.";
                     return new IndyException(message, sdkErrorCode);
             }      
         }

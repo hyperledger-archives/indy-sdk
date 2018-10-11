@@ -13,7 +13,7 @@ use serde_json;
 use self::owning_ref::OwningHandle;
 use std::rc::Rc;
 
-use utils::environment::EnvironmentUtils;
+use utils::environment;
 use errors::wallet::WalletStorageError;
 use errors::common::CommonError;
 use services::wallet::language;
@@ -236,7 +236,7 @@ impl SQLiteStorageType {
 
         let mut path = match config {
             Some(Config {path: Some(ref path)}) => std::path::PathBuf::from(path),
-            _ => EnvironmentUtils::wallet_home_path()
+            _ => environment::wallet_home_path()
         };
 
         path.push(id);
@@ -780,7 +780,7 @@ mod tests {
     use super::*;
     use super::super::Tag;
 
-    use utils::test::TestUtils;
+    use utils::test;
 
     #[test]
     fn sqlite_storage_type_create_works() {
@@ -1253,7 +1253,7 @@ mod tests {
     }
 
     fn _cleanup() {
-        TestUtils::cleanup_storage()
+        test::cleanup_storage()
     }
 
     fn _wallet_id() -> &'static str {
@@ -1346,7 +1346,7 @@ mod tests {
     }
 
     fn _custom_path() -> String {
-        let mut path = EnvironmentUtils::tmp_path();
+        let mut path = environment::tmp_path();
         path.push("custom_wallet_path");
         path.to_str().unwrap().to_owned()
     }

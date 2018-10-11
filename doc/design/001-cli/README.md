@@ -125,16 +125,22 @@ indy> wallet <command>
 ```
 
 #### Wallet create
-Create new wallet with specified name:
+Create new wallet and attach to Indy CLI:
 ```
-indy> wallet create <wallet name> key [storage_type=<storage_type>] [storage_config={config json}]
+indy> wallet create <wallet name> key [key_derivation_method=<key_derivation_method>] [storage_type=<storage_type>] [storage_config={config json}]
 ```
 TODO: Think about custom wallet types support. Now we force default wallet security model.. 
+
+#### Wallet attach
+Attach existing wallet to Indy CLI:
+```
+indy> wallet attach <wallet name> [storage_type=<storage_type>] [storage_config={config json}]
+```
 
 #### Wallet open
 Open the wallet with specified name and make it available for commands that require wallet. If there was opened wallet it will be closed:
 ```
-indy> wallet open <wallet name> key [rekey]
+indy> wallet open <wallet name> key [key_derivation_method=<key_derivation_method>] [rekey] [rekey_derivation_method=<rekey_derivation_method>]
 ```
 
 #### Wallet close
@@ -144,13 +150,19 @@ indy> wallet close
 ```
 
 #### Wallet delete
-Delete the opened wallet
+Delete the wallet
 ```
-indy> wallet delete <wallet name> key
+indy> wallet delete <wallet name> key [key_derivation_method=<key_derivation_method>]
+```
+
+#### Wallet detach
+Detach wallet from Indy CLI
+```
+indy> wallet detach <wallet name>
 ```
 
 #### Wallet list
-List all created wallets with corresponded status (indicates opened one):
+List all attached wallets with corresponded status (indicates opened one):
 ```
 indy> wallet list
 ```
@@ -159,14 +171,14 @@ indy> wallet list
 Exports opened wallet to the specified file.
 
 ```indy-cli
-indy> wallet export export_path=<path-to-file> export_key=[<export key>]
+indy> wallet export export_path=<path-to-file> export_key=[<export key>] [export_key_derivation_method=<export_key_derivation_method>]
 ```
 
 ### Import wallet
 Create new wallet and then import content from the specified file.
 
 ```indy-cli
-indy> wallet import <wallet name> key=<key> export_path=<path-to-file> export_key=<key used for export>  [storage_type=<storage_type>] [storage_config={config json}]
+indy> wallet import <wallet name> key=<key> [key_derivation_method=<key_derivation_method>] export_path=<path-to-file> export_key=<key used for export>  [storage_type=<storage_type>] [storage_config={config json}]
 ```
 
 ### Pool management commands
@@ -212,7 +224,7 @@ indy> did <subcommand>
 #### New
 Create and store my DID in the opened wallet. Requires opened wallet.
 ```
-indy> did new [did=<did>] [seed=<seed str>] [metadata=<metadata string>]
+indy> did new [did=<did>] [seed=<UTF-8, base64 or hex string>] [metadata=<metadata string>]
 ```
 
 #### List
@@ -230,7 +242,7 @@ indy> did use [did=]<did>
 #### Rotate key
 Rotate keys for used DID. Sends NYM to the ledger with updated keys. Requires opened wallet and connection to pool:
 ```
-indy> did rotate-key [seed=<seed str>]
+indy> did rotate-key [seed=<UTF-8, base64 or hex string>] [fees_inputs=<source-1,..,source-n>] [fees_outputs=(<recipient-1>,<amount>),..,(<recipient-n>,<amount>)] [extra=<extra>]
 ```
 
 ### Ledger transactions/messages

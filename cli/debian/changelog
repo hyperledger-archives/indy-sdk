@@ -1,4 +1,9 @@
-indy-cli (1.6.2) unstable; urgency=medium
+indy-cli (1.6.7) unstable; urgency=medium
 
-  [ Hyperledger ]
-  * Created Indy-Cli
+[ Hyperledger ]
+
+* 1.6.7
+    * Supported setting fees in `did rotate-key` command.
+
+* 1.6.5
+    * `ledger get-*` commands can be called without having an active `did`.

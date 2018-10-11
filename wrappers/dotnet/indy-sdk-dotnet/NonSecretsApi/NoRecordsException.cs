@@ -1,5 +1,4 @@
-﻿using System;
-namespace Hyperledger.Indy.NonSecretsApi
+﻿namespace Hyperledger.Indy.NonSecretsApi
 {
     /// <summary>
     /// No records exception.

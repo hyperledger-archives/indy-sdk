@@ -51,12 +51,12 @@ setup_dependencies(){
         else
             echo "${BLUE}Not downloading prebuilt dependencies. Dependencies locations have to be passed${RESET}"
             if [ -z "${OPENSSL_DIR}" ]; then
-                OPENSSL_DIR="openssl_${TARGET_ARCH}"
+                OPENSSL_DIR="openssl_${ABSOLUTE_ARCH}"
                 if [ -d "${OPENSSL_DIR}" ] ; then
                     echo "${GREEN}Found ${OPENSSL_DIR}${RESET}"
                 elif [ -z "$2" ]; then
                     echo STDERR "${RED}Missing OPENSSL_DIR argument and environment variable${RESET}"
-                    echo STDERR "${BLUE}e.g. set OPENSSL_DIR=<path> for environment or openssl_${TARGET_ARCH}${RESET}"
+                    echo STDERR "${BLUE}e.g. set OPENSSL_DIR=<path> for environment or openssl_${ABSOLUTE_ARCH}${RESET}"
                     exit 1
                 else
                     OPENSSL_DIR=$2
@@ -64,12 +64,12 @@ setup_dependencies(){
             fi
 
             if [ -z "${SODIUM_DIR}" ]; then
-                SODIUM_DIR="libsodium_${TARGET_ARCH}"
+                SODIUM_DIR="libsodium_${ABSOLUTE_ARCH}"
                 if [ -d "${SODIUM_DIR}" ] ; then
                     echo "${GREEN}Found ${SODIUM_DIR}${RESET}"
                 elif [ -z "$3" ]; then
                     echo STDERR "${RED}Missing SODIUM_DIR argument and environment variable${RESET}"
-                    echo STDERR "${BLUE}e.g. set SODIUM_DIR=<path> for environment or libsodium_${TARGET_ARCH}${RESET}"
+                    echo STDERR "${BLUE}e.g. set SODIUM_DIR=<path> for environment or libsodium_${ABSOLUTE_ARCH}${RESET}"
                     exit 1
                 else
                     SODIUM_DIR=$3
@@ -77,12 +77,12 @@ setup_dependencies(){
             fi
 
             if [ -z "${LIBZMQ_DIR}" ] ; then
-                LIBZMQ_DIR="libzmq_${TARGET_ARCH}"
+                LIBZMQ_DIR="libzmq_${ABSOLUTE_ARCH}"
                 if [ -d "${LIBZMQ_DIR}" ] ; then
                     echo "${GREEN}Found ${LIBZMQ_DIR}${RESET}"
                 elif [ -z "$4" ] ; then
                     echo STDERR "${RED}Missing LIBZMQ_DIR argument and environment variable${RESET}"
-                    echo STDERR "${BLUE}e.g. set LIBZMQ_DIR=<path> for environment or libzmq_${TARGET_ARCH}${RESET}"
+                    echo STDERR "${BLUE}e.g. set LIBZMQ_DIR=<path> for environment or libzmq_${ABSOLUTE_ARCH}${RESET}"
                     exit 1
                 else
                     LIBZMQ_DIR=$4
@@ -129,7 +129,7 @@ package_library(){
             zip -r libindy_android_${ABSOLUTE_ARCH}.zip libindy_${ABSOLUTE_ARCH} &&
             echo "${BLUE}Zip file available at ${PWD}/libindy_android_${ABSOLUTE_ARCH}.zip ${RESET}"
         else
-            zip -r libindy_android_${ABSOLUTE_ARCH}_${LIBINDY_VERSION}.zip libindy_${TARGET_ARCH} &&
+            zip -r libindy_android_${ABSOLUTE_ARCH}_${LIBINDY_VERSION}.zip libindy_${ABSOLUTE_ARCH} &&
             echo "${BLUE}Zip file available at ${PWD}/libindy_android_${ABSOLUTE_ARCH}_${LIBINDY_VERSION}.zip ${RESET}"
         fi
 
@@ -147,10 +147,11 @@ build(){
     echo "**************************************************"
     pushd ${WORKDIR}
         rm -rf target/${TRIPLET}
-        cargo clean &&
+        cargo clean
         LD_LIBRARY_PATH=${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} \
         RUSTFLAGS="-C link-args=-Wl,-rpath,${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -L${TOOLCHAIN_DIR}/${ANDROID_TRIPLET}/${TOOLCHAIN_SYSROOT_LIB} -lgnustl_shared" \
-        cargo build --release --target=${TRIPLET} &&
+        cargo build --release --target=${TRIPLET}
+
     popd
 }
 

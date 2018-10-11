@@ -11,7 +11,15 @@ use std::fs::File;
 use serde_json::Value as JSONValue;
 use serde_json::Map as JSONMap;
 
-use commands::ledger::{handle_transaction_error, handle_transaction_response, Response};
+use commands::ledger::{
+    handle_transaction_error,
+    handle_transaction_response,
+    handle_build_request_error,
+    set_request_fees,
+    parse_response_with_fees,
+    print_response_receipts,
+    Response
+};
 
 pub mod group {
     use super::*;
@@ -24,7 +32,7 @@ pub mod new_command {
 
     command!(CommandMetadata::build("new", "Create new DID")
                 .add_optional_param("did", "Known DID for new wallet instance")
-                .add_optional_deferred_param("seed", "Seed for creating DID key-pair")
+                .add_optional_deferred_param("seed", "Seed for creating DID key-pair (UTF-8, base64 or hex)")
                 .add_optional_param("metadata", "DID metadata")
                 .add_example("did new")
                 .add_example("did new did=VsKV7grR1BUE29mG2Fm2kX")
@@ -100,7 +108,7 @@ pub mod import_command {
             \"version\": 1,
             \"dids\": [{
                 \"did\": \"did\",
-                \"seed\": \"UTF-8 or base64 seed string\"
+                \"seed\": \"UTF-8, base64 or hex string\"
             }]
         }")
                 .add_main_param("file", "Path to file with DIDs")
@@ -193,15 +201,22 @@ pub mod rotate_key_command {
     use super::*;
 
     command!(CommandMetadata::build("rotate-key", "Rotate keys for active did")
-                .add_optional_deferred_param("seed", "If not provide then a random one will be created")
+                .add_optional_deferred_param("seed", "If not provide then a random one will be created (UTF-8, base64 or hex)")
+                .add_optional_param("fees_inputs","The list of source inputs")
+                .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
+                .add_optional_param("extra","Optional information for fees payment operation")
                 .add_example("did rotate-key")
                 .add_example("did rotate-key seed=00000000000000000000000000000My2")
+                .add_example("did rotate-key fees_inputs=pay:null:111_rBuQo2A1sc9jrJg fees_outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
                 .finalize());
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
         trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
 
         let seed = get_opt_str_param("seed", params).map_err(error_err!())?;
+        let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
+        let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
+        let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
 
         let did = ensure_active_did(&ctx)?;
         let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
@@ -219,27 +234,32 @@ pub mod rotate_key_command {
             Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
         }?;
 
-        let nym_res = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
-            .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request));
+        let mut request = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
+            .map_err(|err| handle_build_request_error(err))?;
 
-        match nym_res {
-            Ok(response) => {
-                let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response)
-                    .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
-                handle_transaction_response(response)?;
-            }
-            Err(err) => {
-                handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name));
-            }
-        };
+        let payment_method = set_request_fees(&mut request, wallet_handle, Some(&did), &fees_inputs, &fees_outputs, extra)?;
 
-        let res =
-            match Did::replace_keys_apply(wallet_handle, &did)
-                .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
-                Ok(vk) => Ok(println_succ!("Verkey for did \"{}\" has been updated. New verkey: \"{}\"", did, vk)),
-                Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
-                Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
-            };
+        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
+            .map_err(|err| handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name)))?;
+
+        let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+
+        handle_transaction_response(response)?;
+
+        let receipts = parse_response_with_fees(&response_json, payment_method)?;
+
+        match Did::replace_keys_apply(wallet_handle, &did)
+            .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
+            Ok(vk) => Ok({
+                println_succ!("Verkey for did \"{}\" has been updated", did);
+                println_succ!("New verkey is \"{}\"", vk)
+            }),
+            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
+            Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+        }?;
+
+        let res = print_response_receipts(receipts);
 
         trace!("execute << {:?}", res);
         res
@@ -314,6 +334,13 @@ pub mod tests {
     pub const DID_MY3: &'static str = "5Uu7YveFSGcT3dSzjpvPab";
     pub const VERKEY_MY3: &'static str = "3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4";
 
+    #[cfg(feature = "nullpay_plugin")]
+    pub const SEED_MY4: &'static str = "00000000000000000000000000000My4";
+    #[cfg(feature = "nullpay_plugin")]
+    pub const DID_MY4: &'static str = "QZAWuVCVYWEAbH8E2ipqtP";
+    #[cfg(feature = "nullpay_plugin")]
+    pub const VERKEY_MY4: &'static str = "Dqc95QYYCot8XNLp9APubEP7omDqHHVU9frwFSUb9yBu";
+
     mod did_new {
         use super::*;
 
@@ -369,6 +396,24 @@ pub mod tests {
             let did = get_did_info(wallet_handle, DID_TRUSTEE);
             assert_eq!(did["did"].as_str().unwrap(), DID_TRUSTEE);
             assert_eq!(did["verkey"].as_str().unwrap(), VERKEY_TRUSTEE);
+
+            close_and_delete_wallet(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn new_works_for_hex_seed() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            {
+                let cmd = new_command::new();
+                let mut params = CommandParams::new();
+                params.insert("seed", "94a823a6387cdd30d8f7687d95710ebab84c6e277b724790a5b221440beb7df6".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            get_did_info(wallet_handle, "HWvjYf77k1dqQAk6sE4gaS");
 
             close_and_delete_wallet(&ctx);
             TestUtils::cleanup_storage();
@@ -533,6 +578,10 @@ pub mod tests {
 
     mod did_rotate_key {
         use super::*;
+        #[cfg(feature = "nullpay_plugin")]
+        use commands::common::tests::load_null_payment_plugin;
+        #[cfg(feature = "nullpay_plugin")]
+        use commands::ledger::tests::{set_fees, create_address_and_mint_sources, get_source_input, FEES, OUTPUT};
 
         #[test]
         pub fn rotate_works() {
@@ -548,15 +597,54 @@ pub mod tests {
             send_nym(&ctx, DID_MY2, VERKEY_MY2, None);
             use_did(&ctx, DID_MY2);
 
-            let did_info = get_did_info(wallet_handle,DID_MY2);
+            let did_info = get_did_info(wallet_handle, DID_MY2);
             assert_eq!(did_info["verkey"].as_str().unwrap(), VERKEY_MY2);
             {
                 let cmd = rotate_key_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let did_info = get_did_info(wallet_handle,DID_MY2);
+            let did_info = get_did_info(wallet_handle, DID_MY2);
             assert_ne!(did_info["verkey"].as_str().unwrap(), VERKEY_MY2);
+
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        #[cfg(feature = "nullpay_plugin")]
+        pub fn nym_works_for_set_fees() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+            new_did(&ctx, SEED_MY4);
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym(&ctx, DID_MY4, VERKEY_MY4, None);
+
+            load_null_payment_plugin(&ctx);
+            set_fees(&ctx, FEES);
+
+            use_did(&ctx, DID_MY4);
+
+            let payment_address_from = create_address_and_mint_sources(&ctx);
+            let input = get_source_input(&ctx, &payment_address_from);
+
+            let did_info = get_did_info(wallet_handle, DID_MY4);
+            assert_eq!(did_info["verkey"].as_str().unwrap(), VERKEY_MY4);
+            {
+                let cmd = rotate_key_command::new();
+                let mut params = CommandParams::new();
+                params.insert("fees_inputs", input);
+                params.insert("fees_outputs", OUTPUT.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let did_info = get_did_info(wallet_handle, DID_MY4);
+            assert_ne!(did_info["verkey"].as_str().unwrap(), VERKEY_MY4);
 
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);

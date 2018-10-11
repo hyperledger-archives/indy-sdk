@@ -838,7 +838,8 @@ Creates keys pair and stores in the wallet.
 * `key`: Json - Key information as json. Example:
 ```
 {
-    "seed": string, // Optional (if not set random one will be used); Seed information that allows deterministic key creation.
+	 "seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created). 
+	                            Can be UTF-8, base64 or hex string.
     "crypto_type": string, // Optional (if not set then ed25519 curve is used); Currently only 'ed25519' value is supported for this field.
 }
 ````
@@ -989,7 +990,8 @@ and encrypt transactions.
             if not provided and cid param is false then the first 16 bit of the verkey will be used as a new DID;
             if not provided and cid is true then the full verkey will be used as a new DID;
             if provided, then keys will be replaced - key rotation use case)
-    "seed": string, (optional; if not provide then a random one will be created)
+	"seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created). 
+	                           Can be UTF-8, base64 or hex string.
     "crypto_type": string, (optional; if not set then ed25519 curve is used;
               currently only 'ed25519' value is supported for this field)
     "cid": bool, (optional; if not set then false is used;)
@@ -1010,7 +1012,8 @@ DID \(owned by the caller of the library\).
 * `identity`: Json - Identity information as json. Example:
 ```
 {
-    "seed": string, (optional; if not provide then a random one will be created)
+	"seed": string, (optional) Seed that allows deterministic key creation (if not set random one will be created). 
+	                           Can be UTF-8, base64 or hex string.
     "crypto_type": string, (optional; if not set then ed25519 curve is used;
               currently only 'ed25519' value is supported for this field)
 }
@@ -1250,7 +1253,7 @@ Errors: `Common*`, `Wallet*`, `Ledger*`, `Crypto*`
 
 Builds a request to get a DDO.
 
-* `submitterDid`: String - Id of Identity stored in secured Wallet.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Id of Identity stored in secured Wallet.
 * __->__ `requestResult`: Json
 
@@ -1291,7 +1294,7 @@ Errors: `Common*`
 
 Builds a GET\_ATTRIB request. Request to get information about an Attribute for the specified DID.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * `hash`: String - \(Optional\) Requested attribute hash.
 * `raw`: String - \(Optional\) Requested attribute name.
@@ -1304,7 +1307,7 @@ Errors: `Common*`
 
 Builds a GET\_NYM request. Request to get information about a DID \(NYM\).
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `targetDid`: String - Target DID as base58-encoded string for 16 or 32 bit DID value.
 * __->__ `request`: Json
 
@@ -1333,7 +1336,7 @@ Errors: `Common*`
 
 Builds a GET\_SCHEMA request. Request to get Credential's Schema.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `id`: String - Schema ID in ledger
 * __->__ `request`: Json
 
@@ -1387,7 +1390,7 @@ Errors: `Common*`
 Builds a GET\_CRED\_DEF request. Request to get a Credential Definition \(in particular, public key\),
 that Issuer creates for a particular Credential Schema.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `id`: String - Credential Definition ID in ledger.
 * __->__ `request`: Json
 
@@ -1451,7 +1454,7 @@ Errors: `Common*`
 
 Builds a GET\_TXN request. Request to get any transaction by its seq\_no.
 
-* `submitterDid`: String - DID of the request submitter.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `ledgerType`: String - \(Optional\) type of the ledger the requested transaction belongs to:
     * DOMAIN - used default,
     * POOL,
@@ -1540,7 +1543,7 @@ Errors: `Common*`
 Builds a GET\_REVOC\_REG\_DEF request. Request to get a revocation registry definition,
 that Issuer creates for a particular Credential Definition.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `id`: String - ID of Revocation Registry Definition in ledger.
 * __->__ `request`: Json
 
@@ -1604,7 +1607,7 @@ Errors: `Common*`
 Builds a GET\_REVOC\_REG request. Request to get the accumulated state of the Revocation Registry
 by ID. The state is defined by the given timestamp.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `revocRegDefId`: String - ID of the corresponding Revocation Registry Definition in ledger.
 * `timestamp`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
 * __->__ `request`: Json
@@ -1634,7 +1637,7 @@ Builds a GET\_REVOC\_REG\_DELTA request. Request to get the delta of the accumul
 The Delta is defined by from and to timestamp fields.
 If from is not specified, then the whole state till to will be returned.
 
-* `submitterDid`: String - DID of the read request sender.
+* `submitterDid`: String - \(Optional\) DID of the read request sender \(if not provided then default Libindy DID will be used\).
 * `revocRegDefId`: String - ID of the corresponding Revocation Registry Definition in ledger.
 * `from`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
 * `to`: Timestamp (Number) - Requested time represented as a total number of seconds from Unix Epoch
@@ -1961,7 +1964,7 @@ Format of inputs is specific for payment method. Usually it should reference pay
 with at least one output that corresponds to payment address that user owns.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `req`: Json - initial transaction request as json
 * `inputs`: Json - The list of payment sources as json array:
 \["source1", ...\]
@@ -2002,7 +2005,7 @@ Builds Indy request for getting sources list for payment address
 according to this payment method.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `paymentAddress`: String - target payment address
 * __->__ [ `getSourcesTxn`: Json, `paymentMethod`: String ] - get\_sources\_txn\_json - Indy request for getting sources list for payment address
 payment\_method - used payment method
@@ -2036,7 +2039,7 @@ Format of inputs is specific for payment method. Usually it should reference pay
 with at least one output that corresponds to payment address that user owns.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `inputs`: Json - The list of payment sources as json array:
 \["source1", ...\]
 Note that each source should reference payment address
@@ -2075,7 +2078,7 @@ Builds Indy request for doing minting
 according to this payment method.
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `outputs`: Json - The list of outputs as json array:
 ```
   [{
@@ -2093,7 +2096,7 @@ payment\_method - used payment method
 Builds Indy request for setting fees for transactions in the ledger
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `paymentMethod`: String - payment method to use
 fees\_json {
 txnType1: amount1,
@@ -2110,7 +2113,7 @@ txnTypeN: amountN,
 Builds Indy get request for getting fees for transactions in the ledger
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `paymentMethod`: String - payment method to use
 * __->__ `getTxnFees`: Json - get\_txn\_fees\_json - Indy request for getting fees for transactions in the ledger
 
@@ -2134,7 +2137,7 @@ txnTypeN: amountN,
 Builds Indy request for information to verify the payment receipt
 
 * `wh`: Handle (Number) - wallet handle (created by openWallet)
-* `submitterDid`: String - DID of request sender
+* `submitterDid`: String - (Option) DID of request sender
 * `receipt`: String - payment receipt to verify
 * __->__ [ `verifyTxn`: Json, `paymentMethod`: String ] - verify\_txn\_json: Indy request for verification receipt
 payment\_method: used payment method
@@ -2250,7 +2253,7 @@ By default PROTOCOL\_VERSION=1.
 
 * `protocolVersion`: Number - Protocol version will be used:
 1 - for Indy Node 1.3
-2 - for Indy Node 1.4
+2 - for Indy Node 1.4 and greater
 * __->__ void
 
 Errors: `Common*`
@@ -2274,7 +2277,7 @@ Create a new secure wallet.
                     For 'default' storage type configuration is:
   {
     "path": optional<string>, Path to the directory with wallet files.
-            Defaults to $HOME/.indy_client/wallets.
+            Defaults to $HOME/.indy_client/wallet.
             Wallet will be stored in the file {path}/{id}/sqlite.db
   }
 }
@@ -2287,8 +2290,8 @@ Create a new secure wallet.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           ARAGON2I_MOD (used by default)
-                           ARAGON2I_INT - less secured but faster
+                           ARGON2I_MOD (used by default)
+                           ARGON2I_INT - less secured but faster
 }
 ````
 * __->__ void
@@ -2314,7 +2317,7 @@ Wallet must be previously created with createWallet method.
                         For 'default' storage type configuration is:
           {
              "path": optional<string>, Path to the directory with wallet files.
-                     Defaults to $HOME/.indy_client/wallets.
+                     Defaults to $HOME/.indy_client/wallet.
                      Wallet will be stored in the file {path}/{id}/sqlite.db
           }
   }
@@ -2328,11 +2331,11 @@ Wallet must be previously created with createWallet method.
       "storage_credentials": optional<object> Credentials for wallet storage. Storage type defines set of supported keys.
                              Can be optional if storage supports default configuration.
       "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                               ARAGON2I_MOD (used by default)
-                               ARAGON2I_INT - less secured but faster}
+                               ARGON2I_MOD (used by default)
+                               ARGON2I_INT - less secured but faster}
       "rekey_derivation_method": optional<string> algorithm to use for master rekey derivation:
-                               ARAGON2I_MOD (used by default)
-                               ARAGON2I_INT - less secured but faster
+                               ARGON2I_MOD (used by default)
+                               ARGON2I_INT - less secured but faster
   }
 ````
 * __->__ `handle`: Handle (Number) - err: Error code
@@ -2351,8 +2354,8 @@ Exports opened wallet
     "path": <string>, Path of the file that contains exported wallet content
     "key": <string>, Passphrase used to derive export key
     "key_derivation_method": optional<string> algorithm to use for export key derivation:
-                             ARAGON2I_MOD (used by default)
-                             ARAGON2I_INT - less secured but faster  
+                             ARGON2I_MOD (used by default)
+                             ARGON2I_INT - less secured but faster  
   }
 ```
 * __->__ void
@@ -2378,7 +2381,7 @@ This can be seen as an createWallet call with additional content import
                     For 'default' storage type configuration is:
   {
     "path": optional<string>, Path to the directory with wallet files.
-            Defaults to $HOME/.indy_client/wallets.
+            Defaults to $HOME/.indy_client/wallet.
             Wallet will be stored in the file {path}/{id}/sqlite.db
   }
 }
@@ -2391,8 +2394,8 @@ This can be seen as an createWallet call with additional content import
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           ARAGON2I_MOD (used by default)
-                           ARAGON2I_INT - less secured but faster
+                           ARGON2I_MOD (used by default)
+                           ARGON2I_INT - less secured but faster
 }
 ````
 * `importConfig`: Json
@@ -2432,7 +2435,7 @@ Deletes created wallet.
                     For 'default' storage type configuration is:
   {
     "path": optional<string>, Path to the directory with wallet files.
-            Defaults to $HOME/.indy_client/wallets.
+            Defaults to $HOME/.indy_client/wallet.
             Wallet will be stored in the file {path}/{id}/sqlite.db
   }
 }
@@ -2445,8 +2448,8 @@ Deletes created wallet.
                          Can be optional if storage supports default configuration.
                          For 'default' storage type should be empty.
   "key_derivation_method": optional<string> algorithm to use for master key derivation:
-                           ARAGON2I_MOD (used by default)
-                           ARAGON2I_INT - less secured but faster
+                           ARGON2I_MOD (used by default)
+                           ARGON2I_INT - less secured but faster
 }
 ````
 * __->__ void
