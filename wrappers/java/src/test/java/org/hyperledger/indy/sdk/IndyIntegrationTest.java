@@ -113,7 +113,7 @@ public class IndyIntegrationTest {
 	}
 
 	@Test
-	public void testSetCryptoThreadPoolSize() throws Exception {
-		LibIndy.setCryptoThreadPoolSize(2);
+	public void testSetRuntimeConfig() throws Exception {
+		LibIndy.setRuntimeConfig("{\"crypto_thread_pool_size\": 2}");
 	}
 }

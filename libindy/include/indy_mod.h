@@ -175,7 +175,16 @@ typedef enum
 extern "C" {
 #endif
 
-    extern indy_error_t indy_set_crypto_thread_pool_size(indy_u64_t  size);
+    /// Set libindy runtime configuration. Can be optionally called to change current params.
+    ///
+    /// #Params
+    /// config: {
+    ///     "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_set_runtime_config(const char *  config);
 
 #ifdef __cplusplus
 }
