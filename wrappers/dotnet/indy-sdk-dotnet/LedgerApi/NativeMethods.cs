@@ -248,11 +248,12 @@ namespace Hyperledger.Indy.LedgerApi
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
+        /// <param name="ledger_type">The type of the ledger the transaction belongs to.</param>
         /// <param name="seq_no">seq_no of transaction in ledger</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_build_get_txn_request(int command_handle, string submitter_did, int seq_no, BuildRequestCompletedDelegate cb);
+        internal static extern int indy_build_get_txn_request(int command_handle, string submitter_did, string ledger_type, int seq_no, BuildRequestCompletedDelegate cb);
 
         /// <summary>
         /// Builds a POOL_CONFIG request.

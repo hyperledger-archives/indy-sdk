@@ -152,7 +152,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, attribRequest);
 
             var getAttribRequest = await Ledger.BuildGetAttribRequestAsync(myDid, myDid, "endpoint", null, null);
-            var getAttribResponse = await PoolUtils.EnsurePreviousRequestApplied(pool, getAttribRequest, response => {
+            var getAttribResponse = await PoolUtils.EnsurePreviousRequestAppliedAsync(pool, getAttribRequest, response => {
                 var getAttribResponseObject = JObject.Parse(response);
                 return endpoint == getAttribResponseObject["result"]["data"].ToString();
             });
@@ -177,7 +177,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, attribRequest);
 
             var getAttribRequest = await Ledger.BuildGetAttribRequestAsync(myDid, myDid, null, hash, null);
-            var getAttribResponse = await PoolUtils.EnsurePreviousRequestApplied(pool, getAttribRequest, response => {
+            var getAttribResponse = await PoolUtils.EnsurePreviousRequestAppliedAsync(pool, getAttribRequest, response => {
                 var getAttribResponseObject = JObject.Parse(response);
                 return hash == getAttribResponseObject["result"]["data"].ToString();
             });
@@ -202,7 +202,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, attribRequest);
 
             var getAttribRequest = await Ledger.BuildGetAttribRequestAsync(myDid, myDid, null, null, enc);
-            var getAttribResponse = await PoolUtils.EnsurePreviousRequestApplied(pool, getAttribRequest, response => {
+            var getAttribResponse = await PoolUtils.EnsurePreviousRequestAppliedAsync(pool, getAttribRequest, response => {
                 var getAttribResponseObject = JObject.Parse(response);
                 return enc == getAttribResponseObject["result"]["data"].ToString();
             });

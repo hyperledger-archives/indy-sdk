@@ -1,6 +1,8 @@
-﻿using Hyperledger.Indy.PoolApi;
+﻿using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.PoolApi;
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test
@@ -13,10 +15,10 @@ namespace Hyperledger.Indy.Test
         private const int RESUBMIT_REQUEST_TIMEOUT = 5_000;
         private const int RESUBMIT_REQUEST_CNT = 3;
 
-        public static FileStream CreateGenesisTxnFile(string filename) 
+        public static FileStream CreateGenesisTxnFile(string filename)
         {
             var path = EnvironmentUtils.GetTmpPath(filename);
-            Directory.CreateDirectory(Path.GetDirectoryName(path ));
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
             var file = File.Create(path);
 
             WriteTransactions(file);
@@ -36,7 +38,7 @@ namespace Hyperledger.Indy.Test
 
             var stream = new StreamWriter(file);
 
-            foreach(var txn in defaultTxns)
+            foreach (var txn in defaultTxns)
                 stream.WriteLine(txn);
 
             stream.Close();
@@ -65,7 +67,38 @@ namespace Hyperledger.Indy.Test
             var openPoolLedgerConfig = "{\"refresh_on_open\":true}";
 
             return await Pool.OpenPoolLedgerAsync(poolName, openPoolLedgerConfig);
-        }        
+        }
+
+        public delegate bool PoolResponseCheckDelegate(string response);
+
+        public delegate string ActionCheckDelegate();
+
+        public static async Task<string> EnsurePreviousRequestAppliedAsync(Pool pool, string checkerRequest, PoolResponseCheckDelegate checker)
+        {
+            for (int i = 0; i < RESUBMIT_REQUEST_CNT; i++) {
+                var response = await Ledger.SubmitRequestAsync(pool, checkerRequest);
+                try {
+                    if (checker(response)) {
+                        return response;
+                    }
+                } catch (Exception e) {
+
+                }
+                Thread.Sleep(RESUBMIT_REQUEST_TIMEOUT);
+            }
+
+            throw new Exception("Resubmit request count exceeded");
+        }
+
+        public static bool RetryCheck(ActionCheckDelegate action, PoolResponseCheckDelegate checker)
+        { 
+		    for (int i = 0; i<RESUBMIT_REQUEST_CNT; i++) {
+			    if (checker(action())) {
+				    return true;
+			    }
+		    }
+		    return false;
+	    }
     }
 }
 

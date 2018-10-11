@@ -1,4 +1,6 @@
-﻿using Hyperledger.Indy.PoolApi;
+﻿using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
@@ -41,19 +43,19 @@ namespace Hyperledger.Indy.Test
             return expectedType == res["op"].ToString();
         }
 
-        //protected string CreateStoreAndPublishDidFromTrustee()
-        //{
-        //    DidResults.CreateAndStoreMyDidResult trusteeDidResult = Did.createAndStoreMyDid(wallet, TRUSTEE_IDENTITY_JSON).get();
-        //    string trusteeDid = trusteeDidResult.getDid();
+        protected async Task<string> CreateStoreAndPublishDidFromTrusteeAsync()
+        {
+            var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var trusteeDid = trusteeDidResult.Did;
 
-        //    DidResults.CreateAndStoreMyDidResult myDidResult = Did.createAndStoreMyDid(wallet, "{}").get();
-        //    string myDid = myDidResult.getDid();
-        //    string myVerkey = myDidResult.getVerkey();
+            var myDidResult = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
+            var myDid = myDidResult.Did;
+            var myVerkey = myDidResult.VerKey;
 
-        //    string nymRequest = Ledger.buildNymRequest(trusteeDid, myDid, myVerkey, null, "TRUSTEE").get();
-        //    Ledger.signAndSubmitRequest(pool, wallet, trusteeDid, nymRequest).get();
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, "TRUSTEE");
+            await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
 
-        //    return myDid;
-        //}
+            return myDid;
+        }
     }
 }

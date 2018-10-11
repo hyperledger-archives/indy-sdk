@@ -642,11 +642,17 @@ namespace Hyperledger.Indy.LedgerApi
         /// <summary>
         /// Builds a GET_TXN request
         /// </summary>
-        /// <param name="submitterDid">The DID of the submitter.</param>
-        /// <param name="data">seq_no of transaction in ledger</param>
+        /// <param name="submitterDid">The DID of the submitter</param>
+        /// <param name="ledgerType">The type of the ledger the requested transaction belongs to</param>
+        /// <param name="seqNo">The requested transaction sequence number as it is stored on the ledger</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="string"/> 
         /// containing the request JSON. </returns>
-        public static Task<string> BuildGetTxnRequestAsync(string submitterDid, int data)
+        /// <remarks>
+        /// The <paramref name="submitterDid"/> if passed as null will default to the LibIndy DID.  The 
+        /// <paramref name="ledgerType"/> can also be passed as null and will default to 'DOMAIN'.  Other values that can be
+        /// passed for this parameter are 'POOL', 'CONFIG' or a string containing any numeric value.
+        /// </remarks>
+        public static Task<string> BuildGetTxnRequestAsync(string submitterDid, string ledgerType, int seqNo)
         {
             ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
 
@@ -656,7 +662,8 @@ namespace Hyperledger.Indy.LedgerApi
             var result = NativeMethods.indy_build_get_txn_request(
                 commandHandle,
                 submitterDid,
-                data,
+                ledgerType,
+                seqNo,
                 BuildRequestCallback);
 
             CallbackHelper.CheckResult(result);
