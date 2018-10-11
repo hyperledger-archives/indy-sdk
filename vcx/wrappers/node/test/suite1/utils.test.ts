@@ -12,7 +12,7 @@ import {
   updateMessages,
   VCXCode
 } from 'src'
-
+import { errorMessage } from '../../src/utils/error-message'
 describe('utils:', () => {
   before(() => initVcxTestMode())
 
@@ -99,6 +99,18 @@ describe('utils:', () => {
   describe('updateMessages:', () => {
     it('success', async () => {
       await updateMessages(updateMessagesData)
+    })
+  })
+
+  describe('VCXCode:', () => {
+    it('should have a one-to-one mapping for each code', async () => {
+      var max = 0
+      for (let ec in VCXCode) {
+        if (typeof VCXCode[ec] === 'number' && parseInt(VCXCode[ec]) > max ) {
+            max = parseInt(VCXCode[ec])
+        }
+      }
+      assert(errorMessage(max+1) == errorMessage(1001))
     })
   })
 })

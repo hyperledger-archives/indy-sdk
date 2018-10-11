@@ -2,7 +2,7 @@ import '../module-resolver-helper'
 
 import { assert } from 'chai'
 import * as ffi from 'ffi'
-import { shouldThrow } from 'helpers/utils'
+import { initVcxTestMode, shouldThrow } from 'helpers/utils'
 import { initVcx, VCXCode, VCXRuntime } from 'src'
 
 describe('vcxInit', () => {
@@ -22,6 +22,8 @@ describe('vcxInit', () => {
 describe('Using the vcx ffi directly', () => {
   const path = '/usr/lib/libvcx.so'
   const run = new VCXRuntime({ basepath: path })
+
+  before(() => initVcxTestMode())
 
   it('a call to vcx_connection_create should return 0', () => {
     const result = run.ffi.vcx_connection_create(

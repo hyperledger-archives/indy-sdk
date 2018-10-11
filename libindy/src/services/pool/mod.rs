@@ -547,7 +547,7 @@ mod tests {
         use super::*;
         use self::indy_crypto::bls::{Generator, SignKey, VerKey};
 
-        pub static POLL_TIMEOUT: i64 = 1_000; /* in ms */
+        pub static POLL_TIMEOUT: i64 = 5_000; /* in ms */
 
         pub fn node() -> NodeTransactionV1 {
             let blskey = VerKey::new(&Generator::from_bytes(&"3LHpUjiyFC2q2hD7MnwwNmVXiuaFbQx2XkAFJWzswCjgN1utjsCeLzHsKk1nJvFEaS4fcrUmVAkdhtPCYbrVyATZcmzwJReTcJqwqBCPTmTQ9uWPwz6rEncKb2pYYYFcdHa8N17HzVyTqKfgPi4X9pMetfT3A5xCHq54R2pDNYWVLDX".from_base58().unwrap()).unwrap(),

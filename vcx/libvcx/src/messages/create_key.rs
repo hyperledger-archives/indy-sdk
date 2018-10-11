@@ -138,7 +138,7 @@ impl GeneralMessage for CreateKeyMsg  {
         debug!("create_keys inner bundle: {:?}", data);
         let msg = Bundled::create(data).encode()?;
 
-        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap();
+        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
         bundle_for_agency(msg, &to_did)
     }
 }
@@ -148,7 +148,7 @@ pub fn parse_create_keys_response(response: Vec<u8>) -> Result<(String, String),
 
     debug!("create keys response inner bundle: {:?}", data[0]);
     let mut de = Deserializer::new(&data[0][..]);
-    let response: CreateKeyResponse = Deserialize::deserialize(&mut de).unwrap();
+    let response: CreateKeyResponse = Deserialize::deserialize(&mut de).or(Err(error::UNKNOWN_ERROR.code_num))?;
 
     Ok((response.for_did, response.for_verkey))
 }
@@ -160,7 +160,6 @@ mod tests {
     use utils::constants::{ CREATE_KEYS_RESPONSE, MY1_SEED, MY2_SEED, MY3_SEED };
     use utils::libindy::signus::create_and_store_my_did;
     use messages::create_keys;
-    use utils::libindy::wallet;
 
     #[test]
     fn test_create_key_returns_message_with_create_key_as_payload() {
@@ -192,13 +191,11 @@ mod tests {
 
     #[test]
     fn test_create_key_set_values_and_serialize() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        let wallet = wallet::init_wallet("test_create_key_set_values_and_serialize").unwrap();
+        init!("false");
 
-        let (agent_did, agent_vk) = create_and_store_my_did(wallet, Some(MY2_SEED)).unwrap();
-        let (my_did, my_vk) = create_and_store_my_did(wallet, Some(MY1_SEED)).unwrap();
-        let (agency_did, agency_vk) = create_and_store_my_did(wallet, Some(MY3_SEED)).unwrap();
+        let (agent_did, agent_vk) = create_and_store_my_did(Some(MY2_SEED)).unwrap();
+        let (my_did, my_vk) = create_and_store_my_did(Some(MY1_SEED)).unwrap();
+        let (agency_did, agency_vk) = create_and_store_my_did(Some(MY3_SEED)).unwrap();
 
         settings::set_config_value(settings::CONFIG_AGENCY_VERKEY, &agency_vk);
         settings::set_config_value(settings::CONFIG_REMOTE_TO_SDK_VERKEY, &agent_vk);
@@ -210,14 +207,11 @@ mod tests {
             .for_verkey(&my_vk)
             .msgpack().unwrap();
         assert!(bytes.len() > 0);
-
-        wallet::delete_wallet("test_create_key_set_values_and_serialize").unwrap();
     }
 
     #[test]
     fn test_parse_create_keys_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "indy");
+        init!("true");
 
         let result = parse_create_keys_response(CREATE_KEYS_RESPONSE.to_vec()).unwrap();
 

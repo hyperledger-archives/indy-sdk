@@ -532,6 +532,18 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_create_my_did_works_with_hex_seed() {
+            let wallet_handle = utils::setup_with_wallet();
+
+            let (my_did, my_verkey) = did::create_and_store_my_did(wallet_handle, Some("94a823a6387cdd30d8f7687d95710ebab84c6e277b724790a5b221440beb7df6")).unwrap();
+
+            assert_eq!(my_did, "HWvjYf77k1dqQAk6sE4gaS");
+            assert_eq!(my_verkey, "A16wi1xHBu5KT4SqNhZXrKZfoQbXJCbDozgSTJhUgu9x");
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
         fn indy_create_my_did_works_as_cid() {
             let wallet_handle = utils::setup_with_wallet();
 

@@ -5,11 +5,11 @@ use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
 use utils::error::error_string;
-use std::thread;
 use std::ptr;
 use schema;
 use settings;
 use error::ToErrorCode;
+use utils::threadpool::spawn;
 
 /// Create a new Schema object that can create or look up schemas on the ledger
 ///
@@ -53,28 +53,29 @@ pub extern fn vcx_schema_create(command_handle: u32,
     info!(target:"vcx","vcx_schema_create(command_handle: {}, source_id: {}, schema_name: {},  schema_data: {})",
           command_handle, source_id, schema_name, schema_data);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
+    spawn(move|| {
         let ( rc, handle) = match schema::create_new_schema(&source_id,
                                                             issuer_did,
                                                             schema_name,
                                                             version,
                                                             schema_data) {
             Ok(x) => {
-                info!(target:"vcx", "vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
-                      command_handle, error_string(0), x, &source_id);
+                info!(target:"vcx", "vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
+                      command_handle, error_string(0), x, source_id);
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}, source_id: {:?})",
+                warn!("vcx_schema_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, error_string(x.to_error_code()), 0, source_id);
                 (x.to_error_code(), 0) },
         };
 
         cb(command_handle, rc, handle);
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 
@@ -97,32 +98,32 @@ pub extern fn vcx_schema_serialize(command_handle: u32,
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
     let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
-    info!("vcx_schema_serialize(command_handle: {}, schema_handle: {}), source_id: {:?}",
+    info!("vcx_schema_serialize(command_handle: {}, schema_handle: {}) source_id: {}",
           command_handle, schema_handle, source_id);
 
     if !schema::is_valid_handle(schema_handle) {
         return error::INVALID_SCHEMA_HANDLE.code_num;
     };
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
+    spawn(move|| {
         match schema::to_string(schema_handle) {
             Ok(x) => {
-                info!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                info!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}) source_id: {}",
                       command_handle, schema_handle, error_string(0), x, source_id);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}), source_id: {:?}",
+                warn!("vcx_schema_serialize_cb(command_handle: {}, schema_handle: {}, rc: {}, state: {}) source_id: {}",
                       command_handle, schema_handle, error_string(x.to_error_code()), "null", source_id);
                 cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
         };
 
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Takes a json string representing a schema object and recreates an object matching the json
@@ -145,24 +146,25 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
     check_useful_c_str!(schema_data, error::INVALID_OPTION.code_num);
 
     info!("vcx_schema_deserialize(command_handle: {}, schema_data: {})", command_handle, schema_data);
-    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
+    spawn(move|| {
         let (rc, handle) = match schema::from_string(&schema_data) {
             Ok(x) => {
-                info!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                info!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
                       command_handle, error_string(0), x, schema::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
             },
             Err(x) => {
-                warn!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                warn!("vcx_schema_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
                       command_handle, error_string(x.to_error_code()), 0, "");
                 (x.to_error_code(), 0)
             },
         };
         cb(command_handle, rc, handle);
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Releases the schema object by de-allocating memory
@@ -176,9 +178,9 @@ pub extern fn vcx_schema_deserialize(command_handle: u32,
 pub extern fn vcx_schema_release(schema_handle: u32) -> u32 {
     let source_id = schema::get_source_id(schema_handle).unwrap_or_default();
     match schema::release(schema_handle) {
-        Ok(x) => info!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {:?}",
+        Ok(x) => info!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
                        schema_handle, error_string(0), source_id),
-        Err(e) => warn!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {:?}",
+        Err(e) => warn!("vcx_schema_release(schema_handle: {}, rc: {}), source_id: {}",
                        schema_handle, error_string(e.to_error_code()), source_id),
     };
     error::SUCCESS.code_num
@@ -204,7 +206,7 @@ pub extern fn vcx_schema_get_schema_id(command_handle: u32,
         return error::INVALID_SCHEMA_HANDLE.code_num;
     }
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(move|| {
         match schema::get_schema_id(schema_handle) {
             Ok(x) => {
                 info!("vcx_schema_get_schema_id(command_handle: {}, schema_handle: {}, rc: {}, schema_seq_no: {})",
@@ -218,10 +220,11 @@ pub extern fn vcx_schema_get_schema_id(command_handle: u32,
                 cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Retrieves all of the data associated with a schema on the ledger.
@@ -248,7 +251,7 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
     info!("vcx_schema_get_attributes(command_handle: {}, source_id: {}, schema_id: {})",
           command_handle, source_id, schema_id);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
+    spawn(move|| {
         match schema::get_schema_attrs(source_id, schema_id) {
             Ok((handle, data)) => {
                 let data:serde_json::Value = serde_json::from_str(&data).unwrap();
@@ -265,10 +268,10 @@ pub extern fn vcx_schema_get_attributes(command_handle: u32,
             },
         };
 
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Retrieve the txn associated with paying for the schema
@@ -298,7 +301,7 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
 
     info!("vcx_schema_get_payment_txn(command_handle: {})", command_handle);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(move|| {
         match schema::get_payment_txn(handle) {
             Ok(x) => {
                 match serde_json::to_string(&x) {
@@ -322,10 +325,11 @@ pub extern fn vcx_schema_get_payment_txn(command_handle: u32,
                 cb(command_handle, x.to_error_code(), ptr::null());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 
@@ -344,14 +348,9 @@ mod tests {
     use utils::constants::{ SCHEMA_ID, SCHEMA_WITH_VERSION, DEFAULT_SCHEMA_ATTRS, DEFAULT_SCHEMA_ID, DEFAULT_SCHEMA_NAME };
     use utils::libindy::return_types_u32;
 
-    fn set_default_and_enable_test_mode() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-    }
-
     #[test]
     fn test_vcx_create_schema_success() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_schema_create(cb.command_handle,
                                        CString::new("Test Source ID").unwrap().into_raw(),
@@ -367,8 +366,7 @@ mod tests {
     #[cfg(feature="pool_tests")]
     #[test]
     fn test_vcx_create_schema_with_pool() {
-        let wallet_name = "test_api_create_schema";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
 
         let data = r#"["name","male"]"#;
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
@@ -385,15 +383,13 @@ mod tests {
                                      Some(cb.get_callback())), error::SUCCESS.code_num);
 
         let handle = cb.receive(Some(Duration::from_secs(5))).unwrap();
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[cfg(feature="pool_tests")]
     #[test]
     fn test_vcx_schema_get_attrs_with_pool() {
-        let wallet_name = "get_schema_atters_api";
-        ::utils::devsetup::tests::setup_ledger_env(wallet_name);
-        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema();
+        init!("ledger");
+        let (schema_id, _) = ::utils::libindy::anoncreds::tests::create_and_write_test_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
 
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         assert_eq!(vcx_schema_get_attributes(cb.command_handle,
@@ -405,12 +401,11 @@ mod tests {
         let mut result_vec = vec!(attrs.clone().unwrap());
         let mut expected_vec = vec!(DEFAULT_SCHEMA_ATTRS);
         assert_eq!(result_vec.sort(), expected_vec.sort());
-        ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 
     #[test]
     fn test_vcx_schema_serialize() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let data = r#"["name","male"]"#;
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_schema_create(cb.command_handle,
@@ -426,8 +421,8 @@ mod tests {
 
     #[test]
     fn test_vcx_schema_deserialize_succeeds() {
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        set_default_and_enable_test_mode();
         let err = vcx_schema_deserialize(cb.command_handle,CString::new(SCHEMA_WITH_VERSION).unwrap().into_raw(), Some(cb.get_callback()));
         assert_eq!(err, error::SUCCESS.code_num);
         let schema_handle = cb.receive(Some(Duration::from_secs(2))).unwrap();
@@ -436,7 +431,7 @@ mod tests {
 
     #[test]
     fn test_vcx_schema_get_schema_id_succeeds() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let data = r#"["name","male"]"#;
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_schema_create(cb.command_handle,
@@ -456,7 +451,7 @@ mod tests {
 
     #[test]
     fn test_vcx_schema_get_attrs() {
-        set_default_and_enable_test_mode();
+        init!("true");
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
         let cb = return_types_u32::Return_U32_U32_STR::new().unwrap();
         let data = r#"["height","name","sex","age"]"#;
@@ -472,7 +467,7 @@ mod tests {
 
     #[test]
     fn test_get_payment_txn() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let handle = schema::create_new_schema("testid", did, "name".to_string(),"1.0".to_string(),"[\"name\":\"male\"]".to_string()).unwrap();
@@ -484,10 +479,7 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_vcx_schema_serialize_contains_version() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-	    let wallet_name = "vcx_schema_serialize_contains_version";
-	    ::utils::devsetup::tests::setup_ledger_env(wallet_name);
+        init!("ledger");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let schema_name= format!("TestSchema-{}", rand::thread_rng().gen::<u32>());
         let source_id = "Test Source ID";
@@ -511,6 +503,5 @@ mod tests {
         let schema:CreateSchema = serde_json::from_value(j["data"].clone()).unwrap();
         assert_eq!(j["version"], "1.0");
         assert_eq!(schema.get_source_id(), source_id);
-	    ::utils::devsetup::tests::cleanup_dev_env(wallet_name);
     }
 }
