@@ -27,6 +27,7 @@ impl CStringUtils {
     }
 }
 
+#[allow(unused_macros)]
 macro_rules! check_useful_c_str {
     ($x:ident, $e:expr) => {
         let $x = match CStringUtils::c_str_to_string($x) {
