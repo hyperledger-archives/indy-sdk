@@ -376,7 +376,6 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetAttribRequestAsync(string submitterDid, string targetDid, string raw, string hash, string enc)
         {
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
