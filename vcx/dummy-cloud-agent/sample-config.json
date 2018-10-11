@@ -1,0 +1,21 @@
+{
+  "app": {
+    "prefix": "/forward_agent"
+  },
+  "forward_agent": {
+    "did": "VsKV7grR1BUE29mG2Fm2kX",
+    "did_seed": "00000000000000000000000000000My1",
+    "wallet_id": "forward_agent_wallet_id",
+    "wallet_passphrase": "forward_agent_wallet_passphrase",
+    "wallet_storage_config": null,
+    "wallet_storage_credentials": null,
+    "wallet_storage_type": null
+  },
+  "server": {
+    "addresses": [
+      "127.0.0.1:8080",
+      "127.0.0.1:8081"
+    ],
+    "workers": 2
+  }
+}
