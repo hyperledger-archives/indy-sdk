@@ -105,7 +105,7 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             var valid = await AnonCreds.VerifierVerifyProofAsync(proofRequest, proofJson, schemasJson, credentialDefsJson, revRegDefsJson, revRegs);
             Assert.IsFalse(valid);
 
-            // Close and Delete Wallet
+            //// Close and Delete Wallet
             await wallet.CloseAsync();
             await Wallet.DeleteWalletAsync(walletConfig, CREDENTIALS);
         }

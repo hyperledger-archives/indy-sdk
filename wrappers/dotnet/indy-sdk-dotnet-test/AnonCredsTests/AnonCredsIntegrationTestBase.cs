@@ -77,8 +77,6 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             if (_walletOpened)
                 return;
 
-            StorageUtils.CleanupStorage();
-
             var walletConfig = JsonConvert.SerializeObject(new { id = Guid.NewGuid() });
 
             await Wallet.CreateWalletAsync(walletConfig, CREDENTIALS);

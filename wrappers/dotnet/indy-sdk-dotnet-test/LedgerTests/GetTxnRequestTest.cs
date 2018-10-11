@@ -18,9 +18,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"operation\":{{" +
                     "\"type\":\"3\"," +
                     "\"data\":{1}" +
-                    "}}", DID1, data);
+                    "}}", DID, data);
 
-            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(DID1, data);
+            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(DID, data);
 
             Assert.IsTrue(getTxnRequest.Replace("\\", "").Contains(expectedResult));
         }

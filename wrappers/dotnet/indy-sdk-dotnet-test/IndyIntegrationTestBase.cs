@@ -17,14 +17,14 @@ namespace Hyperledger.Indy.Test
         protected const string VERKEY_MY2 = "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn";
         protected const string VERKEY_TRUSTEE = "GJ1SzoWzavQYfNL9XkaJdrQejfztN4XqdsiV4ct3LXKL";
         protected const string INVALID_VERKEY = "CnEDk___MnmiHXEV1WFgbV___eYnPqs___TdcZaNhFVW";
-        protected const string DID1 = "8wZcEriaNLNKtteJvx7f8i";
+        protected const string DID = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
         protected const string DID_MY1 = "VsKV7grR1BUE29mG2Fm2kX";
         protected const string DID_MY2 = "2PRyVHmkXQnQzJQKxHxnXC";
         protected const string DID_TRUSTEE = "V4SGRU86Z58d6TV7PBUe6f";
         protected const string INVALID_DID = "invalid_base58string";
         protected const string IDENTITY_JSON_TEMPLATE = "{{\"did\":\"{0}\",\"verkey\":\"{1}\"}}";
         protected readonly static byte[] MESSAGE = Encoding.UTF8.GetBytes("{\"reqId\":1496822211362017764}");
-        protected const string SCHEMA_DATA = "{\"name\":\"gvt2\",\"version\":\"3.0\",\"attr_names\": [\"name\", \"male\"]}";
+        protected const string SCHEMA_DATA = "{\"id\":\"id\",\"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\": [\"name\"], \"ver\":\"1.0\"}";
 
         protected const string METADATA = "some metadata";
         protected const string ENDPOINT = "127.0.0.1:9700";

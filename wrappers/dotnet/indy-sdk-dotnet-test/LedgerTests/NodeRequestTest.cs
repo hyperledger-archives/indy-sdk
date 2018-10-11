@@ -27,9 +27,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"type\":\"0\"," +
                     "\"dest\":\"{1}\"," +
                     "\"data\":{2}" +
-                    "}}", DID1, _dest, _data);
+                    "}}", DID, _dest, _data);
 
-            var nodeRequest = await Ledger.BuildNodeRequestAsync(DID1, _dest, _data);
+            var nodeRequest = await Ledger.BuildNodeRequestAsync(DID, _dest, _data);
 
             Assert.IsTrue(nodeRequest.Replace("\\", "").Contains(expectedResult));
         }
@@ -59,7 +59,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"blskey\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"}";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Ledger.BuildNodeRequestAsync(DID1, _dest, data)
+                Ledger.BuildNodeRequestAsync(DID, _dest, data)
             );
         }
 
@@ -73,7 +73,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"services\":[\"VALIDATOR\"]}";
 
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Ledger.BuildNodeRequestAsync(DID1, _dest, data)
+                Ledger.BuildNodeRequestAsync(DID, _dest, data)
             );
         }
 
