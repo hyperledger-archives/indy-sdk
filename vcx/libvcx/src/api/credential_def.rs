@@ -5,11 +5,11 @@ use self::libc::c_char;
 use utils::cstring::CStringUtils;
 use utils::error;
 use utils::error::error_string;
-use std::thread;
 use std::ptr;
 use credential_def;
 use settings;
 use error::ToErrorCode;
+use utils::threadpool::spawn;
 
 /// Create a new CredentialDef object that can create credential definitions on the ledger
 ///
@@ -70,7 +70,7 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
           tag,
           config);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
+    spawn(move|| {
         let ( rc, handle) = match credential_def::create_new_credentialdef(source_id,
                                                                  credentialdef_name,
                                                                  issuer_did,
@@ -89,10 +89,11 @@ pub extern fn vcx_credentialdef_create(command_handle: u32,
             },
         };
         cb(command_handle, rc, handle);
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Takes the credentialdef object and returns a json string of all its attributes
@@ -121,7 +122,7 @@ pub extern fn vcx_credentialdef_serialize(command_handle: u32,
         return error::INVALID_CREDENTIAL_DEF_HANDLE.code_num;
     };
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
+    spawn(move|| {
         match credential_def::to_string(credentialdef_handle) {
             Ok(x) => {
                 info!("vcx_credentialdef_serialize_cb(command_handle: {}, credentialdef_handle: {}, rc: {}, state: {}), source_id: {:?}",
@@ -136,10 +137,10 @@ pub extern fn vcx_credentialdef_serialize(command_handle: u32,
             },
         };
 
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Takes a json string representing a credentialdef object and recreates an object matching the json
@@ -163,25 +164,26 @@ pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
 
     info!("vcx_credentialdef_deserialize(command_handle: {}, credentialdef_data: {})", command_handle, credentialdef_data);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn( move|| {
+    spawn(move|| {
         let (rc, handle) = match credential_def::from_string(&credentialdef_data) {
             Ok(x) => {
-                info!("vcx_credentialdef_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                info!("vcx_credentialdef_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
                       command_handle, error_string(0), x, credential_def::get_source_id(x).unwrap_or_default());
                 (error::SUCCESS.code_num, x)
             },
             Err(e) => {
                 let error_code = e.to_error_code();
-                warn!("vcx_credentialdef_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {:?}",
+                warn!("vcx_credentialdef_deserialize_cb(command_handle: {}, rc: {}, handle: {}), source_id: {}",
                       command_handle, error_code, 0, "");
                 (error_code, 0)
             },
         };
         cb(command_handle, rc, handle);
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Retrieves credential definition's id
@@ -194,32 +196,36 @@ pub extern fn vcx_credentialdef_deserialize(command_handle: u32,
 /// #Returns
 /// Error code as a u32
 #[no_mangle]
-pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32, cred_def_handle: u32, cb: Option<extern fn(xcommand_handle: u32, err: u32, cred_def_id: *const c_char)>) -> u32 {
+pub extern fn vcx_credentialdef_get_cred_def_id(command_handle: u32,
+                                                cred_def_handle: u32,
+                                                cb: Option<extern fn(xcommand_handle: u32, err: u32, cred_def_id: *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {})", command_handle, cred_def_handle);
+    let source_id = credential_def::get_source_id(cred_def_handle).unwrap_or_default();
+    info!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}) source_id: {}", command_handle, cred_def_handle, source_id);
     if !credential_def::is_valid_handle(cred_def_handle) {
         return error::INVALID_CREDENTIAL_DEF_HANDLE.code_num;
     }
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(move|| {
         match credential_def::get_cred_def_id(cred_def_handle) {
             Ok(x) => {
-                info!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}, rc: {}, cred_def_id: {})",
-                      command_handle, cred_def_handle, error_string(0), x);
+                info!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}, rc: {}, cred_def_id: {}) source_id: {}",
+                      command_handle, cred_def_handle, error_string(0), x, source_id);
                 let msg = CStringUtils::string_to_cstring(x);
                 cb(command_handle, error::SUCCESS.code_num, msg.as_ptr());
             },
             Err(x) => {
-                warn!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}, rc: {}, cred_def_id: {})",
-                      command_handle, cred_def_handle, x.to_string(), "");
+                warn!("vcx_credentialdef_get_cred_def_id(command_handle: {}, cred_def_handle: {}, rc: {}, cred_def_id: {}) source_id: {}",
+                      command_handle, cred_def_handle, x.to_string(), "", source_id);
                 cb(command_handle, x.to_error_code(), ptr::null_mut());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Retrieve the txn associated with paying for the credential_def
@@ -247,36 +253,38 @@ pub extern fn vcx_credentialdef_get_payment_txn(command_handle: u32,
 
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
 
-    info!("vcx_credentialdef_get_payment_txn(command_handle: {})", command_handle);
+    let source_id = credential_def::get_source_id(handle).unwrap_or_default();
+    info!("vcx_credentialdef_get_payment_txn(command_handle: {}) source_id: {}", command_handle, source_id);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(move|| {
         match credential_def::get_payment_txn(handle) {
             Ok(x) => {
                 match serde_json::to_string(&x) {
                     Ok(x) => {
-                        info!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, : {}), source_id: {:?}",
+                        info!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, : {}), source_id: {}",
                               command_handle, error_string(0), x, credential_def::get_source_id(handle).unwrap_or_default());
 
                         let msg = CStringUtils::string_to_cstring(x);
                         cb(command_handle, 0, msg.as_ptr());
                     }
                     Err(_) => {
-                        error!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {:?}",
+                        error!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {}",
                                command_handle, error_string(error::INVALID_JSON.code_num), "null", credential_def::get_source_id(handle).unwrap_or_default());
                         cb(command_handle, error::INVALID_JSON.code_num, ptr::null_mut());
                     }
                 }
             },
             Err(x) => {
-                error!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {:?}",
+                error!("vcx_credentialdef_get_payment_txn_cb(command_handle: {}, rc: {}, txn: {}), source_id: {}",
                        command_handle, x.to_string(), "null", credential_def::get_source_id(handle).unwrap_or_default());
                 cb(command_handle, x.to_error_code(), ptr::null());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Releases the credentialdef object by de-allocating memory
@@ -290,9 +298,9 @@ pub extern fn vcx_credentialdef_get_payment_txn(command_handle: u32,
 pub extern fn vcx_credentialdef_release(credentialdef_handle: u32) -> u32 {
     let source_id = credential_def::get_source_id(credentialdef_handle).unwrap_or_default();
     match credential_def::release(credentialdef_handle) {
-        Ok(_) => info!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {:?}",
+        Ok(_) => info!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {}",
                       credentialdef_handle, error_string(0), source_id),
-        Err(x) => warn!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {:?}",
+        Err(x) => warn!("vcx_credentialdef_release(credentialdef_handle: {}, rc: {}), source_id: {}",
                         credentialdef_handle, x.to_string(), source_id),
     };
     error::SUCCESS.code_num
@@ -309,14 +317,9 @@ mod tests {
     use utils::libindy::return_types_u32;
     use utils::constants::{SCHEMA_ID};
 
-    fn set_default_and_enable_test_mode(){
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-    }
-
     #[test]
     fn test_vcx_create_credentialdef_success() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -332,8 +335,8 @@ mod tests {
 
     #[test]
     fn test_vcx_create_credentialdef_fails() {
+        init!("false");
         settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -349,7 +352,7 @@ mod tests {
 
     #[test]
     fn test_vcx_credentialdef_serialize() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -369,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_vcx_credentialdef_deserialize_succeeds() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         let original = r#"{"version":"1.0", "data": {"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:1697","tag":"tag","name":"Test Credential Definition","source_id":"SourceId"}}"#;
         assert_eq!(vcx_credentialdef_deserialize(cb.command_handle,
@@ -383,7 +386,7 @@ mod tests {
 
     #[test]
     fn test_vcx_creddef_get_id(){
-        set_default_and_enable_test_mode();
+        init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_credentialdef_create(cb.command_handle,
                                             CString::new("Test Source ID").unwrap().into_raw(),
@@ -402,7 +405,7 @@ mod tests {
 
     #[test]
     fn test_get_payment_txn() {
-        set_default_and_enable_test_mode();
+        init!("true");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let handle = credential_def::create_new_credentialdef("sid".to_string(),
                                                               "name".to_string(),

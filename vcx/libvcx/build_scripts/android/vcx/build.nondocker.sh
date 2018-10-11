@@ -4,6 +4,7 @@ WORKDIR=${PWD}
 TARGET_ARCH=$1
 TARGET_API=$2
 CROSS_COMPILE=$3
+NDK_LIB_DIR="lib"
 
 if [ -z "${TARGET_ARCH}" ]; then
     echo STDERR "Missing TARGET_ARCH argument"
@@ -24,6 +25,10 @@ if [ -z "${CROSS_COMPILE}" ]; then
     echo STDERR "e.g. i686-linux-android"
     echo "Sample : ./build.nondocker.sh x86 16 i686-linux-android openssl_x86 libsodium_x86 libzmq_x86 libindy"
     exit 1
+fi
+
+if [ "${TARGET_ARCH}" = "x86_64" ]; then
+    NDK_LIB_DIR="lib64"
 fi
 
 
@@ -149,7 +154,14 @@ fi
 #cp -rf ./../../../../../vcx/libvcx/src ${LIBVCX}
 #cp -rf ./../../../../../vcx/libvcx/build.rs ${LIBVCX}
 #cp -rf ./../../../../../vcx/libvcx/Cargo.toml ${LIBVCX}
+
 LIBVCX=../../../
+CROSS_COMPILE_DIR=${CROSS_COMPILE}
+TARGET_ARCH_DIR=${TARGET_ARCH}
+if [ "${TARGET_ARCH}" = "armv7" ]; then
+    TARGET_ARCH_DIR="arm"
+    CROSS_COMPILE_DIR="arm-linux-androideabi"
+fi
 
 export PAYMENT_PLUGIN="sovtoken"
 export SODIUM_LIB_DIR=${SODIUM_DIR}/lib
@@ -161,19 +173,20 @@ export CARGO_INCREMENTAL=1
 export RUST_LOG=indy=trace
 export RUST_TEST_THREADS=1
 export RUST_BACKTRACE=1
-export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH}
+export TOOLCHAIN_DIR=${TOOLCHAIN_PREFIX}/${TARGET_ARCH_DIR}
 export PATH=${TOOLCHAIN_DIR}/bin:${PATH}
 export PKG_CONFIG_ALLOW_CROSS=1
-export CC=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-clang
-export AR=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-ar
-export CXX=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-clang++
-export CXXLD=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-ld
-export RANLIB=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE}-ranlib
+export CC=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-clang
+export AR=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-ar
+export STRIP=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-strip
+export CXX=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-clang++
+export CXXLD=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-ld
+export RANLIB=${TOOLCHAIN_DIR}/bin/${CROSS_COMPILE_DIR}-ranlib
 export TARGET=android
 
 printenv
 
-python3 ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py --arch ${TARGET_ARCH} --api ${TARGET_API} --install-dir ${TOOLCHAIN_DIR}
+python3 ${ANDROID_NDK_ROOT}/build/tools/make_standalone_toolchain.py --arch ${TARGET_ARCH_DIR} --api ${TARGET_API} --install-dir ${TOOLCHAIN_DIR}
 cat << EOF > ~/.cargo/config
 [target.${CROSS_COMPILE}]
 ar = "${AR}"
@@ -186,21 +199,37 @@ pushd $LIBVCX
 export OPENSSL_STATIC=1
 #cargo clean
 cargo build --release --no-default-features --features "ci ${PAYMENT_PLUGIN}" --target=${CROSS_COMPILE}
+# TEMPORARY HACK (need to build libvcx without duplicate .o object files):
+# There are duplicate .o object files inside the libvcx.a file and these
+# lines of logic remove those duplicate .o object files
+rm -rf target/${CROSS_COMPILE}/release/tmpobjs
+mkdir target/${CROSS_COMPILE}/release/tmpobjs
+pushd target/${CROSS_COMPILE}/release/tmpobjs
+    ${AR} -x ../libvcx.a
+    ls > ../objfiles
+    xargs ${AR} cr ../libvcx.a.new < ../objfiles
+    ${STRIP} -S -x -o ../libvcx.a.stripped ../libvcx.a.new
+    mv ../libvcx.a.stripped ../libvcx.a
+popd
 popd
 
 LIBVCX_BUILDS=${WORKDIR}/libvcx_${TARGET_ARCH}
 mkdir -p ${LIBVCX_BUILDS}
 $CC -v -shared -o ${LIBVCX_BUILDS}/libvcx.so -Wl,--whole-archive \
 ${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a \
-${TOOLCHAIN_DIR}/sysroot/usr/lib/libz.so \
-${TOOLCHAIN_DIR}/sysroot/usr/lib/libm.a \
-${TOOLCHAIN_DIR}/sysroot/usr/lib/liblog.so \
+${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libz.so \
+${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
+${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/liblog.so \
 ${LIBINDY_DIR}/libindy.a \
 ${LIBSOVTOKEN_DIR}/libsovtoken.a \
-${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libgnustl_shared.so \
+${TOOLCHAIN_DIR}/${CROSS_COMPILE_DIR}/${NDK_LIB_DIR}/libgnustl_shared.so \
 ${OPENSSL_DIR}/lib/libssl.a \
 ${OPENSSL_DIR}/lib/libcrypto.a \
 ${SODIUM_LIB_DIR}/libsodium.a \
 ${LIBZMQ_LIB_DIR}/libzmq.a \
-${TOOLCHAIN_DIR}/${CROSS_COMPILE}/lib/libgnustl_shared.so -Wl,--no-whole-archive -z muldefs
+${TOOLCHAIN_DIR}/${CROSS_COMPILE_DIR}/${NDK_LIB_DIR}/libgnustl_shared.so -Wl,--no-whole-archive -z muldefs
+
+${STRIP} -S -x -o ${LIBVCX_BUILDS}/libvcx.so.new ${LIBVCX_BUILDS}/libvcx.so
+mv ${LIBVCX_BUILDS}/libvcx.so.new ${LIBVCX_BUILDS}/libvcx.so
+
 cp "${LIBVCX}/target/${CROSS_COMPILE}/release/libvcx.a" ${LIBVCX_BUILDS}/
