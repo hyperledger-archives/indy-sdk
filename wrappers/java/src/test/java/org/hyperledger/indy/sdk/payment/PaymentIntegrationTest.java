@@ -3,7 +3,7 @@ package org.hyperledger.indy.sdk.payment;
 
 import org.hyperledger.indy.sdk.IndyIntegrationTestWithSingleWallet;
 
-class PaymentIntegrationTest extends IndyIntegrationTestWithSingleWallet {
+public class PaymentIntegrationTest extends IndyIntegrationTestWithSingleWallet {
 
 	static final String paymentMethod = "null";
 	static final String paymentAddress = "pay:null:test";
