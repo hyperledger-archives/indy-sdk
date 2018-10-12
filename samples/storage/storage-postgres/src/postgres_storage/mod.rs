@@ -280,7 +280,8 @@ impl StorageIterator for PostgresStorageIterator {
                 } else {
                     None
                 };
-                Ok(Some(StorageRecord::new(name, value, type_, tags)))
+                let rec_id: i64 = row.get(0);
+                Ok(Some(StorageRecord::new(rec_id as i32, name, value, type_, tags)))
             }
             //Some(Err(err)) => Err(WalletStorageError::from(err)),
             None => Ok(None)
@@ -431,8 +432,9 @@ impl WalletStorage for PostgresStorage {
             }
             Some(tags)
         } else { None };
+        let rec_id: i64 = item.0;
 
-        Ok(StorageRecord::new(id.to_vec(), value, type_.map(|val| val.to_vec()), tags))
+        Ok(StorageRecord::new(rec_id as i32, id.to_vec(), value, type_.map(|val| val.to_vec()), tags))
     }
 
     ///
