@@ -9,19 +9,19 @@
         /// Gets the identifier.
         /// </summary>
         /// <value>The identifier.</value>
-        public string Id { get; private set; }
+        public string Id { get; }
 
         /// <summary>
         /// Gets the object json.
         /// </summary>
         /// <value>The object json.</value>
-        public string ObjectJson { get; private set; }
+        public string ObjectJson { get; }
 
         /// <summary>
         /// Gets the timestamp.
         /// </summary>
         /// <value>The timestamp.</value>
-        public ulong Timestamp { get; private set; }
+        public ulong Timestamp { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Hyperledger.Indy.LedgerApi.ParseRegistryResponseResult"/> class.

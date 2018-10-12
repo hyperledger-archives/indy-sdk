@@ -683,7 +683,7 @@ def rustWrapperPublishing(testEnv, isRelease) {
     echo 'Publish Indy to Cargo'
 
     dir('wrappers/rust') {
-        sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"$ver\" }/indy-sys = { path =\"indy-sys\", version = \"$ver$suffix\" }/g' Cargo.toml"
+        sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"=$ver\" }/indy-sys = { path =\"indy-sys\", version = \"=$ver$suffix\" }/g' Cargo.toml"
         publishToCargo(testEnv, suffix, ver)
     }
 }
