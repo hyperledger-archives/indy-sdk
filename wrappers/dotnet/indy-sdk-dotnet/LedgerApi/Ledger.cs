@@ -640,6 +640,29 @@ namespace Hyperledger.Indy.LedgerApi
         }
 
         /// <summary>
+        /// Builds a get validator info request.
+        /// </summary>
+        /// <param name="submitterDid">The DID of the submitter.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="string"/> 
+        /// containing the request JSON. </returns>
+        public static Task<string> BuildGetValidatorInfoRequestAsync(string submitterDid)
+        {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_get_validator_info_request(
+                commandHandle,
+                submitterDid,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
         /// Builds a GET_TXN request
         /// </summary>
         /// <param name="submitterDid">The DID of the submitter</param>
