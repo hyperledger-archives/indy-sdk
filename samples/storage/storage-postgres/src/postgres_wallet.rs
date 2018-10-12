@@ -73,7 +73,7 @@ lazy_static! {
 }
 
 lazy_static! {
-    // TODO I don't think we need
+    // metadata for active wallets
     static ref ACTIVE_METADATAS: Mutex<HashMap<i32, CString>> = Default::default();
 }
 
@@ -211,6 +211,7 @@ impl PostgresWallet {
                                           id: *const c_char,
                                           joined_value: *const u8,
                                           joined_value_len: usize) -> ErrorCode {
+        unimplemented!();
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
         check_useful_c_byte_array!(joined_value, joined_value_len, ErrorCode::CommonInvalidStructure, ErrorCode::CommonInvalidStructure);
@@ -400,6 +401,7 @@ impl PostgresWallet {
                                       type_: *const c_char,
                                       id: *const c_char,
                                       tags_json: *const c_char) -> ErrorCode {
+        unimplemented!();
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(tags_json, ErrorCode::CommonInvalidStructure);
@@ -452,6 +454,7 @@ impl PostgresWallet {
                                          type_: *const c_char,
                                          id: *const c_char,
                                          tags_json: *const c_char) -> ErrorCode {
+        unimplemented!();
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(tags_json, ErrorCode::CommonInvalidStructure);
@@ -488,6 +491,7 @@ impl PostgresWallet {
                                          type_: *const c_char,
                                          id: *const c_char,
                                          tag_names: *const c_char) -> ErrorCode {
+        unimplemented!();
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(tag_names, ErrorCode::CommonInvalidStructure);
@@ -541,6 +545,7 @@ impl PostgresWallet {
     pub extern "C" fn postgreswallet_fn_delete_record(xhandle: i32,
                                     type_: *const c_char,
                                     id: *const c_char) -> ErrorCode {
+        unimplemented!();
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
 
@@ -576,41 +581,43 @@ impl PostgresWallet {
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_get_storage_metadata(xhandle: i32, metadata_ptr: *mut *const c_char, metadata_handle: *mut i32) -> ErrorCode {
-        // TODO get metadata
-        // TODO PostgresStorage::get_storage_metadata() from handle
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        // PostgresStorage::get_storage_metadata() from handle
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
         }
 
         let wallet_context = handles.get(&xhandle).unwrap();
+        let wallet_box = &wallet_context.phandle;
+        let storage = &*wallet_box;
 
-        let wallets = INMEM_WALLETS.lock().unwrap();
+        let res = storage.get_storage_metadata();
 
-        if !wallets.contains_key(&wallet_context.id) {
-            return ErrorCode::CommonInvalidState;
+        match res {
+            Ok(metadata) => {
+                let metadata = CString::new(metadata.clone()).unwrap();
+                let metadata_pointer = metadata.as_ptr();
+
+                let handle = SequenceUtils::get_next_id();
+
+                let mut metadatas = ACTIVE_METADATAS.lock().unwrap();
+                metadatas.insert(handle, metadata);
+
+                unsafe { *metadata_ptr = metadata_pointer; }
+                unsafe { *metadata_handle = handle };
+
+                ErrorCode::Success
+            },
+            Err(err) => {
+                ErrorCode::CommonInvalidState
+            }
         }
-
-        let wallet = wallets.get(&wallet_context.id).unwrap();
-
-        let metadata = wallet.metadata.clone();
-        let metadata_pointer = metadata.as_ptr();
-
-        let handle = SequenceUtils::get_next_id();
-
-        let mut metadatas = ACTIVE_METADATAS.lock().unwrap();
-        metadatas.insert(handle, metadata);
-
-        unsafe { *metadata_ptr = metadata_pointer; }
-        unsafe { *metadata_handle = handle };
-
-        ErrorCode::Success
-        // TODO end
     }
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_set_storage_metadata(xhandle: i32, metadata: *const c_char) -> ErrorCode {
+        unimplemented!();
         check_useful_c_str!(metadata, ErrorCode::CommonInvalidStructure);
 
         // TODO set metadata
@@ -639,9 +646,7 @@ impl PostgresWallet {
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_free_storage_metadata(xhandle: i32, metadata_handler: i32) -> ErrorCode {
-        // TODO start
-        // TODO t.b.d. not sure
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
@@ -655,11 +660,11 @@ impl PostgresWallet {
         handles.remove(&metadata_handler);
 
         ErrorCode::Success
-        // TODO end
     }
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_search_records(xhandle: i32, type_: *const c_char, _query_json: *const c_char, _options_json: *const c_char, handle: *mut i32) -> ErrorCode {
+        unimplemented!();
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
 
         // TODO start
@@ -700,6 +705,7 @@ impl PostgresWallet {
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_search_all_records(xhandle: i32, handle: *mut i32) -> ErrorCode {
+        unimplemented!();
         // TODO start
         // TODO PostgresStorage::get_all(options) from handle
         let handles = INMEM_OPEN_WALLETS.lock().unwrap();
@@ -737,6 +743,7 @@ impl PostgresWallet {
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_get_search_total_count(xhandle: i32, search_handle: i32, count: *mut usize) -> ErrorCode {
+        unimplemented!();
         // TODO start
         // TODO PostgresStorage::get_all(options) from handle
         let handles = INMEM_OPEN_WALLETS.lock().unwrap();
@@ -760,6 +767,7 @@ impl PostgresWallet {
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_fetch_search_next_record(xhandle: i32, search_handle: i32, record_handle: *mut i32) -> ErrorCode {
+        unimplemented!();
         // TODO start
         // TODO storage iterator???
         let handles = INMEM_OPEN_WALLETS.lock().unwrap();
@@ -793,6 +801,7 @@ impl PostgresWallet {
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_free_search(xhandle: i32, search_handle: i32) -> ErrorCode {
+        unimplemented!();
         // TODO start
         // TODO not sure ???
         let handles = INMEM_OPEN_WALLETS.lock().unwrap();
@@ -976,6 +985,20 @@ mod tests {
                                             config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
                                             credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
                                             &mut handle);
+        assert_eq!(err, ErrorCode::Success);
+
+        // ensure we can fetch metadata
+        let mut metadata_handle: i32 = -1;
+        let mut metadata_ptr: *const c_char = ptr::null_mut();
+        let err = PostgresWallet::postgreswallet_fn_get_storage_metadata(handle, 
+                                            &mut metadata_ptr, 
+                                            &mut metadata_handle);
+        assert_eq!(err, ErrorCode::Success);
+        let _metadata = unsafe { CStr::from_ptr(metadata_ptr).to_bytes() };
+        let _metadata = unsafe { &*(_metadata as *const [u8] as *const [i8]) };
+        //assert_eq!(_metadata.to_vec(), metadata);
+
+        let err = PostgresWallet::postgreswallet_fn_free_storage_metadata(handle, metadata_handle);
         assert_eq!(err, ErrorCode::Success);
 
         // close wallet
