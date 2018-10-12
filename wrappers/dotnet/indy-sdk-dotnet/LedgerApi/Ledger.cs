@@ -156,6 +156,40 @@ namespace Hyperledger.Indy.LedgerApi
         }
 
         /// <summary>
+        /// Multi signs request message.
+        /// </summary>
+        /// <remarks>
+        /// This method adds information associated with the submitter specified by the
+        /// <paramref name="submitterDid"/> to the JSON provided in the <paramref name="requestJson"/> parameter
+        /// then signs it with the submitter's signing key from the provided wallet.
+        /// </remarks>
+        /// <param name="wallet">The wallet to use for signing.</param>
+        /// <param name="submitterDid">The DID of the submitter identity in the provided wallet.</param>
+        /// <param name="requestJson">The request JSON to sign.</param>
+        /// <returns>An asynchronous task that resolves to a <see cref="string"/> containing the signed 
+        /// message.</returns>
+        public static Task<string> MultiSignRequestAsync(Wallet wallet, string submitterDid, string requestJson)
+        {
+            ParamGuard.NotNull(wallet, "wallet");
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+            ParamGuard.NotNullOrWhiteSpace(requestJson, "requestJson");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            int result = NativeMethods.indy_multi_sign_request(
+                commandHandle,
+                wallet.Handle,
+                submitterDid,
+                requestJson,
+                SignRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
         /// Signs and submits a request to the validator pool.
         /// </summary>
         /// <remarks>
