@@ -36,8 +36,6 @@ namespace Hyperledger.Indy.Test.LedgerTests
         [TestMethod]
         public async Task TestBuildNymRequestWorksForOnlyOptionalFields()
         {
-            var verkey = "Anfh2rjAcxkE249DcdsaQl";
-
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
                     "\"alias\":\"{1}\"," +
@@ -45,9 +43,9 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"role\":\"2\"," + 
                     "\"type\":\"1\"," +                    
                     "\"verkey\":\"{3}\"" +
-                    "}}", DID, _alias, _dest, verkey);
+                    "}}", DID, _alias, _dest, VERKEY_TRUSTEE);
 
-            var nymRequest = await Ledger.BuildNymRequestAsync(DID, _dest, verkey, _alias, _role);
+            var nymRequest = await Ledger.BuildNymRequestAsync(DID, _dest, VERKEY_TRUSTEE, _alias, _role);
 
             Assert.IsTrue(nymRequest.Contains(expectedResult));
         }
@@ -63,16 +61,21 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
+        public async Task TestBuildGetNymRequestWorksForDefaultSubmitter()
+        {
+             await Ledger.BuildGetNymRequestAsync(null, _dest);
+        }
+
+        [TestMethod]
         public async Task TestNymRequestWorksWithoutSignature()
         {
             var didResult = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             var did = didResult.Did;
 
             var nymRequest = await Ledger.BuildNymRequestAsync(did, did, null, null, null);
+            var response = await Ledger.SubmitRequestAsync(pool, nymRequest);
 
-            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-                Ledger.SubmitRequestAsync(pool, nymRequest)
-            );
+            CheckResponseType(response, "REQNACK");
         }
 
         [TestMethod]
@@ -136,10 +139,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var myDid2 = myDidResult2.Did;
 
             var nymRequest2 = await Ledger.BuildNymRequestAsync(myDid, myDid2, null, null, null);
-
-            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-                Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, nymRequest2)
-            );
+            var response = await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, nymRequest2);
+            CheckResponseType(response, "REQNACK");
         }
 
         [TestMethod]
@@ -153,10 +154,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var myDid = myDidResult.Did;
 
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, null, null, null);
-
-            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-                Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest)
-            );
+            var response = await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, nymRequest);
+            CheckResponseType(response, "REQNACK");
         }
 
         [TestMethod]
@@ -173,13 +172,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
 
             var getNymRequest = await Ledger.BuildGetNymRequestAsync(myDid, myDid);
-            var getNymResponse = await Ledger.SubmitRequestAsync(pool, getNymRequest);
-
-            var getNymResponseObj = JObject.Parse(getNymResponse);
-
-            Assert.AreEqual("REPLY", (string)getNymResponseObj["op"]);
-            Assert.AreEqual("105", (string)getNymResponseObj["result"]["type"]);
-            Assert.AreEqual(myDid, (string)getNymResponseObj["result"]["dest"]);
+            var getNymResponse = PoolUtils.EnsurePreviousRequestAppliedAsync(pool, getNymRequest, response => { return CompareResponseType(response, "REPLY"); });
+            Assert.IsNotNull(getNymResponse);
         }
 
         [TestMethod]

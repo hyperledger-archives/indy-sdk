@@ -1,105 +1,70 @@
-﻿//using Hyperledger.Indy.LedgerApi;
-//using Hyperledger.Indy.DidApi;
-//using Microsoft.VisualStudio.TestTools.UnitTesting;
-//using Newtonsoft.Json.Linq;
-//using System.Threading.Tasks;
+﻿using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.DidApi;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
 
-//namespace Hyperledger.Indy.Test.LedgerTests
-//{
-//    [TestClass]
-//    public class SchemaRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
-//    {       
-//        [TestMethod]
-//        public async Task TestBuildSchemaRequestWorks()
-//        {
-//            var data = "{\"name\":\"name\",\"version\":\"1.0\",\"attr_names\":[\"name\",\"male\"]}";
+namespace Hyperledger.Indy.Test.LedgerTests
+{
+    [TestClass]
+    public class SchemaRequestTest : LedgerIntegrationTestBase
+    {
+        [TestMethod]
+        public async Task TestBuildSchemaRequestWorks()
+        {
+            var expectedResult = "\"operation\":{" +
+                "\"type\":\"101\"," +
+                "\"data\":{\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\":[\"name\"]}" +
+                "}";
 
-//            var expectedResult = string.Format("\"identifier\":\"{0}\"," +
-//                    "\"operation\":{{" +
-//                    "\"type\":\"101\"," +
-//                    "\"data\":{1}" +
-//                    "}}", DID1, data);
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(DID, SCHEMA_DATA);
 
-//            var schemaRequest = await Ledger.BuildSchemaRequestAsync(DID1, data);
+            Assert.IsTrue(schemaRequest.Replace("\\s+", "").Contains(expectedResult.Replace("\\s+", "")));
+        }
 
-//            Assert.IsTrue(schemaRequest.Replace("\\", "").Contains(expectedResult));
-//        }
+        [TestMethod]
+        public async Task TestBuildGetSchemaRequestWorks()
+        {
+            var id = string.Format("{0}:1:{1}:{2}", DID, GVT_SCHEMA_NAME, SCHEMA_VERSION);
 
-//        [TestMethod]
-//        public async Task TestBuildGetSchemaRequestWorks()
-//        {
-//            var data = "{\"name\":\"name\",\"version\":\"1.0\"}";
+            var expectedResult = "\"operation\":{\"type\":\"107\",\"dest\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\",\"data\":{\"name\":\"gvt\",\"version\":\"1.0\"}}";
 
-//            var expectedResult = string.Format("\"identifier\":\"{0}\"," +
-//                    "\"operation\":{{" +
-//                    "\"type\":\"107\"," +
-//                    "\"dest\":\"{1}\"," +
-//                    "\"data\":{2}" +
-//                    "}}", DID1, DID1, data);
+            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(DID, id);
 
-//            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(DID1, DID1, data);
+            Assert.IsTrue(getSchemaRequest.Contains(expectedResult));
+        }
 
-//            Assert.IsTrue(getSchemaRequest.Contains(expectedResult));
-//        }
+        [TestMethod]
+        public async Task TestBuildSchemaRequestWorksWithoutSignature()
+        {
+            var schemaRequest = await Ledger.BuildSchemaRequestAsync(DID, SCHEMA_DATA);
+            var response = await Ledger.SubmitRequestAsync(pool, schemaRequest);
+            CheckResponseType(response, "REQNACK");
+        }
 
-//        [TestMethod]
-//        public async Task TestBuildSchemaRequestWorksWithoutSignature()
-//        {
-//            var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
-//            var did = didResult.Did;
+        [TestMethod]
+        public async Task TestSchemaRequestWorks()
+        {
+            await PostEntitiesAsync();
 
-//            var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, SCHEMA_DATA);
+            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(DID, schemaId);
+            var getSchemaResponse = await PoolUtils.EnsurePreviousRequestAppliedAsync(pool, getSchemaRequest, response => {
+                var getSchemaResponseObject = JObject.Parse(response);
+                return getSchemaResponseObject["result"]["seqNo"] != null;
+            });
 
-//            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-//                Ledger.SubmitRequestAsync(pool, schemaRequest)
-//            );
-//        }
+            await Ledger.ParseGetSchemaResponseAsync(getSchemaResponse);
+        }
 
-//        [TestMethod] //Name of this test is bad.
-//        public async Task TestSchemaRequestWorks()
-//        {
-//            var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
-//            var did = didResult.Did;
+        [TestMethod]
+        public async Task TestBuildSchemaRequestWorksForMissedFields()
+        {
+            var data = "{\"name\":\"name\",\"version\":\"1.0\"}";
 
-//            var schemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\",\"attr_names\": [\"name\", \"male\"]}";
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
+                Ledger.BuildSchemaRequestAsync(DID, data)
+            );
+        }
 
-//            var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, schemaData);
-//            await Ledger.SignAndSubmitRequestAsync(pool, wallet, did, schemaRequest);
-
-//            var getSchemaData = "{\"name\":\"gvt2\",\"version\":\"2.0\"}";
-//            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData);
-//            var getSchemaResponse = await Ledger.SubmitRequestAsync(pool, getSchemaRequest);
-
-//            var getSchemaResponseObject = JObject.Parse(getSchemaResponse);
-
-//            Assert.AreEqual("gvt2", (string)getSchemaResponseObject["result"]["data"]["name"]);
-//            Assert.AreEqual("2.0", (string)getSchemaResponseObject["result"]["data"]["version"]);           
-//        }
-
-//        [TestMethod]
-//        public async Task TestGetSchemaRequestsWorksForUnknownSchema()
-//        {
-//            var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
-//            var did = didResult.Did;
-
-//            var getSchemaData = "{\"name\":\"schema_name\",\"version\":\"2.0\"}";
-//            var getSchemaRequest = await Ledger.BuildGetSchemaRequestAsync(did, did, getSchemaData);
-//            var getSchemaResponse = await Ledger.SubmitRequestAsync(pool, getSchemaRequest);
-
-//            var getSchemaResponseObject = JObject.Parse(getSchemaResponse);
-
-//            Assert.IsNotNull(getSchemaResponseObject["result"]["data"]);
-//        }
-
-//        [TestMethod]
-//        public async Task TestBuildSchemaRequestWorksForMissedFields()
-//        {
-//            var data = "{\"name\":\"name\",\"version\":\"1.0\"}";
-
-//            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-//                Ledger.BuildSchemaRequestAsync(DID1, data)
-//            );
-//        }
-
-//    }
-//}
+    }
+}
