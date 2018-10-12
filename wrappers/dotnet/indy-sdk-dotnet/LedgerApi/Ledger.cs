@@ -834,6 +834,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="justification">Justification.</param>
         /// <param name="reinstall">If set to <c>true</c> reinstall.</param>
         /// <param name="force">If set to <c>true</c> force.</param>
+        /// <param name="package">Package to be upgraded.</param>
         public static Task<string> BuildPoolUpgradeRequestAsync(string submitterDid, string name, string version, string action, string sha256, int timeout, string schedule, string justification, bool reinstall, bool force, string package)
         {
             ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
