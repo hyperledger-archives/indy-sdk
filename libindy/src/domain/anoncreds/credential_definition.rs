@@ -29,7 +29,7 @@ impl SignatureType {
 
 fn default_false() -> bool { false }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CredentialDefinitionConfig {
     #[serde(default = "default_false")]
     pub support_revocation: bool
