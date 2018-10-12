@@ -966,6 +966,16 @@ mod tests {
     }
 
     #[test]
+    fn wallet_service_delete_wallet_returns_error_for_nonexistant_wallet() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+
+        let res = wallet_service.delete_wallet(&_config(), &RAW_CREDENTIAL);
+        assert_match!(Err(WalletError::NotFound(_)), res);
+    }
+
+    #[test]
     fn wallet_service_open_wallet_works() {
         _cleanup();
 
@@ -1011,6 +1021,17 @@ mod tests {
     }
 
     #[test]
+    fn wallet_service_open_wallet_returns_appropriate_error_if_already_opened() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
+        wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
+        let res = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL);
+        assert_match!(Err(WalletError::AlreadyOpened(_)), res);
+    }
+
+    #[test]
     fn wallet_service_open_works_for_plugged() {
         _cleanup();
 
@@ -1020,16 +1041,6 @@ mod tests {
         wallet_service.create_wallet(&_config_inmem(), &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
         wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
     }
-
-    //    #[test]
-    //    fn wallet_service_open_wallet_without_master_key_in_credentials_returns_error() {
-    //        _cleanup();
-    //
-    //        let wallet_service = WalletService::new();
-    //        wallet_service.create_wallet(&_config(), &_credentials()).unwrap();
-    //        let res = wallet_service.open_wallet(&_config(), "{}");
-    //        assert_match!(Err(WalletError::CommonError(_)), res);
-    //    }
 
     #[test]
     fn wallet_service_open_wallet_returns_error_if_used_different_methods_for_creating_and_opening() {
@@ -1067,6 +1078,20 @@ mod tests {
         wallet_service.close_wallet(wallet_handle).unwrap();
 
         let wallet_handle = wallet_service.open_wallet(&_config_inmem(), &RAW_CREDENTIAL).unwrap();
+        wallet_service.close_wallet(wallet_handle).unwrap();
+    }
+
+    #[test]
+    fn wallet_service_close_wallet_returns_appropriate_error_if_wrong_handle() {
+        _cleanup();
+
+        let wallet_service = WalletService::new();
+        wallet_service.create_wallet(&_config(), &RAW_CREDENTIAL, (&RAW_KDD, &RAW_MASTER_KEY)).unwrap();
+        let wallet_handle = wallet_service.open_wallet(&_config(), &RAW_CREDENTIAL).unwrap();
+
+        let res = wallet_service.close_wallet(wallet_handle + 1);
+        assert_match!(Err(WalletError::InvalidHandle(_)), res);
+
         wallet_service.close_wallet(wallet_handle).unwrap();
     }
 
