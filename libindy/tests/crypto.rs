@@ -227,6 +227,23 @@ mod high_cases {
 
             utils::tear_down_with_wallet(wallet_handle);
         }
+
+        #[test]
+        fn indy_crypto_sign_works_for_key_rotation() {
+            let wallet_handle  = utils::setup_with_wallet();
+            let (did, verkey) = did::create_my_did(wallet_handle, "{}").unwrap();
+
+            let temp_verkey = did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
+
+            let res = crypto::sign(wallet_handle, &temp_verkey, MESSAGE.as_bytes());
+            assert_eq!(res.unwrap_err(), ErrorCode::WalletItemNotFound);
+
+            did::replace_keys_apply(wallet_handle, &did).unwrap();
+
+            crypto::sign(wallet_handle, &temp_verkey, MESSAGE.as_bytes()).unwrap();
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
     }
 
     mod crypto_verify {

@@ -637,6 +637,16 @@ mod high_cases {
 
             utils::tear_down_with_wallet(wallet_handle);
         }
+
+        #[test]
+        fn indy_replace_keys_start_works_for_twice() {
+            let (wallet_handle, did) = utils::setup_did();
+
+            did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
+            did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
     }
 
     mod replace_keys_apply {
