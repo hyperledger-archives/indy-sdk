@@ -445,7 +445,6 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON. </returns>
         public static Task<string> BuildGetNymRequestAsync(string submitterDid, string targetDid)
         {
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -674,7 +673,7 @@ namespace Hyperledger.Indy.LedgerApi
         }
 
         /// <summary>
-        /// Builds a get validator info request.
+        /// Builds a GET_VALIDATOR_INFO request.
         /// </summary>
         /// <param name="submitterDid">The DID of the submitter.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="string"/> 
@@ -735,6 +734,8 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="submitterDid">Id of Identity stored in secured Wallet.</param>
         /// <param name="writes">If set to <c>true</c> writes.</param>
         /// <param name="force">If set to <c>true</c> force.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="string"/> 
+        /// containing the request JSON. </returns>
         public static Task<string> BuildPoolConfigRequestAsync(string submitterDid, bool writes, bool force)
         {
             ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
@@ -747,6 +748,36 @@ namespace Hyperledger.Indy.LedgerApi
                 submitterDid,
                 writes,
                 force,
+                BuildRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Builds a POOL_RESTART request.
+        /// </summary>
+        /// <param name="submitterDid">Id of Identity stored in secured Wallet.</param>
+        /// <param name="action">Action that pool has to do after received transaction.</param>
+        /// <param name="dateTime">Restart time in datetime format.</param>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a <see cref="string"/> 
+        /// containing the request JSON. </returns>
+        /// <remarks>
+        /// A null can be passed for the <paramref name="dateTime"/> parameter to restart as early as possible.
+        /// </remarks>
+        public static Task<string> BuildPoolRestartRequestAsync(string submitterDid, string action, string dateTime)
+        {
+            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_build_pool_restart_request(
+                commandHandle,
+                submitterDid,
+                action,
+                dateTime,
                 BuildRequestCallback);
 
             CallbackHelper.CheckResult(result);
