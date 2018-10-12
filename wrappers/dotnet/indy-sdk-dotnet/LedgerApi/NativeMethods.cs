@@ -307,7 +307,7 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="force">If set to <c>true</c> force.</param>
         /// <param name="cb">Callback that takes command result as parameter.</param>
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        internal static extern int indy_build_pool_upgrade_request(int command_handle, string submitter_did, string name, string version, string action, string sha256, int timeout, string schedule, string justification, bool reinstall, bool force, BuildRequestCompletedDelegate cb);
+        internal static extern int indy_build_pool_upgrade_request(int command_handle, string submitter_did, string name, string version, string action, string sha256, int timeout, string schedule, string justification, bool reinstall, bool force, string package, BuildRequestCompletedDelegate cb);
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
         internal static extern int indy_build_revoc_reg_def_request(int command_handle, string submitter_did, string data, BuildRequestCompletedDelegate cb);

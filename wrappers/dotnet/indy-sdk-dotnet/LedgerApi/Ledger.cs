@@ -262,6 +262,41 @@ namespace Hyperledger.Indy.LedgerApi
         }
 
         /// <summary>
+        /// Send action to particular nodes of validator pool.
+        /// </summary>
+        /// <param name="pool">The validator pool to submit the request to.</param>
+        /// <param name="requestJson">The request to submit.</param>
+        /// <param name="nodes">A list of node names to send the request to.</param>
+        /// <param name="timeout">The time in seconds to wait for a response from the nodes.</param>
+        /// <remarks>
+        /// The list of node names in the <paramref name="nodes"/> parameter is optional, however if provided it should conform
+        /// to the format ["Node1", "Node2",...."NodeN"].  To use the default timeout provide the value -1 to the 
+        /// <paramref name="timeout"/> parameter.
+        /// </remarks>
+        /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a JSON <see cref="string"/> 
+        /// containing the results when the operation completes.</returns>
+        public static Task<string> SubmitActionAsync(Pool pool, string requestJson, string nodes, int timeout)
+        {
+            ParamGuard.NotNull(pool, "pool");
+            ParamGuard.NotNullOrWhiteSpace(requestJson, "requestJson");
+
+            var taskCompletionSource = new TaskCompletionSource<string>();
+            var commandHandle = PendingCommands.Add(taskCompletionSource);
+
+            var result = NativeMethods.indy_submit_action(
+                commandHandle,
+                pool.Handle,
+                requestJson,
+                nodes,
+                timeout,
+                SubmitRequestCallback);
+
+            CallbackHelper.CheckResult(result);
+
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
         /// Builds a ledger request to get a DDO.
         /// </summary>
         /// <remarks>
@@ -799,15 +834,9 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="justification">Justification.</param>
         /// <param name="reinstall">If set to <c>true</c> reinstall.</param>
         /// <param name="force">If set to <c>true</c> force.</param>
-        public static Task<string> BuildPoolUpgradeRequestAsync(string submitterDid, string name, string version, string action, string sha256, int timeout, string schedule, string justification, bool reinstall, bool force)
+        public static Task<string> BuildPoolUpgradeRequestAsync(string submitterDid, string name, string version, string action, string sha256, int timeout, string schedule, string justification, bool reinstall, bool force, string package)
         {
             ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
-            ParamGuard.NotNullOrWhiteSpace(name, "name");
-            ParamGuard.NotNullOrWhiteSpace(version, "version");
-            ParamGuard.NotNullOrWhiteSpace(action, "action");
-            ParamGuard.NotNullOrWhiteSpace(sha256, "sha256");
-            ParamGuard.NotNullOrWhiteSpace(schedule, "schedule");
-            ParamGuard.NotNullOrWhiteSpace(justification, "justification");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
@@ -824,6 +853,7 @@ namespace Hyperledger.Indy.LedgerApi
                 justification,
                 reinstall,
                 force,
+                package,
                 BuildRequestCallback);
 
             CallbackHelper.CheckResult(result);
