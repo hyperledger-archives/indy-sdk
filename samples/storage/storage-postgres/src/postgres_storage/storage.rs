@@ -13,7 +13,7 @@ pub struct EncryptedValue {
 }
 
 #[allow(dead_code)]
-const ENCRYPTED_KEY_LEN: usize = chacha20poly1305_ietf::TAGBYTES + chacha20poly1305_ietf::NONCEBYTES + chacha20poly1305_ietf::KEYBYTES;
+pub const ENCRYPTED_KEY_LEN: usize = chacha20poly1305_ietf::TAGBYTES + chacha20poly1305_ietf::NONCEBYTES + chacha20poly1305_ietf::KEYBYTES;
 
 #[allow(dead_code)]
 impl EncryptedValue {

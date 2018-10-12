@@ -16,7 +16,7 @@ use self::libc::c_char;
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Mutex;
-use std::{slice, str};
+use std::str;
 
 
 // TODO replaced by PostgresStorage
@@ -155,12 +155,12 @@ impl PostgresWallet {
     pub extern "C" fn postgreswallet_fn_add_record(xhandle: i32,
                                  type_: *const c_char,
                                  id: *const c_char,
-                                 value_bytes: *const u8,
-                                 value_bytes_len: usize,
+                                 value: *const u8,
+                                 value_len: usize,
                                  tags_json: *const c_char) -> ErrorCode {
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
-        check_useful_c_byte_array!(value_bytes, value_bytes_len, ErrorCode::CommonInvalidStructure, ErrorCode::CommonInvalidStructure);
+        check_useful_c_byte_array!(value, value_len, ErrorCode::CommonInvalidStructure, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(tags_json, ErrorCode::CommonInvalidStructure);
 
         // call PostgresStorage::add() from the handle
@@ -170,8 +170,7 @@ impl PostgresWallet {
             return ErrorCode::CommonInvalidState;
         }
 
-        let value = unsafe { slice::from_raw_parts(value_bytes.as_ptr(), value_bytes_len) };
-        let value = EncryptedValue::from_bytes(value).unwrap();
+        let value = EncryptedValue::from_bytes(&value).unwrap();
         let tags = _tags_from_json(&tags_json).unwrap();
 
         let wallet_context = handles.get(&xhandle).unwrap();
@@ -182,7 +181,12 @@ impl PostgresWallet {
 
         match res {
             Ok(_) => ErrorCode::Success,
-            Err(_err) => ErrorCode::WalletStorageError
+            Err(err) => {
+                match err {
+                    WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
+                    _ => ErrorCode::WalletStorageError
+                }
+            }
         }
     }
 
@@ -844,11 +848,11 @@ impl PostgresWallet {
         check_useful_c_str!(config, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(credentials, ErrorCode::CommonInvalidStructure);
 
-        // PostgresStorageType::delete_storage()
         let storage_type = ::postgres_storage::PostgresStorageType::new();
-        storage_type.delete_storage(&id, Some(&config), Some(&credentials)).unwrap();
-
-        ErrorCode::Success
+        match storage_type.delete_storage(&id, Some(&config), Some(&credentials)) {
+            Ok(_) => ErrorCode::Success,
+            Err(_err) => ErrorCode::WalletStorageError
+        }
     }
 
     pub fn cleanup() {
@@ -916,10 +920,12 @@ mod tests {
     use super::*;
     use std::ffi::CString;
     use std::ptr;
-    //use utils::test;
+    use postgres_storage::storage::ENCRYPTED_KEY_LEN;
 
     #[test]
     fn postgres_wallet_crud_works() {
+        _cleanup();
+
         let id = _wallet_id();
         let config = Some(_wallet_config());
         let credentials = Some(_wallet_credentials());
@@ -975,9 +981,44 @@ mod tests {
 
     #[test]
     fn postgres_wallet_add_record_works() {
+        _cleanup();
+
         let handle = _create_and_open_wallet();
 
-        // TODO construct unit test for adding record(s) to the wallet
+        let type_  = _type1();
+        let id_    = _id1();
+        let value_ = _value1();
+        let tags_  = _tags();
+
+        let type_ = CString::new(base64::encode(&type_)).unwrap();
+        let id    = CString::new(base64::encode(&id_)).unwrap();
+        let joined_value = value_.to_bytes();
+        let tags  = CString::new(_tags_to_json(&tags_).unwrap()).unwrap();
+
+        // unit test for adding record(s) to the wallet
+        let err = PostgresWallet::postgreswallet_fn_add_record(handle,
+                                type_.as_ptr(),
+                                id.as_ptr(),
+                                joined_value.as_ptr(),
+                                joined_value.len(),
+                                tags.as_ptr());
+        assert_match!(ErrorCode::Success, err);
+
+        let err = PostgresWallet::postgreswallet_fn_add_record(handle,
+                                type_.as_ptr(),
+                                id.as_ptr(),
+                                joined_value.as_ptr(),
+                                joined_value.len(),
+                                tags.as_ptr());
+        assert_match!(ErrorCode::WalletItemAlreadyExists, err);
+
+        let err = PostgresWallet::postgreswallet_fn_add_record(handle,
+                                type_.as_ptr(),
+                                id.as_ptr(),
+                                joined_value.as_ptr(),
+                                joined_value.len(),
+                                tags.as_ptr());
+        assert_match!(ErrorCode::WalletItemAlreadyExists, err);
 
         _close_and_delete_wallet(handle);
     }
@@ -1038,6 +1079,24 @@ mod tests {
         assert_eq!(err, ErrorCode::Success);
     }
 
+    fn _cleanup() {
+        let id = _wallet_id();
+        let config = Some(_wallet_config());
+        let credentials = Some(_wallet_credentials());
+
+        let id = CString::new(id).unwrap();
+        let config = config
+            .map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap();
+        let credentials = credentials
+            .map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap();
+
+        let _err = PostgresWallet::postgreswallet_fn_delete(id.as_ptr(), 
+                                            config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
+                                            credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
+    }
+
     fn _wallet_id() -> &'static str {
         "my_walle1"
     }
@@ -1072,4 +1131,59 @@ mod tests {
         ];
     }
 
+    fn _type(i: u8) -> Vec<u8> {
+        vec![i, 1 + i, 2 + i]
+    }
+
+    fn _type1() -> Vec<u8> {
+        _type(1)
+    }
+
+    fn _type2() -> Vec<u8> {
+        _type(2)
+    }
+
+    fn _id(i: u8) -> Vec<u8> {
+        vec![3 + i, 4 + i, 5 + i]
+    }
+
+    fn _id1() -> Vec<u8> {
+        _id(1)
+    }
+
+    fn _id2() -> Vec<u8> {
+        _id(2)
+    }
+
+    fn _value(i: u8) -> EncryptedValue {
+        EncryptedValue { data: vec![6 + i, 7 + i, 8 + i], key: _key(i) }
+    }
+
+    fn _value1() -> EncryptedValue {
+        _value(1)
+    }
+
+    fn _value2() -> EncryptedValue {
+        _value(2)
+    }
+
+    fn _key(i: u8) -> Vec<u8> {
+        vec![i; ENCRYPTED_KEY_LEN]
+    }
+
+    fn _tags() -> Vec<Tag> {
+        let mut tags: Vec<Tag> = Vec::new();
+        tags.push(Tag::Encrypted(vec![1, 5, 8], vec![3, 5, 6]));
+        tags.push(Tag::PlainText(vec![1, 5, 8, 1], "Plain value 1".to_string()));
+        tags.push(Tag::Encrypted(vec![2, 5, 8], vec![3, 5, 7]));
+        tags.push(Tag::PlainText(vec![2, 5, 8, 1], "Plain value 2".to_string()));
+        tags
+    }
+
+    fn _new_tags() -> Vec<Tag> {
+        vec![
+            Tag::Encrypted(vec![1, 1, 1], vec![2, 2, 2]),
+            Tag::PlainText(vec![1, 1, 1], String::from("tag_value_3"))
+        ]
+    }
 }
