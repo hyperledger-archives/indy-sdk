@@ -41,16 +41,16 @@ struct InmemWalletRecord {
     value: Vec<u8>,
     tags: CString
 }
-/*
-#[derive(Serialize, Deserialize, Debug, Clone)]
+
+#[derive(Debug, Clone)]
 struct PostgresWalletRecord {
-    #[serde(skip_serializing)]
-    type_: CString,
+    rec_id: i32,
     id: CString,
+    type_: CString,
     value: Vec<u8>,
     tags: CString
 }
-*/
+
 #[derive(Debug, Clone)]
 struct InmemWalletEntity {
     metadata: CString,
@@ -84,7 +84,7 @@ lazy_static! {
 
 lazy_static! {
     // cache of Postgres fetched records
-    static ref POSTGRES_ACTIVE_RECORDS: Mutex<HashMap<i32, StorageRecord>> = Default::default();
+    static ref POSTGRES_ACTIVE_RECORDS: Mutex<HashMap<i32, PostgresWalletRecord>> = Default::default();
 }
 
 lazy_static! {
@@ -268,9 +268,10 @@ impl PostgresWallet {
         match res {
             Ok(record) => {
                 let record_handle = record.rec_id;
+                let p_rec = _storagerecord_to_postgresrecord(&record).unwrap();
 
                 let mut handles = POSTGRES_ACTIVE_RECORDS.lock().unwrap();
-                handles.insert(record_handle, record.clone());
+                handles.insert(record_handle, p_rec);
 
                 unsafe { *handle = record_handle };
                 ErrorCode::Success
@@ -298,9 +299,8 @@ impl PostgresWallet {
         }
 
         let record = handles.get(&record_handle).unwrap();
-        let id = CString::new(record.id.clone()).unwrap();
 
-        unsafe { *id_ptr = id.as_ptr(); }
+        unsafe { *id_ptr = record.id.as_ptr() as *const i8; }
 
         ErrorCode::Success
     }
@@ -322,16 +322,8 @@ impl PostgresWallet {
         }
 
         let record = handles.get(&record_handle).unwrap();
-        match record.type_ {
-            Some(ref val) => {
-                let type_ = CString::new(val.clone()).unwrap();
 
-                unsafe { *type_ptr = type_.as_ptr(); }
-            },
-            None => {
-                unsafe { *type_ptr = ptr::null(); }
-            }
-        }
+        unsafe { *type_ptr = record.type_.as_ptr() as *const i8; }
 
         ErrorCode::Success
     }
@@ -354,18 +346,9 @@ impl PostgresWallet {
         }
 
         let record = handles.get(&record_handle).unwrap();
-        match record.value {
-            Some(ref val) => {
-                let value = val.to_bytes();
 
-                unsafe { *value_ptr = value.as_ptr() as *const u8; }
-                unsafe { *value_len = value.len() as usize; }
-            },
-            None => {
-                unsafe { *value_ptr = ptr::null() as *const u8; }
-                unsafe { *value_len = 0 as usize; }
-            }
-        }
+        unsafe { *value_ptr = record.value.as_ptr() as *const u8; }
+        unsafe { *value_len = record.value.len() as usize; }
 
         ErrorCode::Success
     }
@@ -387,15 +370,9 @@ impl PostgresWallet {
         }
 
         let record = handles.get(&record_handle).unwrap();
-        match record.tags {
-            Some(ref val) => {
-                let tags = _tags_to_json(&val).unwrap();
-                unsafe { *tags_json_ptr = tags.as_ptr() as *const i8; }
-            },
-            None => {
-                unsafe { *tags_json_ptr = ptr::null() as *const i8; }
-            }
-        }
+
+        unsafe { *tags_json_ptr = record.tags.as_ptr() as *const i8; }
+
         ErrorCode::Success
     }
 
@@ -879,22 +856,23 @@ impl PostgresWallet {
         handles.clear();
     }
 }
-/*
+
 fn _storagerecord_to_postgresrecord(in_rec: &StorageRecord) -> Result<PostgresWalletRecord, WalletStorageError> {
-    let out_id = CString::new(in_rec.id).unwrap();
+    let out_id = CString::new(in_rec.id.clone()).unwrap();
     let out_type = match in_rec.type_ {
-        Some(val) => CString::new(val).unwrap(),
+        Some(ref val) => CString::new(val.clone()).unwrap(),
         None => CString::new("").unwrap()
     };
     let out_val = match in_rec.value {
-        Some(val) => val.to_bytes(),
+        Some(ref val) => val.to_bytes(),
         None => Vec::<u8>::new()
     };
     let out_tags = match in_rec.tags {
-        Some(val) => CString::new(_tags_to_json(&val).unwrap()).unwrap(),
+        Some(ref val) => CString::new(_tags_to_json(&val).unwrap()).unwrap(),
         None => CString::new("").unwrap()
     };
     let out_rec = PostgresWalletRecord {
+        rec_id: in_rec.rec_id,
         id: out_id,
         type_: out_type,
         value: out_val,
@@ -902,7 +880,7 @@ fn _storagerecord_to_postgresrecord(in_rec: &StorageRecord) -> Result<PostgresWa
     };
     Ok(out_rec)
 }
-*/
+
 fn _tags_to_json(tags: &[Tag]) -> Result<String, WalletStorageError> {
     let mut string_tags = HashMap::new();
     for tag in tags {
@@ -957,7 +935,8 @@ fn _tags_names_to_json(tag_names: &[TagName]) -> Result<String, WalletStorageErr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::ffi::CString;
+    use std::ffi::{CString, CStr};
+    use std::{slice, str};
     use postgres_storage::storage::ENCRYPTED_KEY_LEN;
 
     #[test]
@@ -1072,8 +1051,8 @@ mod tests {
         let value1_ = _value1();
         let tags1_  = _tags();
 
-        let type1_ = CString::new(base64::encode(&type1_)).unwrap();
-        let id1    = CString::new(base64::encode(&id1_)).unwrap();
+        let type1_ = CString::new(type1_.clone()).unwrap();
+        let id1    = CString::new(id1_.clone()).unwrap();
         let joined_value1 = value1_.to_bytes();
         let tags1  = CString::new(_tags_to_json(&tags1_).unwrap()).unwrap();
 
@@ -1091,8 +1070,8 @@ mod tests {
         let value2_ = _value2();
         let tags2_  = _tags();
 
-        let type2_ = CString::new(base64::encode(&type2_)).unwrap();
-        let id2    = CString::new(base64::encode(&id2_)).unwrap();
+        let type2_ = CString::new(type2_.clone()).unwrap();
+        let id2    = CString::new(id2_.clone()).unwrap();
         let joined_value2 = value2_.to_bytes();
         let tags2  = CString::new(_tags_to_json(&tags2_).unwrap()).unwrap();
 
@@ -1107,13 +1086,51 @@ mod tests {
 
         // fetch the 2 records and verify
         let mut rec_handle: i32 = -1;
-        let get_options = _fetch_options(false, true, true);
+        let get_options = _fetch_options(true, true, true);
         let err = PostgresWallet::postgreswallet_fn_get_record(handle,
                                 type1_.as_ptr(),
                                 id1.as_ptr(),
                                 get_options.as_ptr() as *const i8,
                                 &mut rec_handle);
         assert_match!(ErrorCode::Success, err);
+
+        let mut id_ptr: *const c_char = ptr::null_mut();
+        let err = PostgresWallet::postgreswallet_fn_get_record_id(handle,
+                                rec_handle,
+                                &mut id_ptr);
+        assert_match!(ErrorCode::Success, err);
+        let _id = unsafe { CStr::from_ptr(id_ptr).to_bytes() };
+        assert_eq!(_id.to_vec(), id1_);
+
+        let mut type_ptr: *const c_char = ptr::null_mut();
+        let err = PostgresWallet::postgreswallet_fn_get_record_type(handle,
+                                rec_handle,
+                                &mut type_ptr);
+        assert_match!(ErrorCode::Success, err);
+        let _type_ = unsafe { CStr::from_ptr(type_ptr).to_str().unwrap() };
+        assert_eq!(_type_, type1_.to_str().unwrap());
+
+        let mut value_bytes: *const u8 = ptr::null();
+        let mut value_bytes_len: usize = 0;
+        let err = PostgresWallet::postgreswallet_fn_get_record_value(handle,
+                                rec_handle,
+                                &mut value_bytes,
+                                &mut value_bytes_len);
+        assert_match!(ErrorCode::Success, err);
+        let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
+        let _value = EncryptedValue::from_bytes(value).unwrap();
+        assert_eq!(_value, value1_);
+
+        let mut tags_ptr: *const c_char = ptr::null_mut();
+        let err = PostgresWallet::postgreswallet_fn_get_record_tags(handle,
+                                rec_handle,
+                                &mut tags_ptr);
+        assert_match!(ErrorCode::Success, err);
+        let tags_json = unsafe { CStr::from_ptr(tags_ptr).to_str().unwrap() };
+        let _tags = _tags_from_json(tags_json).unwrap();
+        let _tags = _sort_tags(_tags);
+        let tags1_ = _sort_tags(tags1_);
+        assert_eq!(_tags, tags1_);
 
         _close_and_delete_wallet(handle);
     }
@@ -1288,5 +1305,10 @@ mod tests {
             "retrieveValue": value,
             "retrieveTags": tags,
         }).to_string()
+    }
+
+    fn _sort_tags(mut v: Vec<Tag>) -> Vec<Tag> {
+        v.sort();
+        v
     }
 }
