@@ -25,6 +25,7 @@ FOUNDATION_EXPORT const unsigned char indyVersionString[];
 #import <Indy/IndyBlobStorage.h>
 #import <Indy/IndyPayment.h>
 #import <Indy/IndyNonSecrets.h>
+#import <Indy/IndyUtils.h>
 
 
 
