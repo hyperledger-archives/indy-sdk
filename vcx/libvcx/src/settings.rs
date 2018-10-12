@@ -35,7 +35,10 @@ pub static CONFIG_WALLET_TYPE: &'static str = "wallet_type";
 pub static CONFIG_WALLET_HANDLE: &'static str = "wallet_handle";
 pub static CONFIG_THREADPOOL_SIZE: &'static str = "threadpool_size";
 pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
+pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
 
+pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
+pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
 pub static UNINITIALIZED_WALLET_KEY: &str = "<KEY_IS_NOT_SET>";
 pub static DEFAULT_GENESIS_PATH: &str = "/tmp/genesis.txn";
 pub static DEFAULT_EXPORTED_WALLET_PATH: &str = "/tmp/wallet.txn";
@@ -90,6 +93,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_SDK_TO_REMOTE_VERKEY.to_string(),DEFAULT_VERKEY.to_string());
     settings.insert(CONFIG_WALLET_KEY.to_string(),DEFAULT_WALLET_KEY.to_string());
     settings.insert(CONFIG_LINK_SECRET_ALIAS.to_string(), DEFAULT_LINK_SECRET_ALIAS.to_string());
+    settings.insert(CONFIG_PROTOCOL_VERSION.to_string(), DEFAULT_PROTOCOL_VERSION.to_string());
     settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(), DEFAULT_EXPORTED_WALLET_PATH.to_string());
     settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), DEFAULT_WALLET_BACKUP_KEY.to_string());
     settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
@@ -196,6 +200,26 @@ pub fn process_config_file(path: &str) -> Result<u32, u32> {
         Err(error::INVALID_CONFIGURATION.code_num)
     } else {
         process_config_string(&read_config_file(path)?)
+    }
+}
+
+pub fn get_protocol_version() -> usize {
+    let protocol_version = match get_config_value(CONFIG_PROTOCOL_VERSION) {
+        Ok(ver) => ver.parse::<usize>().unwrap_or_else(|err| {
+            warn!("Can't parse value of protocol version from config ({}), use default one ({})", err, DEFAULT_PROTOCOL_VERSION);
+            DEFAULT_PROTOCOL_VERSION
+        }),
+        Err(err) => {
+            info!("Can't fetch protocol version from config ({}), use default one ({})", err, DEFAULT_PROTOCOL_VERSION);
+            DEFAULT_PROTOCOL_VERSION
+        },
+    };
+    if protocol_version > MAX_SUPPORTED_PROTOCOL_VERSION {
+        error!("Protocol version from config {}, greater then maximal supported {}, use maximum one",
+               protocol_version, MAX_SUPPORTED_PROTOCOL_VERSION);
+        MAX_SUPPORTED_PROTOCOL_VERSION
+    } else {
+        protocol_version
     }
 }
 
