@@ -1,12 +1,7 @@
-﻿using Hyperledger.Indy.PoolApi;
-using Hyperledger.Indy.Utils;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NLog;
 using NLog.Config;
 using NLog.Targets;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Hyperledger.Indy.Test
 {

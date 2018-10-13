@@ -2,9 +2,6 @@
 using Hyperledger.Indy.BlobStorageApi;
 using Hyperledger.Indy.LedgerApi;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.LedgerTests

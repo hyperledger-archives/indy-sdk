@@ -1,7 +1,7 @@
-﻿using System;
-using Hyperledger.Indy.DidApi;
+﻿using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.CryptoApi.NativeMethods;

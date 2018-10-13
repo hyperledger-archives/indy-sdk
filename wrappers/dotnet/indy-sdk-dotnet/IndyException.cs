@@ -1,10 +1,10 @@
 ﻿using Hyperledger.Indy.AnonCredsApi;
-using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.PaymentsApi;
+using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.WalletApi;
 using System;
-using Hyperledger.Indy.PaymentsApi;
 
 namespace Hyperledger.Indy
 {

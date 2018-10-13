@@ -1,13 +1,7 @@
-﻿using Hyperledger.Indy.AnonCredsApi;
-using Hyperledger.Indy.BlobStorageApi;
-using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.NonSecretsApi;
+﻿using Hyperledger.Indy.NonSecretsApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.NonSecretsTests

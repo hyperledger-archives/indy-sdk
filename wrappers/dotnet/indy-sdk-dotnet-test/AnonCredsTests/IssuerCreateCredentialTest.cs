@@ -1,7 +1,5 @@
 ﻿using Hyperledger.Indy.AnonCredsApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json.Linq;
-using System;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.AnonCredsTests

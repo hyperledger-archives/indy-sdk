@@ -1,6 +1,5 @@
 ﻿using Hyperledger.Indy.LedgerApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.LedgerTests

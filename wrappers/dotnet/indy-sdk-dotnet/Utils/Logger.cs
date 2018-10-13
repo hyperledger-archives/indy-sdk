@@ -1,5 +1,5 @@
-﻿using System;
-using Hyperledger.Indy.Logging;
+﻿using Hyperledger.Indy.Logging;
+using System;
 using static Hyperledger.Indy.Utils.NativeMethods;
 
 #if __IOS__

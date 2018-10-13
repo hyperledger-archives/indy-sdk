@@ -1,11 +1,9 @@
-﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.DidApi;
+﻿using Hyperledger.Indy.NonSecretsApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
-using Hyperledger.Indy.NonSecretsApi;
-using Hyperledger.Indy.WalletApi;
-using Newtonsoft.Json;
 
 namespace Hyperledger.Indy.Test.NonSecretsTests
 {

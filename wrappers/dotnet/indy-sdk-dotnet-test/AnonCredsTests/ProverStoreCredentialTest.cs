@@ -1,5 +1,4 @@
 ﻿using Hyperledger.Indy.AnonCredsApi;
-using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 

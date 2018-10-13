@@ -1,8 +1,7 @@
-﻿using System.Threading.Tasks;
-using Hyperledger.Indy.Utils;
+﻿using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System.Threading.Tasks;
 using static Hyperledger.Indy.PaymentsApi.NativeMethods;
-using static Hyperledger.Indy.Utils.CallbackHelper;
 #if __IOS__
 using ObjCRuntime;
 #endif

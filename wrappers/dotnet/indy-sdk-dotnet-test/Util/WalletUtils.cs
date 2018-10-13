@@ -1,7 +1,4 @@
-﻿using Hyperledger.Indy.PoolApi;
-using System;
-using System.IO;
-using System.Threading.Tasks;
+﻿using System;
 
 namespace Hyperledger.Indy.Test
 {
