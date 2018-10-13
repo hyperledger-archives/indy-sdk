@@ -55,7 +55,6 @@ pub enum TagName {
 
 #[derive(Clone, Debug)]
 pub struct StorageRecord {
-    pub rec_id: i32,
     pub id: Vec<u8>,
     pub value: Option<EncryptedValue>,
     pub type_: Option<Vec<u8>>,
@@ -63,9 +62,8 @@ pub struct StorageRecord {
 }
 
 impl StorageRecord {
-    pub fn new(rec_id: i32, id: Vec<u8>, value: Option<EncryptedValue>, type_: Option<Vec<u8>>, tags: Option<Vec<Tag>>) -> Self {
+    pub fn new(id: Vec<u8>, value: Option<EncryptedValue>, type_: Option<Vec<u8>>, tags: Option<Vec<Tag>>) -> Self {
         Self {
-            rec_id,
             id,
             value,
             type_,

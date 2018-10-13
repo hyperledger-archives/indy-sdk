@@ -44,7 +44,6 @@ struct InmemWalletRecord {
 
 #[derive(Debug, Clone)]
 struct PostgresWalletRecord {
-    rec_id: i32,
     id: CString,
     type_: CString,
     value: Vec<u8>,
@@ -268,7 +267,7 @@ impl PostgresWallet {
 
         match res {
             Ok(record) => {
-                let record_handle = record.rec_id;
+                let record_handle = SequenceUtils::get_next_id();
                 let p_rec = _storagerecord_to_postgresrecord(&record).unwrap();
 
                 let mut handles = POSTGRES_ACTIVE_RECORDS.lock().unwrap();
@@ -881,7 +880,6 @@ fn _storagerecord_to_postgresrecord(in_rec: &StorageRecord) -> Result<PostgresWa
         None => CString::new("").unwrap()
     };
     let out_rec = PostgresWalletRecord {
-        rec_id: in_rec.rec_id,
         id: out_id,
         type_: out_type,
         value: out_val,
@@ -1141,6 +1139,9 @@ mod tests {
         let _tags = _sort_tags(_tags);
         let tags1_ = _sort_tags(tags1_);
         assert_eq!(_tags, tags1_);
+
+        let err = PostgresWallet::postgreswallet_fn_free_record(handle,
+                                rec_handle);
 
         _close_and_delete_wallet(handle);
     }
