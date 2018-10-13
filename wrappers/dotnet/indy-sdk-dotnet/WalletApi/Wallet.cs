@@ -319,8 +319,6 @@ namespace Hyperledger.Indy.WalletApi
         /// }</param>
         public static Task<string> GenerateWalletKeyAsync(string config)
         {
-            ParamGuard.NotNullOrWhiteSpace(config, "config");
-
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
