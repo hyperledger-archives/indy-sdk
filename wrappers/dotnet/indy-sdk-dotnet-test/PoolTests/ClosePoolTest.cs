@@ -46,5 +46,19 @@ namespace Hyperledger.Indy.Test.PoolTests
             pool = await Pool.OpenPoolLedgerAsync(poolName, null);
             openedPools.Add(pool);
         }
+
+        [TestMethod]
+        public async Task TestAutoCloseWorks()
+        {
+            var poolName = PoolUtils.CreatePoolLedgerConfig();
+
+            using (var autoClosePool = await Pool.OpenPoolLedgerAsync(poolName, null))
+            {
+                Assert.IsNotNull(autoClosePool);
+            }
+
+            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
+            openedPools.Add(pool);
+        }
     }
 }
