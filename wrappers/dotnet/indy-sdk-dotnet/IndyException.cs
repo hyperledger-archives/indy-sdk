@@ -117,6 +117,8 @@ namespace Hyperledger.Indy
                     return new PaymentSourceDoesNotExistException();
                 case ErrorCode.UnknownPaymentMethod:
                     return new UnknownPaymentMethodException();
+                case ErrorCode.PoolIncompatibleProtocolVersionError:
+                    return new PoolIncompatibleProtocolVersionException();
                 default:
                     var message = $"An unmapped error with the code '{sdkErrorCode}' was returned by the SDK.";
                     return new IndyException(message, sdkErrorCode);
