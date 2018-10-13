@@ -1120,7 +1120,7 @@ namespace Hyperledger.Indy.LedgerApi
             var taskCompletionSource = new TaskCompletionSource<ParseRegistryResponseResult>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
-            var result = NativeMethods.indy_parse_get_revoc_reg_response(
+            var result = NativeMethods.indy_parse_get_revoc_reg_delta_response(
                 commandHandle,
                 getRevocRegDeltaResponse,
                 ParseRegistryResponseCallback);
