@@ -10,7 +10,7 @@
         /// <summary>
         /// Initializes a new ClaimRevokedException.
         /// </summary>
-        internal ClaimRevokedException() : base(message, (int)ErrorCode.AnoncredsClaimRevoked)
+        internal ClaimRevokedException() : base(message, (int)ErrorCode.AnoncredsCredentialRevoked)
         {
 
         }

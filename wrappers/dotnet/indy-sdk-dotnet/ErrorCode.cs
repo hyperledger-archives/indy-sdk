@@ -87,6 +87,16 @@
         /// </summary>
         CommonIOError = 114,
 
+        /// <summary>
+        /// Caller passed invalid value as param 13 (null, invalid json and etc..)
+        /// </summary>
+        CommonInvalidParam13 = 115,
+
+        /// <summary>
+        /// Caller passed invalid value as param 14 (null, invalid json and etc..)
+        /// </summary>
+        CommonInvalidParam14 = 116,
+
         // Wallet errors
 
         /// <summary>
@@ -200,12 +210,16 @@
         /// Attempt to create pool ledger config with name used for another existing pool
         /// </summary>
         PoolLedgerConfigAlreadyExistsError = 306,
-
-
+        
         /// <summary>
         /// Pool ledger timeout
         /// </summary>
         PoolLedgerTimeout = 307,
+
+        /// <summary>
+        /// Pool incompatible with protocol version
+        /// </summary>
+        PoolIncompatibleProtocolVersionError = 308,
 
         // Crypto errors
 
@@ -219,15 +233,6 @@
         /// </summary>
         AnoncredsInvalidUserRevocIndex = 401,
 
-        /// <summary>
-        /// Accumulator is full
-        /// </summary>
-        AnoncredsAccumulatorIsFull = 402,
-
-        /// <summary>
-        /// Not issued error
-        /// </summary>
-        AnoncredsNotIssuedError = 403,
 
         /// <summary>
         /// Attempt to generate master secret with duplicated name
@@ -242,7 +247,7 @@
         /// <summary>
         /// Claim revoked
         /// </summary>
-        AnoncredsClaimRevoked = 406,
+        AnoncredsCredentialRevoked = 406,
 
         /// <summary>
         /// Credential definition already exists
@@ -250,10 +255,46 @@
         AnoncredsCredDefAlreadyExists = 407,
 
         // Signus errors
-        // 
+
         /// <summary>
         /// Unknown format of DID entity keys
         /// </summary>
-        SignusUnknownCryptoError = 500
+        SignusUnknownCryptoError = 500,
+
+
+        /// <summary>
+        /// Attempt to create duplicate did.
+        /// </summary>
+        DidAlreadyExistsError= 600,
+
+        /// <summary>
+        /// Unknown payment method has been called
+        /// </summary>
+        UnknownPaymentMethod = 700,
+
+        /// <summary>
+        /// No method were scraped from inputs/outputs or more than one were scraped
+        /// </summary>
+        IncompatiblePaymentError = 701,
+
+        /// <summary>
+        /// Insufficient funds on inputs
+        /// </summary>
+        InsufficientFundsError = 702,
+
+        /// <summary>        
+        /// No such source on a ledger
+        /// </summary>
+        PaymentSourceDoesNotExistError = 703,
+
+        /// <summary>
+        /// Operation is not supported for payment method
+        /// </summary>
+        PaymentOperationNotSupportedError = 704,
+
+        /// <summary>
+        /// Extra funds on inputs
+        /// </summary>
+        ExtraFundsError = 705,
     }
 }
