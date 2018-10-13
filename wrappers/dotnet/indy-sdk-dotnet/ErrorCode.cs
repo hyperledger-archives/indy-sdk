@@ -157,7 +157,7 @@
         /// <summary>
         /// A wallet item with the specified key already exists in the wallet.
         /// </summary>
-        WalletItemAlreadyExists = 213,
+        WalletItemAlreadyExistsError = 213,
 
         /// <summary>
         /// The wallet query was invalid.

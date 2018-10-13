@@ -102,8 +102,12 @@ namespace Hyperledger.Indy
                     return new UnknownCryptoException();
                 case ErrorCode.WalletItemNotFoundError:
                     return new WalletItemNotFoundException();
+                case ErrorCode.WalletItemAlreadyExistsError:
+                    return new WalletItemAlreadyExistsException();
                 case ErrorCode.WalletQueryError:
                     return new WalletInvalidQueryException();
+                case ErrorCode.WalletStorageError:
+                    return new WalletStorageException();
                 default:
                     var message = $"An unmapped error with the code '{sdkErrorCode}' was returned by the SDK.";
                     return new IndyException(message, sdkErrorCode);
