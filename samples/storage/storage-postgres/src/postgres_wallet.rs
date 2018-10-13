@@ -953,17 +953,9 @@ mod tests {
         _cleanup();
 
         let id = _wallet_id();
-        let config = Some(_wallet_config());
-        let credentials = Some(_wallet_credentials());
+        let config = _wallet_config();
+        let credentials = _wallet_credentials();
         let metadata = _metadata();
-
-        let id = CString::new(id).unwrap();
-        let config = config
-            .map(CString::new)
-            .map_or(Ok(None), |r| r.map(Some)).unwrap();
-        let credentials = credentials
-            .map(CString::new)
-            .map_or(Ok(None), |r| r.map(Some)).unwrap();
 
         // open wallet - should return error
         let mut handle: i32 = -1;
@@ -1026,14 +1018,12 @@ mod tests {
         let handle = _create_and_open_wallet();
 
         let type_  = _type1();
-        let id_    = _id1();
+        let id     = _id1();
         let value_ = _value1();
         let tags_  = _tags();
 
-        let type_ = CString::new(base64::encode(&type_)).unwrap();
-        let id    = CString::new(base64::encode(&id_)).unwrap();
         let joined_value = value_.to_bytes();
-        let tags  = CString::new(_tags_to_json(&tags_).unwrap()).unwrap();
+        let tags  = _tags_json(&tags_);
 
         // unit test for adding record(s) to the wallet
         let err = PostgresWallet::postgreswallet_fn_add_record(handle,
@@ -1070,14 +1060,13 @@ mod tests {
         let handle = _create_and_open_wallet();
 
         let type1_  = _type1();
-        let id1_    = _id1();
+        let id1     = _id1();
         let value1_ = _value1();
         let tags1_  = _tags();
 
-        let type1_ = CString::new(type1_.clone()).unwrap();
-        let id1    = CString::new(id1_.clone()).unwrap();
+        let id1_    = _id_bytes1();
         let joined_value1 = value1_.to_bytes();
-        let tags1  = CString::new(_tags_to_json(&tags1_).unwrap()).unwrap();
+        let tags1  = _tags_json(&tags1_);
 
         // unit test for adding record(s) to the wallet
         let err = PostgresWallet::postgreswallet_fn_add_record(handle,
@@ -1089,14 +1078,12 @@ mod tests {
         assert_match!(ErrorCode::Success, err);
 
         let type2_  = _type2();
-        let id2_    = _id2();
+        let id2     = _id2();
         let value2_ = _value2();
         let tags2_  = _tags();
 
-        let type2_ = CString::new(type2_.clone()).unwrap();
-        let id2    = CString::new(id2_.clone()).unwrap();
         let joined_value2 = value2_.to_bytes();
-        let tags2  = CString::new(_tags_to_json(&tags2_).unwrap()).unwrap();
+        let tags2  = _tags_json(&tags2_);
 
         // unit test for adding record(s) to the wallet
         let err = PostgresWallet::postgreswallet_fn_add_record(handle,
@@ -1160,17 +1147,9 @@ mod tests {
 
     fn _create_and_open_wallet() -> i32 {
         let id = _wallet_id();
-        let config = Some(_wallet_config());
-        let credentials = Some(_wallet_credentials());
+        let config = _wallet_config();
+        let credentials = _wallet_credentials();
         let metadata = _metadata();
-
-        let id = CString::new(id).unwrap();
-        let config = config
-            .map(CString::new)
-            .map_or(Ok(None), |r| r.map(Some)).unwrap();
-        let credentials = credentials
-            .map(CString::new)
-            .map_or(Ok(None), |r| r.map(Some)).unwrap();
 
         // create wallet
         let err = PostgresWallet::postgreswallet_fn_create(id.as_ptr(), 
@@ -1192,16 +1171,8 @@ mod tests {
 
     fn _close_and_delete_wallet(handle: i32) {
         let id = _wallet_id();
-        let config = Some(_wallet_config());
-        let credentials = Some(_wallet_credentials());
-
-        let id = CString::new(id).unwrap();
-        let config = config
-            .map(CString::new)
-            .map_or(Ok(None), |r| r.map(Some)).unwrap();
-        let credentials = credentials
-            .map(CString::new)
-            .map_or(Ok(None), |r| r.map(Some)).unwrap();
+        let config = _wallet_config();
+        let credentials = _wallet_credentials();
 
         // close wallet
         let err = PostgresWallet::postgreswallet_fn_close(handle);
@@ -1216,41 +1187,35 @@ mod tests {
 
     fn _cleanup() {
         let id = _wallet_id();
-        let config = Some(_wallet_config());
-        let credentials = Some(_wallet_credentials());
-
-        let id = CString::new(id).unwrap();
-        let config = config
-            .map(CString::new)
-            .map_or(Ok(None), |r| r.map(Some)).unwrap();
-        let credentials = credentials
-            .map(CString::new)
-            .map_or(Ok(None), |r| r.map(Some)).unwrap();
+        let config = _wallet_config();
+        let credentials = _wallet_credentials();
 
         let _err = PostgresWallet::postgreswallet_fn_delete(id.as_ptr(), 
                                             config.as_ref().map_or(ptr::null(), |x| x.as_ptr()), 
                                             credentials.as_ref().map_or(ptr::null(), |x| x.as_ptr()));
     }
 
-    fn _wallet_id() -> &'static str {
-        "my_walle1"
+    fn _wallet_id() -> CString {
+        CString::new("my_walle1").unwrap()
     }
 
-    fn _wallet_config() -> String {
-        let config = json!({
+    fn _wallet_config() -> Option<CString> {
+        let config = Some(json!({
             "url": "localhost:5432".to_owned()
-        }).to_string();
-        config
+        }).to_string());
+        config.map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap()
     }
 
-    fn _wallet_credentials() -> String {
-        let creds = json!({
+    fn _wallet_credentials() -> Option<CString> {
+        let creds = Some(json!({
             "account": "postgres".to_owned(),
             "password": "mysecretpassword".to_owned(),
             "admin_account": Some("postgres".to_owned()),
             "admin_password": Some("mysecretpassword".to_owned())
-        }).to_string();
-        creds
+        }).to_string());
+        creds.map(CString::new)
+            .map_or(Ok(None), |r| r.map(Some)).unwrap()
     }
 
     fn _metadata() -> Vec<i8> {
@@ -1266,27 +1231,41 @@ mod tests {
         ];
     }
 
-    fn _type(i: u8) -> Vec<u8> {
-        vec![i, 1 + i, 2 + i]
+    fn _type(i: u8) -> CString {
+        let type_ = vec![i, 1 + i, 2 + i];
+        CString::new(type_.clone()).unwrap()
     }
 
-    fn _type1() -> Vec<u8> {
+    fn _type1() -> CString {
         _type(1)
     }
 
-    fn _type2() -> Vec<u8> {
+    fn _type2() -> CString {
         _type(2)
     }
 
-    fn _id(i: u8) -> Vec<u8> {
+    fn _id_bytes(i: u8) -> Vec<u8> {
         vec![3 + i, 4 + i, 5 + i]
     }
 
-    fn _id1() -> Vec<u8> {
+    fn _id_bytes1() -> Vec<u8> {
+        _id_bytes(1)
+    }
+
+    fn _id_bytes2() -> Vec<u8> {
+        _id_bytes(2)
+    }
+
+    fn _id(i: u8) -> CString {
+        let id_ = _id_bytes(i);
+        CString::new(id_.clone()).unwrap()
+    }
+
+    fn _id1() -> CString {
         _id(1)
     }
 
-    fn _id2() -> Vec<u8> {
+    fn _id2() -> CString {
         _id(2)
     }
 
@@ -1315,11 +1294,20 @@ mod tests {
         tags
     }
 
+    fn _tags_json(tags_: &Vec<Tag>) -> CString {
+        CString::new(_tags_to_json(tags_).unwrap()).unwrap()
+    }
+
     fn _new_tags() -> Vec<Tag> {
         vec![
             Tag::Encrypted(vec![1, 1, 1], vec![2, 2, 2]),
             Tag::PlainText(vec![1, 1, 1], String::from("tag_value_3"))
         ]
+    }
+
+    fn _sort_tags(mut v: Vec<Tag>) -> Vec<Tag> {
+        v.sort();
+        v
     }
 
     fn _fetch_options(type_: bool, value: bool, tags: bool) -> String {
@@ -1328,10 +1316,5 @@ mod tests {
             "retrieveValue": value,
             "retrieveTags": tags,
         }).to_string()
-    }
-
-    fn _sort_tags(mut v: Vec<Tag>) -> Vec<Tag> {
-        v.sort();
-        v
     }
 }
