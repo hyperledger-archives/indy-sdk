@@ -25,7 +25,7 @@ namespace Hyperledger.Indy.Test
         protected const string IDENTITY_JSON_TEMPLATE = "{{\"did\":\"{0}\",\"verkey\":\"{1}\"}}";
         protected readonly static byte[] MESSAGE = Encoding.UTF8.GetBytes("{\"reqId\":1496822211362017764}");
         protected const string SCHEMA_DATA = "{\"id\":\"id\",\"name\":\"gvt\",\"version\":\"1.0\",\"attrNames\": [\"name\"], \"ver\":\"1.0\"}";
-
+        protected const string TYPE = "default";
         protected const string METADATA = "some metadata";
         protected const string ENDPOINT = "127.0.0.1:9700";
         protected const string CRYPTO_TYPE = "ed25519";

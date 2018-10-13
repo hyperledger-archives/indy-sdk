@@ -37,7 +37,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
         }
 
         [TestMethod]
-        public async Task testSubmitActionWorksForNodes()
+        public async Task TestSubmitActionWorksForNodes()
         {
             var nodes = "[\"Node1\",\"Node2\"]";
             var getValidatorInfoRequest = await Ledger.BuildGetValidatorInfoRequestAsync(did);
