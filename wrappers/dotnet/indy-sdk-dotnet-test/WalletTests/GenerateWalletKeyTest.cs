@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Hyperledger.Indy.Test.WalletTests
 {
     [TestClass]
-    public class GenerateWalletKeyTest : IndyIntegrationTestWithSingleWallet
+    public class GenerateWalletKeyTest : IndyIntegrationTestBase
     {
         [TestMethod]
         public async Task TestGenerateWalletKeyWorks()
