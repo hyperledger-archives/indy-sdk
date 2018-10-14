@@ -7,7 +7,7 @@
     {
         const string message = "An unknown payment method was called.";
 
-        internal UnknownPaymentMethodException() : base(message, (int)ErrorCode.UnknownPaymentMethod)
+        internal UnknownPaymentMethodException() : base(message, (int)ErrorCode.PaymentUnknownMethodError)
         {
         }
     }

@@ -88,14 +88,79 @@
         CommonIOError = 114,
 
         /// <summary>
-        /// Caller passed invalid value as param 13 (null, invalid json and etc..)
+        /// 
         /// </summary>
         CommonInvalidParam13 = 115,
 
         /// <summary>
-        /// Caller passed invalid value as param 14 (null, invalid json and etc..)
+        /// 
         /// </summary>
         CommonInvalidParam14 = 116,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam15 = 117,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam16 = 118,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam17 = 119,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam18 = 120,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam19 = 121,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam20 = 122,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam21 = 123,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam22 = 124,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam23 = 125,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam24 = 126,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam25 = 127,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam26 = 128,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam27 = 129,
 
         // Wallet errors
 
@@ -165,12 +230,12 @@
         WalletItemNotFoundError = 212,
 
         /// <summary>
-        /// A wallet item with the specified key already exists in the wallet.
+        /// Returned if wallet's add_record operation is used with record name that already exists
         /// </summary>
         WalletItemAlreadyExistsError = 213,
 
         /// <summary>
-        /// The wallet query was invalid.
+        /// Returned if provided wallet query is invalid
         /// </summary>
         WalletQueryError = 214,
 
@@ -217,7 +282,8 @@
         PoolLedgerTimeout = 307,
 
         /// <summary>
-        /// Pool incompatible with protocol version
+        /// Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
+        /// Call pool.indy_set_protocol_version to set correct Protocol version.
         /// </summary>
         PoolIncompatibleProtocolVersionError = 308,
 
@@ -250,39 +316,40 @@
         AnoncredsCredentialRevoked = 406,
 
         /// <summary>
-        /// Credential definition already exists
+        /// Attempt to create credential definition with duplicated id
         /// </summary>
-        AnoncredsCredDefAlreadyExists = 407,
+        AnoncredsCredDefAlreadyExistsError = 407,
 
-        // Signus errors
+        // Crypto errors
 
         /// <summary>
         /// Unknown format of DID entity keys
         /// </summary>
-        UnknownCryptoError = 500,
+        UnknownCryptoTypeError = 500,
 
-
+        // Attempt to create duplicate did
         /// <summary>
-        /// Attempt to create duplicate did.
+        /// 
         /// </summary>
-        DidAlreadyExistsError= 600,
+        DidAlreadyExistsError = 600,
 
+        // Unknown payment method was given
         /// <summary>
-        /// Unknown payment method has been called
+        /// 
         /// </summary>
-        UnknownPaymentMethod = 700,
+        PaymentUnknownMethodError = 700,
 
         /// <summary>
         /// No method were scraped from inputs/outputs or more than one were scraped
         /// </summary>
-        IncompatiblePaymentError = 701,
+        PaymentIncompatibleMethodsError = 701,
 
         /// <summary>
         /// Insufficient funds on inputs
         /// </summary>
-        InsufficientFundsError = 702,
+        PaymentInsufficientFundsError = 702,
 
-        /// <summary>        
+        /// <summary>
         /// No such source on a ledger
         /// </summary>
         PaymentSourceDoesNotExistError = 703,
@@ -295,6 +362,6 @@
         /// <summary>
         /// Extra funds on inputs
         /// </summary>
-        ExtraFundsError = 705,
+        PaymentExtraFundsError = 705
     }
 }

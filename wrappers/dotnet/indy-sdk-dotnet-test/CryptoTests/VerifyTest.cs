@@ -28,7 +28,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
         {
             var verkey = VERKEY_TRUSTEE + ":unknown_crypto";
 
-            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoTypeException>(() =>
                Crypto.VerifyAsync(verkey, MESSAGE, SIGNATURE)
            );
         }

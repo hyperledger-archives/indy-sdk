@@ -10,7 +10,7 @@
         /// <summary>
         /// Initializes a new CredDefAlreadyExistsException.
         /// </summary>
-        internal CredentialDefinitionAlreadyExistsException() : base(message, (int)ErrorCode.AnoncredsCredDefAlreadyExists)
+        internal CredentialDefinitionAlreadyExistsException() : base(message, (int)ErrorCode.AnoncredsCredDefAlreadyExistsError)
         {
 
         }

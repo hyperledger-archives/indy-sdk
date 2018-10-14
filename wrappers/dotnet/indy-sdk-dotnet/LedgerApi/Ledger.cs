@@ -315,7 +315,6 @@ namespace Hyperledger.Indy.LedgerApi
         /// containing the request JSON.</returns>
         public static Task<string> BuildGetDdoRequestAsync(string submitterDid, string targetDid)
         {
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(targetDid, "targetDid");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -512,9 +511,11 @@ namespace Hyperledger.Indy.LedgerApi
         /// "ip", "port", and "keys":
         /// <code>
         /// {
+        ///     "id": "id",
         ///     "name":"access",
         ///     "version":"1.0",
-        ///     "attr_names":["ip","port","keys"]
+        ///     "attrNames":["ip","port","keys"],
+        ///     "ver":"1.0"      // note: this must always be 1.0
         /// }
         /// </code>
         /// </para>
@@ -551,7 +552,6 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="schemaId">Schema ID in ledger</param>
         public static Task<string> BuildGetSchemaRequestAsync(string submitterDid, string schemaId)
         {
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(schemaId, "schemaId");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -636,7 +636,6 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="id">Identifier.</param>
         public static Task<string> BuildGetCredDefRequestAsync(string submitterDid, string id)
         {
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(id, "id");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -745,8 +744,6 @@ namespace Hyperledger.Indy.LedgerApi
         /// </remarks>
         public static Task<string> BuildGetTxnRequestAsync(string submitterDid, string ledgerType, int seqNo)
         {
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
-
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
@@ -911,7 +908,6 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="id">ID of Revocation Registry Definition in ledger..</param>
         public static Task<string> BuildGetRevocRegDefRequestAsync(string submitterDid, string id)
         {
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(id, "id");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -1019,7 +1015,6 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="timestamp">Requested time represented as a total number of seconds from Unix Epoch</param>
         public static Task<string> BuildGetRevocRegRequestAsync(string submitterDid, string revocRegDefId, long timestamp)
         {
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(revocRegDefId, "revocRegDefId");
 
             var taskCompletionSource = new TaskCompletionSource<string>();
@@ -1079,7 +1074,6 @@ namespace Hyperledger.Indy.LedgerApi
         /// <param name="to">Requested time represented as a total number of seconds from Unix Epoch.</param>
         public static Task<string> BuildGetRevocRegDeltaRequestAsync(string submitterDid, string revocRegDefId, long from, long to)
         {
-            ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
             ParamGuard.NotNullOrWhiteSpace(revocRegDefId, "id");
 
             var taskCompletionSource = new TaskCompletionSource<string>();

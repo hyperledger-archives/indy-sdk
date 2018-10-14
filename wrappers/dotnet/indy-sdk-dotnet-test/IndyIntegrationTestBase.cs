@@ -74,10 +74,5 @@ namespace Hyperledger.Indy.Test
             await Pool.SetProtocolVersionAsync(PROTOCOL_VERSION);
             WALLET_CONFIG = WalletUtils.GetWalletConfig();
         }
-
-        [TestCleanup]
-        public async Task TearDown()
-        {
-        }
     }
 }

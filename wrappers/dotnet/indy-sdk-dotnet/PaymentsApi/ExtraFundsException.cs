@@ -7,7 +7,7 @@
     {
         const string message = "Extra funds on inputs.";
 
-        internal ExtraFundsException() : base(message, (int)ErrorCode.ExtraFundsError)
+        internal ExtraFundsException() : base(message, (int)ErrorCode.PaymentExtraFundsError)
         {
         }
     }

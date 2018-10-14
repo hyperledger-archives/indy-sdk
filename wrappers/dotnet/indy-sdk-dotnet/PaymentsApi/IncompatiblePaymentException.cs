@@ -3,11 +3,11 @@
     /// <summary>
     /// Information passed to libindy is incompatible.
     /// </summary>
-    public class IncompatiblePaymentException : IndyException
+    public class IncompatiblePaymentMethodsException : IndyException
     {
         const string message = "Information passed to libindy is incompatible.";
 
-        internal IncompatiblePaymentException() : base(message, (int)ErrorCode.IncompatiblePaymentError)
+        internal IncompatiblePaymentMethodsException() : base(message, (int)ErrorCode.PaymentIncompatibleMethodsError)
         {
         }
     }

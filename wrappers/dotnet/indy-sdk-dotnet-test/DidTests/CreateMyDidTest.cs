@@ -78,7 +78,7 @@ namespace Hyperledger.Indy.Test.DidTests
         {
             var json = string.Format("{{\"seed\":\"{0}\",\"crypto_type\":\"crypto_type\"}}", MY1_SEED);
 
-            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoTypeException>(() =>
                 Did.CreateAndStoreMyDidAsync(wallet, json)
             );
         }

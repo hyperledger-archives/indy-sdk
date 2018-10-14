@@ -46,6 +46,21 @@ namespace Hyperledger.Indy
                 case ErrorCode.CommonInvalidParam10:
                 case ErrorCode.CommonInvalidParam11:
                 case ErrorCode.CommonInvalidParam12:
+                case ErrorCode.CommonInvalidParam13:
+                case ErrorCode.CommonInvalidParam14:
+                case ErrorCode.CommonInvalidParam15:
+                case ErrorCode.CommonInvalidParam16:
+                case ErrorCode.CommonInvalidParam17:
+                case ErrorCode.CommonInvalidParam18:
+                case ErrorCode.CommonInvalidParam19:
+                case ErrorCode.CommonInvalidParam20:
+                case ErrorCode.CommonInvalidParam21:
+                case ErrorCode.CommonInvalidParam22:
+                case ErrorCode.CommonInvalidParam23:
+                case ErrorCode.CommonInvalidParam24:
+                case ErrorCode.CommonInvalidParam25:
+                case ErrorCode.CommonInvalidParam26:
+                case ErrorCode.CommonInvalidParam27:
                     return new InvalidParameterException(sdkErrorCode);
                 case ErrorCode.CommonInvalidState:
                     return new InvalidStateException();
@@ -95,10 +110,10 @@ namespace Hyperledger.Indy
                     return new ProofRejectedException();
                 case ErrorCode.AnoncredsCredentialRevoked:
                     return new CredentialRevokedException();
-                case ErrorCode.AnoncredsCredDefAlreadyExists:
+                case ErrorCode.AnoncredsCredDefAlreadyExistsError:
                     return new CredentialDefinitionAlreadyExistsException();
-                case ErrorCode.UnknownCryptoError:
-                    return new UnknownCryptoException();
+                case ErrorCode.UnknownCryptoTypeError:
+                    return new UnknownCryptoTypeException();
                 case ErrorCode.WalletItemNotFoundError:
                     return new WalletItemNotFoundException();
                 case ErrorCode.WalletItemAlreadyExistsError:
@@ -113,17 +128,17 @@ namespace Hyperledger.Indy
                     return new WalletEncryptionException();
                 case ErrorCode.WalletInputError:
                     return new WalletInputException();
-                case ErrorCode.ExtraFundsError:
+                case ErrorCode.PaymentExtraFundsError:
                     return new ExtraFundsException();
-                case ErrorCode.IncompatiblePaymentError:
-                    return new IncompatiblePaymentException();
-                case ErrorCode.InsufficientFundsError:
+                case ErrorCode.PaymentIncompatibleMethodsError:
+                    return new IncompatiblePaymentMethodsException();
+                case ErrorCode.PaymentInsufficientFundsError:
                     return new InsufficientFundsException();
                 case ErrorCode.PaymentOperationNotSupportedError:
                     return new PaymentOperationNotSupportedException();
                 case ErrorCode.PaymentSourceDoesNotExistError:
                     return new PaymentSourceDoesNotExistException();
-                case ErrorCode.UnknownPaymentMethod:
+                case ErrorCode.PaymentUnknownMethodError:
                     return new UnknownPaymentMethodException();
 
                 default:

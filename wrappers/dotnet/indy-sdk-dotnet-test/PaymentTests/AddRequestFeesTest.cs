@@ -26,7 +26,7 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestAddRequestFeesWorksForSeveralMethods()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IncompatiblePaymentException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<IncompatiblePaymentMethodsException>(() =>
                  Payments.AddRequestFeesAsync(wallet, DID_TRUSTEE, emptyObject, incompatibleInputs, emptyObject, null)
              );
         }

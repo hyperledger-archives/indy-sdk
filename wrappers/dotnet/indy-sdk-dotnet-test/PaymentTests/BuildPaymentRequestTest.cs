@@ -34,7 +34,7 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestBuildPaymentRequestWorksForIncompatiblePaymentMethods()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IncompatiblePaymentException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<IncompatiblePaymentMethodsException>(() =>
                  Payments.BuildPaymentRequestAsync(wallet, DID_TRUSTEE, incompatibleInputs, emptyObject, null)
              );
         }

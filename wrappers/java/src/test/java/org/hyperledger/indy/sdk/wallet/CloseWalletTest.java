@@ -34,7 +34,7 @@ public class CloseWalletTest extends IndyIntegrationTest {
 
 	@Test
 	public void testAutoCloseWorks() throws Exception {
-		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS);
+		Wallet.createWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get();
 		try (Wallet wallet = Wallet.openWallet(WALLET_CONFIG, WALLET_CREDENTIALS).get()) {
 			assertNotNull(wallet);
 		}

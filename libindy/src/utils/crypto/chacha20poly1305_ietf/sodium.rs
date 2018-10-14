@@ -214,6 +214,48 @@ mod tests {
     use utils::crypto::randombytes::randombytes;
 
     #[test]
+    fn derivation_argon2i_mod_produces_expected_result() {
+        let passphrase = "passphrase";
+        let salt_bytes: [u8; 32] = [
+            24, 62, 35, 31, 123, 241, 94, 24, 192, 110, 199, 143, 173, 20, 23, 102,
+            184, 99, 221, 64, 247, 230, 11, 253, 10, 7, 80, 236, 185, 249, 110, 187
+        ];
+        let key_bytes: [u8; 32] = [
+            148, 89, 76, 239, 127, 103, 13, 86, 84, 217, 216, 13, 223, 141, 225, 41,
+            223, 126, 145, 138, 174, 31, 142, 199, 81, 12, 40, 201, 67, 8, 6, 251
+        ];
+
+        let res = derive_key(
+            passphrase,
+            &pwhash_argon2i13::Salt::from_slice(&salt_bytes).unwrap(),
+            &KeyDerivationMethod::ARGON2I_MOD
+        ).unwrap();
+
+        assert_eq!(res, Key::new(key_bytes))
+    }
+
+    #[test]
+    fn derivation_argon2i_int_produces_expected_result() {
+        let passphrase = "passphrase";
+        let salt_bytes: [u8; 32] = [
+            24, 62, 35, 31, 123, 241, 94, 24, 192, 110, 199, 143, 173, 20, 23, 102,
+            184, 99, 221, 64, 247, 230, 11, 253, 10, 7, 80, 236, 185, 249, 110, 187
+        ];
+        let key_bytes: [u8; 32] = [
+            247, 55, 177, 252, 244, 130, 218, 129, 113, 206, 72, 44, 29, 68, 134, 215,
+            249, 233, 131, 199, 38, 87, 69, 217, 156, 217, 10, 160, 30, 148, 80, 160
+        ];
+
+        let res = derive_key(
+            passphrase,
+            &pwhash_argon2i13::Salt::from_slice(&salt_bytes).unwrap(),
+            &KeyDerivationMethod::ARGON2I_INT
+        ).unwrap();
+
+        assert_eq!(res, Key::new(key_bytes))
+    }
+
+    #[test]
     fn encrypt_decrypt_works() {
         let data = randombytes(100);
         let key = gen_key();

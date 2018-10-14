@@ -7,7 +7,7 @@
     {
         const string message = "Insufficient funds on inputs.";
 
-        internal InsufficientFundsException() : base(message, (int)ErrorCode.InsufficientFundsError)
+        internal InsufficientFundsException() : base(message, (int)ErrorCode.PaymentInsufficientFundsError)
         {
         }
     }

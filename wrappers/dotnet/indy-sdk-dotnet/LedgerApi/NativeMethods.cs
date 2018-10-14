@@ -258,7 +258,11 @@ namespace Hyperledger.Indy.LedgerApi
         /// </summary>
         /// <param name="command_handle">The handle for the command that will be passed to the callback.</param>
         /// <param name="submitter_did">Id of Identity stored in secured Wallet.</param>
-        /// <param name="ledger_type">The type of the ledger the transaction belongs to.</param>
+        /// <param name="ledger_type">(Optional) type of the ledger the requested transaction belongs to:
+        ///     DOMAIN - used default,
+        ///     POOL,
+        ///     CONFIG
+        ///     any number</param>
         /// <param name="seq_no">seq_no of transaction in ledger</param>
         /// <param name="cb">The function that will be called when the asynchronous call is complete.</param>
         /// <returns>0 if the command was initiated successfully.  Any non-zero result indicates an error.</returns>

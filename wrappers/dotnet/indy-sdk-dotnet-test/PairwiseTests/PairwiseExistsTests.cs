@@ -10,7 +10,7 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestPairwiseExistsWorks()
         {
-            await Pairwise.CreateAsync(wallet, theirDid, myDid, null);
+            await Pairwise.CreateAsync(wallet, theirDid, theirDid, null);
 
             Assert.IsTrue(await Pairwise.IsExistsAsync(wallet, theirDid));
         }

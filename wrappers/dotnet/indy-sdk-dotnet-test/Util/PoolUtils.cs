@@ -14,6 +14,7 @@ namespace Hyperledger.Indy.Test
         public const int TEST_TIMEOUT_FOR_REQUEST_ENSURE = 20_000;
         private const int RESUBMIT_REQUEST_TIMEOUT = 5_000;
         private const int RESUBMIT_REQUEST_CNT = 3;
+        public const int PROTOCOL_VERSION = 1;
 
         public static FileStream CreateGenesisTxnFile(string filename)
         {
