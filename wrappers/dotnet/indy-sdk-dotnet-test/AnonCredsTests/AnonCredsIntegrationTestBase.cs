@@ -27,11 +27,8 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
         protected static string issuer1GvtCredReqMetadata;
         protected static string CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
         protected static string masterSecretId = "master_secret_name";
-
         protected static string issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
         protected static string proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-
-
         protected static string defaultCredentialDefinitionConfig = "{\"support_revocation\":false}";
         protected static string tag = "tag1";
         protected static string gvtSchemaName = "gvt";

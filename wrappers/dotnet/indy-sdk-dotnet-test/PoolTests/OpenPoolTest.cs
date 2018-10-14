@@ -7,13 +7,6 @@ namespace Hyperledger.Indy.Test.PoolTests
     [TestClass]
     public class OpenPoolTest : IndyIntegrationTestBase
     {
-
-        [TestInitialize]
-        public async Task SetProtocolVersion()
-        {
-            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
-        }
-
         [TestMethod]
         public async Task TestOpenPoolWorksForNullConfig()
         {

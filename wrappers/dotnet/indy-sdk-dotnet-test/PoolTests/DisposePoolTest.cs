@@ -7,12 +7,6 @@ namespace Hyperledger.Indy.Test.PoolTests
     [TestClass]
     public class DisposePoolTest : IndyIntegrationTestBase
     {
-        [TestInitialize]
-        public async Task SetProtocolVersion()
-        {
-            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
-        }
-
         [TestMethod]
         public async Task CanDisposeClosedPool()
         {

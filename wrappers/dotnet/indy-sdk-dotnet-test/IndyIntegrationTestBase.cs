@@ -31,7 +31,6 @@ namespace Hyperledger.Indy.Test
         protected const string CRYPTO_TYPE = "ed25519";
         protected readonly static byte[] SIGNATURE = (byte[])(Array)new sbyte[] { 20, -65, 100, -43, 101, 12, -59, -58, -53, 49, 89, -36, -51, -64, -32, -35, 97, 77, -36, -66, 90, 60, -114, 23, 16, -16, -67, -127, 45, -108, -11, 8, 102, 95, 95, -7, 100, 89, 41, -29, -43, 25, 100, 1, -24, -68, -11, -21, -70, 21, 52, -80, -20, 11, 99, 70, -101, -97, 89, -41, -59, -17, -118, 5 };
         protected readonly static byte[] ENCRYPTED_MESSAGE = (byte[])(Array)new sbyte[] { -105, 30, 89, 75, 76, 28, -59, -45, 105, -46, 20, 124, -85, -13, 109, 29, -88, -82, -8, -6, -50, -84, -53, -48, -49, 56, 124, 114, 82, 126, 74, 99, -72, -78, -117, 96, 60, 119, 50, -40, 121, 21, 57, -68, 89 };
-        protected readonly static byte[] NONCE = (byte[])(Array)new sbyte[] { -14, 102, -41, -57, 1, 4, 75, -46, -91, 87, 14, 41, -39, 48, 42, -126, -121, 84, -58, 59, -27, 51, -32, -23 };
 
         protected const string DEFAULT_CRED_DEF_CONFIG = "{\"support_revocation\":false}";
         protected const string TAG = "tag1";
@@ -51,9 +50,9 @@ namespace Hyperledger.Indy.Test
                 "        \"height\": {\"raw\": \"175\", \"encoded\": \"175\"},\n" +
                 "        \"age\": {\"raw\": \"28\", \"encoded\": \"28\"}\n" +
                 "    }";
-        
-	    protected const string WALLET_CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
-	    protected int PROTOCOL_VERSION = 2;
+
+        protected const string WALLET_CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
+        protected int PROTOCOL_VERSION = 2;
 
 
         protected readonly static string TRUSTEE_IDENTITY_JSON = string.Format("{{\"seed\":\"{0}\"}}", TRUSTEE_SEED);
@@ -61,7 +60,7 @@ namespace Hyperledger.Indy.Test
         protected readonly static string MY1_IDENTITY_KEY_JSON = string.Format("{{\"seed\":\"{0}\"}}", MY1_SEED);
 
         private const string EXPORT_KEY = "export_key";
-	    protected readonly static string EXPORT_PATH = EnvironmentUtils.GetTmpPath("export_wallet");
+        protected readonly static string EXPORT_PATH = EnvironmentUtils.GetTmpPath("export_wallet");
         protected readonly static string EXPORT_CONFIG_JSON = string.Format("{{\"key\":\"{0}\", \"path\":\"{1}\"}}", EXPORT_KEY, EXPORT_PATH);
 
         protected HashSet<Pool> openedPools = new HashSet<Pool>();
@@ -74,5 +73,7 @@ namespace Hyperledger.Indy.Test
             await Pool.SetProtocolVersionAsync(PROTOCOL_VERSION);
             WALLET_CONFIG = WalletUtils.GetWalletConfig();
         }
+
+
     }
 }
