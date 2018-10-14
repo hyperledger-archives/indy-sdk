@@ -1,7 +1,8 @@
 ﻿using Hyperledger.Indy.AnonCredsApi;
-using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.PaymentsApi;
+using Hyperledger.Indy.PoolApi;
 using Hyperledger.Indy.WalletApi;
 using System;
 
@@ -76,43 +77,70 @@ namespace Hyperledger.Indy
                 case ErrorCode.WalletAlreadyExistsError:
                     return new WalletExistsException();
                 case ErrorCode.WalletNotFoundError:
-                    return new WalletValueNotFoundException();
+                    return new WalletNotFoundException();
                 case ErrorCode.WalletIncompatiblePoolError:
                     return new WrongWalletForPoolException();
                 case ErrorCode.WalletAlreadyOpenedError:
                     return new WalletAlreadyOpenedException();
+                case ErrorCode.WalletAccessFailed:
+                    return new WalletAccessFailedException();
                 case ErrorCode.PoolLedgerNotCreatedError:
                     return new PoolConfigNotCreatedException();
                 case ErrorCode.PoolLedgerInvalidPoolHandle:
                     return new InvalidPoolException();
                 case ErrorCode.PoolLedgerTerminated:
                     return new PoolLedgerTerminatedException();
+                case ErrorCode.PoolIncompatibleProtocolVersionError:
+                    return new PoolIncompatibleProtocolVersionException();
+                case ErrorCode.PoolLedgerConfigAlreadyExistsError:
+                    return new PoolLedgerConfigExistsException();
                 case ErrorCode.LedgerNoConsensusError:
                     return new LedgerConsensusException();
                 case ErrorCode.LedgerInvalidTransaction:
                     return new InvalidLedgerTransactionException();
                 case ErrorCode.LedgerSecurityError:
                     return new LedgerSecurityException();
-                case ErrorCode.PoolLedgerConfigAlreadyExistsError:
-                    return new PoolLedgerConfigExistsException();
                 case ErrorCode.AnoncredsRevocationRegistryFullError:
                     return new RevocationRegistryFullException();
-                case ErrorCode.AnoncredsInvalidUserRevocIndex:
-                    return new InvalidUserRevocIndexException();
-                case ErrorCode.AnoncredsAccumulatorIsFull:
-                    return new AnoncredsAccumulatorFullException();
-                case ErrorCode.AnoncredsNotIssuedError:
-                    return new AnoncredsNotIssuedException();
+                case ErrorCode.AnoncredsInvalidUserRevocId:
+                    return new InvalidUserRevocIdException();
                 case ErrorCode.AnoncredsMasterSecretDuplicateNameError:
                     return new DuplicateMasterSecretNameException();
                 case ErrorCode.AnoncredsProofRejected:
                     return new ProofRejectedException();
-                case ErrorCode.AnoncredsClaimRevoked:
-                    return new ClaimRevokedException();
+                case ErrorCode.AnoncredsCredentialRevoked:
+                    return new CredentialRevokedException();
+                case ErrorCode.AnoncredsCredDefAlreadyExistsError:
+                    return new CredentialDefinitionAlreadyExistsException();
                 case ErrorCode.UnknownCryptoTypeError:
-                    return new UnknownCryptoException();
+                    return new UnknownCryptoTypeException();
                 case ErrorCode.WalletItemNotFoundError:
                     return new WalletItemNotFoundException();
+                case ErrorCode.WalletItemAlreadyExistsError:
+                    return new WalletItemAlreadyExistsException();
+                case ErrorCode.WalletQueryError:
+                    return new WalletInvalidQueryException();
+                case ErrorCode.WalletStorageError:
+                    return new WalletStorageException();
+                case ErrorCode.WalletDecodingError:
+                    return new WalletDecodingException();
+                case ErrorCode.WalletEncryptionError:
+                    return new WalletEncryptionException();
+                case ErrorCode.WalletInputError:
+                    return new WalletInputException();
+                case ErrorCode.PaymentExtraFundsError:
+                    return new ExtraFundsException();
+                case ErrorCode.PaymentIncompatibleMethodsError:
+                    return new IncompatiblePaymentMethodsException();
+                case ErrorCode.PaymentInsufficientFundsError:
+                    return new InsufficientFundsException();
+                case ErrorCode.PaymentOperationNotSupportedError:
+                    return new PaymentOperationNotSupportedException();
+                case ErrorCode.PaymentSourceDoesNotExistError:
+                    return new PaymentSourceDoesNotExistException();
+                case ErrorCode.PaymentUnknownMethodError:
+                    return new UnknownPaymentMethodException();
+
                 default:
                     var message = $"An unmapped error with the code '{sdkErrorCode}' was returned by the SDK.";
                     return new IndyException(message, sdkErrorCode);

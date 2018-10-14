@@ -1,6 +1,6 @@
-﻿using Hyperledger.Indy.Test.Util;
-using Hyperledger.Indy.WalletApi;
+﻿using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.WalletTests
@@ -8,85 +8,65 @@ namespace Hyperledger.Indy.Test.WalletTests
     [TestClass]
     public class DeleteWalletTest : IndyIntegrationTestBase
     {
-        string config = WalletUtils.GetCreateWalletConfig(WALLET);
-        string cred = WalletUtils.GetOpenWalletCredentials(WALLET_KEY);
-
         [TestMethod]
         public async Task TestDeleteWalletWorks()
         {
-            await Wallet.CreateWalletAsync(config, cred);
-            await Wallet.DeleteWalletAsync(config, cred);
-            await Wallet.CreateWalletAsync(config, cred);
-            await Wallet.DeleteWalletAsync(config, cred);
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+            await Wallet.DeleteWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+            await Wallet.DeleteWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
         }
 
         [TestMethod]
         public async Task TestDeleteWalletWorksForClosed()
         {
-            await Wallet.CreateWalletAsync(config, cred);
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
 
-            var wallet = await Wallet.OpenWalletAsync(config, cred);
+            var wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
             Assert.IsNotNull(wallet);
 
             await wallet.CloseAsync();
-            await Wallet.DeleteWalletAsync(config, cred);
-            await Wallet.CreateWalletAsync(config, cred);
-            await Wallet.DeleteWalletAsync(config, cred);
+            await Wallet.DeleteWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+            await Wallet.DeleteWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
         }
 
         [TestMethod]
-        public async Task TestDeleteWalletSucceedsForOpened()
+        public async Task TestDeleteWalletWorksForOpened()
         {
-            await Wallet.CreateWalletAsync(config, cred);
-            var wallet = await Wallet.OpenWalletAsync(config, cred);
+            var config = JsonConvert.SerializeObject(new { id = "deleteWalletWorksForOpened" });
 
-            // delete wallet will not throw any exceptions if the wallet is open
-            // it essentially does nothing
-            Wallet.DeleteWalletAsync(config, cred);
+            await Wallet.CreateWalletAsync(config, WALLET_CREDENTIALS);
+            var wallet = await Wallet.OpenWalletAsync(config, WALLET_CREDENTIALS);
 
-            // safely clean up
-            try
-            {
-                await wallet.CloseAsync();
-                await Wallet.DeleteWalletAsync(config, cred);
-            }
-            catch 
-            {
-                // don't allow exceptions on cleanup to fail test
-            }
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStateException>(() =>
+                Wallet.DeleteWalletAsync(config, WALLET_CREDENTIALS)
+            );
+
+            await wallet.CloseAsync();
         }
 
         [TestMethod]
-        public async Task TestDeleteWalletThrowsExceptionOnSecondDelete()
+        public async Task TestDeleteWalletWorksForTwice()
         {
-            await Wallet.CreateWalletAsync(config, cred);
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
 
-            var wallet = await Wallet.OpenWalletAsync(config, cred);
+            var wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
             await wallet.CloseAsync();
 
-            await Wallet.DeleteWalletAsync(config, cred);
+            await Wallet.DeleteWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
 
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                 Wallet.DeleteWalletAsync(config, cred)
+            var ex = await Assert.ThrowsExceptionAsync<WalletNotFoundException>(() =>
+                 Wallet.DeleteWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS)
             );        
         }
 
         [TestMethod]
-        public async Task TestDeleteWalletThrowsExceptionNotCreatedWallet()
+        public async Task TestDeleteWalletWorksForNotCreated()
         {
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                Wallet.DeleteWalletAsync(config, cred)
+            var ex = await Assert.ThrowsExceptionAsync<WalletNotFoundException>(() =>
+                Wallet.DeleteWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS)
             );
         }
-
-        //[TestMethod]
-        //public async Task TestDeleteWalletWorksForPlugged()
-        //{
-        //    var walletName = "pluggedWalletDelete";
-
-        //    await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
-        //    await Wallet.DeleteWalletAsync(walletName, null);
-        //    await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
-        //}
     }
 }

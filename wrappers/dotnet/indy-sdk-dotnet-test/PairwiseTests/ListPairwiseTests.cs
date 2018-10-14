@@ -11,13 +11,13 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestListPairwiseWorks()
         {
-            await Pairwise.CreateAsync(wallet, theirVerkey, myDid, null);
+            await Pairwise.CreateAsync(wallet, theirDid, myDid, null);
 
             var listPairwise = await Pairwise.ListAsync(wallet);
             var listPairwiseArray = JArray.Parse(listPairwise);
 
             Assert.AreEqual(1, listPairwiseArray.Count);
-            Assert.AreEqual(listPairwiseArray[0].ToString(), string.Format(PAIR_TEMPLATE, myDid, theirVerkey));
+            Assert.AreEqual(listPairwiseArray[0].ToString(), string.Format(PAIR_TEMPLATE, myDid, theirDid));
         }
 
         [TestMethod]

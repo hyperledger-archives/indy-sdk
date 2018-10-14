@@ -355,7 +355,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="wallet">The wallet to resolve the DID from.</param>
         /// <param name="did">The DID to get the verification key for.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key associated with the DID.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/> and <paramref name="pool"/>.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/> and <paramref name="pool"/>.</exception>
         public static Task<string> KeyForDidAsync(Pool pool, Wallet wallet, string did)
         {
             ParamGuard.NotNull(pool, "pool");
@@ -393,7 +393,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="wallet">The wallet to resolve the DID from.</param>
         /// <param name="did">The DID to get the verification key for.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the verification key associated with the DID.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/>.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the DID could not be resolved from the <paramref name="wallet"/>.</exception>
         public static Task<string> KeyForLocalDidAsync(Wallet wallet, string did)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -492,7 +492,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="did">The DID to set the metadata on.</param>
         /// <param name="metadata">The metadata to store.</param>
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation completes.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the <paramref name="wallet"/> does not contain the specified <paramref name="did"/>.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the <paramref name="wallet"/> does not contain the specified <paramref name="did"/>.</exception>
         /// <exception cref="InvalidStructureException">Thrown if the value provided to the <paramref name="did"/> parameter is malformed.</exception>
         public static Task SetDidMetadataAsync(Wallet wallet, string did, string metadata)
         {
@@ -521,7 +521,7 @@ namespace Hyperledger.Indy.DidApi
         /// <param name="wallet">The wallet that contains the DID.</param>
         /// <param name="did">The DID to get the metadata for.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the metadata associated with the DID.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the wallet does not contain the specified <paramref name="did"/> or the DID did not have any metadata.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the wallet does not contain the specified <paramref name="did"/> or the DID did not have any metadata.</exception>
         /// <exception cref="InvalidStructureException">Thrown if the value provided in the <paramref name="did"/> parameter is malformed.</exception>
         public static Task<string> GetDidMetadataAsync(Wallet wallet, string did)
         {

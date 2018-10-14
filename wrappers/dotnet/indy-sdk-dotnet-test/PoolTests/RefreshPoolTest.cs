@@ -1,6 +1,4 @@
-﻿using Hyperledger.Indy.PoolApi;
-using Hyperledger.Indy.Test.Util;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.PoolTests
@@ -11,7 +9,6 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestRefreshPoolWorks()
         {
-            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
             var pool = await PoolUtils.CreateAndOpenPoolLedgerAsync();
 
             Assert.IsNotNull(pool);
