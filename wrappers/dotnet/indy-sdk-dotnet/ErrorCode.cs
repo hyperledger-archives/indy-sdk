@@ -231,7 +231,7 @@
         /// <summary>
         /// Invalid user revocation index
         /// </summary>
-        AnoncredsInvalidUserRevocIndex = 401,
+        AnoncredsInvalidUserRevocId = 401,
 
 
         /// <summary>
@@ -259,7 +259,7 @@
         /// <summary>
         /// Unknown format of DID entity keys
         /// </summary>
-        SignusUnknownCryptoError = 500,
+        UnknownCryptoError = 500,
 
 
         /// <summary>

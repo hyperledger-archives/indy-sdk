@@ -75,27 +75,29 @@ namespace Hyperledger.Indy
                     return new InvalidPoolException();
                 case ErrorCode.PoolLedgerTerminated:
                     return new PoolLedgerTerminatedException();
+                case ErrorCode.PoolIncompatibleProtocolVersionError:
+                    return new PoolIncompatibleProtocolVersionException();
+                case ErrorCode.PoolLedgerConfigAlreadyExistsError:
+                    return new PoolLedgerConfigExistsException();
                 case ErrorCode.LedgerNoConsensusError:
                     return new LedgerConsensusException();
                 case ErrorCode.LedgerInvalidTransaction:
                     return new InvalidLedgerTransactionException();
                 case ErrorCode.LedgerSecurityError:
                     return new LedgerSecurityException();
-                case ErrorCode.PoolLedgerConfigAlreadyExistsError:
-                    return new PoolLedgerConfigExistsException();
                 case ErrorCode.AnoncredsRevocationRegistryFullError:
                     return new RevocationRegistryFullException();
-                case ErrorCode.AnoncredsInvalidUserRevocIndex:
-                    return new InvalidUserRevocIndexException();
+                case ErrorCode.AnoncredsInvalidUserRevocId:
+                    return new InvalidUserRevocIdException();
                 case ErrorCode.AnoncredsMasterSecretDuplicateNameError:
                     return new DuplicateMasterSecretNameException();
                 case ErrorCode.AnoncredsProofRejected:
                     return new ProofRejectedException();
                 case ErrorCode.AnoncredsCredentialRevoked:
-                    return new ClaimRevokedException();
+                    return new CredentialRevokedException();
                 case ErrorCode.AnoncredsCredDefAlreadyExists:
                     return new CredentialDefinitionAlreadyExistsException();
-                case ErrorCode.SignusUnknownCryptoError:
+                case ErrorCode.UnknownCryptoError:
                     return new UnknownCryptoException();
                 case ErrorCode.WalletItemNotFoundError:
                     return new WalletItemNotFoundException();
@@ -105,6 +107,12 @@ namespace Hyperledger.Indy
                     return new WalletInvalidQueryException();
                 case ErrorCode.WalletStorageError:
                     return new WalletStorageException();
+                case ErrorCode.WalletDecodingError:
+                    return new WalletDecodingException();
+                case ErrorCode.WalletEncryptionError:
+                    return new WalletEncryptionException();
+                case ErrorCode.WalletInputError:
+                    return new WalletInputException();
                 case ErrorCode.ExtraFundsError:
                     return new ExtraFundsException();
                 case ErrorCode.IncompatiblePaymentError:
@@ -117,8 +125,7 @@ namespace Hyperledger.Indy
                     return new PaymentSourceDoesNotExistException();
                 case ErrorCode.UnknownPaymentMethod:
                     return new UnknownPaymentMethodException();
-                case ErrorCode.PoolIncompatibleProtocolVersionError:
-                    return new PoolIncompatibleProtocolVersionException();
+
                 default:
                     var message = $"An unmapped error with the code '{sdkErrorCode}' was returned by the SDK.";
                     return new IndyException(message, sdkErrorCode);
