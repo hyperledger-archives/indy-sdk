@@ -9,6 +9,7 @@ use utils::sequence::SequenceUtils;
 use utils::ctypes;
 use utils::crypto::base64;
 use postgres_storage::storage::{WalletStorage, WalletStorageType, StorageRecord, Tag, TagName, EncryptedValue};
+use postgres_storage::language;
 use indy::errors::wallet::WalletStorageError;
 
 use self::libc::c_char;
@@ -18,12 +19,6 @@ use std::ffi::CString;
 use std::sync::Mutex;
 use std::str;
 
-
-// TODO replaced by PostgresStorage
-#[derive(Debug)]
-struct InmemWalletContext {
-    id: String
-}
 
 struct PostgresStorageContext {
     xhandle: i32,        // reference returned to client to track open wallet connection
@@ -42,7 +37,7 @@ struct PostgresWalletRecord {
 }
 
 lazy_static! {
-    // store a PostgresStorage object (contains a connection) instead of an InmemWalletContext
+    // store a PostgresStorage object (contains a connection) 
     static ref POSTGRES_OPEN_WALLETS: Mutex<HashMap<i32, PostgresStorageContext>> = Default::default();
 }
 
@@ -244,8 +239,11 @@ impl PostgresWallet {
                 unsafe { *handle = record_handle };
                 ErrorCode::Success
             },
-            Err(_err) => {
-                ErrorCode::WalletStorageError
+            Err(err) => {
+                match err {
+                    WalletStorageError::ItemNotFound => ErrorCode::WalletItemNotFound,
+                    _ => ErrorCode::WalletStorageError
+                }
             }
         }
     }
@@ -577,21 +575,36 @@ impl PostgresWallet {
     }
 
 #[no_mangle]
-    pub extern "C" fn postgreswallet_fn_search_records(xhandle: i32, type_: *const c_char, _query_json: *const c_char, _options_json: *const c_char, handle: *mut i32) -> ErrorCode {
-        unimplemented!();
+    pub extern "C" fn postgreswallet_fn_search_records(xhandle: i32, type_: *const c_char, query_json: *const c_char, options_json: *const c_char, handle: *mut i32) -> ErrorCode {
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(query_json, ErrorCode::CommonInvalidStructure);
+        check_useful_c_str!(options_json, ErrorCode::CommonInvalidStructure);
 
-        // TODO start
-        // TODO PostgresStorage::search(options) from handle
         let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
         }
 
+        let query = language::parse_from_json(&query_json).unwrap();
+
         let wallet_context = handles.get(&xhandle).unwrap();
         let wallet_box = &wallet_context.phandle;
         let storage = &*wallet_box;
+
+        let res = storage.search(&type_.as_bytes(), &query, Some(&options_json));
+        
+        match res {
+            Ok(iter) => {
+                // iter: Box<StorageIterator>
+                return ErrorCode::Success
+            },
+            Err(err) => {
+                // err: WalletStorageError
+                return ErrorCode::WalletStorageError
+            }
+        }
+
 /*
         let search_records = wallet.records
             .iter()
@@ -1231,7 +1244,7 @@ mod tests {
                                 id1.as_ptr(),
                                 get_options.as_ptr() as *const i8,
                                 &mut rec_handle);
-        assert_match!(ErrorCode::WalletStorageError, err);
+        assert_match!(ErrorCode::WalletItemNotFound, err);
 
         _close_and_delete_wallet(handle);
     }

@@ -162,7 +162,6 @@ impl string::ToString for Operator {
     }
 }
 
-#[allow(dead_code)]
 pub fn parse_from_json(json: &str) -> Result<Operator, WalletQueryError> {
     if let serde_json::Value::Object(map) = serde_json::from_str(json)? {
         parse(map)
@@ -171,8 +170,6 @@ pub fn parse_from_json(json: &str) -> Result<Operator, WalletQueryError> {
     }
 }
 
-
-#[allow(dead_code)]
 fn parse(map: serde_json::Map<String, serde_json::Value>) -> Result<Operator, WalletQueryError> {
     let mut operators: Vec<Operator> = Vec::new();
 
@@ -185,8 +182,6 @@ fn parse(map: serde_json::Map<String, serde_json::Value>) -> Result<Operator, Wa
     Ok(top_operator.optimise())
 }
 
-
-#[allow(dead_code)]
 fn parse_operator(key: String, value: serde_json::Value) -> Result<Operator, WalletQueryError> {
     match (&*key, value) {
         ("$and", serde_json::Value::Array(values)) => {
@@ -237,7 +232,6 @@ fn parse_operator(key: String, value: serde_json::Value) -> Result<Operator, Wal
     }
 }
 
-#[allow(dead_code)]
 fn parse_single_operator(operator_name: String, key: String, value: serde_json::Value) -> Result<Operator, WalletQueryError> {
     match (&*operator_name, value) {
         ("$neq", serde_json::Value::String(s)) => Ok(Operator::Neq(TagName::from(key)?, TargetValue::from(s))),

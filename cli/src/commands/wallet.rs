@@ -297,6 +297,7 @@ pub mod delete_command {
                                     argon2m - derive secured wallet key (used by default)
                                     argon2i - derive secured wallet key (less secured but faster)
                                     raw - raw key provided (skip derivation)")
+                .add_optional_param("storage_credentials", "The list of key:value pairs defined by storage type.")
                 .add_example("wallet delete wallet1 key")
                 .finalize()
     );
@@ -307,11 +308,27 @@ pub mod delete_command {
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
         let key_derivation_method = get_opt_str_param("key_derivation_method", params).map_err(error_err!())?;
+        let storage_credentials = get_opt_object_param("storage_credentials", params).map_err(error_err!())?;
 
         let config = _read_wallet_config(id)
             .map_err(|_| println_err!("Wallet \"{}\" isn't attached to CLI", id))?;
 
-        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)? }).to_string();
+        let credentials = {
+            let mut json = JSONMap::new();
+
+            json.insert("key".to_string(), serde_json::Value::String(key.to_string()));
+            json.insert("key_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(key_derivation_method)?.to_string()));
+
+            match storage_credentials {
+                Some(creds) => {
+                    json.insert("storage_credentials".to_string(), creds);
+                    ()
+                },
+                _ => ()
+            }
+
+            JSONValue::from(json).to_string()
+        };
 
         let res = match Wallet::delete_wallet(config.as_str(), credentials.as_str()) {
             Ok(()) => {
