@@ -1,10 +1,11 @@
-use super::IndyError;
 use futures::*;
 use futures::sync::oneshot;
-use utils::sequence;
 use std::collections::HashMap;
 use std::os::raw::c_char;
 use std::sync::Mutex;
+use super::IndyError;
+use utils::futures::*;
+use utils::sequence;
 
 pub fn create_wallet(config: &str, credentials: &str) -> Box<Future<Item=(), Error=IndyError>> {
     lazy_static! {
@@ -12,8 +13,10 @@ pub fn create_wallet(config: &str, credentials: &str) -> Box<Future<Item=(), Err
     }
 
     extern fn callback(command_handle: i32, err: i32) {
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        let tx = callbacks.remove(&command_handle).unwrap();
+        let tx = {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            callbacks.remove(&command_handle).unwrap()
+        };
 
         let res = if err != 0 {
             Err(IndyError::from_err_code(err))
@@ -24,26 +27,30 @@ pub fn create_wallet(config: &str, credentials: &str) -> Box<Future<Item=(), Err
         tx.send(res).unwrap();
     }
 
-    let config = c_str!(config);
-    let credentials = c_str!(credentials);
-
-    let (tx, rx) = oneshot::channel();
-    let mut callbacks = CALLBACKS.lock().unwrap();
-    let command_handle = sequence::get_next_id();
-    callbacks.insert(command_handle, tx);
+    let (rx, command_handle) = {
+        let (tx, rx) = oneshot::channel();
+        let command_handle = sequence::get_next_id();
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        callbacks.insert(command_handle, tx);
+        (rx, command_handle)
+    };
 
     let err = unsafe {
-        indy_create_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), Some(callback))
+        indy_create_wallet(command_handle,
+                           c_str!(config).as_ptr(),
+                           c_str!(credentials).as_ptr(),
+                           Some(callback))
     };
 
     if err != 0 {
         let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.remove(&0).unwrap();
-        Box::new(done(Err(IndyError::from_err_code(err))))
+        callbacks.remove(&command_handle).unwrap();
+        future::err(IndyError::from_err_code(err)).into_box()
     } else {
-        Box::new(rx
+        rx
             .map_err(|_| panic!("channel error!"))
-            .and_then(|res| done(res)))
+            .and_then(|res| res)
+            .into_box()
     }
 }
 
@@ -53,8 +60,10 @@ pub fn open_wallet(config: &str, credentials: &str) -> Box<Future<Item=i32, Erro
     }
 
     extern fn callback(command_handle: i32, err: i32, wallet_handle: i32) {
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        let tx = callbacks.remove(&command_handle).unwrap();
+        let tx = {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            callbacks.remove(&command_handle).unwrap()
+        };
 
         let res = if err != 0 {
             Err(IndyError::from_err_code(err))
@@ -65,26 +74,27 @@ pub fn open_wallet(config: &str, credentials: &str) -> Box<Future<Item=i32, Erro
         tx.send(res).unwrap();
     }
 
-    let config = c_str!(config);
-    let credentials = c_str!(credentials);
-
-    let (tx, rx) = oneshot::channel();
-    let mut callbacks = CALLBACKS.lock().unwrap();
-    let command_handle = sequence::get_next_id();
-    callbacks.insert(command_handle, tx);
+    let (rx, command_handle) = {
+        let (tx, rx) = oneshot::channel();
+        let command_handle = sequence::get_next_id();
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        callbacks.insert(command_handle, tx);
+        (rx, command_handle)
+    };
 
     let err = unsafe {
-        indy_open_wallet(command_handle, config.as_ptr(), credentials.as_ptr(), Some(callback))
+        indy_open_wallet(command_handle, c_str!(config).as_ptr(), c_str!(credentials).as_ptr(), Some(callback))
     };
 
     if err != 0 {
         let mut callbacks = CALLBACKS.lock().unwrap();
-        callbacks.remove(&0).unwrap();
-        Box::new(done(Err(IndyError::from_err_code(err))))
+        callbacks.remove(&command_handle).unwrap();
+        future::err(IndyError::from_err_code(err)).into_box()
     } else {
-        Box::new(rx
+        rx
             .map_err(|_| panic!("channel error!"))
-            .and_then(|res| done(res)))
+            .and_then(|res| res)
+            .into_box()
     }
 }
 

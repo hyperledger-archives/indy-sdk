@@ -1,6 +1,7 @@
 use actix::prelude::*;
-use actix_web::*;//{AsyncResponder, FutureResponse, HttpMessage, HttpRequest, HttpResponse, State, Error};
-use actors::forward_agent::{ForwardAgent, GetEndpointDetails, ForwardMessage};
+use actix_web::*;
+use actors::forward_agent::{ForwardAgent, ForwardMessage, GetEndpointDetails};
+use bytes::Bytes;
 use domain::config::AppConfig;
 use futures::*;
 
@@ -12,8 +13,8 @@ pub fn new(config: AppConfig, forward_agent: Addr<ForwardAgent>) -> App<AppState
     App::with_state(AppState { forward_agent })
         .prefix(config.prefix.as_ref())
         .middleware(middleware::Logger::default()) // enable logger
-        .resource("/", |r| r.method(http::Method::GET).with(_get_endpoint_details))
-        .resource("/msg", |r| r.method(http::Method::GET).with(_forward_message))
+        .resource("", |r| r.method(http::Method::GET).with(_get_endpoint_details))
+        .resource("/msg", |r| r.method(http::Method::POST).with(_forward_message))
 }
 
 fn _get_endpoint_details(state: State<AppState>) -> FutureResponse<HttpResponse> {
@@ -36,7 +37,7 @@ fn _forward_message((state, req): (State<AppState>, HttpRequest<AppState>)) -> F
                 .send(ForwardMessage(body.to_vec()))
                 .from_err()
                 .and_then(|res| match res {
-                    Ok(msg) => Ok(HttpResponse::Ok().json(msg)),
+                    Ok(msg) => Ok(Bytes::from(msg.0).into()),
                     Err(_) => Ok(HttpResponse::InternalServerError().into()),
                 })
         })
