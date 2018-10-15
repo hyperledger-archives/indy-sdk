@@ -130,17 +130,32 @@ def macosTesting() {
                 echo "MacOS Test: Checkout scm"
                 checkout scm
 
+                echo "MacOS Test: Running pool"
+                sh "docker rm -f indy_pool || true"
+                sh "docker build -f ci/indy-pool.dockerfile -t indy_pool ci"
+                sh "docker run -d --name indy_pool -p 9701-9708:9701-9708 indy_pool"
+
                 dir('libindy') {
                     echo "MacOS Test: Build"
                     setupRust()
                     setupBrewPackages()
                     sh "cargo build --features fatal_warnings"
+                    echo "MacOS Test: Build tests"
                     sh "cargo test --no-run"
-                    // TODO testing
+                    echo "MacOS Test: Run tests"
+                    sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 cargo test"
                 }
 
                 //TODO wrappers testing
             } finally {
+                try {
+                    sh "docker stop indy_pool"
+                } catch (ignore) {
+                }
+                try {
+                    sh "docker rm indy_pool"
+                } catch (ignore) {
+                }
                 step([$class: 'WsCleanup'])
             }
         }
