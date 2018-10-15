@@ -12,7 +12,9 @@ pub struct Bundle {
 pub enum Message {
     Forward(Forward),
     Connect(Connect),
-    Connected(Connected)
+    Connected(Connected),
+    CreateKey(CreateKey),
+    KeyCreated(KeyCreated)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -39,6 +41,22 @@ pub struct Connected {
     pub with_pairwise_did_verkey: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateKey {
+    #[serde(rename = "fromDID")]
+    pub from_did: String,
+    #[serde(rename = "fromDIDVerKey")]
+    pub from_did_verkey: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct KeyCreated {
+    #[serde(rename = "withPairwiseDID")]
+    pub with_pairwise_did: String,
+    #[serde(rename = "withPairwiseDIDVerKey")]
+    pub with_pairwise_did_verkey: String,
+}
+
 impl<'de> Deserialize<'de> for Message {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
@@ -54,13 +72,22 @@ impl<'de> Deserialize<'de> for Message {
                     .map(|msg| Message::Connected(msg))
                     .map_err(de::Error::custom)
             }
+            (Some("CREATE_KEY"), Some("1.0")) => {
+                CreateKey::deserialize(value)
+                    .map(|msg| Message::CreateKey(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("KEY_CREATED"), Some("1.0")) => {
+                KeyCreated::deserialize(value)
+                    .map(|msg| Message::KeyCreated(msg))
+                    .map_err(de::Error::custom)
+            }
             (Some("FWD"), Some("1.0")) => {
                 Forward::deserialize(value)
                     .map(|msg| Message::Forward(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
-
         }
     }
 }
@@ -83,9 +110,19 @@ impl Serialize for Message {
                 value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "FWD", "ver": "1.0"}));
                 value
             }
+            Message::CreateKey(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CREATE_KEY", "ver": "1.0"}));
+                value
+            }
+            Message::KeyCreated(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "KEY_CREATED", "ver": "1.0"}));
+                value
+            }
         };
 
-       value.serialize(serializer)
+        value.serialize(serializer)
     }
 }
 
