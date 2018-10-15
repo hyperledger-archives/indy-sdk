@@ -819,7 +819,7 @@ fn _tags_from_json(json: &str) -> Result<Vec<Tag>, WalletStorageError> {
     Ok(tags)
 }
 
-fn _tags_names_to_json(tag_names: &[TagName]) -> Result<String, WalletStorageError> {
+fn _tag_names_to_json(tag_names: &[TagName]) -> Result<String, WalletStorageError> {
     let mut tags: Vec<String> = Vec::new();
 
     for tag_name in tag_names {
@@ -1236,6 +1236,80 @@ mod tests {
         _close_and_delete_wallet(handle);
     }
 
+    #[test]
+    fn postgres_wallet_delete_tags_works() {
+        _cleanup();
+
+        let handle = _create_and_open_wallet();
+
+        let type1_  = _type1();
+        let id1     = _id1();
+        let value1_ = _value1();
+        let tags1_  = _tags();
+
+        let id1_    = _id_bytes1();
+        let joined_value1 = value1_.to_bytes();
+        let tags1  = _tags_json(&tags1_);
+
+        // add record to the wallet
+        let err = PostgresWallet::postgreswallet_fn_add_record(handle,
+                                type1_.as_ptr(),
+                                id1.as_ptr(),
+                                joined_value1.as_ptr(),
+                                joined_value1.len(),
+                                tags1.as_ptr());
+        assert_match!(ErrorCode::Success, err);
+
+        // fetch the record
+        let mut rec_handle: i32 = -1;
+        let get_options = _fetch_options(true, true, true);
+        let err = PostgresWallet::postgreswallet_fn_get_record(handle,
+                                type1_.as_ptr(),
+                                id1.as_ptr(),
+                                get_options.as_ptr() as *const i8,
+                                &mut rec_handle);
+        assert_match!(ErrorCode::Success, err);
+
+        let err = PostgresWallet::postgreswallet_fn_free_record(handle,
+                                rec_handle);
+
+        // delete tags
+        let tag_names = _tag_names_to_delete();
+        let tag_names = _tag_names_json(&tag_names);
+        let err = PostgresWallet::postgreswallet_fn_delete_record_tags(handle,
+                                type1_.as_ptr(),
+                                id1.as_ptr(),
+                                tag_names.as_ptr());
+        assert_match!(ErrorCode::Success, err);
+
+        // fetch the record
+        let mut rec_handle: i32 = -1;
+        let get_options = _fetch_options(true, true, true);
+        let err = PostgresWallet::postgreswallet_fn_get_record(handle,
+                                type1_.as_ptr(),
+                                id1.as_ptr(),
+                                get_options.as_ptr() as *const i8,
+                                &mut rec_handle);
+        assert_match!(ErrorCode::Success, err);
+
+        let mut tags_ptr: *const c_char = ptr::null_mut();
+        let err = PostgresWallet::postgreswallet_fn_get_record_tags(handle,
+                                rec_handle,
+                                &mut tags_ptr);
+        assert_match!(ErrorCode::Success, err);
+        let tags_json = unsafe { CStr::from_ptr(tags_ptr).to_str().unwrap() };
+        let _tags = _tags_from_json(tags_json).unwrap();
+        let _tags = _sort_tags(_tags);
+        let tags2_  = _tags_removed();
+        let tags2_ = _sort_tags(tags2_);
+        assert_eq!(_tags, tags2_);
+
+        let err = PostgresWallet::postgreswallet_fn_free_record(handle,
+                                rec_handle);
+
+        _close_and_delete_wallet(handle);
+    }
+
     fn _create_and_open_wallet() -> i32 {
         let id = _wallet_id();
         let config = _wallet_config();
@@ -1396,6 +1470,24 @@ mod tests {
         tags.push(Tag::Encrypted(vec![2, 5, 8], vec![3, 5, 7]));
         tags.push(Tag::PlainText(vec![2, 5, 8, 1], "Plain value 2".to_string()));
         tags
+    }
+
+    fn _tags_removed() -> Vec<Tag> {
+        let mut tags: Vec<Tag> = Vec::new();
+        tags.push(Tag::Encrypted(vec![2, 5, 8], vec![3, 5, 7]));
+        tags.push(Tag::PlainText(vec![2, 5, 8, 1], "Plain value 2".to_string()));
+        tags
+    }
+
+    fn _tag_names_to_delete() -> Vec<TagName> {
+        vec![
+            TagName::OfEncrypted(vec![1, 5, 8]),
+            TagName::OfPlain(vec![1, 5, 8, 1])
+        ]
+    }
+
+    fn _tag_names_json(tag_names_: &Vec<TagName>) -> CString {
+        CString::new(_tag_names_to_json(tag_names_).unwrap()).unwrap()
     }
 
     fn _tags_json(tags_: &Vec<Tag>) -> CString {
