@@ -5,7 +5,7 @@ extern crate r2d2_postgres;
 
 mod query;
 mod transaction;
-mod language;
+pub mod language;
 pub mod storage;
 
 use postgres;
