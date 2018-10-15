@@ -5,11 +5,13 @@ from vcx.api.connection import Connection
 
 
 @pytest.mark.asyncio
-async def test_vcx_init(vcx_init_test_mode):
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_vcx_init():
     pass
 
 @pytest.mark.asyncio
-async def test_vcx_init_with_config(vcx_init_test_mode):
+@pytest.mark.usefixtures('vcx_init_test_mode')
+async def test_vcx_init_with_config():
     pass
 
 @pytest.mark.asyncio

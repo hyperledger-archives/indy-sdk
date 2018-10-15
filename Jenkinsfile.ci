@@ -344,9 +344,9 @@ def linuxTesting(file, env_name, network_name) {
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
         stash includes: 'vcx/libvcx/libindy.so', name: "LibindyVCXSO${env_name}"
         stash includes: 'vcx/libvcx/libnullpay.so', name: "LibnullpayVCXSO${env_name}"
-        stash includes: 'vcx/wrappers/python3/libindy.so', name: "LibindyVcxPythonSO${env_name}"
-        stash includes: 'vcx/wrappers/python3/libnullpay.so', name: "LibnullpayVcxPythonSO${env_name}"
-        stash includes: 'vcx/wrappers/python3/libvcx.so', name: "LibvcxPythonSO${env_name}"
+        stash includes: 'vcx/wrappers/python3/libindy.so,' +
+                'vcx/wrappers/python3/libnullpay.so,' +
+                'vcx/wrappers/python3/libvcx.so', name: "LibvcxPythonDependencies${env_name}"
 
         parallel([
                 "${env_name}-libindy-test"   : {
@@ -484,9 +484,7 @@ def linuxVCXTesting(env_name, network_name, testEnv) {
 }
 
 def linuxVcxPythonTesting(env_name, network_name, testEnv) {
-    unstash name: "LibindyVcxPythonSO${env_name}"
-    unstash name: "LibvcxPythonSO${env_name}"
-    unstash name: "LibnullpayVcxPythonSO${env_name}"
+    unstash name: "LibvcxPythonDependencies${env_name}"
 
     dir('vcx/wrappers/python3') {
         testEnv.inside("--network=${network_name}") {
@@ -494,7 +492,7 @@ def linuxVcxPythonTesting(env_name, network_name, testEnv) {
 
             sh '''
                     python3.5 -m pip install --user pytest==3.4.2 qrcode pytest-asyncio
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} TEST_POOL_IP=10.0.0.2  python3.5 -m pytest
             '''
         }
     }

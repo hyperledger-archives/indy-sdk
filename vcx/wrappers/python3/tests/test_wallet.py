@@ -74,6 +74,7 @@ async def test_wallet_storage():
     assert (json.loads(await Wallet.get_record(TYPE, ID, OPTIONS)) == record)
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_wallet_search():
     search_handle = await Wallet.open_search(TYPE, QUERY_JSON, None)
     assert (search_handle == 1)
@@ -85,6 +86,7 @@ async def test_wallet_search():
         await Wallet.export("/tmp/output.wallet", "backupKey")
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_import_wallet_failures():
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet('Invalid Json')
