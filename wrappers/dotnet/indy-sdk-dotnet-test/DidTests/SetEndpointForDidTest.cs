@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Test.SignusTests
+namespace Hyperledger.Indy.Test.DidTests
 {
     [TestClass]
     public class SetEndpointForDidTest : IndyIntegrationTestWithPoolAndSingleWallet
@@ -10,20 +10,20 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestSetEndpointForDidWorks()
         {
-            await Did.SetEndpointForDidAsync(wallet, DID1, ENDPOINT, VERKEY);
+            await Did.SetEndpointForDidAsync(wallet, DID, ENDPOINT, VERKEY);
         }
 
         [TestMethod]
         public async Task TestSetEndpointForDidWorksForReplace()
         {
-            await Did.SetEndpointForDidAsync(wallet, DID1, ENDPOINT, VERKEY);
-            var receivedEndpoint = await Did.GetEndpointForDidAsync(wallet, pool, DID1);
+            await Did.SetEndpointForDidAsync(wallet, DID, ENDPOINT, VERKEY);
+            var receivedEndpoint = await Did.GetEndpointForDidAsync(wallet, pool, DID);
             Assert.AreEqual(ENDPOINT, receivedEndpoint.Address);
             Assert.AreEqual(VERKEY, receivedEndpoint.TransportKey);
 
             var newEndpoint = "10.10.10.1:9710";
-            await Did.SetEndpointForDidAsync(wallet, DID1, newEndpoint, VERKEY_MY2);
-            var updatedEndpoint = await Did.GetEndpointForDidAsync(wallet, pool, DID1);
+            await Did.SetEndpointForDidAsync(wallet, DID, newEndpoint, VERKEY_MY2);
+            var updatedEndpoint = await Did.GetEndpointForDidAsync(wallet, pool, DID);
 
             Assert.AreEqual(newEndpoint, updatedEndpoint.Address);
             Assert.AreEqual(VERKEY_MY2, updatedEndpoint.TransportKey);
@@ -41,7 +41,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         public async Task TestSetEndpointForDidWorksForInvalidTransportKey()
         {
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-               Did.SetEndpointForDidAsync(wallet, DID1, ENDPOINT, INVALID_VERKEY)
+               Did.SetEndpointForDidAsync(wallet, DID, ENDPOINT, INVALID_VERKEY)
            );
         }
     }
