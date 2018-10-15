@@ -1,19 +1,5 @@
 use futures::Future;
 
-/// This is the equivalent `try!` adapted to deal with futures.
-#[macro_export]
-macro_rules! fry {
-    ($res:expr) => {
-        match $res {
-            Ok(elt) => elt,
-            Err(e) => {
-                use $crate::utils::FutureExt;
-                return ::futures::future::err(From::from(e)).into_box();
-            }
-        }
-    };
-}
-
 /// This is the equivalent of `Result::Ok()` adapted to deal with futures.
 #[macro_export]
 macro_rules! ok {
@@ -32,10 +18,12 @@ macro_rules! err {
     }};
 }
 
+pub type BoxedFuture<I, E> = Box<Future<Item = I, Error = E>>;
+
 pub trait FutureExt: Future + Sized {
     /// Box this future. Similar to `boxed` combinator, but does not require
     /// the future to implement `Send`.
-    fn into_box(self) -> Box<Future<Item = Self::Item, Error = Self::Error>>;
+    fn into_box(self) -> BoxedFuture<Self::Item, Self::Error>;
 }
 
 impl<F: Future + 'static> FutureExt for F {

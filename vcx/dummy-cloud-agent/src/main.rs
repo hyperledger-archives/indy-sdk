@@ -3,6 +3,7 @@
 
 extern crate actix;
 extern crate actix_web;
+extern crate bytes;
 #[macro_use]
 extern crate failure;
 extern crate futures;
@@ -21,7 +22,7 @@ extern crate serde_json;
 extern crate tokio_core;
 
 use actix::prelude::*;
-use actors::forward_agent;
+use actors::forward_agent::ForwardAgent;
 use domain::config::Config;
 use failure::*;
 use futures::*;
@@ -75,7 +76,7 @@ fn _start(config_path: &str) {
     Arbiter::spawn_fn(|| {
         info!("Starting Forward Agent with config: {:?}", forward_agent_config);
 
-        forward_agent::start(forward_agent_config)
+        ForwardAgent::start(forward_agent_config)
             .map(move |forward_agent| {
                 info!("Forward Agent started");
                 info!("Starting Server with config: {:?}", server_config);

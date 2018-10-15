@@ -1,57 +1,91 @@
-use serde::{Deserialize, Deserializer};
-use serde::de;
-use serde_json::Value;
+use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
+use serde_json::{self, Value};
 
-#[derive(Deserialize, Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Bundle {
-    bundled: Vec<u8>,
+    pub bundled: Vec<Vec<u8>>,
 }
 
+// TODO: For simplification we avoid complex versioning logic
+// TODO: There should be additional enum level for versions
 #[derive(Debug)]
-pub enum AgentMsg {
-    Forward(ForwardMsg),
-    Connect(ConnectMsg),
+pub enum Message {
+    Forward(Forward),
+    Connect(Connect),
+    Connected(Connected)
 }
 
-#[derive(Debug)]
-pub enum ForwardMsg {
-    V1(ForwardV1Msg)
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ForwardV1Msg {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Forward {
     #[serde(rename = "@fwd")]
     pub fwd: String,
     #[serde(rename = "@msg")]
     pub msg: Vec<u8>,
 }
 
-#[derive(Debug)]
-pub enum ConnectMsg {
-    V1(ConnectV1Msg)
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ConnectV1Msg {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Connect {
     #[serde(rename = "fromDID")]
     pub from_did: String,
     #[serde(rename = "fromDIDVerKey")]
     pub from_did_verkey: String,
 }
 
-impl<'de> Deserialize<'de> for AgentMsg {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Connected {
+    #[serde(rename = "withPairwiseDID")]
+    pub with_pairwise_did: String,
+    #[serde(rename = "withPairwiseDIDVerKey")]
+    pub with_pairwise_did_verkey: String,
+}
+
+impl<'de> Deserialize<'de> for Message {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
 
         match (value["@type"]["name"].as_str(), value["@type"]["ver"].as_str()) {
-            (Some("FWD"), Some("1.0")) => ForwardV1Msg::deserialize(value)
-                .map(|msg| AgentMsg::Forward(ForwardMsg::V1(msg)))
-                .map_err(de::Error::custom),
-            (Some("CONNECT"), Some("1.0")) => ConnectV1Msg::deserialize(value)
-                .map(|msg| AgentMsg::Connect(ConnectMsg::V1(msg)))
-                .map_err(de::Error::custom),
+            (Some("CONNECT"), Some("1.0")) => {
+                Connect::deserialize(value)
+                    .map(|msg| Message::Connect(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("CONNECTED"), Some("1.0")) => {
+                Connected::deserialize(value)
+                    .map(|msg| Message::Connected(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("FWD"), Some("1.0")) => {
+                Forward::deserialize(value)
+                    .map(|msg| Message::Forward(msg))
+                    .map_err(de::Error::custom)
+            }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
+
         }
+    }
+}
+
+impl Serialize for Message {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+        let value = match self {
+            Message::Connect(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONNECT", "ver": "1.0"}));
+                value
+            }
+            Message::Connected(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONNECTED", "ver": "1.0"}));
+                value
+            }
+            Message::Forward(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "FWD", "ver": "1.0"}));
+                value
+            }
+        };
+
+       value.serialize(serializer)
     }
 }
 
