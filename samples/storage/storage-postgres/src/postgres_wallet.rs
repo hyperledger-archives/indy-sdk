@@ -17,7 +17,6 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Mutex;
 use std::str;
-use std::ptr;
 
 
 // TODO replaced by PostgresStorage
@@ -210,36 +209,33 @@ impl PostgresWallet {
                                           id: *const c_char,
                                           joined_value: *const u8,
                                           joined_value_len: usize) -> ErrorCode {
-        unimplemented!();
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
         check_useful_c_byte_array!(joined_value, joined_value_len, ErrorCode::CommonInvalidStructure, ErrorCode::CommonInvalidStructure);
 
-        // TODO start update record value
-        // TODO PostgresStorage::update() from the handle
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
         }
 
+        let value = EncryptedValue::from_bytes(&joined_value).unwrap();
+
         let wallet_context = handles.get(&xhandle).unwrap();
+        let wallet_box = &wallet_context.phandle;
+        let storage = &*wallet_box;
 
-        let mut wallets = INMEM_WALLETS.lock().unwrap();
+        let res = storage.update(&type_.as_bytes(), &id.as_bytes(), &value);
 
-        if !wallets.contains_key(&wallet_context.id) {
-            return ErrorCode::CommonInvalidState;
+        match res {
+            Ok(_) => ErrorCode::Success,
+            Err(err) => {
+                match err {
+                    WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
+                    _ => ErrorCode::WalletStorageError
+                }
+            }
         }
-
-        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
-
-        match wallet.records.get_mut(&PostgresWallet::build_record_id(&type_, &id)) {
-            Some(ref mut record) => record.value = joined_value,
-            None => return ErrorCode::WalletItemNotFound
-        }
-
-        ErrorCode::Success
-        // TODO end
     }
 
 #[no_mangle]
@@ -400,29 +396,34 @@ impl PostgresWallet {
                                       type_: *const c_char,
                                       id: *const c_char,
                                       tags_json: *const c_char) -> ErrorCode {
-        unimplemented!();
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(tags_json, ErrorCode::CommonInvalidStructure);
 
-        // TODO start add record tags
-        // TODO PostgresStorage::add_tags() from handle
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
         }
 
+        let tags = _tags_from_json(&tags_json).unwrap();
+
         let wallet_context = handles.get(&xhandle).unwrap();
+        let wallet_box = &wallet_context.phandle;
+        let storage = &*wallet_box;
 
-        let mut wallets = INMEM_WALLETS.lock().unwrap();
+        let res = storage.add_tags(&type_.as_bytes(), &id.as_bytes(), &tags);
 
-        if !wallets.contains_key(&wallet_context.id) {
-            return ErrorCode::CommonInvalidState;
+        match res {
+            Ok(_) => ErrorCode::Success,
+            Err(err) => {
+                match err {
+                    WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
+                    _ => ErrorCode::WalletStorageError
+                }
+            }
         }
-
-        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
-
+/*
         match wallet.records.get_mut(&PostgresWallet::build_record_id(&type_, &id)) {
             Some(ref mut record) => {
                 let curr_tags_json =record.tags.to_str().unwrap().to_string() ;
@@ -446,6 +447,7 @@ impl PostgresWallet {
 
         ErrorCode::Success
         // TODO end
+*/
     }
 
 #[no_mangle]
@@ -453,29 +455,34 @@ impl PostgresWallet {
                                          type_: *const c_char,
                                          id: *const c_char,
                                          tags_json: *const c_char) -> ErrorCode {
-        unimplemented!();
         check_useful_c_str!(type_, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(id, ErrorCode::CommonInvalidStructure);
         check_useful_c_str!(tags_json, ErrorCode::CommonInvalidStructure);
 
-        // TODO update tags
-        // TODO PostgresStorage::update_tags() from handle
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
         }
 
+        let tags = _tags_from_json(&tags_json).unwrap();
+
         let wallet_context = handles.get(&xhandle).unwrap();
+        let wallet_box = &wallet_context.phandle;
+        let storage = &*wallet_box;
 
-        let mut wallets = INMEM_WALLETS.lock().unwrap();
+        let res = storage.update_tags(&type_.as_bytes(), &id.as_bytes(), &tags);
 
-        if !wallets.contains_key(&wallet_context.id) {
-            return ErrorCode::CommonInvalidState;
+        match res {
+            Ok(_) => ErrorCode::Success,
+            Err(err) => {
+                match err {
+                    WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
+                    _ => ErrorCode::WalletStorageError
+                }
+            }
         }
-
-        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
-
+/*
         match wallet.records.get_mut(&PostgresWallet::build_record_id(&type_, &id)) {
             Some(ref mut record) => record.tags = CString::new(tags_json).unwrap(),
             None => return ErrorCode::WalletItemNotFound
@@ -483,6 +490,7 @@ impl PostgresWallet {
 
         ErrorCode::Success
         // TODO end
+*/
     }
 
 #[no_mangle]
@@ -497,22 +505,16 @@ impl PostgresWallet {
 
         // TODO delete tags
         // TODO PostgresStorage::delete_tags() from handle
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
         }
 
         let wallet_context = handles.get(&xhandle).unwrap();
-
-        let mut wallets = INMEM_WALLETS.lock().unwrap();
-
-        if !wallets.contains_key(&wallet_context.id) {
-            return ErrorCode::CommonInvalidState;
-        }
-
-        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
-
+        let wallet_box = &wallet_context.phandle;
+        let storage = &*wallet_box;
+/*
         match wallet.records.get_mut(&PostgresWallet::build_record_id(&type_, &id)) {
             Some(ref mut record) => {
                 let curr_tags_json = record.tags.to_str().unwrap().to_string() ;
@@ -535,7 +537,7 @@ impl PostgresWallet {
             }
             None => return ErrorCode::WalletItemNotFound
         }
-
+*/
         ErrorCode::Success
         // END TODO
     }
@@ -550,22 +552,16 @@ impl PostgresWallet {
 
         // TODO delete record
         // TODO PostgresStorage::delete() from handle
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
         }
 
         let wallet_context = handles.get(&xhandle).unwrap();
-
-        let mut wallets = INMEM_WALLETS.lock().unwrap();
-
-        if !wallets.contains_key(&wallet_context.id) {
-            return ErrorCode::CommonInvalidState;
-        }
-
-        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
-
+        let wallet_box = &wallet_context.phandle;
+        let storage = &*wallet_box;
+/*
         let key = PostgresWallet::build_record_id(&type_, &id);
 
         if !wallet.records.contains_key(&key) {
@@ -573,7 +569,7 @@ impl PostgresWallet {
         }
 
         wallet.records.remove(&key);
-
+*/
         ErrorCode::Success
         // END TODO
     }
@@ -616,31 +612,29 @@ impl PostgresWallet {
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_set_storage_metadata(xhandle: i32, metadata: *const c_char) -> ErrorCode {
-        unimplemented!();
         check_useful_c_str!(metadata, ErrorCode::CommonInvalidStructure);
 
-        // TODO set metadata
-        // TODO PostgresStorage::set_storage_metadata() from handle
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
         }
 
         let wallet_context = handles.get(&xhandle).unwrap();
+        let wallet_box = &wallet_context.phandle;
+        let storage = &*wallet_box;
 
-        let mut wallets = INMEM_WALLETS.lock().unwrap();
+        let res = storage.set_storage_metadata(&metadata.as_bytes());
 
-        if !wallets.contains_key(&wallet_context.id) {
-            return ErrorCode::CommonInvalidState;
+        match res {
+            Ok(_) => ErrorCode::Success,
+            Err(err) => {
+                match err {
+                    WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
+                    _ => ErrorCode::WalletStorageError
+                }
+            }
         }
-
-        let wallet = wallets.get_mut(&wallet_context.id).unwrap();
-
-        wallet.metadata = CString::new(metadata).unwrap();
-
-        ErrorCode::Success
-        // TODO end
     }
 
 #[no_mangle]
@@ -668,22 +662,16 @@ impl PostgresWallet {
 
         // TODO start
         // TODO PostgresStorage::search(options) from handle
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
         }
 
         let wallet_context = handles.get(&xhandle).unwrap();
-
-        let wallets = INMEM_WALLETS.lock().unwrap();
-
-        if !wallets.contains_key(&wallet_context.id) {
-            return ErrorCode::CommonInvalidState;
-        }
-
-        let wallet = wallets.get(&wallet_context.id).unwrap();
-
+        let wallet_box = &wallet_context.phandle;
+        let storage = &*wallet_box;
+/*
         let search_records = wallet.records
             .iter()
             .filter(|&(key, _)| key.starts_with(&type_))
@@ -697,7 +685,7 @@ impl PostgresWallet {
         searches.insert(search_handle, search_records);
 
         unsafe { *handle = search_handle };
-
+*/
         ErrorCode::Success
         // TODO end
     }
@@ -707,22 +695,16 @@ impl PostgresWallet {
         unimplemented!();
         // TODO start
         // TODO PostgresStorage::get_all(options) from handle
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
         }
 
         let wallet_context = handles.get(&xhandle).unwrap();
-
-        let wallets = INMEM_WALLETS.lock().unwrap();
-
-        if !wallets.contains_key(&wallet_context.id) {
-            return ErrorCode::CommonInvalidState;
-        }
-
-        let wallet = wallets.get(&wallet_context.id).unwrap();
-
+        let wallet_box = &wallet_context.phandle;
+        let storage = &*wallet_box;
+/*
         let search_records = wallet.records
             .values()
             .cloned()
@@ -735,7 +717,7 @@ impl PostgresWallet {
         searches.insert(search_handle, search_records);
 
         unsafe { *handle = search_handle };
-
+*/
         ErrorCode::Success
         // TODO end
     }
@@ -745,7 +727,7 @@ impl PostgresWallet {
         unimplemented!();
         // TODO start
         // TODO PostgresStorage::get_all(options) from handle
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
@@ -769,7 +751,7 @@ impl PostgresWallet {
         unimplemented!();
         // TODO start
         // TODO storage iterator???
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
@@ -803,7 +785,7 @@ impl PostgresWallet {
         unimplemented!();
         // TODO start
         // TODO not sure ???
-        let handles = INMEM_OPEN_WALLETS.lock().unwrap();
+        let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
             return ErrorCode::CommonInvalidState;
@@ -943,7 +925,7 @@ fn _tags_names_to_json(tag_names: &[TagName]) -> Result<String, WalletStorageErr
 mod tests {
     use super::*;
     use std::ffi::{CString, CStr};
-    use std::{slice, str};
+    use std::{slice, str, ptr};
     use postgres_storage::storage::ENCRYPTED_KEY_LEN;
 
     #[test]
@@ -989,6 +971,24 @@ mod tests {
         //assert_eq!(_metadata.to_vec(), metadata);
 
         let err = PostgresWallet::postgreswallet_fn_free_storage_metadata(handle, metadata_handle);
+        assert_eq!(err, ErrorCode::Success);
+
+        // update metadata to some new metadata
+        let metadata2 = _metadata2();
+        let err = PostgresWallet::postgreswallet_fn_set_storage_metadata(handle, metadata2.as_ptr());
+        assert_eq!(err, ErrorCode::Success);
+
+        let mut metadata_handle2: i32 = -1;
+        let mut metadata_ptr2: *const c_char = ptr::null_mut();
+        let err = PostgresWallet::postgreswallet_fn_get_storage_metadata(handle, 
+                                            &mut metadata_ptr2, 
+                                            &mut metadata_handle2);
+        assert_eq!(err, ErrorCode::Success);
+        let _metadata2 = unsafe { CStr::from_ptr(metadata_ptr2).to_bytes() };
+        let _metadata2 = unsafe { &*(_metadata2 as *const [u8] as *const [i8]) };
+        //assert_eq!(_metadata2.to_vec(), metadata2);
+
+        let err = PostgresWallet::postgreswallet_fn_free_storage_metadata(handle, metadata_handle2);
         assert_eq!(err, ErrorCode::Success);
 
         // close wallet
@@ -1146,6 +1146,104 @@ mod tests {
         _close_and_delete_wallet(handle);
     }
 
+    #[test]
+    fn postgres_wallet_update_record_works() {
+        _cleanup();
+
+        let handle = _create_and_open_wallet();
+
+        let type1_  = _type1();
+        let id1     = _id1();
+        let value1_ = _value1();
+        let tags1_  = _tags();
+
+        let id1_    = _id_bytes1();
+        let joined_value1 = value1_.to_bytes();
+        let tags1  = _tags_json(&tags1_);
+
+        // unit test for adding record(s) to the wallet
+        let err = PostgresWallet::postgreswallet_fn_add_record(handle,
+                                type1_.as_ptr(),
+                                id1.as_ptr(),
+                                joined_value1.as_ptr(),
+                                joined_value1.len(),
+                                tags1.as_ptr());
+        assert_match!(ErrorCode::Success, err);
+
+        let value2_ = _value2();
+        let tags2_  = _tags();
+
+        let joined_value2 = value2_.to_bytes();
+        let tags2  = _tags_json(&tags2_);
+
+        // unit test for adding record(s) to the wallet
+        let err = PostgresWallet::postgreswallet_fn_update_record_value(handle,
+                                type1_.as_ptr(),
+                                id1.as_ptr(),
+                                joined_value2.as_ptr(),
+                                joined_value2.len());
+        assert_match!(ErrorCode::Success, err);
+
+        let err = PostgresWallet::postgreswallet_fn_update_record_tags(handle,
+                                type1_.as_ptr(),
+                                id1.as_ptr(),
+                                tags2.as_ptr());
+        assert_match!(ErrorCode::Success, err);
+
+        // fetch the record and verify updates
+        let mut rec_handle: i32 = -1;
+        let get_options = _fetch_options(true, true, true);
+        let err = PostgresWallet::postgreswallet_fn_get_record(handle,
+                                type1_.as_ptr(),
+                                id1.as_ptr(),
+                                get_options.as_ptr() as *const i8,
+                                &mut rec_handle);
+        assert_match!(ErrorCode::Success, err);
+
+        let mut id_ptr: *const c_char = ptr::null_mut();
+        let err = PostgresWallet::postgreswallet_fn_get_record_id(handle,
+                                rec_handle,
+                                &mut id_ptr);
+        assert_match!(ErrorCode::Success, err);
+        let _id = unsafe { CStr::from_ptr(id_ptr).to_bytes() };
+        assert_eq!(_id.to_vec(), id1_);
+
+        let mut type_ptr: *const c_char = ptr::null_mut();
+        let err = PostgresWallet::postgreswallet_fn_get_record_type(handle,
+                                rec_handle,
+                                &mut type_ptr);
+        assert_match!(ErrorCode::Success, err);
+        let _type_ = unsafe { CStr::from_ptr(type_ptr).to_str().unwrap() };
+        assert_eq!(_type_, type1_.to_str().unwrap());
+
+        let mut value_bytes: *const u8 = ptr::null();
+        let mut value_bytes_len: usize = 0;
+        let err = PostgresWallet::postgreswallet_fn_get_record_value(handle,
+                                rec_handle,
+                                &mut value_bytes,
+                                &mut value_bytes_len);
+        assert_match!(ErrorCode::Success, err);
+        let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
+        let _value = EncryptedValue::from_bytes(value).unwrap();
+        assert_eq!(_value, value2_);
+
+        let mut tags_ptr: *const c_char = ptr::null_mut();
+        let err = PostgresWallet::postgreswallet_fn_get_record_tags(handle,
+                                rec_handle,
+                                &mut tags_ptr);
+        assert_match!(ErrorCode::Success, err);
+        let tags_json = unsafe { CStr::from_ptr(tags_ptr).to_str().unwrap() };
+        let _tags = _tags_from_json(tags_json).unwrap();
+        let _tags = _sort_tags(_tags);
+        let tags2_ = _sort_tags(tags2_);
+        assert_eq!(_tags, tags2_);
+
+        let err = PostgresWallet::postgreswallet_fn_free_record(handle,
+                                rec_handle);
+
+        _close_and_delete_wallet(handle);
+    }
+
     fn _create_and_open_wallet() -> i32 {
         let id = _wallet_id();
         let config = _wallet_config();
@@ -1229,6 +1327,19 @@ mod tests {
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8,
             1, 2, 3, 4, 5, 6, 7, 8
+        ];
+    }
+
+    fn _metadata2() -> Vec<i8> {
+        return vec![
+            2, 3, 4, 5, 6, 7, 8, 9,
+            2, 3, 4, 5, 6, 7, 8, 9,
+            2, 3, 4, 5, 6, 7, 8, 9,
+            2, 3, 4, 5, 6, 7, 8, 9,
+            2, 3, 4, 5, 6, 7, 8, 9,
+            2, 3, 4, 5, 6, 7, 8, 9,
+            2, 3, 4, 5, 6, 7, 8, 9,
+            2, 3, 4, 5, 6, 7, 8, 9
         ];
     }
 
