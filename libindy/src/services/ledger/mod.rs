@@ -15,6 +15,7 @@ use domain::ledger::pool::{PoolConfigOperation, PoolUpgradeOperation, PoolRestar
 use domain::ledger::node::{NodeOperation, NodeOperationData};
 use domain::ledger::txn::{GetTxnOperation, LedgerType};
 use domain::ledger::response::{Message, Reply};
+use domain::ledger::reply_type::ReplyType;
 use domain::ledger::validator_info::GetValidatorInfoOperation;
 use domain::anoncreds::DELIMITER;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};
@@ -542,10 +543,18 @@ impl LedgerService {
         Ok(res)
     }
 
-    pub fn parse_response<T>(response: &str) -> Result<Reply<T>, LedgerError> where T: DeserializeOwned {
+    pub fn parse_response<T>(response: &str) -> Result<Reply<T>, LedgerError> where T: DeserializeOwned + ReplyType {
         trace!("parse_response >>> response {:?}", response);
 
-        let message: Message<T> = serde_json::from_str(&response)
+        let message: serde_json::Value = serde_json::from_str(&response)
+            .map_err(|err|
+                LedgerError::InvalidTransaction(format!("Cannot deserialize transaction Response: {:?}", err)))?;
+
+        if message["op"] == json!("REPLY") && message["result"]["type"] != json!(T::get_type()) {
+            return Err(LedgerError::InvalidTransaction(format!("Invalid response type: {:?}", message)))
+        }
+
+        let message: Message<T> = serde_json::from_value(message)
             .map_err(|err|
                 LedgerError::NotFound(format!("Cannot deserialize transaction Response: {:?}", err)))?;
 

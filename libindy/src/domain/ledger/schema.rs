@@ -1,5 +1,6 @@
 use super::constants::{SCHEMA, GET_SCHEMA};
 use super::response::GetReplyResultV1;
+use super::reply_type::ReplyType;
 
 use std::collections::HashSet;
 
@@ -74,6 +75,12 @@ impl GetSchemaOperationData {
 pub enum GetSchemaReplyResult {
     GetSchemaReplyResultV0(GetSchemaResultV0),
     GetSchemaReplyResultV1(GetReplyResultV1<GetSchemaResultDataV1>)
+}
+
+impl ReplyType for GetSchemaReplyResult {
+    fn get_type<'a>() -> &'a str {
+        GET_SCHEMA
+    }
 }
 
 #[derive(Deserialize, Debug)]
