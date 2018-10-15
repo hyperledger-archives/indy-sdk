@@ -17,14 +17,11 @@ VCX_SDK=$(abspath "$VCX_SDK")
 #     echo "The output from this script will not reflect the correct status of the full build!"
 # fi
 
-# Verify that libindy, libnullpay, and libvcx built correctly for iOS...
+# Verify that libindy, and libvcx built correctly for iOS...
 cd $START_DIR
 grep "error:" ./mac.03.libindy.build.sh.out
 echo "-----------------------------------------------------------------------------------------------------------------------------------------------"
 cd $WORK_DIR/vcx-indy-sdk/libindy/target
-ls -al `find . -name "*.a"`
-echo "-----------------------------------------------------------------------------------------------------------------------------------------------"
-cd $WORK_DIR/vcx-indy-sdk/libnullpay/target
 ls -al `find . -name "*.a"`
 echo "-----------------------------------------------------------------------------------------------------------------------------------------------"
 cd $START_DIR

@@ -15,7 +15,7 @@ use utils::libindy::{
         libindy_parse_get_schema_response,
     },
     anoncreds::libindy_issuer_create_schema,
-    payments::{pay_for_txn, PaymentTxn},
+    payments::{pay_for_txn, PaymentTxn, build_test_address},
 };
 use error::schema::SchemaError;
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
@@ -86,7 +86,16 @@ pub trait Schema: ToString {
                       version: &str,
                       data: &str) -> Result<(String, Option<PaymentTxn>), SchemaError> {
         if settings::test_indy_mode_enabled() {
-            return Ok((SCHEMA_ID.to_string(), Some(PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1, false).unwrap())));
+            let inputs = format!(r#"["{}"]"#, build_test_address("9UFgyjuJxi1i1HD"));
+            let outputs = format!(r#"[
+                {{
+                    "amount": 1,
+                    "extra": null,
+                    "recipient": "{}"
+                }}
+            ]"#, build_test_address("xkIsxem0YNtHrRO"));
+
+            return Ok((SCHEMA_ID.to_string(), Some(PaymentTxn::from_parts(&inputs, &outputs, 1, false).unwrap())));
         }
 
         let (id, create_schema) = libindy_issuer_create_schema(submitter_did, name, version, data)
@@ -109,7 +118,7 @@ pub trait Schema: ToString {
 
         match txn_val.get("result") {
             Some(_) => return Ok(()),
-            None => warn!("No result found in ledger txn. Must be Rejectd"),
+            None => warn!("No result found in ledger txn. Must be Rejected"),
         };
 
         match txn_val.get("op") {

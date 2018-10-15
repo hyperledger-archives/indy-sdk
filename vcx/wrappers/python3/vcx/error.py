@@ -96,6 +96,7 @@ class ErrorCode(IntEnum):
     DuplicateMasterSecret = 1084,
     ThreadError = 1085,
     InvalidProofRequest = 1086,
+    MissingPaymentMethod = 1087,
 
 
 class VcxError(Exception):

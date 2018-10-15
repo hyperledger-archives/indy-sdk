@@ -74,7 +74,6 @@ mod tests {
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
-    #[cfg(feature = "sovtoken")]
     #[test]
     fn test_real_proof() {
         let number_of_attributes = 50;

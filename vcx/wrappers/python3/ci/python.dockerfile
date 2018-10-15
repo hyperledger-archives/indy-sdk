@@ -8,7 +8,7 @@ RUN apt-get install -y python3-pip
 
 RUN pip3 install pytest==3.4.2 qrcode pytest-asyncio
 
-ENV PYTHONPATH=${PYTHONPATH}:vcx/wrappers/python3
+ENV PYTHONPATH=vcx/wrappers/python3
 
 RUN find . -name \*.pyc -delete
 COPY vcx/libvcx/target/debian/*.deb .

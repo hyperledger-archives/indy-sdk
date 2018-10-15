@@ -8,7 +8,6 @@ setup() {
     export PATH=$PATH:/opt/gradle/gradle-3.4.1/bin
     export PATH=${PATH}:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools:$ANDROID_HOME/build-tools/25.0.2/
     export PATH=${HOME}/.cargo/bin:${PATH}
-    export SOVRIN_REPO=https://repo.sovrin.org/android/libsovtoken/stable
     export VCX_BASE=../vcx
     # For docker
     # export VCX_BASE=${HOME}/vcx
@@ -108,21 +107,6 @@ get_libindy() {
 
 }
 
-get_libsovtoken() {
-    set -xv
-    # Todo: This artifact was manually uploaded to this repo. Eventually, the file format will change. That is why it is hardcoded
-    if [ -z ${LIBSOVTOKEN_DIR} ]; then
-        LIBSOVTOKEN_ZIP=libsovtoken_0.9.3-201809211729-2d02370_all.zip
-        if [ ! -d "libsovtoken" ]; then
-            echo "retrieving libsovtoken prebuilt library"
-            wget ${SOVRIN_REPO}/${LIBSOVTOKEN_ZIP}
-            unzip ${LIBSOVTOKEN_ZIP}
-        fi
-        export LIBSOVTOKEN_DIR="${PWD}/libsovtoken/${TRIPLET}"
-    fi
-
-}
-
 build_vcx() {
     # For Jenkins
     LIBVCX_PATH=${VCX_BASE}/libvcx/build_scripts/android/vcx/
@@ -135,14 +119,10 @@ build_vcx() {
         echo "missing libindy_${ARCH} directory. Cannot proceed without it."
         exit 1
     fi
-    if [ ! -d ${LIBSOVTOKEN_DIR} ]; then
-        echo "missing libsovtoken directory. Cannot proceed without it."
-        exit 1
-    fi
 
     pushd ${LIBVCX_PATH}
     mkdir -p toolchains/
-    ./build.nondocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${OPENSSL_DIR} ${SODIUM_DIR} ${LIBZMQ_DIR} ${LIBINDY_DIR} ${LIBSOVTOKEN_DIR}
+    ./build.nondocker.sh ${ARCH} ${PLATFORM} ${TRIPLET} ${OPENSSL_DIR} ${SODIUM_DIR} ${LIBZMQ_DIR} ${LIBINDY_DIR}
     popd
     rm -rf libvcx_${ARCH}
     mv ${LIBVCX_PATH}libvcx_${ARCH} .
@@ -151,5 +131,4 @@ build_vcx() {
 
 setup $1
 get_libindy $1
-get_libsovtoken
 build_vcx $1

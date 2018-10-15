@@ -57,6 +57,7 @@ def mainUbuntu() {
         def nodeDockerfile = 'vcx/wrappers/node/ci/node.dockerfile'
         def javaDockerfile = 'vcx/wrappers/java/ci/java.dockerfile'
         def uid= sh(returnStdout: true, script: 'id -u').trim()
+        def cwd= sh(returnStdout: true, script: 'pwd').trim()
         def libvcx
         def python
         def node
@@ -82,8 +83,10 @@ def mainUbuntu() {
             }
             stage('Test Python Wrapper'){
                 python = docker.build("python", "--build-arg uid=${uid} -f ${pythonDockerfile} .")
-                python.inside() {
-                    sh 'vcx/wrappers/python3/ci/test.sh'
+                withEnv(["PYTHONPATH=${cwd}/vcx/wrappers/python3:vcx/wrappers/python3"]){
+                    python.inside() {
+                        sh 'vcx/wrappers/python3/ci/test.sh'
+                    }
                 }
             }
             stage('Test Java Wrapper'){

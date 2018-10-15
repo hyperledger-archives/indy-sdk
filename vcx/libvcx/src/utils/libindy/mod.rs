@@ -18,6 +18,8 @@ use settings;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::sync::Mutex;
 
+use indy::ErrorCode;
+
 lazy_static!{
     static ref NEXT_LIBINDY_RC: Mutex<Vec<i32>> = Mutex::new(vec![]);
 }
@@ -56,6 +58,10 @@ pub fn init_pool() -> Result<(), u32>  {
             Ok(())
         }
     }
+}
+
+extern {
+    pub fn indy_set_default_logger(level: *const libc::c_char) -> ErrorCode;
 }
 
 #[cfg(test)]

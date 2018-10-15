@@ -8,7 +8,6 @@ mkdir -p $WORK_DIR
 WORK_DIR=$(abspath "$WORK_DIR")
 SHA_HASH_DIR=$START_DIR/../..
 SHA_HASH_DIR=$(abspath "$SHA_HASH_DIR")
-LIBSOVTOKEN_ANDROID_BUILD_URL="https://repo.corp.evernym.com/filely/android/libsovtoken_0.8.1-201807262112-cbb1520_all.zip"
 
 source ./mac.02.libindy.env.sh
 if [ -d $WORK_DIR/vcx-indy-sdk ]; then
@@ -161,22 +160,6 @@ sed -i .bak 's/\"\"\.as_ptr() as \*const u8/\"\"\.as_ptr() as \*const i8/' src/s
 # KS:Commenting this for now, because it fails for osx build
 # cargo build --target x86_64-apple-darwin --release --verbose
 echo "-----------------------------------------------------------------------------------------------"
-
-#########################################################################################################################
-# Now setup libsovtoken
-#########################################################################################################################
-
-if [ -d $WORK_DIR/libsovtoken-android ]; then
-    echo "libsovtoken build for android already exist"
-else
-    mkdir -p $WORK_DIR/libsovtoken-android
-    cd $WORK_DIR/libsovtoken-android
-    curl -o libsovtoken-android.zip $LIBSOVTOKEN_ANDROID_BUILD_URL
-    unzip libsovtoken-android.zip
-    # Deletes extra folders we don't need
-    rm libsovtoken-android.zip
-    rm -rf __MACOSX
-fi
 
 # This builds the library for code that runs in OSX
 export OPENSSL_DIR=$OPENSSL_DIR_DARWIN

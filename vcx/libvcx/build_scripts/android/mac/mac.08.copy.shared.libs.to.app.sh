@@ -39,7 +39,6 @@ do
     mkdir -p $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/${target_arch}
     ln -f -v $OPENSSL_DIR/output/android/openssl-${openssl_arch}/lib/libssl.a $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/${target_arch}
     ln -f -v $OPENSSL_DIR/output/android/openssl-${openssl_arch}/lib/libcrypto.a $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/${target_arch}
-    # ln -f -v $INDY_SDK/libnullpay/target/${cross_compile}/release/libnullpay.a $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/${target_arch}
     # ln -f -v $INDY_SDK/libindy/target/${cross_compile}/release/libindy.a $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/${target_arch}
     ln -f -v $VCX_SDK/vcx/libvcx/target/${cross_compile}/release/libvcx.a $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/${target_arch}
     ln -f -v $WORK_DIR/libzmq-android/libsodium/libsodium_${target_arch}/lib/libsodium.a $VCX_SDK/vcx/wrappers/java/vcx/src/main/jniLibs/${target_arch}
