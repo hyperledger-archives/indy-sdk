@@ -111,12 +111,12 @@ impl GetMessages{
         }
 
         self.payload.msg_type.name = "GET_MSGS_BY_CONNS".to_string();
-        let data = encode::to_vec_named(&self.payload).unwrap();
+        let data = encode::to_vec_named(&self.payload).or(Err(error::UNKNOWN_ERROR.code_num))?;
         trace!("get_message content: {:?}", data);
 
         let msg = Bundled::create(data).encode()?;
 
-        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID).unwrap();
+        let to_did = settings::get_config_value(settings::CONFIG_REMOTE_TO_SDK_DID)?;
         let data = bundle_for_agency(msg, &to_did)?;
 
         match httpclient::post_u8(&data) {
@@ -145,7 +145,7 @@ impl GeneralMessage for GetMessages{
             return Err(self.validate_rc)
         }
 
-        let data = encode::to_vec_named(&self.payload).unwrap();
+        let data = encode::to_vec_named(&self.payload).or(Err(error::UNKNOWN_ERROR.code_num))?;
         trace!("get_message content: {:?}", data);
 
         let msg = Bundled::create(data).encode()?;
@@ -213,14 +213,13 @@ impl Message {
 
     pub fn decrypt(&self, vk: &str) -> Message {
         let mut new_message = self.clone();
-        if self.payload.is_some() {
-            let payload = ::messages::to_u8(&self.payload.clone().unwrap());
+        if let Some(ref payload) = self.payload {
+            let payload = ::messages::to_u8(payload);
             match ::utils::libindy::crypto::parse_msg(&vk, &payload) {
                 Ok(x) => {
-                    new_message.decrypted_payload = match to_json(&x.1) {
-                        Ok(x) => Some(x.to_string()),
-                        Err(_) => None,
-                    };
+                    new_message.decrypted_payload = to_json(&x.1)
+                        .map(|i| i.to_string())
+                        .ok();
                 }
                 Err(_) => (),
             };
@@ -326,27 +325,24 @@ pub fn get_connection_messages(pw_did: &str, pw_vk: &str, agent_did: &str, agent
 pub fn get_ref_msg(msg_id: &str, pw_did: &str, pw_vk: &str, agent_did: &str, agent_vk: &str) -> Result<(String, Vec<u8>), u32> {
     let message = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
     trace!("checking for ref_msg: {:?}", message);
-    let msg_id;
-    if message[0].status_code == MessageAccepted.as_string() && !message[0].ref_msg_id.is_none() {
-        msg_id = message[0].ref_msg_id.clone().unwrap()
-    }
-    else {
-        return Err(error::NOT_READY.code_num);
-    }
 
-    let message = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id.to_string()]))?;
+    let msg_id = match message[0].ref_msg_id.clone() {
+        Some(ref ref_msg_id) if message[0].status_code == MessageAccepted.as_string() => ref_msg_id.to_string(),
+        _ => return Err(error::NOT_READY.code_num),
+    };
+
+    let message = get_connection_messages(pw_did, pw_vk, agent_did, agent_vk, Some(vec![msg_id]))?;
 
     trace!("checking for pending message: {:?}", message);
 
     // this will work for both credReq and proof types
-    if message[0].status_code == MessagePending.as_string() && !message[0].payload.is_none() {
-        let data = to_u8(message[0].payload.as_ref().unwrap());
-	// TOD: check returned verkey
-        let (_, msg) = crypto::parse_msg(&pw_vk, &data)?;
-	Ok((message[0].uid.clone(), msg))
-    }
-    else {
-        Err(error::INVALID_HTTP_RESPONSE.code_num)
+    match message[0].payload.clone() {
+        Some(ref payload) if message[0].status_code == MessagePending.as_string() => {
+            // TODO: check returned verkey
+            let (_, msg) = crypto::parse_msg(&pw_vk, &to_u8(payload))?;
+            Ok((message[0].uid.clone(), msg))
+        },
+        _ => Err(error::INVALID_HTTP_RESPONSE.code_num)
     }
 }
 
@@ -379,8 +375,7 @@ mod tests {
 
     #[test]
     fn test_parse_get_messages_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let result = parse_get_messages_response(GET_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 3)
@@ -388,19 +383,16 @@ mod tests {
 
     #[test]
     fn test_parse_get_connection_messages_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let json = to_json(&GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
-        println!("{}", json);
         let result = parse_get_connection_messages_response(GET_ALL_MESSAGES_RESPONSE.to_vec()).unwrap();
         assert_eq!(result.len(), 1)
     }
 
     #[test]
     fn test_build_response() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
         let delivery_details1 = DeliveryDetails {
             to: "3Xk9vxK9jeiqVaCPrEQ8bg".to_string(),
             status_code: "MDS-101".to_string(),
@@ -454,12 +446,11 @@ mod tests {
         use std::thread;
         use std::time::Duration;
 
-        settings::set_defaults();
-        ::utils::devsetup::tests::setup_local_env("test_download_messages");
+        init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
 
-        let (schema_id, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def();
+        let (schema_id, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
         let credential_offer = ::issuer_credential::issuer_credential_create(cred_def_id.clone(),
                                                                            "1".to_string(),
@@ -486,6 +477,6 @@ mod tests {
         let invalid_did = "abc".to_string();
         let bad_req = download_messages(Some(vec![invalid_did]), None, None);
         assert_eq!(bad_req, Err(error::POST_MSG_FAILURE.code_num));
-        ::utils::devsetup::tests::cleanup_dev_env("test_download_messages");
+        teardown!("agency");
     }
 }

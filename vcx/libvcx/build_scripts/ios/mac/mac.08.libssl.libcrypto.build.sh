@@ -1,5 +1,6 @@
 #!/bin/sh
 
+#For Evernym Mac Jenkins machines, rm the cache(~/.build_libvcx) and store OpenSSL-for-iPhone dir at /Users/jenkins
 source ./shared.functions.sh
 
 START_DIR=$PWD
