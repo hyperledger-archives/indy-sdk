@@ -21,6 +21,7 @@ macro_rules! rust_slice {
 
 pub mod crypto;
 pub mod did;
+pub mod pairwise;
 pub mod wallet;
 
 #[derive(Fail, Debug)]
