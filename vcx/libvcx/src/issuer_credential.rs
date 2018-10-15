@@ -648,7 +648,7 @@ pub mod tests {
             credential_offer: Some(credential_offer.to_owned()),
             credential_id: String::from(DEFAULT_CREDENTIAL_ID),
 	        price: 1,
-            payment_address: Some("pay:null:9UFgyjuJxi1i1HD".to_string()),
+            payment_address: Some(payments::build_test_address("9UFgyjuJxi1i1HD")),
             ref_msg_id: None,
             remote_did: DID.to_string(),
             remote_vk: VERKEY.to_string(),
@@ -985,7 +985,7 @@ pub mod tests {
 
         // Success
         credential.price = 3;
-        credential.payment_address = Some("pay:null:9UFgyjuJxi1i1HD".to_string());
+        credential.payment_address = Some(payments::build_test_address("9UFgyjuJxi1i1HD"));
         assert!(credential.verify_payment().is_ok());
 
         // Err - Wrong payment amount
@@ -1003,7 +1003,7 @@ pub mod tests {
         let mut credential = create_standard_issuer_credential();
         credential.state = VcxStateType::VcxStateRequestReceived;
         credential.price = 3;
-        credential.payment_address = Some("pay:null:9UFgyjuJxi1i1HD".to_string());
+        credential.payment_address = Some(payments::build_test_address("9UFgyjuJxi1i1HD"));
 
         let connection_handle = build_connection("test_send_credential_offer").unwrap();
 

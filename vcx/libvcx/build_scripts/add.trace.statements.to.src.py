@@ -2,7 +2,6 @@
 # findLargeFiles.py - given a folder name, walk through its entire hierarchy
 #                   - print folders and files within each folder
 # python add.trace.statements.to.src.py /Users/iosbuild1/forge/work/code/evernym/sdk/vcx/libvcx/src
-# python add.trace.statements.to.src.py /Users/iosbuild1/forge/work/code/evernym/sdk/.macosbuild/vcx-indy-sdk/libnullpay/src
 # python add.trace.statements.to.src.py /Users/iosbuild1/forge/work/code/evernym/sdk/.macosbuild/vcx-indy-sdk/libindy/src
 
 import os
