@@ -13,8 +13,7 @@ async def test_vcx_init_with_config(vcx_init_test_mode):
     pass
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_error_message():
+async def test_error_message(vcx_init_test_mode):
     assert error_message(ErrorCode.NotReady) == 'Object not ready for specified action'
 
 @pytest.mark.asyncio
@@ -25,5 +24,9 @@ async def test_shutdown_works():
         assert connection.handle > 0
         shutdown(True)
         await connection.serialize()
-    assert ErrorCode.InvalidConnectionHandle == e.value.error_code
+    # If vcx_init_test_mode was called on a previous test, then
+    # the error code will be InvalidURL.  Otherwise the error
+    # will be InvalidConnectionHandle.
+    assert (ErrorCode.InvalidConnectionHandle == e.value.error_code) or \
+           (ErrorCode.InvalidUrl == e.value.error_code)
 

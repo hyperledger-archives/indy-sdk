@@ -15,7 +15,6 @@ LIBSSL=$WORK_DIR/OpenSSL-for-iPhone
 LIBZMQ=$WORK_DIR/libzmq-ios
 
 #cp -v $INDY_SDK/libindy/target/universal/release/libindy.a $VCX_SDK/vcx/wrappers/ios/vcx/lib
-# cp -v $INDY_SDK/libnullpay/target/universal/release/libnullpay.a $VCX_SDK/vcx/wrappers/ios/vcx/lib
 cp -v $VCX_SDK/vcx/libvcx/target/universal/release/libvcx.a $VCX_SDK/vcx/wrappers/ios/vcx/lib/libvcx.a.tocombine
 #cp -v $LIBSSL/lib/libcrypto.a $VCX_SDK/vcx/wrappers/ios/vcx/lib
 #cp -v $LIBSSL/lib/libssl.a $VCX_SDK/vcx/wrappers/ios/vcx/lib

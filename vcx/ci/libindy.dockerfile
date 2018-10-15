@@ -68,8 +68,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 68DB5E88 && \
 
 ARG LIBINDY_VER="1.6.6"
 ARG LIBNULL_VER="1.6.6"
-ARG LIBSOVTOKEN_VER="0.9.3+5.4"
 
 RUN apt-get update && apt-get install -y \
-    libsovtoken=${LIBSOVTOKEN_VER} \
     libindy=${LIBINDY_VER} \
+    libnullpay=${LIBNULL_VER}

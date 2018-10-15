@@ -6,7 +6,7 @@ use utils::error;
 use settings;
 use schema::LedgerSchema;
 use utils::constants::{ CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE };
-use utils::libindy::payments::{pay_for_txn, PaymentTxn};
+use utils::libindy::payments::{pay_for_txn, PaymentTxn, build_test_address};
 use utils::libindy::anoncreds::{libindy_create_and_store_credential_def};
 use utils::libindy::ledger::{libindy_submit_request,
                              libindy_build_get_credential_def_txn,
@@ -112,7 +112,18 @@ fn _create_and_store_credential_def(issuer_did: &str,
                                    sig_type: Option<&str>,
                                    config_json: &str) -> Result<(String, Option<PaymentTxn>), CredDefError> {
     if settings::test_indy_mode_enabled() {
-        return Ok((CRED_DEF_ID.to_string(), Some(PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1, false).unwrap())));
+
+        let inputs = format!(r#"["{}"]"#, build_test_address("9UFgyjuJxi1i1HD"));
+
+        let outputs = format!(r#"[
+            {{
+                "amount": 1,
+                "extra": null,
+                "recipient": "{}"
+            }}
+        ]"#, build_test_address("xkIsxem0YNtHrRO"));
+
+        return Ok((CRED_DEF_ID.to_string(), Some(PaymentTxn::from_parts(&inputs, &outputs, 1, false).unwrap())));
     }
 
     let (id, cred_def_json) = libindy_create_and_store_credential_def(issuer_did,
