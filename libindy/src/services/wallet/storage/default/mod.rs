@@ -906,7 +906,9 @@ mod tests {
         storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
         let record = storage.get(&_type1(), &_id1(), r##"{"retrieveType": false, "retrieveValue": true, "retrieveTags": true}"##).unwrap();
 
+        assert_eq!(record.id, _id1());
         assert_eq!(record.value.unwrap(), _value1());
+        assert_eq!(record.type_, None);
         assert_eq!(_sort(record.tags.unwrap()), _sort(_tags()));
     }
 
@@ -975,6 +977,16 @@ mod tests {
         assert_match!(Err(WalletStorageError::ItemNotFound), res);
     }
 
+    #[test]
+    fn sqlite_storage_delete_returns_error_item_not_found_if_no_such_type() {
+        _cleanup();
+
+        let storage = _storage();
+
+        storage.add(&_type1(), &_id1(), &_value1(), &_tags()).unwrap();
+        let res = storage.delete(&_type2(), &_id2());
+        assert_match!(Err(WalletStorageError::ItemNotFound), res);
+    }
 
     #[test]
     fn sqlite_storage_get_all_works() {
