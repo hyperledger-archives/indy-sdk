@@ -1,9 +1,11 @@
 use actix::prelude::{Actor, Addr, Context, Handler, Message as ActorMessage, ResponseFuture};
 use domain::config::ForwardAgentConfig;
 use domain::messages::*;
+use domain::pairwise::*;
 use failure::*;
 use futures::*;
-use indy::{did, IndyError, wallet};
+use indy::{did, IndyError, pairwise, wallet};
+use serde_json;
 use utils::futures::*;
 use utils::messages::*;
 
@@ -141,21 +143,48 @@ impl ForwardAgent {
         trace!("ForwardAgent::_handle_connect >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, forward_agent_vk, sender_vk, msg);
 
-        if msg.from_did_verkey != sender_vk {
-            return err!(err_msg("Inconsistent sender verkey"))
-        }
+        let Connect { from_did: their_did, from_did_verkey: their_verkey } = msg;
 
-        did::create_and_store_my_did(wallet_handle, "{}")
-            .from_err()
-            .map(|(pairwise_did, pairwise_vk)| {
-                Message::Connected(Connected {
-                    with_pairwise_did: pairwise_did,
-                    with_pairwise_did_verkey: pairwise_vk,
-                })
+        if their_verkey != sender_vk {
+            return err!(err_msg("Inconsistent sender and connection verkeys"));
+        };
+
+        let their_did_info = json!({
+            "did": their_did,
+            "verkey": their_verkey,
+        })
+            .to_string();
+
+        let pairwise_metadata = ftry!(
+            serde_json::to_string(&PairwiseMetadata {})
+                .map_err(|err| err.context("Can't serialize connection pairwise_metadata."))
+        );
+
+        future::ok(())
+            .and_then(move |_| {
+                // FIXME: Return specific error for already exists case
+                did::store_their_did(wallet_handle, &their_did_info)
+                    .map_err(|err| err.context("Can't store their DID for connection pairwise.").into())
             })
-            .and_then(move |msg| bundle_authcrypted(wallet_handle, &forward_agent_vk, &sender_vk, &msg))
-            .into_box()
+            .and_then(move |_| {
+                did::create_and_store_my_did(wallet_handle, "{}")
+                    .map_err(|err| err.context("Can't create my DID for connection pairwise.").into())
+            })
+            .and_then(move |(my_did, my_verkey)| {
+                pairwise::create_pairwise(wallet_handle, &their_did, &my_did, &pairwise_metadata)
+                    .map(|_| (my_did, my_verkey))
+                    .map_err(|err| err.context("Can't store connection pairwise.").into())
+            })
+            .and_then(move |(my_did, my_verkey)| {
+                let msg = Message::Connected(Connected {
+                    with_pairwise_did: my_did,
+                    with_pairwise_did_verkey: my_verkey,
+                });
 
+                bundle_authcrypted(wallet_handle, &forward_agent_vk, &their_verkey, &msg)
+                    .map_err(|err| err.context("Can't bundle and authcrypt connected message.").into())
+            })
+            .into_box()
     }
 }
 
