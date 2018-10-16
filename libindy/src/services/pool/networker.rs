@@ -547,6 +547,11 @@ pub mod networker_tests {
 
             networker.process_event(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), "6".to_string(), POOL_ACK_TIMEOUT)));
             assert_eq!(2, networker.pool_connections.len());
+
+            let mut pc_iter = networker.pool_connections.values();
+            let first_pc = pc_iter.next().unwrap();
+            let second_pc = pc_iter.next().unwrap();
+            assert_ne!(first_pc.key_pair.public_key, second_pc.key_pair.public_key);
         }
 
         #[test]
