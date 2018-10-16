@@ -10,7 +10,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
     public class SignTest : IndyIntegrationTestWithSingleWallet
     {
         [TestMethod]
-        public async Task TestSignWorks()
+        public async Task TestCryptoSignWorks()
         {
             var keyJson = string.Format("{{\"seed\":\"{0}\"}}", TRUSTEE_SEED);
             var key = await Crypto.CreateKeyAsync(wallet, keyJson);
@@ -20,7 +20,7 @@ namespace Hyperledger.Indy.Test.CryptoTests
         }
 
         [TestMethod]
-        public async Task TestSignFailsIfKeyNotInWallet()
+        public async Task TestCryptoSignWorksForUnknowSigner()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                Crypto.SignAsync(wallet, VERKEY_TRUSTEE, MESSAGE)

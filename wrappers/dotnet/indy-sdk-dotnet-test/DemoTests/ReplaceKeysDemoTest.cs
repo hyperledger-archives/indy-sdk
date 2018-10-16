@@ -1,6 +1,7 @@
-﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.DidApi;
+﻿using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.LedgerApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.DemoTests
@@ -17,7 +18,8 @@ namespace Hyperledger.Indy.Test.DemoTests
             var myVerkey = result.VerKey;
 
             // 2. Create Their Did from Trustee1 seed
-            var createTheirDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var theirDidJson = JsonConvert.SerializeObject(new { seed = TRUSTEE_SEED });
+            var createTheirDidResult = await Did.CreateAndStoreMyDidAsync(wallet, theirDidJson);
             var trusteeDid = createTheirDidResult.Did;
 
             // 3. Build and send Nym Request
@@ -48,7 +50,8 @@ namespace Hyperledger.Indy.Test.DemoTests
             var myVerkey = result.VerKey;
 
             // 2. Create Their Did from Trustee1 seed
-            var createTheirDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var theirDidJson = JsonConvert.SerializeObject(new { seed = TRUSTEE_SEED });
+            var createTheirDidResult = await Did.CreateAndStoreMyDidAsync(wallet, theirDidJson);
             var trusteeDid = createTheirDidResult.Did;
 
             // 3. Build and send Nym Request
@@ -63,10 +66,8 @@ namespace Hyperledger.Indy.Test.DemoTests
 
             // 6. Send schema request
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(myDid, SCHEMA_DATA);
-
-            var ex = await Assert.ThrowsExceptionAsync<InvalidLedgerTransactionException>(() =>
-               Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, schemaRequest)
-            );
+            var response = await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, schemaRequest);
+            CheckResponseType(response, "REQNACK");
         }
     }
 }

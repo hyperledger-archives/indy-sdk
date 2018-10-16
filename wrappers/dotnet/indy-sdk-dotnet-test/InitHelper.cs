@@ -1,6 +1,4 @@
-﻿using Hyperledger.Indy.Test.WalletTests;
-using Hyperledger.Indy.WalletApi;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test
 {
@@ -15,5 +13,6 @@ namespace Hyperledger.Indy.Test
 
             _isInitialized = true;
         }
+
     }
 }

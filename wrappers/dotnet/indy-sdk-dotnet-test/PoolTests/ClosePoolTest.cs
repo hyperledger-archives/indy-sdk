@@ -7,13 +7,6 @@ namespace Hyperledger.Indy.Test.PoolTests
     [TestClass]
     public class ClosePoolTest : IndyIntegrationTestBase
     {
-
-        [TestInitialize]
-        public async Task SetProtocolVersion()
-        {
-            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
-        }
-
         [TestMethod]
         public async Task TestClosePoolWorks()
         {
@@ -51,6 +44,20 @@ namespace Hyperledger.Indy.Test.PoolTests
             await pool.CloseAsync();
 
             pool = await Pool.OpenPoolLedgerAsync(poolName, null);
+            openedPools.Add(pool);
+        }
+
+        [TestMethod]
+        public async Task TestAutoCloseWorks()
+        {
+            var poolName = PoolUtils.CreatePoolLedgerConfig();
+
+            using (var autoClosePool = await Pool.OpenPoolLedgerAsync(poolName, null))
+            {
+                Assert.IsNotNull(autoClosePool);
+            }
+
+            var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
             openedPools.Add(pool);
         }
     }
