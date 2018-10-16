@@ -1,6 +1,5 @@
 use super::constants::{SCHEMA, GET_SCHEMA};
-use super::response::GetReplyResultV1;
-use super::reply_type::ReplyType;
+use super::response::{GetReplyResultV1, ReplyType};
 
 use std::collections::HashSet;
 

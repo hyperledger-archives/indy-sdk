@@ -70,3 +70,7 @@ pub enum Message<T> {
     #[serde(rename = "REJECT")]
     Reject(Response)
 }
+
+pub trait ReplyType {
+    fn get_type<'a>() -> &'a str;
+}

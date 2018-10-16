@@ -14,8 +14,7 @@ use domain::ledger::rev_reg::{RevRegEntryOperation, GetRevRegOperation, GetRevRe
 use domain::ledger::pool::{PoolConfigOperation, PoolUpgradeOperation, PoolRestartOperation};
 use domain::ledger::node::{NodeOperation, NodeOperationData};
 use domain::ledger::txn::{GetTxnOperation, LedgerType};
-use domain::ledger::response::{Message, Reply};
-use domain::ledger::reply_type::ReplyType;
+use domain::ledger::response::{Message, Reply, ReplyType};
 use domain::ledger::validator_info::GetValidatorInfoOperation;
 use domain::anoncreds::DELIMITER;
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinition, RevocationRegistryDefinitionV1};

@@ -1,6 +1,5 @@
 use super::constants::{CRED_DEF, GET_CRED_DEF};
-use super::response::GetReplyResultV1;
-use super::reply_type::ReplyType;
+use super::response::{GetReplyResultV1, ReplyType};
 use super::super::anoncreds::credential_definition::{CredentialDefinitionData, CredentialDefinitionV1, SignatureType};
 use super::super::ledger::request::ProtocolVersion;
 
