@@ -117,7 +117,7 @@ pub trait Schema: ToString {
                 if m == "REJECT" {
                     match txn_val.get("reason") {
                         Some(r) => Err(SchemaError::DuplicateSchema(r.to_string())),
-                        None => Err(SchemaError::UnknownRejection()),
+                        None => Err(SchemaError::UnknownRejection(txn.to_string())),
                     }
                 } else {
                     return Err(SchemaError::CommonError(error::INVALID_JSON.code_num))

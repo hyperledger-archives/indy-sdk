@@ -96,7 +96,8 @@ class ErrorCode(IntEnum):
     DuplicateMasterSecret = 1084,
     ThreadError = 1085,
     InvalidProofRequest = 1086,
-
+    DuplicateSchema = 1087,
+    UnknownLibindyRejection = 1088
 
 class VcxError(Exception):
     # error_code: ErrorCode
