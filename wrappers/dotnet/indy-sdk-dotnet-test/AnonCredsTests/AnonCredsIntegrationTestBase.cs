@@ -1,7 +1,9 @@
 ﻿using Hyperledger.Indy.AnonCredsApi;
-using Hyperledger.Indy.Test.Util;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.AnonCredsTests
@@ -9,41 +11,62 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
 
     public abstract class AnonCredsIntegrationTestBase 
     {
-        private const string WALLET_NAME = "commonWallet";
-        private const string WALLET_KEY = "commonWalletKey";
-
-        protected static Wallet commonWallet;
-        protected static string claimDef;
-        protected static string masterSecretName = "master_secret_name";
-        protected static string issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
-        protected static string issuerDid2 = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-        protected static string proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
-        protected static string claimOfferTemplate = "{{\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}";
-        protected static string schema = "{\"seqNo\":1,\"data\": {\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\":[\"age\",\"sex\",\"height\",\"name\"]}}";
-        protected static string claimRequestTemplate =
-            "{{\"blinded_ms\":" +
-            "{{\"prover_did\":\"CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW\"," +
-            "\"u\":\"54172737564529332710724213139048941083013176891644677117322321823630308734620627329227591845094100636256829761959157314784293939045176621327154990908459072821826818718739696323299787928173535529024556540323709578850706993294234966440826690899266872682790228513973999212370574548239877108511283629423807338632435431097339875665075453785141722989098387895970395982432709011505864533727415552566715069675346220752584449560407261446567731711814188836703337365986725429656195275616846543535707364215498980750860746440672050640048215761507774996460985293327604627646056062013419674090094698841792968543317468164175921100038\"," +
-            "\"ur\":null}}," +
-            "\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}";
-
         private static bool _walletOpened = false;
+
+        protected static Wallet wallet;
+        protected static string gvtSchemaId;
+        protected static string gvtSchema;
+        protected static string xyzSchemaId;
+        protected static string xyzSchema;
+        protected static string issuer1gvtCredDefId;
+        protected static string issuer1gvtCredDef;
+        protected static string issuer1xyzCredDef;
+        protected static string issuer1GvtCredOffer;
+        protected static string issuer2GvtCredOffer;
+        protected static string issuer1GvtCredReq;
+        protected static string issuer1GvtCredReqMetadata;
+        protected static string CREDENTIALS = "{\"key\":\"8dvfYSt5d1taSd6yJdpjq4emkwsPDDLYxkNFysFD2cZY\", \"key_derivation_method\":\"RAW\"}";
+        protected static string masterSecretId = "master_secret_name";
+        protected static string issuerDid = "NcYxiDXkpYi6ov5FcYDi1e";
+        protected static string proverDid = "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW";
+        protected static string defaultCredentialDefinitionConfig = "{\"support_revocation\":false}";
+        protected static string tag = "tag1";
+        protected static string gvtSchemaName = "gvt";
+        protected static string schemaVersion = "1.0";
+        protected static string gvtSchemaAttributes = "[\"name\", \"age\", \"sex\", \"height\"]";
+        protected static string credentialId1 = "id1";
+        protected static string credentialId2 = "id2";
+        // note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786
+        protected static string gvtCredentialValuesJson = JObject.Parse("{\n" +
+                "               \"sex\":{\"raw\":\"male\",\"encoded\":\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"},\n" +
+                "               \"name\":{\"raw\":\"Alex\",\"encoded\":\"1139481716457488690172217916278103335\"},\n" +
+                "               \"height\":{\"raw\":\"175\",\"encoded\":\"175\"},\n" +
+                "               \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
+                "        }").ToString();
+        protected static string xyzCredentialValuesJson = JObject.Parse("{\n" +
+                "               \"status\":{\"raw\":\"partial\",\"encoded\":\"51792877103171595686471452153480627530895\"},\n" +
+                "               \"period\":{\"raw\":\"8\",\"encoded\":\"8\"}\n" +
+                "        }").ToString();
+        protected static string proofRequest = JObject.Parse("{\n" +
+                "                   \"nonce\":\"123432421212\",\n" +
+                "                   \"name\":\"proof_req_1\",\n" +
+                "                   \"version\":\"0.1\", " +
+                "                   \"requested_attributes\":{" +
+                "                          \"attr1_referent\":{\"name\":\"name\"}" +
+                "                    },\n" +
+                "                    \"requested_predicates\":{" +
+                "                          \"predicate1_referent\":{\"name\":\"age\",\"p_type\":\">=\",\"p_value\":18}" +
+                "                    }" +
+                "               }").ToString();
+
+
+
 
         [TestInitialize]
         public async Task SetUp() 
         {
             await InitHelper.InitAsync();
-        }
-
-        [ClassCleanup]
-        public static async Task CloseCommonWallet()
-        {
-            if (_walletOpened)
-            {
-                await commonWallet.CloseAsync();
-                _walletOpened = false;
-            }
-
+            await InitCommonWallet();
         }
 
         protected async Task InitCommonWallet()
@@ -51,35 +74,77 @@ namespace Hyperledger.Indy.Test.AnonCredsTests
             if (_walletOpened)
                 return;
 
-            StorageUtils.CleanupStorage();
+            var walletConfig = JsonConvert.SerializeObject(new { id = Guid.NewGuid() });
 
-            await WalletUtils.CreateWallet(WALLET_NAME, WALLET_KEY);
-            commonWallet = await WalletUtils.OpenWallet(WALLET_NAME, WALLET_KEY);
+            await Wallet.CreateWalletAsync(walletConfig, CREDENTIALS);
+            wallet = await Wallet.OpenWalletAsync(walletConfig, CREDENTIALS);
 
-            IssuerCreateAndStoreCredentialDefResult claimDefType = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(commonWallet, issuerDid, schema, null, null, null);
-            claimDef = claimDefType.CredDefJson;
+            var createSchemaResult = await AnonCreds.IssuerCreateSchemaAsync(issuerDid, gvtSchemaName, schemaVersion, gvtSchemaAttributes);
+            gvtSchemaId = createSchemaResult.SchemaId;
+            gvtSchema = createSchemaResult.SchemaJson;
 
-            await AnonCreds.ProverStoreCredentialAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid, 1), null, null, null, null);
-            // TODO await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid, 2), null, null, null, null);
-            // TODO await AnonCreds.ProverStoreCredentialOfferAsync(commonWallet, string.Format(claimOfferTemplate, issuerDid2, 2), null, null, null, null);
+            var xyzSchemaAttributes = "[\"status\", \"period\"]";
+            var xyzSchemaName = "xyz";
+            createSchemaResult = await AnonCreds.IssuerCreateSchemaAsync(issuerDid, xyzSchemaName, schemaVersion, xyzSchemaAttributes);
+            xyzSchemaId = createSchemaResult.SchemaId;
+            xyzSchema = createSchemaResult.SchemaJson;
 
-            await AnonCreds.ProverCreateMasterSecretAsync(commonWallet, masterSecretName);
+            //Issue GVT issuer1GvtCredential by Issuer1
+            var issuer1CreateGvtCredDefResult = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(wallet, issuerDid, gvtSchema, tag, null, defaultCredentialDefinitionConfig);
+            issuer1gvtCredDefId = issuer1CreateGvtCredDefResult.CredDefId;
+            issuer1gvtCredDef = issuer1CreateGvtCredDefResult.CredDefJson;
 
-            var claimOffer = string.Format("{{\"issuer_did\":\"{0}\",\"schema_seq_no\":{1}}}", issuerDid, 1);
+            //Issue XYZ issuer1GvtCredential by Issuer1
+            var issuer1CreateXyzCredDefResult = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(wallet, issuerDid, xyzSchema, tag, null, defaultCredentialDefinitionConfig);
+            var issuer1xyzCredDefId = issuer1CreateXyzCredDefResult.CredDefId;
+            issuer1xyzCredDef = issuer1CreateXyzCredDefResult.CredDefJson;
 
-            var claimRequest = await AnonCreds.ProverCreateCredentialReqAsync(commonWallet, "CnEDk9HrMnmiHXEV1WFgbVCRteYnPqsJwrTdcZaNhFVW", claimOffer, claimDef, masterSecretName);
+            //Issue GVT issuer1GvtCredential by Issuer2
+            var issuerDid2 = "VsKV7grR1BUE29mG2Fm2kX";
+            var issuer2CreateGvtCredDefResult = await AnonCreds.IssuerCreateAndStoreCredentialDefAsync(wallet, issuerDid2, gvtSchema, tag, null, defaultCredentialDefinitionConfig);
+            var issuer2gvtCredDefId = issuer2CreateGvtCredDefResult.CredDefId;
+            var issuer2gvtCredDef = issuer2CreateGvtCredDefResult.CredDefJson;
 
-            var claim = "{\"sex\":[\"male\",\"5944657099558967239210949258394887428692050081607692519917050011144233115103\"],\n" +
-                    "                 \"name\":[\"Alex\",\"1139481716457488690172217916278103335\"],\n" +
-                    "                 \"height\":[\"175\",\"175\"],\n" +
-                    "                 \"age\":[\"28\",\"28\"]\n" +
-                    "        }";
+            issuer1GvtCredOffer = await AnonCreds.IssuerCreateCredentialOfferAsync(wallet, issuer1gvtCredDefId);
+            var issuer1XyzCredOffer = await AnonCreds.IssuerCreateCredentialOfferAsync(wallet, issuer1xyzCredDefId);
+            issuer2GvtCredOffer = await AnonCreds.IssuerCreateCredentialOfferAsync(wallet, issuer2gvtCredDefId);
 
-            //TODO var createClaimResult = await AnonCreds.IssuerCreateCredentialAsync(commonWallet, claimRequest, claim, -1);
+            await AnonCreds.ProverCreateMasterSecretAsync(wallet, masterSecretId);
 
-            //TODO var claimJson = createClaimResult.ClaimJson;
+            var createCredReqResult = await AnonCreds.ProverCreateCredentialReqAsync(wallet, proverDid, issuer1GvtCredOffer, issuer1gvtCredDef, masterSecretId);
+            issuer1GvtCredReq = createCredReqResult.CredentialRequestJson;
+            issuer1GvtCredReqMetadata = createCredReqResult.CredentialRequestMetadataJson;
 
-            //TODO await AnonCreds.ProverStoreClaimAsync(commonWallet, claimJson, createClaimResult.RevocRegUpdateJson);
+            var createCredResult = await AnonCreds.IssuerCreateCredentialAsync(wallet, issuer1GvtCredOffer, issuer1GvtCredReq, gvtCredentialValuesJson, null, null);
+            var issuer1GvtCredential = createCredResult.CredentialJson;
+
+            await AnonCreds.ProverStoreCredentialAsync(wallet, credentialId1, issuer1GvtCredReqMetadata, issuer1GvtCredential, issuer1gvtCredDef, null);
+
+            createCredReqResult = await AnonCreds.ProverCreateCredentialReqAsync(wallet, proverDid, issuer1XyzCredOffer, issuer1xyzCredDef, masterSecretId);
+            var issuer1XyzCredReq = createCredReqResult.CredentialRequestJson;
+            var issuer1XyzCredReqMetadata = createCredReqResult.CredentialRequestMetadataJson;
+
+            createCredResult = await AnonCreds.IssuerCreateCredentialAsync(wallet, issuer1XyzCredOffer, issuer1XyzCredReq, xyzCredentialValuesJson, null, null);
+            var issuer1XyzCredential = createCredResult.CredentialJson;
+
+            await AnonCreds.ProverStoreCredentialAsync(wallet, credentialId2, issuer1XyzCredReqMetadata, issuer1XyzCredential, issuer1xyzCredDef, null);
+
+            createCredReqResult = await AnonCreds.ProverCreateCredentialReqAsync(wallet, proverDid, issuer2GvtCredOffer, issuer2gvtCredDef, masterSecretId);
+            var issuer2GvtCredReq = createCredReqResult.CredentialRequestJson;
+            var issuer2GvtCredReqMetadata = createCredReqResult.CredentialRequestMetadataJson;
+
+            var gvt2CredValues = "{" +
+                    "           \"sex\":{\"raw\":\"male\",\"encoded\":\"2142657394558967239210949258394838228692050081607692519917028371144233115103\"},\n" +
+                    "           \"name\":{\"raw\":\"Alexander\",\"encoded\":\"21332817548165488690172217217278169335\"},\n" +
+                    "           \"height\":{\"raw\":\"170\",\"encoded\":\"170\"},\n" +
+                    "           \"age\":{\"raw\":\"28\",\"encoded\":\"28\"}\n" +
+                    "   }";
+
+            createCredResult = await AnonCreds.IssuerCreateCredentialAsync(wallet, issuer2GvtCredOffer, issuer2GvtCredReq, gvt2CredValues, null, null);
+            var issuer2GvtCredential = createCredResult.CredentialJson;
+
+            var credentialId3 = "id3";
+            await AnonCreds.ProverStoreCredentialAsync(wallet, credentialId3, issuer2GvtCredReqMetadata, issuer2GvtCredential, issuer2gvtCredDef, null);
 
             _walletOpened = true;
         }

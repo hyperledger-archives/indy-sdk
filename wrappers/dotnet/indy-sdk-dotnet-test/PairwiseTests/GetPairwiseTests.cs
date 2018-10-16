@@ -12,9 +12,9 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         [TestMethod]
         public async Task TestGetPairwiseWorks()
         {
-            await Pairwise.CreateAsync(wallet, theirVerkey, myDid, METADATA);
+            await Pairwise.CreateAsync(wallet, theirDid, myDid, METADATA);
 
-            var pairwiseInfoJson = await Pairwise.GetAsync(wallet, theirVerkey);
+            var pairwiseInfoJson = await Pairwise.GetAsync(wallet, theirDid);
             var pairwiseInfo = JObject.Parse(pairwiseInfoJson);
 
             Assert.AreEqual(myDid, pairwiseInfo.Value<string>("my_did"));
@@ -22,22 +22,10 @@ namespace Hyperledger.Indy.Test.PairwiseTests
         }
 
         [TestMethod]
-        public async Task TestGetPairwiseWorksWhenNoMetadataIsPresent()
-        {
-            await Pairwise.CreateAsync(wallet, theirVerkey, myDid, null);
-
-            var pairwiseInfoJson = await Pairwise.GetAsync(wallet, theirVerkey);
-            var pairwiseInfo = JObject.Parse(pairwiseInfoJson);
-
-            Assert.AreEqual(myDid, pairwiseInfo.Value<string>("my_did"));
-            Assert.IsNull(pairwiseInfo["metadata"]);
-        }
-
-        [TestMethod]
-        public async Task TestGetPairwiseWalletItemNotFoundExceptionForNotCreated()
+        public async Task TestGetPairwiseWorksForNotCreated()
         {
             var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
-                Pairwise.GetAsync(wallet, theirVerkey)
+                Pairwise.GetAsync(wallet, theirDid)
             );          
         }
     }

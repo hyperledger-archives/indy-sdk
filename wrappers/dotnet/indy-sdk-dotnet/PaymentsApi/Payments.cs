@@ -1,8 +1,7 @@
-﻿using System.Threading.Tasks;
-using Hyperledger.Indy.Utils;
+﻿using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System.Threading.Tasks;
 using static Hyperledger.Indy.PaymentsApi.NativeMethods;
-using static Hyperledger.Indy.Utils.CallbackHelper;
 #if __IOS__
 using ObjCRuntime;
 #endif
@@ -350,7 +349,8 @@ namespace Hyperledger.Indy.PaymentsApi
         ///     amount: &lt;int>, // amount of tokens to transfer to this payment address
         ///     extra: &lt;str>, // optional data
         ///   }]</param>
-        public static Task<PaymentResult> AddRequestFeesAsync(Wallet wallet, string submitterDid, string reqJson, string inputsJson, string outputsJson)
+        ///   <param name="extra">Optional information for payment operation.</param>
+        public static Task<PaymentResult> AddRequestFeesAsync(Wallet wallet, string submitterDid, string reqJson, string inputsJson, string outputsJson, string extra)
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(submitterDid, "submitterDid");
@@ -365,6 +365,7 @@ namespace Hyperledger.Indy.PaymentsApi
                 reqJson,
                 inputsJson,
                 outputsJson,
+                extra,
                 AddRequestFeesCallback);
 
             CallbackHelper.CheckResult(result);

@@ -9,7 +9,7 @@ namespace Hyperledger.Indy.Test.PairwiseTests
     {
         protected string myDid;
         protected string theirDid;
-        protected string theirVerkey;
+        protected const string metadata = "some metadata";
         protected const string PAIR_TEMPLATE = "{{\"my_did\":\"{0}\",\"their_did\":\"{1}\"}}";
 
         [TestInitialize]
@@ -20,9 +20,9 @@ namespace Hyperledger.Indy.Test.PairwiseTests
 
             result = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
             theirDid = result.Did;
-            theirVerkey = result.VerKey;
+            var theirVerKey = result.VerKey;
 
-            await Did.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", result.VerKey));
+            await Did.StoreTheirDidAsync(wallet, string.Format(IDENTITY_JSON_TEMPLATE, theirDid, theirVerKey));
         }
     }
 }
