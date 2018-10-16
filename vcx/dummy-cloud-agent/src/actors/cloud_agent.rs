@@ -1,5 +1,6 @@
 use actix::prelude::{Actor, Addr, Context, Handler, Message as ActorMessage, ResponseFuture};
 use domain::messages::*;
+use domain::config::CloudAgentConfig;
 use failure::*;
 use futures::*;
 use indy::{did, wallet};
@@ -7,67 +8,81 @@ use utils::futures::*;
 use utils::messages::*;
 
 pub struct CloudAgent {
-    wallet_config: String,
-    wallet_credentials: String,
+    wallet_handle: i32,
     owner_did: String,
     did: String,
     verkey: String,
 }
 
 impl CloudAgent {
-    pub fn start() -> ResponseFuture<Addr<CloudAgent>, Error> {
-        Self::new()
+    pub fn start(config: CloudAgentConfig) -> ResponseFuture<Addr<CloudAgent>, Error> {
+        Self::new(config)
             .map(|cloud_agent| cloud_agent.start())
             .into_box()
     }
 
-    pub fn new() -> ResponseFuture<CloudAgent, Error> {
-        unimplemented!()
-    }
+    pub fn new(config: CloudAgentConfig) -> ResponseFuture<CloudAgent, Error> {
+        let wallet_config = json!({
+            "id": config.wallet_id,
+            "storage_type": config.wallet_storage_type,
+            "storage_config": config.wallet_storage_config,
+         })
+            .to_string();
 
-    pub fn handle_message(&mut self, msg: Vec<u8>) -> ResponseFuture<Vec<u8>, Error> {
-        trace!("CloudAgent::handle_message >> msg: {:?}", msg);
-
-        let wallet_config = self.wallet_config.clone();
-        let wallet_credentials = self.wallet_credentials.clone();
-        let owner_did = self.owner_did.clone();
-        let cloud_agent_did = self.did.clone();
-        let cloud_agent_vk = self.verkey.clone();
+        let wallet_credentials = json!({
+            "key": config.wallet_passphrase,
+            "storage_credentials": config.wallet_storage_credentials,
+        })
+            .to_string();
 
         future::ok(())
             .and_then(move |_| {
                 wallet::open_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
                     .map_err(|err| err.context("Can't open Cloud Agent wallet.`").into())
             })
-            .and_then(move |wallet_handle|
-                unbundle_authcrypted(wallet_handle, &cloud_agent_vk, &msg)
-                    .map(move |(sender_vk, msg)| (wallet_handle, sender_vk, msg, cloud_agent_vk))
-            )
-            .and_then(|(wallet_handle, sender_vk, msg, cloud_agent_vk)| {
+            .and_then(move |wallet_handle| {
+                did::key_for_local_did(wallet_handle,
+                                       config.did.as_ref())
+                    .map(move |verkey| (wallet_handle, verkey, config))
+                    .map_err(|err| err.context("Can't get Cloud Agent did key").into())
+            })
+            .map(move |(wallet_handle, verkey, config)| {
+                CloudAgent {
+                    wallet_handle,
+                    verkey,
+                    did: config.did,
+                    owner_did: config.owner_did,
+                }
+            })
+            .into_box()
+    }
+
+    pub fn handle_message(&mut self, msg: Vec<u8>) -> ResponseFuture<Vec<u8>, Error> {
+        trace!("CloudAgent::handle_message >> msg: {:?}", msg);
+
+        let wallet_handle = self.wallet_handle.clone();
+        let owner_did = self.owner_did.clone();
+        let cloud_agent_vk = self.verkey.clone();
+
+        unbundle_authcrypted(wallet_handle, &cloud_agent_vk, &msg)
+            .and_then(move |(sender_vk, msg)| {
                 match msg {
                     Message::CreateKey(msg) => {
-                        Self::_handle_create_key(wallet_handle, owner_did, cloud_agent_did, cloud_agent_vk, sender_vk, msg)
+                        Self::_handle_create_key(wallet_handle, owner_did, cloud_agent_vk, sender_vk, msg)
                     }
-                    _ => err!(err_msg("Unsupported message"))
+                    _ => future::err(err_msg("Unsupported message")).into_box()
                 }
-                    .map(move |response| (response, wallet_handle))
             })
-            .and_then(|(response, wallet_handle)|
-                wallet::close_wallet(wallet_handle)
-                    .map(move |_| response)
-                    .map_err(|err| err.context("Can't close Cloud Agent wallet.").into())
-            )
             .into_box()
     }
 
     fn _handle_create_key(wallet_handle: i32,
                           owner_did: String,
-                          cloud_agent_did: String,
                           cloud_agent_vk: String,
                           sender_vk: String,
                           msg: CreateKey) -> ResponseFuture<Vec<u8>, Error> {
-        trace!("CloudAgent::_handle_create_key >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
-               wallet_handle, owner_did, cloud_agent_did, cloud_agent_vk, sender_vk, msg);
+        trace!("CloudAgent::_handle_create_key >> {:?}, {:?}, {:?}, {:?}, {:?}",
+               wallet_handle, owner_did, cloud_agent_vk, sender_vk, msg);
 
         if msg.from_did != owner_did {
             return err!(err_msg("Inconsistent sender did"));
