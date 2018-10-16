@@ -6,12 +6,12 @@ which created the wallet is avoided.
 
 ## Goals and ideas
 
-* Alow users to export their wallets so the can do the backup  or move their secret data to different agency or different device.
+* Allow users to export their wallets so the can do the backup  or move their secret data to different agency or different device.
   * Export file will be encrypted with export key.
   * Export should contain the whole wallet data (including secrets).
   * Export should be done in a streaming way so big wallets may be exported on machines with conservative memory.
-* Alow users to import exported wallet.
-  * Import is alowed only on empty wallet - Therefore import is done with one create + import operation.
+* Allow users to import exported wallet.
+  * Import is allowed only on empty wallet - Therefore import is done with one create + import operation.
   * User should provide key used for export, so export file may be decrypted.
   * User should provide new master key used for opening newly created wallet from import.
   * Import should be done in a streaming way so big wallets may be imported on machines with conservative memory.
@@ -115,7 +115,7 @@ pub struct Header {
 }
 
 pub enum EncryptionMethod {
-    ChaCha20Poly1305IETF { // **ChaCha20-Poly1305-IETF** cypher in blocks per chunk_size bytes
+    ChaCha20Poly1305IETF { // **ChaCha20-Poly1305-IETF** cipher in blocks per chunk_size bytes
         salt: Vec<u8>,  // pwhash_argon2i13::Salt as bytes. Random salt used for deriving of key from passphrase
         nonce: Vec<u8>, // chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency
         chunk_size: usize, // size of encrypted chunk
