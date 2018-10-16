@@ -1,5 +1,19 @@
 use futures::Future;
 
+/// This is the equivalent `try!` adapted to deal with futures.
+#[macro_export]
+macro_rules! ftry {
+    ($res:expr) => {
+        match $res {
+            Ok(elt) => elt,
+            Err(e) => {
+                use $crate::utils::futures::FutureExt;
+                return ::futures::future::err(From::from(e)).into_box();
+            }
+        }
+    };
+}
+
 /// This is the equivalent of `Result::Ok()` adapted to deal with futures.
 #[macro_export]
 macro_rules! ok {

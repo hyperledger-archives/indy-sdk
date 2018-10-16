@@ -23,7 +23,7 @@ fn _get_endpoint_details(state: State<AppState>) -> FutureResponse<HttpResponse>
         .from_err()
         .and_then(|res| match res {
             Ok(msg) => Ok(HttpResponse::Ok().json(msg)),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
+            Err(err) => Ok(HttpResponse::InternalServerError().body(format!("{:?}", err)).into()), // FIXME: Better error
         })
         .responder()
 }
@@ -38,7 +38,7 @@ fn _forward_message((state, req): (State<AppState>, HttpRequest<AppState>)) -> F
                 .from_err()
                 .and_then(|res| match res {
                     Ok(msg) => Ok(Bytes::from(msg.0).into()),
-                    Err(_) => Ok(HttpResponse::InternalServerError().into()),
+                    Err(err) => Ok(HttpResponse::InternalServerError().body(format!("{:?}", err)).into()), // FIXME: Better error
                 })
         })
         .responder()

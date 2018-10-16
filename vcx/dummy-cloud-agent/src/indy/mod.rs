@@ -7,6 +7,12 @@ macro_rules! c_str {
     }
 }
 
+macro_rules! opt_c_str {
+    ($x:ident) => {
+        $x.map(|s| ::std::ffi::CString::new(s).unwrap())
+    }
+}
+
 macro_rules! rust_str {
     ($x:ident) => {
         unsafe { ::std::ffi::CStr::from_ptr($x).to_str().unwrap().to_string() }
@@ -21,6 +27,7 @@ macro_rules! rust_slice {
 
 pub mod crypto;
 pub mod did;
+pub mod logger;
 pub mod pairwise;
 pub mod wallet;
 
