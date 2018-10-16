@@ -9,14 +9,14 @@ namespace Hyperledger.Indy.Test.CryptoTests
     public class VerifyTest : IndyIntegrationTestWithSingleWallet
     {
         [TestMethod]
-        public async Task TestVerifyWorksWhenAllMatch()
+        public async Task TestCryptoVerifyWorks()
         {
             var result = await Crypto.VerifyAsync(VERKEY_TRUSTEE, MESSAGE, SIGNATURE);
             Assert.IsTrue(result);
         }
 
         [TestMethod]
-        public async Task TestVerifyWorksForVerkeyWithCorrectCryptoType()
+        public async Task TestCryptoVerifyWorksForVerkeyWithCorrectCryptoType()
         {
             var verkey = VERKEY_TRUSTEE + ":ed25519";
             var valid = await Crypto.VerifyAsync(verkey, MESSAGE, SIGNATURE);
@@ -24,17 +24,17 @@ namespace Hyperledger.Indy.Test.CryptoTests
         }
 
         [TestMethod]
-        public async Task TestVerifyWorksForVerkeyWithInvalidCryptoType()
+        public async Task TestCryptoVerifyWorksForVerkeyWithInvalidCryptoType()
         {
             var verkey = VERKEY_TRUSTEE + ":unknown_crypto";
 
-            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<UnknownCryptoTypeException>(() =>
                Crypto.VerifyAsync(verkey, MESSAGE, SIGNATURE)
            );
         }
 
         [TestMethod]
-        public async Task TestVerifyWorksForOtherSigner()
+        public async Task TestCryptoVerifyWorksForOtherSigner()
         {
             var valid = await Crypto.VerifyAsync(VERKEY_MY2, MESSAGE, SIGNATURE);
             Assert.IsFalse(valid);
