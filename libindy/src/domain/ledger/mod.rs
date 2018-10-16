@@ -12,4 +12,3 @@ pub mod rev_reg;
 pub mod response;
 pub mod validator_info;
 pub mod constants;
-pub mod reply_type;
