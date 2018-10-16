@@ -283,23 +283,17 @@ def rhelTesting() {
 
 def linuxTesting(file, env_name, network_name) {
     parallel([
-            failFast                         : true,
-            "${env_name} Test: build libindy": {
+            failFast                                  : true,
+            "${env_name} Test: build and test libindy": {
                 node('ubuntu') {
                     linuxLibindyBuild(file, env_name, network_name)
                 }
             },
-            "${env_name} Test: test wrappers": {
+            "${env_name} Test: test other components" : {
                 waitUntil {
                     libindyBuildFinished[env_name]
                 }
-                parallel([
-                        "${env_name}-java-test"   : {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
-                        },
-                        "${env_name}-python-test" : {
-                            linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
-                        },
+                def jobs = [
                         "${env_name}-nodejs-test" : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
                         },
@@ -312,7 +306,16 @@ def linuxTesting(file, env_name, network_name) {
                         "${env_name}-vcx-test"    : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting)
                         }
-                ])
+                ]
+                if (env_name == "Ubuntu") {
+                    jobs["${env_name}-java-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
+                    }
+                    jobs["${env_name}-python-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                    }
+                }
+                parallel(jobs)
             },
     ])
 }
