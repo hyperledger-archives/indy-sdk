@@ -1812,7 +1812,7 @@ mod wallet_tests {
     fn _wallet() -> Wallet {
         // use passed parameters to build wallet/storage, if available
         let wallet_service = WalletService::new();
-        let storage_types = wallet_service.storage_types.borrow();
+        let storage_types;
 
         let storage_type: Box<WalletStorageType>;
         let storage_type_ref: &Box<WalletStorageType>;
@@ -1821,12 +1821,7 @@ mod wallet_tests {
         let credentials;
 
         let overrides = utils::wallet::test_utils::wallet_storage_overrides();
-        if !utils::wallet::test_utils::any_overrides(&overrides) {
-            storage_type = Box::new(SQLiteStorageType::new());
-            storage_type_ref = &storage_type;
-            config = None;
-            credentials = None;
-        } else {
+        if utils::wallet::test_utils::any_overrides(&overrides) {
             let init_config = _config();
             let init_creds = _credentials_moderate();
             let (my_config, my_credentials) = utils::wallet::test_utils::override_wallet_config_creds(&init_config, &init_creds, &wallet_service, true);
@@ -1834,6 +1829,8 @@ mod wallet_tests {
             creds_str = serde_json::to_string(&my_credentials).unwrap();
             config = Some(&config_str[..]);
             credentials = Some(&creds_str[..]);
+
+            storage_types = wallet_service.storage_types.borrow();
 
             storage_type_ref = {
                 let storage_type = my_config.storage_type
@@ -1845,6 +1842,11 @@ mod wallet_tests {
                     .get(storage_type).unwrap()
                     //.ok_or(WalletError::UnknownType(storage_type.to_string())).unwrap()
             };
+        } else {
+            storage_type = Box::new(SQLiteStorageType::new());
+            storage_type_ref = &storage_type;
+            config = None;
+            credentials = None;
         }
 
         let master_key = _master_key();
