@@ -153,66 +153,7 @@ def macosTesting() {
 def androidTesting() {
     env_name="android_on_linux"
     network_name="pool_network"
-    parallel([
-            "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
-            "${env_name}-android-building" : { androidBuildAsTesting() }
-    ])
-}
-
-def androidBuildAsTesting() {
-
-    node('ubuntu') {
-        stage('Android Test') {
-            try {
-                echo 'Building android binaries.This will start emulator and test android binaries'
-                checkout scm
-
-                dir('libindy') {
-                    echo 'Building android binaries: Building docker image'
-                    def testEnv
-                    testEnv = dockerBuild('libindy', "ci/ubuntu.dockerfile ci")
-                    sh 'chmod -R 777 ci/*.sh'
-                    sh 'chmod -R 777 *.sh'
-
-                    buildAndroid(testEnv)
-                }
-            }
-            finally {
-                step([$class: 'WsCleanup'])
-            }
-        }
-    }
-}
-
-def buildAndroid(buildEnv) {
-
-    ANDROID_SCRIPT_PATH = 'android.build.sh'
-
-    echo 'Building Libindy android files for arm'
-    buildEnv.inside {
-        sh "./${ANDROID_SCRIPT_PATH} -d arm"
-    }
-
-    echo 'Building Libindy android files for x86'
-    buildEnv.inside {
-        sh "./${ANDROID_SCRIPT_PATH} -d x86"
-    }
-
-    echo 'Building Libindy android files for arm64'
-    buildEnv.inside {
-        sh "./${ANDROID_SCRIPT_PATH} -d arm64"
-    }
-
-    echo 'Building Libindy android files for armv7'
-    buildEnv.inside {
-        sh "./${ANDROID_SCRIPT_PATH} -d armv7"
-    }
-
-    echo 'Building Libindy android files for x86_64'
-    buildEnv.inside {
-        sh "./${ANDROID_SCRIPT_PATH} -d x86_64"
-    }
-
+    linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting)
 }
 
 def iosTesting() {
