@@ -1,5 +1,8 @@
 #!groovy
 
+
+libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
+
 testing()
 
 def testing() {
@@ -267,22 +270,57 @@ def iosTesting() {
 }
 
 def ubuntuTesting() {
-    node('ubuntu') {
-        stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network")
-        }
+    stage('Ubuntu Test') {
+        linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network")
     }
 }
 
 def rhelTesting() {
-    node('ubuntu') {
-        stage('RedHat Test') {
-            linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
-        }
+    stage('RedHat Test') {
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network")
     }
 }
 
 def linuxTesting(file, env_name, network_name) {
+    parallel([
+            failFast                                  : true,
+            "${env_name} Test: build and test libindy": {
+                node('ubuntu') {
+                    linuxLibindyBuild(file, env_name, network_name)
+                }
+            },
+            "${env_name} Test: test other components" : {
+                waitUntil {
+                    libindyBuildFinished[env_name]
+                }
+                def jobs = [
+                        "${env_name}-nodejs-test" : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
+                        },
+                        "${env_name}-cli-test"    : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
+                        },
+                        "${env_name}-rust-test"   : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
+                        },
+                        "${env_name}-vcx-test"    : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting)
+                        }
+                ]
+                if (env_name == "Ubuntu") {
+                    jobs["${env_name}-java-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting)
+                    }
+                    jobs["${env_name}-python-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting)
+                    }
+                }
+                parallel(jobs)
+            },
+    ])
+}
+
+def linuxLibindyBuild(file, env_name, network_name) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -332,40 +370,31 @@ def linuxTesting(file, env_name, network_name) {
         stash includes: 'vcx/libvcx/libindy.so', name: "LibindyVCXSO${env_name}"
         stash includes: 'vcx/libvcx/libnullpay.so', name: "LibnullpayVCXSO${env_name}"
 
-        parallel([
-                "${env_name}-libindy-test"   : {
-                    dir('libindy') {
-                        testEnv.inside("--network=${network_name}") {
-                            echo "${env_name} Libindy Test: Test"
+        libindyBuildFinished[env_name] = true
 
-                            echo "${env_name} Libindy Test: Build Test"
-                            sh "RUST_BACKTRACE=1 cargo test --no-run --features $additionalFeatures"
+        dir('libindy') {
+            testEnv.inside("--network=${network_name}") {
+                echo "${env_name} Libindy Test: Test"
 
-                            echo "${env_name} Libindy Test: Run tests"
-                            sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features  $additionalFeatures"
-                        }
-                    }
-                },
-                "${env_name}-libnullpay-test": {
-                    dir('libnullpay') {
-                        testEnv.inside("--network=${network_name}") {
-                            echo "${env_name} Libnullpay Test: Test"
+                echo "${env_name} Libindy Test: Build Test"
+                sh "RUST_BACKTRACE=1 cargo test --no-run --features $additionalFeatures"
 
-                            echo "${env_name} Libnullpay Test: Build Test"
-                            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
+                echo "${env_name} Libindy Test: Run tests"
+                sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --features  $additionalFeatures"
+            }
+        }
 
-                            echo "${env_name} Libnullpay Test: Run tests"
-                            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
-                        }
-                    }
-                },
-                "${env_name}-java-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting) },
-                "${env_name}-python-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting) },
-                "${env_name}-nodejs-test"    : { linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting) },
-                "${env_name}-cli-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting) },
-                "${env_name}-rust-test"      : { linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting) },
-                "${env_name}-vcx-test"       : { linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting) }
-        ])
+        dir('libnullpay') {
+            testEnv.inside("--network=${network_name}") {
+                echo "${env_name} Libnullpay Test: Test"
+
+                echo "${env_name} Libnullpay Test: Build Test"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run"
+
+                echo "${env_name} Libnullpay Test: Run tests"
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
+            }
+        }
     }
     finally {
         closePool(env_name, network_name, poolInst)
