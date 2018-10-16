@@ -435,7 +435,27 @@ mod tests {
 
         assert_eq!(query, expected);
     }
+/*
+    #[test]
+    fn test_simple_operator_eq_encrypted_parse_2() {
+        let name1 = vec![1, 5, 8];
+        let value1 = vec![3, 5, 6];
 
+        let query = Operator::Eq(
+            TagName::EncryptedTagName(name1.clone()),
+            TargetValue::Encrypted(value1.clone()),
+        );
+        let json = query.to_string();
+        let query = parse_from_json(&json).unwrap();
+
+        let expected = Operator::Eq(
+            TagName::EncryptedTagName(name1.clone()),
+            TargetValue::Encrypted(value1.clone())
+        );
+
+        assert_eq!(query, expected);
+    }
+*/
     #[test]
     fn test_simple_operator_neq_plaintext_parse() {
         let name1 = _random_string(10);

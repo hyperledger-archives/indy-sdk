@@ -8,7 +8,7 @@ use indy::api::ErrorCode;
 use utils::sequence::SequenceUtils;
 use utils::ctypes;
 use utils::crypto::base64;
-use postgres_storage::storage::{WalletStorage, WalletStorageType, StorageRecord, Tag, TagName, EncryptedValue};
+use postgres_storage::storage::{WalletStorage, WalletStorageType, StorageRecord, StorageIterator, Tag, TagName, EncryptedValue};
 use postgres_storage::language;
 use indy::errors::wallet::WalletStorageError;
 
@@ -21,10 +21,11 @@ use std::str;
 
 
 struct PostgresStorageContext {
-    xhandle: i32,        // reference returned to client to track open wallet connection
+    // TODO save handle, config and credentials in case we need to re-connect to database
+    _xhandle: i32,        // reference returned to client to track open wallet connection
     id: String,          // wallet name
-    config: String,      // wallet config
-    credentials: String, // wallet credentials
+    _config: String,      // wallet config
+    _credentials: String, // wallet credentials
     phandle: Box<::postgres_storage::PostgresStorage>  // reference to a postgres database connection
 }
 
@@ -53,7 +54,9 @@ lazy_static! {
 
 lazy_static! {
     // cache of active Postgres searches
-    static ref POSTGRES_ACTIVE_SEARCHES: Mutex<HashMap<i32, Vec<PostgresWalletRecord>,>> = Default::default();
+    // TODO figure out  athread-safe PostgresStorageIterator
+    // static ref POSTGRES_ACTIVE_SEARCHES: Mutex<HashMap<i32, Box<::postgres_storage::PostgresStorageIterator>>> = Default::default();
+    static ref POSTGRES_ACTIVE_SEARCHES: Mutex<HashMap<i32, Vec<PostgresWalletRecord>>> = Default::default();
 }
 
 pub struct PostgresWallet {}
@@ -118,10 +121,10 @@ impl PostgresWallet {
 
         // create a storage context (keep all info in case we need to recycle wallet connection)
         let context = PostgresStorageContext {
-            xhandle,      // reference returned to client to track open wallet connection
+            _xhandle: xhandle,      // reference returned to client to track open wallet connection
             id,           // wallet name
-            config,       // wallet config
-            credentials,  // wallet credentials
+            _config: config,       // wallet config
+            _credentials: credentials,  // wallet credentials
             phandle       // reference to a postgres database connection
         };
 
@@ -523,7 +526,7 @@ impl PostgresWallet {
 
                 ErrorCode::Success
             },
-            Err(err) => {
+            Err(_err) => {
                 ErrorCode::CommonInvalidState
             }
         }
@@ -587,7 +590,6 @@ impl PostgresWallet {
         }
 
         let query = language::parse_from_json(&query_json).unwrap();
-
         let wallet_context = handles.get(&xhandle).unwrap();
         let wallet_box = &wallet_context.phandle;
         let storage = &*wallet_box;
@@ -597,38 +599,28 @@ impl PostgresWallet {
         match res {
             Ok(iter) => {
                 // iter: Box<StorageIterator>
+                let search_records = _iterator_to_record_set(iter).unwrap();
+
+                let search_handle = SequenceUtils::get_next_id();
+
+                let mut searches = POSTGRES_ACTIVE_SEARCHES.lock().unwrap();
+
+                // TODO store the iterator rather than the fetched records
+                // searches.insert(search_handle, iter);
+                searches.insert(search_handle, search_records);
+
+                unsafe { *handle = search_handle };
                 return ErrorCode::Success
             },
-            Err(err) => {
+            Err(_err) => {
                 // err: WalletStorageError
                 return ErrorCode::WalletStorageError
             }
         }
-
-/*
-        let search_records = wallet.records
-            .iter()
-            .filter(|&(key, _)| key.starts_with(&type_))
-            .map(|(_, value)| value.clone())
-            .collect::<Vec<InmemWalletRecord>>();
-
-        let search_handle = SequenceUtils::get_next_id();
-
-        let mut searches = POSTGRES_ACTIVE_SEARCHES.lock().unwrap();
-
-        searches.insert(search_handle, search_records);
-
-        unsafe { *handle = search_handle };
-*/
-        ErrorCode::Success
-        // TODO end
     }
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_search_all_records(xhandle: i32, handle: *mut i32) -> ErrorCode {
-        unimplemented!();
-        // TODO start
-        // TODO PostgresStorage::get_all(options) from handle
         let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
@@ -638,29 +630,34 @@ impl PostgresWallet {
         let wallet_context = handles.get(&xhandle).unwrap();
         let wallet_box = &wallet_context.phandle;
         let storage = &*wallet_box;
-/*
-        let search_records = wallet.records
-            .values()
-            .cloned()
-            .collect::<Vec<InmemWalletRecord>>();
 
-        let search_handle = SequenceUtils::get_next_id();
+        let res = storage.get_all();
+        
+        match res {
+            Ok(iter) => {
+                // iter: Box<StorageIterator>
+                let search_records = _iterator_to_record_set(iter).unwrap()     ;
 
-        let mut searches = POSTGRES_ACTIVE_SEARCHES.lock().unwrap();
+                let search_handle = SequenceUtils::get_next_id();
 
-        searches.insert(search_handle, search_records);
+                let mut searches = POSTGRES_ACTIVE_SEARCHES.lock().unwrap();
 
-        unsafe { *handle = search_handle };
-*/
-        ErrorCode::Success
-        // TODO end
+                // TODO store the iterator rather than the fetched records
+                // searches.insert(search_handle, iter);
+                searches.insert(search_handle, search_records);
+
+                unsafe { *handle = search_handle };
+                return ErrorCode::Success
+            },
+            Err(_err) => {
+                // err: WalletStorageError
+                return ErrorCode::WalletStorageError
+            }
+        }
     }
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_get_search_total_count(xhandle: i32, search_handle: i32, count: *mut usize) -> ErrorCode {
-        unimplemented!();
-        // TODO start
-        // TODO PostgresStorage::get_all(options) from handle
         let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
@@ -677,14 +674,10 @@ impl PostgresWallet {
         }
 
         ErrorCode::Success
-        // TODO end
     }
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_fetch_search_next_record(xhandle: i32, search_handle: i32, record_handle: *mut i32) -> ErrorCode {
-        unimplemented!();
-        // TODO start
-        // TODO storage iterator???
         let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
@@ -692,7 +685,7 @@ impl PostgresWallet {
         }
 
         let mut searches = POSTGRES_ACTIVE_SEARCHES.lock().unwrap();
-/*
+
         match searches.get_mut(&search_handle) {
             Some(records) => {
                 match records.pop() {
@@ -703,22 +696,17 @@ impl PostgresWallet {
                         handles.insert(handle, record.clone());
 
                         unsafe { *record_handle = handle };
-                    }
-                    None => return ErrorCode::WalletItemNotFound
+                        ErrorCode::Success
+                    },
+                    None => ErrorCode::WalletItemNotFound
                 }
-            }
-            None => return ErrorCode::CommonInvalidState
+            },
+            None => ErrorCode::CommonInvalidState
         }
-*/
-        ErrorCode::Success
-        // TODO end
     }
 
 #[no_mangle]
     pub extern "C" fn postgreswallet_fn_free_search(xhandle: i32, search_handle: i32) -> ErrorCode {
-        unimplemented!();
-        // TODO start
-        // TODO not sure ???
         let handles = POSTGRES_OPEN_WALLETS.lock().unwrap();
 
         if !handles.contains_key(&xhandle) {
@@ -733,7 +721,6 @@ impl PostgresWallet {
         handles.remove(&search_handle);
 
         ErrorCode::Success
-        // TODO end
     }
 
 #[no_mangle]
@@ -793,6 +780,31 @@ fn _storagerecord_to_postgresrecord(in_rec: &StorageRecord) -> Result<PostgresWa
         tags: out_tags
     };
     Ok(out_rec)
+}
+
+fn _iterator_to_record_set(mut iter: Box<StorageIterator>) -> Result<Vec<PostgresWalletRecord>, ErrorCode> {
+    let mut search_continue: bool = true;
+    let mut search_records = Vec::new();
+    while search_continue {
+        let rec = iter.next();
+        match rec {
+            Ok(record) => {
+                match record {
+                    Some(record) => {
+                        // record: StorageRecord
+                        search_records.push(_storagerecord_to_postgresrecord(&record).unwrap());
+                    },
+                    None => {
+                        search_continue = false;
+                    }
+                };
+            },
+            Err(_err) => {
+                return Err(ErrorCode::WalletStorageError);
+            }
+        };
+    }
+    Ok(search_records)
 }
 
 fn _tags_to_json(tags: &[Tag]) -> Result<String, WalletStorageError> {
@@ -874,7 +886,7 @@ fn _tag_names_from_json(json: &str) -> Result<Vec<TagName>, WalletStorageError> 
 mod tests {
     use super::*;
     use std::ffi::{CString, CStr};
-    use std::{slice, str, ptr};
+    use std::{slice, ptr};
     use postgres_storage::storage::ENCRYPTED_KEY_LEN;
 
     #[test]
@@ -1089,8 +1101,8 @@ mod tests {
         let tags1_ = _sort_tags(tags1_);
         assert_eq!(_tags, tags1_);
 
-        let err = PostgresWallet::postgreswallet_fn_free_record(handle,
-                                rec_handle);
+        let err = PostgresWallet::postgreswallet_fn_free_record(handle, rec_handle);
+        assert_match!(ErrorCode::Success, err);
 
         _close_and_delete_wallet(handle);
     }
@@ -1187,8 +1199,8 @@ mod tests {
         let tags2_ = _sort_tags(tags2_);
         assert_eq!(_tags, tags2_);
 
-        let err = PostgresWallet::postgreswallet_fn_free_record(handle,
-                                rec_handle);
+        let err = PostgresWallet::postgreswallet_fn_free_record(handle, rec_handle);
+        assert_match!(ErrorCode::Success, err);
 
         _close_and_delete_wallet(handle);
     }
@@ -1204,7 +1216,6 @@ mod tests {
         let value1_ = _value1();
         let tags1_  = _tags();
 
-        let id1_    = _id_bytes1();
         let joined_value1 = value1_.to_bytes();
         let tags1  = _tags_json(&tags1_);
 
@@ -1227,8 +1238,8 @@ mod tests {
                                 &mut rec_handle);
         assert_match!(ErrorCode::Success, err);
 
-        let err = PostgresWallet::postgreswallet_fn_free_record(handle,
-                                rec_handle);
+        let err = PostgresWallet::postgreswallet_fn_free_record(handle, rec_handle);
+        assert_match!(ErrorCode::Success, err);
 
         // delete record
         let err = PostgresWallet::postgreswallet_fn_delete_record(handle,
@@ -1260,7 +1271,6 @@ mod tests {
         let value1_ = _value1();
         let tags1_  = _tags();
 
-        let id1_    = _id_bytes1();
         let joined_value1 = value1_.to_bytes();
         let tags1  = _tags_json(&tags1_);
 
@@ -1283,8 +1293,8 @@ mod tests {
                                 &mut rec_handle);
         assert_match!(ErrorCode::Success, err);
 
-        let err = PostgresWallet::postgreswallet_fn_free_record(handle,
-                                rec_handle);
+        let err = PostgresWallet::postgreswallet_fn_free_record(handle, rec_handle);
+        assert_match!(ErrorCode::Success, err);
 
         // delete tags
         let tag_names = _tag_names_to_delete();
@@ -1317,12 +1327,203 @@ mod tests {
         let tags2_ = _sort_tags(tags2_);
         assert_eq!(_tags, tags2_);
 
-        let err = PostgresWallet::postgreswallet_fn_free_record(handle,
-                                rec_handle);
+        let err = PostgresWallet::postgreswallet_fn_free_record(handle, rec_handle);
+        assert_match!(ErrorCode::Success, err);
 
         _close_and_delete_wallet(handle);
     }
 
+    #[test]
+    fn postgres_wallet_get_all_works() {
+        _cleanup();
+
+        let handle = _create_and_open_wallet();
+
+        let type1_  = _type1();
+        let id1     = _id1();
+        let value1_ = _value1();
+        let tags1_  = _tags();
+
+        let joined_value1 = value1_.to_bytes();
+        let tags1  = _tags_json(&tags1_);
+
+        // unit test for adding record(s) to the wallet
+        let err = PostgresWallet::postgreswallet_fn_add_record(handle,
+                                type1_.as_ptr(),
+                                id1.as_ptr(),
+                                joined_value1.as_ptr(),
+                                joined_value1.len(),
+                                tags1.as_ptr());
+        assert_match!(ErrorCode::Success, err);
+
+        let type2_  = _type2();
+        let id2     = _id2();
+        let value2_ = _value2();
+        let tags2_  = _tags();
+
+        let joined_value2 = value2_.to_bytes();
+        let tags2  = _tags_json(&tags2_);
+
+        // unit test for adding record(s) to the wallet
+        let err = PostgresWallet::postgreswallet_fn_add_record(handle,
+                                type2_.as_ptr(),
+                                id2.as_ptr(),
+                                joined_value2.as_ptr(),
+                                joined_value2.len(),
+                                tags2.as_ptr());
+        assert_match!(ErrorCode::Success, err);
+
+        // fetch the 2 records and verify
+        let mut search_handle: i32 = -1;
+        let err = PostgresWallet::postgreswallet_fn_search_all_records(handle, &mut search_handle);
+        assert_match!(ErrorCode::Success, err);
+        
+        let mut rec_count: i32 = 0;
+        let mut search_continue: bool = true;
+        while search_continue {
+            let mut rec_handle = -1;
+            let err = PostgresWallet::postgreswallet_fn_fetch_search_next_record(handle, search_handle, &mut rec_handle);
+            if err == ErrorCode::WalletItemNotFound {
+                search_continue = false;
+            } else if err != ErrorCode::Success {
+                search_continue = false;
+            }
+
+            if search_continue {
+                rec_count = rec_count + 1;
+
+                // fetch the record just to verify we can ...
+                let mut value_bytes: *const u8 = ptr::null();
+                let mut value_bytes_len: usize = 0;
+                let err = PostgresWallet::postgreswallet_fn_get_record_value(handle,
+                                        rec_handle,
+                                        &mut value_bytes,
+                                        &mut value_bytes_len);
+                assert_match!(ErrorCode::Success, err);
+                let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
+                let _value = EncryptedValue::from_bytes(value).unwrap();
+
+                let mut tags_ptr: *const c_char = ptr::null_mut();
+                let err = PostgresWallet::postgreswallet_fn_get_record_tags(handle,
+                                        rec_handle,
+                                        &mut tags_ptr);
+                assert_match!(ErrorCode::Success, err);
+                let tags_json = unsafe { CStr::from_ptr(tags_ptr).to_str().unwrap() };
+                let _tags = _tags_from_json(tags_json).unwrap();
+                let _tags = _sort_tags(_tags);
+
+                // free record once done
+                let err = PostgresWallet::postgreswallet_fn_free_record(handle, rec_handle);
+                assert_match!(ErrorCode::Success, err);
+            }
+        }
+        // confirm 2 records total
+        assert_eq!(2, rec_count);
+
+        _close_and_delete_wallet(handle);
+    }
+/*
+    #[test]
+    fn postgres_wallet_search_records_works() {
+        _cleanup();
+
+        let handle = _create_and_open_wallet();
+
+        let type1_  = _type1();
+        let id1     = _id1();
+        let value1_ = _value1();
+        let tags1_  = _tags();
+
+        let joined_value1 = value1_.to_bytes();
+        let tags1  = _tags_json(&tags1_);
+
+        // unit test for adding record(s) to the wallet
+        let err = PostgresWallet::postgreswallet_fn_add_record(handle,
+                                type1_.as_ptr(),
+                                id1.as_ptr(),
+                                joined_value1.as_ptr(),
+                                joined_value1.len(),
+                                tags1.as_ptr());
+        assert_match!(ErrorCode::Success, err);
+
+        let id2     = _id2();
+        let value2_ = _value2();
+
+        let joined_value2 = value2_.to_bytes();
+
+        // unit test for adding record(s) to the wallet
+        let err = PostgresWallet::postgreswallet_fn_add_record(handle,
+                                type1_.as_ptr(),
+                                id2.as_ptr(),
+                                joined_value2.as_ptr(),
+                                joined_value2.len(),
+                                tags1.as_ptr());
+        assert_match!(ErrorCode::Success, err);
+
+        // search the records and verify
+        println!("Setting up search query");
+        let mut search_handle: i32 = -1;
+        //let tag_name = String::from_utf8(vec![1, 5, 8]).unwrap();
+        //let tag_value = String::from_utf8(vec![3, 5, 6]).unwrap();
+        let tag_name = format!("{:?}", vec![1, 5, 8]);
+        let tag_value = format!("{:?}", vec![3, 5, 6]);
+        let query_json = format!(r#"{{{}:{}}}"#, tag_name, tag_value);
+        let query_json = CString::new(query_json.to_string()).unwrap();
+        println!("query_json {:?}", query_json);
+        let options_json = _search_options(true, true, true, true, true);
+        println!("Options {:?}", options_json);
+        let err = PostgresWallet::postgreswallet_fn_search_records(handle, 
+                                type1_.as_ptr(), 
+                                query_json.as_ptr(), 
+                                options_json.as_ptr() as *const i8, 
+                                &mut search_handle);
+        assert_match!(ErrorCode::Success, err);
+        
+        let mut rec_count: i32 = 0;
+        let mut search_continue: bool = true;
+        while search_continue {
+            let mut rec_handle = -1;
+            let err = PostgresWallet::postgreswallet_fn_fetch_search_next_record(handle, search_handle, &mut rec_handle);
+            if err == ErrorCode::WalletItemNotFound {
+                search_continue = false;
+            } else if err != ErrorCode::Success {
+                search_continue = false;
+            }
+
+            if search_continue {
+                rec_count = rec_count + 1;
+
+                // fetch the record just to verify we can ...
+                let mut value_bytes: *const u8 = ptr::null();
+                let mut value_bytes_len: usize = 0;
+                let err = PostgresWallet::postgreswallet_fn_get_record_value(handle,
+                                        rec_handle,
+                                        &mut value_bytes,
+                                        &mut value_bytes_len);
+                assert_match!(ErrorCode::Success, err);
+                let value = unsafe { slice::from_raw_parts(value_bytes, value_bytes_len) };
+                let _value = EncryptedValue::from_bytes(value).unwrap();
+
+                let mut tags_ptr: *const c_char = ptr::null_mut();
+                let err = PostgresWallet::postgreswallet_fn_get_record_tags(handle,
+                                        rec_handle,
+                                        &mut tags_ptr);
+                assert_match!(ErrorCode::Success, err);
+                let tags_json = unsafe { CStr::from_ptr(tags_ptr).to_str().unwrap() };
+                let _tags = _tags_from_json(tags_json).unwrap();
+                let _tags = _sort_tags(_tags);
+
+                // free record once done
+                let err = PostgresWallet::postgreswallet_fn_free_record(handle, rec_handle);
+                assert_match!(ErrorCode::Success, err);
+            }
+        }
+        // confirm 2 records total
+        assert_eq!(2, rec_count);
+
+        _close_and_delete_wallet(handle);
+    }
+*/
     fn _create_and_open_wallet() -> i32 {
         let id = _wallet_id();
         let config = _wallet_config();
@@ -1526,4 +1727,17 @@ mod tests {
             "retrieveTags": tags,
         }).to_string()
     }
+
+    fn _search_options(retrieve_records: bool, retrieve_total_count: bool, retrieve_value: bool, retrieve_tags: bool, retrieve_type: bool) -> String {
+        let mut map = HashMap::new();
+
+        map.insert("retrieveRecords", retrieve_records);
+        map.insert("retrieveTotalCount", retrieve_total_count);
+        map.insert("retrieveValue", retrieve_value);
+        map.insert("retrieveTags", retrieve_tags);
+        map.insert("retrieveType", retrieve_type);
+
+        serde_json::to_string(&map).unwrap()
+    }
+
 }
