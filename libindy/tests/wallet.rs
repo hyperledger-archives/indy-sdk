@@ -786,7 +786,7 @@ mod dynamic_storage_cases {
             //      export LD_LIBRARY_PATH=../samples/storage/storage-inmem/target/debug/:./target/debug/
             let os = os_type::current_platform();
             let osfile = match os.os_type {
-                os_type::OSType::OSX => "../samples/storage/storage-inmem/target/debug/libindystrginmem.dylib",
+                os_type::OSType::OSX => "libindystrginmem.dylib",
                 _ => "libindystrginmem.so"
             };
 

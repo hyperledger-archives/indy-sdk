@@ -16,8 +16,9 @@ pub mod test_utils {
     use std::collections::HashMap;
     use std::env;
     use std::sync::Mutex;
+    use std::ffi::OsString;
 
-    //use std::path::Path;
+    use std::path::Path;
 
     use serde_json;
     use serde_json::Value;
@@ -69,10 +70,11 @@ pub mod test_utils {
 
         let err;
         let lib;
-        //let lib_path = Path::new(library_path);
+        let sz_library_path = OsString::from(library_path);
+        let lib_path = Path::new(&sz_library_path);
         unsafe {
-            println!("Loading {:?}", library_path);
-            lib = match Lib::new(library_path) {
+            println!("Loading {:?}", lib_path);
+            lib = match Lib::new(lib_path) {
                 Ok(rlib) => {
                     println!("Loaded lib");
                     rlib
