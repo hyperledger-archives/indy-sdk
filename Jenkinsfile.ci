@@ -431,7 +431,7 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
 
         echo "${env_name} Libindy Test: Test on ARM emulator"
         testEnv.inside("--network=${network_name}") {
-            sh "./android.test.sh arm"
+            sh "./android.test.sh arm --release"
         }
     }
 }
