@@ -1,4 +1,5 @@
 use actix::prelude::{Actor, Addr, Context, Handler, Message as ActorMessage, ResponseFuture};
+use actors::cloud_agent::{CloudAgent, CloudMessage};
 use domain::config::ForwardAgentConfig;
 use domain::messages::*;
 use domain::pairwise::*;
@@ -9,10 +10,18 @@ use serde_json;
 use utils::futures::*;
 use utils::messages::*;
 
+use std::collections::HashMap;
+use std::convert::Into;
+use std::sync::Mutex;
+
+lazy_static! {
+    pub static ref CLOUD_AGENTS: Mutex<HashMap<String, Addr<CloudAgent>>> = Default::default();
+}
+
 pub struct ForwardAgent {
     wallet_handle: i32,
     verkey: String,
-    config: ForwardAgentConfig,
+    config: ForwardAgentConfig
 }
 
 impl ForwardAgent {
@@ -104,7 +113,7 @@ impl ForwardAgent {
                         if msg.fwd == forward_agent_did {
                             Self::_handle_forward_agent_message(wallet_handle, forward_agent_vk, msg.msg)
                         } else {
-                            Self::_handle_forward_agent_pairwise_message(msg.msg)
+                            Self::_handle_forward_agent_pairwise_message(msg)
                         }
                     }
                     _ => future::err(err_msg("Unsupported message")).into_box()
@@ -131,9 +140,21 @@ impl ForwardAgent {
             .into_box()
     }
 
-    fn _handle_forward_agent_pairwise_message(_msg: Vec<u8>) -> ResponseFuture<Vec<u8>, Error> {
-        trace!("ForwardAgent::_handle_forward_agent_pairwise_message >> {:?}", _msg);
-        unimplemented!()
+    fn _handle_forward_agent_pairwise_message(msg: Forward) -> ResponseFuture<Vec<u8>, Error> {
+        trace!("ForwardAgent::_handle_forward_agent_pairwise_message >> msg: {:?}", msg);
+        let cloud_agents = CLOUD_AGENTS.lock().unwrap();
+
+        let cloud_agent = cloud_agents.get(&msg.fwd).unwrap();
+
+        cloud_agent
+            .send(CloudMessage(msg.msg))
+            .from_err()
+            .and_then(|res|
+                res
+                    .map(|r| r.0)
+                    .map_err(Into::into)
+            )
+            .into_box()
     }
 
     fn _handle_connect(wallet_handle: i32,

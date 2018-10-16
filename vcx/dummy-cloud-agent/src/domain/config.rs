@@ -38,3 +38,21 @@ pub struct ServerConfig {
     // Amount of http workers (instances of app). By default amount of logical CPU cores.
     pub workers: Option<usize>,
 }
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct CloudAgentConfig {
+    // Cloud Agent DID
+    pub did: String,
+    // Cloud Agent Owner DID
+    pub owner_did: String,
+    // Cloud Agent wallet id
+    pub wallet_id: String,
+    // Cloud Agent wallet passphrase
+    pub wallet_passphrase: String,
+    // Wallet storage type for Cloud Agent and agents wallets
+    pub wallet_storage_type: Option<String>,
+    // Wallet storage config for Cloud Agent and agents wallets
+    pub wallet_storage_config: Option<Value>,
+    // Wallet storage credentials for Cloud Agent and agents wallets
+    pub wallet_storage_credentials: Option<Value>,
+}
