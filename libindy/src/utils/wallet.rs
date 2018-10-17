@@ -4,6 +4,7 @@ pub mod test_utils {
     extern crate sharedlib;
     extern crate base64;
     extern crate libc;
+    extern crate os_type;
 
     use self::sharedlib::{Lib, Func, Symbol};
 
@@ -16,7 +17,6 @@ pub mod test_utils {
     use std::collections::HashMap;
     use std::env;
     use std::sync::Mutex;
-    use std::ffi::OsString;
 
     use std::path::Path;
 
@@ -30,12 +30,12 @@ pub mod test_utils {
     */
     pub fn override_wallet_config_creds(config: &Config, credentials: &Credentials, wallet_service: &WalletService, load_dynalib: bool) -> (Config, Credentials) {
         // if storge_type is explicit then bail
-        if let Some(_) = config.storage_type {
-            return ((*config).clone(), (*credentials).clone());
-        }
+        //if let Some(_) = config.storage_type {
+        //    return ((*config).clone(), (*credentials).clone());
+        //}
 
         // if no config is provided at all then bail
-        let storage_config = wallet_storage_overrides();
+        let storage_config = postgres_lib_test_overrides(); //wallet_storage_overrides();
         if !any_overrides(&storage_config) {
             return ((*config).clone(), (*credentials).clone());
         }
@@ -63,53 +63,53 @@ pub mod test_utils {
 
         let mut wallets = STG_REGISERED_WALLETS.lock().unwrap();
 
-        if wallets.contains_key(stg_type) {
-            // as registering of plugged wallet with
-            return Ok(());
+        if !wallets.contains_key(stg_type) {
+            let lib_path = Path::new(library_path);
+            unsafe {
+                println!("Loading {:?}", lib_path);
+                let lib = match Lib::new(lib_path) {
+                    Ok(rlib) => {
+                        println!("Loaded lib");
+                        rlib
+                    },
+                    Err(err) => {
+                        println!("Load error {:?}", err);
+                        panic!("Load error {:?}", err)
+                    }
+                };
+            wallets.insert(stg_type.to_string(), lib);
+            }
         }
 
-        let err;
-        let lib;
-        let sz_library_path = OsString::from(library_path);
-        let lib_path = Path::new(&sz_library_path);
-        unsafe {
-            println!("Loading {:?}", lib_path);
-            lib = match Lib::new(lib_path) {
-                Ok(rlib) => {
-                    println!("Loaded lib");
-                    rlib
-                },
-                Err(err) => {
-                    println!("Load error {:?}", err);
-                    panic!("Load error {:?}", err)
-                }
-            };
+        let lib_ref = wallets.get(stg_type).unwrap();
 
+        let err;
+        unsafe {
             println!("Get fn pointers ...");
-            let fn_create_handler: Func<WalletCreate> = lib.find_func(&format!("{}create", fn_pfx)).unwrap();
-            let fn_open_handler: Func<WalletOpen> = lib.find_func(&format!("{}open", fn_pfx)).unwrap();
-            let fn_close_handler: Func<WalletClose> = lib.find_func(&format!("{}close", fn_pfx)).unwrap();
-            let fn_delete_handler: Func<WalletDelete> = lib.find_func(&format!("{}delete", fn_pfx)).unwrap();
-            let fn_add_record_handler: Func<WalletAddRecord> = lib.find_func(&format!("{}add_record", fn_pfx)).unwrap();
-            let fn_update_record_value_handler: Func<WalletUpdateRecordValue> = lib.find_func(&format!("{}update_record_value", fn_pfx)).unwrap();
-            let fn_update_record_tags_handler: Func<WalletUpdateRecordTags> = lib.find_func(&format!("{}update_record_tags", fn_pfx)).unwrap();
-            let fn_add_record_tags_handler: Func<WalletAddRecordTags> = lib.find_func(&format!("{}add_record_tags", fn_pfx)).unwrap();
-            let fn_delete_record_tags_handler: Func<WalletDeleteRecordTags> = lib.find_func(&format!("{}delete_record_tags", fn_pfx)).unwrap();
-            let fn_delete_record_handler: Func<WalletDeleteRecord> = lib.find_func(&format!("{}delete_record", fn_pfx)).unwrap();
-            let fn_get_record_handler: Func<WalletGetRecord> = lib.find_func(&format!("{}get_record", fn_pfx)).unwrap();
-            let fn_get_record_id_handler: Func<WalletGetRecordId> = lib.find_func(&format!("{}get_record_id", fn_pfx)).unwrap();
-            let fn_get_record_type_handler: Func<WalletGetRecordType> = lib.find_func(&format!("{}get_record_type", fn_pfx)).unwrap();
-            let fn_get_record_value_handler: Func<WalletGetRecordValue> = lib.find_func(&format!("{}get_record_value", fn_pfx)).unwrap();
-            let fn_get_record_tags_handler: Func<WalletGetRecordTags> = lib.find_func(&format!("{}get_record_tags", fn_pfx)).unwrap();
-            let fn_free_record_handler: Func<WalletFreeRecord> = lib.find_func(&format!("{}free_record", fn_pfx)).unwrap();
-            let fn_get_storage_metadata_handler: Func<WalletGetStorageMetadata> = lib.find_func(&format!("{}get_storage_metadata", fn_pfx)).unwrap();
-            let fn_set_storage_metadata_handler: Func<WalletSetStorageMetadata> = lib.find_func(&format!("{}set_storage_metadata", fn_pfx)).unwrap();
-            let fn_free_storage_metadata_handler: Func<WalletFreeStorageMetadata> = lib.find_func(&format!("{}free_storage_metadata", fn_pfx)).unwrap();
-            let fn_search_records_handler: Func<WalletSearchRecords> = lib.find_func(&format!("{}search_records", fn_pfx)).unwrap();
-            let fn_search_all_records_handler: Func<WalletSearchAllRecords> = lib.find_func(&format!("{}search_all_records", fn_pfx)).unwrap();
-            let fn_get_search_total_count_handler: Func<WalletGetSearchTotalCount> = lib.find_func(&format!("{}get_search_total_count", fn_pfx)).unwrap();
-            let fn_fetch_search_next_record_handler: Func<WalletFetchSearchNextRecord> = lib.find_func(&format!("{}fetch_search_next_record", fn_pfx)).unwrap();
-            let fn_free_search_handler: Func<WalletFreeSearch> = lib.find_func(&format!("{}free_search", fn_pfx)).unwrap();
+            let fn_create_handler: Func<WalletCreate> = lib_ref.find_func(&format!("{}create", fn_pfx)).unwrap();
+            let fn_open_handler: Func<WalletOpen> = lib_ref.find_func(&format!("{}open", fn_pfx)).unwrap();
+            let fn_close_handler: Func<WalletClose> = lib_ref.find_func(&format!("{}close", fn_pfx)).unwrap();
+            let fn_delete_handler: Func<WalletDelete> = lib_ref.find_func(&format!("{}delete", fn_pfx)).unwrap();
+            let fn_add_record_handler: Func<WalletAddRecord> = lib_ref.find_func(&format!("{}add_record", fn_pfx)).unwrap();
+            let fn_update_record_value_handler: Func<WalletUpdateRecordValue> = lib_ref.find_func(&format!("{}update_record_value", fn_pfx)).unwrap();
+            let fn_update_record_tags_handler: Func<WalletUpdateRecordTags> = lib_ref.find_func(&format!("{}update_record_tags", fn_pfx)).unwrap();
+            let fn_add_record_tags_handler: Func<WalletAddRecordTags> = lib_ref.find_func(&format!("{}add_record_tags", fn_pfx)).unwrap();
+            let fn_delete_record_tags_handler: Func<WalletDeleteRecordTags> = lib_ref.find_func(&format!("{}delete_record_tags", fn_pfx)).unwrap();
+            let fn_delete_record_handler: Func<WalletDeleteRecord> = lib_ref.find_func(&format!("{}delete_record", fn_pfx)).unwrap();
+            let fn_get_record_handler: Func<WalletGetRecord> = lib_ref.find_func(&format!("{}get_record", fn_pfx)).unwrap();
+            let fn_get_record_id_handler: Func<WalletGetRecordId> = lib_ref.find_func(&format!("{}get_record_id", fn_pfx)).unwrap();
+            let fn_get_record_type_handler: Func<WalletGetRecordType> = lib_ref.find_func(&format!("{}get_record_type", fn_pfx)).unwrap();
+            let fn_get_record_value_handler: Func<WalletGetRecordValue> = lib_ref.find_func(&format!("{}get_record_value", fn_pfx)).unwrap();
+            let fn_get_record_tags_handler: Func<WalletGetRecordTags> = lib_ref.find_func(&format!("{}get_record_tags", fn_pfx)).unwrap();
+            let fn_free_record_handler: Func<WalletFreeRecord> = lib_ref.find_func(&format!("{}free_record", fn_pfx)).unwrap();
+            let fn_get_storage_metadata_handler: Func<WalletGetStorageMetadata> = lib_ref.find_func(&format!("{}get_storage_metadata", fn_pfx)).unwrap();
+            let fn_set_storage_metadata_handler: Func<WalletSetStorageMetadata> = lib_ref.find_func(&format!("{}set_storage_metadata", fn_pfx)).unwrap();
+            let fn_free_storage_metadata_handler: Func<WalletFreeStorageMetadata> = lib_ref.find_func(&format!("{}free_storage_metadata", fn_pfx)).unwrap();
+            let fn_search_records_handler: Func<WalletSearchRecords> = lib_ref.find_func(&format!("{}search_records", fn_pfx)).unwrap();
+            let fn_search_all_records_handler: Func<WalletSearchAllRecords> = lib_ref.find_func(&format!("{}search_all_records", fn_pfx)).unwrap();
+            let fn_get_search_total_count_handler: Func<WalletGetSearchTotalCount> = lib_ref.find_func(&format!("{}get_search_total_count", fn_pfx)).unwrap();
+            let fn_fetch_search_next_record_handler: Func<WalletFetchSearchNextRecord> = lib_ref.find_func(&format!("{}fetch_search_next_record", fn_pfx)).unwrap();
+            let fn_free_search_handler: Func<WalletFreeSearch> = lib_ref.find_func(&format!("{}free_search", fn_pfx)).unwrap();
 
             println!("Register wallet ...");
             err = wallet_service.register_wallet_storage(
@@ -142,9 +142,10 @@ pub mod test_utils {
         }
 
         println!("Finish up ...");
-        wallets.insert(stg_type.to_string(), lib);
-
-        err
+        match err {
+            Err(errors::wallet::WalletError::TypeAlreadyRegistered(_)) => Ok(()),
+            _ => err
+        }
     }
 
     /*
@@ -245,6 +246,26 @@ pub mod test_utils {
             };
         }
 
+        storage_config
+    }
+
+    pub fn postgres_lib_test_overrides() -> HashMap<String, Option<String>> {
+        // Note - on OS/X we specify the fully qualified path to the shared lib
+        //      - on UNIX systems we have to include the directories in LD_LIBRARY_PATH, e.g.:
+        //      export LD_LIBRARY_PATH=../samples/storage/storage-inmem/target/debug/:./target/debug/
+        let os = os_type::current_platform();
+        let osfile = match os.os_type {
+            os_type::OSType::OSX => "libindystrgpostgres.dylib",
+            _ => "libindystrgpostgres.so"
+        };
+
+        let mut storage_config = HashMap::new();
+        let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
+        storage_config.insert(env_vars[0].to_string(), Some(r#"{"url":"localhost:5432"}"#.to_string()));
+        storage_config.insert(env_vars[1].to_string(), Some(r#"{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}"#.to_string()));
+        storage_config.insert(env_vars[2].to_string(), Some("postgres_custom".to_string()));
+        storage_config.insert(env_vars[3].to_string(), Some(osfile.to_string()));
+        storage_config.insert(env_vars[4].to_string(), Some("postgreswallet_fn_".to_string()));
         storage_config
     }
 

@@ -800,6 +800,26 @@ mod dynamic_storage_cases {
             storage_config
         }
 
+        fn postgres_lib_test_overrides() -> HashMap<String, Option<String>> {
+            // Note - on OS/X we specify the fully qualified path to the shared lib
+            //      - on UNIX systems we have to include the directories in LD_LIBRARY_PATH, e.g.:
+            //      export LD_LIBRARY_PATH=../samples/storage/storage-inmem/target/debug/:./target/debug/
+            let os = os_type::current_platform();
+            let osfile = match os.os_type {
+                os_type::OSType::OSX => "libindystrgpostgres.dylib",
+                _ => "libindystrgpostgres.so"
+            };
+
+            let mut storage_config = HashMap::new();
+            let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
+            storage_config.insert(env_vars[0].to_string(), Some(r#"{"url":"localhost:5432"}"#.to_string()));
+            storage_config.insert(env_vars[1].to_string(), Some(r#"{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}"#.to_string()));
+            storage_config.insert(env_vars[2].to_string(), Some("postgres_custom".to_string()));
+            storage_config.insert(env_vars[3].to_string(), Some(osfile.to_string()));
+            storage_config.insert(env_vars[4].to_string(), Some("postgreswallet_fn_".to_string()));
+            storage_config
+        }
+
         #[test]
         fn configure_wallet_works_for_case() {
             let hs_keep = save_config_overrides();
@@ -844,31 +864,45 @@ mod dynamic_storage_cases {
         }
 
         #[test]
-        fn dynaload_wallet_storage_plugin_works() {
+        fn dynaload_wallet_storage_plugin_inmem_works() {
             utils::setup();
 
             // load dynamic lib and set config/creds based on overrides
             let hs_vars = inmem_lib_test_overrides();
-            println!("Testing: {:?}", hs_vars);
             let new_config = utils::wallet::override_wallet_configuration(&UNKNOWN_WALLET_CONFIG, &hs_vars);
             let new_creds = utils::wallet::override_wallet_credentials(&WALLET_CREDENTIALS_RAW, &hs_vars);
-            println!("Loading library ...");
             let res = utils::wallet::load_storage_library_config(&hs_vars);
-            println!(" ... returns {:?}", res);
 
             // confirm dynamic lib loaded ok
             assert_eq!(res, Ok(()));
 
             // verify wallet COCD
-            println!("Create ...");
             wallet::create_wallet(&new_config, &new_creds).unwrap();
-            println!("Open ...");
             let wallet_handle = wallet::open_wallet(&new_config, &new_creds).unwrap();
-            println!("Close ...");
             wallet::close_wallet(wallet_handle).unwrap();
-            println!("Delete ...");
             wallet::delete_wallet(&new_config, &new_creds).unwrap();
-            println!("Done!");
+
+            utils::tear_down();
+        }
+
+        #[test]
+        fn dynaload_wallet_storage_plugin_postgres_works() {
+            utils::setup();
+
+            // load dynamic lib and set config/creds based on overrides
+            let hs_vars = postgres_lib_test_overrides();
+            let new_config = utils::wallet::override_wallet_configuration(&UNKNOWN_WALLET_CONFIG, &hs_vars);
+            let new_creds = utils::wallet::override_wallet_credentials(&WALLET_CREDENTIALS_RAW, &hs_vars);
+            let res = utils::wallet::load_storage_library_config(&hs_vars);
+
+            // confirm dynamic lib loaded ok
+            assert_eq!(res, Ok(()));
+
+            // verify wallet COCD
+            wallet::create_wallet(&new_config, &new_creds).unwrap();
+            let wallet_handle = wallet::open_wallet(&new_config, &new_creds).unwrap();
+            wallet::close_wallet(wallet_handle).unwrap();
+            wallet::delete_wallet(&new_config, &new_creds).unwrap();
 
             utils::tear_down();
         }

@@ -417,8 +417,8 @@ impl WalletStorage for PostgresStorage {
             let mut iter = rows.iter();
             while let Some(res) = iter.next() {
                 let row = res;
-                let tag_name: Vec<u8> = row.get(0);
-                let tag_value: Vec<u8> = row.get(1);
+                //let tag_name: Vec<u8> = row.get(0);
+                //let tag_value: Vec<u8> = row.get(1);
                 tags.push(Tag::Encrypted(row.get(0), row.get(1)));
             }
 
@@ -429,8 +429,8 @@ impl WalletStorage for PostgresStorage {
             let mut iter = rows.iter();
             while let Some(res) = iter.next() {
                 let row = res;
-                let tag_name: Vec<u8> = row.get(0);
-                let tag_value: String = row.get(1);
+                //let tag_name: Vec<u8> = row.get(0);
+                //let tag_value: String = row.get(1);
                 tags.push(Tag::PlainText(row.get(0), row.get(1)));
             }
             Some(tags)
