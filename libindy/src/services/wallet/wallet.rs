@@ -1816,19 +1816,20 @@ mod wallet_tests {
 
         let storage_type: Box<WalletStorageType>;
         let storage_type_ref: &Box<WalletStorageType>;
-        let (config_str, creds_str);
-        let config;
-        let credentials;
+        let (storage_config_str, storage_creds_str);
+        let storage_config;
+        let storage_credentials;
 
-        let overrides = utils::wallet::test_utils::wallet_storage_overrides();
+        //let overrides = utils::wallet::test_utils::wallet_storage_overrides();
+        let overrides = utils::wallet::test_utils::postgres_lib_test_overrides();
         if utils::wallet::test_utils::any_overrides(&overrides) {
             let init_config = _config();
             let init_creds = _credentials_moderate();
             let (my_config, my_credentials) = utils::wallet::test_utils::override_wallet_config_creds(&init_config, &init_creds, &wallet_service, true);
-            config_str = serde_json::to_string(&my_config).unwrap();
-            creds_str = serde_json::to_string(&my_credentials).unwrap();
-            config = Some(&config_str[..]);
-            credentials = Some(&creds_str[..]);
+            storage_config_str = serde_json::to_string(&my_config.storage_config.unwrap()).unwrap();
+            storage_creds_str = serde_json::to_string(&my_credentials.storage_credentials.unwrap()).unwrap();
+            storage_config = Some(&storage_config_str[..]);
+            storage_credentials = Some(&storage_creds_str[..]);
 
             storage_types = wallet_service.storage_types.borrow();
 
@@ -1845,8 +1846,8 @@ mod wallet_tests {
         } else {
             storage_type = Box::new(SQLiteStorageType::new());
             storage_type_ref = &storage_type;
-            config = None;
-            credentials = None;
+            storage_config = None;
+            storage_credentials = None;
         }
 
         let master_key = _master_key();
@@ -1866,11 +1867,11 @@ mod wallet_tests {
         };
 
         storage_type_ref.create_storage(_wallet_id(),
-                                    config,
-                                    credentials,
+                                    storage_config,
+                                    storage_credentials,
                                     &metadata).unwrap();
 
-        let storage = storage_type_ref.open_storage(_wallet_id(), config, credentials).unwrap();
+        let storage = storage_type_ref.open_storage(_wallet_id(), storage_config, storage_credentials).unwrap();
 
         Wallet::new(_wallet_id().to_string(), storage, Rc::new(keys))
     }
