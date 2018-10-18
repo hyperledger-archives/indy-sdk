@@ -28,10 +28,15 @@ fi
 check_if_emulator_is_running(){
     emus=$(adb devices)
     if [[ ${emus} = *"emulator"* ]]; then
-      echo "emulator is running"
-      else
-       echo "emulator is not running"
-       exit 1
+        echo "emulator is running"
+        until adb -e shell "ls /storage/emulated/0/"
+        do
+            echo "waiting emulator FS"
+            sleep 30
+        done
+    else
+        echo "emulator is not running"
+        exit 1
     fi
 }
 
@@ -66,11 +71,16 @@ create_avd(){
 }
 
 download_sdk(){
-    echo "${GREEN}Downloading sdk....${RESET}"
-     pushd ${ANDROID_SDK}
-        curl -sSLO https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
-        echo "${GREEN}Done!${RESET}"
-        unzip -qq sdk-tools-linux-4333796.zip
+    pushd ${ANDROID_SDK}
+        if [ ! -d "tools" ] ; then
+            echo "${GREEN}Downloading sdk....${RESET}"
+            curl -sSLO https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+            echo "${GREEN}Done!${RESET}"
+            unzip -qq sdk-tools-linux-4333796.zip
+        else
+            echo "${BLUE}Skipping download sdk-tools-linux-4333796.zip${RESET}"
+        fi
+
         set +e
         delete_existing_avd
         set -e
@@ -132,27 +142,39 @@ generate_arch_flags(){
 
 download_and_unzip_dependencies(){
     pushd ${ANDROID_BUILD_FOLDER}
-        echo -e "${GREEN}Downloading openssl for $1 ${RESET}"
-        curl -sSLO https://repo.sovrin.org/android/libindy/deps/openssl/openssl_$1.zip
-        unzip -o -qq openssl_$1.zip
+        if [ ! -d "openssl_$1" ] ; then
+            echo -e "${GREEN}Downloading openssl for $1 ${RESET}"
+            curl -sSLO https://repo.sovrin.org/android/libindy/deps/openssl/openssl_$1.zip
+            unzip -o -qq openssl_$1.zip
+            rm openssl_$1.zip
+            echo -e "${GREEN}Done!${RESET}"
+        else
+            echo "Skipping download openssl_$1.zip"
+        fi
+
+        if [ ! -d "libsodium_$1" ] ; then
+            echo -e "${GREEN}Downloading sodium for $1 ${RESET}"
+            curl -sSLO https://repo.sovrin.org/android/libindy/deps/sodium/libsodium_$1.zip
+            unzip -o -qq libsodium_$1.zip
+            rm libsodium_$1.zip
+            echo -e "${GREEN}Done!${RESET}"
+        else
+            echo "Skipping download libsodium_$1.zip"
+        fi
+
+        if [ ! -d "libzmq_$1" ] ; then
+            echo -e "${GREEN}Downloading zmq for $1 ${RESET}"
+            curl -sSLO https://repo.sovrin.org/android/libindy/deps/zmq/libzmq_$1.zip
+            unzip -o -qq libzmq_$1.zip
+            rm libzmq_$1.zip
+            echo -e "${GREEN}Done!${RESET}"
+        else
+            echo "Skipping download libzmq_$1.zip"
+        fi
+
         export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
-        echo -e "${GREEN}Done!${RESET}"
-
-        echo -e "${GREEN}Downloading sodium for $1 ${RESET}"
-        curl -sSLO https://repo.sovrin.org/android/libindy/deps/sodium/libsodium_$1.zip
-        unzip -o -qq libsodium_$1.zip
         export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
-        echo -e "${GREEN}Done!${RESET}"
-
-        echo -e "${GREEN}Downloading zmq for $1 ${RESET}"
-        curl -sSLO https://repo.sovrin.org/android/libindy/deps/zmq/libzmq_$1.zip
-        unzip -o -qq libzmq_$1.zip
         export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/libzmq_$1
-        echo -e "${GREEN}Done!${RESET}"
-
-        rm openssl_$1.zip
-        rm libsodium_$1.zip
-        rm libzmq_$1.zip
     popd
 }
 
