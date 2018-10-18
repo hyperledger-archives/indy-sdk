@@ -35,7 +35,7 @@ pub mod test_utils {
         //}
 
         // if no config is provided at all then bail
-        let storage_config = postgres_lib_test_overrides(); //wallet_storage_overrides();
+        let storage_config = wallet_storage_overrides();
         if !any_overrides(&storage_config) {
             return ((*config).clone(), (*credentials).clone());
         }
@@ -66,14 +66,11 @@ pub mod test_utils {
         if !wallets.contains_key(stg_type) {
             let lib_path = Path::new(library_path);
             unsafe {
-                println!("Loading {:?}", lib_path);
                 let lib = match Lib::new(lib_path) {
                     Ok(rlib) => {
-                        println!("Loaded lib");
                         rlib
                     },
                     Err(err) => {
-                        println!("Load error {:?}", err);
                         panic!("Load error {:?}", err)
                     }
                 };
@@ -85,7 +82,6 @@ pub mod test_utils {
 
         let err;
         unsafe {
-            println!("Get fn pointers ...");
             let fn_create_handler: Func<WalletCreate> = lib_ref.find_func(&format!("{}create", fn_pfx)).unwrap();
             let fn_open_handler: Func<WalletOpen> = lib_ref.find_func(&format!("{}open", fn_pfx)).unwrap();
             let fn_close_handler: Func<WalletClose> = lib_ref.find_func(&format!("{}close", fn_pfx)).unwrap();
@@ -111,7 +107,6 @@ pub mod test_utils {
             let fn_fetch_search_next_record_handler: Func<WalletFetchSearchNextRecord> = lib_ref.find_func(&format!("{}fetch_search_next_record", fn_pfx)).unwrap();
             let fn_free_search_handler: Func<WalletFreeSearch> = lib_ref.find_func(&format!("{}free_search", fn_pfx)).unwrap();
 
-            println!("Register wallet ...");
             err = wallet_service.register_wallet_storage(
                 stg_type,
                 fn_create_handler.get(),
@@ -141,7 +136,6 @@ pub mod test_utils {
             );
         }
 
-        println!("Finish up ...");
         match err {
             Err(errors::wallet::WalletError::TypeAlreadyRegistered(_)) => Ok(()),
             _ => err
@@ -236,6 +230,23 @@ pub mod test_utils {
     * STG_FN_PREFIX - prefix for all plug-in functions (allows standard function naming)
     */
     pub fn wallet_storage_overrides() -> HashMap<String, Option<String>> {
+        // check for default configs for inmem or postgres plugins
+        let env_var = "STG_USE";
+        match env::var(env_var) {
+            Ok(var) => {
+                match var.to_lowercase().as_ref() {
+                    "inmem" => {
+                        return inmem_lib_test_overrides();
+                    },
+                    "postgres" => {
+                        return postgres_lib_test_overrides();
+                    },
+                    _ => ()
+                }
+            },
+            Err(_) => ()
+        };
+
         let mut storage_config = HashMap::new();
         let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
 
@@ -246,6 +257,35 @@ pub mod test_utils {
             };
         }
 
+        storage_config
+    }
+
+    pub fn any_overrides(storage_config: &HashMap<String, Option<String>>) -> bool {
+        for (_key, val) in storage_config {
+            if let Some(_) = val {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    pub fn inmem_lib_test_overrides() -> HashMap<String, Option<String>> {
+        // Note - on OS/X we specify the fully qualified path to the shared lib
+        //      - on UNIX systems we have to include the directories in LD_LIBRARY_PATH, e.g.:
+        //      export LD_LIBRARY_PATH=../samples/storage/storage-inmem/target/debug/:./target/debug/
+        let os = os_type::current_platform();
+        let osfile = match os.os_type {
+            os_type::OSType::OSX => "libindystrginmem.dylib",
+            _ => "libindystrginmem.so"
+        };
+
+        let mut storage_config = HashMap::new();
+        let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
+        storage_config.insert(env_vars[0].to_string(), None);
+        storage_config.insert(env_vars[1].to_string(), None);
+        storage_config.insert(env_vars[2].to_string(), Some("inmem_custom".to_string()));
+        storage_config.insert(env_vars[3].to_string(), Some(osfile.to_string()));
+        storage_config.insert(env_vars[4].to_string(), Some("inmemwallet_fn_".to_string()));
         storage_config
     }
 
@@ -267,14 +307,5 @@ pub mod test_utils {
         storage_config.insert(env_vars[3].to_string(), Some(osfile.to_string()));
         storage_config.insert(env_vars[4].to_string(), Some("postgreswallet_fn_".to_string()));
         storage_config
-    }
-
-    pub fn any_overrides(storage_config: &HashMap<String, Option<String>>) -> bool {
-        for (_key, val) in storage_config {
-            if let Some(_) = val {
-                return true;
-            }
-        }
-        return false;
     }
 }

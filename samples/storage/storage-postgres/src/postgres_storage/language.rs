@@ -417,7 +417,7 @@ mod tests {
     impl Eq for Operator {}
 
     /// parse
-
+/* TODO unit test for encrypted search
     #[test]
     fn test_simple_json_parse_unparse_enc() {
         let json = r#"{"tag_name_1": "tag_value_1"}"#;
@@ -426,7 +426,7 @@ mod tests {
         let query2 = parse_from_json_encrypted(&json2).unwrap();
         assert_eq!(encrypted_query, query2);
     }
-
+*/
     #[test]
     fn test_simple_json_parse_unparse_plain() {
         let json = r#"{"~tag_name_1": "tag_value_1"}"#;
