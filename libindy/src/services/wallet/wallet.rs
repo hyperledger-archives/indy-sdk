@@ -196,12 +196,9 @@ impl Wallet {
     }
 
     pub fn search<'a>(&'a self, type_: &str, query: &str, options: Option<&str>) -> Result<WalletIterator, WalletError> {
-        println!("Search {:?} {:?}", type_, query);
         let parsed_query = language::parse_from_json(query)?;
-        println!("Parsed Search {:?} {:?}", type_, parsed_query);
         let encrypted_query = encrypt_query(parsed_query, &self.keys)?;
         let encrypted_type_ = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
-        println!("Enc Search {:?} {:?}", encrypted_type_, encrypted_query);
         let storage_iterator = self.storage.search(&encrypted_type_, &encrypted_query, options)?;
         let wallet_iterator = WalletIterator::new(storage_iterator, Rc::clone(&self.keys));
         Ok(wallet_iterator)
@@ -547,6 +544,7 @@ mod wallet_tests {
         ]);
 
         assert_eq!(_fetch_all(&mut iterator), expected_records);
+        assert_eq!(2, expected_records.len());
         assert!(iterator.get_total_count().unwrap().is_none());
     }
 
@@ -579,6 +577,7 @@ mod wallet_tests {
         ]);
 
         assert_eq!(_fetch_all(&mut iterator), expected_records);
+        assert_eq!(2, expected_records.len());
         assert_eq!(iterator.get_total_count().unwrap().unwrap(), 2);
     }
 

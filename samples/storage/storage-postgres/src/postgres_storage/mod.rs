@@ -497,7 +497,6 @@ impl WalletStorage for PostgresStorage {
                 }
             }
         };
-        println!("Added record {:?} {:?} {:?} {:?}", item_id, &type_.to_vec(), &id.to_vec(), &value.data);
 
         let item_id = item_id as i64;
 
@@ -508,7 +507,6 @@ impl WalletStorage for PostgresStorage {
             for tag in tags {
                 match tag {
                     &Tag::Encrypted(ref tag_name, ref tag_data) => {
-                        println!("Added ebc tag {:?} {:?} {:?}", item_id, tag_name, tag_data);
                         match stmt_e.execute(&[&item_id, tag_name, tag_data]) {
                             Ok(_) => (),
                             Err(err) => {
@@ -522,7 +520,6 @@ impl WalletStorage for PostgresStorage {
                         }
                     },
                     &Tag::PlainText(ref tag_name, ref tag_data) => {
-                        println!("Added pt tag {:?} {:?} {:?}", item_id, tag_name, tag_data);
                         match stmt_p.execute(&[&item_id, tag_name, tag_data]) {
                             Ok(_) => (),
                             Err(err) => {
@@ -805,6 +802,7 @@ impl WalletStorage for PostgresStorage {
                 None => None
             }
         } else { None };
+        println!("total_count = {:?}", total_count);
 
         if search_options.retrieve_records {
             let fetch_options = RecordOptions {

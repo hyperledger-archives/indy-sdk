@@ -566,16 +566,12 @@ impl WalletStorage for PluggedStorage {
 
         let mut search_handle: i32 = -1;
 
-        println!("Plug search {:?} {:?}", type_, query);
-
         let err = (self.search_records_handler)(self.handle,
                                                 type_.as_ptr(),
                                                 query.as_ptr(),
                                                 options_cstr.as_ptr(),
                                                 &mut search_handle);
         
-        println!("Search returns {:?}", err);
-
         if err != ErrorCode::Success {
             return Err(WalletStorageError::PluggedStorageError(err));
         }

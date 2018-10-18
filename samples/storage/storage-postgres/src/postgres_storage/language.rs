@@ -421,26 +421,18 @@ mod tests {
     #[test]
     fn test_simple_json_parse_unparse_enc() {
         let json = r#"{"tag_name_1": "tag_value_1"}"#;
-        println!("json {:?}", json);
         let encrypted_query = parse_from_json(json).unwrap();
-        println!("encrypted_query {:?}", encrypted_query);
         let json2 = encrypted_query.to_string();
-        println!("json2 {:?}", json2);
         let query2 = parse_from_json_encrypted(&json2).unwrap();
-        println!("query2 {:?}", query2);
         assert_eq!(encrypted_query, query2);
     }
 
     #[test]
     fn test_simple_json_parse_unparse_plain() {
         let json = r#"{"~tag_name_1": "tag_value_1"}"#;
-        println!("json {:?}", json);
         let encrypted_query = parse_from_json(json).unwrap();
-        println!("encrypted_query {:?}", encrypted_query);
         let json2 = encrypted_query.to_string();
-        println!("json2 {:?}", json2);
         let query2 = parse_from_json_encrypted(&json2).unwrap();
-        println!("query2 {:?}", query2);
         assert_eq!(encrypted_query, query2);
     }
 
