@@ -16,7 +16,7 @@ public class CreatePoolTest extends IndyIntegrationTest {
 		File file = new File("testCreatePoolWorks.txn");
 		file.deleteOnExit();
 		assertTrue(file.createNewFile());
-		PoolUtils.writeTransactions(file, 1);
+		PoolUtils.writeTransactions(file);
 
 		Pool.createPoolLedgerConfig("testCreatePoolWorks", null).get();
 	}

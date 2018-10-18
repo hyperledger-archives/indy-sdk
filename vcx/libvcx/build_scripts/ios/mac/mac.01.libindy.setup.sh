@@ -44,13 +44,14 @@ fi
 
 if [[ $RUSTUP_VERSION =~ ^'rustup ' ]]; then
     rustup update
+    rustup default 1.27.0
     rustup component add rls-preview rust-analysis rust-src
-
+    echo "Using rustc version $(rustc --version)"
     rustup target remove aarch64-linux-android armv7-linux-androideabi arm-linux-androideabi i686-linux-android x86_64-linux-android
     rustup target add aarch64-apple-ios armv7-apple-ios armv7s-apple-ios x86_64-apple-ios i386-apple-ios
 
     RUST_TARGETS=$(rustc --print target-list|grep -i ios)
-    if [ "RUST_TARGETS" = "" ]; then
+    if [ "$RUST_TARGETS" = "" ]; then
         sudo xcodebuild -license
         # DON'T do this
         #xcode-select --install # Install Command Line Tools if you haven't already.

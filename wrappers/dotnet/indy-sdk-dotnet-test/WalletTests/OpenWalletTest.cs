@@ -1,5 +1,6 @@
 ﻿using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.WalletTests
@@ -10,56 +11,56 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestOpenWalletWorks()
         {
-            var walletName = "openWalletWorks";
-
-            await Wallet.CreateWalletAsync(POOL, walletName, TYPE, null, null);
-            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+            var wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
 
             Assert.IsNotNull(wallet);
+            await wallet.CloseAsync();
         }
 
         [TestMethod]
-        public async Task TestOpenWalletWorksForConfig()
+        public async Task TestOpenWalletWorksForForInvalidCredentials()
         {
-            var walletName = "openWalletWorksForConfig";
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
 
-            await Wallet.CreateWalletAsync(POOL, walletName, TYPE, null, null);
-            var wallet = await Wallet.OpenWalletAsync(walletName, "{\"freshness_time\":1000}", null);
-
-            Assert.IsNotNull(wallet);
+            var ex = await Assert.ThrowsExceptionAsync<WalletAccessFailedException>(() =>
+                Wallet.OpenWalletAsync(WALLET_CONFIG, "{\"key\": \"other_key\"}")
+            );
         }
 
         [TestMethod]
-        public async Task TestOpenWalletWorksForPlugged()
+        public async Task TestOpenWalletWorksForChangingCredentials()
         {
-            var walletName = "testOpenWalletWorksForPlugged";
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, "{\"key\": \"key\"}");
+            
+            var wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, "{\"key\": \"key\", \"rekey\": \"other_key\"}");
+            await wallet.CloseAsync();
 
-            await Wallet.CreateWalletAsync(POOL, walletName, "inmem", null, null);
-            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
-            Assert.IsNotNull(wallet);
+            wallet = await Wallet.OpenWalletAsync(WALLET_CONFIG, "{\"key\": \"other_key\"}");
+            await wallet.CloseAsync();
         }
         
         [TestMethod]
         public async Task TestOpenWalletWorksForNotCreated()
         {
-            var ex = await Assert.ThrowsExceptionAsync<IOException>(() =>
-               Wallet.OpenWalletAsync("testOpenWalletWorksForNotCreated", null, null)
+            var ex = await Assert.ThrowsExceptionAsync<WalletNotFoundException>(() =>
+               Wallet.OpenWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS)
             );
         }
         
         [TestMethod]
         public async Task TestOpenWalletWorksForTwice()
         {
-            var walletName = "openWalletWorksForTwice";
+            var config = JsonConvert.SerializeObject(new { id = "openWalletWorksForTwice" });
 
-            await Wallet.CreateWalletAsync(POOL, walletName, TYPE, null, null);
-            var wallet = await Wallet.OpenWalletAsync(walletName, null, null);
+            await Wallet.CreateWalletAsync(config, WALLET_CREDENTIALS);
+            var wallet = await Wallet.OpenWalletAsync(config, WALLET_CREDENTIALS);
 
             var ex = await Assert.ThrowsExceptionAsync<WalletAlreadyOpenedException>(() =>
-               Wallet.OpenWalletAsync(walletName, null, null)
+               Wallet.OpenWalletAsync(config, WALLET_CREDENTIALS)
             );
-        }
 
-        
+            await wallet.CloseAsync();
+        }        
     }
 }

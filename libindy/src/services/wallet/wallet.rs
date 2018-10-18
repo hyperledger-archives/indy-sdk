@@ -56,9 +56,11 @@ impl Keys {
         extern crate rmp_serde;
 
         let mut decrypted = decrypt_merged(bytes, master_key)
+            .map_err(map_err_trace!())
             .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
 
         let keys: Keys = rmp_serde::from_slice(&decrypted)
+            .map_err(map_err_trace!())
             .map_err(|_| WalletError::AccessFailed("Invalid master key provided".to_string()))?;
 
         memzero(&mut decrypted[..]);
@@ -205,8 +207,8 @@ impl Wallet {
     }
 
     pub fn close(&mut self) -> Result<(), WalletError> {
-        self.storage.close()?;
-        Ok(())
+        self.storage.close()
+            .map_err(WalletError::from)
     }
 
     pub fn get_all(&self) -> Result<WalletIterator, WalletError> {

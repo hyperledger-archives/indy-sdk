@@ -46,7 +46,7 @@ public class OpenPoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testOpenPoolWorksForTwoNodes() throws Exception {
-		String poolName = PoolUtils.createPoolLedgerConfig(2);
+		String poolName = PoolUtils.createPoolLedgerConfig();
 
 		Pool pool = Pool.openPoolLedger(poolName, null).get();
 
@@ -56,7 +56,7 @@ public class OpenPoolTest extends IndyIntegrationTest {
 
 	@Test
 	public void testOpenPoolWorksForThreeNodes() throws Exception {
-		String poolName = PoolUtils.createPoolLedgerConfig(3);
+		String poolName = PoolUtils.createPoolLedgerConfig();
 
 		Pool pool = Pool.openPoolLedger(poolName, null).get();
 

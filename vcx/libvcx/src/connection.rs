@@ -55,7 +55,7 @@ struct Connection {
 
 impl Connection {
     fn _connect_send_invite(&mut self, options: Option<String>) -> Result<u32, ConnectionError> {
-        debug!("\"_connect_send_invite\" for connection {}", self.source_id);
+        debug!("sending invite for connection {}", self.source_id);
 
         let options_obj: ConnectionOptions = match options {
             Some(opt) => {
@@ -97,7 +97,7 @@ impl Connection {
                 self.invite_detail = match parse_invite_detail(&response[0]) {
                     Ok(x) => Some(x),
                     Err(x) => {
-                        error!("error when sending invite: {}", x);
+                        error!("error when sending invite for connection {}: {}", self.source_id, x);
                         // TODO: Refactor Error
                         // TODO: Implement Correct Error
                         return Err(ConnectionError::GeneralConnectionError())
@@ -126,7 +126,7 @@ impl Connection {
     }
 
     fn _connect_accept_invite(&mut self, options: Option<String>) -> Result<u32,ConnectionError> {
-        debug!("\"_connect_send_invite\" for connection {}", self.source_id);
+        debug!("accepting invite for connection {}", self.source_id);
 
         if let Some(ref details) = self.invite_detail {
             match messages::accept_invite()
@@ -151,7 +151,7 @@ impl Connection {
             }
         }
         else{
-            warn!("Can not connect without Invite Details");
+            warn!("{} can not connect without invite details", self.source_id);
             // TODO: Refactor Error
             // TODO: Implement Correct Error
             Err(ConnectionError::GeneralConnectionError())
@@ -312,14 +312,12 @@ pub fn set_endpoint(handle: u32, endpoint: &str) -> Result<(), ConnectionError> 
 }
 
 pub fn get_agent_verkey(handle: u32) -> Result<String, ConnectionError> {
-    debug!("Getting Agent Verkey for Connection with handle {}", handle);
     CONNECTION_MAP.get(handle, |cxn| {
         Ok(cxn.get_agent_verkey().clone())
     }).or(Err(ConnectionError::InvalidHandle()))
 }
 
 pub fn set_agent_verkey(handle: u32, verkey: &str) -> Result<(), ConnectionError>{
-    info!("Setting Agent Verkey for Connection with handle {}", handle);
     CONNECTION_MAP.get_mut(handle, |cxn| {
         cxn.set_agent_verkey(verkey);
         Ok(())
@@ -362,7 +360,7 @@ pub fn get_source_id(handle: u32) -> Result<String, ConnectionError> {
 }
 
 pub fn create_agent_pairwise(handle: u32) -> Result<u32, ConnectionError> {
-    debug!("creating pairwise keys on agent for connection handle {}", handle);
+    debug!("creating pairwise keys on agent for connection {}", get_source_id(handle).unwrap_or_default());
     let pw_did = get_pw_did(handle)?;
     let pw_verkey = get_pw_verkey(handle)?;
 
@@ -370,21 +368,21 @@ pub fn create_agent_pairwise(handle: u32) -> Result<u32, ConnectionError> {
         .for_did(&pw_did)
         .for_verkey(&pw_verkey)
         .send_secure()
-        .or(Err(ConnectionError::InvalidWalletSetup()))?;   // Throw a context specific error
-    debug!("create key for handle: {} with did/vk: {:?}",  handle,  result);
+        .map_err(|e|ConnectionError::CommonError(e))?;
+    debug!("create key for connection: {} with did/vk: {:?}",  get_source_id(handle).unwrap_or_default(),  result);
     set_agent_did(handle,&result[0]).err();
     set_agent_verkey(handle,&result[1]).err();
     Ok(error::SUCCESS.code_num)
 }
 
 pub fn update_agent_profile(handle: u32) -> Result<u32, ConnectionError> {
-    debug!("updating agent config for connection handle {}", handle);
+    debug!("updating agent config for connection {}", get_source_id(handle).unwrap_or_default());
     let pw_did = get_pw_did(handle)?;
     if let Ok(name) = settings::get_config_value(settings::CONFIG_INSTITUTION_NAME) {
         match messages::update_data()
             .to(&pw_did)
             .name(&name)
-            .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).unwrap())
+            .logo_url(&settings::get_config_value(settings::CONFIG_INSTITUTION_LOGO_URL).map_err(|e| ConnectionError::CommonError(e))?)
             .send_secure() {
             Ok(_) => Ok(error::SUCCESS.code_num),
             Err(ec) => Err(ConnectionError::CommonError(ec)),
@@ -415,16 +413,16 @@ fn create_connection(source_id: &str) -> Result<u32, ConnectionError> {
     };
 
     let new_handle = CONNECTION_MAP.add(c).map_err(|key| ConnectionError::CreateError(key))?;
-    debug!("creating connection with handle {} and id {}", new_handle, source_id);
+    debug!("creating connection: {} {}", new_handle, source_id);
     Ok(new_handle)
 
 }
 
 fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
-    let (my_did, my_verkey) = match create_and_store_my_did(wallet::get_wallet_handle(),None) {
+    let (my_did, my_verkey) = match create_and_store_my_did(None) {
         Ok(y) => y,
         Err(x) => {
-            error!("could not create DID/VK: {}", x);
+            error!("{} could not create DID/VK: {}", get_source_id(handle).unwrap_or_default(), x);
             return Err(ConnectionError::CommonError(x))
         },
     };
@@ -436,7 +434,6 @@ fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
     match create_agent_pairwise(handle) {
         Err(err) => {
             error!("Error while Creating Agent Pairwise: {}", err);
-            release(handle)?;
             return Err(err)
         },
         Ok(_) => debug!("created pairwise key on agent"),
@@ -445,7 +442,6 @@ fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
     match update_agent_profile(handle) {
         Err(x) => {
             error!("could not update profile on agent: {}", x);
-            release(handle)?;
             return Err(x)
         },
         Ok(_) => debug!("updated profile on agent"),
@@ -469,6 +465,7 @@ pub fn build_connection(source_id: &str) -> Result<u32,ConnectionError> {
 }
 
 pub fn build_connection_with_invite(source_id: &str, details: &str) -> Result<u32,ConnectionError> {
+    debug!("using invite to create connection {}", source_id);
 
     let details:Value = serde_json::from_str(&details)
         .or(Err(ConnectionError::CommonError(error::INVALID_JSON.code_num)))?;
@@ -508,13 +505,13 @@ pub fn build_connection_with_invite(source_id: &str, details: &str) -> Result<u3
 }
 
 pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<SenderDetail, ConnectionError> {
-
-    debug!("parsing acceptance details for message {:?}", message);
-    if message.payload.is_none() {
-        return Err(ConnectionError::CommonError(error::INVALID_MSGPACK.code_num)) }
-
-    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).unwrap();
-    let payload = messages::to_u8(message.payload.as_ref().unwrap());
+    debug!("connection {} parsing acceptance details for message {:?}", get_source_id(handle).unwrap_or_default(), message);
+    let my_vk = settings::get_config_value(settings::CONFIG_SDK_TO_REMOTE_VERKEY).map_err(|e| ConnectionError::CommonError(e))?;
+    let payload = messages::to_u8(
+        message.payload
+        .as_ref()
+        .ok_or(ConnectionError::CommonError(error::INVALID_MSGPACK.code_num))?
+    );
     // TODO: check returned verkey
     let (_, payload) = crypto::parse_msg(&my_vk,&payload).map_err(|e| {ConnectionError::CommonError(e)})?;
 
@@ -537,14 +534,12 @@ pub fn parse_acceptance_details(handle: u32, message: &Message) -> Result<Sender
 }
 
 pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
-    debug!("updating state for connection handle {}", handle);
+    debug!("updating state for connection {}", get_source_id(handle).unwrap_or_default());
     // TODO: Refactor Error
     let pw_did = get_pw_did(handle)?;
     let pw_vk = get_pw_verkey(handle)?;
     let agent_did = get_agent_did(handle)?;
     let agent_vk = get_agent_verkey(handle)?;
-
-    let url = format!("{}/agency/route", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).unwrap());
 
     match messages::get_messages()
         .to(&pw_did)
@@ -558,7 +553,7 @@ pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
             Err(ConnectionError::CommonError(error::POST_MSG_FAILURE.code_num))
         }
         Ok(response) => {
-            debug!("update state response: {:?}", response);
+            debug!("connection {} update state response: {:?}", get_source_id(handle).unwrap_or_default(), response);
             if get_state(handle) == VcxStateType::VcxStateOfferSent as u32 || get_state(handle) == VcxStateType::VcxStateInitialized as u32{
                  for i in response {
                      if i.status_code == MessageAccepted.as_string() && i.msg_type == "connReqAnswer" {
@@ -607,9 +602,8 @@ pub fn from_string(connection_data: &str) -> Result<u32, ConnectionError> {
     };
 
 
-    let source_id = derived_connection.get_source_id().clone();
     let new_handle = CONNECTION_MAP.add(derived_connection).map_err(|ec| ConnectionError::CommonError(ec))?;
-    debug!("inserting handle {} source_id {:?} into connection table", new_handle, source_id);
+    debug!("inserting handle {} source_id {} into connection table", new_handle, get_source_id(new_handle).unwrap_or_default());
 
     Ok(new_handle)
 }
@@ -798,17 +792,25 @@ pub mod tests {
     }
 
     #[test]
-    fn test_build_connection(){
-        settings::set_defaults();
+    fn test_build_connection_failures(){
+        init!("true");
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         assert_eq!(build_connection("This Should Fail").err(),
                    Some(ConnectionError::CommonError(error::INVALID_WALLET_HANDLE.code_num)));
-       assert!(build_connection_with_invite("This Should Fail", "BadDetailsFoobar").is_err());
+        assert!(build_connection_with_invite("This Should Fail", "BadDetailsFoobar").is_err());
     }
+
+    #[test]
+    fn test_create_connection_agency_failure() {
+        init!("indy");
+        ::utils::httpclient::set_next_u8_response(vec![]);
+        let rc = build_connection("invalid");
+        assert_eq!(rc.unwrap_err(),ConnectionError::CommonError(error::POST_MSG_FAILURE.code_num));
+    }
+
     #[test]
     fn test_create_connection() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let handle = build_connection("test_create_connection").unwrap();
         assert!(handle > 0);
         assert!(!get_pw_did(handle).unwrap().is_empty());
@@ -818,13 +820,11 @@ pub mod tests {
         assert_eq!(delete_connection(handle).unwrap(), 0);
         // This errors b/c we release handle in delete connection
         assert!(release(handle).is_err());
-
     }
 
     #[test]
     fn test_create_drop_create() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let handle = build_connection("test_create_drop_create").unwrap();
         let did1 = get_pw_did(handle).unwrap();
         assert!(release(handle).is_ok());
@@ -865,8 +865,7 @@ pub mod tests {
 
     #[test]
     fn test_get_qr_code_data() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let test_name = "test_get_qr_code_data";
         let c = Connection {
             source_id: test_name.to_string(),
@@ -888,7 +887,6 @@ pub mod tests {
         httpclient::set_next_u8_response(GET_MESSAGES_RESPONSE.to_vec());
         update_state(handle).unwrap();
         let details = get_invite_details(handle, true).unwrap();
-        println!("{}",details);
         assert!(details.contains("\"dp\":"));
         assert_eq!(get_invite_details(12345, true).err(),
                    Some(ConnectionError::CommonError(error::INVALID_CONNECTION_HANDLE.code_num)));
@@ -896,8 +894,7 @@ pub mod tests {
 
     #[test]
     fn test_serialize_deserialize() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let handle = build_connection("test_serialize_deserialize").unwrap();
         assert!(handle > 0);
         let first_string = to_string(handle).unwrap();
@@ -905,29 +902,23 @@ pub mod tests {
         let handle = from_string(&first_string).unwrap();
         let second_string = to_string(handle).unwrap();
         assert!(release(handle).is_ok());
-        println!("{}",first_string);
-        println!("{}",second_string);
         assert_eq!(first_string,second_string);
     }
 
     #[test]
     fn test_deserialize_existing() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let handle = build_connection("test_serialize_deserialize").unwrap();
         assert!(handle > 0);
         let first_string = to_string(handle).unwrap();
         let handle = from_string(&first_string).unwrap();
         let second_string = to_string(handle).unwrap();
-        println!("{}",first_string);
-        println!("{}",second_string);
         assert_eq!(first_string,second_string);
     }
 
     #[test]
     fn test_retry_connection() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let handle = build_connection("test_serialize_deserialize").unwrap();
         assert!(handle > 0);
         assert_eq!(get_state(handle), VcxStateType::VcxStateInitialized as u32);
@@ -937,15 +928,14 @@ pub mod tests {
 
     #[test]
     fn test_bad_wallet_connection_fails() {
-        settings::set_defaults();
+        init!("true");
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"false");
         assert_eq!(build_connection("test_bad_wallet_connection_fails").unwrap_err().to_error_code(),error::INVALID_WALLET_HANDLE.code_num);
     }
 
     #[test]
     fn test_parse_acceptance_details() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let test_name = "test_parse_acceptance_details";
         let handle = rand::thread_rng().gen::<u32>();
 
@@ -1063,8 +1053,7 @@ pub mod tests {
 
     #[test]
     fn test_release_all() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let h1 = build_connection("rel1").unwrap();
         let h2 = build_connection("rel2").unwrap();
         let h3 = build_connection("rel3").unwrap();
@@ -1080,9 +1069,7 @@ pub mod tests {
 
     #[test]
     fn test_create_with_valid_invite_details() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
-        wallet::init_wallet("create_with_details").unwrap();
+        init!("true");
 
         let details = r#"{"id":"njjmmdg","s":{"d":"JZho9BzVAEk8jJ1hwrrDiZ","dp":{"d":"JDF8UHPBTXigvtJWeeMJzx","k":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","s":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"l":"https://robohash.org/123","n":"Evernym","v":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"sa":{"d":"YRuVCckY6vfZfX9kcQZe3u","e":"52.38.32.107:80/agency/msg","v":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"sc":"MS-101","sm":"message created","t":"there"}"#;
         let unabbrv_details = unabbrv_event_detail(serde_json::from_str(details).unwrap()).unwrap();
@@ -1095,13 +1082,11 @@ pub mod tests {
         let handle_2 = build_connection_with_invite("alice",&details).unwrap();
 
         connect(handle_2,Some("{}".to_string())).unwrap();
-        wallet::delete_wallet("create_with_details").unwrap();
     }
 
     #[test]
     fn test_create_with_invalid_invite_details() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let bad_details = r#"{"id":"mtfjmda","s":{"d":"abc"},"l":"abc","n":"Evernym","v":"avc"},"sa":{"d":"abc","e":"abc","v":"abc"},"sc":"MS-101","sm":"message created","t":"there"}"#;
         match build_connection_with_invite("alice",&bad_details) {
             Ok(_) => panic!("should have failed"),
@@ -1112,8 +1097,7 @@ pub mod tests {
     #[test]
     fn test_connect_with_invalid_details() {
         use error::connection::ConnectionError;
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
         let test_name = "test_connect_with_invalid_details";
 
         let c = Connection {

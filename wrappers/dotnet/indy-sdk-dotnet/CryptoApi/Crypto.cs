@@ -1,7 +1,7 @@
-﻿using System;
-using Hyperledger.Indy.DidApi;
+﻿using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.Utils;
 using Hyperledger.Indy.WalletApi;
+using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using static Hyperledger.Indy.CryptoApi.NativeMethods;
@@ -199,7 +199,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="verKey">The verification key of the key pair.</param>
         /// <param name="metadata">The metadata to set.</param>
         /// <returns>An asynchronous <see cref="Task"/> that completes when the operation completes.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the wallet does not contain a key-pair matching the provided <paramref name="verKey"/>.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the wallet does not contain a key-pair matching the provided <paramref name="verKey"/>.</exception>
         public static Task SetKeyMetadataAsync(Wallet wallet, string verKey, string metadata)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -229,7 +229,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="wallet">The wallet containing the key-pair.</param>
         /// <param name="verKey">The verification key of the key-pair.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a string containing the metadata associated with the key-pair.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if the wallet does not contain a key-pair matching the provided <paramref name="verKey"/> or they key-pair has no metadata.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if the wallet does not contain a key-pair matching the provided <paramref name="verKey"/> or they key-pair has no metadata.</exception>
         public static Task<string> GetKeyMetadataAsync(Wallet wallet, string verKey)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -265,7 +265,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="myVk">The verification key of the key-pair to sign with.</param>
         /// <param name="message">The message to sign</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the signature.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
         public static Task<byte[]> SignAsync(Wallet wallet, string myVk, byte[] message)
         {
             ParamGuard.NotNull(wallet, "wallet");
@@ -459,7 +459,7 @@ namespace Hyperledger.Indy.CryptoApi
         /// <param name="myVk">The verification key of the intended recipient of the encrypted message.</param>
         /// <param name="encryptedMessage">The encrypted message to decrypt.</param>
         /// <returns>An asynchronous <see cref="Task{T}"/> that resolves to a byte array containing the decrypted message.</returns>
-        /// <exception cref="WalletValueNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
+        /// <exception cref="WalletItemNotFoundException">Thrown if <paramref name="myVk"/> is not present in the <paramref name="wallet"/>.</exception>
         /// <exception cref="InvalidStructureException">Thrown if <paramref name="myVk"/> was not used to encrypt <paramref name="encryptedMessage"/>.</exception>
         public static Task<byte[]> AnonDecryptAsync(Wallet wallet, string myVk, byte[] encryptedMessage)
         {
