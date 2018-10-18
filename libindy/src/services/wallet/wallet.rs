@@ -1822,8 +1822,7 @@ mod wallet_tests {
         let storage_type: Box<WalletStorageType>;
         let storage_type_ref: &Box<WalletStorageType>;
 
-        //let overrides = utils::wallet::test_utils::wallet_storage_overrides();
-        let overrides = utils::wallet::test_utils::postgres_lib_test_overrides();
+        let overrides = utils::wallet::test_utils::wallet_storage_overrides();
         let (storage_type_name, storage_config, storage_credentials) = _get_wallet_config_params(&wallet_service, &overrides);
         let storage_config_str = storage_config.as_ref().map(|x| &**x);
         let storage_creds_str = storage_credentials.as_ref().map(|x| &**x);
@@ -1872,8 +1871,7 @@ mod wallet_tests {
         let storage_type: Box<WalletStorageType>;
         let storage_type_ref: &Box<WalletStorageType>;
 
-        //let overrides = utils::wallet::test_utils::wallet_storage_overrides();
-        let overrides = utils::wallet::test_utils::postgres_lib_test_overrides();
+        let overrides = utils::wallet::test_utils::wallet_storage_overrides();
         let (storage_type_name, storage_config, storage_credentials) = _get_wallet_config_params(&wallet_service, &overrides);
         let storage_config_str = storage_config.as_ref().map(|x| &**x);
         let storage_creds_str = storage_credentials.as_ref().map(|x| &**x);
@@ -1910,8 +1908,7 @@ mod wallet_tests {
         let storage_type: Box<WalletStorageType>;
         let storage_type_ref: &Box<WalletStorageType>;
 
-        //let overrides = utils::wallet::test_utils::wallet_storage_overrides();
-        let overrides = utils::wallet::test_utils::postgres_lib_test_overrides();
+        let overrides = utils::wallet::test_utils::wallet_storage_overrides();
         let (storage_type_name, storage_config, storage_credentials) = _get_wallet_config_params(&wallet_service, &overrides);
         let storage_config_str = storage_config.as_ref().map(|x| &**x);
         let storage_creds_str = storage_credentials.as_ref().map(|x| &**x);

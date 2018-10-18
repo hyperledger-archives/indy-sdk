@@ -1,5 +1,6 @@
 extern crate sharedlib;
 extern crate base64;
+extern crate os_type;
 
 use self::sharedlib::{Lib, Func, Symbol};
 
@@ -240,8 +241,20 @@ pub fn override_wallet_config_creds(config: &str, credentials: &str, load_dynali
                 return (config.to_owned(), credentials.to_owned());
             }
 
+            // check for default configs for inmem or postgres plugins
+            let env_var = "STG_USE";
+            let storage_config = match env::var(env_var) {
+                Ok(var) => {
+                    match var.to_lowercase().as_ref() {
+                        "inmem" => inmem_lib_test_overrides(),
+                        "postgres" => postgres_lib_test_overrides(),
+                        _ => wallet_storage_overrides()
+                    }
+                },
+                Err(_) => wallet_storage_overrides()
+            };
+
             // if no config is provided at all then bail
-            let storage_config = wallet_storage_overrides();
             if !any_overrides(&storage_config) {
                 return (config.to_owned(), credentials.to_owned());
             }
@@ -287,19 +300,15 @@ pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) ->
     let lib;
     //let lib_path = Path::new(library_path);
     unsafe {
-        println!("Loading {:?}", library_path);
         lib = match Lib::new(library_path) {
             Ok(rlib) => {
-                println!("Loaded lib");
                 rlib
             },
             Err(err) => {
-                println!("Load error {:?}", err);
                 panic!("Load error {:?}", err)
             }
         };
 
-        println!("Get fn pointers ...");
         let fn_create_handler: Func<WalletCreate> = lib.find_func(&format!("{}create", fn_pfx)).unwrap();
         let fn_open_handler: Func<WalletOpen> = lib.find_func(&format!("{}open", fn_pfx)).unwrap();
         let fn_close_handler: Func<WalletClose> = lib.find_func(&format!("{}close", fn_pfx)).unwrap();
@@ -325,7 +334,6 @@ pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) ->
         let fn_fetch_search_next_record_handler: Func<WalletFetchSearchNextRecord> = lib.find_func(&format!("{}fetch_search_next_record", fn_pfx)).unwrap();
         let fn_free_search_handler: Func<WalletFreeSearch> = lib.find_func(&format!("{}free_search", fn_pfx)).unwrap();
 
-        println!("Register wallet ...");
         err = indy_register_wallet_storage(
             command_handle,
             xxtype.as_ptr(),
@@ -357,7 +365,6 @@ pub fn load_storage_library(stg_type: &str, library_path: &str, fn_pfx: &str) ->
         );
     }
 
-    println!("Finish up ...");
     wallets.insert(stg_type.to_string(), lib);
 
     super::results::result_to_empty(err, receiver)
@@ -472,3 +479,44 @@ pub fn any_overrides(storage_config: &HashMap<String, Option<String>>) -> bool {
     }
     return false;
 }
+
+pub fn inmem_lib_test_overrides() -> HashMap<String, Option<String>> {
+    // Note - on OS/X we specify the fully qualified path to the shared lib
+    //      - on UNIX systems we have to include the directories in LD_LIBRARY_PATH, e.g.:
+    //      export LD_LIBRARY_PATH=../samples/storage/storage-inmem/target/debug/:./target/debug/
+    let os = os_type::current_platform();
+    let osfile = match os.os_type {
+        os_type::OSType::OSX => "libindystrginmem.dylib",
+        _ => "libindystrginmem.so"
+    };
+
+    let mut storage_config = HashMap::new();
+    let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
+    storage_config.insert(env_vars[0].to_string(), None);
+    storage_config.insert(env_vars[1].to_string(), None);
+    storage_config.insert(env_vars[2].to_string(), Some("inmem_custom".to_string()));
+    storage_config.insert(env_vars[3].to_string(), Some(osfile.to_string()));
+    storage_config.insert(env_vars[4].to_string(), Some("inmemwallet_fn_".to_string()));
+    storage_config
+}
+
+pub fn postgres_lib_test_overrides() -> HashMap<String, Option<String>> {
+    // Note - on OS/X we specify the fully qualified path to the shared lib
+    //      - on UNIX systems we have to include the directories in LD_LIBRARY_PATH, e.g.:
+    //      export LD_LIBRARY_PATH=../samples/storage/storage-inmem/target/debug/:./target/debug/
+    let os = os_type::current_platform();
+    let osfile = match os.os_type {
+        os_type::OSType::OSX => "libindystrgpostgres.dylib",
+        _ => "libindystrgpostgres.so"
+    };
+
+    let mut storage_config = HashMap::new();
+    let env_vars = vec!["STG_CONFIG", "STG_CREDS", "STG_TYPE", "STG_LIB", "STG_FN_PREFIX"];
+    storage_config.insert(env_vars[0].to_string(), Some(r#"{"url":"localhost:5432"}"#.to_string()));
+    storage_config.insert(env_vars[1].to_string(), Some(r#"{"account":"postgres","password":"mysecretpassword","admin_account":"postgres","admin_password":"mysecretpassword"}"#.to_string()));
+    storage_config.insert(env_vars[2].to_string(), Some("postgres_custom".to_string()));
+    storage_config.insert(env_vars[3].to_string(), Some(osfile.to_string()));
+    storage_config.insert(env_vars[4].to_string(), Some("postgreswallet_fn_".to_string()));
+    storage_config
+}
+
