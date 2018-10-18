@@ -788,8 +788,6 @@ impl WalletStorage for PostgresStorage {
         let conn = pool.get().unwrap();
         let total_count: Option<usize> = if search_options.retrieve_total_count {
             let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
-            println!("count query_string {:?}", query_string);
-            println!("count query_arguments {:?}", query_arguments);
 
             let mut rows = conn.query(
                 &query_string,
@@ -802,7 +800,6 @@ impl WalletStorage for PostgresStorage {
                 None => None
             }
         } else { None };
-        println!("total_count = {:?}", total_count);
 
         if search_options.retrieve_records {
             let fetch_options = RecordOptions {
@@ -812,8 +809,6 @@ impl WalletStorage for PostgresStorage {
             };
 
             let (query_string, query_arguments) = query::wql_to_sql(&type_, query, options)?;
-            println!("rec query_string {:?}", query_string);
-            println!("rec query_arguments {:?}", query_arguments);
 
             let statement = self._prepare_statement(&query_string)?;
             let tag_retriever = if fetch_options.retrieve_tags {
