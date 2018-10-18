@@ -475,7 +475,7 @@ impl WalletStorage for PostgresStorage {
         let res = tx.prepare_cached("INSERT INTO items (type, name, value, key) VALUES ($1, $2, $3, $4) RETURNING id")?
             .query(&[&type_.to_vec(), &id.to_vec(), &value.data, &value.key]);
 
-        let id = match res {
+        let item_id = match res {
             Ok(rows) => {
                 let res = match rows.iter().next() {
                     Some(row) => Ok(row.get(0)),
@@ -497,8 +497,9 @@ impl WalletStorage for PostgresStorage {
                 }
             }
         };
+        println!("Added record {:?} {:?} {:?} {:?}", item_id, &type_.to_vec(), &id.to_vec(), &value.data);
 
-        let id = id as i64;
+        let item_id = item_id as i64;
 
         if !tags.is_empty() {
             let stmt_e = tx.prepare_cached("INSERT INTO tags_encrypted (item_id, name, value) VALUES ($1, $2, $3)")?;
@@ -507,7 +508,8 @@ impl WalletStorage for PostgresStorage {
             for tag in tags {
                 match tag {
                     &Tag::Encrypted(ref tag_name, ref tag_data) => {
-                        match stmt_e.execute(&[&id, tag_name, tag_data]) {
+                        println!("Added ebc tag {:?} {:?} {:?}", item_id, tag_name, tag_data);
+                        match stmt_e.execute(&[&item_id, tag_name, tag_data]) {
                             Ok(_) => (),
                             Err(err) => {
                                 if err.code() == Some(&postgres::error::UNIQUE_VIOLATION) ||
@@ -520,7 +522,8 @@ impl WalletStorage for PostgresStorage {
                         }
                     },
                     &Tag::PlainText(ref tag_name, ref tag_data) => {
-                        match stmt_p.execute(&[&id, tag_name, tag_data]) {
+                        println!("Added pt tag {:?} {:?} {:?}", item_id, tag_name, tag_data);
+                        match stmt_p.execute(&[&item_id, tag_name, tag_data]) {
                             Ok(_) => (),
                             Err(err) => {
                                 if err.code() == Some(&postgres::error::UNIQUE_VIOLATION) ||
@@ -788,6 +791,8 @@ impl WalletStorage for PostgresStorage {
         let conn = pool.get().unwrap();
         let total_count: Option<usize> = if search_options.retrieve_total_count {
             let (query_string, query_arguments) = query::wql_to_sql_count(&type_, query)?;
+            println!("count query_string {:?}", query_string);
+            println!("count query_arguments {:?}", query_arguments);
 
             let mut rows = conn.query(
                 &query_string,
@@ -809,6 +814,8 @@ impl WalletStorage for PostgresStorage {
             };
 
             let (query_string, query_arguments) = query::wql_to_sql(&type_, query, options)?;
+            println!("rec query_string {:?}", query_string);
+            println!("rec query_arguments {:?}", query_arguments);
 
             let statement = self._prepare_statement(&query_string)?;
             let tag_retriever = if fetch_options.retrieve_tags {
