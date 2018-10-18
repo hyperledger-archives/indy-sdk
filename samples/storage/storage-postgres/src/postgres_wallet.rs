@@ -705,7 +705,7 @@ impl PostgresWallet {
 
         match searches.get(&search_handle) {
             Some(records) => {
-                unsafe { *count = records.records.len() };
+                unsafe { *count = records.count };
             }
             None => return ErrorCode::CommonInvalidState
         }
