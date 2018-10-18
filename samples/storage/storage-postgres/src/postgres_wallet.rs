@@ -37,6 +37,13 @@ struct PostgresWalletRecord {
     tags: CString
 }
 
+#[derive(Debug, Clone)]
+struct PostgresWalletRecordSet {
+    idx: usize,
+    records: Vec<PostgresWalletRecord>,
+    count: usize
+}
+
 lazy_static! {
     // store a PostgresStorage object (contains a connection) 
     static ref POSTGRES_OPEN_WALLETS: Mutex<HashMap<i32, PostgresStorageContext>> = Default::default();
@@ -56,7 +63,7 @@ lazy_static! {
     // cache of active Postgres searches
     // TODO figure out  athread-safe PostgresStorageIterator
     // static ref POSTGRES_ACTIVE_SEARCHES: Mutex<HashMap<i32, Box<::postgres_storage::PostgresStorageIterator>>> = Default::default();
-    static ref POSTGRES_ACTIVE_SEARCHES: Mutex<HashMap<i32, Vec<PostgresWalletRecord>>> = Default::default();
+    static ref POSTGRES_ACTIVE_SEARCHES: Mutex<HashMap<i32, PostgresWalletRecordSet>> = Default::default();
 }
 
 pub struct PostgresWallet {}
@@ -589,23 +596,32 @@ impl PostgresWallet {
             return ErrorCode::CommonInvalidState;
         }
 
-        println!("Postgres search {:?} {:?}", type_, query_json);
-
         let query = language::parse_from_json_encrypted(&query_json).unwrap();
         let wallet_context = handles.get(&xhandle).unwrap();
         let wallet_box = &wallet_context.phandle;
         let storage = &*wallet_box;
 
-        println!("Storage search {:?} {:?}", type_, query);
-
         let res = storage.search(&type_.as_bytes(), &query, Some(&options_json));
         
         match res {
             Ok(iter) => {
-                println!("Postgres Iterate Search");
-
                 // iter: Box<StorageIterator>
+                let total_count = iter.get_total_count();
                 let search_records = _iterator_to_record_set(iter).unwrap();
+                let total_count = match total_count {
+                    Ok(count) => {
+                        match count {
+                            Some(ct) => ct,
+                            None => 0
+                        }
+                    },
+                    _ => search_records.len()
+                };
+                let search_set = PostgresWalletRecordSet {
+                    idx: 0,
+                    records: search_records,
+                    count: total_count
+                };
 
                 let search_handle = SequenceUtils::get_next_id();
 
@@ -613,15 +629,13 @@ impl PostgresWallet {
 
                 // TODO store the iterator rather than the fetched records
                 // searches.insert(search_handle, iter);
-                searches.insert(search_handle, search_records);
+                searches.insert(search_handle, search_set);
 
                 unsafe { *handle = search_handle };
                 return ErrorCode::Success
             },
-            Err(err) => {
+            Err(_err) => {
                 // err: WalletStorageError
-                println!("Postgres Search returns {:?}", err);
-
                 return ErrorCode::WalletStorageError
             }
         }
@@ -644,7 +658,22 @@ impl PostgresWallet {
         match res {
             Ok(iter) => {
                 // iter: Box<StorageIterator>
-                let search_records = _iterator_to_record_set(iter).unwrap()     ;
+                let total_count = iter.get_total_count();
+                let search_records = _iterator_to_record_set(iter).unwrap();
+                let total_count = match total_count {
+                    Ok(count) => {
+                        match count {
+                            Some(ct) => ct,
+                            None => 0
+                        }
+                    },
+                    _ => search_records.len()
+                };
+                let search_set = PostgresWalletRecordSet {
+                    idx: 0,
+                    records: search_records,
+                    count: total_count
+                };
 
                 let search_handle = SequenceUtils::get_next_id();
 
@@ -652,7 +681,7 @@ impl PostgresWallet {
 
                 // TODO store the iterator rather than the fetched records
                 // searches.insert(search_handle, iter);
-                searches.insert(search_handle, search_records);
+                searches.insert(search_handle, search_set);
 
                 unsafe { *handle = search_handle };
                 return ErrorCode::Success
@@ -676,7 +705,7 @@ impl PostgresWallet {
 
         match searches.get(&search_handle) {
             Some(records) => {
-                unsafe { *count = records.len() };
+                unsafe { *count = records.records.len() };
             }
             None => return ErrorCode::CommonInvalidState
         }
@@ -696,17 +725,17 @@ impl PostgresWallet {
 
         match searches.get_mut(&search_handle) {
             Some(records) => {
-                match records.pop() {
-                    Some(record) => {
-                        let handle = SequenceUtils::get_next_id();
+                if records.idx < records.records.len() {
+                    let handle = SequenceUtils::get_next_id();
 
-                        let mut handles = POSTGRES_ACTIVE_RECORDS.lock().unwrap();
-                        handles.insert(handle, record.clone());
+                    let mut handles = POSTGRES_ACTIVE_RECORDS.lock().unwrap();
+                    handles.insert(handle, records.records.get(records.idx).unwrap().clone());
+                    records.idx = records.idx + 1;
 
-                        unsafe { *record_handle = handle };
-                        ErrorCode::Success
-                    },
-                    None => ErrorCode::WalletItemNotFound
+                    unsafe { *record_handle = handle };
+                    ErrorCode::Success
+                } else {
+                    ErrorCode::WalletItemNotFound
                 }
             },
             None => ErrorCode::CommonInvalidState
