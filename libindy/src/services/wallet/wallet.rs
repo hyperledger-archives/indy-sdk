@@ -196,9 +196,12 @@ impl Wallet {
     }
 
     pub fn search<'a>(&'a self, type_: &str, query: &str, options: Option<&str>) -> Result<WalletIterator, WalletError> {
+        println!("Search {:?} {:?}", type_, query);
         let parsed_query = language::parse_from_json(query)?;
+        println!("Parsed Search {:?} {:?}", type_, parsed_query);
         let encrypted_query = encrypt_query(parsed_query, &self.keys)?;
         let encrypted_type_ = encrypt_as_searchable(type_.as_bytes(), &self.keys.type_key, &self.keys.item_hmac_key);
+        println!("Enc Search {:?} {:?}", encrypted_type_, encrypted_query);
         let storage_iterator = self.storage.search(&encrypted_type_, &encrypted_query, options)?;
         let wallet_iterator = WalletIterator::new(storage_iterator, Rc::clone(&self.keys));
         Ok(wallet_iterator)
@@ -1766,6 +1769,7 @@ mod wallet_tests {
     }
 
     fn _cleanup() {
+        _delete_wallet();
         test::cleanup_storage();
     }
 
@@ -1816,38 +1820,21 @@ mod wallet_tests {
 
         let storage_type: Box<WalletStorageType>;
         let storage_type_ref: &Box<WalletStorageType>;
-        let (storage_config_str, storage_creds_str);
-        let storage_config;
-        let storage_credentials;
 
         //let overrides = utils::wallet::test_utils::wallet_storage_overrides();
         let overrides = utils::wallet::test_utils::postgres_lib_test_overrides();
+        let (storage_type_name, storage_config, storage_credentials) = _get_wallet_config_params(&wallet_service, &overrides);
+        let storage_config_str = storage_config.as_ref().map(|x| &**x);
+        let storage_creds_str = storage_credentials.as_ref().map(|x| &**x);
         if utils::wallet::test_utils::any_overrides(&overrides) {
-            let init_config = _config();
-            let init_creds = _credentials_moderate();
-            let (my_config, my_credentials) = utils::wallet::test_utils::override_wallet_config_creds(&init_config, &init_creds, &wallet_service, true);
-            storage_config_str = serde_json::to_string(&my_config.storage_config.unwrap()).unwrap();
-            storage_creds_str = serde_json::to_string(&my_credentials.storage_credentials.unwrap()).unwrap();
-            storage_config = Some(&storage_config_str[..]);
-            storage_credentials = Some(&storage_creds_str[..]);
-
             storage_types = wallet_service.storage_types.borrow();
 
-            storage_type_ref = {
-                let storage_type = my_config.storage_type
-                    .as_ref()
-                    .map(String::as_str)
-                    .unwrap_or("default");
-
-                storage_types
-                    .get(storage_type).unwrap()
-                    //.ok_or(WalletError::UnknownType(storage_type.to_string())).unwrap()
-            };
+            storage_type_ref = storage_types
+                    .get(&storage_type_name).unwrap();
+                    //.ok_or(WalletError::UnknownType(storage_type.to_string())).unwrap();
         } else {
             storage_type = Box::new(SQLiteStorageType::new());
             storage_type_ref = &storage_type;
-            storage_config = None;
-            storage_credentials = None;
         }
 
         let master_key = _master_key();
@@ -1867,18 +1854,40 @@ mod wallet_tests {
         };
 
         storage_type_ref.create_storage(_wallet_id(),
-                                    storage_config,
-                                    storage_credentials,
+                                    storage_config_str,
+                                    storage_creds_str,
                                     &metadata).unwrap();
 
-        let storage = storage_type_ref.open_storage(_wallet_id(), storage_config, storage_credentials).unwrap();
+        let storage = storage_type_ref.open_storage(_wallet_id(), storage_config_str, storage_creds_str).unwrap();
 
         Wallet::new(_wallet_id().to_string(), storage, Rc::new(keys))
     }
 
     fn _exists_wallet() -> Wallet {
-        let storage_type = SQLiteStorageType::new();
-        let storage = storage_type.open_storage(_wallet_id(), None, None).unwrap();
+        // use passed parameters to build wallet/storage, if available
+        let wallet_service = WalletService::new();
+        let storage_types;
+
+        let storage_type: Box<WalletStorageType>;
+        let storage_type_ref: &Box<WalletStorageType>;
+
+        //let overrides = utils::wallet::test_utils::wallet_storage_overrides();
+        let overrides = utils::wallet::test_utils::postgres_lib_test_overrides();
+        let (storage_type_name, storage_config, storage_credentials) = _get_wallet_config_params(&wallet_service, &overrides);
+        let storage_config_str = storage_config.as_ref().map(|x| &**x);
+        let storage_creds_str = storage_credentials.as_ref().map(|x| &**x);
+        if utils::wallet::test_utils::any_overrides(&overrides) {
+            storage_types = wallet_service.storage_types.borrow();
+
+            storage_type_ref = storage_types
+                    .get(&storage_type_name).unwrap();
+                    //.ok_or(WalletError::UnknownType(storage_type.to_string())).unwrap();
+        } else {
+            storage_type = Box::new(SQLiteStorageType::new());
+            storage_type_ref = &storage_type;
+        }
+
+        let storage = storage_type_ref.open_storage(_wallet_id(), storage_config_str, storage_creds_str).unwrap();
 
         let metadata: MetadataArgon = {
             let metadata = storage.get_storage_metadata().unwrap();
@@ -1890,6 +1899,62 @@ mod wallet_tests {
         let keys = Keys::deserialize_encrypted(&metadata.keys, &master_key).unwrap();
 
         Wallet::new(_wallet_id().to_string(), storage, Rc::new(keys))
+    }
+
+    fn _delete_wallet() {
+        // use passed parameters to build wallet/storage, if available
+        let wallet_service = WalletService::new();
+        let storage_types;
+
+        let storage_type: Box<WalletStorageType>;
+        let storage_type_ref: &Box<WalletStorageType>;
+
+        //let overrides = utils::wallet::test_utils::wallet_storage_overrides();
+        let overrides = utils::wallet::test_utils::postgres_lib_test_overrides();
+        let (storage_type_name, storage_config, storage_credentials) = _get_wallet_config_params(&wallet_service, &overrides);
+        let storage_config_str = storage_config.as_ref().map(|x| &**x);
+        let storage_creds_str = storage_credentials.as_ref().map(|x| &**x);
+        if utils::wallet::test_utils::any_overrides(&overrides) {
+            storage_types = wallet_service.storage_types.borrow();
+
+            storage_type_ref = storage_types
+                    .get(&storage_type_name).unwrap();
+                    //.ok_or(WalletError::UnknownType(storage_type.to_string())).unwrap();
+        } else {
+            storage_type = Box::new(SQLiteStorageType::new());
+            storage_type_ref = &storage_type;
+        }
+
+        let _ = storage_type_ref.delete_storage(_wallet_id(), storage_config_str, storage_creds_str);
+    }
+
+    // this returns Storage Type, Storage Config, Storage Credentials
+    fn _get_wallet_config_params(wallet_service: &WalletService, overrides: &HashMap<String, Option<String>>) -> (String, Option<String>, Option<String>) {
+        let (storage_config_str, storage_creds_str);
+        let storage_config;
+        let storage_credentials;
+        let storage_type;
+
+        if utils::wallet::test_utils::any_overrides(&overrides) {
+            let init_config = _config();
+            let init_creds = _credentials_moderate();
+            let (my_config, my_credentials) = utils::wallet::test_utils::override_wallet_config_creds(&init_config, &init_creds, &wallet_service, true);
+            storage_config_str = serde_json::to_string(&my_config.storage_config.unwrap()).unwrap();
+            storage_creds_str = serde_json::to_string(&my_credentials.storage_credentials.unwrap()).unwrap();
+            storage_config = Some(storage_config_str);
+            storage_credentials = Some(storage_creds_str);
+            storage_type = my_config.storage_type
+                    .as_ref()
+                    .map(String::as_str)
+                    .unwrap_or("default")
+                    .to_owned();
+        } else {
+            storage_config = None;
+            storage_credentials = None;
+            storage_type = "default".to_string();
+        }
+
+        (storage_type, storage_config, storage_credentials)
     }
 
     fn _master_key() -> chacha20poly1305_ietf::Key {

@@ -202,7 +202,7 @@ impl PostgresWallet {
             Ok(_) => ErrorCode::Success,
             Err(err) => {
                 match err {
-                    WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
+                    WalletStorageError::ItemNotFound => ErrorCode::WalletItemNotFound,
                     _ => ErrorCode::WalletStorageError
                 }
             }
@@ -490,7 +490,7 @@ impl PostgresWallet {
             Ok(_) => ErrorCode::Success,
             Err(err) => {
                 match err {
-                    WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
+                    WalletStorageError::ItemNotFound => ErrorCode::WalletItemNotFound,
                     _ => ErrorCode::WalletStorageError
                 }
             }
@@ -589,15 +589,21 @@ impl PostgresWallet {
             return ErrorCode::CommonInvalidState;
         }
 
-        let query = language::parse_from_json(&query_json).unwrap();
+        println!("Postgres search {:?} {:?}", type_, query_json);
+
+        let query = language::parse_from_json_encrypted(&query_json).unwrap();
         let wallet_context = handles.get(&xhandle).unwrap();
         let wallet_box = &wallet_context.phandle;
         let storage = &*wallet_box;
+
+        println!("Storage search {:?} {:?}", type_, query);
 
         let res = storage.search(&type_.as_bytes(), &query, Some(&options_json));
         
         match res {
             Ok(iter) => {
+                println!("Postgres Iterate Search");
+
                 // iter: Box<StorageIterator>
                 let search_records = _iterator_to_record_set(iter).unwrap();
 
@@ -612,8 +618,10 @@ impl PostgresWallet {
                 unsafe { *handle = search_handle };
                 return ErrorCode::Success
             },
-            Err(_err) => {
+            Err(err) => {
                 // err: WalletStorageError
+                println!("Postgres Search returns {:?}", err);
+
                 return ErrorCode::WalletStorageError
             }
         }
