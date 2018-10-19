@@ -1,6 +1,5 @@
 import pytest
 from vcx.error import VcxError, ErrorCode
-from vcx.common import shutdown
 from vcx.api.wallet import *
 import json
 
@@ -84,8 +83,9 @@ async def test_wallet_search():
     with pytest.raises(VcxError) as e:
         await Wallet.export("/tmp/output.wallet", "backupKey")
 
+
 @pytest.mark.asyncio
-async def test_import_wallet_failures():
+async def test_import_wallet_failures(vcx_init_test_mode, shutdown):
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet('Invalid Json')
     assert ErrorCode.InvalidJson == e.value.error_code

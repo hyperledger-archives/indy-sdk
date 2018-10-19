@@ -9,6 +9,7 @@ source_id = '123'
 phone_number = '8019119191'
 details = '{"connReqId":"njjmmdg","senderAgencyDetail":{"DID":"YRuVCckY6vfZfX9kcQZe3u","endpoint":"52.38.32.107:80/agency/msg","verKey":"J8Yct6FwmarXjrE2khZesUXRVVSVczSoa9sFaGe6AD2v"},"senderDetail":{"DID":"JZho9BzVAEk8jJ1hwrrDiZ","agentKeyDlgProof":{"agentDID":"JDF8UHPBTXigvtJWeeMJzx","agentDelegatedKey":"AP5SzUaHHhF5aLmyKHB3eTqUaREGKyVttwo5T4uwEkM4","signature":"JHSvITBMZiTEhpK61EDIWjQOLnJ8iGQ3FT1nfyxNNlxSngzp1eCRKnGC/RqEWgtot9M5rmTC8QkZTN05GGavBg=="},"logoUrl":"https://robohash.org/123","name":"Evernym","verKey":"AaEDsDychoytJyzk4SuzHMeQJGCtQhQHDitaic6gtiM1"},"statusCode":"MS-101","statusMsg":"message created","targetName":"there"}'
 
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_create_connection():
@@ -27,6 +28,7 @@ async def test_connection_connect():
     with pytest.raises(VcxError) as e:
         await connection.serialize()
 
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_connection_with_invite_connect():
@@ -34,8 +36,8 @@ async def test_connection_with_invite_connect():
     invite = await connection.connect(phone_number)
     assert invite
 
+
 @pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_call_to_connect_with_bad_handle():
     with pytest.raises(VcxError) as e:
         invalid_connection = Connection(source_id)
@@ -68,7 +70,6 @@ async def test_serialize():
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_serialize_with_bad_handle():
     with pytest.raises(VcxError) as e:
         connection = Connection(source_id)
@@ -90,8 +91,8 @@ async def test_deserialize():
     assert state == State.OfferSent
     connection3 = connection
 
+
 @pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_deserialize_with_invalid_data():
     with pytest.raises(VcxError) as e:
         data = {'invalid': -99}
@@ -131,7 +132,6 @@ async def test_update_state():
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_update_state_with_invalid_handle():
     with pytest.raises(VcxError) as e:
         connection = Connection(source_id)
