@@ -30,7 +30,9 @@ use indy::api as api;
 mod utils;
 
 use utils::{wallet, anoncreds, blob_storage, pool, ledger, did};
-use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID, CREDENTIAL2_ID, CREDENTIAL3_ID};
+use utils::anoncreds::{COMMON_MASTER_SECRET, CREDENTIAL1_ID};
+#[cfg(any(feature = "force_full_interaction_tests", not(target_os = "android")))]
+use utils::anoncreds::{CREDENTIAL2_ID, CREDENTIAL3_ID};
 
 use utils::constants::*;
 
