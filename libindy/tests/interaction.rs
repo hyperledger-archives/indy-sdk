@@ -392,6 +392,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand() {
 }
 
 #[cfg(feature = "revocation_tests")]
+#[cfg(any(feature = "force_full_interaction_tests", not(target_os = "andriod")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_default() {
     utils::setup();
@@ -698,6 +699,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_default() {
 }
 
 #[cfg(feature = "revocation_tests")]
+#[cfg(any(feature = "force_full_interaction_tests", not(target_os = "andriod")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_entry_three_times_proving_first() {
     utils::setup();
@@ -972,6 +974,7 @@ fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_po
 }
 
 #[cfg(feature = "revocation_tests")]
+#[cfg(any(feature = "force_full_interaction_tests", not(target_os = "andriod")))]
 #[test]
 fn anoncreds_revocation_interaction_test_issuance_by_demand_three_credentials_post_common_entry_proving_all() {
     utils::setup();
