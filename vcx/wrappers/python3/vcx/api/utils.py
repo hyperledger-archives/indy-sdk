@@ -114,6 +114,7 @@ async def vcx_messages_download(status: str = None, uids: str = None, pw_dids: s
     logger.debug("vcx_messages_download completed")
     return result
 
+
 async def vcx_messages_update_status(msg_json: str):
     """
     Update the status of messages from the specified connection

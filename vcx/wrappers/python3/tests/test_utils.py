@@ -26,10 +26,11 @@ async def test_provision_agent():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_update_agent_info_fails():
+async def test_update_agent_info_fails(shutdown):
     with pytest.raises(VcxError) as e:
         await vcx_agent_update_info("")
     assert ErrorCode.InvalidOption == e.value.error_code
+    shutdown(True)
 
 
 @pytest.mark.asyncio
@@ -47,8 +48,9 @@ async def test_vcx_messages_update_status():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_update_agent_info():
+async def test_update_agent_info(shutdown):
     await vcx_agent_update_info(agentUpdateString)
+    shutdown(True)
 
 
 def test_get_version():
