@@ -1891,6 +1891,36 @@ mod medium_cases {
             let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
 
             let res = ledger::parse_get_schema_response(&get_schema_response);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerNotFound);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_parse_returns_error_for_wrong_type() {
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+
+            let (schema_id, _, _) = ledger::post_entities();
+
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_MY1), &schema_id).unwrap();
+            let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
+
+            let res = ledger::parse_get_cred_def_response(&get_schema_response);
+            assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
+
+            utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);
+        }
+
+        #[test]
+        #[cfg(feature = "local_nodes_pool")]
+        fn indy_get_parse_returns_error_for_wrong_type_and_unknown_schema() {
+            let (wallet_handle, pool_handle) = utils::setup_with_wallet_and_pool();
+
+            let get_schema_request = ledger::build_get_schema_request(Some(DID_TRUSTEE), &Schema::schema_id(DID, "other_schema", "1.0")).unwrap();
+            let get_schema_response = ledger::submit_request(pool_handle, &get_schema_request).unwrap();
+
+            let res = ledger::parse_get_cred_def_response(&get_schema_response);
             assert_eq!(res.unwrap_err(), ErrorCode::LedgerInvalidTransaction);
 
             utils::tear_down_with_wallet_and_pool(wallet_handle, pool_handle);

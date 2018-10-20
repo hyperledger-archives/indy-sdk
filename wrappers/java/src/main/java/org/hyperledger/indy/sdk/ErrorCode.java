@@ -225,6 +225,11 @@ public enum ErrorCode {
 	 */
 	PoolIncompatibleProtocolVersion(308),
 
+	/**
+	 * Item not found on ledger.
+	 */
+	LedgerNotFound(309),
+
 	// Crypto errors
 
 	/**
