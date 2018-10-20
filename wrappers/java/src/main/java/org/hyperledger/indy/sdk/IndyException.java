@@ -120,6 +120,8 @@ public class IndyException extends Exception {
 				return new TimeoutException();
 			case PoolIncompatibleProtocolVersion:
 				return new PoolIncompatibleProtocolVersionException();
+			case LedgerNotFound:
+				return new LedgerNotFoundException();
 			case AnoncredsRevocationRegistryFullError:
 				return new RevocationRegistryFullException();
 			case AnoncredsInvalidUserRevocId:

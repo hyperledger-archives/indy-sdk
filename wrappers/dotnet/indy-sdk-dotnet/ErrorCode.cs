@@ -275,7 +275,7 @@
         /// Attempt to create pool ledger config with name used for another existing pool
         /// </summary>
         PoolLedgerConfigAlreadyExistsError = 306,
-        
+
         /// <summary>
         /// Pool ledger timeout
         /// </summary>
@@ -286,6 +286,11 @@
         /// Call pool.indy_set_protocol_version to set correct Protocol version.
         /// </summary>
         PoolIncompatibleProtocolVersionError = 308,
+
+        /// <summary>
+        /// Item not found on ledger.
+        /// </summary>
+        LedgerNotFound = 309,
 
         // Crypto errors
 
