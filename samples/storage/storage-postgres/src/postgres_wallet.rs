@@ -87,7 +87,7 @@ impl PostgresWallet {
             Ok(_) => ErrorCode::Success,
             Err(err) => {
                 match err {
-                    WalletStorageError::ItemAlreadyExists => ErrorCode::WalletItemAlreadyExists,
+                    WalletStorageError::AlreadyExists => ErrorCode::WalletAlreadyExistsError,
                     _ => ErrorCode::WalletStorageError
                 }
             }
