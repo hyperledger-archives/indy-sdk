@@ -21,7 +21,7 @@ macro_rules! ftry_act {
         match $res {
             Ok(elt) => elt,
             Err(e) => {
-                use $crate::utils::futures::FutureExt;
+                use $crate::utils::futures::ActorFutureExt;
                 return ::futures::future::err(From::from(e)).into_actor($slf).into_box();
             }
         }
@@ -49,7 +49,7 @@ macro_rules! err {
 #[macro_export]
 macro_rules! err_act {
     ($slf:expr, $elt:expr) => {{
-        use $crate::utils::futures::FutureExt;
+        use $crate::utils::futures::ActorFutureExt;
         ::futures::future::err(From::from($elt)).into_actor($slf).into_box()
     }};
 }

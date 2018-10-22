@@ -15,13 +15,32 @@ pub struct ForwardAgent {
     did: String,
     verkey: String,
     router: Addr<Router>,
+    #[allow(unused)] // TODO: FIXME:
     wallet_storage_config: WalletStorageConfig,
 }
 
 impl ForwardAgent {
-    pub fn new(config: ForwardAgentConfig,
-               wallet_storage_config: WalletStorageConfig,
-               router: Addr<Router>) -> ResponseFuture<ForwardAgent, Error> {
+    pub fn start(config: ForwardAgentConfig,
+                 wallet_storage_config: WalletStorageConfig) -> ResponseFuture<Addr<ForwardAgent>, Error> {
+        let router = Router::new().start();
+
+        Self::new(config, wallet_storage_config, router.clone())
+            .and_then(move |forward_agent| {
+                let (did, _) = forward_agent.get_endpoint();
+                let forward_agent = forward_agent.start();
+
+                router
+                    .send(AddA2ARoute(did, forward_agent.clone().recipient()))
+                    .from_err()
+                    .map(move |_| forward_agent)
+            })
+            .into_box()
+    }
+
+    fn new(config: ForwardAgentConfig,
+           wallet_storage_config: WalletStorageConfig,
+           router: Addr<Router>) -> ResponseFuture<ForwardAgent, Error> {
+
         future::ok(())
             .and_then(move |_| {
                 let wallet_config = json!({

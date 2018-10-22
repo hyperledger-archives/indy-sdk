@@ -89,7 +89,7 @@ impl ForwardAgentConnection {
                     .map_err(|err| err.context("Can't unbundle a2a message.").into())
                     .into_actor(slf)
             })
-            .and_then(move |(sender_vk, mut msgs), slf, ctx| {
+            .and_then(move |(sender_vk, mut msgs), slf, _| {
                 if slf.their_verkey != sender_vk {
                     return err_act!(slf, err_msg("Inconsistent sender and connection pairwise verkeys"))
                 };
@@ -104,7 +104,7 @@ impl ForwardAgentConnection {
             .into_box()
     }
 
-    fn sign_up(&mut self, msg: SignUp) -> ResponseActFuture<Self, Vec<u8>, Error> {
+    fn sign_up(&mut self, _msg: SignUp) -> ResponseActFuture<Self, Vec<u8>, Error> {
         if self.is_signed_up {
             return err_act!(self, err_msg("Already signed up"))
         };
