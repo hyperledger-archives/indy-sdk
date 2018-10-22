@@ -6,10 +6,7 @@
     "did": "VsKV7grR1BUE29mG2Fm2kX",
     "did_seed": "0000000000000000000000000Forward",
     "wallet_id": "forward_agent_wallet_id",
-    "wallet_passphrase": "forward_agent_wallet_passphrase",
-    "wallet_storage_config": null,
-    "wallet_storage_credentials": null,
-    "wallet_storage_type": null
+    "wallet_passphrase": "forward_agent_wallet_passphrase"
   },
   "server": {
     "addresses": [
@@ -17,5 +14,10 @@
       "127.0.0.1:8081"
     ],
     "workers": 2
+  },
+  "wallet_storage": {
+    "config": null,
+    "credentials": null,
+    "type": null
   }
 }

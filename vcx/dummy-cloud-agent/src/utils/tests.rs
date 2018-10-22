@@ -1,4 +1,4 @@
-use domain::messages::*;
+use domain::a2a::*;
 use futures::*;
 use indy::{crypto, did, IndyError, wallet};
 use tokio_core::reactor::Core;
@@ -80,7 +80,7 @@ pub fn forward_agent_wallet_setup() -> i32 {
 pub fn compose_connect(wallet_handle: i32) -> Vec<u8> {
     let mut core = Core::new().unwrap();
 
-    let msg = Message::Connect(
+    let msg = A2AMessage::Connect(
         Connect::V1(
             ConnectV1 {
                 from_did: EDGE_AGENT_DID.into(),
@@ -99,7 +99,7 @@ pub fn compose_connect(wallet_handle: i32) -> Vec<u8> {
 pub fn compose_forward(recipient_did: &str, recipient_vk: &str, msg: Vec<u8>) -> Vec<u8> {
     let mut core = Core::new().unwrap();
 
-    let msg = Message::Forward(
+    let msg = A2AMessage::Forward(
         Forward::V1(
             ForwardV1 {
                 fwd: recipient_did.into(),

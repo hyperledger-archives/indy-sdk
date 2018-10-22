@@ -1,3 +1,3 @@
 pub mod config;
-pub mod messages;
+pub mod a2a;
 pub mod pairwise;

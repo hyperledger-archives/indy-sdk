@@ -5,6 +5,7 @@ pub struct Config {
     pub app: AppConfig,
     pub forward_agent: ForwardAgentConfig,
     pub server: ServerConfig,
+    pub wallet_storage: WalletStorageConfig,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -17,12 +18,6 @@ pub struct ForwardAgentConfig {
     pub wallet_id: String,
     // Forward Agent wallet passphrase
     pub wallet_passphrase: String,
-    // Wallet storage type for Forward Agent and agents wallets
-    pub wallet_storage_type: Option<String>,
-    // Wallet storage config for Forward Agent and agents wallets
-    pub wallet_storage_config: Option<Value>,
-    // Wallet storage credentials for Forward Agent and agents wallets
-    pub wallet_storage_credentials: Option<Value>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -49,10 +44,15 @@ pub struct CloudAgentConfig {
     pub wallet_id: String,
     // Cloud Agent wallet passphrase
     pub wallet_passphrase: String,
-    // Wallet storage type for Cloud Agent and agents wallets
-    pub wallet_storage_type: Option<String>,
-    // Wallet storage config for Cloud Agent and agents wallets
-    pub wallet_storage_config: Option<Value>,
-    // Wallet storage credentials for Cloud Agent and agents wallets
-    pub wallet_storage_credentials: Option<Value>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct WalletStorageConfig {
+    // Wallet storage type for agents wallets
+    #[serde(rename = "type")]
+    pub xtype: Option<String>,
+    // Wallet storage config for agents wallets
+    pub config: Option<Value>,
+    // Wallet storage credentials for agents wallets
+    pub credentials: Option<Value>,
 }

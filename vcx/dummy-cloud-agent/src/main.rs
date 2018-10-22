@@ -23,6 +23,7 @@ extern crate tokio_core;
 
 use actix::prelude::*;
 use actors::forward_agent::ForwardAgent;
+use actors::router::Router;
 use domain::config::Config;
 use failure::*;
 use futures::*;
@@ -68,6 +69,7 @@ fn _start(config_path: &str) {
         app: app_config,
         forward_agent: forward_agent_config,
         server: server_config,
+        wallet_storage: wallet_storage_config,
     } = File::open(config_path)
         .context("Can't open config file")
         .and_then(|reader| serde_json::from_reader(reader)
@@ -79,8 +81,14 @@ fn _start(config_path: &str) {
     Arbiter::spawn_fn(|| {
         info!("Starting Forward Agent with config: {:?}", forward_agent_config);
 
-        ForwardAgent::start(forward_agent_config)
+        let router = Router::new().start();
+
+        ForwardAgent::new(forward_agent_config,
+                            wallet_storage_config,
+                            router)
             .map(move |forward_agent| {
+                let forward_agent = forward_agent.start();
+
                 info!("Forward Agent started");
                 info!("Starting Server with config: {:?}", server_config);
 
