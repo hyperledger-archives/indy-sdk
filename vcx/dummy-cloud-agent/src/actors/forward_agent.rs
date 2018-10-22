@@ -15,6 +15,7 @@ pub struct ForwardAgent {
     did: String,
     verkey: String,
     router: Addr<Router>,
+    #[allow(unused)] // FIXME: Use!
     wallet_storage_config: WalletStorageConfig,
 }
 

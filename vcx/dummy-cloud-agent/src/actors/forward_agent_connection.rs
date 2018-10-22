@@ -78,6 +78,7 @@ impl ForwardAgentConnection {
         (self.my_did.clone(), self.my_verkey.clone())
     }
 
+    #[allow(unused)] // FIXME: Use!
     fn handle_a2a_msg(&mut self,
                       msg: Vec<u8>) -> ResponseActFuture<Self, Vec<u8>, Error> {
         trace!("ForwardAgentConnection::handle_message >> {:?}", msg);
@@ -104,7 +105,8 @@ impl ForwardAgentConnection {
             .into_box()
     }
 
-    fn sign_up(&mut self, msg: SignUp) -> ResponseActFuture<Self, Vec<u8>, Error> {
+    #[allow(unused)] // FIXME: Use!
+    fn sign_up(&mut self, _msg: SignUp) -> ResponseActFuture<Self, Vec<u8>, Error> {
         if self.is_signed_up {
             return err_act!(self, err_msg("Already signed up"))
         };

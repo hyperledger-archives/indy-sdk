@@ -3,3 +3,15 @@ pub mod futures;
 pub mod sequence;
 #[cfg(test)]
 pub mod tests;
+
+macro_rules! map (
+    { $($key:expr => $value:expr),+ } => {
+        {
+            let mut m = ::std::collections::HashMap::new();
+            $(
+                m.insert($key, $value);
+            )+
+            m
+        }
+     };
+);

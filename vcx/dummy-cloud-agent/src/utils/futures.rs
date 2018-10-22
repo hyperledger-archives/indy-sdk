@@ -49,7 +49,6 @@ macro_rules! err {
 #[macro_export]
 macro_rules! err_act {
     ($slf:expr, $elt:expr) => {{
-        use $crate::utils::futures::FutureExt;
         ::futures::future::err(From::from($elt)).into_actor($slf).into_box()
     }};
 }

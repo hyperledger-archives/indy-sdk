@@ -20,6 +20,9 @@ extern crate serde_derive;
 extern crate serde_json;
 #[cfg(test)]
 extern crate tokio_core;
+extern crate base64;
+extern crate chrono;
+extern crate rand;
 
 use actix::prelude::*;
 use actors::forward_agent::ForwardAgent;
@@ -84,8 +87,8 @@ fn _start(config_path: &str) {
         let router = Router::new().start();
 
         ForwardAgent::new(forward_agent_config,
-                            wallet_storage_config,
-                            router)
+                          wallet_storage_config,
+                          router)
             .map(move |forward_agent| {
                 let forward_agent = forward_agent.start();
 
