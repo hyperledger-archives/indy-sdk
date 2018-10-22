@@ -67,7 +67,7 @@ impl CloudAgent {
         unbundle_authcrypted(wallet_handle, &cloud_agent_vk, &msg)
             .and_then(move |(sender_vk, msg)| {
                 match msg {
-                    Message::CreateKey(msg) => {
+                    AgentMessage::CreateKey(msg) => {
                         Self::_handle_create_key(wallet_handle, owner_did, cloud_agent_vk, sender_vk, msg)
                     }
                     _ => future::err(err_msg("Unsupported message")).into_box()
@@ -95,7 +95,7 @@ impl CloudAgent {
         did::create_and_store_my_did(wallet_handle, "{}")
             .from_err()
             .map(|(pairwise_did, pairwise_vk)| {
-                Message::KeyCreated(KeyCreated {
+                AgentMessage::KeyCreated(KeyCreated {
                     with_pairwise_did: pairwise_did,
                     with_pairwise_did_verkey: pairwise_vk,
                 })

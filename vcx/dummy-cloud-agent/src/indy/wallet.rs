@@ -98,6 +98,7 @@ pub fn open_wallet(config: &str, credentials: &str) -> Box<Future<Item=i32, Erro
     }
 }
 
+#[allow(unused)] // TODO: FIXME:
 pub fn close_wallet(wallet_handle: i32) -> Box<Future<Item=(), Error=IndyError>> {
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<(), IndyError>>>> = Default::default();

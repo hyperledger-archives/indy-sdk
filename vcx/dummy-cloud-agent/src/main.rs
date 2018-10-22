@@ -68,6 +68,7 @@ fn _start(config_path: &str) {
         app: app_config,
         forward_agent: forward_agent_config,
         server: server_config,
+        wallet_storage: wallet_storage_config,
     } = File::open(config_path)
         .context("Can't open config file")
         .and_then(|reader| serde_json::from_reader(reader)
@@ -76,10 +77,10 @@ fn _start(config_path: &str) {
 
     let sys = actix::System::new("indy-dummy-agent");
 
-    Arbiter::spawn_fn(|| {
+    Arbiter::spawn_fn(move || {
         info!("Starting Forward Agent with config: {:?}", forward_agent_config);
 
-        ForwardAgent::start(forward_agent_config)
+        ForwardAgent::start(forward_agent_config, wallet_storage_config)
             .map(move |forward_agent| {
                 info!("Forward Agent started");
                 info!("Starting Server with config: {:?}", server_config);

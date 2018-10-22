@@ -1,3 +1,5 @@
-// TODO: It will get some content later, can be changed to enum
 #[derive(Deserialize, Serialize, Debug)]
-pub struct PairwiseMetadata {}
+pub struct ForwardAgentConnectionState {
+    pub is_signed_up: bool,
+    pub registrations: Vec<(String, String, String)>,
+}
