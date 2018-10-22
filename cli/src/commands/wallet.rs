@@ -291,6 +291,7 @@ pub mod delete_command {
                                     argon2m - derive secured wallet key (used by default)
                                     argon2i - derive secured wallet key (less secured but faster)
                                     raw - raw key provided (skip derivation)")
+                .add_optional_param("storage_credentials", "The list of key:value pairs defined by storage type.")
                 .add_example("wallet delete wallet1 key")
                 .finalize()
     );
@@ -301,11 +302,27 @@ pub mod delete_command {
         let id = get_str_param("name", params).map_err(error_err!())?;
         let key = get_str_param("key", params).map_err(error_err!())?;
         let key_derivation_method = get_opt_str_param("key_derivation_method", params).map_err(error_err!())?;
+        let storage_credentials = get_opt_object_param("storage_credentials", params).map_err(error_err!())?;
 
         let config = _read_wallet_config(id)
             .map_err(|_| println_err!("Wallet \"{}\" isn't attached to CLI", id))?;
 
-        let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)? }).to_string();
+        let credentials = {
+            let mut json = JSONMap::new();
+
+            json.insert("key".to_string(), serde_json::Value::String(key.to_string()));
+            json.insert("key_derivation_method".to_string(), serde_json::Value::String(map_key_derivation_method(key_derivation_method)?.to_string()));
+
+            match storage_credentials {
+                Some(creds) => {
+                    json.insert("storage_credentials".to_string(), creds);
+                    ()
+                },
+                _ => ()
+            }
+
+            JSONValue::from(json).to_string()
+        };
 
         let res = match Wallet::delete_wallet(config.as_str(), credentials.as_str()) {
             Ok(()) => {
@@ -461,6 +478,47 @@ pub mod import_command {
             Err(ErrorCode::WalletAlreadyExistsError) => Err(println_err!("Wallet \"{}\" already exists", id)),
             Err(ErrorCode::CommonIOError) => Err(println_err!("Can not import Wallet from file: \"{}\"", export_path)),
             Err(ErrorCode::CommonInvalidStructure) => Err(println_err!("Can not import Wallet: Invalid file format or encryption key")),
+            Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
+        };
+
+        trace!("execute << {:?}", res);
+        res
+    }
+}
+
+pub mod register_command {
+    use super::*;
+
+    command!(CommandMetadata::build("register", "Register a new wallet storage type")
+                .add_main_param("name", "The name of new wallet storage type")
+                .add_required_param("so_file", "Path to shared library file containing the storage plug-in")
+                .add_optional_param("prefix", "Prefix for all exported functions within this plug-in")
+                .add_example("wallet register inmem so_file=inmem.so")
+                .add_example("wallet register postgres so_file=postgres.so prefix=postgres_fn_")
+                .finalize()
+    );
+
+    fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
+        trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
+
+        let stg_type = get_str_param("name", params).map_err(error_err!())?;
+        let stg_lib = get_str_param("so_file", params).map_err(error_err!())?;
+        let fn_prefix = match get_opt_str_param("prefix", params).map_err(error_err!())? {
+            Some(s) => s,
+            None => ""
+        };
+
+        trace!("Wallet::register_wallet_storage try: stg_type {}, stg_lib {}", stg_type, stg_lib);
+
+        let res = Wallet::register_wallet_storage(stg_type,
+                                        stg_lib,
+                                        fn_prefix,
+        );
+
+        trace!("Wallet::register_wallet_storage return: {:?}", res);
+
+        let res = match res {
+            Ok(()) => Ok(println_succ!("Wallet storage type \"{}\" has been loaded", stg_type)),
             Err(err) => return Err(println_err!("Indy SDK error occurred {:?}", err)),
         };
 
@@ -1364,6 +1422,75 @@ pub mod tests {
                 params.insert("key_derivation_method", "raw".to_string());
                 cmd.execute(&CommandContext::new(), &params).unwrap();
             }
+
+            TestUtils::cleanup_storage();
+        }
+    }
+
+    mod register {
+        use super::*;
+
+        #[test]
+        pub fn register_create_open_close_wallet_works() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let storage_type = "inmem-test";
+            let so_file = "../samples/storage/storage-inmem/target/debug/libindystrginmem.so";
+            let prefix = "inmemwallet_fn_";
+
+            // try to create wallet with plug-in storage - should fail
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("storage_type", storage_type.to_string());
+                let _ = cmd.execute(&ctx, &params); //.unwrap(); ignore since we get an error
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(0, wallets.len());
+
+            // load storage plug-un (in-mem example)
+            {
+                let cmd = register_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", storage_type.to_string());
+                params.insert("so_file", so_file.to_string());
+                params.insert("prefix", prefix.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            // create and open wallet with in-mem plug-in
+            {
+                let cmd = create_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                params.insert("storage_type", storage_type.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            let wallets = _list_wallets();
+            assert_eq!(1, wallets.len());
+
+            assert_eq!(wallets[0]["id"].as_str().unwrap(), WALLET);
+            assert_eq!(wallets[0]["storage_type"].as_str().unwrap(), storage_type);
+
+            // open ...
+            {
+                let cmd = open_command::new();
+                let mut params = CommandParams::new();
+                params.insert("name", WALLET.to_string());
+                params.insert("key", WALLET_KEY.to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+
+            ensure_opened_wallet_handle(&ctx).unwrap();
+
+            // close and delete wallet
+            close_and_delete_wallet(&ctx);
 
             TestUtils::cleanup_storage();
         }

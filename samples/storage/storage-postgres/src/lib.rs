@@ -1,7 +1,6 @@
 #![cfg_attr(feature = "fatal_warnings", deny(warnings))]
 
 extern crate base64;
-extern crate byteorder;
 
 #[macro_use]
 extern crate log;
@@ -11,43 +10,36 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 
+#[allow(unused_imports)]
 #[macro_use]
 extern crate serde_json;
 
-extern crate rmp_serde;
+//extern crate rmp_serde;
 
 #[macro_use]
 extern crate lazy_static;
 
-extern crate named_type;
+//extern crate named_type;
 
-#[macro_use]
-extern crate named_type_derive;
+//#[macro_use]
+//extern crate named_type_derive;
 
+extern crate indy;
 extern crate indy_crypto;
-extern crate libsqlite3_sys;
-extern crate rlp;
-extern crate time;
 extern crate libc;
 extern crate rand;
-extern crate rusqlite;
 extern crate postgres;
 
-#[macro_use]
-extern crate derivative;
-
-extern crate sharedlib;
-extern crate os_type;
 
 // Note that to use macroses from util inside of other modules it must me loaded first!
 #[macro_use]
-mod utils;
+pub mod utils;
 
-pub mod api;
-mod commands;
-pub mod errors;
-mod services;
-mod domain;
+pub mod postgres_wallet;
+pub mod postgres_storage;
+
+//pub mod api;
+//mod errors;
 
 #[cfg(test)]
 mod tests {
@@ -58,3 +50,4 @@ mod tests {
         assert!(true, "Dummy check!");
     }
 }
+
