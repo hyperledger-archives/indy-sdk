@@ -18,11 +18,11 @@ async def test_error_message():
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_shutdown_works(shutdown):
+async def test_shutdown_works(cleanup):
     update_institution_info('name1', 'http://www.evernym.com')
     with pytest.raises(VcxError) as e:
         connection = await Connection.create('123')
         assert connection.handle > 0
-        shutdown(True)
+        cleanup(True)
         await connection.serialize()
     assert ErrorCode.InvalidConnectionHandle == e.value.error_code

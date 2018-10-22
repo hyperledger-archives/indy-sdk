@@ -16,7 +16,7 @@ async def vcx_init_test_mode():
 
 
 @pytest.fixture
-async def shutdown():
+async def cleanup():
 
     def _shutdown(erase):
         global flag
