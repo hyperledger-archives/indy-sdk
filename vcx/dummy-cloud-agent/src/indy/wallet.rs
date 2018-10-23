@@ -158,6 +158,7 @@ extern {
                         credentials: *const c_char,
                         cb: Option<extern fn(xcommand_handle: i32, err: i32, handle: i32)>) -> i32;
 
+    #[allow(unused)] // FIXME: Use!
     #[no_mangle]
     fn indy_close_wallet(command_handle: i32,
                          wallet_handle: i32,

@@ -1,10 +1,11 @@
 use actix::prelude::*;
 use failure::*;
 
+pub mod router;
 pub mod forward_agent;
 pub mod forward_agent_connection;
-//pub mod cloud_agent; FIXME: Add this after merge
-pub mod router;
+pub mod cloud_agent;
+pub mod cloud_agent_connection;
 
 // Common messages
 

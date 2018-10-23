@@ -20,6 +20,9 @@ extern crate serde_derive;
 extern crate serde_json;
 #[cfg(test)]
 extern crate tokio_core;
+extern crate base64;
+extern crate chrono;
+extern crate rand;
 
 use actix::prelude::*;
 use actors::forward_agent::ForwardAgent;

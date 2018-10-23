@@ -6,6 +6,10 @@ use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::{self, Value};
 use utils::futures::*;
 
+use domain::invite::{InviteDetail, SenderDetail, AgentDetail};
+use domain::key_deligation_proof::KeyDlgProof;
+use domain::status::{MessageStatusCode, ConnectionStatus};
+
 // TODO: For simplification we avoid complex versioning logic
 // TODO: There should be additional enum level for versions
 #[derive(Debug)]
@@ -17,6 +21,17 @@ pub enum A2AMessage {
     KeyCreated(KeyCreated),
     SignUp(SignUp),
     SignedUp(SignedUp),
+    CreateMessage(CreateMessage),
+    MessageDetail(MessageDetail),
+    MessageCreated(MessageCreated),
+    SendMessages(SendMessages),
+    MessageSent(MessageSent),
+    UpdateConnectionStatus(UpdateConnectionStatus),
+    ConnectionStatusUpdated(ConnectionStatusUpdated),
+    UpdateMessageStatus(UpdateMessageStatus),
+    MessageStatusUpdated(MessageStatusUpdated),
+    GetMessages(GetMessages),
+    Messages(Messages),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -46,9 +61,9 @@ pub struct Connected {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateKey {
     #[serde(rename = "fromDID")]
-    pub from_did: String,
+    pub for_did: String,
     #[serde(rename = "fromDIDVerKey")]
-    pub from_did_verkey: String,
+    pub for_did_verkey: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -64,6 +79,159 @@ pub struct SignUp {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SignedUp {}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateMessage {
+    pub mtype: CreateMessageType,
+    #[serde(rename = "sendMsg")]
+    pub send_msg: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reply_to_msg_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MessageCreated {
+    pub uid: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SendMessages {
+    pub uids: Vec<String>,
+}
+
+#[serde(untagged)]
+#[derive(Debug, Deserialize, Serialize)]
+pub enum MessageDetail {
+    ConnectionRequestMessageDetail(ConnectionRequestMessageDetail),
+    ConnectionRequestMessageDetailResp(ConnectionRequestMessageDetailResp),
+    ConnectionRequestAnswerMessageDetail(ConnectionRequestAnswerMessageDetail),
+    GeneralMessageDetail(GeneralMessageDetail),
+    SendMessageDetail(SendMessageDetail),
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MessageSent {
+    pub uids: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateConnectionStatus {
+    #[serde(rename = "statusCode")]
+    pub status_code: ConnectionStatus,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionStatusUpdated {
+    #[serde(rename = "statusCode")]
+    pub status_code: ConnectionStatus,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateMessageStatus {
+    pub uids: Vec<String>,
+    #[serde(rename = "statusCode")]
+    pub status_code: MessageStatusCode,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MessageStatusUpdated {
+    pub uids: Vec<String>,
+    #[serde(rename = "statusCode")]
+    pub status_code: MessageStatusCode,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GetMessages {
+    #[serde(rename = "excludePayload")]
+    pub exclude_payload: bool,
+    pub uids: Vec<String>,
+    #[serde(rename = "statusCodes")]
+    pub status_codes: Vec<MessageStatusCode>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Messages {
+    pub msgs: Vec<GetMessagesDetailResponse>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GetMessagesDetailResponse {
+    pub uid: String,
+    #[serde(rename = "statusCodes")]
+    pub status_codes: MessageStatusCode,
+    #[serde(rename = "senderDID")]
+    pub sender_did: String,
+    pub type_: CreateMessageType,
+    pub payload: Option<Vec<u8>>,
+    #[serde(rename = "refMsgId")]
+    pub ref_msg_id: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+pub enum CreateMessageType {
+    #[serde(rename = "connReq")]
+    ConnReq,
+    #[serde(rename = "connReqAnswer")]
+    ConnReqAnswer,
+    #[serde(rename = "credOffer")]
+    CredOffer,
+    #[serde(rename = "credReq")]
+    CredReq,
+    #[serde(rename = "cred")]
+    Cred,
+    #[serde(rename = "proofReq")]
+    ProofReq,
+    #[serde(rename = "proof")]
+    Proof,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestMessageDetail {
+    #[serde(rename = "keyDlgProof")]
+    pub key_dlg_proof: KeyDlgProof,
+    #[serde(rename = "targetName")]
+    pub target_name: Option<String>,
+    #[serde(rename = "phoneNo")]
+    pub phone_no: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestMessageDetailResp {
+    #[serde(rename = "inviteDetail")]
+    pub invite_detail: InviteDetail,
+    #[serde(rename = "urlToInviteDetail")]
+    pub url_to_invite_detail: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConnectionRequestAnswerMessageDetail {
+    #[serde(rename = "keyDlgProof")]
+    pub key_dlg_proof: KeyDlgProof,
+    #[serde(rename = "senderDetail")]
+    pub sender_detail: SenderDetail,
+    #[serde(rename = "senderAgencyDetail")]
+    pub sender_agency_detail: AgentDetail,
+    #[serde(rename = "answerStatusCode")]
+    pub answer_status_code: MessageStatusCode,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GeneralMessageDetail {
+    #[serde(rename = "@msg")]
+    pub msg: Vec<u8>,
+    pub title: Option<String>,
+    pub detail: Option<String>
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SendMessageDetail {
+    #[serde(rename = "@msg")]
+    pub msg: Vec<u8>,
+    pub title: Option<String>,
+    pub detail: Option<String>,
+    #[serde(rename = "answerStatusCode")]
+    pub answer_status_code: MessageStatusCode,
+}
 
 impl<'de> Deserialize<'de> for A2AMessage {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
@@ -103,6 +271,61 @@ impl<'de> Deserialize<'de> for A2AMessage {
             (Some("SIGNED_UP"), Some("1.0")) => {
                 SignedUp::deserialize(value)
                     .map(|msg| A2AMessage::SignedUp(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("CREATE_MSG"), Some("1.0")) => {
+                CreateMessage::deserialize(value)
+                    .map(|msg| A2AMessage::CreateMessage(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("MSG_DETAIL"), Some("1.0")) => {
+                MessageDetail::deserialize(value)
+                    .map(|msg| A2AMessage::MessageDetail(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("MSG_CREATED"), Some("1.0")) => {
+                MessageCreated::deserialize(value)
+                    .map(|msg| A2AMessage::MessageCreated(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("MSGS_SENT"), Some("1.0")) => {
+                MessageSent::deserialize(value)
+                    .map(|msg| A2AMessage::MessageSent(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("SEND_MSGS"), Some("1.0")) => {
+                SendMessages::deserialize(value)
+                    .map(|msg| A2AMessage::SendMessages(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("UPDATE_CONN_STATUS"), Some("1.0")) => {
+                UpdateConnectionStatus::deserialize(value)
+                    .map(|msg| A2AMessage::UpdateConnectionStatus(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("CONN_STATUS_UPDATED"), Some("1.0")) => {
+                ConnectionStatusUpdated::deserialize(value)
+                    .map(|msg| A2AMessage::ConnectionStatusUpdated(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("UPDATE_MSG_STATUS"), Some("1.0")) => {
+                UpdateMessageStatus::deserialize(value)
+                    .map(|msg| A2AMessage::UpdateMessageStatus(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("MSG_STATUS_UPDATED"), Some("1.0")) => {
+                MessageStatusUpdated::deserialize(value)
+                    .map(|msg| A2AMessage::MessageStatusUpdated(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("GET_MSGS"), Some("1.0")) => {
+                GetMessages::deserialize(value)
+                    .map(|msg| A2AMessage::GetMessages(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("MSGS"), Some("1.0")) => {
+                Messages::deserialize(value)
+                    .map(|msg| A2AMessage::Messages(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -148,6 +371,61 @@ impl Serialize for A2AMessage {
                 value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "SIGNED_UP", "ver": "1.0"}));
                 value
             }
+            A2AMessage::CreateMessage(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CREATE_MSG", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::MessageDetail(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSG_DETAIL", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::MessageCreated(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSG_CREATED", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::MessageSent(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSGS_SENT", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::SendMessages(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "SEND_MSGS", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::UpdateConnectionStatus(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "UPDATE_CONN_STATUS", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::ConnectionStatusUpdated(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONN_STATUS_UPDATED", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::UpdateMessageStatus(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "UPDATE_MSG_STATUS", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::MessageStatusUpdated(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSG_STATUS_UPDATED", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::GetMessages(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "GET_MSGS", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::Messages(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSGS", "ver": "1.0"}));
+                value
+            }
         };
 
         value.serialize(serializer)
@@ -181,6 +459,7 @@ impl A2AMessage {
             .into_box()
     }
 
+    #[allow(unused)] //FIXME:
     pub fn bundle_anoncrypted(recipient_vk: &str,
                               msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         let bundle = ftry!(Self::bundle_plain(msgs));
