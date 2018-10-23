@@ -80,7 +80,7 @@ fn _start(config_path: &str) {
     Arbiter::spawn_fn(move || {
         info!("Starting Forward Agent with config: {:?}", forward_agent_config);
 
-        ForwardAgent::start(forward_agent_config, wallet_storage_config)
+        ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config)
             .map(move |forward_agent| {
                 info!("Forward Agent started");
                 info!("Starting Server with config: {:?}", server_config);
