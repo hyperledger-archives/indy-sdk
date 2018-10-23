@@ -4,8 +4,8 @@ use failure::*;
 pub mod router;
 pub mod forward_agent;
 pub mod forward_agent_connection;
-pub mod cloud_agent;
-pub mod cloud_agent_connection;
+pub mod agent;
+pub mod agent_connection;
 
 // Common messages
 
