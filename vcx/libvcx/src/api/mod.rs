@@ -10,6 +10,7 @@ pub mod schema;
 pub mod credential;
 pub mod disclosed_proof;
 pub mod wallet;
+pub mod logger;
 
 use std::fmt;
 
