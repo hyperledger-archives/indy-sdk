@@ -181,6 +181,7 @@ impl A2AMessage {
             .into_box()
     }
 
+    #[allow(unused)] // FIXME:
     pub fn bundle_anoncrypted(recipient_vk: &str,
                               msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         let bundle = ftry!(Self::bundle_plain(msgs));
