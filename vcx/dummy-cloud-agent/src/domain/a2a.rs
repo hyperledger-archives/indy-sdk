@@ -454,7 +454,17 @@ impl A2AMessage {
                               msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         let bundle = ftry!(Self::bundle_plain(msgs));
 
-        crypto::auth_crypt(wallet_handle, &sender_vk, &recipient_vk, &bundle)
+        crypto::auth_crypt(wallet_handle, sender_vk, recipient_vk, &bundle)
+            .from_err()
+            .into_box()
+    }
+
+    #[allow(unused)] //FIXME:
+    pub fn bundle_anoncrypted(recipient_vk: &str,
+                              msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
+        let bundle = ftry!(Self::bundle_plain(msgs));
+
+        crypto::anon_crypt(recipient_vk, &bundle)
             .from_err()
             .into_box()
     }

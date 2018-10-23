@@ -26,7 +26,6 @@ extern crate rand;
 
 use actix::prelude::*;
 use actors::forward_agent::ForwardAgent;
-use actors::router::Router;
 use domain::config::Config;
 use failure::*;
 use futures::*;
@@ -81,17 +80,11 @@ fn _start(config_path: &str) {
 
     let sys = actix::System::new("indy-dummy-agent");
 
-    Arbiter::spawn_fn(|| {
+    Arbiter::spawn_fn(move || {
         info!("Starting Forward Agent with config: {:?}", forward_agent_config);
 
-        let router = Router::new().start();
-
-        ForwardAgent::new(forward_agent_config,
-                          wallet_storage_config,
-                          router)
+        ForwardAgent::create_or_restore(forward_agent_config, wallet_storage_config)
             .map(move |forward_agent| {
-                let forward_agent = forward_agent.start();
-
                 info!("Forward Agent started");
                 info!("Starting Server with config: {:?}", server_config);
 
