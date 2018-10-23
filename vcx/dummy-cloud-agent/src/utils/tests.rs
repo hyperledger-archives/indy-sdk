@@ -1,8 +1,8 @@
 use domain::a2a::*;
+use domain::config::*;
 use futures::*;
-use indy::{crypto, did, IndyError, wallet};
+use indy::{did, IndyError, wallet};
 use tokio_core::reactor::Core;
-use utils::messages::*;
 
 pub const EDGE_AGENT_WALLET_ID: &'static str = "edge_agent_wallet_id";
 pub const EDGE_AGENT_WALLET_CONFIG: &'static str = "{\"id\": \"edge_agent_wallet_id\"}";
@@ -20,6 +20,23 @@ pub const FORWARD_AGENT_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
 pub const FORWARD_AGENT_DID_SEED: &'static str = "0000000000000000000000000Forward";
 pub const FORWARD_AGENT_DID_INFO: &'static str = "{\"did\": \"VsKV7grR1BUE29mG2Fm2kX\", \"seed\": \"0000000000000000000000000Forward\"}";
 pub const FORWARD_AGENT_DID_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
+
+pub fn forward_agent_config() -> ForwardAgentConfig {
+    ForwardAgentConfig {
+        wallet_id: FORWARD_AGENT_WALLET_ID.into(),
+        wallet_passphrase: FORWARD_AGENT_WALLET_PASSPHRASE.into(),
+        did: FORWARD_AGENT_DID.into(),
+        did_seed: Some(FORWARD_AGENT_DID_SEED.into()),
+    }
+}
+
+pub fn wallet_storage_config() -> WalletStorageConfig {
+    WalletStorageConfig {
+        xtype: None,
+        config: None,
+        credentials: None,
+    }
+}
 
 pub fn edge_agent_wallet_setup() -> i32 {
     let mut core = Core::new().unwrap();
@@ -80,17 +97,17 @@ pub fn forward_agent_wallet_setup() -> i32 {
 pub fn compose_connect(wallet_handle: i32) -> Vec<u8> {
     let mut core = Core::new().unwrap();
 
-    let msg = A2AMessage::Connect(
-        Connect::V1(
-            ConnectV1 {
-                from_did: EDGE_AGENT_DID.into(),
-                from_did_verkey: EDGE_AGENT_DID_VERKEY.into(),
-            }));
-
-    let msg = bundle(&msg).unwrap();
+    let msgs = [A2AMessage::Connect(
+        Connect {
+            from_did: EDGE_AGENT_DID.into(),
+            from_did_verkey: EDGE_AGENT_DID_VERKEY.into(),
+        })];
 
     let msg = core.run(
-        crypto::auth_crypt(wallet_handle, EDGE_AGENT_DID_VERKEY, FORWARD_AGENT_DID_VERKEY, &msg)
+        A2AMessage::bundle_authcrypted(wallet_handle,
+                                       EDGE_AGENT_DID_VERKEY,
+                                       FORWARD_AGENT_DID_VERKEY,
+                                       &msgs)
     ).unwrap();
 
     compose_forward(FORWARD_AGENT_DID, FORWARD_AGENT_DID_VERKEY, msg)
@@ -99,16 +116,13 @@ pub fn compose_connect(wallet_handle: i32) -> Vec<u8> {
 pub fn compose_forward(recipient_did: &str, recipient_vk: &str, msg: Vec<u8>) -> Vec<u8> {
     let mut core = Core::new().unwrap();
 
-    let msg = A2AMessage::Forward(
-        Forward::V1(
-            ForwardV1 {
-                fwd: recipient_did.into(),
-                msg: msg,
-            }));
-
-    let msg = bundle(&msg).unwrap();
+    let msgs = [A2AMessage::Forward(
+        Forward {
+            fwd: recipient_did.into(),
+            msg,
+        })];
 
     core.run(
-        crypto::anon_crypt(recipient_vk, &msg)
+        A2AMessage::bundle_anoncrypted(recipient_vk, &msgs)
     ).unwrap()
 }
