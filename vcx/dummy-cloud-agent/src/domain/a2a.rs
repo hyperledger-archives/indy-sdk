@@ -86,12 +86,13 @@ pub struct CreateMessage {
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub uid: Option<String>,
     pub reply_to_msg_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MessageCreated {
-    pub uid: String,
+    pub uid: String
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -102,11 +103,11 @@ pub struct SendMessages {
 #[serde(untagged)]
 #[derive(Debug, Deserialize, Serialize)]
 pub enum MessageDetail {
-    ConnectionRequestMessageDetail(ConnectionRequestMessageDetail),
-    ConnectionRequestMessageDetailResp(ConnectionRequestMessageDetailResp),
-    ConnectionRequestAnswerMessageDetail(ConnectionRequestAnswerMessageDetail),
-    GeneralMessageDetail(GeneralMessageDetail),
-    SendMessageDetail(SendMessageDetail),
+    ConnectionRequest(ConnectionRequestMessageDetail),
+    ConnectionRequestResp(ConnectionRequestMessageDetailResp),
+    ConnectionRequestAnswer(ConnectionRequestAnswerMessageDetail),
+    General(GeneralMessageDetail),
+    Send(SendMessageDetail),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -206,7 +207,7 @@ pub struct ConnectionRequestMessageDetailResp {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequestAnswerMessageDetail {
     #[serde(rename = "keyDlgProof")]
-    pub key_dlg_proof: KeyDlgProof,
+    pub key_dlg_proof: Option<KeyDlgProof>,
     #[serde(rename = "senderDetail")]
     pub sender_detail: SenderDetail,
     #[serde(rename = "senderAgencyDetail")]
@@ -231,6 +232,14 @@ pub struct SendMessageDetail {
     pub detail: Option<String>,
     #[serde(rename = "answerStatusCode")]
     pub answer_status_code: MessageStatusCode,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PayloadMessage {
+    #[serde(rename = "@type")]
+    pub type_: String,
+    #[serde(rename = "@msg")]
+    pub msg: Vec<u8>,
 }
 
 impl<'de> Deserialize<'de> for A2AMessage {

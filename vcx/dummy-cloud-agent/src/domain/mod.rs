@@ -1,5 +1,4 @@
 pub mod config;
-pub mod constants;
 pub mod a2a;
 pub mod wallet;
 pub mod invite;

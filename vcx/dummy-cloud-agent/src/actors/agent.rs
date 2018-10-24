@@ -73,7 +73,7 @@ impl Agent {
                 wallet::open_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
                     .map_err(|err| err.context("Can't open Cloud Agent wallet.`").into())
             })
-            .and_then(move |wallet_handle| {
+            .and_then(|wallet_handle| {
                 did::create_and_store_my_did(wallet_handle, "{}")
                     .map(move |(did, verkey)| (wallet_handle, did, verkey))
                     .map_err(|err| err.context("Can't get Cloud Agent did key").into())
@@ -103,7 +103,7 @@ impl Agent {
                 router
                     .send(AddA2ARoute(did, agent.clone().recipient()))
                     .from_err()
-                    .map(move |_| agent_config)
+                    .map(|_| agent_config)
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent").into())
             })
             .into_box()
@@ -127,7 +127,7 @@ impl Agent {
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
-            .and_then(move |(sender_vk, mut msgs), slf, _| {
+            .and_then(|(sender_vk, mut msgs), slf, _| {
                 match msgs.pop() {
                     Some(A2AMessage::Forward(msg)) => {
                         slf.router
@@ -190,13 +190,13 @@ impl Agent {
                     .map(|_| for_did)
                     .into_actor(slf)
             )
-            .and_then(move |for_did, slf, _| {
+            .and_then(|for_did, slf, _| {
                 did::create_and_store_my_did(slf.wallet_handle, "{}")
                     .map_err(|err| err.context("Can't create DID for agent pairwise connection.").into())
                     .map(|(pairwise_did, pairwise_did_verkey)| (pairwise_did, pairwise_did_verkey, for_did))
                     .into_actor(slf)
             })
-            .and_then(move |(for_did, pairwise_did, pairwise_did_verkey), slf, _| {
+            .and_then(|(for_did, pairwise_did, pairwise_did_verkey), slf, _| {
                 pairwise::create_pairwise(slf.wallet_handle, &for_did, &pairwise_did, "{}")
                     .map_err(|err| err.context("Can't store agent pairwise connection.").into())
                     .map(|_| (for_did, pairwise_did, pairwise_did_verkey))
@@ -208,6 +208,7 @@ impl Agent {
                     owner_did: slf.owner_did.to_string(),
                     owner_verkey:  slf.owner_verkey.to_string(),
                     agent_did: slf.did.to_string(),
+                    agent_verkey: slf.verkey.to_string(),
                     user_pairwise_did: for_did.to_string(),
                     user_pairwise_verkey: for_did_verkey.to_string(),
                     agent_pairwise_did: pairwise_did.to_string(),
@@ -219,7 +220,7 @@ impl Agent {
                     .map(|_| (pairwise_did, pairwise_did_verkey))
                     .into_actor(slf)
             })
-            .map(move |(pairwise_did, pairwise_did_verkey), _, _| {
+            .map(|(pairwise_did, pairwise_did_verkey), _, _| {
                 vec![A2AMessage::KeyCreated(KeyCreated {
                     with_pairwise_did: pairwise_did,
                     with_pairwise_did_verkey: pairwise_did_verkey,

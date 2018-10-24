@@ -22,6 +22,7 @@ extern crate serde_json;
 extern crate tokio_core;
 extern crate base64;
 extern crate rand;
+extern crate hyper;
 
 use actix::prelude::*;
 use actors::forward_agent::ForwardAgent;

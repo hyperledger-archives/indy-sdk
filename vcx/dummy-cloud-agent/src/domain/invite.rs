@@ -39,3 +39,11 @@ pub struct SenderDetail {
     #[serde(rename = "logoUrl")]
     pub logo_url: Option<String>,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AgentDetail {
+    // Agent DID
+    pub did: String,
+    // Agent Verkey
+    pub verkey: String,
+}
