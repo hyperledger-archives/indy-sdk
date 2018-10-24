@@ -918,7 +918,7 @@
       "ret": "indy_error_t"
     },
     "indy_get_my_did_with_meta": {
-      "docs": "Retrieves the information about the giving DID in the wallet.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - The DID to retrieve information.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n  did_with_meta:  {\n    \"did\": string - DID stored in the wallet,\n    \"verkey\": string - The DIDs transport key (ver key, key id),\n    \"metadata\": string - The meta information stored with the DID\n  }\n\n#Errors\nCommon*\nWallet*\nCrypto*",
+      "docs": "Retrieves the information about the giving DID in the wallet.\n\n#Params\ncommand_handle: Command handle to map callback to caller context.\nwallet_handle: Wallet handle (created by open_wallet).\ndid - The DID to retrieve information.\ncb: Callback that takes command result as parameter.\n\n#Returns\nError Code\ncb:\n- xcommand_handle: Command handle to map callback to caller context.\n- err: Error code.\n  did_with_meta:  {\n    \"did\": string - DID stored in the wallet,\n    \"verkey\": string - The DIDs transport key (ver key, key id),\n    \"tempVerkey\": string - The future DIDs transport key (after rotation is finished),\n	\"metadata\": string - The meta information stored with the DID\n  }\n\n#Errors\nCommon*\nWallet*\nCrypto*",
       "group": "did",
       "params": [
         {"name": "command_handle", "type": "indy_handle_t"},
