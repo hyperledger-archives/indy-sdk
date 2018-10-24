@@ -10,6 +10,7 @@ use std::ffi::NulError;
 use std::str::Utf8Error;
 
 use rusqlite;
+use postgres;
 use serde_json;
 
 use api::ErrorCode;
@@ -197,6 +198,17 @@ impl From<rusqlite::Error> for WalletStorageError {
         match &err {
             &rusqlite::Error::SqliteFailure(libsqlite3_sys::Error{code: libsqlite3_sys::ErrorCode::ConstraintViolation, extended_code: _}, _) => WalletStorageError::ItemAlreadyExists,
             _ => WalletStorageError::IOError(format!("IO error during storage operation: {}", err.description()))
+        }
+    }
+}
+
+impl From<postgres::error::Error> for WalletStorageError {
+    fn from(err: postgres::error::Error) -> WalletStorageError {
+        if err.code() == Some(&postgres::error::UNIQUE_VIOLATION) ||
+           err.code() == Some(&postgres::error::INTEGRITY_CONSTRAINT_VIOLATION) {
+            WalletStorageError::ItemAlreadyExists
+        } else {
+            WalletStorageError::IOError(format!("IO error during storage operation: {}", err.description()))
         }
     }
 }
