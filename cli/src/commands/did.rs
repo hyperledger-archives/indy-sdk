@@ -205,6 +205,7 @@ pub mod rotate_key_command {
                 .add_optional_param("fees_inputs","The list of source inputs")
                 .add_optional_param("fees_outputs","The list of outputs in the following format: (recipient, amount)")
                 .add_optional_param("extra","Optional information for fees payment operation")
+                .add_optional_param("resume", "Resume interrupted operation")
                 .add_example("did rotate-key")
                 .add_example("did rotate-key seed=00000000000000000000000000000My2")
                 .add_example("did rotate-key fees_inputs=pay:null:111_rBuQo2A1sc9jrJg fees_outputs=(pay:null:FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4,100)")
@@ -217,37 +218,92 @@ pub mod rotate_key_command {
         let fees_inputs = get_opt_str_array_param("fees_inputs", params).map_err(error_err!())?;
         let fees_outputs = get_opt_str_tuple_array_param("fees_outputs", params).map_err(error_err!())?;
         let extra = get_opt_str_param("extra", params).map_err(error_err!())?;
+        let resume = get_opt_bool_param("resume", params).map_err(error_err!())?.unwrap_or(false);
 
         let did = ensure_active_did(&ctx)?;
         let (pool_handle, pool_name) = ensure_connected_pool(&ctx)?;
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
-        let identity_json = {
-            let mut json = JSONMap::new();
-            update_json_map_opt_key!(json, "seed", seed);
-            JSONValue::from(json).to_string()
+        let (new_verkey, update_ledger) = if resume {
+            // get temp and current verkey from wallet.
+            let (temp_verkey, curr_verkey) = Did::get_did_with_meta(wallet_handle, &did)
+                .map_err(|e|println_err!("Unable to get did: {:?}", e))
+                .and_then(|did_info| {
+                    serde_json::from_str::<JSONValue>(&did_info)
+                        .map_err(|e|println_err!("{}", e))
+                        .and_then(|did_info| {
+                            let temp_verkey = match did_info["tempVerkey"].as_str() {
+                                Some(temp_verkey) => Ok(temp_verkey.to_owned()),
+                                None => Err(println_err!("Unable to resume, did you started rotate-key previously?"))
+                            }?;
+                            let verkey = match did_info["verkey"].as_str() {
+                                Some(verkey) => Ok(verkey.to_owned()),
+                                None => Err(println_err!("Fatal error, no verkey in wallet"))
+                            }?;
+                            Ok((temp_verkey, verkey))
+                        })
+                })?;
+
+            // get verkey from ledger
+            let ledger_verkey = _get_current_verkey(pool_handle, &pool_name, wallet_handle, &wallet_name, &did)?;
+
+            match ledger_verkey {
+                Some(ledger_verkey) => {
+                    if ledger_verkey == temp_verkey {
+                        // ledger is updated, need to apply change to wallet.
+                        Ok((temp_verkey, false))
+                    }
+                    else if ledger_verkey == curr_verkey {
+                        // ledger have old state, send nym request and apply change to wallet.
+                        Ok((temp_verkey, true))
+                    }
+                    else { // some invalid state
+                        Err(println_err!("Unable to resume, verkey on ledger is completely different from verkey in wallet"))
+                    }
+                },
+                None => Err(println_err!("No verkey on ledger for did: {}", did))
+            }?
+        }
+        else {
+            let identity_json = {
+                let mut json = JSONMap::new();
+                update_json_map_opt_key!(json, "seed", seed);
+                JSONValue::from(json).to_string()
+            };
+
+            let new_verkey = match Did::replace_keys_start(wallet_handle, &did, &identity_json) {
+                Ok(request) => Ok(request),
+                Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
+                Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
+            }?;
+
+            (new_verkey, true)
         };
 
-        let new_verkey = match Did::replace_keys_start(wallet_handle, &did, &identity_json) {
-            Ok(request) => Ok(request),
-            Err(ErrorCode::WalletItemNotFound) => Err(println_err!("Active DID: \"{}\" not found", did)),
-            Err(_) => return Err(println_err!("Invalid format of command params. Please check format of posted JSONs, Keys, DIDs and etc...")),
-        }?;
+        let receipts = if update_ledger {
+            let mut request = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
+                .map_err(|err| handle_build_request_error(err))?;
 
-        let mut request = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None)
-            .map_err(|err| handle_build_request_error(err))?;
+            let payment_method = set_request_fees(&mut request, wallet_handle, Some(&did), &fees_inputs, &fees_outputs, extra)?;
 
-        let payment_method = set_request_fees(&mut request, wallet_handle, Some(&did), &fees_inputs, &fees_outputs, extra)?;
+            let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
+                .map_err(|err| {
+                    match err {
+                        ErrorCode::PoolLedgerTimeout => {
+                            println_err!("Transaction response has not beed received");
+                            println_err!("Use command `did rotate-key resume={}` to complete", new_verkey);
+                        }
+                        err => handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))
+                    }
+                })?;
 
-        let response_json = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request)
-            .map_err(|err| handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name)))?;
+            let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+                .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
 
-        let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
-            .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+            handle_transaction_response(response)?;
 
-        handle_transaction_response(response)?;
-
-        let receipts = parse_response_with_fees(&response_json, payment_method)?;
+            parse_response_with_fees(&response_json, payment_method)?
+        } else {None};
 
         match Did::replace_keys_apply(wallet_handle, &did)
             .and_then(|_| Did::abbreviate_verkey(&did, &new_verkey)) {
@@ -264,6 +320,18 @@ pub mod rotate_key_command {
         trace!("execute << {:?}", res);
         res
     }
+}
+
+fn _get_current_verkey(pool_handle: i32, pool_name: &str, wallet_handle: i32, wallet_name: &str, did: &str) -> Result<Option<String>, ()> {
+    let response_json = Ledger::build_get_nym_request(Some(did), did)
+        .and_then(|request| Ledger::sign_and_submit_request(pool_handle, wallet_handle, did, &request))
+        .map_err(|err| handle_transaction_error(err, Some(did), Some(pool_name), Some(wallet_name)))?;
+    let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
+        .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
+    let result = handle_transaction_response(response)?;
+    let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or("")).unwrap();
+    let verkey = data["verkey"].as_str().map(String::from);
+    Ok(verkey)
 }
 
 pub mod list_command {
@@ -326,9 +394,9 @@ pub mod tests {
     pub const DID_MY1: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
     pub const VERKEY_MY1: &'static str = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
 
-    pub const SEED_MY2: &'static str = "00000000000000000000000000000My2";
-    pub const DID_MY2: &'static str = "2PRyVHmkXQnQzJQKxHxnXC";
-    pub const VERKEY_MY2: &'static str = "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn";
+//    pub const SEED_MY2: &'static str = "00000000000000000000000000000My2";
+//    pub const DID_MY2: &'static str = "2PRyVHmkXQnQzJQKxHxnXC";
+//    pub const VERKEY_MY2: &'static str = "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn";
 
     pub const SEED_MY3: &'static str = "00000000000000000000000000000My3";
     pub const DID_MY3: &'static str = "5Uu7YveFSGcT3dSzjpvPab";
@@ -592,20 +660,128 @@ pub mod tests {
             create_and_connect_pool(&ctx);
 
             new_did(&ctx, SEED_TRUSTEE);
-            new_did(&ctx, SEED_MY2);
-            use_did(&ctx, DID_TRUSTEE);
-            send_nym(&ctx, DID_MY2, VERKEY_MY2, None);
-            use_did(&ctx, DID_MY2);
 
-            let did_info = get_did_info(wallet_handle, DID_MY2);
-            assert_eq!(did_info["verkey"].as_str().unwrap(), VERKEY_MY2);
+            let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym(&ctx, &did, &verkey, None);
+            use_did(&ctx, &did);
+
+            let did_info = get_did_info(wallet_handle, &did);
+            assert_eq!(did_info["verkey"].as_str().unwrap(), verkey);
             {
                 let cmd = rotate_key_command::new();
                 let params = CommandParams::new();
                 cmd.execute(&ctx, &params).unwrap();
             }
-            let did_info = get_did_info(wallet_handle, DID_MY2);
-            assert_ne!(did_info["verkey"].as_str().unwrap(), VERKEY_MY2);
+            let did_info = get_did_info(wallet_handle, &did);
+            assert_ne!(did_info["verkey"].as_str().unwrap(), verkey);
+
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn rotate_resume_works_when_ledger_updated() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+            let pool_handle = ensure_connected_pool_handle(&ctx).unwrap();
+
+            new_did(&ctx, SEED_TRUSTEE);
+
+            let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym(&ctx, &did, &verkey, None);
+            use_did(&ctx, &did);
+
+            let new_verkey = Did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
+            let request = Ledger::build_nym_request(&did, &did, Some(&new_verkey), None, None).unwrap();
+            Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did, &request).unwrap();
+
+            let did_info = get_did_info(wallet_handle, &did);
+            assert_eq!(did_info["verkey"].as_str().unwrap(), verkey);
+            assert_eq!(did_info["tempVerkey"].as_str().unwrap(), new_verkey);
+            {
+                let cmd = rotate_key_command::new();
+                let mut params = CommandParams::new();
+                params.insert("resume", "true".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let did_info = get_did_info(wallet_handle, &did);
+            assert_eq!(did_info["verkey"].as_str().unwrap(), new_verkey);
+            assert_eq!(did_info["tempVerkey"].as_str(), None);
+
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn rotate_resume_works_when_ledger_not_updated() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+
+            let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym(&ctx, &did, &verkey, None);
+            use_did(&ctx, &did);
+
+
+            let new_verkey = Did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
+
+            let did_info = get_did_info(wallet_handle, &did);
+            assert_eq!(did_info["verkey"].as_str().unwrap(), verkey);
+            assert_eq!(did_info["tempVerkey"].as_str().unwrap(), new_verkey);
+            {
+                let cmd = rotate_key_command::new();
+                let mut params = CommandParams::new();
+                params.insert("resume", "true".to_string());
+                cmd.execute(&ctx, &params).unwrap();
+            }
+            let did_info = get_did_info(wallet_handle, &did);
+            assert_eq!(did_info["verkey"].as_str().unwrap(), new_verkey);
+            assert_eq!(did_info["tempVerkey"].as_str(), None);
+
+            close_and_delete_wallet(&ctx);
+            disconnect_and_delete_pool(&ctx);
+            TestUtils::cleanup_storage();
+        }
+
+        #[test]
+        pub fn rotate_resume_without_started_rotation_rejected() {
+            TestUtils::cleanup_storage();
+            let ctx = CommandContext::new();
+
+            let wallet_handle = create_and_open_wallet(&ctx);
+            create_and_connect_pool(&ctx);
+
+            new_did(&ctx, SEED_TRUSTEE);
+
+            let (did, verkey) = Did::new(wallet_handle, "{}").unwrap();
+            use_did(&ctx, DID_TRUSTEE);
+            send_nym(&ctx, &did, &verkey, None);
+            use_did(&ctx, &did);
+
+            let did_info = get_did_info(wallet_handle, &did);
+            assert_eq!(did_info["verkey"].as_str().unwrap(), verkey);
+            assert_eq!(did_info["tempVerkey"].as_str(), None);
+            {
+                let cmd = rotate_key_command::new();
+                let mut params = CommandParams::new();
+                params.insert("resume", "true".to_string());
+                cmd.execute(&ctx, &params).unwrap_err();
+            }
+            let did_info = get_did_info(wallet_handle, &did);
+            assert_eq!(did_info["verkey"].as_str().unwrap(), verkey); // it is not changed.
+            assert_eq!(did_info["tempVerkey"].as_str(), None);
 
             close_and_delete_wallet(&ctx);
             disconnect_and_delete_pool(&ctx);

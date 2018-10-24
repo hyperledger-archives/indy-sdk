@@ -39,6 +39,7 @@ impl Did {
     }
 
     pub fn replace_keys_apply(wallet_handle: i32, did: &str) -> Result<(), ErrorCode> {
+        println!("replace_keys_apply({}, {})", wallet_handle, did);
         let (receiver, command_handle, cb) = super::callbacks::_closure_to_cb_ec();
 
         let did = CString::new(did).unwrap();
