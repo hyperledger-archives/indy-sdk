@@ -4,6 +4,7 @@ use actors::forward_agent_connection::ForwardAgentConnection;
 use actors::router::Router;
 use domain::a2a::*;
 use domain::config::{ForwardAgentConfig, WalletStorageConfig};
+use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
 use futures::*;
 use indy::{did, IndyError, pairwise, pairwise::Pairwise, wallet};
@@ -16,14 +17,14 @@ pub struct ForwardAgent {
     did: String,
     verkey: String,
     router: Addr<Router>,
-    #[allow(unused)] // TODO: FIXME:
+    forward_agent_detail: ForwardAgentDetail,
     wallet_storage_config: WalletStorageConfig,
 }
 
 impl ForwardAgent {
     pub fn create_or_restore(config: ForwardAgentConfig,
                              wallet_storage_config: WalletStorageConfig) -> ResponseFuture<Addr<ForwardAgent>, Error> {
-        trace!("ForwardAgent::get_endpoint >> {:?} {:?}", config, wallet_storage_config);
+        trace!("ForwardAgent::create_or_restore >> {:?} {:?}", config, wallet_storage_config);
         let router = Router::new().start();
 
         future::ok(())
@@ -78,23 +79,35 @@ impl ForwardAgent {
 
                 did::key_for_local_did(wallet_handle,
                                        &config.did)
-                    .map(move |verkey| (wallet_handle, config.did, verkey, wallet_storage_config))
+                    .map(move |verkey| (wallet_handle, config.did, verkey, config.endpoint, wallet_storage_config))
                     .map_err(|err| err.context("Can't get Forward Agent did key").into())
             })
-            .and_then(move |(wallet_handle, did, verkey, wallet_storage_config)| {
+            .and_then(move |(wallet_handle, did, verkey, endpoint, wallet_storage_config)| {
                 // Resolve information about existing connections from the wallet
                 // and start Forward Agent Connection actor for each exists connection
 
-                Self::_restore_connections(wallet_handle, router.clone())
-                    .map(move |_| (wallet_handle, did, verkey, router, wallet_storage_config))
+                let forward_agent_detail = ForwardAgentDetail {
+                    did: did.clone(),
+                    verkey: verkey.clone(),
+                    endpoint: endpoint.clone(),
+                };
+
+                Self::_restore_connections(wallet_handle,
+                                           forward_agent_detail.clone(),
+                                           wallet_storage_config.clone(),
+                                           router.clone())
+                    .map(move |_| (wallet_handle, did, verkey,
+                                   router, wallet_storage_config, forward_agent_detail))
             })
-            .and_then(|(wallet_handle, did, verkey, router, wallet_storage_config)| {
+            .and_then(|(wallet_handle, did, verkey, router,
+                           wallet_storage_config, forward_agent_detail)| {
                 let forward_agent = ForwardAgent {
                     wallet_handle,
                     did: did.clone(),
                     verkey,
                     router: router.clone(),
                     wallet_storage_config,
+                    forward_agent_detail,
                 };
 
                 let forward_agent = forward_agent.start();
@@ -109,6 +122,8 @@ impl ForwardAgent {
     }
 
     fn _restore_connections(wallet_handle: i32,
+                            forward_agent_detail: ForwardAgentDetail,
+                            wallet_storage_config: WalletStorageConfig,
                             router: Addr<Router>) -> ResponseFuture<(), Error> {
         trace!("ForwardAgent::_restore_connections >> {:?}", wallet_handle);
 
@@ -137,6 +152,8 @@ impl ForwardAgent {
                     .map(move |pairwise| {
                         ForwardAgentConnection::restore(wallet_handle,
                                                         pairwise.their_did.clone(),
+                                                        forward_agent_detail.clone(),
+                                                        wallet_storage_config.clone(),
                                                         router.clone())
                     })
                     .collect();
@@ -149,13 +166,13 @@ impl ForwardAgent {
     }
 
     fn _get_endpoint(&self) -> (String, String) {
-        trace!("ForwardAgent::get_endpoint >>");
+        trace!("ForwardAgent::_get_endpoint >>");
         (self.did.clone(), self.verkey.clone())
     }
 
     fn _forward_a2a_msg(&mut self,
                         msg: Vec<u8>) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgent::forward_a2a_msg >> {:?}", msg);
+        trace!("ForwardAgent::_forward_a2a_msg >> {:?}", msg);
 
         future::ok(())
             .into_actor(self)
@@ -182,7 +199,7 @@ impl ForwardAgent {
 
     fn _handle_a2a_msg(&mut self,
                        msg: Vec<u8>) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgent::handle_a2a_msg >> {:?}", msg);
+        trace!("ForwardAgent::_handle_a2a_msg >> {:?}", msg);
 
         future::ok(())
             .into_actor(self)
@@ -205,7 +222,7 @@ impl ForwardAgent {
     fn _connect(&mut self,
                 sender_vk: String,
                 msg: Connect) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("ForwardAgent::connect >> {:?}, {:?}", sender_vk, msg);
+        trace!("ForwardAgent::_connect >> {:?}, {:?}", sender_vk, msg);
 
         let Connect { from_did: their_did, from_did_verkey: their_verkey } = msg;
 
@@ -219,7 +236,9 @@ impl ForwardAgent {
                 ForwardAgentConnection::create(slf.wallet_handle,
                                                their_did.clone(),
                                                their_verkey.clone(),
-                                               slf.router.clone())
+                                               slf.router.clone(),
+                                               slf.forward_agent_detail.clone(),
+                                               slf.wallet_storage_config.clone())
                     .map(|(my_did, my_verkey)| (my_did, my_verkey, their_verkey))
                     .map_err(|err| err.context("Can't create Forward Agent Connection.").into())
                     .into_actor(slf)

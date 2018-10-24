@@ -5,6 +5,7 @@
   "forward_agent": {
     "did": "VsKV7grR1BUE29mG2Fm2kX",
     "did_seed": "0000000000000000000000000Forward",
+    "endpoint": "http://localhost:8080/forward_agent",
     "wallet_id": "forward_agent_wallet_id",
     "wallet_passphrase": "forward_agent_wallet_passphrase"
   },
