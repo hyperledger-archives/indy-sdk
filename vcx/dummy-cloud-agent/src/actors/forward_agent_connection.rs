@@ -2,7 +2,7 @@ use actix::prelude::*;
 use actors::{AddA2ARoute, HandleA2AMsg};
 use actors::router::Router;
 use domain::a2a::*;
-use domain::wallet::*;
+use domain::indy::*;
 use failure::{err_msg, Error, Fail};
 use futures::*;
 use indy::{did, pairwise};

@@ -4,7 +4,7 @@ use actors::forward_agent_connection::ForwardAgentConnection;
 use actors::router::Router;
 use domain::a2a::*;
 use domain::config::{ForwardAgentConfig, WalletStorageConfig};
-use domain::wallet::*;
+use domain::indy::*;
 use failure::{err_msg, Error, Fail};
 use futures::*;
 use indy::{did, IndyError, pairwise, wallet};

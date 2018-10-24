@@ -263,6 +263,58 @@ pub fn anon_decrypt(wallet_handle: i32,
     }
 }
 
+pub fn indy_verify(signer_vk: &str,
+                   message: &[u8],
+                   signature: &[u8]) -> Box<Future<Item=bool, Error=IndyError>> {
+    lazy_static! {
+            static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<bool, IndyError>>>> = Default::default();
+        }
+
+    extern fn callback(command_handle: i32, err: i32, valid: bool) {
+        let tx = {
+            let mut callbacks = CALLBACKS.lock().unwrap();
+            callbacks.remove(&command_handle).unwrap()
+        };
+
+        let res = if err != 0 {
+            Err(IndyError::from_err_code(err))
+        } else {
+            Ok(valid)
+        };
+
+        tx.send(res).unwrap();
+    }
+
+    let (rx, command_handle) = {
+        let (tx, rx) = oneshot::channel();
+        let command_handle = sequence::get_next_id();
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        callbacks.insert(command_handle, tx);
+        (rx, command_handle)
+    };
+
+    let err = unsafe {
+        indy_crypto_verify(command_handle,
+                           c_str!(signer_vk).as_ptr(),
+                           message.as_ptr() as *const u8,
+                           message.len() as u32,
+                           signature.as_ptr() as *const u8,
+                           signature.len() as u32,
+                           Some(callback))
+    };
+
+    if err != 0 {
+        let mut callbacks = CALLBACKS.lock().unwrap();
+        callbacks.remove(&command_handle).unwrap();
+        future::err(IndyError::from_err_code(err)).into_box()
+    } else {
+        rx
+            .map_err(|_| panic!("channel error!"))
+            .and_then(|res| res)
+            .into_box()
+    }
+}
+
 extern {
     #[no_mangle]
     fn indy_create_key(command_handle: i32,
@@ -302,4 +354,13 @@ extern {
                                 encrypted_msg_raw: *const u8,
                                 encrypted_msg_len: u32,
                                 cb: Option<extern fn(xcommand_handle: i32, err: i32, msg: *const u8, msg_len: u32)>) -> i32;
+
+    #[no_mangle]
+    fn indy_crypto_verify(command_handle: i32,
+                          signer_vk: *const c_char,
+                          message_raw: *const u8,
+                          message_len: u32,
+                          signature_raw: *const u8,
+                          signature_len: u32,
+                          cb: Option<extern fn(xcommand_handle: i32, err: i32, valid: bool)>) -> i32;
 }
