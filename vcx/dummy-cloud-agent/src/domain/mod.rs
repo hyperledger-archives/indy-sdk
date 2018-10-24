@@ -1,6 +1,7 @@
 pub mod config;
+pub mod constants;
 pub mod a2a;
-pub mod pairwise;
+pub mod wallet;
 pub mod invite;
 pub mod key_deligation_proof;
 pub mod status;

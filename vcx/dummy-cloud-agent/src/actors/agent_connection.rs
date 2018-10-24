@@ -1,9 +1,10 @@
 use actix::prelude::*;
-use actors::HandleA2AMsg;
+use actors::{AddA2ARoute, HandleA2AMsg};
+use actors::router::Router;
 use domain::a2a::*;
-use domain::config::CloudAgentConnectionConfig;
+use domain::constants::AGENCY_DOMAIN_URL_PREFIX;
 use domain::status::{ConnectionStatus, MessageStatusCode};
-use domain::invite::{AgentDetail, InviteDetail, SenderDetail};
+use domain::invite::{ForwardAgentDetail, InviteDetail, SenderDetail};
 use domain::internal_message::InternalMessage;
 use domain::key_deligation_proof::KeyDlgProof;
 use failure::{err_msg, Error, Fail};
@@ -16,81 +17,115 @@ use base64;
 
 use std::collections::HashMap;
 
+#[derive(Clone, Debug, Deserialize)]
+pub struct AgentConnectionConfig {
+    // Agent wallet handle
+    pub wallet_handle: i32,
+    // Agent Owner DID
+    pub owner_did: String,
+    // Agent Owner Verkey
+    pub owner_verkey: String,
+    // Agent DID
+    pub agent_did: String,
+    // User pairwise DID
+    pub user_pairwise_did: String,
+    // User pairwise DID Verkey
+    pub user_pairwise_verkey: String,
+    // Agent pairwise DID
+    pub agent_pairwise_did: String,
+    // Agent pairwise DID Verkey
+    pub agent_pairwise_verkey: String,
+    // Forward Agent info
+    pub forward_agent_detail: ForwardAgentDetail,
+}
+
 #[allow(unused)] // FIXME: Use!
-pub struct CloudAgentConnection {
+pub struct AgentConnection {
+    // Agent wallet handle
     wallet_handle: i32,
+    // Agent Owner DID
+    pub owner_did: String,
+    // Agent Owner Verkey
+    pub owner_verkey: String,
+    // Agent DID
     agent_did: String,
-    from_did: String,
-    from_did_verkey: String,
-    pairwise_did: String,
-    pairwise_did_verkey: String,
-    name: Option<String>,
-    logo_url: Option<String>,
-    agent_detail: AgentDetail,
+    // User pairwise DID
+    user_pairwise_did: String,
+    // User pairwise Verkey
+    user_pairwise_verkey: String,
+    // User pairwise DID
+    agent_pairwise_did: String,
+    // User pairwise Verkey
+    agent_pairwise_verkey: String,
+    // User Forward Agent info
+    forward_agent_detail: ForwardAgentDetail,
+    // Agent Key Delegation Proof
     agent_key_dlg_proof: Option<KeyDlgProof>,
+    // Remote User Forward Agent info
+    remote_forward_agent_detail: Option<ForwardAgentDetail>,
+    // Remote Agent Key Delegation Proof
     remote_agent_key_dlg_proof: Option<KeyDlgProof>,
-    remote_agent_detail: Option<AgentDetail>,
+    // Agent Connection Status
     connection_status: ConnectionStatus,
+    // Agent Connection internal messages
     messages: HashMap<String, InternalMessage>
 }
 
-impl CloudAgentConnection {
-    pub fn new(config: CloudAgentConnectionConfig) -> ResponseFuture<CloudAgentConnection, Error> {
-        future::ok(CloudAgentConnection {
-            wallet_handle: config.wallet_handle,
-            agent_did: config.agent_did,
-            from_did: config.from_did,
-            from_did_verkey: config.from_did_verkey,
-            pairwise_did: config.pairwise_did,
-            pairwise_did_verkey: config.pairwise_did_verkey,
-            name: None,
-            logo_url: None,
-            agent_detail: AgentDetail {
-                did: String::new(),
-                verkey: String::new(),
-                endpoint: String::new(),
-            },
-            agent_key_dlg_proof: None,
-            remote_agent_key_dlg_proof: None,
-            remote_agent_detail: None,
-            connection_status: ConnectionStatus::NotConnected,
-            messages: HashMap::new(),
-        })
+impl AgentConnection {
+    pub fn create(config: AgentConnectionConfig,
+                  router: Addr<Router>) -> ResponseFuture<(), Error> {
+        future::ok(())
+            .and_then(move |_| {
+                let agent_connection = AgentConnection {
+                    wallet_handle: config.wallet_handle,
+                    owner_did: config.owner_did,
+                    owner_verkey: config.owner_verkey,
+                    agent_did: config.agent_did,
+                    user_pairwise_did: config.user_pairwise_did,
+                    user_pairwise_verkey: config.user_pairwise_verkey,
+                    agent_pairwise_did: config.agent_pairwise_did.clone(),
+                    agent_pairwise_verkey: config.agent_pairwise_verkey,
+                    forward_agent_detail: ForwardAgentDetail {
+                        did: String::new(),
+                        verkey: String::new(),
+                        endpoint: String::new(),
+                    },
+                    agent_key_dlg_proof: None,
+                    remote_agent_key_dlg_proof: None,
+                    remote_forward_agent_detail: None,
+                    connection_status: ConnectionStatus::NotConnected,
+                    messages: HashMap::new(),
+                };
+
+                let agent_connection = agent_connection.start();
+
+                router
+                    .send(AddA2ARoute(config.agent_pairwise_did.clone(), agent_connection.clone().recipient()))
+                    .from_err()
+                    .map_err(|err: Error| err.context("Can't add route for Agent Connection").into())
+            })
             .into_box()
+    }
+
+
+    #[allow(unused)] // FIXME: Use!
+    pub fn restore(config: &AgentConnectionConfig,
+                   router: Addr<Router>) -> BoxedFuture<(), Error> {
+        unimplemented!()
     }
 
     fn store_message(&mut self, msg: &InternalMessage) {
         self.messages.insert(msg.uid.to_string(), msg.clone());
     }
 
-    fn get_message(&self, uid: &str) -> Option<InternalMessage> {
-        self.messages.get(uid).cloned()
-    }
-
-    fn update_message_status(&mut self, uid: &str, status: &MessageStatusCode) -> Result<(), Error> {
-        self.messages.get_mut(uid)
-            .map(|message| message.update(status, None))
-            .ok_or(err_msg("Message not found."))
-    }
-
-    fn answer_message(&mut self, uid: &str, ref_msg_id: &str, status_code: &MessageStatusCode) -> Result<(), Error> {
-        trace!("CloudAgentConnection::answer_message >> {:?}, {:?}, {:?}", uid, ref_msg_id, status_code);
-
-        self.messages.get_mut(uid)
-            .map(|message| message.update(status_code, Some(ref_msg_id)))
-            .ok_or(err_msg("Message mot found"))?;
-
-        Ok(())
-    }
-
     fn handle_a2a_msg(&mut self,
                       msg: Vec<u8>) -> ResponseActFuture<Self, Vec<u8>, Error> {
-        trace!("CloudAgentConnection::handle_a2a_msg >> {:?}", msg);
+        trace!("AgentConnection::handle_a2a_msg >> {:?}", msg);
 
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _| {
-                A2AMessage::unbundle_authcrypted(slf.wallet_handle, &slf.pairwise_did_verkey, &msg)
+                A2AMessage::unbundle_authcrypted(slf.wallet_handle, &slf.agent_pairwise_verkey, &msg)
                     .map_err(|err| err.context("Can't unbundle message.").into())
                     .into_actor(slf)
             })
@@ -115,7 +150,7 @@ impl CloudAgentConnection {
                 }
             })
             .and_then(move |msgs, slf, _| {
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.pairwise_did_verkey, &slf.from_did_verkey, &msgs)
+                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.agent_pairwise_verkey, &slf.owner_verkey, &msgs)
                     .map_err(|err| err.context("Can't bundle and authcrypt message.").into())
                     .into_actor(slf)
             })
@@ -126,15 +161,15 @@ impl CloudAgentConnection {
                              msg: CreateMessage,
                              tail: Vec<A2AMessage>,
                              sender_verkey: String) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("CloudAgentConnection::handle_create_message >> {:?}, {:?}, {:?}", msg, tail, sender_verkey);
+        trace!("AgentConnection::handle_create_message >> {:?}, {:?}, {:?}", msg, tail, sender_verkey);
 
         let CreateMessage { mtype, send_msg, reply_to_msg_id } = msg;
 
         match mtype {
-            CreateMessageType::ConnReq => {
+            MessageType::ConnReq => {
                 self.handle_create_connection_request(send_msg, tail, sender_verkey)
             }
-            CreateMessageType::ConnReqAnswer => {
+            MessageType::ConnReqAnswer => {
                 self.handle_create_connection_request_answer(send_msg, tail, reply_to_msg_id)
             }
             type_ @ _ =>
@@ -144,7 +179,7 @@ impl CloudAgentConnection {
 
     fn handle_send_messages(&mut self,
                             msg: SendMessages) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("CloudAgentConnection::handle_send_messages >> {:?}",
+        trace!("AgentConnection::handle_send_messages >> {:?}",
                msg);
 
         let SendMessages { uids } = msg;
@@ -161,7 +196,7 @@ impl CloudAgentConnection {
 
     fn handle_get_messages(&mut self,
                            msg: GetMessages) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("CloudAgentConnection::handle_get_messages >> {:?}",
+        trace!("AgentConnection::handle_get_messages >> {:?}",
                msg);
 
         let GetMessages { exclude_payload, uids, status_codes } = msg;
@@ -191,7 +226,7 @@ impl CloudAgentConnection {
 
     fn handle_update_connection_status(&mut self,
                                        msg: UpdateConnectionStatus) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("CloudAgentConnection::handle_update_connection_status >> {:?}",
+        trace!("AgentConnection::handle_update_connection_status >> {:?}",
                msg);
 
         let UpdateConnectionStatus { status_code } = msg;
@@ -209,7 +244,7 @@ impl CloudAgentConnection {
 
     fn handle_update_message_status(&mut self,
                                     msg: UpdateMessageStatus) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("CloudAgentConnection::handle_update_message_status >> {:?}",
+        trace!("AgentConnection::handle_update_message_status >> {:?}",
                msg);
 
         let UpdateMessageStatus { uids, status_code } = msg;
@@ -235,9 +270,9 @@ impl CloudAgentConnection {
                                         send_msg: bool,
                                         mut tail: Vec<A2AMessage>,
                                         sender_verkey: String) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("CloudAgentConnection::handle_create_connection_request >> {:?}, {:?}, {:?}", send_msg, tail, sender_verkey);
+        trace!("AgentConnection::handle_create_connection_request >> {:?}, {:?}, {:?}", send_msg, tail, sender_verkey);
 
-        if sender_verkey != self.from_did_verkey {
+        if sender_verkey != self.user_pairwise_verkey {
             return err_act!(self, err_msg("Unknown message sender"));
         }
 
@@ -255,58 +290,54 @@ impl CloudAgentConnection {
                     .into_actor(slf)
             )
             .and_then(move |msg_detail, slf, _|
-                slf.verify_agent_key_dlg_proof(&slf.from_did_verkey, &msg_detail.key_dlg_proof)
+                slf.verify_agent_key_dlg_proof(&slf.user_pairwise_verkey, &msg_detail.key_dlg_proof)
                     .map(|_| msg_detail)
                     .into_actor(slf)
             )
             .map(move |msg_detail, slf, _| {
                 let msg = InternalMessage::new(None,
-                                               &CreateMessageType::ConnReq,
+                                               &MessageType::ConnReq,
                                                MessageStatusCode::Created,
-                                               &slf.from_did,
-                                               None);                // TODO clarify message code!
-                (msg, msg_detail)
-            })
-            .map(move |(msg, msg_detail), slf, _| {
+                                               &slf.user_pairwise_did,
+                                               None);
                 slf.store_message(&msg);
                 slf.agent_key_dlg_proof = Some(msg_detail.key_dlg_proof.clone());
+
                 (msg, msg_detail)
             })
             .and_then(move |(msg, msg_detail), slf, _| {
-                let sending_details = map! {
-                  "phone_no" => msg_detail.phone_no.clone()
-                };
+                let sending_details = map! { "phone_no" => msg_detail.phone_no.clone() };
 
                 slf.send_msg(send_msg, vec![(msg.uid.clone(), None)], sending_details)
-                    .map(|sent_message| (msg, msg_detail, sent_message))
+                    .map(|sent_msg| (msg, msg_detail, sent_msg))
                     .into_actor(slf)
             })
-            .map(move |(msg, msg_detail, sent_message), slf, _| {
-                let msg_created = MessageCreated { uid: msg.uid.clone() };
+            .map(move |(msg, msg_detail, sent_msg), slf, _| {
+                let msg_created_resp = MessageCreated { uid: msg.uid.clone() };
 
-                let msg_detail = ConnectionRequestMessageDetailResp {
+                let msg_detail_resp = ConnectionRequestMessageDetailResp {
                     invite_detail: InviteDetail {
                         conn_req_id: msg.uid.clone(),
                         target_name: msg_detail.target_name,
-                        sender_agency_detail: slf.agent_detail.clone(),
+                        sender_agency_detail: slf.forward_agent_detail.clone(),
                         sender_detail: SenderDetail {
-                            did: slf.from_did.clone(),
-                            verkey: slf.from_did_verkey.clone(),
+                            did: slf.user_pairwise_did.clone(),
+                            verkey: slf.user_pairwise_verkey.clone(),
                             agent_key_dlg_proof: msg_detail.key_dlg_proof,
-                            name: slf.name.clone(),
-                            logo_url: slf.logo_url.clone(),
+                            name: None,
+                            logo_url: None,
                         },
                         status_code: msg.status_code.clone(),
                         status_msg: msg.status_code.message().to_string(),
                     },
-                    url_to_invite_detail: CloudAgentConnection::_get_invite_url(&slf.pairwise_did, &msg.uid)
+                    url_to_invite_detail: slf.get_invite_url(&msg.uid)
                 };
 
                 let mut messages =
-                    vec![A2AMessage::MessageCreated(msg_created),
-                         A2AMessage::MessageDetail(MessageDetail::ConnectionRequestMessageDetailResp(msg_detail))];
+                    vec![A2AMessage::MessageCreated(msg_created_resp),
+                         A2AMessage::MessageDetail(MessageDetail::ConnectionRequestMessageDetailResp(msg_detail_resp))];
 
-                sent_message.map(|msg| messages.push(msg));
+                sent_msg.map(|msg| messages.push(msg));
 
                 messages
             })
@@ -317,14 +348,12 @@ impl CloudAgentConnection {
                                                send_msg: bool,
                                                mut tail: Vec<A2AMessage>,
                                                reply_to_msg_id: Option<String>) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("CloudAgentConnection::handle_create_connection_request_answer >> {:?}, {:?}, {:?}", send_msg, tail, reply_to_msg_id);
+        trace!("AgentConnection::handle_create_connection_request_answer >> {:?}, {:?}, {:?}", send_msg, tail, reply_to_msg_id);
 
         let reply_to_msg_id = match reply_to_msg_id {
             Some(msg_id) => msg_id,
             None => return err_act!(self, err_msg("Required fied `reply_to_msg_id` is missed"))
         };
-        let message = self.get_message(&reply_to_msg_id); // possible optional ????
-        // check message not expired
 
         let msg_detail = match tail.pop() {
             Some(A2AMessage::MessageDetail(MessageDetail::ConnectionRequestAnswerMessageDetail(msg))) => msg,
@@ -339,7 +368,7 @@ impl CloudAgentConnection {
                     .into_actor(slf)
             )
             .and_then(move |msg_detail, slf, _|
-                slf.verify_agent_key_dlg_proof(&slf.from_did_verkey, &msg_detail.key_dlg_proof)
+                slf.verify_agent_key_dlg_proof(&slf.user_pairwise_verkey, &msg_detail.key_dlg_proof)
                     .map(|_| msg_detail)
                     .into_actor(slf)
             )
@@ -349,9 +378,9 @@ impl CloudAgentConnection {
                     .into_actor(slf)
             )
             .map(move |msg_detail, slf, _| {
-                if message.is_none() {
+                if slf.messages.get(&reply_to_msg_id).is_none() {
                     let msg_created = InternalMessage::new(Some(&reply_to_msg_id),
-                                                           &CreateMessageType::ConnReq,
+                                                           &MessageType::ConnReq,
                                                            MessageStatusCode::Created,
                                                            &msg_detail.sender_detail.did,
                                                            None);
@@ -361,15 +390,15 @@ impl CloudAgentConnection {
             })
             .map(move |(msg_detail, reply_to_msg_id), slf, _| {
                 let answer_msg = InternalMessage::new(None,
-                                                      &CreateMessageType::ConnReqAnswer,
+                                                      &MessageType::ConnReqAnswer,
                                                       msg_detail.answer_status_code.clone(),
-                                                      &slf.from_did,
+                                                      &slf.user_pairwise_did,
                                                       None);
 
                 slf.store_message(&answer_msg);
                 slf.agent_key_dlg_proof = Some(msg_detail.key_dlg_proof.clone());
                 slf.remote_agent_key_dlg_proof = Some(msg_detail.sender_detail.agent_key_dlg_proof.clone());
-                slf.remote_agent_detail = Some(msg_detail.sender_agency_detail.clone());
+                slf.remote_forward_agent_detail = Some(msg_detail.sender_agency_detail.clone());
 
                 (msg_detail, reply_to_msg_id, answer_msg.uid)
             })
@@ -404,11 +433,11 @@ impl CloudAgentConnection {
 
 
     fn handle_create_general_message(&mut self,
-                                     mtype: CreateMessageType,
+                                     mtype: MessageType,
                                      send_msg: bool,
                                      mut tail: Vec<A2AMessage>,
                                      reply_to_msg_id: Option<String>) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("CloudAgentConnection::handle_create_connection_request >> {:?}, {:?}, {:?}", send_msg, tail, reply_to_msg_id);
+        trace!("AgentConnection::handle_create_general_message >> {:?}, {:?}, {:?}", send_msg, tail, reply_to_msg_id);
 
         let msg_detail = match tail.pop() {
             Some(A2AMessage::MessageDetail(MessageDetail::GeneralMessageDetail(msg))) => msg,
@@ -419,7 +448,7 @@ impl CloudAgentConnection {
             return err_act!(self, err);
         }
 
-        let msg = InternalMessage::new(None, &mtype, MessageStatusCode::Created, &self.from_did, Some(msg_detail.msg.clone()));
+        let msg = InternalMessage::new(None, &mtype, MessageStatusCode::Created, &self.user_pairwise_did, Some(msg_detail.msg.clone()));
         self.store_message(&msg);
 
         if let Some(msg_id) = reply_to_msg_id.as_ref() {
@@ -446,7 +475,7 @@ impl CloudAgentConnection {
 
     fn validate_general_message(&self, reply_to_msg_id: Option<&str>) -> Result<(), Error> {
         if let Some(msg_id) = reply_to_msg_id {
-            let message = self.get_message(msg_id)
+            let message = self.messages.get(msg_id)
                 .ok_or(err_msg("Message not found."))?;
 
             self.check_if_message_not_already_answered(&message.status_code)?;
@@ -456,7 +485,7 @@ impl CloudAgentConnection {
 
     fn validate_connection_request(&self,
                                    msg_detail: &ConnectionRequestMessageDetail) -> Result<(), Error> {
-        trace!("CloudAgentConnection::validate_connection_request >> {:?}", msg_detail);
+        trace!("AgentConnection::validate_connection_request >> {:?}", msg_detail);
 
         self.check_no_connection_established()?;
         self.check_no_accepted_invitation_exists()?;
@@ -466,7 +495,7 @@ impl CloudAgentConnection {
 
     fn validate_connection_request_answer(&self,
                                           msg_detail: &ConnectionRequestAnswerMessageDetail) -> Result<(), Error> {
-        trace!("CloudAgentConnection::validate_connection_request_answer >> {:?}", msg_detail);
+        trace!("AgentConnection::validate_connection_request_answer >> {:?}", msg_detail);
 
         self.check_no_accepted_invitation_exists()?;
         self.check_valid_status_code(&msg_detail.answer_status_code)?;
@@ -476,10 +505,31 @@ impl CloudAgentConnection {
         Ok(())
     }
 
+    fn update_message_status(&mut self, uid: &str, status: &MessageStatusCode) -> Result<(), Error> {
+        trace!("AgentConnection::update_message_status >> {:?}, {:?}", uid, status);
+
+        self.messages.get_mut(uid)
+            .map(|message| message.status_code = status.clone())
+            .ok_or(err_msg("Message not found."))
+    }
+
+    fn answer_message(&mut self, uid: &str, ref_msg_id: &str, status_code: &MessageStatusCode) -> Result<(), Error> {
+        trace!("AgentConnection::answer_message >> {:?}, {:?}, {:?}", uid, ref_msg_id, status_code);
+
+        self.messages.get_mut(uid)
+            .map(|message| {
+                message.status_code = status_code.clone();
+                message.ref_msg_id = Some(ref_msg_id.to_string());
+            })
+            .ok_or(err_msg("Message mot found"))?;
+
+        Ok(())
+    }
+
     fn store_their_did(&self,
                        did: &str,
                        verkey: &str) -> ResponseFuture<(), Error> {
-        trace!("CloudAgentConnection::store_their_did >> {:?}, {:?}", did, verkey);
+        trace!("AgentConnection::store_their_did >> {:?}, {:?}", did, verkey);
 
         let their_did_info = json!({
             "did": did,
@@ -491,15 +541,15 @@ impl CloudAgentConnection {
             .into_box()
     }
 
-    fn _get_invite_url(pairwise_did: &str, uid: &str) -> String {
-        trace!("CloudAgentConnection::_get_invite_url >> {:?}, {:?}", pairwise_did, uid);
+    fn get_invite_url(&self, msg_uid: &str) -> String {
+        trace!("AgentConnection::get_invite_url >> {:?}", msg_uid);
 
-        format!("{}/agency/invite/{}?uid{}", "", pairwise_did, uid) // AGENCY_DOMAIN_URL_PREFIX constant
+        format!("{}/agency/invite/{}?msg_uid{}", AGENCY_DOMAIN_URL_PREFIX, self.agent_pairwise_did, msg_uid)
     }
 
     fn check_if_message_not_already_answered(&self,
                                              status_code: &MessageStatusCode) -> Result<(), Error> {
-        trace!("CloudAgentConnection::check_if_message_not_already_answered >> {:?}", status_code);
+        trace!("AgentConnection::check_if_message_not_already_answered >> {:?}", status_code);
 
         if MessageStatusCode::valid_status_codes().contains(status_code) {
             return Err(err_msg("Message is already answered."));
@@ -510,7 +560,7 @@ impl CloudAgentConnection {
 
     fn check_valid_status_code(&self,
                                status_code: &MessageStatusCode) -> Result<(), Error> {
-        trace!("CloudAgentConnection::check_valid_status_code >> {:?}", status_code);
+        trace!("AgentConnection::check_valid_status_code >> {:?}", status_code);
 
         if !MessageStatusCode::valid_status_codes().contains(status_code) {
             return Err(err_msg("Invalid answer status code."));
@@ -519,18 +569,19 @@ impl CloudAgentConnection {
     }
 
     fn check_no_connection_established(&self) -> Result<(), Error> {
-        if self.remote_agent_detail.is_some() {
+        if self.remote_forward_agent_detail.is_some() {
             return Err(err_msg("Accepted connection already exists.")); //
         }
         Ok(())
     }
 
     fn check_no_accepted_invitation_exists(&self) -> Result<(), Error> {
-        trace!("CloudAgentConnection::check_no_accepted_invitation_exists >>");
+        trace!("AgentConnection::check_no_accepted_invitation_exists >>");
 
         let is_exists = self.messages.values()
             .any(|msg|
-                msg._type == CreateMessageType::ConnReq && msg.status_code == MessageStatusCode::Accepted);
+                msg._type == MessageType::ConnReq && msg.status_code == MessageStatusCode::Accepted
+            );
         if is_exists {
             return Err(err_msg("Accepted connection already exists."));
         }
@@ -538,7 +589,7 @@ impl CloudAgentConnection {
     }
 
     fn check_valid_phone_no(&self, phone_no: &str) -> Result<(), Error> {
-        trace!("CloudAgentConnection::check_valid_phone_no >> {:?}", phone_no);
+        trace!("AgentConnection::check_valid_phone_no >> {:?}", phone_no);
 
         let phone_no = phone_no.replace("+", "").replace("-", "").replace(" ", "").replace("(", "").replace(")", "");
         if !phone_no.chars().all(|c| c.is_numeric()) {
@@ -550,7 +601,7 @@ impl CloudAgentConnection {
     fn verify_agent_key_dlg_proof(&self,
                                   sender_verkey: &str,
                                   key_dlg_proof: &KeyDlgProof) -> ResponseFuture<(), Error> {
-        trace!("CloudAgentConnection::verify_agent_key_dlg_proof >> {:?}, {:?}", sender_verkey, key_dlg_proof);
+        trace!("AgentConnection::verify_agent_key_dlg_proof >> {:?}, {:?}", sender_verkey, key_dlg_proof);
 
         let signature = base64::decode(&key_dlg_proof.signature).unwrap();
 
@@ -595,11 +646,12 @@ impl CloudAgentConnection {
         msgs
             .into_iter()
             .map(|(msg_uid, reply_to)| {
-                let message = self.get_message(&msg_uid).unwrap();
-                match message._type {
-                    CreateMessageType::ConnReq => self.send_invite_message(&msg_uid, &sending_details),
-                    CreateMessageType::ConnReqAnswer => self.send_invite_answer_message(&msg_uid),
-                    _ => self.send_general_message(&msg_uid, reply_to.as_ref().map(String::as_str)),
+                let message = self.messages.get(&msg_uid).cloned();
+                match message.map(|m| m._type) {
+                    Some(MessageType::ConnReq) => self.send_invite_message(&msg_uid, &sending_details),
+                    Some(MessageType::ConnReqAnswer) => self.send_invite_answer_message(&msg_uid),
+                    Some(_) => self.send_general_message(&msg_uid, reply_to.as_ref().map(String::as_str)),
+                    None => Err(err_msg("Message not found."))
                 }
                     .map(|_| msg_uid.to_string())
             })
@@ -630,11 +682,11 @@ impl CloudAgentConnection {
     }
 }
 
-impl Actor for CloudAgentConnection {
+impl Actor for AgentConnection {
     type Context = Context<Self>;
 }
 
-impl Handler<HandleA2AMsg> for CloudAgentConnection {
+impl Handler<HandleA2AMsg> for AgentConnection {
     type Result = ResponseActFuture<Self, Vec<u8>, Error>;
 
     fn handle(&mut self, msg: HandleA2AMsg, _: &mut Self::Context) -> Self::Result {
