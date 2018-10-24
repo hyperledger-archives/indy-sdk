@@ -43,3 +43,13 @@
 
 In order to run local nodes on MacOS, it may be necessary to set up port mapping between the Docker container
 and local host. Follow the instructions in [Indy SDK README](https://github.com/hyperledger/indy-sdk#how-to-start-local-nodes-pool-with-docker)
+
+# IOError while running of whole set of tests on MacOS
+
+There is a possible case when some tests are failed if whole set of tests is run (`cargo test`).
+But failed tests will be successful in case of separate runs.
+If an error message like `IOError` `Too many open files` is present in logs when fails can be fixed by changing default limit.
+
+`ulimit -n <new limit value>`
+
+https://jira.hyperledger.org/browse/IS-1038

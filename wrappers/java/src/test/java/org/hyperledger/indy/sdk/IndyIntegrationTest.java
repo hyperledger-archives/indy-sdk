@@ -9,6 +9,7 @@ import org.hyperledger.indy.sdk.utils.StorageUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
@@ -109,5 +110,10 @@ public class IndyIntegrationTest {
 		});
 		openedPools.clear();
 		StorageUtils.cleanupStorage();
+	}
+
+	@Test
+	public void testSetRuntimeConfig() throws Exception {
+		LibIndy.setRuntimeConfig("{\"crypto_thread_pool_size\": 2}");
 	}
 }

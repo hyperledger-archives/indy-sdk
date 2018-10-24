@@ -36,7 +36,7 @@ fn main() {
         let openssl = match env::var("OPENSSL_LIB_DIR") {
             Ok(val) => val,
             Err(..) => match env::var("OPENSSL_DIR") {
-                Ok(dir) => Path::new(&dir[..]).join("/lib").to_string_lossy().into_owned(),
+                Ok(dir) => Path::new(&dir[..]).join("lib").to_string_lossy().into_owned(),
                 Err(..) => panic!("Missing required environment variables OPENSSL_DIR or OPENSSL_LIB_DIR")
             }
         };
@@ -49,7 +49,7 @@ fn main() {
         let zmq = match env::var("LIBZMQ_LIB_DIR") {
             Ok(val) => val,
             Err(..) => match env::var("LIBZMQ_PREFIX") {
-                Ok(dir) => Path::new(&dir[..]).join("/lib").to_string_lossy().into_owned(),
+                Ok(dir) => Path::new(&dir[..]).join("lib").to_string_lossy().into_owned(),
                 Err(..) => panic!("Missing required environment variables LIBZMQ_PREFIX or LIBZMQ_LIB_DIR")
             }
         };

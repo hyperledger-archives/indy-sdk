@@ -45,14 +45,24 @@ ar = "$(realpath ${AR})"
 linker = "$(realpath ${CC})"
 EOF
 }
+
+normalize_dir(){
+    case "$1" in
+    /*) echo "$1";;
+    ~/*) echo "$1";;
+    *) echo "$(pwd)/$1";;
+    esac
+}
+
 setup_dependencies(){
     if [ "${DOWNLOAD_PREBUILTS}" == "1" ]; then
         download_and_unzip_dependencies ${ABSOLUTE_ARCH}
         else
             echo "${BLUE}Not downloading prebuilt dependencies. Dependencies locations have to be passed${RESET}"
             if [ -z "${OPENSSL_DIR}" ]; then
-                OPENSSL_DIR="openssl_${ABSOLUTE_ARCH}"
-                if [ -d "${OPENSSL_DIR}" ] ; then
+
+                OPENSSL_DIR=$(normalize_dir "openssl_${ABSOLUTE_ARCH}")
+                if [ -d "${OPENSSL_DIR}" ]; then
                     echo "${GREEN}Found ${OPENSSL_DIR}${RESET}"
                 elif [ -z "$2" ]; then
                     echo STDERR "${RED}Missing OPENSSL_DIR argument and environment variable${RESET}"
@@ -64,7 +74,7 @@ setup_dependencies(){
             fi
 
             if [ -z "${SODIUM_DIR}" ]; then
-                SODIUM_DIR="libsodium_${ABSOLUTE_ARCH}"
+                SODIUM_DIR=$(normalize_dir "libsodium_${ABSOLUTE_ARCH}")
                 if [ -d "${SODIUM_DIR}" ] ; then
                     echo "${GREEN}Found ${SODIUM_DIR}${RESET}"
                 elif [ -z "$3" ]; then
@@ -77,7 +87,7 @@ setup_dependencies(){
             fi
 
             if [ -z "${LIBZMQ_DIR}" ] ; then
-                LIBZMQ_DIR="libzmq_${ABSOLUTE_ARCH}"
+                LIBZMQ_DIR=$(normalize_dir  "libzmq_${ABSOLUTE_ARCH}")
                 if [ -d "${LIBZMQ_DIR}" ] ; then
                     echo "${GREEN}Found ${LIBZMQ_DIR}${RESET}"
                 elif [ -z "$4" ] ; then

@@ -87,6 +87,81 @@
         /// </summary>
         CommonIOError = 114,
 
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam13 = 115,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam14 = 116,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam15 = 117,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam16 = 118,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam17 = 119,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam18 = 120,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam19 = 121,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam20 = 122,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam21 = 123,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam22 = 124,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam23 = 125,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam24 = 126,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam25 = 127,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam26 = 128,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        CommonInvalidParam27 = 129,
+
         // Wallet errors
 
         /// <summary>
@@ -125,9 +200,44 @@
         WalletAlreadyOpenedError = 206,
 
         /// <summary>
+        /// Attempt to open encrypted wallet with invalid credentials
+        /// </summary>
+        WalletAccessFailed = 207,
+
+        /// <summary>
+        /// Input provided to wallet operations is considered not valid
+        /// </summary>
+        WalletInputError = 208,
+
+        /// <summary>
+        /// Decoding of wallet data during input/output failed
+        /// </summary>
+        WalletDecodingError = 209,
+
+        /// <summary>
+        /// Storage error occurred during wallet operation
+        /// </summary>
+        WalletStorageError = 210,
+
+        /// <summary>
+        /// Error during encryption-related operations
+        /// </summary>
+        WalletEncryptionError = 211,
+
+        /// <summary>
         /// No value with the specified key exists in the wallet from which it was requested.
         /// </summary>
         WalletItemNotFoundError = 212,
+
+        /// <summary>
+        /// Returned if wallet's add_record operation is used with record name that already exists
+        /// </summary>
+        WalletItemAlreadyExistsError = 213,
+
+        /// <summary>
+        /// Returned if provided wallet query is invalid
+        /// </summary>
+        WalletQueryError = 214,
 
         // Ledger errors
 
@@ -166,11 +276,21 @@
         /// </summary>
         PoolLedgerConfigAlreadyExistsError = 306,
 
-
         /// <summary>
         /// Pool ledger timeout
         /// </summary>
         PoolLedgerTimeout = 307,
+
+        /// <summary>
+        /// Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
+        /// Call pool.indy_set_protocol_version to set correct Protocol version.
+        /// </summary>
+        PoolIncompatibleProtocolVersionError = 308,
+
+        /// <summary>
+        /// Item not found on ledger.
+        /// </summary>
+        LedgerNotFound = 309,
 
         // Crypto errors
 
@@ -182,17 +302,8 @@
         /// <summary>
         /// Invalid user revocation index
         /// </summary>
-        AnoncredsInvalidUserRevocIndex = 401,
+        AnoncredsInvalidUserRevocId = 401,
 
-        /// <summary>
-        /// Accumulator is full
-        /// </summary>
-        AnoncredsAccumulatorIsFull = 402,
-
-        /// <summary>
-        /// Not issued error
-        /// </summary>
-        AnoncredsNotIssuedError = 403,
 
         /// <summary>
         /// Attempt to generate master secret with duplicated name
@@ -207,13 +318,55 @@
         /// <summary>
         /// Claim revoked
         /// </summary>
-        AnoncredsClaimRevoked = 406,
+        AnoncredsCredentialRevoked = 406,
 
-        // Signus errors
-        // 
+        /// <summary>
+        /// Attempt to create credential definition with duplicated id
+        /// </summary>
+        AnoncredsCredDefAlreadyExistsError = 407,
+
+        // Crypto errors
+
         /// <summary>
         /// Unknown format of DID entity keys
         /// </summary>
-        SignusUnknownCryptoError = 500
+        UnknownCryptoTypeError = 500,
+
+        // Attempt to create duplicate did
+        /// <summary>
+        /// 
+        /// </summary>
+        DidAlreadyExistsError = 600,
+
+        // Unknown payment method was given
+        /// <summary>
+        /// 
+        /// </summary>
+        PaymentUnknownMethodError = 700,
+
+        /// <summary>
+        /// No method were scraped from inputs/outputs or more than one were scraped
+        /// </summary>
+        PaymentIncompatibleMethodsError = 701,
+
+        /// <summary>
+        /// Insufficient funds on inputs
+        /// </summary>
+        PaymentInsufficientFundsError = 702,
+
+        /// <summary>
+        /// No such source on a ledger
+        /// </summary>
+        PaymentSourceDoesNotExistError = 703,
+
+        /// <summary>
+        /// Operation is not supported for payment method
+        /// </summary>
+        PaymentOperationNotSupportedError = 704,
+
+        /// <summary>
+        /// Extra funds on inputs
+        /// </summary>
+        PaymentExtraFundsError = 705
     }
 }

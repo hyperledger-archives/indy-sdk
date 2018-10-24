@@ -1,9 +1,10 @@
-﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.DidApi;
+﻿using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.LedgerApi;
+using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Test.SignusTests
+namespace Hyperledger.Indy.Test.DidTests
 {
 
     [TestClass]
@@ -52,7 +53,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestKeyForDidWorksForNoKey()
         {
-            var ex = await Assert.ThrowsExceptionAsync<InvalidStateException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                Did.KeyForDidAsync(pool, wallet, DID_MY2)
            );
         }

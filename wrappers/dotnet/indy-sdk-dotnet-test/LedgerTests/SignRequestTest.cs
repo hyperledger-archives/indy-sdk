@@ -1,5 +1,5 @@
-﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.DidApi;
+﻿using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.LedgerApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
@@ -8,7 +8,7 @@ namespace Hyperledger.Indy.Test.LedgerTests
 {
     [TestClass]
     public class SignRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
-    {        
+    {
         [TestMethod]
         public async Task TestSignWorks()
         {
@@ -37,8 +37,8 @@ namespace Hyperledger.Indy.Test.LedgerTests
         {
             var msg = "{\"reqId\":1496822211362017764}";
 
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
-                Ledger.SignRequestAsync(wallet, DID1, msg)
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
+                Ledger.SignRequestAsync(wallet, DID, msg)
             );
 
         }

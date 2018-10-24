@@ -4,23 +4,13 @@ extern crate serde_json;
 use self::libc::c_char;
 use messages;
 use std::ptr;
-use std::thread;
 use utils::httpclient;
 use utils::constants::*;
 use utils::cstring::CStringUtils;
 use utils::error;
 use utils::error::error_string;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Config {
-    agency_url: String,
-    agency_did: String,
-    agency_verkey: String,
-    wallet_name: Option<String>,
-    wallet_key: String,
-    agent_seed: Option<String>,
-    enterprise_seed: Option<String>,
-}
+use utils::threadpool::spawn;
+use std::thread;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateAgentInfo {
@@ -32,28 +22,16 @@ pub struct UpdateAgentInfo {
 /// NOTE: for asynchronous call use vcx_agent_provision_async
 ///
 /// #Params
-/// json: configuration
+/// config: configuration
 ///
 /// #Returns
 /// Configuration (wallet also populated), on error returns NULL
 
 #[no_mangle]
-pub extern fn vcx_provision_agent(json: *const c_char) -> *mut c_char {
-    check_useful_c_str!(json, ptr::null_mut());
-    let my_config: Config = match serde_json::from_str(&json) {
-        Ok(x) => x,
-        Err(x) => {
-            return ptr::null_mut()
-        },
-    };
+pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
+    check_useful_c_str!(config, ptr::null_mut());
 
-    match messages::agent_utils::connect_register_provision(&my_config.agency_url,
-                                                         &my_config.agency_did,
-                                                         &my_config.agency_verkey,
-                                                         my_config.wallet_name,
-                                                         my_config.agent_seed,
-                                                         my_config.enterprise_seed,
-                                                         &my_config.wallet_key, None, None, None) {
+    match messages::agent_utils::connect_register_provision(&config) {
         Err(e) => {
             error!("Provision Agent Error {}.", e);
             return ptr::null_mut();
@@ -73,7 +51,7 @@ pub extern fn vcx_provision_agent(json: *const c_char) -> *mut c_char {
 /// #Params
 /// command_handle: command handle to map callback to user context.
 ///
-/// json: configuration
+/// config: configuration
 ///
 /// cb: Callback that provides configuration or error status
 ///
@@ -82,29 +60,16 @@ pub extern fn vcx_provision_agent(json: *const c_char) -> *mut c_char {
 
 #[no_mangle]
 pub extern fn vcx_agent_provision_async(command_handle : u32,
-                               json: *const c_char,
-                               cb: Option<extern fn(xcommand_handle: u32, err: u32, config: *const c_char)>) -> u32 {
+                               config: *const c_char,
+                               cb: Option<extern fn(xcommand_handle: u32, err: u32, _config: *const c_char)>) -> u32 {
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
-    check_useful_c_str!(json, error::INVALID_OPTION.code_num);
-
-    let my_config: Config = match serde_json::from_str(&json) {
-        Ok(x) => x,
-        Err(x) => {
-            return error::INVALID_JSON.code_num
-        },
-    };
+    check_useful_c_str!(config, error::INVALID_OPTION.code_num);
 
     info!("vcx_agent_provision_async(command_handle: {}, json: {})",
-          command_handle, json);
+          command_handle, config);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
-        match messages::agent_utils::connect_register_provision(&my_config.agency_url,
-                                                                &my_config.agency_did,
-                                                                &my_config.agency_verkey,
-                                                                my_config.wallet_name,
-                                                                my_config.agent_seed,
-                                                                my_config.enterprise_seed,
-                                                                &my_config.wallet_key, None, None, None) {
+    thread::spawn(move|| {
+        match messages::agent_utils::connect_register_provision(&config) {
             Err(e) => {
                 error!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: NULL", command_handle, error_string(e));
                 cb(command_handle, e, ptr::null_mut());
@@ -116,10 +81,9 @@ pub extern fn vcx_agent_provision_async(command_handle : u32,
                 cb(command_handle, 0, msg.as_ptr());
             },
         }
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Update information on the agent (ie, comm method and type)
@@ -152,7 +116,7 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
         },
     };
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(move|| {
         match messages::agent_utils::update_agent_info(&agent_info.id, &agent_info.value){
             Ok(x) => {
                 info!("vcx_agent_update_info_cb(command_handle: {}, rc: {})",
@@ -165,10 +129,11 @@ pub extern fn vcx_agent_update_info(command_handle: u32,
                 cb(command_handle, e);
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Get ledger fees from the sovrin network
@@ -189,7 +154,7 @@ pub extern fn vcx_ledger_get_fees(command_handle: u32,
     info!("vcx_ledger_get_fees(command_handle: {})",
           command_handle);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(move|| {
         match ::utils::libindy::payments::get_ledger_fees() {
             Ok(x) => {
                 info!("vcx_ledger_get_fees_cb(command_handle: {}, rc: {}, fees: {})",
@@ -205,10 +170,11 @@ pub extern fn vcx_ledger_get_fees(command_handle: u32,
                 cb(command_handle, e, ptr::null_mut());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 #[no_mangle]
@@ -282,7 +248,7 @@ pub extern fn vcx_messages_download(command_handle: u32,
     info!("vcx_messages_download(command_handle: {}, message_status: {:?}, uids: {:?})",
           command_handle, message_status, uids);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(move|| {
         match ::messages::get_message::download_messages(pw_dids, message_status, uids) {
             Ok(x) => {
                 match  serde_json::to_string(&x) {
@@ -308,10 +274,11 @@ pub extern fn vcx_messages_download(command_handle: u32,
                 cb(command_handle, e, ptr::null_mut());
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 /// Update the status of messages from the specified connection
@@ -342,7 +309,7 @@ pub extern fn vcx_messages_update_status(command_handle: u32,
     info!("vcx_messages_set_status(command_handle: {}, message_status: {:?}, uids: {:?})",
           command_handle, message_status, msg_json);
 
-    match thread::Builder::new().name(command_handle.to_string()).spawn(move|| {
+    spawn(move|| {
         match ::messages::update_message::update_agency_messages(&message_status, &msg_json) {
             Ok(_) => {
                 info!("vcx_messages_set_status_cb(command_handle: {}, rc: {})",
@@ -357,25 +324,24 @@ pub extern fn vcx_messages_update_status(command_handle: u32,
                 cb(command_handle, e);
             },
         };
-    }) {
-        Ok(_) => error::SUCCESS.code_num,
-        Err(x) => error::THREAD_ERROR.code_num,
-    }
+
+        Ok(())
+    });
+
+    error::SUCCESS.code_num
 }
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    use settings;
     use std::ffi::CString;
     use std::time::Duration;
     use utils::libindy::return_types_u32;
 
     #[test]
     fn test_provision_agent() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
@@ -388,9 +354,7 @@ mod tests {
 
     #[test]
     fn test_create_agent() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
-
+        init!("true");
 
         let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":"key"}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
@@ -404,21 +368,21 @@ mod tests {
 
     #[test]
     fn test_create_agent_fails() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let json_string = r#"{"agency_url":"https://enym-eagency.pdev.evernym.com","agency_did":"Ab8TvZa3Q19VNkQVzAWVL7","agency_verkey":"5LXaR43B1aQyeh94VBP8LG1Sgvjk7aNfqiksBCSjwqbf","wallet_name":"test_provision_agent","agent_seed":null,"enterprise_seed":null,"wallet_key":null}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
-        assert_eq!(vcx_agent_provision_async(cb.command_handle, c_json, Some(cb.get_callback())),
-                   error::INVALID_JSON.code_num);
+        let result = vcx_agent_provision_async(cb.command_handle, c_json, Some(cb.get_callback()));
+        assert_eq!(0, result);
+        let result = cb.receive(Some(Duration::from_secs(2)));
+        assert_eq!(result, Err(error::INVALID_CONFIGURATION.code_num));
     }
 
     #[test]
     fn test_update_agent_info() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let json_string = r#"{"id":"123","value":"value"}"#;
         let c_json = CString::new(json_string).unwrap().into_raw();
@@ -430,8 +394,7 @@ mod tests {
 
     #[test]
     fn test_update_agent_fails() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         httpclient::set_next_u8_response(REGISTER_RESPONSE.to_vec()); //set response garbage
         let json_string = r#"{"id":"123"}"#;
@@ -446,8 +409,7 @@ mod tests {
 
     #[test]
     fn test_get_ledger_fees() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "true");
+        init!("true");
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_ledger_get_fees(cb.command_handle,
@@ -457,8 +419,7 @@ mod tests {
 
     #[test]
     fn test_messages_download() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
 
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_messages_download(cb.command_handle, ptr::null_mut(), ptr::null_mut(), ptr::null_mut(), Some(cb.get_callback())), error::SUCCESS.code_num);
@@ -467,8 +428,7 @@ mod tests {
 
     #[test]
     fn test_messages_update_status() {
-        settings::set_defaults();
-        settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE,"true");
+        init!("true");
 
         let status = CString::new("MS-103").unwrap().into_raw();
         let json = CString::new(r#"[{"pairwiseDID":"QSrw8hebcvQxiwBETmAaRs","uids":["mgrmngq"]}]"#).unwrap().into_raw();

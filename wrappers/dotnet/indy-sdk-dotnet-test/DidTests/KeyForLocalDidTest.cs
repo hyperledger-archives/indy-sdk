@@ -3,7 +3,7 @@ using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Test.SignusTests
+namespace Hyperledger.Indy.Test.DidTests
 {
     [TestClass]
     public class KeyForLocalDidTest : IndyIntegrationTestWithSingleWallet
@@ -34,7 +34,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestKeyForDidWorksForNoKey()
         {
-            var ex = await Assert.ThrowsExceptionAsync<WalletValueNotFoundException>(() =>
+            var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
                Did.KeyForLocalDidAsync(wallet, DID_MY2)
            );
         }

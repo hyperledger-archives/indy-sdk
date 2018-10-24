@@ -12,6 +12,8 @@ properties([
         ]]
 ]);
 
+libindyBuildFinished = ["Ubuntu": false, "RedHat": false]
+
 try {
     testing()
     publishing()
@@ -97,6 +99,14 @@ def getBuildPoolVerOptions(pool_type, plenum_ver, anoncreds_ver, node_ver) {
     }
 }
 
+def getUserUid() {
+    return sh(returnStdout: true, script: 'id -u').trim()
+}
+
+def dockerBuild(name, file = 'ci/ubuntu.dockerfile ci', customParams = '') {
+    return docker.build("$name-test", "--build-arg uid=${getUserUid()} ${customParams} -f $file")
+}
+
 def dockerClean(env_name, network_name) {
     try {
         try {
@@ -156,6 +166,42 @@ void getSrcVersion(folder) {
 }
 
 def linuxTesting(file, env_name, network_name, stashBuildResults) {
+    parallel([
+            failFast                                  : true,
+            "${env_name} Test: build and test libindy": {
+                node('ubuntu') {
+                    linuxLibindyBuild(file, env_name, network_name, stashBuildResults)
+                }
+            },
+            "${env_name} Test: test other components" : {
+                waitUntil {
+                    libindyBuildFinished[env_name]
+                }
+                def jobs = [
+                        "${env_name}-cli-test" : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting, stashBuildResults)
+                        },
+                        "${env_name}-rust-test": {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting, stashBuildResults)
+                        },
+                        "${env_name}-vcx-test" : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxVCXTesting, stashBuildResults)
+                        }
+                ]
+                if (env_name == "Ubuntu") {
+                    jobs["${env_name}-java-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxJavaTesting, stashBuildResults)
+                    }
+                    jobs["${env_name}-python-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting, stashBuildResults)
+                    }
+                }
+                parallel(jobs)
+            },
+    ])
+}
+
+def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
     def poolInst
     try {
         echo "${env_name} Test: Checkout csm"
@@ -172,64 +218,26 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Test: Test"
 
-                try {
-                    def libindyFeatures = "--features sodium_static"
-                    def libindyBuildFeatures = "--features \"fatal_warnings sodium_static\""
+                echo "${env_name} Libindy Test: Build"
+                sh "RUST_BACKTRACE=1 cargo build --release --features \"fatal_warnings sodium_static\""
 
-                    echo "${env_name} Libindy Test: Build"
-                    sh "RUST_BACKTRACE=1 cargo build --release $libindyBuildFeatures"
-
-                    echo "${env_name} Libindy Test: Build tests"
-                    sh "RUST_BACKTRACE=1 cargo test --release --no-run $libindyFeatures"
-
-                    echo "${env_name} Libindy Test: Run tests"
-                    sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $libindyFeatures"
-
-                    if (stashBuildResults) {
-                        stash includes: 'target/release/libindy.so,target/release/libindy.a', name: 'LibindyUbuntuBuildResult'
-                    }
-
-                    /* TODO FIXME restore after xunit will be fixed
-                    sh 'RUST_TEST_THREADS=1 cargo test-xunit'
-                    */
-                }
-                finally {
-                    /* TODO FIXME restore after xunit will be fixed
-                    junit 'test-results.xml'
-                    */
+                if (stashBuildResults) {
+                    stash includes: 'target/release/libindy.so,target/release/libindy.a', name: 'LibindyUbuntuBuildResult'
                 }
             }
         }
 
         sh "cp libindy/target/release/libindy.so wrappers/java/lib"
-        dir('wrappers/java') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Libindy Test: Test java wrapper"
-
-                sh "RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
-            }
-        }
-
         sh "cp libindy/target/release/libindy.so wrappers/python"
-        dir('wrappers/python') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Libindy Test: Test python wrapper"
-
-                sh '''
-                    python3.5 -m pip install --user -e .
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
-                '''
-            }
-        }
-
+        sh "cp libindy/target/release/libindy.so wrappers/rust"
+        sh "cp libindy/target/release/libindy.so cli"
         sh "cp libindy/target/release/libindy.so libnullpay"
+        sh "cp libindy/target/release/libindy.so vcx/libvcx"
+
         dir('libnullpay') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libnullpay Test: Build"
                 sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run"
-
-                echo "${env_name} Libnullpay Test: Run tests"
-                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
@@ -238,46 +246,130 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
         }
 
         sh "cp libnullpay/target/release/libnullpay.so cli"
-        sh "cp libindy/target/release/libindy.so cli"
-        dir('cli') {
-            testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
-                echo "${env_name} Indy Cli Test: Build"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
-
-                echo "${env_name} Indy Cli Test: Build Tests"
-                sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run'
-
-                echo "${env_name} Indy Cli Test: Run tests"
-                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
-
-                if (stashBuildResults) {
-                    stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
-                }
-            }
-        }
-
         sh "cp libnullpay/target/release/libnullpay.so vcx/libvcx"
-        sh "cp libindy/target/release/libindy.so vcx/libvcx"
 
-        dir('vcx/libvcx') {
-            testEnv.inside {
-                echo "${env_name} Libvcx Test: Build"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
+        stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
+        stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
+        stash includes: 'wrappers/rust/libindy.so', name: "LibindyRustSO${env_name}"
+        stash includes: 'cli/libindy.so', name: "LibindyCliSO${env_name}"
+        stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
+        stash includes: 'vcx/libvcx/libindy.so', name: "LibindyVCXSO${env_name}"
+        stash includes: 'vcx/libvcx/libnullpay.so', name: "LibnullpayVCXSO${env_name}"
 
-                echo "${env_name} Libvcx Test: Build Tests"
-                sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run'
+        libindyBuildFinished[env_name] = true
 
-                echo "${env_name} Libvcx Test: Run tests"
-                sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test --release'
+        dir('libindy') {
+            testEnv.inside("--network=${network_name}") {
+                echo "${env_name} Libindy Test: Test"
 
-                if (stashBuildResults) {
-                    stash includes: 'target/release/libvcx.so', name: 'LibvcxUbuntuBuildResult'
-                }
+                def libindyFeatures = "--features sodium_static"
+
+                echo "${env_name} Libindy Test: Build tests"
+                sh "RUST_BACKTRACE=1 cargo test --release --no-run $libindyFeatures"
+
+                echo "${env_name} Libindy Test: Run tests"
+                sh "RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release $libindyFeatures"
             }
         }
+
+        dir('libnullpay') {
+            testEnv.inside("--network=${network_name}") {
+                echo "${env_name} Libnullpay Test: Test"
+
+                echo "${env_name} Libnullpay Test: Build Test"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run --release"
+
+                echo "${env_name} Libnullpay Test: Run tests"
+                sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
+            }
+        }
+
     }
     finally {
         closePool(env_name, network_name, poolInst)
+    }
+}
+
+def linuxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
+    unstash name: "LibindyJavaSO${env_name}"
+    dir('wrappers/java') {
+        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+            echo "${env_name} Libindy Test: Test java wrapper"
+
+            sh "RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+        }
+    }
+}
+
+def linuxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
+    unstash name: "LibindyPythonSO${env_name}"
+    dir('wrappers/python') {
+        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+            echo "${env_name} Libindy Test: Test python wrapper"
+
+            sh '''
+                    python3.5 -m pip install --user -e .
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                '''
+        }
+    }
+}
+
+def linuxVCXTesting(env_name, network_name, testEnv, stashBuildResults) {
+    unstash name: "LibindyVCXSO${env_name}"
+    unstash name: "LibnullpayVCXSO${env_name}"
+
+    dir('vcx/libvcx') {
+        testEnv.inside {
+            echo "${env_name} Libvcx Test: Build"
+            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
+
+            echo "${env_name} Libvcx Test: Build Tests"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run'
+
+            echo "${env_name} Libvcx Test: Run tests"
+            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test --release'
+
+            if (stashBuildResults) {
+                stash includes: 'target/release/libvcx.so', name: 'LibvcxUbuntuBuildResult'
+            }
+        }
+    }
+}
+
+def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
+    unstash name: "LibindyCliSO${env_name}"
+    unstash name: "LibnullpayCliSO${env_name}"
+
+    dir('cli') {
+        testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
+            echo "${env_name} Indy Cli Test: Build"
+            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
+
+            echo "${env_name} Indy Cli Test: Build Tests"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run'
+
+            echo "${env_name} Indy Cli Test: Run tests"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
+
+            if (stashBuildResults) {
+                stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
+            }
+        }
+    }
+}
+
+def linuxRustTesting(env_name, network_name, testEnv, stashBuildResults) {
+    unstash name: "LibindyRustSO${env_name}"
+
+    dir('wrappers/rust') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Indy Rust wrapper Test: Build"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run'
+
+            echo "${env_name} Indy Rust wrapper Test: Run tests"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
+        }
     }
 }
 
@@ -399,21 +491,21 @@ def windowsTesting() {
 }
 
 def ubuntuTesting() {
-    node('ubuntu') {
-        stage('Ubuntu Test') {
-            linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network", true)
-        }
+    stage('Ubuntu Test') {
+        linuxTesting("ci/ubuntu.dockerfile ci", "Ubuntu", "pool_network", true)
     }
 }
 
-def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv) {
+def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv, stashBuildResult) {
     dir('libindy') {
         sh 'chmod -R 777 ci/*.sh'
         sh 'chmod -R 777 *.sh'
 
-        echo "${env_name} Libindy Test: Test on ARM emulator"
+        def emu_arch = "x86"
+
+        echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
         testEnv.inside("--network=${network_name}") {
-            sh "./android.test.sh arm"
+            sh "./android.test.sh ${emu_arch} --release"
         }
     }
 }
@@ -494,10 +586,8 @@ def buildIOSPod(packageName, targets) {
 }
 
 def rhelTesting() {
-    node('ubuntu') {
-        stage('RedHat Test') {
-            linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
-        }
+    stage('RedHat Test') {
+        linuxTesting("ci/amazon.dockerfile ci", "RedHat", "pool_network", false)
     }
 }
 
@@ -552,6 +642,7 @@ def ubuntuPublishing() {
                 libindyDebPublishing(testEnv, libindyVersion)
                 pythonWrapperPublishing(testEnv, false)
                 javaWrapperPublishing(testEnv, false)
+                rustWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
                 libnullpayDebPublishing(testEnv)
                 libvcxDebPublishing(testEnv)
@@ -563,6 +654,37 @@ def ubuntuPublishing() {
         }
     }
     return libindyVersion
+}
+
+def rustWrapperPublishing(testEnv, isRelease) {
+
+    def ver = getSrcVersion("wrappers/rust")
+    def suffix = getSuffix(isRelease, "Cargo")
+
+    echo 'Publish Indy-Sys to Cargo'
+
+    dir('wrappers/rust/indy-sys') {
+        publishToCargo(testEnv, suffix, ver)
+    }
+
+    echo 'Publish Indy to Cargo'
+
+    dir('wrappers/rust') {
+        sh "sed -i -- 's/indy-sys = { path =\"indy-sys\", version = \"=$ver\" }/indy-sys = { path =\"indy-sys\", version = \"=$ver$suffix\" }/g' Cargo.toml"
+        publishToCargo(testEnv, suffix, ver)
+    }
+}
+
+def publishToCargo(testEnv, suffix, ver) {
+    testEnv.inside {
+        sh "sed -i -E -e 'H;1h;\$!d;x' -e \"s/version = \\\"$ver/version = \\\"$ver$suffix/\" Cargo.toml"
+
+        withCredentials([string(credentialsId: 'cargoSecretKey', variable: 'LOGIN')]) {
+            sh 'cargo login $LOGIN'
+            sh 'cargo package --allow-dirty'
+            sh 'cargo publish --allow-dirty'
+        }
+    }
 }
 
 def windowsPublishing() {
@@ -798,6 +920,9 @@ def publishingRCtoStable() {
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
 
+                echo 'Moving Ubuntu RC artifacts to Stable: rust wrapper'
+                rustWrapperPublishing(testEnv, true)
+
                 echo 'Moving Ubuntu RC artifacts to Stable: indy-cli'
                 publishLibindyCliDebRCtoStable(testEnv, libindyVersion)
 
@@ -888,7 +1013,7 @@ def publishLibnullpayIOSFilesRCtoStable(version) {
     copyFilesFromRcToStable(src, target)
 }
 
-def fullVersion(version){
+def fullVersion(version) {
     return "${version}-${env.BUILD_NUMBER}"
 }
 
@@ -1026,7 +1151,7 @@ def androidPublishArtifact(buildEnv, arch, packageVersion, artifact) {
     }
 }
 
-def linuxModuleTesting(file, env_name, network_name, module_tester) {
+def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildResults) {
     node('ubuntu') {
         def poolInst
         try {
@@ -1042,7 +1167,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
                 testEnv = dockerBuild('libindy', file)
             }
 
-            module_tester(env_name, network_name, testEnv)
+            module_tester(env_name, network_name, testEnv, stashBuildResults)
         } finally {
             closePool(env_name, network_name, poolInst)
         }
@@ -1050,11 +1175,13 @@ def linuxModuleTesting(file, env_name, network_name, module_tester) {
 }
 
 def androidTesting() {
-    env_name="android_on_linux"
-    network_name="pool_network"
+    env_name = "android_on_linux"
+    network_name = "pool_network"
     parallel([
-            "${env_name}-android-test"     : { linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting) },
-            "${env_name}-android-building" : { androidBuildAsTesting() }
+            "${env_name}-android-test"    : {
+                linuxModuleTesting("ci/ubuntu.dockerfile ci", env_name, network_name, this.&linuxAndroidOnEmulatorTesting, false)
+            },
+            "${env_name}-android-building": { androidBuildAsTesting() }
     ])
 }
 

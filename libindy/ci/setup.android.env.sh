@@ -28,10 +28,15 @@ fi
 check_if_emulator_is_running(){
     emus=$(adb devices)
     if [[ ${emus} = *"emulator"* ]]; then
-      echo "emulator is running"
-      else
-       echo "emulator is not running"
-       exit 1
+        echo "emulator is running"
+        until adb -e shell "ls /storage/emulated/0/"
+        do
+            echo "waiting emulator FS"
+            sleep 30
+        done
+    else
+        echo "emulator is not running"
+        exit 1
     fi
 }
 
@@ -62,20 +67,34 @@ create_avd(){
                 -f \
                 -c 1000M
 
-        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${ABSOLUTE_ARCH} -no-audio -no-window &
+        ANDROID_SDK_ROOT=${ANDROID_SDK} ANDROID_HOME=${ANDROID_SDK} ${ANDROID_HOME}/tools/emulator -avd ${ABSOLUTE_ARCH} -no-audio -no-window -no-snapshot -no-accel &
+}
+
+download_and_unzip_if_missed() {
+    target_dir=$1
+    url_pref=$2
+    fname=$3
+    url="${url_pref}${fname}"
+    if [ ! -d "${target_dir}" ] ; then
+        echo "${GREEN}Downloading ${fname}${RESET}"
+        curl -sSLO ${url}
+        unzip -qq ${fname}
+        rm ${fname}
+        echo "${GREEN}Done!${RESET}"
+    else
+        echo "${BLUE}Skipping download ${fname}${RESET}"
+    fi
 }
 
 download_sdk(){
-    echo "${GREEN}Downloading sdk....${RESET}"
-     pushd ${ANDROID_SDK}
-        curl -sSLO https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
-        echo "${GREEN}Done!${RESET}"
-        unzip -qq sdk-tools-linux-4333796.zip
+    pushd ${ANDROID_SDK}
+        download_and_unzip_if_missed "tools" "https://dl.google.com/android/repository/" "sdk-tools-linux-4333796.zip"
+
         set +e
         delete_existing_avd
         set -e
         create_avd
-     popd
+    popd
 }
 
 
@@ -132,27 +151,13 @@ generate_arch_flags(){
 
 download_and_unzip_dependencies(){
     pushd ${ANDROID_BUILD_FOLDER}
-        echo -e "${GREEN}Downloading openssl for $1 ${RESET}"
-        curl -sSLO https://repo.sovrin.org/android/libindy/deps/openssl/openssl_$1.zip
-        unzip -o -qq openssl_$1.zip
+        download_and_unzip_if_missed "openssl_$1" "https://repo.sovrin.org/android/libindy/deps/openssl/" "openssl_$1.zip"
+        download_and_unzip_if_missed "libsodium_$1" "https://repo.sovrin.org/android/libindy/deps/sodium/" "libsodium_$1.zip"
+        download_and_unzip_if_missed "libzmq_$1" "https://repo.sovrin.org/android/libindy/deps/zmq/" "libzmq_$1.zip"
+
         export OPENSSL_DIR=${ANDROID_BUILD_FOLDER}/openssl_$1
-        echo -e "${GREEN}Done!${RESET}"
-
-        echo -e "${GREEN}Downloading sodium for $1 ${RESET}"
-        curl -sSLO https://repo.sovrin.org/android/libindy/deps/sodium/libsodium_$1.zip
-        unzip -o -qq libsodium_$1.zip
         export SODIUM_DIR=${ANDROID_BUILD_FOLDER}/libsodium_$1
-        echo -e "${GREEN}Done!${RESET}"
-
-        echo -e "${GREEN}Downloading zmq for $1 ${RESET}"
-        curl -sSLO https://repo.sovrin.org/android/libindy/deps/zmq/libzmq_$1.zip
-        unzip -o -qq libzmq_$1.zip
         export LIBZMQ_DIR=${ANDROID_BUILD_FOLDER}/libzmq_$1
-        echo -e "${GREEN}Done!${RESET}"
-
-        rm openssl_$1.zip
-        rm libsodium_$1.zip
-        rm libzmq_$1.zip
     popd
 }
 
@@ -178,34 +183,18 @@ download_and_setup_toolchain(){
         export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains/darwin
         mkdir -p ${TOOLCHAIN_PREFIX}
         pushd $TOOLCHAIN_PREFIX
-        if [ ! -d "android-ndk-r16b" ] ; then
-            echo "${GREEN}Downloading NDK for OSX${RESET}"
-            echo "${BLUE}Downloading... android-ndk-r16b-darwin-x86_64.zip${RESET}"
-            curl -sSLO https://dl.google.com/android/repository/android-ndk-r16b-darwin-x86_64.zip
-            unzip -qq android-ndk-r16b-darwin-x86_64.zip
-            echo "${GREEN}Done!${RESET}"
-        else
-            echo "${BLUE}Skipping download android-ndk-r16b-darwin-x86_64.zip${RESET}"
-        fi
-        export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
+        echo "${GREEN}Resolving NDK for OSX${RESET}"
+        download_and_unzip_if_missed "android-ndk-r16b" "https://dl.google.com/android/repository/" "android-ndk-r16b-darwin-x86_64.zip"
         popd
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
         export TOOLCHAIN_PREFIX=${ANDROID_BUILD_FOLDER}/toolchains/linux
         mkdir -p ${TOOLCHAIN_PREFIX}
         pushd $TOOLCHAIN_PREFIX
-        if [ ! -d "android-ndk-r16b" ] ; then
-            echo "${GREEN}Downloading NDK for Linux${RESET}"
-            echo "${BLUE}Downloading... android-ndk-r16b-linux-x86_64.zip${RESET}"
-            curl -sSLO https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip
-            unzip -qq android-ndk-r16b-linux-x86_64.zip
-            echo "${GREEN}Done!${RESET}"
-        else
-            echo "${BLUE}Skipping download android-ndk-r16b-linux-x86_64.zip${RESET}"
-        fi
-        export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
+        echo "${GREEN}Resolving NDK for Linux${RESET}"
+        download_and_unzip_if_missed "android-ndk-r16b" "https://dl.google.com/android/repository/" "android-ndk-r16b-linux-x86_64.zip"
         popd
     fi
-
+    export ANDROID_NDK_ROOT=${TOOLCHAIN_PREFIX}/android-ndk-r16b
 }
 
 

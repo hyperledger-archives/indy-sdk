@@ -1,6 +1,8 @@
 #ifndef __indy__mod_included__
 #define __indy__mod_included__
 
+#include "indy_types.h"
+
 typedef enum
 {
     Success = 0,
@@ -127,6 +129,9 @@ typedef enum
     // Call pool.indy_set_protocol_version to set correct Protocol version.
     PoolIncompatibleProtocolVersion = 308,
 
+    // Item not found on ledger.
+    LedgerNotFound = 309,
+
     // Revocation registry is full and creation of new registry is necessary
     AnoncredsRevocationRegistryFullError = 400,
 
@@ -168,6 +173,25 @@ typedef enum
     PaymentExtraFundsError = 705
 
 } indy_error_t;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+    /// Set libindy runtime configuration. Can be optionally called to change current params.
+    ///
+    /// #Params
+    /// config: {
+    ///     "crypto_thread_pool_size": <int> - size of thread pool for the most expensive crypto operations. (4 by default)
+    /// }
+    ///
+    /// #Errors
+    /// Common*
+    extern indy_error_t indy_set_runtime_config(const char *  config);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

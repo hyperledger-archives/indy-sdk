@@ -1,5 +1,4 @@
-﻿using Hyperledger.Indy.Test.Util;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.PoolTests

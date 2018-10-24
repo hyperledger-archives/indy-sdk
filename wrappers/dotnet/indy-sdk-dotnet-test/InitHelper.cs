@@ -1,6 +1,4 @@
-﻿using Hyperledger.Indy.Test.WalletTests;
-using Hyperledger.Indy.WalletApi;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test
 {
@@ -13,14 +11,8 @@ namespace Hyperledger.Indy.Test
             if (_isInitialized)
                 return;
 
-            await RegisterWalletTypeAsync();
-
             _isInitialized = true;
         }
 
-        private static async Task RegisterWalletTypeAsync()
-        {
-            await Wallet.RegisterWalletTypeAsync("inmem", new InMemWalletType());
-        }
     }
 }
