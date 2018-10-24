@@ -44,7 +44,8 @@ fn main() {
     indy::logger::set_default_logger(None)
         .expect("Can't init indy logger");
 
-    env_logger::init();
+    env_logger::try_init()
+        .expect("Can't init env logger");
 
     let mut args = env::args();
     args.next(); // skip app name

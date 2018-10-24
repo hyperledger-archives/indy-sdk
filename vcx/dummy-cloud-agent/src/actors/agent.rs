@@ -7,27 +7,10 @@ use domain::config::WalletStorageConfig;
 use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, wallet, pairwise};
+use indy::{did, pairwise, wallet};
 use std::convert::Into;
 use utils::futures::*;
 use utils::rand;
-
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct AgentConfig {
-    // Agent DID
-    pub did: String,
-    // Agent Owner DID
-    pub owner_did: String,
-    // Agent Owner DID
-    pub owner_verkey: String,
-    // Agent wallet id
-    pub wallet_id: String,
-    // Agent wallet passphrase
-    pub wallet_passphrase: String,
-    // Forward Agent info
-    pub forward_agent_detail: ForwardAgentDetail,
-}
 
 pub struct Agent {
     wallet_handle: i32,
@@ -40,14 +23,13 @@ pub struct Agent {
 }
 
 impl Agent {
-    #[allow(unused)] // FIXME: Use!
     pub fn create(owner_did: &str,
                   owner_verkey: &str,
-                  wallet_storage_config: WalletStorageConfig,
+                  router: Addr<Router>,
                   forward_agent_detail: ForwardAgentDetail,
-                  router: Addr<Router>) -> BoxedFuture<AgentConfig, Error> {
+                  wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(String, String, String, String), Error> {
         let wallet_id = rand::rand_string(10);
-        let wallet_passphrase = rand::rand_string(10);
+        let wallet_key = rand::rand_string(10);
 
         let wallet_config = json!({
                     "id": wallet_id.clone(),
@@ -56,7 +38,7 @@ impl Agent {
                  }).to_string();
 
         let wallet_credentials = json!({
-                    "key": wallet_passphrase.clone(),
+                    "key": wallet_key.clone(),
                     "storage_credentials": wallet_storage_config.credentials,
                 }).to_string();
 
@@ -79,18 +61,9 @@ impl Agent {
                     .map_err(|err| err.context("Can't get Cloud Agent did key").into())
             })
             .and_then(move |(wallet_handle, did, verkey)| {
-                let agent_config = AgentConfig {
-                    did: did.clone(),
-                    owner_did: owner_did.clone(),
-                    owner_verkey: owner_verkey.clone(),
-                    wallet_id,
-                    wallet_passphrase,
-                    forward_agent_detail: forward_agent_detail.clone(),
-                };
-
                 let agent = Agent {
                     wallet_handle,
-                    verkey,
+                    verkey: verkey.clone(),
                     did: did.clone(),
                     owner_did,
                     owner_verkey,
@@ -101,19 +74,24 @@ impl Agent {
                 let agent = agent.start();
 
                 router
-                    .send(AddA2ARoute(did, agent.clone().recipient()))
+                    .send(AddA2ARoute(did.clone(), agent.clone().recipient()))
                     .from_err()
-                    .map(move |_| agent_config)
+                    .map(move |_| (wallet_id, wallet_key, did, verkey))
                     .map_err(|err: Error| err.context("Can't add route for Forward Agent").into())
             })
             .into_box()
     }
 
-    #[allow(unused)] // FIXME: Use!
-    pub fn restore(config: &AgentConfig,
-                   wallet_storage_config: WalletStorageConfig,
-                   router: Addr<Router>) -> BoxedFuture<(), Error> {
-        unimplemented!()
+    pub fn restore(_wallet_id: &str,
+                   _wallet_key: &str,
+                   _did: &str,
+                   _owner_did: &str,
+                   _owner_verkey: &str,
+                   _router: Addr<Router>,
+                   _forward_agent_detail: ForwardAgentDetail,
+                   _wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(), Error> {
+        // FIXME: Implement me!!!
+        ok!(())
     }
 
     fn handle_a2a_msg(&mut self,
@@ -206,7 +184,7 @@ impl Agent {
                 let config = AgentConnectionConfig {
                     wallet_handle: slf.wallet_handle,
                     owner_did: slf.owner_did.to_string(),
-                    owner_verkey:  slf.owner_verkey.to_string(),
+                    owner_verkey: slf.owner_verkey.to_string(),
                     agent_did: slf.did.to_string(),
                     user_pairwise_did: for_did.to_string(),
                     user_pairwise_verkey: for_did_verkey.to_string(),
