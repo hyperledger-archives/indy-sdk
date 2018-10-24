@@ -236,8 +236,9 @@ impl SendInvite{
         match httpclient::post_u8(&data) {
             Err(_) => return Err(error::POST_MSG_FAILURE.code_num),
             Ok(response) => {
-                let response = parse_response(response)?;
-                result.push(response);
+                let (invite, url) = parse_response(response)?;
+                result.push(invite);
+                result.push(url);
             },
         };
 
@@ -419,7 +420,7 @@ impl GeneralMessage for AcceptInvite{
     }
 }
 
-fn parse_response(response: Vec<u8>) -> Result<String, u32> {
+fn parse_response(response: Vec<u8>) -> Result<(String, String), u32> {
     let data = unbundle_from_agency(response)?;
 
     if data.len() != 3 {
@@ -438,7 +439,7 @@ fn parse_response(response: Vec<u8>) -> Result<String, u32> {
 
     debug!("Invite Details: {:?}", response.invite_detail);
     match serde_json::to_string(&response.invite_detail) {
-        Ok(x) => Ok(x),
+        Ok(x) => Ok((x, response.url_to_invite_detail)),
         Err(_) => Err(error::INVALID_JSON.code_num),
     }
 }
@@ -513,9 +514,10 @@ mod tests {
     #[test]
     fn test_parse_send_invite_response() {
         init!("indy");
-        let result = parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
+        let (result, url) = parse_response(SEND_INVITE_RESPONSE.to_vec()).unwrap();
 
         assert_eq!(result, INVITE_DETAIL_STRING);
+        assert_eq!(url, "http://localhost:9001/agency/invite/WRUzXXuFVTYkT8CjSZpFvT?uid=NjcwOWU");
     }
 
     #[test]

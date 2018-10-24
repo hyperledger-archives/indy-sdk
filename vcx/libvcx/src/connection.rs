@@ -47,6 +47,7 @@ struct Connection {
     endpoint: String,
     // For QR code invitation
     invite_detail: Option<InviteDetail>,
+    invite_url: Option<String>,
     agent_did: String,
     agent_vk: String,
     their_pw_did: String,
@@ -103,6 +104,7 @@ impl Connection {
                         return Err(ConnectionError::GeneralConnectionError())
                     },
                 };
+                self.invite_url = Some(response[1].clone());
                 Ok(error::SUCCESS.code_num)
             }
         }
@@ -406,6 +408,7 @@ fn create_connection(source_id: &str) -> Result<u32, ConnectionError> {
         uuid: String::new(),
         endpoint: String::new(),
         invite_detail: None,
+        invite_url: None,
         agent_did: String::new(),
         agent_vk: String::new(),
         their_pw_did: String::new(),
@@ -875,6 +878,7 @@ pub mod tests {
             uuid: String::new(),
             endpoint: String::new(),
             invite_detail: Some(InviteDetail::new()),
+            invite_url: None,
             agent_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
             agent_vk: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
             their_pw_did: String::new(),
@@ -958,6 +962,7 @@ pub mod tests {
             uuid: String::new(),
             endpoint: String::new(),
             invite_detail: None,
+            invite_url: None,
             agent_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
             agent_vk: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
             their_pw_did: String::new(),
@@ -1108,6 +1113,7 @@ pub mod tests {
             uuid: String::new(),
             endpoint: String::new(),
             invite_detail: None,
+            invite_url: None,
             agent_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
             agent_vk: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
             their_pw_did: String::new(),
