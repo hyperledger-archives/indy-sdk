@@ -7,7 +7,6 @@ authors = ["Vyacheslav Gudkov <vyacheslav.gudkov@dsr-company.com>"]
 actix = "0.7"
 actix-web = "0.7"
 bytes = "0.4.10"
-chrono = "0.4"
 failure = "0.1.2"
 futures = "0.1.24"
 lazy_static = "0.2"

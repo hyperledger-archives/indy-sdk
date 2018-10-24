@@ -6,7 +6,7 @@ use serde::{de, Deserialize, Deserializer, ser, Serialize, Serializer};
 use serde_json::{self, Value};
 use utils::futures::*;
 
-use domain::invite::{InviteDetail, SenderDetail, AgentDetail};
+use domain::invite::{InviteDetail, SenderDetail, ForwardAgentDetail};
 use domain::key_deligation_proof::KeyDlgProof;
 use domain::status::{MessageStatusCode, ConnectionStatus};
 
@@ -82,7 +82,7 @@ pub struct SignedUp {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateMessage {
-    pub mtype: CreateMessageType,
+    pub mtype: MessageType,
     #[serde(rename = "sendMsg")]
     pub send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -161,14 +161,14 @@ pub struct GetMessagesDetailResponse {
     pub status_codes: MessageStatusCode,
     #[serde(rename = "senderDID")]
     pub sender_did: String,
-    pub type_: CreateMessageType,
+    pub type_: MessageType,
     pub payload: Option<Vec<u8>>,
     #[serde(rename = "refMsgId")]
     pub ref_msg_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
-pub enum CreateMessageType {
+pub enum MessageType {
     #[serde(rename = "connReq")]
     ConnReq,
     #[serde(rename = "connReqAnswer")]
@@ -210,7 +210,7 @@ pub struct ConnectionRequestAnswerMessageDetail {
     #[serde(rename = "senderDetail")]
     pub sender_detail: SenderDetail,
     #[serde(rename = "senderAgencyDetail")]
-    pub sender_agency_detail: AgentDetail,
+    pub sender_agency_detail: ForwardAgentDetail,
     #[serde(rename = "answerStatusCode")]
     pub answer_status_code: MessageStatusCode,
 }

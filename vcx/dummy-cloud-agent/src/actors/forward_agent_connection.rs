@@ -2,21 +2,25 @@ use actix::prelude::*;
 use actors::{AddA2ARoute, HandleA2AMsg};
 use actors::router::Router;
 use domain::a2a::*;
-use domain::indy::*;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, pairwise};
+use indy::{did, pairwise, pairwise::PairwiseInfo};
 use serde_json;
 use std::convert::Into;
 use utils::futures::*;
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct ForwardAgentConnectionState {
+    pub is_signed_up: bool,
+    pub agents: Vec<(String, String, String)>, // cloud agent did, wallet_id, wallet_key
+}
 
 pub struct ForwardAgentConnection {
     wallet_handle: i32,
     their_did: String,
     their_verkey: String,
     my_verkey: String,
-    is_signed_up: bool,
-    registrations: Vec<(String, String, String)>, // cloud agent did, wallet_id, wallet_key
+    state: ForwardAgentConnectionState,
 }
 
 impl ForwardAgentConnection {
@@ -47,7 +51,7 @@ impl ForwardAgentConnection {
             .and_then(move |(my_did, my_verkey, their_did, their_verkey)| {
                 let state = ForwardAgentConnectionState {
                     is_signed_up: false,
-                    registrations: Vec::new(),
+                    agents: Vec::new(),
                 };
 
                 let metadata = ftry!(
@@ -61,13 +65,17 @@ impl ForwardAgentConnection {
                     .into_box()
             })
             .and_then(move |(my_did, my_verkey, their_did, their_verkey)| {
+                let state = ForwardAgentConnectionState {
+                    is_signed_up: false,
+                    agents: Vec::new(),
+                };
+
                 let forward_agent_connection = ForwardAgentConnection {
                     wallet_handle,
                     their_did,
                     their_verkey,
                     my_verkey: my_verkey.clone(),
-                    is_signed_up: false,
-                    registrations: Vec::new(),
+                    state,
                 };
 
                 let forward_agent_connection = forward_agent_connection.start();
@@ -117,15 +125,12 @@ impl ForwardAgentConnection {
                     .map(|(my_verkey, their_verkey)| (my_did, my_verkey, their_did, their_verkey, state))
             })
             .and_then(move |(my_did, my_verkey, their_did, their_verkey, state)| {
-                let ForwardAgentConnectionState { is_signed_up, registrations } = state;
-
                 let forward_agent_connection = ForwardAgentConnection {
                     wallet_handle,
                     their_did,
                     their_verkey,
                     my_verkey,
-                    is_signed_up,
-                    registrations,
+                    state,
                 };
 
                 let forward_agent_connection = forward_agent_connection.start();
@@ -167,22 +172,17 @@ impl ForwardAgentConnection {
     fn _sign_up(&mut self, msg: SignUp) -> ResponseActFuture<Self, Vec<u8>, Error> {
         trace!("ForwardAgentConnection::handle_message >> {:?}", msg);
 
-        if self.is_signed_up {
+        if self.state.is_signed_up {
             return err_act!(self, err_msg("Already signed up"));
         };
 
-        self.is_signed_up = true;
+        self.state.is_signed_up = true;
 
         future::ok(())
             .into_actor(self)
             .and_then(|_, slf, _| {
-                let state = ForwardAgentConnectionState {
-                    is_signed_up: slf.is_signed_up,
-                    registrations: slf.registrations.clone(),
-                };
-
                 let metadata = ftry_act!(slf, {
-                    serde_json::to_string(&state)
+                    serde_json::to_string(&slf.state)
                         .map_err(|err| err.context("Can't serialize connection state."))
                 });
 

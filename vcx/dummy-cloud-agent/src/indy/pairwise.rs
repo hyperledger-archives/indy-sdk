@@ -7,6 +7,19 @@ use super::IndyError;
 use utils::futures::*;
 use utils::sequence;
 
+#[derive(Deserialize, Debug)]
+pub struct Pairwise {
+    pub my_did: String,
+    pub their_did: String,
+    pub metadata: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct PairwiseInfo {
+    pub my_did: String,
+    pub metadata: String,
+}
+
 #[allow(unused)] //FIXME:
 pub fn is_pairwise_exists(wallet_handle: i32, their_did: &str) -> Box<Future<Item=bool, Error=IndyError>> {
     lazy_static! {

@@ -8,7 +8,7 @@ pub struct InviteDetail {
     #[serde(rename = "targetName")]
     pub target_name: Option<String>,
     #[serde(rename = "senderAgencyDetail")]
-    pub sender_agency_detail: AgentDetail,
+    pub sender_agency_detail: ForwardAgentDetail,
     #[serde(rename = "senderDetail")]
     pub sender_detail: SenderDetail,
     #[serde(rename = "statusCode")]
@@ -18,9 +18,12 @@ pub struct InviteDetail {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AgentDetail {
+pub struct ForwardAgentDetail {
+    // Forward Agent DID
     pub did: String,
+    // Forward Agent Verkey
     pub verkey: String,
+    // Forward Agent Endpoint
     pub endpoint: String,
 }
 
