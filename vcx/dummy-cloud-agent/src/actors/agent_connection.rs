@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use actors::{AddA2ARoute, HandleA2AMsg};
+use actors::{AddA2ARoute, HandleA2AMsg, RemoteMsg};
 use actors::router::Router;
 use domain::a2a::*;
 use domain::status::{ConnectionStatus, MessageStatusCode};
@@ -11,7 +11,6 @@ use futures::*;
 use indy::{did, crypto};
 use std::convert::Into;
 use utils::futures::*;
-use utils::request;
 
 use base64;
 use rmp_serde;
@@ -82,7 +81,9 @@ pub struct AgentConnection {
     // Agent Connection Status
     connection_status: ConnectionStatus,
     // Agent Connection internal messages
-    messages: HashMap<String, InternalMessage>
+    messages: HashMap<String, InternalMessage>,
+    // Address of router agent
+    router: Addr<Router>,
 }
 
 impl AgentConnection {
@@ -105,6 +106,7 @@ impl AgentConnection {
                     remote_connection_detail: None,
                     connection_status: ConnectionStatus::NotConnected,
                     messages: HashMap::new(),
+                    router: router.clone(),
                 };
 
                 let agent_connection = agent_connection.start();
@@ -217,19 +219,11 @@ impl AgentConnection {
                                         sender_verkey: String) -> ResponseActFuture<Self, (String, Vec<A2AMessage>), Error> {
         trace!("AgentConnection::handle_create_connection_request >> {:?}, {:?}", msg_detail, sender_verkey);
 
-        if sender_verkey != self.user_pairwise_verkey {
-            return err_act!(self, err_msg("Unknown message sender."));
-        }
+        ftry_act!(self, self.validate_connection_request(&msg_detail, &sender_verkey));
 
         future::ok(())
             .into_actor(self)
             .and_then(|_, slf, _|
-                slf.validate_connection_request(&msg_detail)
-                    .into_future()
-                    .map(|_| msg_detail)
-                    .into_actor(slf)
-            )
-            .and_then(|msg_detail, slf, _|
                 slf.verify_agent_key_dlg_proof(&slf.agent_pairwise_verkey, &msg_detail.key_dlg_proof)
                     .map(|_| msg_detail)
                     .into_actor(slf)
@@ -249,9 +243,8 @@ impl AgentConnection {
                 (msg, msg_detail)
             })
             .map(move |(msg, msg_detail), slf, _| {
-                let msg_uid = msg.uid.clone();
-                let messages = slf.build_invite_message(msg, msg_detail);
-                (msg_uid, messages)
+                let messages = slf.build_invite_message(&msg, &msg_detail);
+                (msg.uid, messages)
             })
             .into_box()
     }
@@ -264,10 +257,12 @@ impl AgentConnection {
         trace!("AgentConnection::handle_create_connection_request_answer >> {:?}, {:?}, {:?}, {:?}",
                msg_detail, reply_to_msg_id, msg_uid, sender_verkey);
 
-        let reply_to_msg_id = match reply_to_msg_id {
-            Some(msg_id) => msg_id,
-            None => return err_act!(self, err_msg("Required field `reply_to_msg_id` is missed"))
-        };
+        let reply_to_msg_id = ftry_act!(self, {
+            reply_to_msg_id.clone()
+                .ok_or(err_msg("Required field `reply_to_msg_id` is missed."))
+        });
+
+        ftry_act!(self, self.validate_connection_request_answer(&msg_detail, &reply_to_msg_id));
 
         match self.get_message_handler_role(&sender_verkey) {
             MessageHandlerRole::Sender =>
@@ -286,9 +281,7 @@ impl AgentConnection {
         trace!("AgentConnection::handle_create_general_message >> {:?}, {:?}, {:?}, {:?}, {:?}",
                mtype, msg_detail, reply_to_msg_id, uid, sender_verkey);
 
-        if let Err(err) = self.validate_general_message(reply_to_msg_id.as_ref().map(String::as_str)) {
-            return err_act!(self, err);
-        }
+        ftry_act!(self, self.validate_general_message(reply_to_msg_id.as_ref().map(String::as_str)));
 
         let (status_code, sender_did) =
             match self.get_message_handler_role(&sender_verkey) {
@@ -298,7 +291,7 @@ impl AgentConnection {
                     (MessageStatusCode::Received,
                      self.remote_connection_detail.as_ref()
                          .map(|detail| detail.agent_detail.did.clone())
-                         .unwrap_or(self.user_pairwise_did.clone())) // TODO: FIXME
+                         .unwrap_or(self.user_pairwise_did.clone())) // TODO: FIXME use proper did
             };
 
         let msg = self.create_and_store_internal_message(uid.as_ref().map(String::as_str),
@@ -308,7 +301,6 @@ impl AgentConnection {
                                                          None,
                                                          Some(msg_detail.msg),
                                                          Some(map! {"detail" => msg_detail.detail, "title"=> msg_detail.title}));
-
 
         if let Some(msg_id) = reply_to_msg_id.as_ref() {
             self.answer_message(msg_id, &msg.uid, &MessageStatusCode::Accepted).unwrap();
@@ -375,7 +367,9 @@ impl AgentConnection {
 
         self.connection_status = status_code.clone();
 
-        future::ok(vec![A2AMessage::ConnectionStatusUpdated(ConnectionStatusUpdated { status_code })])
+        let messages = vec![A2AMessage::ConnectionStatusUpdated(ConnectionStatusUpdated { status_code })];
+
+        future::ok(messages)
             .into_actor(self)
             .into_box()
     }
@@ -391,7 +385,7 @@ impl AgentConnection {
             .all(|uid| self.check_if_message_status_can_be_updated(uid, &status_code).is_ok());
 
         if messages_can_be_updated {
-            return err_act!(self, err_msg("Message can't be updated."));
+            return err_act!(self, err_msg("Messages can't be updated."));
         }
 
         uids.iter()
@@ -408,20 +402,14 @@ impl AgentConnection {
                                                       reply_to_msg_id: String) -> ResponseActFuture<Self, (String, Vec<A2AMessage>), Error> {
         trace!("AgentConnection::initiator_handle_create_connection_request_answer >> {:?}, {:?}", msg_detail, reply_to_msg_id);
 
-        let key_dlg_proof = match msg_detail.key_dlg_proof.clone() {
-            Some(key_dlg_proof) => key_dlg_proof,
-            None => return err_act!(self, err_msg("Required field `key_dlg_proof` is missed"))
-        };
+        let key_dlg_proof = ftry_act!(self, {
+            msg_detail.key_dlg_proof.clone()
+                .ok_or(err_msg("Required field `key_dlg_proof` is missed."))
+        });
 
         future::ok(())
             .into_actor(self)
-            .and_then(move |_, slf, _|
-                slf.validate_connection_request_answer(&msg_detail, &reply_to_msg_id)
-                    .into_future()
-                    .map(|_| (msg_detail, reply_to_msg_id))
-                    .into_actor(slf)
-            )
-            .and_then(|(msg_detail, reply_to_msg_id), slf, _|
+            .and_then(|_, slf, _|
                 slf.verify_agent_key_dlg_proof(&slf.user_pairwise_verkey, &key_dlg_proof)
                     .map(|_| (msg_detail, reply_to_msg_id, key_dlg_proof))
                     .into_actor(slf)
@@ -461,10 +449,10 @@ impl AgentConnection {
 
                 (msg_detail, reply_to_msg_id, answer_msg.uid)
             })
-            .and_then(|(msg_detail, reply_to_msg_id, uid), slf, _| {
-                slf.answer_message(&reply_to_msg_id, &uid, &msg_detail.answer_status_code)
+            .and_then(|(msg_detail, reply_to_msg_id, answer_msg_uid), slf, _| {
+                slf.answer_message(&reply_to_msg_id, &answer_msg_uid, &msg_detail.answer_status_code)
                     .into_future()
-                    .map(|_| (msg_detail, uid))
+                    .map(|_| (msg_detail, answer_msg_uid))
                     .into_actor(slf)
             })
             .and_then(|(msg_detail, uid), slf, _| {
@@ -493,22 +481,15 @@ impl AgentConnection {
         future::ok(())
             .into_actor(self)
             .and_then(|_, slf, _|
-                slf.validate_connection_request_answer(&msg_detail, &reply_to_msg_id)
-                    .into_future()
-                    .map(|_| (msg_detail, reply_to_msg_id))
-                    .into_actor(slf)
-            )
-            .and_then(|(msg_detail, reply_to_msg_id), slf, _|
                 slf.verify_agent_key_dlg_proof(&msg_detail.sender_detail.verkey, &msg_detail.sender_detail.agent_key_dlg_proof)
                     .map(|_| (msg_detail, reply_to_msg_id))
                     .into_actor(slf)
             )
             .map(move |(msg_detail, reply_to_msg_id), slf, _| {
-                let sender_did = msg_detail.sender_detail.did.clone();
                 let answer_msg = slf.create_and_store_internal_message(msg_uid.as_ref().map(String::as_str),
                                                                        MessageType::ConnReqAnswer,
                                                                        msg_detail.answer_status_code.clone(),
-                                                                       &sender_did,
+                                                                       &msg_detail.sender_detail.did,
                                                                        None,
                                                                        None,
                                                                        None);
@@ -524,9 +505,9 @@ impl AgentConnection {
 
                 (msg_detail, reply_to_msg_id, answer_msg.uid)
             })
-            .and_then(|(msg_detail, reply_to_msg_id, uid), slf, _| {
-                slf.answer_message(&reply_to_msg_id, &uid, &msg_detail.answer_status_code).into_future()
-                    .map(|_| (msg_detail, uid))
+            .and_then(|(msg_detail, reply_to_msg_id, answer_msg_uid), slf, _| {
+                slf.answer_message(&reply_to_msg_id, &answer_msg_uid, &msg_detail.answer_status_code).into_future()
+                    .map(|_| (msg_detail, answer_msg_uid))
                     .into_actor(slf)
             })
             .and_then(|(msg_detail, uid), slf, _| {
@@ -584,20 +565,11 @@ impl AgentConnection {
 
         let msg_uid = msg_uid.to_string();
 
+        let msg = ftry_act!(self, self.build_payload_message(MessageType::ConnReqAnswer, &msg_detail.sender_detail));
+
         future::ok(())
-            .and_then(move |_|
-                rmp_serde::to_vec(&msg_detail.sender_detail)
-                    .map_err(|err| err.into())
-                    .into_future()
-            )
-            .and_then(move |msg| {
-                let payload_msg = PayloadMessage { type_: "connReqAnswer".to_string(), msg };
-                rmp_serde::to_vec(&payload_msg)
-                    .map_err(|err| err.into())
-                    .into_future()
-            })
             .into_actor(self)
-            .and_then(move |msg, slf, _|
+            .and_then(move |_, slf, _|
                 crypto::auth_crypt(slf.wallet_handle, &slf.user_pairwise_verkey, &slf.agent_verkey, &msg)
                     .map_err(|err| err.context("Can't create my DID for pairwise.").into())
                     .into_actor(slf)
@@ -611,15 +583,24 @@ impl AgentConnection {
     }
 
     fn get_message_handler_role(&self, sender_verkey: &str) -> MessageHandlerRole {
+        trace!("AgentConnection::get_message_handler_role >> {:?}", sender_verkey);
+
         if sender_verkey == self.user_pairwise_verkey { MessageHandlerRole::Sender } else { MessageHandlerRole::Recipient }
     }
 
-    fn validate_connection_request(&self, msg_detail: &ConnectionRequestMessageDetail) -> Result<(), Error> {
-        trace!("AgentConnection::validate_connection_request >> {:?}", msg_detail);
+    fn validate_connection_request(&self,
+                                   msg_detail: &ConnectionRequestMessageDetail,
+                                   sender_verkey: &str) -> Result<(), Error> {
+        trace!("AgentConnection::validate_connection_request >> {:?}, {:?}", msg_detail, sender_verkey);
+
+        if sender_verkey != self.user_pairwise_verkey {
+            return Err(err_msg("Unknown message sender."));
+        }
 
         self.check_no_connection_established()?;
         self.check_no_accepted_invitation_exists()?;
         self.check_valid_phone_no(&msg_detail.phone_no)?;
+
         Ok(())
     }
 
@@ -640,6 +621,8 @@ impl AgentConnection {
     }
 
     fn validate_general_message(&self, reply_to_msg_id: Option<&str>) -> Result<(), Error> {
+        trace!("AgentConnection::validate_general_message >> {:?}", reply_to_msg_id);
+
         if let Some(msg_id) = reply_to_msg_id {
             let message = self.messages.get(msg_id)
                 .ok_or(err_msg("Message not found."))?;
@@ -653,21 +636,19 @@ impl AgentConnection {
         trace!("AgentConnection::update_message_status >> {:?}, {:?}", uid, status);
 
         self.messages.get_mut(uid)
-            .map(|message| message.status_code = status.clone())
             .ok_or(err_msg("Message not found."))
+            .map(|message| message.status_code = status.clone())
     }
 
     fn answer_message(&mut self, uid: &str, ref_msg_id: &str, status_code: &MessageStatusCode) -> Result<(), Error> {
         trace!("AgentConnection::answer_message >> {:?}, {:?}, {:?}", uid, ref_msg_id, status_code);
 
         self.messages.get_mut(uid)
+            .ok_or(err_msg("Message mot found."))
             .map(|message| {
                 message.status_code = status_code.clone();
                 message.ref_msg_id = Some(ref_msg_id.to_string());
             })
-            .ok_or(err_msg("Message mot found"))?;
-
-        Ok(())
     }
 
     fn store_their_did(&self, did: &str, verkey: &str) -> ResponseFuture<(), Error> {
@@ -702,6 +683,8 @@ impl AgentConnection {
     }
 
     fn check_no_connection_established(&self) -> Result<(), Error> {
+        trace!("AgentConnection::check_no_connection_established >>");
+
         if self.remote_connection_detail.is_some() {
             return Err(err_msg("Accepted connection already exists.")); //
         }
@@ -731,9 +714,7 @@ impl AgentConnection {
         Ok(())
     }
 
-    fn verify_agent_key_dlg_proof(&self,
-                                  sender_verkey: &str,
-                                  key_dlg_proof: &KeyDlgProof) -> ResponseFuture<(), Error> {
+    fn verify_agent_key_dlg_proof(&self, sender_verkey: &str, key_dlg_proof: &KeyDlgProof) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::verify_agent_key_dlg_proof >> {:?}, {:?}",
                sender_verkey, key_dlg_proof);
 
@@ -742,18 +723,16 @@ impl AgentConnection {
         crypto::indy_verify(sender_verkey, &key_dlg_proof.challenge().as_bytes(), &signature)
             .map_err(|err| err.context("Agent key delegation proof verification failed.").into())
             .and_then(|valid|
-                if !valid {
-                    err!(err_msg("Agent key delegation proof verification failed.")).into()
-                } else {
+                if valid {
                     future::ok(()).into_box()
+                } else {
+                    err!(err_msg("Agent key delegation proof verification failed.")).into()
                 }
             )
             .into_box()
     }
 
-    fn check_if_message_status_can_be_updated(&self,
-                                              uid: &str,
-                                              status_code: &MessageStatusCode) -> Result<(), Error> {
+    fn check_if_message_status_can_be_updated(&self, uid: &str, status_code: &MessageStatusCode) -> Result<(), Error> {
         trace!("AgentConnection::check_if_message_status_can_be_updated >> {:?}, {:?}",
                uid, status_code);
 
@@ -785,68 +764,90 @@ impl AgentConnection {
         self.send_messages(vec![(uid.to_string(), reply_to_msg_id.map(String::from))])
     }
 
-    fn send_messages(&mut self,
-                     msgs: Vec<(String, Option<String>)>) -> ResponseFuture<Vec<A2AMessage>, Error> {
+    fn send_messages(&mut self, msgs: Vec<(String, Option<String>)>) -> ResponseFuture<Vec<A2AMessage>, Error> {
         trace!("AgentConnection::send_messages >> {:?}", msgs);
 
-        msgs
+        let futures: Vec<_> = msgs
             .into_iter()
             .map(|(msg_uid, reply_to)| {
                 let message = self.messages.get(&msg_uid).cloned().unwrap();
                 match message._type {
-                    MessageType::ConnReq => self.send_invite_message(&msg_uid),
-                    MessageType::ConnReqAnswer => self.send_invite_answer_message(&message, reply_to),
-                    _ => self.send_general_message(&message, &msg_uid, reply_to.as_ref().map(String::as_str)),
+                    MessageType::ConnReq => self.send_invite_message(message),
+                    MessageType::ConnReqAnswer => self.send_invite_answer_message(message, reply_to),
+                    _ => self.send_general_message(message, reply_to.as_ref().map(String::as_str)),
                 }
-                    .map(|_| msg_uid.to_string())
+                    .map(move |_| msg_uid.to_string())
             })
-            .collect::<Result<Vec<_>, Error>>() // TODO: change on ResponseFuture
+            .collect();
+
+        future::join_all(futures)
             .map(|uids| vec![A2AMessage::MessageSent(MessageSent { uids })])
             .into_future()
             .into_box()
     }
 
-    fn send_invite_message(&mut self,
-                           _uid: &str) -> Result<(), Error> {
+    fn send_invite_message(&mut self, _message: InternalMessage) -> ResponseFuture<(), Error> {
+        trace!("AgentConnection::send_invite_message >> {:?}",
+               _message);
+
         unimplemented!() // TODO: send invite sms?
     }
 
-    fn send_invite_answer_message(&mut self,
-                                  message: &InternalMessage,
-                                  reply_to: Option<String>) -> Result<(), Error> {
-        let reply_to = reply_to.ok_or(err_msg("Missed required field."))?;
+    fn send_invite_answer_message(&mut self, message: InternalMessage, reply_to: Option<String>) -> ResponseFuture<(), Error> {
+        trace!("AgentConnection::send_invite_answer_message >> {:?}, {:?}",
+               message, reply_to);
+
+        let reply_to = ftry!(reply_to.ok_or(err_msg("Missed required field.")));
 
         if message.status_code != MessageStatusCode::Accepted {
-            return Err(err_msg("Message status isn't accepted."));
+            return err!(err_msg("Message status isn't accepted."));
         }
 
-        let invite_answer = self.build_invite_answer_message(message, &reply_to)?;
-
-        let message = self.prepare_remote_message(invite_answer)?;
-
-        let endpoint = self.remote_connection_detail.as_ref().map(|detail| detail.forward_agent_detail.endpoint.to_string())
-            .ok_or(err_msg("Missed remote Forward Agent Endpoit."))?;
-
-        request::send_message_to_remote_endpoint(message, &endpoint)
+        let invite_answer = ftry!(self.build_invite_answer_message(&message, &reply_to));
+        let message = ftry!(self.prepare_remote_message(invite_answer));
+        let endpoint = ftry!(self.get_remote_endpoint());
+        self.send_remote_message(message, endpoint)
     }
 
-    fn send_general_message(&self, message: &InternalMessage, _uid: &str, reply_to: Option<&str>) -> Result<(), Error> {
+    fn send_general_message(&self, message: InternalMessage, reply_to: Option<&str>) -> ResponseFuture<(), Error> {
+        trace!("AgentConnection::send_general_message >> {:?}, {:?}",
+               message, reply_to);
+
         if message.sender_did == self.user_pairwise_did {
             // TODO: support message delivery statuses?
-            let message = self.build_general_message(message, reply_to)?;
-            let message = self.prepare_remote_message(message)?;
-
-            let endpoint = self.remote_connection_detail.as_ref().map(|detail| detail.forward_agent_detail.endpoint.to_string())
-                .ok_or(err_msg("Missed remote Forward Agent Endpoit."))?;
-
-            request::send_message_to_remote_endpoint(message, &endpoint)
+            let general_message = ftry!(self.build_general_message(message, reply_to));
+            let message = ftry!(self.prepare_remote_message(general_message));
+            let endpoint = ftry!(self.get_remote_endpoint());
+            self.send_remote_message(message, endpoint)
         } else {
             // TODO: Notify user
-            Ok(())
+            unimplemented!()
         }
+    }
+
+    fn send_remote_message(&self, message: Vec<u8>, endpoint: String) -> ResponseFuture<(), Error> {
+        let router = self.router.clone();
+
+        future::ok(())
+            .and_then(move |_| {
+                router
+                    .send(RemoteMsg { endpoint, body: message })
+                    .from_err()
+                    .and_then(|res| res)
+                    .map_err(|err: Error| err.context("Can't add route for Agent Connection").into())
+            })
+            .into_box()
+    }
+
+    fn get_remote_endpoint(&self) -> Result<String, Error> {
+        self.remote_connection_detail.as_ref().map(|detail| detail.forward_agent_detail.endpoint.to_string())
+            .ok_or(err_msg("Missed remote Forward Agent Endpoit."))
     }
 
     fn prepare_remote_message(&self, message: Vec<A2AMessage>) -> Result<Vec<u8>, Error> {
+        trace!("AgentConnection::prepare_remote_message >> {:?}",
+               message);
+
         let remote_connection_detail = self.remote_connection_detail.as_ref()
             .ok_or(err_msg("Missed Remote Connection Details."))?;
 
@@ -873,29 +874,43 @@ impl AgentConnection {
         Ok(message)
     }
 
+    fn build_payload_message<T>(&self, type_: MessageType, msg: &T) -> Result<Vec<u8>, Error> where T: ::serde::Serialize + ::std::fmt::Debug {
+        trace!("AgentConnection::build_payload_message >> {:?}, {:?}",
+               type_, msg);
+
+        let msg = rmp_serde::to_vec(&msg)?;
+        let payload_msg = PayloadMessage { type_, msg };
+        rmp_serde::to_vec(&payload_msg)
+            .map_err(|err| err.into())
+    }
+
     fn build_forward_message(&self, fwd: &str, message: Vec<u8>) -> Result<Vec<A2AMessage>, Error> {
+        trace!("AgentConnection::build_forward_message >> {:?}, {:?}",
+               fwd, message);
+
         Ok(vec![A2AMessage::Forward(Forward { fwd: fwd.to_string(), msg: message })])
     }
 
-    fn build_invite_message(&self,
-                            msg: InternalMessage,
-                            msg_detail: ConnectionRequestMessageDetail) -> Vec<A2AMessage> {
+    fn build_invite_message(&self, msg: &InternalMessage, msg_detail: &ConnectionRequestMessageDetail) -> Vec<A2AMessage> {
+        trace!("AgentConnection::build_invite_message >> {:?}, {:?}",
+               msg, msg_detail);
+
         let msg_created = MessageCreated { uid: msg.uid.clone() };
 
         let status_msg = msg.status_code.message().to_string();
         let msg_detail = ConnectionRequestMessageDetailResp {
             invite_detail: InviteDetail {
                 conn_req_id: msg.uid.clone(),
-                target_name: msg_detail.target_name,
+                target_name: msg_detail.target_name.clone(),
                 sender_agency_detail: self.forward_agent_detail.clone(),
                 sender_detail: SenderDetail {
                     did: self.agent_did.clone(),
                     verkey: self.agent_verkey.clone(),
-                    agent_key_dlg_proof: msg_detail.key_dlg_proof,
+                    agent_key_dlg_proof: msg_detail.key_dlg_proof.clone(),
                     name: None,
                     logo_url: None,
                 },
-                status_code: msg.status_code,
+                status_code: msg.status_code.clone(),
                 status_msg,
             },
             url_to_invite_detail: "".to_string() // format!("{}/agency/invite/{}?msg_uid{}", AGENCY_DOMAIN_URL_PREFIX, self.agent_pairwise_did, msg_uid)
@@ -906,6 +921,9 @@ impl AgentConnection {
     }
 
     fn build_invite_answer_message(&self, message: &InternalMessage, reply_to: &str) -> Result<Vec<A2AMessage>, Error> {
+        trace!("AgentConnection::build_invite_answer_message >> {:?}, {:?}",
+               message, reply_to);
+
         let msg_create = CreateMessage {
             mtype: message._type.clone(),
             send_msg: false,
@@ -933,18 +951,21 @@ impl AgentConnection {
         Ok(messages)
     }
 
-    fn build_general_message(&self, message: &InternalMessage, reply_to: Option<&str>) -> Result<Vec<A2AMessage>, Error> {
+    fn build_general_message(&self, message: InternalMessage, reply_to: Option<&str>) -> Result<Vec<A2AMessage>, Error> {
+        trace!("AgentConnection::build_general_message >> {:?}, {:?}",
+               message, reply_to);
+
+        let title = message.sending_data.get("title").cloned().and_then(|val| val);
+        let detail = message.sending_data.get("detail").cloned().and_then(|val| val);
+
         let msg_create = CreateMessage {
-            mtype: message._type.clone(),
+            mtype: message._type,
             send_msg: false,
-            uid: Some(message.uid.clone()),
+            uid: Some(message.uid),
             reply_to_msg_id: reply_to.map(String::from),
         };
 
-        let title = message.sending_data.get("title").and_then(|val| val.clone());
-        let detail = message.sending_data.get("detail").and_then(|val| val.clone());
-
-        let msg = message.payload.clone()
+        let msg = message.payload
             .ok_or(err_msg("Missed Payload."))?;
 
         let msg_detail = GeneralMessageDetail { msg, title, detail };

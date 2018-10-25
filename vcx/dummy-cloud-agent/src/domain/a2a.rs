@@ -237,7 +237,7 @@ pub struct SendMessageDetail {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PayloadMessage {
     #[serde(rename = "@type")]
-    pub type_: String,
+    pub type_: MessageType,
     #[serde(rename = "@msg")]
     pub msg: Vec<u8>,
 }

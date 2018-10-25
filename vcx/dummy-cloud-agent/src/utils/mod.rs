@@ -1,7 +1,6 @@
 #[macro_use]
 pub mod futures;
 pub mod rand;
-pub mod request;
 pub mod sequence;
 
 #[allow(unused)] // FIXME:

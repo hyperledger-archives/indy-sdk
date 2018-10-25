@@ -1,6 +1,7 @@
 use actix::prelude::*;
 use actors::{AddA2ARoute, Endpoint, ForwardA2AMsg, GetEndpoint, HandleA2AMsg, RouteA2AMsg};
 use actors::forward_agent_connection::ForwardAgentConnection;
+use actors::requester::Requester;
 use actors::router::Router;
 use domain::a2a::*;
 use domain::config::{ForwardAgentConfig, WalletStorageConfig};
@@ -25,7 +26,8 @@ impl ForwardAgent {
     pub fn create_or_restore(config: ForwardAgentConfig,
                              wallet_storage_config: WalletStorageConfig) -> ResponseFuture<Addr<ForwardAgent>, Error> {
         trace!("ForwardAgent::get_endpoint >> {:?} {:?}", config, wallet_storage_config);
-        let router = Router::new().start();
+        let request = Requester::new().start();
+        let router = Router::new(request).start();
 
         future::ok(())
             .and_then(move |_| {

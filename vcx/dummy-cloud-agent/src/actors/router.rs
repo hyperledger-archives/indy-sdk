@@ -1,5 +1,6 @@
 use actix::prelude::*;
-use actors::{AddA2ARoute, HandleA2AMsg, RouteA2AMsg};
+use actors::{AddA2ARoute, HandleA2AMsg, RouteA2AMsg, RemoteMsg};
+use actors::requester::Requester;
 use failure::{Error, err_msg};
 use futures::*;
 use std::collections::HashMap;
@@ -7,14 +8,16 @@ use utils::futures::*;
 
 pub struct Router {
     routes: HashMap<String, Recipient<HandleA2AMsg>>,
+    requester: Addr<Requester>
 }
 
 impl Router {
-    pub fn new() -> Router {
+    pub fn new(requester: Addr<Requester>) -> Router {
         trace!("Router::new >>");
 
         Router {
-            routes: HashMap::new()
+            routes: HashMap::new(),
+            requester,
         }
     }
 
@@ -35,6 +38,16 @@ impl Router {
         } else {
             err!(err_msg("No route found."))
         }
+    }
+
+    pub fn route_to_requester(&self, msg: RemoteMsg) -> ResponseFuture<(), Error> {
+        trace!("Router::route_to_requester >> {:?}", msg);
+
+        self.requester
+            .send(msg)
+            .from_err()
+            .and_then(|res| res)
+            .into_box()
     }
 }
 
@@ -57,5 +70,14 @@ impl Handler<RouteA2AMsg> for Router {
     fn handle(&mut self, msg: RouteA2AMsg, _: &mut Self::Context) -> Self::Result {
         trace!("Handler<RouteA2AMsg>::handle >> {:?}", msg);
         self.route_a2a_msg(msg.0, msg.1)
+    }
+}
+
+impl Handler<RemoteMsg> for Router {
+    type Result = ResponseFuture<(), Error>;
+
+    fn handle(&mut self, msg: RemoteMsg, _: &mut Self::Context) -> Self::Result {
+        trace!("Handler<RemoteMessage>::handle >> {:?}", msg);
+        self.route_to_requester(msg)
     }
 }
