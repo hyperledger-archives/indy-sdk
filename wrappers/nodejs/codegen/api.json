@@ -39,6 +39,7 @@
     "c306": "PoolLedgerConfigAlreadyExistsError",
     "c307": "PoolLedgerTimeout",
     "c308": "PoolIncompatibleProtocolVersion",
+    "c309": "LedgerNotFound",
     "c400": "AnoncredsRevocationRegistryFullError",
     "c401": "AnoncredsInvalidUserRevocId",
     "c404": "AnoncredsMasterSecretDuplicateNameError",
