@@ -291,28 +291,59 @@ impl Handler<HandleA2AMsg> for ForwardAgent {
 
 #[cfg(test)]
 mod tests {
-    use env_logger;
-    use indy;
     use super::*;
     use utils::tests::*;
 
     #[test]
     fn forward_agent_create_or_restore_works() {
-        indy::logger::set_default_logger(None).ok();
-        env_logger::try_init().ok();
+        run_test(|_| {
+            Ok(())
+        });
+    }
 
-        System::run(|| {
-            Arbiter::spawn_fn(move || {
-                future::ok(())
-                    .and_then(move |_| {
-                        ForwardAgent::create_or_restore(forward_agent_config(),
-                                                        wallet_storage_config())
-                    })
-                    .map(move |_| {
-                        System::current().stop()
-                    })
-                    .map_err(|err| panic!("Test error: {}!", err))
-            })
+    #[test]
+    fn forward_agent_get_endpoint_works() {
+        run_test(|forward_agent| {
+            forward_agent
+                .send(GetEndpoint {})
+                .from_err()
+                .map(|res| match res {
+                    Ok(endpoint) => {
+                        assert_eq!(endpoint.did, FORWARD_AGENT_DID);
+                        assert_eq!(endpoint.verkey, FORWARD_AGENT_DID_VERKEY);
+                    }
+                    Err(err) => panic!("Can't get endpoint: {:?}", err),
+                })
+        });
+    }
+
+    #[test]
+    fn forward_agent_connect_works() {
+        run_test(|forward_agent| {
+            future::ok(())
+                .and_then(|_| {
+                    edge_wallet_setup()
+                })
+                .and_then(|e_wallet_handle| {
+                    compose_connect(e_wallet_handle)
+                        .map(move |connect_msg| (e_wallet_handle, connect_msg))
+                })
+                .and_then(move |(e_wallet_handle, connect_msg)| {
+                    forward_agent
+                        .send(ForwardA2AMsg(connect_msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |connected_msg| (e_wallet_handle, connected_msg))
+                })
+                .and_then(|(e_wallet_handle, connected_msg)| {
+                    decompose_connected(e_wallet_handle, &connected_msg)
+                        .map(|(sender_verkey, pairwise_did, pairwise_verkey)| {
+                            assert_eq!(sender_verkey, FORWARD_AGENT_DID_VERKEY);
+                            assert!(!pairwise_did.is_empty());
+                            assert!(!pairwise_verkey.is_empty());
+                        })
+                })
         });
     }
 }
+

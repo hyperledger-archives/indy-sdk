@@ -4,6 +4,8 @@
 extern crate actix;
 extern crate actix_web;
 extern crate bytes;
+#[cfg(test)]
+extern crate dirs;
 #[macro_use]
 extern crate failure;
 extern crate futures;
