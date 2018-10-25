@@ -212,6 +212,33 @@ pub fn decompose_signedup(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<String,
         .into_box()
 }
 
+pub fn compose_create_agent(wallet_handle: i32, pairwise_did: &str, pairwise_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
+    let msgs = [A2AMessage::CreateAgent(CreateAgent {})];
+    let pairwise_did = pairwise_did.to_owned();
+
+    A2AMessage::bundle_authcrypted(wallet_handle,
+                                   EDGE_AGENT_DID_VERKEY,
+                                   pairwise_verkey,
+                                   &msgs)
+        .map(move |msg| (wallet_handle, msg))
+        .and_then(move |(wallet_handle, msg)| {
+            compose_forward(&pairwise_did, FORWARD_AGENT_DID_VERKEY, msg)
+        })
+        .into_box()
+}
+
+pub fn decompose_agent_created(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(String, String, String), Error> {
+    A2AMessage::unbundle_authcrypted(wallet_handle, EDGE_AGENT_DID_VERKEY, &msg)
+        .and_then(|(sender_verkey, mut msgs)| {
+            if let Some(A2AMessage::AgentCreated(agent_created)) = msgs.pop() {
+                let AgentCreated { with_pairwise_did: pw_did, with_pairwise_did_verkey: pw_vk } = agent_created;
+                Ok((sender_verkey, pw_did, pw_vk))
+            } else {
+                Err(err_msg("Invalid message"))
+            }
+        })
+        .into_box()
+}
 
 pub fn compose_forward(recipient_did: &str, recipient_vk: &str, msg: Vec<u8>) -> BoxedFuture<Vec<u8>, Error> {
     let msgs = [A2AMessage::Forward(

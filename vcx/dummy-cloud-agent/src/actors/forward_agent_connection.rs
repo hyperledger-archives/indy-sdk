@@ -336,4 +336,50 @@ mod tests {
                 })
         });
     }
+
+    #[test]
+    fn forward_agent_connection_create_agent_works() {
+        run_test(|forward_agent| {
+            future::ok(())
+                .and_then(|()| {
+                    let e_wallet_handle = edge_wallet_setup().wait().unwrap();
+                    let connect_msg = compose_connect(e_wallet_handle).wait().unwrap();
+                    forward_agent
+                        .send(ForwardA2AMsg(connect_msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |connected_msg| (forward_agent, e_wallet_handle, connected_msg))
+                })
+                .and_then(|(forward_agent, e_wallet_handle, connected_msg)| {
+                    let (sender_verkey, pairwise_did, pairwise_verkey) = decompose_connected(e_wallet_handle, &connected_msg).wait().unwrap();
+                    assert_eq!(sender_verkey, FORWARD_AGENT_DID_VERKEY);
+                    assert!(!pairwise_did.is_empty());
+                    assert!(!pairwise_verkey.is_empty());
+                    let signup_msg = compose_signup(e_wallet_handle, &pairwise_did, &pairwise_verkey).wait().unwrap();
+                    forward_agent
+                        .send(ForwardA2AMsg(signup_msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |signedup_msg| (forward_agent, e_wallet_handle, signedup_msg, pairwise_did, pairwise_verkey))
+                })
+                .and_then(move |(forward_agent, e_wallet_handle, signedup_msg, pairwise_did, pairwise_verkey)| {
+                    let sender_verkey = decompose_signedup(e_wallet_handle, &signedup_msg).wait().unwrap();
+                    assert_eq!(sender_verkey, pairwise_verkey);
+                    let create_agent_msg = compose_create_agent(e_wallet_handle, &pairwise_did, &pairwise_verkey).wait().unwrap();
+                    forward_agent
+                        .send(ForwardA2AMsg(create_agent_msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |agent_created_msg| (e_wallet_handle, agent_created_msg, pairwise_verkey))
+                })
+                .and_then(|(e_wallet_handle, agent_created_msg, pairwise_verkey)| {
+                    decompose_agent_created(e_wallet_handle, &agent_created_msg)
+                        .map(move |(sender_vk, pw_did, pw_vk)| {
+                            assert_eq!(sender_vk, pairwise_verkey);
+                            assert!(!pw_did.is_empty());
+                            assert!(!pw_vk.is_empty());
+                        })
+                })
+        });
+    }
 }

@@ -14,15 +14,18 @@ use domain::status::{MessageStatusCode, ConnectionStatus};
 // TODO: There should be additional enum level for versions
 #[derive(Debug)]
 pub enum A2AMessage {
-    AgentCreated(AgentCreated),
+    /// base
     Forward(Forward),
+    /// onboarding
     Connect(Connect),
     Connected(Connected),
-    CreateAgent(CreateAgent),
-    CreateKey(CreateKey),
-    KeyCreated(KeyCreated),
     SignUp(SignUp),
     SignedUp(SignedUp),
+    CreateAgent(CreateAgent),
+    AgentCreated(AgentCreated),
+    /// PW Connection
+    CreateKey(CreateKey),
+    KeyCreated(KeyCreated),
     CreateMessage(CreateMessage),
     MessageDetail(MessageDetail),
     MessageCreated(MessageCreated),
