@@ -307,14 +307,9 @@ mod tests {
     fn forward_agent_connection_signup_works() {
         run_test(|forward_agent| {
             future::ok(())
-                .and_then(|_| {
-                    edge_wallet_setup()
-                })
-                .and_then(|e_wallet_handle| {
-                    compose_connect(e_wallet_handle)
-                        .map(move |connect_msg| (e_wallet_handle, connect_msg))
-                })
-                .and_then(move |(e_wallet_handle, connect_msg)| {
+                .and_then(|()| {
+                    let e_wallet_handle = edge_wallet_setup().wait().unwrap();
+                    let connect_msg = compose_connect(e_wallet_handle).wait().unwrap();
                     forward_agent
                         .send(ForwardA2AMsg(connect_msg))
                         .from_err()
@@ -322,19 +317,11 @@ mod tests {
                         .map(move |connected_msg| (forward_agent, e_wallet_handle, connected_msg))
                 })
                 .and_then(|(forward_agent, e_wallet_handle, connected_msg)| {
-                    decompose_connected(e_wallet_handle, &connected_msg)
-                        .map(move |(sender_verkey, pairwise_did, pairwise_verkey)| {
-                            assert_eq!(sender_verkey, FORWARD_AGENT_DID_VERKEY);
-                            assert!(!pairwise_did.is_empty());
-                            assert!(!pairwise_verkey.is_empty());
-                            (forward_agent, e_wallet_handle, pairwise_did, pairwise_verkey)
-                        })
-                })
-                .and_then(|(forward_agent, e_wallet_handle, pairwise_did, pairwise_verkey)| {
-                    compose_signup(e_wallet_handle, &pairwise_did, &pairwise_verkey)
-                        .map(move |signup_msg| (forward_agent, e_wallet_handle, signup_msg, pairwise_verkey))
-                })
-                .and_then(move |(forward_agent, e_wallet_handle, signup_msg, pairwise_verkey)| {
+                    let (sender_verkey, pairwise_did, pairwise_verkey) = decompose_connected(e_wallet_handle, &connected_msg).wait().unwrap();
+                    assert_eq!(sender_verkey, FORWARD_AGENT_DID_VERKEY);
+                    assert!(!pairwise_did.is_empty());
+                    assert!(!pairwise_verkey.is_empty());
+                    let signup_msg = compose_signup(e_wallet_handle, &pairwise_did, &pairwise_verkey).wait().unwrap();
                     forward_agent
                         .send(ForwardA2AMsg(signup_msg))
                         .from_err()
