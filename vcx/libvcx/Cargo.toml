@@ -13,7 +13,7 @@ path = "src/lib.rs"
 crate-type = ["staticlib","rlib", "cdylib"]
 
 [features]
-default = ["nullpay"]
+default = ["sovtoken", "pool_tests","agency"]
 pool_tests = []
 nullpay = []
 sovtoken = []

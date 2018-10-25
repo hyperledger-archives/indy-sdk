@@ -40,7 +40,7 @@ use utils::threadpool::spawn;
 #[allow(unused_variables, unused_mut)]
 pub extern fn vcx_issuer_create_credential(command_handle: u32,
                                       source_id: *const c_char,
-                                      cred_def_id: *const c_char,
+                                      cred_def_handle: u32,
                                       issuer_did: *const c_char,
                                       credential_data: *const c_char,
                                       credential_name: *const c_char,
@@ -52,7 +52,6 @@ pub extern fn vcx_issuer_create_credential(command_handle: u32,
     check_useful_c_str!(credential_name, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
     check_useful_c_str!(price, error::INVALID_OPTION.code_num);
-    check_useful_c_str!(cred_def_id, error::INVALID_OPTION.code_num);
 
     let issuer_did: String = if !issuer_did.is_null() {
         check_useful_c_str!(issuer_did, error::INVALID_OPTION.code_num);
@@ -69,16 +68,20 @@ pub extern fn vcx_issuer_create_credential(command_handle: u32,
         Err(_) => return error::INVALID_OPTION.code_num,
     };
 
-    info!("vcx_issuer_create_credential(command_handle: {}, source_id: {}, cred_def_id: {}, issuer_did: {}, credential_data: {}, credential_name: {})",
+    if !::credential_def::is_valid_handle(cred_def_handle) {
+        return error::INVALID_CREDENTIAL_DEF_HANDLE.code_num;
+    }
+
+    info!("vcx_issuer_create_credential(command_handle: {}, source_id: {}, cred_def_handle: {}, issuer_did: {}, credential_data: {}, credential_name: {})",
           command_handle,
           source_id,
-          cred_def_id,
+          cred_def_handle,
           issuer_did,
           credential_data,
           credential_name);
 
     spawn(move|| {
-        let (rc, handle) = match issuer_credential::issuer_credential_create(cred_def_id, source_id, issuer_did, credential_name, credential_data, price) {
+        let (rc, handle) = match issuer_credential::issuer_credential_create(cred_def_handle, source_id, issuer_did, credential_name, credential_data, price) {
             Ok(x) => {
                 info!("vcx_issuer_create_credential_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, error_string(0), x, issuer_credential::get_source_id(x).unwrap_or_default());
@@ -486,7 +489,7 @@ mod tests {
     use settings;
     use connection;
     use api::VcxStateType;
-    use utils::constants::{CRED_DEF_ID, DEFAULT_SERIALIZED_ISSUER_CREDENTIAL};
+    use utils::constants::{DEFAULT_SERIALIZED_ISSUER_CREDENTIAL};
     use utils::libindy::return_types_u32;
 
     static DEFAULT_CREDENTIAL_NAME: &str = "Credential Name Default";
@@ -501,7 +504,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
                                            CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                           CString::new(CRED_DEF_ID).unwrap().into_raw(),
+                                           ::credential_def::tests::create_cred_def_fake(),
                                            ptr::null(),
                                            CString::new(DEFAULT_ATTR).unwrap().into_raw(),
                                            CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
@@ -516,7 +519,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                CString::new(CRED_DEF_ID).unwrap().into_raw(),
+                                                ::credential_def::tests::create_cred_def_fake(),
                                                 ptr::null(),
                                                 ptr::null(),
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
@@ -533,7 +536,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
                                            CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                           CString::new(CRED_DEF_ID).unwrap().into_raw(),
+                                                ::credential_def::tests::create_cred_def_fake(),
                                            CString::new(DEFAULT_DID).unwrap().into_raw(),
                                            CString::new(DEFAULT_ATTR).unwrap().into_raw(),
                                            CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
@@ -600,7 +603,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                CString::new(CRED_DEF_ID).unwrap().into_raw(),
+                                                ::credential_def::tests::create_cred_def_fake(),
                                                 CString::new(DEFAULT_DID).unwrap().into_raw(),
                                                 CString::new(DEFAULT_ATTR).unwrap().into_raw(),
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
@@ -624,7 +627,7 @@ mod tests {
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
         assert_eq!(vcx_issuer_create_credential(cb.command_handle,
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),
-                                                CString::new(CRED_DEF_ID).unwrap().into_raw(),
+                                                ::credential_def::tests::create_cred_def_fake(),
                                                 CString::new(DEFAULT_DID).unwrap().into_raw(),
                                                 CString::new(DEFAULT_ATTR).unwrap().into_raw(),
                                                 CString::new(DEFAULT_CREDENTIAL_NAME).unwrap().into_raw(),

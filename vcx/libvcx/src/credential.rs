@@ -198,7 +198,7 @@ impl Credential {
                                                             &cred_req.libindy_cred_req_meta,
                                                             &credential_msg.libindy_cred,
                                                             &cred_def_json,
-                                                            None)?);
+                                                            credential_msg.rev_reg_def_json)?);
         self.state = VcxStateType::VcxStateAccepted;
 
         Ok(())

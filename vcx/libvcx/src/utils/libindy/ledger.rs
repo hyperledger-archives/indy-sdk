@@ -66,3 +66,13 @@ pub fn libindy_build_create_credential_def_txn(submitter_did: &str,
                                                credential_def_json: &str)  -> Result<String, u32>{
     Ledger::build_cred_def_request(submitter_did, credential_def_json).map_err(map_rust_indy_sdk_error_code)
 }
+
+pub fn libindy_build_revoc_reg_def_request(submitter_did: &str,
+                                           rev_reg_def_json: &str) -> Result<String, u32> {
+   Ledger::build_revoc_reg_def_request(submitter_did, rev_reg_def_json).map_err(map_rust_indy_sdk_error_code)
+}
+
+pub fn libindy_parse_get_revoc_reg_delta_response(get_rev_reg_delta_response: &str) -> Result<(String, String), u32> {
+    Ledger::parse_get_revoc_reg_def_response(get_rev_reg_delta_response)
+        .map_err(map_rust_indy_sdk_error_code)
+}

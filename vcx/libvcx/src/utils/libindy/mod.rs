@@ -10,7 +10,7 @@ pub mod pool;
 pub mod crypto;
 pub mod payments;
 
-mod error_codes;
+pub mod error_codes;
 
 extern crate libc;
 

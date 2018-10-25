@@ -8,7 +8,7 @@ use settings;
 use connection;
 use api::{ VcxStateType, ProofStateType };
 use std::collections::HashMap;
-use messages::proofs::proof_message::{ProofMessage};
+use messages::proofs::proof_message::{ProofMessage, CredInfo};
 use messages;
 use messages::proofs::proof_request::{ ProofRequestMessage };
 use messages::GeneralMessage;
@@ -25,6 +25,12 @@ use object_cache::ObjectCache;
 
 lazy_static! {
     static ref PROOF_MAP: ObjectCache<Proof> = Default::default();
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+struct RevocationInterval {
+    from: Option<u64>,
+    to: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -47,6 +53,7 @@ pub struct Proof {
     remote_vk: String,
     agent_did: String,
     agent_vk: String,
+    revocation_interval: RevocationInterval
 }
 
 impl Proof {
@@ -83,24 +90,25 @@ impl Proof {
             self.proof_state = ProofStateType::ProofInvalid;
             return Ok(error::SUCCESS.code_num)
         }
+
         debug!("Indy validated proof: {}", self.source_id);
         self.proof_state = ProofStateType::ProofValidated;
         Ok(error::SUCCESS.code_num)
     }
 
-    fn build_credential_defs_json(&self, credential_data: &Vec<(String, String, String)>) -> Result<String, ProofError> {
-        debug!("{} building credentialdef json for proof validation", self.source_id);
+    fn build_credential_defs_json(&self, credential_data: &Vec<CredInfo>) -> Result<String, ProofError> {
+        debug!("{} building credential_def_json for proof validation", self.source_id);
         let mut credential_json: HashMap<String, serde_json::Value> = HashMap::new();
 
-        for &(_, ref cred_def_id, _) in credential_data.iter() {
-            if !credential_json.contains_key(cred_def_id) {
-                let (_, credential_def) = retrieve_credential_def(cred_def_id)
+        for ref cred_info in credential_data.iter() {
+            if !credential_json.contains_key(&cred_info.cred_def_id) {
+                let (_, credential_def) = retrieve_credential_def(&cred_info.cred_def_id)
                     .map_err(|ec| ProofError::CommonError(ec.to_error_code()))?;
 
                 let credential_def = serde_json::from_str(&credential_def)
                     .or(Err(ProofError::InvalidCredData()))?;
 
-                credential_json.insert(cred_def_id.to_string(), credential_def);
+                credential_json.insert(cred_info.cred_def_id.to_string(), credential_def);
             }
         }
 
@@ -117,20 +125,20 @@ impl Proof {
         }
     }
 
-    fn build_schemas_json(&self, credential_data: &Vec<(String, String, String)>) -> Result<String, ProofError> {
+    fn build_schemas_json(&self, credential_data: &Vec<CredInfo>) -> Result<String, ProofError> {
         debug!("{} building schemas json for proof validation", self.source_id);
 
         let mut schema_json: HashMap<String, serde_json::Value> = HashMap::new();
 
-        for &(ref schema_id, _, _) in credential_data.iter() {
-            if !schema_json.contains_key(schema_id) {
-                let schema = LedgerSchema::new_from_ledger(schema_id)
+        for ref cred_info in credential_data.iter() {
+            if !schema_json.contains_key(&cred_info.schema_id) {
+                let schema = LedgerSchema::new_from_ledger(&cred_info.schema_id)
                     .or(Err(ProofError::InvalidSchema()))?;
 
                 let schema_val = serde_json::from_str(&schema.schema_json)
                     .or(Err(ProofError::InvalidSchema()))?;
 
-                schema_json.insert(schema_id.to_string(), schema_val);
+                schema_json.insert(cred_info.schema_id.to_string(), schema_val);
             }
         }
 
@@ -139,48 +147,36 @@ impl Proof {
 
     fn build_proof_req_json(&self) -> Result<String, ProofError> {
         debug!("{} building proof request json for proof validation", self.source_id);
-        match self.proof_request {
-            Some(ref x) => {
-                Ok(x.get_proof_request_data())
-            },
-            None => Err(ProofError::InvalidProof()),
+        if let Some(ref x) = self.proof_request {
+            return Ok(x.get_proof_request_data())
         }
+
+        Err(ProofError::InvalidProof())
     }
 
     fn proof_validation(&mut self) -> Result<u32, ProofError> {
-        let proof_req_msg = match self.proof_request.clone() {
-            Some(x) => x,
-            None => return Err(ProofError::InvalidProof()),
-        };
-
-        let proof_msg = match self.proof.clone() {
-            Some(x) => x,
-            None => return Err(ProofError::InvalidProof()),
-        };
+        let proof_msg = self.proof
+            .clone()
+            .ok_or(ProofError::InvalidProof())?;
 
         let credential_data = proof_msg.get_credential_info()?;
 
-        //if credential_data.len() == 0 {
-        //    return Err(ProofError::InvalidCredData())
-        //}
+        let credential_def_msg = self.build_credential_defs_json(&credential_data)
+            .unwrap_or(format!("{{}}"));
 
-        let credential_def_msg = match self.build_credential_defs_json(&credential_data) {
-            Ok(x) => x,
-            Err(_) => format!("{{}}"),
-        };
+        let schemas_json = self.build_schemas_json(&credential_data)
+            .unwrap_or(format!("{{}}"));
 
-        let schemas_json = match self.build_schemas_json(&credential_data) {
-            Ok(x) => x,
-            Err(_) => format!("{{}}"),
-        };
         let proof_json = self.build_proof_json()?;
+
         let proof_req_json = self.build_proof_req_json()?;
+
         debug!("*******\n{}\n********", credential_def_msg);
         debug!("*******\n{}\n********", schemas_json);
         debug!("*******\n{}\n********", proof_json);
         debug!("*******\n{}\n********", proof_req_json);
-//        proof_compliance(&proof_req_msg.proof_request_data, &proof_msg)?;
-        self.validate_proof_indy(&proof_req_json, &proof_json, &schemas_json, &credential_def_msg, "{}", "{}")
+        self.validate_proof_indy(&proof_req_json, &proof_json, &schemas_json,
+                                 &credential_def_msg, "{}", "{}")
     }
 
     fn send_proof_request(&mut self, connection_handle: u32) -> Result<u32, ProofError> {
@@ -206,13 +202,13 @@ impl Proof {
         let mut proof_obj = messages::proof_request();
         let proof_request = proof_obj
             .type_version(&self.version)
-            .tid(1)
-            .mid(9)
             .nonce(&self.nonce)
             .proof_name(&self.name)
             .proof_data_version(data_version)
             .requested_attrs(&self.requested_attrs)
             .requested_predicates(&self.requested_predicates)
+            .from_timestamp(self.revocation_interval.from)
+            .to_timestamp(self.revocation_interval.to)
             .serialize_message()
             .map_err(|ec| ProofError::ProofMessageError(ec))?;
 
@@ -320,13 +316,14 @@ impl Proof {
 pub fn create_proof(source_id: String,
                     requested_attrs: String,
                     requested_predicates: String,
+                    revocation_details: String,
                     name: String) -> Result<u32, ProofError> {
 
     // TODO: Get this to actually validate as json, not just check length.
-    let length = requested_attrs.len();
-    if length <= 0 {
-        return Err(ProofError::CommonError(error::INVALID_JSON.code_num))
-    }
+    if requested_attrs.len() <= 0 { return Err(ProofError::CommonError(error::INVALID_JSON.code_num)) }
+
+    let revocation_details: RevocationInterval = serde_json::from_str(&revocation_details)
+        .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
 
     debug!("creating proof with source_id: {}, name: {}, requested_attrs: {}, requested_predicates: {}", source_id, name, requested_attrs, requested_predicates);
 
@@ -349,6 +346,7 @@ pub fn create_proof(source_id: String,
         remote_vk: String::new(),
         agent_did: String::new(),
         agent_vk: String::new(),
+        revocation_interval: revocation_details
     };
 
     new_proof.validate_proof_request().map_err(|ec| ProofError::CommonError(ec))?;
@@ -516,6 +514,7 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
+            revocation_interval: RevocationInterval { from: None, to: None}
         })
     }
 
@@ -526,7 +525,42 @@ mod tests {
         create_proof("1".to_string(),
                      REQUESTED_ATTRS.to_owned(),
                      REQUESTED_PREDICATES.to_owned(),
+                     r#"{"support_revocation":false}"#.to_string(),
                      "Optional".to_owned()).unwrap();
+    }
+
+    #[test]
+    fn test_revocation_details() {
+        init!("true");
+
+        // No Revocation
+        create_proof("1".to_string(),
+                     REQUESTED_ATTRS.to_owned(),
+                     REQUESTED_PREDICATES.to_owned(),
+                     r#"{"support_revocation":false}"#.to_string(),
+                     "Optional".to_owned()).unwrap();
+
+        // Support Revocation Success
+        let revocation_details = json!({
+            "support_revocation": true,
+            "to": 1234,
+        });
+        create_proof("1".to_string(),
+                     REQUESTED_ATTRS.to_owned(),
+                     REQUESTED_PREDICATES.to_owned(),
+                     revocation_details.to_string(),
+                     "Optional".to_owned()).unwrap();
+
+
+        // Support Revocation Fails with no to
+        let revocation_details = json!({
+            "support_revocation": true,
+        });
+        assert_eq!(create_proof("1".to_string(),
+                     REQUESTED_ATTRS.to_owned(),
+                     REQUESTED_PREDICATES.to_owned(),
+                     revocation_details.to_string(),
+                     "Optional".to_owned()), Err(ProofError::InvalidTimestamp()));
     }
 
     #[test]
@@ -541,6 +575,7 @@ mod tests {
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
+                                  r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
         let proof_string = to_string(handle).unwrap();
         let s:Value = serde_json::from_str(&proof_string).unwrap();
@@ -554,6 +589,7 @@ mod tests {
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
+                                  r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
         let proof_data = to_string(handle).unwrap();
         let proof1: Proof = Proof::from_str(&proof_data).unwrap();
@@ -570,6 +606,7 @@ mod tests {
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
+                                  r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
         assert!(release(handle).is_ok());
         assert!(!is_valid_handle(handle));
@@ -587,6 +624,7 @@ mod tests {
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
+                                  r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
         assert_eq!(send_proof_request(handle, connection_handle).unwrap(), error::SUCCESS.code_num);
         assert_eq!(get_state(handle).unwrap(), VcxStateType::VcxStateOfferSent as u32);
@@ -607,6 +645,7 @@ mod tests {
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
+                                  r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
 
         assert!(send_proof_request(handle, connection_handle).is_err());
@@ -618,6 +657,7 @@ mod tests {
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
+                                  r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
         assert!(is_valid_handle(handle));
         assert!(get_proof(handle).is_err())
@@ -648,6 +688,7 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
+            revocation_interval: RevocationInterval { from: None, to: None}
         });
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
@@ -682,6 +723,7 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
+            revocation_interval: RevocationInterval { from: None, to: None}
         });
 
         httpclient::set_next_u8_response(PROOF_RESPONSE.to_vec());
@@ -703,10 +745,25 @@ mod tests {
         init!("true");
         let proof = create_boxed_proof();
 
-        let cred1 = ("schema_key1".to_string(), "cred_def_key1".to_string(), "".to_string());
-        let cred2 = ("schema_key2".to_string(), "cred_def_key2".to_string(), "".to_string());
-        let cred3 = ("schema_key3".to_string(), "cred_def_key3".to_string(), "".to_string());
-        let credentials = vec![cred1.clone(), cred2.clone(), cred3.clone()];
+        let cred1 = CredInfo {
+            schema_id: "schema_key1".to_string(),
+            cred_def_id: "cred_def_key1".to_string(),
+            rev_reg_id: None,
+            timestamp: None
+        };
+        let cred2 = CredInfo {
+            schema_id: "schema_key2".to_string(),
+            cred_def_id: "cred_def_key2".to_string(),
+            rev_reg_id: None,
+            timestamp: None
+        };
+        let cred3 = CredInfo {
+            schema_id: "schema_key3".to_string(),
+            cred_def_id: "cred_def_key3".to_string(),
+            rev_reg_id: None,
+            timestamp: None
+        };
+        let credentials = vec![cred1, cred2, cred3];
         let credential_json = proof.build_credential_defs_json(&credentials).unwrap();
 
         assert!(credential_json.contains(r#""cred_def_key1":{"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2471""#));
@@ -718,10 +775,25 @@ mod tests {
     fn test_build_schemas_json_with_multiple_schemas() {
         init!("true");
         let proof = create_boxed_proof();
-        let cred1 = ("schema_key1".to_string(), "cred_def_key1".to_string(), "".to_string());
-        let cred2 = ("schema_key2".to_string(), "cred_def_key2".to_string(), "".to_string());
-        let cred3 = ("schema_key3".to_string(), "cred_def_key3".to_string(), "".to_string());
-        let credentials = vec![cred1.clone(), cred2.clone(), cred3.clone()];
+        let cred1 = CredInfo {
+            schema_id: "schema_key1".to_string(),
+            cred_def_id: "cred_def_key1".to_string(),
+            rev_reg_id: None,
+            timestamp: None
+        };
+        let cred2 = CredInfo {
+            schema_id: "schema_key2".to_string(),
+            cred_def_id: "cred_def_key2".to_string(),
+            rev_reg_id: None,
+            timestamp: None
+        };
+        let cred3 = CredInfo {
+            schema_id: "schema_key3".to_string(),
+            cred_def_id: "cred_def_key3".to_string(),
+            rev_reg_id: None,
+            timestamp: None
+        };
+        let credentials = vec![cred1, cred2, cred3];
         let credential_json = proof.build_schemas_json(&credentials).unwrap();
 
         assert!(credential_json.contains(r#""schema_key1":{"attrNames":["height","name","sex","age"],"id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4""#));
@@ -746,11 +818,11 @@ mod tests {
     #[test]
     fn test_release_all() {
         init!("true");
-        let h1 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
-        let h2 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
-        let h3 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
-        let h4 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
-        let h5 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(), "Optional".to_owned()).unwrap();
+        let h1 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let h2 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let h3 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let h4 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
+        let h5 = create_proof("1".to_string(), REQUESTED_ATTRS.to_owned(), REQUESTED_PREDICATES.to_owned(),r#"{"support_revocation":false}"#.to_string(), "Optional".to_owned()).unwrap();
         release_all();
         assert_eq!(release(h1).err(), Some(ProofError::InvalidHandle()));
         assert_eq!(release(h2).err(), Some(ProofError::InvalidHandle()));
@@ -789,6 +861,7 @@ mod tests {
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
+            revocation_interval: RevocationInterval { from: None, to: None}
         };
         let rc = proof.proof_validation();
         assert!(rc.is_ok());
@@ -811,6 +884,7 @@ mod tests {
         let handle = create_proof("1".to_string(),
                                   REQUESTED_ATTRS.to_owned(),
                                   REQUESTED_PREDICATES.to_owned(),
+                                  r#"{"support_revocation":false}"#.to_string(),
                                   "Optional".to_owned()).unwrap();
         set_libindy_rc(error::TIMEOUT_LIBINDY_ERROR.code_num);
         assert_eq!(send_proof_request(handle, connection_handle).err(), Some(ProofError::CommonError(error::TIMEOUT_LIBINDY_ERROR.code_num)));
@@ -876,6 +950,7 @@ mod tests {
         assert_eq!(create_proof("my source id".to_string(),
                                 empty.to_string(),
                                 "{}".to_string(),
+                                r#"{"support_revocation":false}"#.to_string(),
                                 "my name".to_string()).err(),
             Some(ProofError::CommonError(INVALID_JSON.code_num)));
 

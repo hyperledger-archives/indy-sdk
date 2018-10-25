@@ -434,6 +434,8 @@ pub mod tests {
 
         let rc = delete_record(record_type, id);
         assert_eq!(rc, Err(error::WALLET_RECORD_NOT_FOUND.code_num));
+
+        delete_wallet(wallet_n).unwrap();
     }
 
     #[test]

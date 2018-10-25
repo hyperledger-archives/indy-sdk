@@ -98,6 +98,9 @@ pub static DID_ALREADY_EXISTS_IN_WALLET: Error = Error { code_num: 1083, message
 pub static DUPLICATE_MASTER_SECRET: Error = Error { code_num: 1084, message: "Attempted to add a Master Secret that already existed in wallet"};
 pub static THREAD_ERROR: Error = Error{ code_num: 1085, message: "Unable to create thread"};
 pub static INVALID_PROOF_REQUEST: Error = Error{ code_num: 1086, message: "Proof Request Passed into Libindy Call Was Invalid"};
+pub static INVALID_REVOCATION_DETAILS: Error = Error{ code_num: 1087, message: "Invalid Revocation Details"};
+pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1087, message: "Failed to create Revocation Registration Definition"};
+pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1088, message: "Invalid Credential Revocation timestamp"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -189,6 +192,9 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_LEDGER_RESPONSE);
         insert_c_message(&mut m, &THREAD_ERROR);
         insert_c_message(&mut m, &INVALID_PROOF_REQUEST);
+        insert_c_message(&mut m, &INVALID_REVOCATION_DETAILS);
+        insert_c_message(&mut m, &INVALID_REV_REG_DEF_CREATION);
+        insert_c_message(&mut m, &INVALID_REVOCATION_TIMESTAMP);
         m
     };
 }

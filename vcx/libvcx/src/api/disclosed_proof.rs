@@ -457,8 +457,8 @@ pub extern fn vcx_disclosed_proof_retrieve_credentials(command_handle: u32,
 /// handle: Proof handle that was provided during creation. Used to identify the disclosed proof object
 ///
 /// selected_credentials: a json string with a credential for each proof request attribute.
-/// List of possible credentials for each attribute is returned from vcx_disclosed_proof_retrieve_credentials
-/// # Examples selected_credential -> "{"req_attr_0":cred_info}" Where cred_info is returned from retrieve credentials
+///     List of possible credentials for each attribute is returned from vcx_disclosed_proof_retrieve_credentials
+///     selected_credentials can be empty "{}" if the proof only contains self_attested_attrs
 ///
 /// self_attested_attrs: a json string with attributes self attested by user
 /// # Examples self_attested_attrs -> "{"self_attested_attr_0":"attested_val"}"

@@ -1,6 +1,6 @@
 use std::fmt;
 use error::ToErrorCode;
-use utils::error::{NO_PAYMENT_INFORMATION, INVALID_CREDENTIAL_DEF_HANDLE, BUILD_CREDENTIAL_DEF_REQ_ERR, CREDENTIAL_DEF_ALREADY_CREATED, CREATE_CREDENTIAL_DEF_ERR };
+use utils::error::{NO_PAYMENT_INFORMATION, INVALID_CREDENTIAL_DEF_HANDLE, BUILD_CREDENTIAL_DEF_REQ_ERR, CREDENTIAL_DEF_ALREADY_CREATED, CREATE_CREDENTIAL_DEF_ERR, INVALID_REVOCATION_DETAILS, INVALID_REV_REG_DEF_CREATION};
 
 #[derive(Debug)]
 pub enum CredDefError {
@@ -12,6 +12,8 @@ pub enum CredDefError {
     SchemaError(String),
     NoPaymentInformation(),
     CommonError(u32),
+    InvalidRevocationDetails(),
+    CreateRevRegDefError(),
 }
 impl fmt::Display for CredDefError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -24,6 +26,8 @@ impl fmt::Display for CredDefError {
             CredDefError::CreateCredDefError() => write!(f, "{}", CREATE_CREDENTIAL_DEF_ERR.message ),
             CredDefError::NoPaymentInformation() => write!(f, "{}", NO_PAYMENT_INFORMATION.message ),
             CredDefError::CredDefAlreadyCreatedError() => write!(f, "{}", CREDENTIAL_DEF_ALREADY_CREATED.message ),
+            CredDefError::InvalidRevocationDetails() => write!(f, "{}", INVALID_REVOCATION_DETAILS.message ),
+            CredDefError::CreateRevRegDefError() => write!(f, "{}", INVALID_REV_REG_DEF_CREATION.message ),
         }
     }
 }
@@ -37,6 +41,8 @@ impl ToErrorCode for CredDefError {
             CredDefError::CreateCredDefError() => CREATE_CREDENTIAL_DEF_ERR.code_num,
             CredDefError::NoPaymentInformation() => NO_PAYMENT_INFORMATION.code_num,
             CredDefError::CredDefAlreadyCreatedError() => CREDENTIAL_DEF_ALREADY_CREATED.code_num,
+            CredDefError::InvalidRevocationDetails() => INVALID_REVOCATION_DETAILS.code_num,
+            CredDefError::CreateRevRegDefError() => INVALID_REV_REG_DEF_CREATION.code_num,
             CredDefError::CommonError(x) => x,
         }
     }

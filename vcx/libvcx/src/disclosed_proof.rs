@@ -17,7 +17,9 @@ use schema::{ LedgerSchema };
 
 use utils::libindy::anoncreds;
 use utils::libindy::crypto;
-use utils::serde_utils;
+use utils::libindy::ledger::{libindy_build_revoc_reg_def_request,
+                             libindy_submit_request,
+                             libindy_parse_get_revoc_reg_delta_response };
 
 use settings;
 use utils::httpclient;
@@ -75,34 +77,65 @@ pub struct RequestedCreds {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct CredInfo {
+    pub requested_attr: String,
     pub referent: String,
     pub schema_id: String,
     pub cred_def_id: String,
+    pub rev_reg_id: Option<String>,
+    pub cred_rev_id: Option<String>,
 }
 
-fn credential_def_identifiers(credentials: &str) -> Result<Vec<(String, String, String, String)>, ProofError> {
+fn credential_def_identifiers(credentials: &str) -> Result<Vec<CredInfo>, ProofError> {
     let mut rtn = Vec::new();
 
     let credentials: Value = serde_json::from_str(credentials)
-        .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
+        .or(Err(ProofError::InvalidJson()))?;
 
     if let Value::Object(ref attrs) = credentials["attrs"] {
         for (requested_attr, value) in attrs {
-            if let Some(ref attr_obj) = value.get("cred_info") {
-                rtn.push((
-                    requested_attr.to_string(),
-                    serde_utils::get_value_to_string("referent", attr_obj)
-                        .map_err(|e| ProofError::CommonError(e))?,
-                    serde_utils::get_value_to_string("schema_id", attr_obj)
-                             .map_err(|e| ProofError::CommonError(e))?,
-                    serde_utils::get_value_to_string("cred_def_id", attr_obj)
-                             .map_err(|e| ProofError::CommonError(e))?
-                 ));
-            }
+            if let (Some(referent), Some(schema_id), Some(cred_def_id)) =
+            (value["cred_info"]["referent"].as_str(),
+             value["cred_info"]["schema_id"].as_str(),
+             value["cred_info"]["cred_def_id"].as_str()) {
+
+                let rev_reg_id = value["cred_info"]["rev_reg_id"]
+                    .as_str()
+                    .map(|x| x.to_string());
+
+                let cred_rev_id = value["cred_info"]["cred_rev_id"]
+                    .as_str()
+                    .map(|x| x.to_string());
+
+                rtn.push(
+                    CredInfo {
+                        requested_attr: requested_attr.to_string(),
+                        referent: referent.to_string(),
+                        schema_id: schema_id.to_string(),
+                        cred_def_id: cred_def_id.to_string(),
+                        rev_reg_id,
+                        cred_rev_id,
+                    }
+                );
+            } else { return Err(ProofError::InvalidCredData()) }
         }
     }
+
     Ok(rtn)
 }
+
+//fn build_rev_states_json(credentials_identifiers: &Vec<CredInfo>) -> Result<String, ProofError> {
+//    let mut rtn: HashMap<String, Value> = HashMap::new();
+//
+//    for ref cred_info in credentials_identifiers {
+//        if let Some(rev_reg_id) = &cred_info.rev_reg_id {
+//            if !rtn.contains_key(&rev_reg_id.to_owned()) {
+////                let get_rev_reg_delta_request = libindy_build_revoc_reg_def_request()
+//            }
+//        }
+//    }
+//    Ok(serde_json::to_string(&rtn).or(Err(ProofError::InvalidJson()))?)
+//
+//}
 
 impl DisclosedProof {
 
@@ -114,46 +147,48 @@ impl DisclosedProof {
     fn retrieve_credentials(&self) -> Result<String, ProofError> {
         if settings::test_indy_mode_enabled() {return Ok(CREDS_FROM_PROOF_REQ.to_string())}
 
-        let proof_req = self.proof_request.as_ref().ok_or(ProofError::ProofNotReadyError())?;
+        let proof_req = self.proof_request
+            .as_ref()
+            .ok_or(ProofError::ProofNotReadyError())?;
+
         let indy_proof_req = serde_json::to_string(&proof_req.proof_request_data)
-            .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?;
+            .or(Err(ProofError::InvalidJson()))?;
 
         anoncreds::libindy_prover_get_credentials_for_proof_req(&indy_proof_req)
             .map_err(|err| ProofError::CommonError(err))
     }
 
-    fn _find_schemas(&self, credentials_identifiers: &Vec<(String, String, String, String)>) -> Result<String, ProofError> {
-        if credentials_identifiers.len() == 0 { return Ok("{}".to_string()); }
-
+    fn _find_schemas(&self, credentials_identifiers: &Vec<CredInfo>) -> Result<String, ProofError> {
         let mut rtn: HashMap<String, Value> = HashMap::new();
 
-        for &(ref attr_id, ref cred_uuid, ref schema_id, ref cred_def_id) in credentials_identifiers {
-            if !rtn.contains_key(schema_id) {
-                let schema = LedgerSchema::new_from_ledger(schema_id).or( Err(ProofError::InvalidSchema()))?;
-                let schema_json = serde_json::from_str(&schema.schema_json).or(Err(ProofError::InvalidSchema()))?;
-                rtn.insert(schema_id.to_owned(), schema_json);
+        for ref cred_info in credentials_identifiers {
+            if !rtn.contains_key(&cred_info.schema_id) {
+                let schema = LedgerSchema::new_from_ledger(&cred_info.schema_id)
+                    .or( Err(ProofError::InvalidSchema()))?;
+
+                let schema_json = serde_json::from_str(&schema.schema_json)
+                    .or(Err(ProofError::InvalidSchema()))?;
+
+                rtn.insert(cred_info.schema_id.to_owned(), schema_json);
             }
         }
-
-        match rtn.is_empty() {
-            false => Ok(serde_json::to_string(&rtn)
-                .or(Err(ProofError::CommonError(error::INVALID_JSON.code_num)))?),
-            true => Err(ProofError::CommonError(error::INVALID_JSON.code_num))
-        }
+        Ok(serde_json::to_string(&rtn).or(Err(ProofError::InvalidJson()))?)
     }
 
-    fn _find_credential_def(&self, credentials_identifiers: &Vec<(String, String, String, String)>) -> Result<String, ProofError> {
+    fn _find_credential_def(&self, credentials_identifiers: &Vec<CredInfo>) -> Result<String, ProofError> {
         if credentials_identifiers.len() == 0 { return Ok("{}".to_string()); }
 
         let mut rtn: HashMap<String, Value> = HashMap::new();
 
-        for &(ref attr_id, ref cred_uuid, ref schema_id, ref cred_def_id) in credentials_identifiers {
-            if !rtn.contains_key(cred_def_id) {
-                let (_, credential_def) = retrieve_credential_def(cred_def_id)
+        for ref cred_info in credentials_identifiers {
+            if !rtn.contains_key(&cred_info.cred_def_id) {
+                let (_, credential_def) = retrieve_credential_def(&cred_info.cred_def_id)
                     .or(Err(ProofError::InvalidCredData()))?;
+
                 let credential_def = serde_json::from_str(&credential_def)
                     .or(Err(ProofError::InvalidCredData()))?;
-                rtn.insert(cred_def_id.to_owned(), credential_def);
+
+                rtn.insert(cred_info.cred_def_id.to_owned(), credential_def);
             }
         }
 
@@ -166,7 +201,7 @@ impl DisclosedProof {
     }
 
     fn _build_requested_credentials(&self,
-                                    credentials_identifiers: &Vec<(String, String, String, String)>,
+                                    credentials_identifiers: &Vec<CredInfo>,
                                     self_attested_attrs: &str) -> Result<String, ProofError> {
         let mut rtn: Value = json!({
               "self_attested_attributes":{},
@@ -176,10 +211,9 @@ impl DisclosedProof {
         //Todo: need to do same for predicates and self_attested
         //Todo: need to handle if the attribute is not revealed
         if let Value::Object(ref mut map) = rtn["requested_attributes"] {
-            for &(ref attr_id, ref cred_uuid, ref schema_id, ref cred_def_id) in credentials_identifiers {
-
-                let insert_val = json!({"cred_id": cred_uuid, "revealed": true});
-                map.insert(attr_id.to_owned(), insert_val);
+            for ref cred_info in credentials_identifiers {
+                let insert_val = json!({"cred_id": cred_info.referent, "revealed": true});
+                map.insert(cred_info.requested_attr.to_owned(), insert_val);
             }
         }
 
@@ -208,6 +242,7 @@ impl DisclosedProof {
                                                                       self_attested_attrs)?;
         let schemas = self._find_schemas(&credentials_identifiers)?;
         let credential_defs_json = self._find_credential_def(&credentials_identifiers)?;
+        // TODO: build revoc_regs_json
         let revoc_regs_json = Some("{}");
         let proof = anoncreds::libindy_prover_create_proof(&proof_req_data_json,
                                                            &requested_credentials,
@@ -479,8 +514,10 @@ mod tests {
     extern crate serde_json;
 
     use super::*;
-    use utils::constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID, ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID };
     use serde_json::Value;
+    use utils::constants::{ ADDRESS_CRED_ID, LICENCE_CRED_ID, ADDRESS_SCHEMA_ID,
+                            ADDRESS_CRED_DEF_ID, CRED_DEF_ID, SCHEMA_ID, ADDRESS_CRED_REV_ID,
+                            ADDRESS_REV_REG_ID, REV_REG_ID, CRED_REV_ID };
 
     #[test]
     fn test_create_proof() {
@@ -539,11 +576,28 @@ mod tests {
     #[test]
     fn test_find_schemas() {
         init!("true");
-        let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
-        let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
-        let creds = vec![cred1, cred2];
 
         let proof: DisclosedProof = Default::default();
+        assert_eq!(proof._find_schemas(&Vec::new()), Ok("{}".to_string()));
+
+        let cred1 = CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(REV_REG_ID.to_string()),
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+        };
+        let cred2 = CredInfo {
+            requested_attr: "zip_2".to_string(),
+            referent: ADDRESS_CRED_ID.to_string(),
+            schema_id: ADDRESS_SCHEMA_ID.to_string(),
+            cred_def_id: ADDRESS_CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(ADDRESS_REV_REG_ID.to_string()),
+            cred_rev_id: Some(ADDRESS_CRED_REV_ID.to_string()),
+        };
+        let creds = vec![cred1, cred2];
+
         let schemas = proof._find_schemas(&creds).unwrap();
         assert!(schemas.len() > 0);
         assert!(schemas.contains(r#""id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4","name":"test-licence""#));
@@ -553,8 +607,14 @@ mod tests {
     fn test_find_schemas_fails() {
         init!("false");
 
-        let mut credential_ids = Vec::new();
-        credential_ids.push(("1".to_string(), "2".to_string(), "3".to_string(), "4".to_string()));
+        let credential_ids = vec![CredInfo {
+            requested_attr: "1".to_string(),
+            referent: "2".to_string(),
+            schema_id: "3".to_string(),
+            cred_def_id: "3".to_string(),
+            rev_reg_id: Some("4".to_string()),
+            cred_rev_id: Some("5".to_string()),
+        }];
         let proof: DisclosedProof = Default::default();
         assert_eq!(proof._find_schemas(&credential_ids).err(),
                    Some(ProofError::InvalidSchema()));
@@ -563,8 +623,22 @@ mod tests {
     #[test]
     fn test_find_credential_def() {
         init!("true");
-        let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
-        let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
+        let cred1 = CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(REV_REG_ID.to_string()),
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+        };
+        let cred2 = CredInfo {
+            requested_attr: "zip_2".to_string(),
+            referent: ADDRESS_CRED_ID.to_string(),
+            schema_id: ADDRESS_SCHEMA_ID.to_string(),
+            cred_def_id: ADDRESS_CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(ADDRESS_REV_REG_ID.to_string()),
+            cred_rev_id: Some(ADDRESS_CRED_REV_ID.to_string()),
+        };
         let creds = vec![cred1, cred2];
 
         let proof: DisclosedProof = Default::default();
@@ -577,8 +651,14 @@ mod tests {
     fn test_find_credential_def_fails() {
         init!("false");
 
-        let mut credential_ids = Vec::new();
-        credential_ids.push(("1".to_string(), "2".to_string(), "3".to_string(), "4".to_string()));
+        let credential_ids = vec![CredInfo {
+            requested_attr: "1".to_string(),
+            referent: "2".to_string(),
+            schema_id: "3".to_string(),
+            cred_def_id: "3".to_string(),
+            rev_reg_id: Some("4".to_string()),
+            cred_rev_id: Some("5".to_string()),
+        }];
         let proof: DisclosedProof = Default::default();
         assert_eq!(proof._find_credential_def(&credential_ids).err(),
                    Some(ProofError::InvalidCredData()));
@@ -587,8 +667,22 @@ mod tests {
     #[test]
     fn test_build_requested_credentials() {
         init!("true");
-        let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
-        let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
+        let cred1 = CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(REV_REG_ID.to_string()),
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+        };
+        let cred2 = CredInfo {
+            requested_attr: "zip_2".to_string(),
+            referent: ADDRESS_CRED_ID.to_string(),
+            schema_id: ADDRESS_SCHEMA_ID.to_string(),
+            cred_def_id: ADDRESS_CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(ADDRESS_REV_REG_ID.to_string()),
+            cred_rev_id: Some(ADDRESS_CRED_REV_ID.to_string()),
+        };
         let creds = vec![cred1, cred2];
         let self_attested_attrs = json!({
             "self_attested_attr_3": "my self attested 1",
@@ -636,6 +730,33 @@ mod tests {
 
         let retrieved_creds = proof.retrieve_credentials().unwrap();
         assert!(retrieved_creds.len() > 500);
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_retrieve_credentials_emtpy() {
+        init!("ledger");
+
+        let mut req = json!({
+           "nonce":"123432421212",
+           "name":"proof_req_1",
+           "version":"0.1",
+           "requested_attributes": json!({}),
+           "requested_predicates": json!({}),
+        });
+        let mut proof_req = ProofRequestMessage::create();
+        let mut proof: DisclosedProof = Default::default();
+        proof_req.proof_request_data = serde_json::from_str(&req.to_string()).unwrap();
+        proof.proof_request = Some(proof_req.clone());
+
+        let retrieved_creds = proof.retrieve_credentials().unwrap();
+        assert_eq!(retrieved_creds, "{}".to_string());
+
+        req["requested_attributes"]["address1_1"] = json!({"name": "address1"});
+        proof_req.proof_request_data = serde_json::from_str(&req.to_string()).unwrap();
+        proof.proof_request = Some(proof_req);
+        let retrieved_creds = proof.retrieve_credentials().unwrap();
+        assert_eq!(retrieved_creds, json!({"attrs":{"address1_1":[]}}).to_string());
     }
 
     #[cfg(feature = "pool_tests")]
@@ -692,8 +813,22 @@ mod tests {
 
     #[test]
     fn test_credential_def_identifiers() {
-        let cred1 = ("height_1".to_string(), LICENCE_CRED_ID.to_string(), SCHEMA_ID.to_string(), CRED_DEF_ID.to_string() );
-        let cred2 = ("zip_2".to_string(), ADDRESS_CRED_ID.to_string(), ADDRESS_SCHEMA_ID.to_string(), ADDRESS_CRED_DEF_ID.to_string() );
+        let cred1 = CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(REV_REG_ID.to_string()),
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+        };
+        let cred2 = CredInfo {
+            requested_attr: "zip_2".to_string(),
+            referent: ADDRESS_CRED_ID.to_string(),
+            schema_id: ADDRESS_SCHEMA_ID.to_string(),
+            cred_def_id: ADDRESS_CRED_DEF_ID.to_string(),
+            rev_reg_id: Some(ADDRESS_REV_REG_ID.to_string()),
+            cred_rev_id: Some(ADDRESS_CRED_REV_ID.to_string()),
+        };
         let selected_credentials : Value = json!({
            "attrs":{
               "height_1":{
@@ -707,8 +842,8 @@ mod tests {
                    },
                    "schema_id": SCHEMA_ID,
                    "cred_def_id": CRED_DEF_ID,
-                   "rev_reg_id":null,
-                   "cred_rev_id":null
+                   "rev_reg_id":REV_REG_ID,
+                   "cred_rev_id":CRED_REV_ID
                 },
                 "interval":null
               },
@@ -724,8 +859,8 @@ mod tests {
                    },
                    "schema_id":ADDRESS_SCHEMA_ID,
                    "cred_def_id":ADDRESS_CRED_DEF_ID,
-                   "rev_reg_id":null,
-                   "cred_rev_id":null
+                   "rev_reg_id":ADDRESS_REV_REG_ID,
+                   "cred_rev_id":ADDRESS_CRED_REV_ID
                 },
                 "interval":null
              }
@@ -736,6 +871,93 @@ mod tests {
         });
         let creds = credential_def_identifiers(&selected_credentials.to_string()).unwrap();
         assert_eq!(creds, vec![cred1, cred2]);
+    }
+
+    #[test]
+    fn test_credential_def_identifiers_failure() {
+        // selected credentials has incorrect json
+        assert_eq!(credential_def_identifiers(""), Err(ProofError::InvalidJson()));
+
+
+        // No Creds
+        assert_eq!(credential_def_identifiers("{}"), Ok(Vec::new()));
+        assert_eq!(credential_def_identifiers(r#"{"attrs":{}}"#), Ok(Vec::new()));
+
+        // missing cred info
+        let selected_credentials : Value = json!({
+           "attrs":{
+              "height_1":{ "interval":null }
+           },
+           "predicates":{
+
+           }
+        });
+        assert_eq!(credential_def_identifiers(&selected_credentials.to_string()), Err(ProofError::InvalidCredData()));
+
+        // Optional Revocation
+        let mut selected_credentials : Value = json!({
+           "attrs":{
+              "height_1":{
+                "cred_info":{
+                   "referent":LICENCE_CRED_ID,
+                   "attrs":{
+                      "sex":"male",
+                      "age":"111",
+                      "name":"Bob",
+                      "height":"4'11"
+                   },
+                   "schema_id": SCHEMA_ID,
+                   "cred_def_id": CRED_DEF_ID,
+                   "cred_rev_id":CRED_REV_ID
+                },
+                "interval":null
+              },
+           },
+           "predicates":{ }
+        });
+        let creds = vec![CredInfo {
+            requested_attr: "height_1".to_string(),
+            referent: LICENCE_CRED_ID.to_string(),
+            schema_id: SCHEMA_ID.to_string(),
+            cred_def_id: CRED_DEF_ID.to_string(),
+            rev_reg_id: None,
+            cred_rev_id: Some(CRED_REV_ID.to_string()),
+
+        }];
+        assert_eq!(&credential_def_identifiers(&selected_credentials.to_string()).unwrap(), &creds);
+
+        // rev_reg_id is null
+        selected_credentials["attrs"]["height_1"]["cred_info"]["rev_reg_id"] = serde_json::Value::Null;
+        assert_eq!(&credential_def_identifiers(&selected_credentials.to_string()).unwrap(), &creds);
+
+        // Missing schema ID
+        let mut selected_credentials : Value = json!({
+           "attrs":{
+              "height_1":{
+                "cred_info":{
+                   "referent":LICENCE_CRED_ID,
+                   "attrs":{
+                      "sex":"male",
+                      "age":"111",
+                      "name":"Bob",
+                      "height":"4'11"
+                   },
+                   "cred_def_id": CRED_DEF_ID,
+                   "rev_reg_id":REV_REG_ID,
+                   "cred_rev_id":CRED_REV_ID
+                },
+                "interval":null
+              },
+           },
+           "predicates":{
+
+           }
+        });
+        assert_eq!(credential_def_identifiers(&selected_credentials.to_string()), Err(ProofError::InvalidCredData()));
+
+        // Schema Id is null
+        selected_credentials["attrs"]["height_1"]["cred_info"]["schema_id"] = serde_json::Value::Null;
+        assert_eq!(credential_def_identifiers(&selected_credentials.to_string()), Err(ProofError::InvalidCredData()));
     }
 
     #[cfg(feature = "pool_tests")]
@@ -855,4 +1077,33 @@ mod tests {
 
         assert!(generated_proof.is_ok());
     }
+
+//    #[cfg(feature = "pool_tests")]
+//    #[test]
+//    fn test_build_rev_states_json() {
+//        init!("ledger");
+//
+//        assert_eq!(build_rev_states_json(&Vec::new()), Ok("{}".to_string()));
+//        let mut cred1 = CredInfo {
+//            requested_attr: "height_1".to_string(),
+//            referent: LICENCE_CRED_ID.to_string(),
+//            schema_id: SCHEMA_ID.to_string(),
+//            cred_def_id: CRED_DEF_ID.to_string(),
+//            rev_reg_id: None,
+//            cred_rev_id: Some(CRED_REV_ID.to_string()),
+//        };
+//        let cred_info = vec![cred1];
+//        assert_eq!(build_rev_states_json(&cred_info), Ok("{}".to_string()));
+//
+//        cred1.rev_reg_id = Some(REV_REG_ID.to_string());
+////        let cred2 = CredInfo {
+////            requested_attr: "zip_2".to_string(),
+////            referent: ADDRESS_CRED_ID.to_string(),
+////            schema_id: ADDRESS_SCHEMA_ID.to_string(),
+////            cred_def_id: ADDRESS_CRED_DEF_ID.to_string(),
+////            rev_reg_id: Some(ADDRESS_REV_REG_ID.to_string()),
+////            cred_rev_id: Some(ADDRESS_CRED_REV_ID.to_string()),
+////        };
+////
+//    }
 }
