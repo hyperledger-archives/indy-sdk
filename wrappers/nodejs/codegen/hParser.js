@@ -12,6 +12,9 @@ fs.readdirSync(dir).forEach(function (file) {
   file = path.resolve(dir, file)
 
   var group = path.basename(file).replace(/^indy_|\.h$/g, '')
+  if (group === 'logger') {
+    return
+  }
   var hText = fs.readFileSync(file, 'utf8') + '\n'
   parseSection(group, hText)
 })
