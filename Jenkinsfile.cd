@@ -501,9 +501,11 @@ def linuxAndroidOnEmulatorTesting(env_name, network_name, testEnv, stashBuildRes
         sh 'chmod -R 777 ci/*.sh'
         sh 'chmod -R 777 *.sh'
 
-        echo "${env_name} Libindy Test: Test on ARM emulator"
+        def emu_arch = "x86"
+
+        echo "${env_name} Libindy Test: Test on ${emu_arch} emulator"
         testEnv.inside("--network=${network_name}") {
-            sh "./android.test.sh arm --release"
+            sh "./android.test.sh ${emu_arch} --release"
         }
     }
 }
