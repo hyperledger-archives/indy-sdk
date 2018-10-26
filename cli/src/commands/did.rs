@@ -394,10 +394,6 @@ pub mod tests {
     pub const DID_MY1: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
     pub const VERKEY_MY1: &'static str = "GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa";
 
-//    pub const SEED_MY2: &'static str = "00000000000000000000000000000My2";
-//    pub const DID_MY2: &'static str = "2PRyVHmkXQnQzJQKxHxnXC";
-//    pub const VERKEY_MY2: &'static str = "kqa2HyagzfMAq42H5f9u3UMwnSBPQx2QfrSyXbUPxMn";
-
     pub const SEED_MY3: &'static str = "00000000000000000000000000000My3";
     pub const DID_MY3: &'static str = "5Uu7YveFSGcT3dSzjpvPab";
     pub const VERKEY_MY3: &'static str = "3SeuRm3uYuQDYmHeuMLu1xNHozNTtzS3kbZRFMMCWrX4";
