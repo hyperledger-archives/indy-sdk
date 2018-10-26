@@ -38,11 +38,13 @@ async def test_send_tokens():
     receipt = await Wallet.send_tokens(0,1,"address")
     assert receipt
 
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_create_payment_address():
     address = await Wallet.create_payment_address()
     assert address
+
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -50,10 +52,12 @@ async def test_create_payment_address_with_seed():
     address = await Wallet.create_payment_address("0000000000000000000000WHATEVER00")
     assert address
 
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_validate_payment_address():
     await Wallet.validate_payment_address('sov:1:1234')
+
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures('vcx_init_test_mode')
@@ -73,6 +77,7 @@ async def test_wallet_storage():
     }
     assert (json.loads(await Wallet.get_record(TYPE, ID, OPTIONS)) == record)
 
+
 @pytest.mark.asyncio
 async def test_wallet_search():
     search_handle = await Wallet.open_search(TYPE, QUERY_JSON, None)
@@ -83,6 +88,7 @@ async def test_wallet_search():
 
     with pytest.raises(VcxError) as e:
         await Wallet.export("/tmp/output.wallet", "backupKey")
+
 
 @pytest.mark.asyncio
 async def test_import_wallet_failures():

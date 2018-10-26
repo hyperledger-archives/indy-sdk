@@ -153,6 +153,7 @@ fn anoncreds_demo_works() {
 
     assert_eq!(ErrorCode::Success, err);
     let (err, schema_id, schema_json) = issuer_create_schema_receiver.recv_timeout(timeout::long_timeout()).unwrap();
+    println!("schema_id:\n{}", schema_id);
     assert_eq!(ErrorCode::Success, err);
 
     // Issuer create Credential Definition for Schema
@@ -315,6 +316,7 @@ fn anoncreds_demo_works() {
     // Prover prepare Credential to prove
     // Prover gets Credentials for Proof Request
     #[allow(deprecated)] //TODO FIXME use new one
+    println!("proof_req_json:\n{}", proof_req_json);
     let err =
         indy_prover_get_credentials_for_proof_req(prover_get_credentials_for_proof_req_command_handle,
                                                   prover_wallet_handle,

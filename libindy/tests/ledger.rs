@@ -673,7 +673,7 @@ mod high_cases {
                 },
             });
 
-            let request = ledger::build_get_schema_request(Some(IDENTIFIER), &anoncreds::gvt_schema_id()).unwrap();
+            let request = ledger::build_get_scuse utils::ctypes;hema_request(Some(IDENTIFIER), &anoncreds::gvt_schema_id()).unwrap();
             check_request(&request, expected_result);
         }
 

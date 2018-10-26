@@ -77,7 +77,7 @@ impl log::Log for LibindyLogger {
 
             enabled_cb(self.context,
                        level,
-                       target.as_ptr(),
+                       target.as_ptr()
             )
         } else { true }
     }
