@@ -14,6 +14,8 @@ pub struct ForwardAgentConfig {
     pub did: String,
     // Seed for deterministic generation of Forward Agent did key
     pub did_seed: Option<String>,
+    // Forward Agent Endpoint
+    pub endpoint: String,
     // Forward Agent wallet id
     pub wallet_id: String,
     // Forward Agent wallet passphrase

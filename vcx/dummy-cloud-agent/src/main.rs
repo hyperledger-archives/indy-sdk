@@ -4,6 +4,8 @@
 extern crate actix;
 extern crate actix_web;
 extern crate bytes;
+#[cfg(test)]
+extern crate dirs;
 #[macro_use]
 extern crate failure;
 extern crate futures;
@@ -45,7 +47,8 @@ fn main() {
     indy::logger::set_default_logger(None)
         .expect("Can't init indy logger");
 
-    env_logger::init();
+    env_logger::try_init()
+        .expect("Can't init env logger");
 
     let mut args = env::args();
     args.next(); // skip app name

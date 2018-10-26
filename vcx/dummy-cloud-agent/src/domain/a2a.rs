@@ -14,13 +14,18 @@ use domain::status::{MessageStatusCode, ConnectionStatus};
 // TODO: There should be additional enum level for versions
 #[derive(Debug)]
 pub enum A2AMessage {
+    /// base
     Forward(Forward),
+    /// onboarding
     Connect(Connect),
     Connected(Connected),
-    CreateKey(CreateKey),
-    KeyCreated(KeyCreated),
     SignUp(SignUp),
     SignedUp(SignedUp),
+    CreateAgent(CreateAgent),
+    AgentCreated(AgentCreated),
+    /// PW Connection
+    CreateKey(CreateKey),
+    KeyCreated(KeyCreated),
     CreateMessage(CreateMessage),
     MessageDetail(MessageDetail),
     MessageCreated(MessageCreated),
@@ -32,6 +37,14 @@ pub enum A2AMessage {
     MessageStatusUpdated(MessageStatusUpdated),
     GetMessages(GetMessages),
     Messages(Messages),
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AgentCreated {
+    #[serde(rename = "withPairwiseDID")]
+    pub with_pairwise_did: String,
+    #[serde(rename = "withPairwiseDIDVerKey")]
+    pub with_pairwise_did_verkey: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -57,6 +70,9 @@ pub struct Connected {
     #[serde(rename = "withPairwiseDIDVerKey")]
     pub with_pairwise_did_verkey: String,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateAgent {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateKey {
@@ -247,6 +263,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
         let value = Value::deserialize(deserializer).map_err(de::Error::custom)?;
 
         match (value["@type"]["name"].as_str(), value["@type"]["ver"].as_str()) {
+            (Some("AGENT_CREATED"), Some("1.0")) => {
+                AgentCreated::deserialize(value)
+                    .map(|msg| A2AMessage::AgentCreated(msg))
+                    .map_err(de::Error::custom)
+            }
             (Some("CONNECT"), Some("1.0")) => {
                 Connect::deserialize(value)
                     .map(|msg| A2AMessage::Connect(msg))
@@ -255,6 +276,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
             (Some("CONNECTED"), Some("1.0")) => {
                 Connected::deserialize(value)
                     .map(|msg| A2AMessage::Connected(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("CREATE_AGENT"), Some("1.0")) => {
+                CreateAgent::deserialize(value)
+                    .map(|msg| A2AMessage::CreateAgent(msg))
                     .map_err(de::Error::custom)
             }
             (Some("CREATE_KEY"), Some("1.0")) => {
@@ -345,6 +371,11 @@ impl<'de> Deserialize<'de> for A2AMessage {
 impl Serialize for A2AMessage {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let value = match self {
+            A2AMessage::AgentCreated(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "AGENT_CREATED", "ver": "1.0"}));
+                value
+            }
             A2AMessage::Connect(msg) => {
                 let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
                 value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONNECT", "ver": "1.0"}));
@@ -358,6 +389,11 @@ impl Serialize for A2AMessage {
             A2AMessage::Forward(msg) => {
                 let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
                 value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "FWD", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::CreateAgent(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CREATE_AGENT", "ver": "1.0"}));
                 value
             }
             A2AMessage::CreateKey(msg) => {
@@ -468,7 +504,7 @@ impl A2AMessage {
             .into_box()
     }
 
-    #[allow(unused)] //FIXME:
+    #[allow(unused)] // FIXME:
     pub fn bundle_anoncrypted(recipient_vk: &str,
                               msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         let bundle = ftry!(Self::bundle_plain(msgs));
