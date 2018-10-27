@@ -323,12 +323,10 @@ mod tests {
     fn forward_agent_connect_works() {
         run_test(|forward_agent| {
             future::ok(())
-                .and_then(|_| {
-                    edge_wallet_setup()
-                })
-                .and_then(|e_wallet_handle| {
-                    compose_connect(e_wallet_handle)
-                        .map(move |connect_msg| (e_wallet_handle, connect_msg))
+                .map(|_| {
+                    let e_wallet_handle = edge_wallet_setup().wait().unwrap();
+                    let connect_msg = compose_connect(e_wallet_handle).wait().unwrap();
+                    (e_wallet_handle, connect_msg)
                 })
                 .and_then(move |(e_wallet_handle, connect_msg)| {
                     forward_agent
@@ -337,13 +335,11 @@ mod tests {
                         .and_then(|res| res)
                         .map(move |connected_msg| (e_wallet_handle, connected_msg))
                 })
-                .and_then(|(e_wallet_handle, connected_msg)| {
-                    decompose_connected(e_wallet_handle, &connected_msg)
-                        .map(|(sender_verkey, pairwise_did, pairwise_verkey)| {
-                            assert_eq!(sender_verkey, FORWARD_AGENT_DID_VERKEY);
-                            assert!(!pairwise_did.is_empty());
-                            assert!(!pairwise_verkey.is_empty());
-                        })
+                .map(|(e_wallet_handle, connected_msg)| {
+                    let (sender_verkey, pairwise_did, pairwise_verkey) = decompose_connected(e_wallet_handle, &connected_msg).wait().unwrap();
+                    assert_eq!(sender_verkey, FORWARD_AGENT_DID_VERKEY);
+                    assert!(!pairwise_did.is_empty());
+                    assert!(!pairwise_verkey.is_empty());
                 })
         });
     }

@@ -8,7 +8,7 @@ use domain::internal_message::InternalMessage;
 use domain::key_deligation_proof::KeyDlgProof;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, crypto};
+use indy::{did, crypto, IndyError};
 use std::convert::Into;
 use utils::futures::*;
 
@@ -36,10 +36,6 @@ pub struct AgentConnectionConfig {
     pub owner_did: String,
     // Agent Owner Verkey
     pub owner_verkey: String,
-    // Agent DID
-    pub agent_did: String,
-    // Agent Verkey
-    pub agent_verkey: String,
     // User pairwise DID
     pub user_pairwise_did: String,
     // User pairwise DID Verkey
@@ -60,10 +56,6 @@ pub struct AgentConnection {
     owner_did: String,
     // Agent Owner Verkey
     owner_verkey: String,
-    // Agent DID
-    agent_did: String,
-    // Agent Verkey
-    agent_verkey: String,
     // User pairwise DID
     user_pairwise_did: String,
     // User pairwise Verkey
@@ -89,14 +81,14 @@ pub struct AgentConnection {
 impl AgentConnection {
     pub fn create(config: AgentConnectionConfig,
                   router: Addr<Router>) -> ResponseFuture<(), Error> {
+        trace!("AgentConnection::create >> {:?}", config);
+
         future::ok(())
             .and_then(move |_| {
                 let agent_connection = AgentConnection {
                     wallet_handle: config.wallet_handle,
                     owner_did: config.owner_did,
                     owner_verkey: config.owner_verkey,
-                    agent_did: config.agent_did,
-                    agent_verkey: config.agent_verkey,
                     user_pairwise_did: config.user_pairwise_did,
                     user_pairwise_verkey: config.user_pairwise_verkey,
                     agent_pairwise_did: config.agent_pairwise_did.clone(),
@@ -123,11 +115,8 @@ impl AgentConnection {
     #[allow(unused)] // FIXME: Use!
     pub fn restore(config: &AgentConnectionConfig,
                    router: Addr<Router>) -> BoxedFuture<(), Error> {
+        trace!("AgentConnection::restore >> {:?}", config);
         unimplemented!()
-    }
-
-    fn store_message(&mut self, msg: &InternalMessage) {
-        self.messages.insert(msg.uid.to_string(), msg.clone());
     }
 
     fn handle_a2a_msg(&mut self,
@@ -142,9 +131,17 @@ impl AgentConnection {
                     .into_actor(slf)
             })
             .and_then(|(sender_vk, mut msgs), slf, _| {
-                match msgs.pop() {
+                msgs.reverse();
+                let msg = msgs.pop();
+                slf.check_message_sender(msg.as_ref(), &sender_vk)
+                    .map(|_| (sender_vk, msg, msgs))
+                    .into_future()
+                    .into_actor(slf)
+            })
+            .and_then(|(sender_vk, msg, msgs), slf, _| {
+                match msg {
                     Some(A2AMessage::CreateMessage(msg)) => {
-                        slf.handle_create_message(msg, msgs, sender_vk)
+                        slf.handle_create_message(msg, msgs, &sender_vk)
                     }
                     Some(A2AMessage::SendMessages(msg)) => {
                         slf.handle_send_messages(msg)
@@ -160,23 +157,25 @@ impl AgentConnection {
                     }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
+                    .map(|msgs, _, _| (msgs, sender_vk))
             })
-            .and_then(|msgs, slf, _| {
-                A2AMessage::bundle_authcrypted(slf.wallet_handle, &slf.agent_pairwise_verkey, &slf.owner_verkey, &msgs)
-                    .map_err(|err| err.context("Can't bundle and authcrypt message.").into())
+            .and_then(|(msgs, sender_vk), slf, _|
+                slf.encrypt_response(&sender_vk, &msgs)
                     .into_actor(slf)
-            })
+            )
             .into_box()
     }
 
     fn handle_create_message(&mut self,
                              msg: CreateMessage,
                              mut tail: Vec<A2AMessage>,
-                             sender_verkey: String) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+                             sender_verkey: &str) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         trace!("AgentConnection::handle_create_message >> {:?}, {:?}, {:?}",
                msg, tail, sender_verkey);
 
         let CreateMessage { mtype, send_msg, reply_to_msg_id, uid } = msg;
+
+        let sender_verkey = sender_verkey.to_string();
 
         future::ok(())
             .into_actor(self)
@@ -224,7 +223,7 @@ impl AgentConnection {
         future::ok(())
             .into_actor(self)
             .and_then(|_, slf, _|
-                slf.verify_agent_key_dlg_proof(&slf.agent_pairwise_verkey, &msg_detail.key_dlg_proof)
+                slf.verify_agent_key_dlg_proof(&slf.user_pairwise_verkey, &msg_detail.key_dlg_proof)
                     .map(|_| msg_detail)
                     .into_actor(slf)
             )
@@ -265,9 +264,9 @@ impl AgentConnection {
         ftry_act!(self, self.validate_connection_request_answer(&msg_detail, &reply_to_msg_id));
 
         match self.get_message_handler_role(&sender_verkey) {
-            MessageHandlerRole::Sender =>
+            MessageHandlerRole::Owner =>
                 self.sender_handle_create_connection_request_answer(msg_detail, reply_to_msg_id),
-            MessageHandlerRole::Recipient =>
+            MessageHandlerRole::Remote =>
                 self.receipt_handle_create_connection_request_answer(msg_detail, reply_to_msg_id, msg_uid)
         }
     }
@@ -285,9 +284,9 @@ impl AgentConnection {
 
         let (status_code, sender_did) =
             match self.get_message_handler_role(&sender_verkey) {
-                MessageHandlerRole::Sender =>
+                MessageHandlerRole::Owner =>
                     (MessageStatusCode::Created, self.user_pairwise_did.clone()),
-                MessageHandlerRole::Recipient =>
+                MessageHandlerRole::Remote =>
                     (MessageStatusCode::Received,
                      self.remote_connection_detail.as_ref()
                          .map(|detail| detail.agent_detail.did.clone())
@@ -400,7 +399,8 @@ impl AgentConnection {
     fn sender_handle_create_connection_request_answer(&mut self,
                                                       msg_detail: ConnectionRequestAnswerMessageDetail,
                                                       reply_to_msg_id: String) -> ResponseActFuture<Self, (String, Vec<A2AMessage>), Error> {
-        trace!("AgentConnection::initiator_handle_create_connection_request_answer >> {:?}, {:?}", msg_detail, reply_to_msg_id);
+        trace!("AgentConnection::initiator_handle_create_connection_request_answer >> {:?}, {:?}",
+               msg_detail, reply_to_msg_id);
 
         let key_dlg_proof = ftry_act!(self, {
             msg_detail.key_dlg_proof.clone()
@@ -476,7 +476,8 @@ impl AgentConnection {
                                                        msg_detail: ConnectionRequestAnswerMessageDetail,
                                                        reply_to_msg_id: String,
                                                        msg_uid: Option<String>) -> ResponseActFuture<Self, (String, Vec<A2AMessage>), Error> {
-        trace!("AgentConnection::receipt_handle_create_connection_request_answer >> {:?}, {:?}, {:?}", msg_detail, reply_to_msg_id, msg_uid);
+        trace!("AgentConnection::receipt_handle_create_connection_request_answer >> {:?}, {:?}, {:?}",
+               msg_detail, reply_to_msg_id, msg_uid);
 
         future::ok(())
             .into_actor(self)
@@ -549,7 +550,7 @@ impl AgentConnection {
                                        ref_msg_id,
                                        payload,
                                        sending_data);
-        self.store_message(&msg);
+        self.messages.insert(msg.uid.to_string(), msg.clone());
         msg
     }
 
@@ -570,7 +571,7 @@ impl AgentConnection {
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _|
-                crypto::auth_crypt(slf.wallet_handle, &slf.user_pairwise_verkey, &slf.agent_verkey, &msg)
+                crypto::auth_crypt(slf.wallet_handle, &slf.agent_pairwise_verkey, &slf.owner_verkey, &msg)
                     .map_err(|err| err.context("Can't create my DID for pairwise.").into())
                     .into_actor(slf)
             )
@@ -582,18 +583,31 @@ impl AgentConnection {
             .into_box()
     }
 
-    fn get_message_handler_role(&self, sender_verkey: &str) -> MessageHandlerRole {
-        trace!("AgentConnection::get_message_handler_role >> {:?}", sender_verkey);
+    fn is_sent_by_owner(&self, sender_verkey: &str) -> bool {
+        sender_verkey == self.user_pairwise_verkey
+    }
 
-        if sender_verkey == self.user_pairwise_verkey { MessageHandlerRole::Sender } else { MessageHandlerRole::Recipient }
+    fn is_sent_by_remote(&self, sender_verkey: &str) -> bool {
+        match self.remote_connection_detail {
+            Some(ref remote_connection_detail) => sender_verkey == remote_connection_detail.agent_key_dlg_proof.agent_delegated_key,
+            None => true
+        }
+    }
+
+    fn get_message_handler_role(&self, sender_verkey: &str) -> MessageHandlerRole {
+        trace!("AgentConnection::get_message_handler_role >> {:?}",
+               sender_verkey);
+
+        if self.is_sent_by_owner(sender_verkey) { MessageHandlerRole::Owner } else { MessageHandlerRole::Remote }
     }
 
     fn validate_connection_request(&self,
                                    msg_detail: &ConnectionRequestMessageDetail,
                                    sender_verkey: &str) -> Result<(), Error> {
-        trace!("AgentConnection::validate_connection_request >> {:?}, {:?}", msg_detail, sender_verkey);
+        trace!("AgentConnection::validate_connection_request >> {:?}, {:?}",
+               msg_detail, sender_verkey);
 
-        if sender_verkey != self.user_pairwise_verkey {
+        if !self.is_sent_by_owner(sender_verkey) {
             return Err(err_msg("Unknown message sender."));
         }
 
@@ -604,10 +618,34 @@ impl AgentConnection {
         Ok(())
     }
 
+    fn check_message_sender(&self, msg: Option<&A2AMessage>, sender_verkey: &str) -> Result<(), Error> {
+        trace!("AgentConnection::check_message_sender >> {:?}, {:?}",
+               msg, sender_verkey);
+
+        match msg {
+            Some(A2AMessage::CreateMessage(_)) => {
+                if self.is_sent_by_owner(sender_verkey) || self.is_sent_by_remote(sender_verkey) {
+                    return Ok(());
+                }
+            }
+            Some(A2AMessage::SendMessages(_)) |
+            Some(A2AMessage::GetMessages(_)) |
+            Some(A2AMessage::UpdateConnectionStatus(_)) |
+            Some(A2AMessage::UpdateMessageStatus(_)) => {
+                if self.is_sent_by_owner(sender_verkey) {
+                    return Ok(());
+                }
+            }
+            _ => return Err(err_msg("Unsupported message"))
+        }
+        Err(err_msg("Invalid message sender."))
+    }
+
     fn validate_connection_request_answer(&self,
                                           msg_detail: &ConnectionRequestAnswerMessageDetail,
                                           reply_to_msg_id: &str) -> Result<(), Error> {
-        trace!("AgentConnection::validate_connection_request_answer >> {:?}", msg_detail);
+        trace!("AgentConnection::validate_connection_request_answer >> {:?}, {:?}",
+               msg_detail, reply_to_msg_id);
 
         self.check_no_accepted_invitation_exists()?;
         self.check_valid_status_code(&msg_detail.answer_status_code)?;
@@ -660,6 +698,10 @@ impl AgentConnection {
         }).to_string();
 
         did::store_their_did(self.wallet_handle, &their_did_info)
+            .then(|res| match res {
+                Err(IndyError::WalletItemAlreadyExists) => Ok(()),
+                r => r
+            })
             .map_err(|err| err.context("Can't create my DID for pairwise.").into())
             .into_box()
     }
@@ -720,7 +762,7 @@ impl AgentConnection {
 
         let signature = base64::decode(&key_dlg_proof.signature).unwrap();
 
-        crypto::indy_verify(sender_verkey, &key_dlg_proof.challenge().as_bytes(), &signature)
+        crypto::verify(sender_verkey, &key_dlg_proof.challenge().as_bytes(), &signature)
             .map_err(|err| err.context("Agent key delegation proof verification failed.").into())
             .and_then(|valid|
                 if valid {
@@ -787,8 +829,7 @@ impl AgentConnection {
     }
 
     fn send_invite_message(&mut self, _message: InternalMessage) -> ResponseFuture<(), Error> {
-        trace!("AgentConnection::send_invite_message >> {:?}",
-               _message);
+        trace!("AgentConnection::send_invite_message >> {:?}", _message);
 
         unimplemented!() // TODO: send invite sms?
     }
@@ -845,31 +886,22 @@ impl AgentConnection {
     }
 
     fn prepare_remote_message(&self, message: Vec<A2AMessage>) -> Result<Vec<u8>, Error> {
-        trace!("AgentConnection::prepare_remote_message >> {:?}",
-               message);
+        trace!("AgentConnection::prepare_remote_message >> {:?}", message);
 
         let remote_connection_detail = self.remote_connection_detail.as_ref()
             .ok_or(err_msg("Missed Remote Connection Details."))?;
 
-        let remote_forward_agent_detail = &remote_connection_detail.forward_agent_detail.verkey;
-        let remote_agent_verkey = &remote_connection_detail.agent_detail.verkey;
-        let remote_agent_pairwise_verkey = &remote_connection_detail.agent_key_dlg_proof.agent_delegated_key;
+        let remote_forward_agent_detail = &remote_connection_detail.forward_agent_detail;
+        let remote_agent_pairwise_detail = &remote_connection_detail.agent_key_dlg_proof;
 
         let message = A2AMessage::bundle_authcrypted(self.wallet_handle,
                                                      &self.user_pairwise_verkey,
-                                                     &remote_agent_pairwise_verkey,
+                                                     &remote_agent_pairwise_detail.agent_delegated_key,
                                                      &message).wait()?;
 
-        let fwd_message = self.build_forward_message(&remote_agent_pairwise_verkey, message)?;
+        let fwd_message = self.build_forward_message(&remote_agent_pairwise_detail.agent_delegated_key, message)?;
 
-        let message = A2AMessage::bundle_authcrypted(self.wallet_handle,
-                                                     &self.owner_verkey,
-                                                     &remote_agent_verkey,
-                                                     fwd_message.as_slice()).wait()?;
-
-        let fwd_message = self.build_forward_message(&remote_agent_verkey, message)?;
-
-        let message = A2AMessage::bundle_anoncrypted(&remote_forward_agent_detail, fwd_message.as_slice()).wait()?;
+        let message = A2AMessage::bundle_anoncrypted(&remote_forward_agent_detail.verkey, fwd_message.as_slice()).wait()?;
 
         Ok(message)
     }
@@ -904,8 +936,8 @@ impl AgentConnection {
                 target_name: msg_detail.target_name.clone(),
                 sender_agency_detail: self.forward_agent_detail.clone(),
                 sender_detail: SenderDetail {
-                    did: self.agent_did.clone(),
-                    verkey: self.agent_verkey.clone(),
+                    did: self.user_pairwise_did.clone(),
+                    verkey: self.user_pairwise_verkey.clone(),
                     agent_key_dlg_proof: msg_detail.key_dlg_proof.clone(),
                     name: None,
                     logo_url: None,
@@ -924,6 +956,9 @@ impl AgentConnection {
         trace!("AgentConnection::build_invite_answer_message >> {:?}, {:?}",
                message, reply_to);
 
+        let agent_key_dlg_proof = self.agent_key_dlg_proof.clone()
+            .ok_or(err_msg("Missed Key Delegation Proof."))?;
+
         let msg_create = CreateMessage {
             mtype: message._type.clone(),
             send_msg: false,
@@ -932,11 +967,11 @@ impl AgentConnection {
         };
 
         let msg_detail = ConnectionRequestAnswerMessageDetail {
-            key_dlg_proof: self.agent_key_dlg_proof.clone(),
+            key_dlg_proof: None,
             sender_detail: SenderDetail {
                 did: self.user_pairwise_did.clone(),
                 verkey: self.user_pairwise_verkey.clone(),
-                agent_key_dlg_proof: self.agent_key_dlg_proof.clone().unwrap(),
+                agent_key_dlg_proof,
                 name: None,
                 logo_url: None,
             },
@@ -976,6 +1011,23 @@ impl AgentConnection {
 
         Ok(messages)
     }
+
+    fn get_recipient_key(&self, sender_vk: &str) -> Result<String, Error> {
+        if self.is_sent_by_owner(sender_vk) {
+            Ok(self.owner_verkey.clone())
+        } else if self.is_sent_by_remote(sender_vk) {
+            self.remote_connection_detail.as_ref().map(|detail| detail.agent_key_dlg_proof.agent_delegated_key.to_string())
+                .ok_or(err_msg("Remote connection is not set."))
+        } else { Err(err_msg("Unknown message sender.")) }
+    }
+
+    fn encrypt_response(&self, sender_vk: &str, msgs: &Vec<A2AMessage>) -> ResponseFuture<Vec<u8>, Error> {
+        let recipient_vk = ftry!(self.get_recipient_key(&sender_vk));
+
+        A2AMessage::bundle_authcrypted(self.wallet_handle, &self.agent_pairwise_verkey, &recipient_vk, &msgs)
+            .map_err(|err| err.context("Can't bundle and authcrypt message.").into())
+            .into_box()
+    }
 }
 
 impl Actor for AgentConnection {
@@ -992,6 +1044,266 @@ impl Handler<HandleA2AMsg> for AgentConnection {
 }
 
 enum MessageHandlerRole {
-    Sender,
-    Recipient
+    Owner,
+    Remote
+}
+
+#[cfg(test)]
+mod tests {
+    use actors::ForwardA2AMsg;
+    use super::*;
+    use utils::tests::*;
+    use indy::wallet;
+
+    #[test]
+    fn agent_create_connection_request_works() {
+        run_test(|forward_agent| {
+            future::ok(())
+                .and_then(|()| {
+                    setup_agent(forward_agent)
+                })
+                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                    let msg = compose_create_connection_request(e_wallet_handle,
+                                                                         &agent_did,
+                                                                         &agent_verkey,
+                                                                         &agent_pw_did,
+                                                                         &agent_pw_vk).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_pw_did, agent_pw_vk))
+                })
+                .map(|(e_wallet_handle, resp, agent_pw_did, agent_pw_vk)| {
+                    let (sender_vk, _, invite_detail) = decompose_connection_request_created(e_wallet_handle, &resp).wait().unwrap();
+                    assert_eq!(sender_vk, agent_pw_vk);
+                    assert_eq!(FORWARD_AGENT_DID, invite_detail.sender_agency_detail.did);
+                    assert_eq!(FORWARD_AGENT_DID_VERKEY, invite_detail.sender_agency_detail.verkey);
+                    assert_eq!(EDGE_PAIRWISE_DID, invite_detail.sender_detail.did);
+                    assert_eq!(EDGE_PAIRWISE_DID_VERKEY, invite_detail.sender_detail.verkey);
+                    assert_eq!(agent_pw_did, invite_detail.sender_detail.agent_key_dlg_proof.agent_did);
+                    assert_eq!(agent_pw_vk, invite_detail.sender_detail.agent_key_dlg_proof.agent_delegated_key);
+
+                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                })
+        });
+    }
+
+    #[test]
+    fn agent_create_connection_request_answer_works() {
+        run_test(|forward_agent| {
+            future::ok(())
+                .and_then(|()| {
+                    setup_agent(forward_agent)
+                })
+                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                    let reply_to_msg_id = "123456789";
+                    let msg = compose_create_connection_request_answer(e_wallet_handle,
+                                                                                &agent_did,
+                                                                                &agent_verkey,
+                                                                                &agent_pw_did,
+                                                                                &agent_pw_vk,
+                                                                                reply_to_msg_id).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_pw_vk, reply_to_msg_id))
+                })
+                .map(|(e_wallet_handle, resp, agent_pw_vk, reply_to_msg_id)| {
+                    let (sender_vk, msg_uid) = decompose_connection_request_answer_created(e_wallet_handle, &resp).wait().unwrap();
+                    assert_eq!(sender_vk, agent_pw_vk);
+                    assert_ne!(reply_to_msg_id, msg_uid);
+
+                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                })
+        });
+    }
+
+    #[test]
+    fn agent_create_general_message_works() {
+        run_test(|forward_agent| {
+            future::ok(())
+                .and_then(|()| {
+                    setup_agent(forward_agent)
+                })
+                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                    let msg = compose_create_general_message(e_wallet_handle,
+                                                                     &agent_did,
+                                                                     &agent_verkey,
+                                                                     &agent_pw_did,
+                                                                     &agent_pw_vk,
+                                                                     MessageType::CredOffer).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_pw_vk))
+                })
+                .map(|(e_wallet_handle, resp, agent_pw_vk)| {
+                    let (sender_vk, msg_uid) = decompose_general_message_created(e_wallet_handle, &resp).wait().unwrap();
+                    assert_eq!(sender_vk, agent_pw_vk);
+                    assert!(!msg_uid.is_empty());
+
+                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                })
+        });
+    }
+
+    #[test]
+    fn agent_get_messages_works() {
+        run_test(|forward_agent| {
+            future::ok(())
+                .and_then(|()| {
+                    setup_agent(forward_agent)
+                })
+                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                    let msg = compose_create_general_message(e_wallet_handle,
+                                                                      &agent_did,
+                                                                      &agent_verkey,
+                                                                      &agent_pw_did,
+                                                                      &agent_pw_vk,
+                                                                      MessageType::CredOffer).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_did, agent_verkey, forward_agent, agent_pw_did, agent_pw_vk))
+                })
+                .and_then(move |(e_wallet_handle, resp, agent_did, agent_verkey, forward_agent, agent_pw_did, agent_pw_vk)| {
+                    let (_, msg_uid) = decompose_general_message_created(e_wallet_handle, &resp).wait().unwrap();
+
+                    let msg = compose_get_messages(e_wallet_handle,
+                                                            &agent_did,
+                                                            &agent_verkey,
+                                                            &agent_pw_did,
+                                                            &agent_pw_vk).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, agent_pw_vk, resp, msg_uid))
+                })
+                .map(|(e_wallet_handle, agent_pw_vk, resp, msg_uid)| {
+                    let (sender_vk, messages) = decompose_get_messages(e_wallet_handle, &resp).wait().unwrap();
+                    assert_eq!(sender_vk, agent_pw_vk);
+                    assert_eq!(1, messages.len());
+
+                    let expected_message = GetMessagesDetailResponse {
+                        uid: msg_uid,
+                        status_codes: MessageStatusCode::Created,
+                        sender_did: EDGE_PAIRWISE_DID.to_string(),
+                        type_: MessageType::CredOffer,
+                        payload: Some(PAYLOAD.to_vec()),
+                        ref_msg_id: None,
+                    };
+                    assert_eq!(expected_message, messages[0]);
+
+                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                })
+        });
+    }
+
+    #[test]
+    fn agent_update_message_status_works() {
+        run_test(|forward_agent| {
+            future::ok(())
+                .and_then(|()| {
+                    setup_agent(forward_agent)
+                })
+                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                    let msg = compose_create_general_message(e_wallet_handle,
+                                                                      &agent_did,
+                                                                      &agent_verkey,
+                                                                      &agent_pw_did,
+                                                                      &agent_pw_vk,
+                                                             MessageType::CredOffer).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_did, agent_verkey, forward_agent, agent_pw_did, agent_pw_vk))
+                })
+                .and_then(move |(e_wallet_handle, resp, agent_did, agent_verkey, forward_agent, agent_pw_did, agent_pw_vk)| {
+                    let (_, msg_uid) = decompose_general_message_created(e_wallet_handle, &resp).wait().unwrap();
+
+                    let get_messages = compose_get_messages(e_wallet_handle,
+                                                            &agent_did,
+                                                            &agent_verkey,
+                                                            &agent_pw_did,
+                                                            &agent_pw_vk).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(get_messages))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_did, agent_verkey, forward_agent, agent_pw_did, agent_pw_vk, msg_uid))
+                })
+                .and_then(|(e_wallet_handle, get_messages, agent_did, agent_verkey, forward_agent, agent_pw_did, agent_pw_vk, msg_uid)| {
+                    let (_, messages) = decompose_get_messages(e_wallet_handle, &get_messages).wait().unwrap();
+                    assert_eq!(1, messages.len());
+                    assert_eq!(msg_uid, messages[0].uid);
+                    assert_eq!(MessageStatusCode::Created,  messages[0].status_codes);
+
+                    let msg = compose_update_message_status_message(e_wallet_handle,
+                                                                                  &agent_did,
+                                                                                  &agent_verkey,
+                                                                                  &agent_pw_did,
+                                                                                  &agent_pw_vk,
+                                                                                  &msg_uid,
+                                                                                  MessageStatusCode::Accepted).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_pw_vk, msg_uid))
+                })
+                .map(|(e_wallet_handle, resp, agent_pw_vk, msg_uid)| {
+                    let (sender_vk, resp) = decompose_message_status_updated(e_wallet_handle, &resp).wait().unwrap();
+                    assert_eq!(sender_vk, agent_pw_vk);
+                    assert_eq!(1, resp.uids.len());
+                    assert_eq!(msg_uid, resp.uids[0].clone());
+                    assert_eq!(MessageStatusCode::Accepted, resp.status_code);
+
+                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                })
+        });
+    }
+
+    #[test]
+    fn agent_update_connection_status_works() {
+        run_test(|forward_agent| {
+            future::ok(())
+                .and_then(|()| {
+                    setup_agent(forward_agent)
+                })
+                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                    let msg = compose_update_connection_status_message(e_wallet_handle,
+                                                                                          &agent_did,
+                                                                                          &agent_verkey,
+                                                                                          &agent_pw_did,
+                                                                                          &agent_pw_vk).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_pw_vk))
+                })
+                .map(move |(e_wallet_handle, resp, agent_pw_vk)| {
+                    let (sender_vk, msg) = decompose_connection_status_updated(e_wallet_handle, &resp).wait().unwrap();
+                    assert_eq!(sender_vk, agent_pw_vk);
+                    assert_eq!(ConnectionStatus::Deleted, msg.status_code);
+
+                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                })
+        });
+    }
 }

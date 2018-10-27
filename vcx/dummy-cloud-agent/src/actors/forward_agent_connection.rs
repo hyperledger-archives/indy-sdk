@@ -328,11 +328,9 @@ mod tests {
                         .and_then(|res| res)
                         .map(move |signedup_msg| (e_wallet_handle, signedup_msg, pairwise_verkey))
                 })
-                .and_then(|(e_wallet_handle, signedup_msg, pairwise_verkey)| {
-                    decompose_signedup(e_wallet_handle, &signedup_msg)
-                        .map(move |sender_verkey| {
-                            assert_eq!(sender_verkey, pairwise_verkey);
-                        })
+                .map(|(e_wallet_handle, signedup_msg, pairwise_verkey)| {
+                    let sender_verkey = decompose_signedup(e_wallet_handle, &signedup_msg).wait().unwrap();
+                    assert_eq!(sender_verkey, pairwise_verkey);
                 })
         });
     }

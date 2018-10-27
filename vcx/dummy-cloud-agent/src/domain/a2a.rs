@@ -171,7 +171,7 @@ pub struct Messages {
     pub msgs: Vec<GetMessagesDetailResponse>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct GetMessagesDetailResponse {
     pub uid: String,
     #[serde(rename = "statusCodes")]

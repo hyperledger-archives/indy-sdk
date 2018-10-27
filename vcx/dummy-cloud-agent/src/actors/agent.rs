@@ -12,6 +12,7 @@ use std::convert::Into;
 use utils::futures::*;
 use utils::rand;
 
+#[allow(unused)] //FIXME:
 pub struct Agent {
     wallet_handle: i32,
     owner_did: String,
@@ -171,7 +172,7 @@ impl Agent {
             .and_then(|for_did, slf, _| {
                 did::create_and_store_my_did(slf.wallet_handle, "{}")
                     .map_err(|err| err.context("Can't create DID for agent pairwise connection.").into())
-                    .map(|(pairwise_did, pairwise_did_verkey)| (pairwise_did, pairwise_did_verkey, for_did))
+                    .map(|(pairwise_did, pairwise_did_verkey)| (for_did, pairwise_did, pairwise_did_verkey))
                     .into_actor(slf)
             })
             .and_then(|(for_did, pairwise_did, pairwise_did_verkey), slf, _| {
@@ -185,8 +186,6 @@ impl Agent {
                     wallet_handle: slf.wallet_handle,
                     owner_did: slf.owner_did.to_string(),
                     owner_verkey: slf.owner_verkey.to_string(),
-                    agent_did: slf.did.to_string(),
-                    agent_verkey: slf.verkey.to_string(),
                     user_pairwise_did: for_did.to_string(),
                     user_pairwise_verkey: for_did_verkey.to_string(),
                     agent_pairwise_did: pairwise_did.to_string(),
@@ -232,5 +231,41 @@ impl Handler<HandleA2AMsg> for Agent {
     fn handle(&mut self, msg: HandleA2AMsg, _: &mut Self::Context) -> Self::Result {
         trace!("Handler<AgentMsgsBundle>::handle >> {:?}", msg);
         self.handle_a2a_msg(msg.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use actors::ForwardA2AMsg;
+    use super::*;
+    use utils::tests::*;
+
+    #[test]
+    fn agent_create_key_works() {
+        run_test(|forward_agent| {
+            future::ok(())
+                .and_then(|()| {
+                    setup_agent(forward_agent)
+                })
+                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, _, _, forward_agent)| {
+                    let (user_pw_did, user_pw_verkey) = did::create_and_store_my_did(e_wallet_handle, "{}").wait().unwrap();
+
+                    let create_key_msg = compose_create_key(e_wallet_handle, &agent_did, &agent_verkey, &user_pw_did, &user_pw_verkey).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(create_key_msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |key_created_msg| (e_wallet_handle, key_created_msg, agent_verkey))
+                })
+                .map(|(e_wallet_handle, key_created_msg, agent_verkey)| {
+                    let (sender_vk, key) = decompose_key_created(e_wallet_handle, &key_created_msg).wait().unwrap();
+                    assert_eq!(sender_vk, agent_verkey);
+                    assert!(!key.with_pairwise_did.is_empty());
+                    assert!(!key.with_pairwise_did_verkey.is_empty());
+
+                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                })
+        });
     }
 }
