@@ -19,6 +19,7 @@ Native bindings for [Hyperledger Indy](https://www.hyperledger.org/projects/hype
   * [payment](#payment)
   * [pool](#pool)
   * [wallet](#wallet)
+  * [logger](#logger)
 - [Advanced](#advanced)
 - [Contributing](#contributing)
 
@@ -2459,6 +2460,38 @@ Errors: `Common*`, `Wallet*`
 
 [//]: # (CODEGEN-END - don't edit by hand see `codegen/index.js`)
 
+### logger
+
+WARNING: You can only set the logger **once**. Call `setLogger`, `setDefaultLogger`, not both. Once it's been set, libindy won't let you change it.
+
+#### setDefaultLogger \( pattern \)
+
+Calling this turns on the default logger and libindy will write logs to stdout.
+
+* `pattern`: String - pattern that corresponds with the log messages to show.
+
+Errors: `Common*`
+
+NOTE: This is a synchronous function (does not return a promise.)
+
+#### setLogger \( logFn \)
+
+Set a function to be called every time a log is emitted from libindy.
+
+* `logFn`: Function(Int level, String target, String message, String module_path, String file, Int line)
+
+Example:
+```js
+indy.setLogger(function (level, target, message, modulePath, file, line) {
+    console.log('libindy said:', level, target, message, modulePath, file, line)
+})
+```
+
+Errors: `Common*`
+
+NOTE: This is a synchronous function (does not return a promise) but may call `logFn` asynchronously many times.
+
+
 ## Advanced
 
 If you need to get closer to the metal, you can access the node bindings directly.
@@ -2491,16 +2524,13 @@ Setup an Indy SDK environment, and start a local pool.
 # You will need libindy in your system library path. (i.e. /usr/lib/libindy.so for linux)
 # or in this directory (i.e. wrappers/nodejs/libindy.so)
 
-# Copy over the libindy header files. This is needed for the build step.
-cp -r ../../libindy/include/ .
-
 # Install dependencies and do the initial build.
 npm install
 
 # Run the tests
-RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+TEST_POOL_IP=10.0.0.2 npm test
 # If you built with libindy locally (i.e. wrappers/nodejs/libindy.so) you need to set LD_LIBRARY_PATH
-LD_LIBRARY_PATH=./ RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+LD_LIBRARY_PATH=./ TEST_POOL_IP=10.0.0.2 npm test
 
 # To recompile the native bindings
 npm run rebuild

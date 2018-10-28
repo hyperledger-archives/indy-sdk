@@ -1,5 +1,6 @@
 #include <string>
 #include <map>
+#include <queue>
 #include <nan.h>
 #include "indy_core.h"
 
@@ -326,6 +327,99 @@ void indyCalled(IndyCallback* icb, indy_error_t res) {
     }
     icb->cbNone(res);
 }
+
+NAN_METHOD(setDefaultLogger) {
+  INDY_ASSERT_NARGS(setDefaultLogger, 1)
+  INDY_ASSERT_STRING(setDefaultLogger, 0, pattern)
+  const char* pattern = argToCString(info[0]);
+  indy_error_t res = indy_set_default_logger(pattern);
+  delete pattern;
+  info.GetReturnValue().Set(res);
+}
+
+struct IndyLogEntry {
+    indy_u32_t level;
+    const char* target;
+    const char* message;
+    const char* module_path;
+    const char* file;
+    indy_u32_t line;
+};
+class IndyLogger : public Nan::AsyncResource {
+  public:
+    IndyLogger(v8::Local<v8::Function> logFn_) : Nan::AsyncResource("IndyLogger") {
+        logFn.Reset(logFn_);
+        uvHandle.data = this;
+        uv_async_init(uv_default_loop(), &uvHandle, onMainLoopReentry);
+    }
+
+    ~IndyLogger() {
+        logFn.Reset();
+    }
+
+    void cbLog(indy_u32_t level, const char* target, const char* message, const char* module_path, const char* file, indy_u32_t line){
+        IndyLogEntry* entry = new IndyLogEntry();
+        entry->level = level;
+        entry->target = copyCStr(target);
+        entry->message = copyCStr(message);
+        entry->module_path = copyCStr(module_path);
+        entry->file = copyCStr(file);
+        entry->line = line;
+        entries.push(entry);
+
+        uv_async_send(&uvHandle);
+    }
+
+    void cbFlush(){
+        uv_async_send(&uvHandle);
+    }
+
+  private:
+
+    Nan::Persistent<v8::Function> logFn;
+    uv_async_t uvHandle;
+    std::queue<IndyLogEntry*> entries;
+
+    inline static NAUV_WORK_CB(onMainLoopReentry) {
+        Nan::HandleScope scope;
+
+        IndyLogger* il = static_cast<IndyLogger*>(async->data);
+
+        v8::Local<v8::Object> that = Nan::New<v8::Object>();
+        v8::Local<v8::Function> logFn = Nan::New(il->logFn);
+
+        while(!il->entries.empty()){
+            IndyLogEntry* entry = il->entries.front();
+            il->entries.pop();
+            v8::Local<v8::Value> argv[6];
+            argv[0] = Nan::New<v8::Number>(entry->level);
+            argv[1] = toJSString(entry->target);
+            argv[2] = toJSString(entry->message);
+            argv[3] = toJSString(entry->module_path);
+            argv[4] = toJSString(entry->file);
+            argv[5] = Nan::New<v8::Number>(entry->line);
+            delete entry;
+
+            il->runInAsyncScope(that, logFn, 6, argv);
+        }
+    }
+};
+void setLogger_logFn(const void*  context, indy_u32_t level, const char* target, const char* message, const char* module_path, const char* file, indy_u32_t line){
+    IndyLogger* il = (IndyLogger*) context;
+    il->cbLog(level, target, message, module_path, file, line);
+}
+void setLogger_flushFn(const void*  context){
+    IndyLogger* il = (IndyLogger*) context;
+    il->cbFlush();
+}
+NAN_METHOD(setLogger) {
+  INDY_ASSERT_NARGS(setLogger, 1)
+  INDY_ASSERT_FUNCTION(setLogger, 0)
+  IndyLogger* il = new IndyLogger(Nan::To<v8::Function>(info[0]).ToLocalChecked());
+  indy_error_t res = indy_set_logger(il, nullptr, setLogger_logFn, setLogger_flushFn);
+  info.GetReturnValue().Set(res);
+}
+
 
 // Now inject the generated C++ code (see /codegen/cpp.js)
 #include "indy_codegen.h"

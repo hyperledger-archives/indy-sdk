@@ -14,7 +14,7 @@ test('did', async function (t) {
   t.deepEqual(await indy.listMyDidsWithMeta(wh), [])
   var [did, verkey] = await indy.createAndStoreMyDid(wh, {seed: '000000000000000000000000Steward1'})
   t.deepEqual(await indy.listMyDidsWithMeta(wh), [
-    {did: did, metadata: null, verkey: verkey}
+    {did: did, metadata: null, verkey: verkey, tempVerkey: null}
   ])
   t.is(await indy.keyForLocalDid(wh, did), verkey)
   t.is(await indy.keyForDid(pool.handle, wh, did), verkey)
@@ -51,7 +51,8 @@ test('did', async function (t) {
   t.deepEqual(data, {
     did: did,
     metadata: metadata,
-    verkey: verkey
+    verkey: verkey,
+    tempVerkey: null
   })
   t.deepEqual(await indy.listMyDidsWithMeta(wh), [data])
 

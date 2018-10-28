@@ -2,8 +2,6 @@
 macro_rules! init {
     ($x:expr) => (
     ::utils::threadpool::init();
-    ::settings::set_config_value(::settings::CONFIG_WALLET_KEY,::settings::DEFAULT_WALLET_KEY);
-    ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
     ::utils::libindy::wallet::tests::delete_test_wallet(::settings::DEFAULT_WALLET_NAME);
     ::settings::clear_config();
     ::settings::set_config_value(::settings::CONFIG_WALLET_KEY,::settings::DEFAULT_WALLET_KEY);
@@ -26,13 +24,14 @@ macro_rules! init {
         },
         "ledger" => {
             ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
+            ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
             ::utils::devsetup::tests::setup_ledger_env();
         },
         "agency" => {
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::ENTERPRISE_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::wallet::tests::delete_test_wallet(&format!("{}_{}", ::utils::constants::CONSUMER_PREFIX, ::settings::DEFAULT_WALLET_NAME));
             ::utils::libindy::pool::tests::delete_test_pool();
-            ::settings::set_config_value(::settings::CONFIG_ENABLE_TEST_MODE,"false");
+            ::utils::devsetup::tests::init_plugin(::settings::DEFAULT_PAYMENT_PLUGIN, ::settings::DEFAULT_PAYMENT_INIT_FUNCTION);
             ::utils::devsetup::tests::setup_local_env();
         },
         _ => {panic!("Invalid test mode");},
@@ -58,15 +57,20 @@ macro_rules! teardown {
 #[cfg(test)]
 pub mod tests {
     extern crate serde_json;
+    extern crate libloading;
+    extern crate libc;
 
     use utils::constants;
     use utils::libindy::wallet;
     use utils::libindy::pool;
     use settings;
+    use std;
     use object_cache::ObjectCache;
-
     static mut INSTITUTION_CONFIG: u32 = 0;
     static mut CONSUMER_CONFIG: u32 = 0;
+    use indy::ErrorCode;
+
+    static INIT_PLUGIN: std::sync::Once = std::sync::ONCE_INIT;
 
     lazy_static! {
         static ref CONFIG_STRING: ObjectCache<String> = Default::default();
@@ -99,6 +103,40 @@ pub mod tests {
         let did = settings::set_config_value(settings::CONFIG_INSTITUTION_DID, &my_did);
     }
 
+    pub fn init_plugin(library: &str, initializer: &str) {
+        settings::set_config_value(settings::CONFIG_PAYMENT_METHOD, settings::DEFAULT_PAYMENT_METHOD);
+
+        INIT_PLUGIN.call_once(|| {
+            if let Ok(lib) = _load_lib(library) {
+                unsafe {
+                    if let Ok(init_func) = lib.get(initializer.as_bytes()) {
+                        let init_func: libloading::Symbol<unsafe extern fn() -> ErrorCode> = init_func;
+
+                        match init_func() {
+                            ErrorCode::Success => {
+                                debug!("Plugin has been loaded: {:?}", library);
+                            },
+                            _ => {
+                                error!("Plugin has not been loaded: {:?}", library);
+                                std::process::exit(123);
+                            }
+                        }
+                    } else {
+                        error!("Init function not found: {:?}", initializer);
+                        std::process::exit(123);
+                    }
+                }
+            } else {
+                error!("Plugin not found: {:?}", library);
+                std::process::exit(123);
+            }
+        });
+    }
+
+    fn _load_lib(library: &str) -> libloading::Result<libloading::Library> {
+        libloading::os::unix::Library::open(Some(library), libc::RTLD_NOW | libc::RTLD_NODELETE).map(libloading::Library::from)
+    }
+
     pub fn setup_ledger_env() {
         match pool::get_pool_handle() {
             Ok(x) => pool::close().unwrap(),
@@ -112,11 +150,14 @@ pub mod tests {
         settings::set_config_value(settings::CONFIG_WALLET_NAME, settings::DEFAULT_WALLET_NAME);
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_GENESIS_PATH, settings::DEFAULT_GENESIS_PATH);
+
         pool::tests::open_sandbox_pool();
 
         wallet::init_wallet(settings::DEFAULT_WALLET_NAME).unwrap();
+
         ::utils::libindy::anoncreds::libindy_prover_create_master_secret(settings::DEFAULT_LINK_SECRET_ALIAS).unwrap();
         set_trustee_did();
+
         ::utils::libindy::payments::tests::token_setup(None, None);
     }
 
@@ -157,7 +198,6 @@ pub mod tests {
         settings::clear_config();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
         settings::set_config_value(settings::CONFIG_WALLET_KEY, settings::DEFAULT_WALLET_KEY);
-
         let enterprise_wallet_name = format!("{}_{}", constants::ENTERPRISE_PREFIX, settings::DEFAULT_WALLET_NAME);
         let config = json!({
             "agency_url": AGENCY_ENDPOINT.to_string(),
@@ -168,7 +208,7 @@ pub mod tests {
             "enterprise_seed": TRUSTEE.to_string(),
             "name": "institution".to_string(),
             "logo": "http://www.logo.com".to_string(),
-            "path": constants::GENESIS_PATH.to_string()
+            "path": constants::GENESIS_PATH.to_string(),
         }).to_string();
         let enterprise_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
 
@@ -184,19 +224,16 @@ pub mod tests {
             "enterprise_seed": TRUSTEE.to_string(),
             "name": "consumer".to_string(),
             "logo": "http://www.logo.com".to_string(),
-            "path": constants::GENESIS_PATH.to_string()
+            "path": constants::GENESIS_PATH.to_string(),
         }).to_string();
         let consumer_config = ::messages::agent_utils::connect_register_provision(&config).unwrap();
-
 
         unsafe {
             INSTITUTION_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&enterprise_wallet_name, &enterprise_config)).unwrap();
         }
-
         unsafe {
             CONSUMER_CONFIG = CONFIG_STRING.add(_config_with_wallet_handle(&consumer_wallet_name, &consumer_config)).unwrap();
         }
-
         pool::tests::open_sandbox_pool();
 
         set_consumer();
