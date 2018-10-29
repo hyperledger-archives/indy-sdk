@@ -771,7 +771,6 @@ pub mod tests {
     use std::ffi::CString;
     use std::time::Duration;
     use utils::libindy::{ return_types_u32, wallet::delete_wallet};
-    use utils::libindy::payments::build_test_address;
 
     #[test]
     fn test_get_token_info() {
