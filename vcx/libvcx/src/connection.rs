@@ -37,7 +37,7 @@ struct ConnectionOptions {
     phone: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Connection {
     source_id: String,
     pw_did: String,
@@ -56,6 +56,7 @@ struct Connection {
 impl Connection {
     fn _connect_send_invite(&mut self, options: Option<String>) -> Result<u32, ConnectionError> {
         debug!("sending invite for connection {}", self.source_id);
+        println!("self {:?}", self);
 
         let options_obj: ConnectionOptions = match options {
             Some(opt) => {

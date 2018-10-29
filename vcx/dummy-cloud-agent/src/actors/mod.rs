@@ -6,6 +6,7 @@ pub mod forward_agent;
 pub mod forward_agent_connection;
 pub mod agent;
 pub mod agent_connection;
+pub mod requester;
 
 // Common messages
 
@@ -49,4 +50,14 @@ pub struct RouteA2AMsg(pub String, pub Vec<u8>);
 
 impl Message for RouteA2AMsg {
     type Result = Result<Vec<u8>, Error>;
+}
+
+#[derive(Debug, Serialize)]
+pub struct RemoteMsg {
+    pub endpoint: String,
+    pub body: Vec<u8>
+}
+
+impl Message for RemoteMsg {
+    type Result = Result<(), Error>;
 }
