@@ -100,6 +100,7 @@ pub static THREAD_ERROR: Error = Error{ code_num: 1085, message: "Unable to crea
 pub static INVALID_PROOF_REQUEST: Error = Error{ code_num: 1086, message: "Proof Request Passed into Libindy Call Was Invalid"};
 pub static DUPLICATE_SCHEMA: Error = Error{ code_num: 1087, message: "Duplicate Schema: Ledger Already Contains Schema For Given DID, Version, and Name Combination"};
 pub static UKNOWN_LIBINDY_TRANSACTION_REJECTION: Error = Error{ code_num: 1088, message: "Unknown Libindy Rejection"};
+pub static MISSING_PAYMENT_METHOD: Error = Error{ code_num: 1089, message: "Configuration is missing the Payment Method parameter"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -193,6 +194,8 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_PROOF_REQUEST);
         insert_c_message(&mut m, &DUPLICATE_SCHEMA);
         insert_c_message(&mut m, &UKNOWN_LIBINDY_TRANSACTION_REJECTION);
+        insert_c_message(&mut m, &MISSING_PAYMENT_METHOD);
+
         m
     };
 }
