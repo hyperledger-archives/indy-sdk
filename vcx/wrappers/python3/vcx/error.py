@@ -97,6 +97,8 @@ class ErrorCode(IntEnum):
     ThreadError = 1085,
     InvalidProofRequest = 1086,
     MissingPaymentMethod = 1087,
+    DuplicateSchema = 1088,
+    UnknownLibindyRejection = 1089
 
 
 class VcxError(Exception):
