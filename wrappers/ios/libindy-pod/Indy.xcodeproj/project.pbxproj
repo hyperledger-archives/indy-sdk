@@ -42,6 +42,8 @@
 		ADF5F3B8EFC4D2816713001C /* IndyBlobStorage.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F28481E59F87D3680FB0 /* IndyBlobStorage.mm */; };
 		ADF5F6E301043F50DBFA7C63 /* IndyPayment.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF5F582B274D01D39FAA3F8 /* IndyPayment.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		ADF5FB30996DEF39DCD1BB92 /* IndyPayment.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5FAE758484DA836DF08D1 /* IndyPayment.mm */; };
+		ADF5FB81DCE4370CF99C0B81 /* IndyUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF5FBF2E10538C7610F30CC /* IndyUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		ADF5FBE42AC1107A83B12F53 /* IndyUtils.mm in Sources */ = {isa = PBXBuildFile; fileRef = ADF5F82EDD4154CA0EA46386 /* IndyUtils.mm */; };
 		ADF5FFAD8BF145CFC7C57C28 /* IndyBlobStorage.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF5F0289053914846F15C3E /* IndyBlobStorage.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		E32B103AE817115C80F0142F /* libPods-Indy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 788BE98286C5622244B9A7F5 /* libPods-Indy.a */; };
 /* End PBXBuildFile section */
@@ -85,7 +87,9 @@
 		ADF5F1B3292A4FAEE6C9B4BB /* IndyNonSecrets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyNonSecrets.h; sourceTree = "<group>"; };
 		ADF5F28481E59F87D3680FB0 /* IndyBlobStorage.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyBlobStorage.mm; sourceTree = "<group>"; };
 		ADF5F582B274D01D39FAA3F8 /* IndyPayment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyPayment.h; sourceTree = "<group>"; };
+		ADF5F82EDD4154CA0EA46386 /* IndyUtils.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyUtils.mm; sourceTree = "<group>"; };
 		ADF5FAE758484DA836DF08D1 /* IndyPayment.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyPayment.mm; sourceTree = "<group>"; };
+		ADF5FBF2E10538C7610F30CC /* IndyUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndyUtils.h; sourceTree = "<group>"; };
 		ADF5FD56969EAF15313B3399 /* IndyNonSecrets.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IndyNonSecrets.mm; sourceTree = "<group>"; };
 		CB6A56DBDD1F10585C90ECA8 /* Pods-Indy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Indy.release.xcconfig"; path = "Pods/Target Support Files/Pods-Indy/Pods-Indy.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -193,6 +197,8 @@
 				ADF5F582B274D01D39FAA3F8 /* IndyPayment.h */,
 				ADF5FD56969EAF15313B3399 /* IndyNonSecrets.mm */,
 				ADF5F1B3292A4FAEE6C9B4BB /* IndyNonSecrets.h */,
+				ADF5F82EDD4154CA0EA46386 /* IndyUtils.mm */,
+				ADF5FBF2E10538C7610F30CC /* IndyUtils.h */,
 			);
 			path = Wrapper;
 			sourceTree = "<group>";
@@ -231,6 +237,7 @@
 				ADF5FFAD8BF145CFC7C57C28 /* IndyBlobStorage.h in Headers */,
 				ADF5F6E301043F50DBFA7C63 /* IndyPayment.h in Headers */,
 				ADF5F09002A987F55A08F493 /* IndyNonSecrets.h in Headers */,
+				ADF5FB81DCE4370CF99C0B81 /* IndyUtils.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -359,6 +366,7 @@
 				ADF5F3B8EFC4D2816713001C /* IndyBlobStorage.mm in Sources */,
 				ADF5FB30996DEF39DCD1BB92 /* IndyPayment.mm in Sources */,
 				ADF5F180774B3F07CF685B00 /* IndyNonSecrets.mm in Sources */,
+				ADF5FBE42AC1107A83B12F53 /* IndyUtils.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

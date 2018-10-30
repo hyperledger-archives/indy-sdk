@@ -47,6 +47,7 @@ struct Connection {
     endpoint: String,
     // For QR code invitation
     invite_detail: Option<InviteDetail>,
+    invite_url: Option<String>,
     agent_did: String,
     agent_vk: String,
     their_pw_did: String,
@@ -103,6 +104,7 @@ impl Connection {
                         return Err(ConnectionError::GeneralConnectionError())
                     },
                 };
+                self.invite_url = Some(response[1].clone());
                 Ok(error::SUCCESS.code_num)
             }
         }
@@ -368,7 +370,7 @@ pub fn create_agent_pairwise(handle: u32) -> Result<u32, ConnectionError> {
         .for_did(&pw_did)
         .for_verkey(&pw_verkey)
         .send_secure()
-        .or(Err(ConnectionError::InvalidWalletSetup()))?;   // Throw a context specific error
+        .map_err(|e|ConnectionError::CommonError(e))?;
     debug!("create key for connection: {} with did/vk: {:?}",  get_source_id(handle).unwrap_or_default(),  result);
     set_agent_did(handle,&result[0]).err();
     set_agent_verkey(handle,&result[1]).err();
@@ -406,6 +408,7 @@ fn create_connection(source_id: &str) -> Result<u32, ConnectionError> {
         uuid: String::new(),
         endpoint: String::new(),
         invite_detail: None,
+        invite_url: None,
         agent_did: String::new(),
         agent_vk: String::new(),
         their_pw_did: String::new(),
@@ -434,17 +437,15 @@ fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
     match create_agent_pairwise(handle) {
         Err(err) => {
             error!("Error while Creating Agent Pairwise: {}", err);
-            release(handle)?;
             return Err(err)
         },
         Ok(_) => debug!("created pairwise key on agent"),
     };
 
-// TODO: RECOVER AFTER DUMMY CLOUD AGENT SUPPORTED IT
-//   match update_agent_profile(handle) {
+//    TODO: RESTORE IT AFTER DUMMY AGENT HAD SUPPORTED
+//    match update_agent_profile(handle) {
 //        Err(x) => {
 //            error!("could not update profile on agent: {}", x);
-//            release(handle)?;
 //            return Err(x)
 //        },
 //        Ok(_) => debug!("updated profile on agent"),
@@ -802,6 +803,15 @@ pub mod tests {
                    Some(ConnectionError::CommonError(error::INVALID_WALLET_HANDLE.code_num)));
         assert!(build_connection_with_invite("This Should Fail", "BadDetailsFoobar").is_err());
     }
+
+    #[test]
+    fn test_create_connection_agency_failure() {
+        init!("indy");
+        ::utils::httpclient::set_next_u8_response(vec![]);
+        let rc = build_connection("invalid");
+        assert_eq!(rc.unwrap_err(),ConnectionError::CommonError(error::POST_MSG_FAILURE.code_num));
+    }
+
     #[test]
     fn test_create_connection() {
         init!("true");
@@ -869,6 +879,7 @@ pub mod tests {
             uuid: String::new(),
             endpoint: String::new(),
             invite_detail: Some(InviteDetail::new()),
+            invite_url: None,
             agent_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
             agent_vk: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
             their_pw_did: String::new(),
@@ -952,6 +963,7 @@ pub mod tests {
             uuid: String::new(),
             endpoint: String::new(),
             invite_detail: None,
+            invite_url: None,
             agent_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
             agent_vk: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
             their_pw_did: String::new(),
@@ -1102,6 +1114,7 @@ pub mod tests {
             uuid: String::new(),
             endpoint: String::new(),
             invite_detail: None,
+            invite_url: None,
             agent_did: "8XFh8yBzrpJQmNyZzgoTqB".to_string(),
             agent_vk: "EkVTa7SCJ5SntpYyX7CSb2pcBhiVGT9kWSagA8a9T69A".to_string(),
             their_pw_did: String::new(),

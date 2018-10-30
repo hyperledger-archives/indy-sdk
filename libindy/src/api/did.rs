@@ -619,6 +619,8 @@ pub extern fn indy_get_did_metadata(command_handle: i32,
 ///   did_with_meta:  {
 ///     "did": string - DID stored in the wallet,
 ///     "verkey": string - The DIDs transport key (ver key, key id),
+///     "tempVerkey": string - Temporary DIDs transport key (ver key, key id), exist only during the rotation of the keys.
+///                            After rotation is done, it becomes a new verkey.
 ///     "metadata": string - The meta information stored with the DID
 ///   }
 ///

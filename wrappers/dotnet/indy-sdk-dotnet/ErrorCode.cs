@@ -232,7 +232,7 @@
         /// <summary>
         /// Returned if wallet's add_record operation is used with record name that already exists
         /// </summary>
-        WalletItemAlreadyExists = 213,
+        WalletItemAlreadyExistsError = 213,
 
         /// <summary>
         /// Returned if provided wallet query is invalid
@@ -276,7 +276,6 @@
         /// </summary>
         PoolLedgerConfigAlreadyExistsError = 306,
 
-
         /// <summary>
         /// Pool ledger timeout
         /// </summary>
@@ -286,7 +285,12 @@
         /// Attempt to open Pool for witch Genesis Transactions are not compatible with set Protocol version.
         /// Call pool.indy_set_protocol_version to set correct Protocol version.
         /// </summary>
-        PoolIncompatibleProtocolVersion = 308,
+        PoolIncompatibleProtocolVersionError = 308,
+
+        /// <summary>
+        /// Item not found on ledger.
+        /// </summary>
+        LedgerNotFound = 309,
 
         // Crypto errors
 
@@ -298,17 +302,8 @@
         /// <summary>
         /// Invalid user revocation index
         /// </summary>
-        AnoncredsInvalidUserRevocIndex = 401,
+        AnoncredsInvalidUserRevocId = 401,
 
-        /// <summary>
-        /// Accumulator is full
-        /// </summary>
-        AnoncredsAccumulatorIsFull = 402,
-
-        /// <summary>
-        /// Not issued error
-        /// </summary>
-        AnoncredsNotIssuedError = 403,
 
         /// <summary>
         /// Attempt to generate master secret with duplicated name
@@ -323,15 +318,16 @@
         /// <summary>
         /// Claim revoked
         /// </summary>
-        AnoncredsClaimRevoked = 406,
+        AnoncredsCredentialRevoked = 406,
 
         /// <summary>
         /// Attempt to create credential definition with duplicated id
         /// </summary>
         AnoncredsCredDefAlreadyExistsError = 407,
 
+        // Crypto errors
+
         /// <summary>
-        /// Crypto errors
         /// Unknown format of DID entity keys
         /// </summary>
         UnknownCryptoTypeError = 500,

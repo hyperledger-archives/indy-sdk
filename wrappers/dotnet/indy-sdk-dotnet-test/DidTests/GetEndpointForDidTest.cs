@@ -1,9 +1,9 @@
-﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.DidApi;
+﻿using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.LedgerApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Test.SignusTests
+namespace Hyperledger.Indy.Test.DidTests
 {
     [TestClass]
     public class GetEndpointForDidTest : IndyIntegrationTestWithPoolAndSingleWallet
@@ -11,8 +11,8 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestGetEndpointForDidWorks()
         {
-            await Did.SetEndpointForDidAsync(wallet, DID1, ENDPOINT, VERKEY);
-            var receivedEndpoint = await Did.GetEndpointForDidAsync(wallet, pool, DID1);
+            await Did.SetEndpointForDidAsync(wallet, DID, ENDPOINT, VERKEY);
+            var receivedEndpoint = await Did.GetEndpointForDidAsync(wallet, pool, DID);
             Assert.AreEqual(ENDPOINT, receivedEndpoint.Address);
             Assert.AreEqual(VERKEY, receivedEndpoint.TransportKey);
         }
@@ -38,7 +38,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         public async Task TestGetEndpointForDidWorksForUnknownDid()
         {
             var ex = await Assert.ThrowsExceptionAsync<InvalidStateException>(() =>
-               Did.GetEndpointForDidAsync(wallet, pool, DID1)
+               Did.GetEndpointForDidAsync(wallet, pool, DID)
            );
         }
     }

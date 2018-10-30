@@ -1,7 +1,6 @@
 ﻿using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
-using System;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.WalletTests
@@ -12,22 +11,47 @@ namespace Hyperledger.Indy.Test.WalletTests
         [TestMethod]
         public async Task TestCreateWalletWorks()
         {
-            WalletConfig config = new WalletConfig() { id = WALLET };
-            Credentials cred = new Credentials() { key = WALLET_KEY };
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+        }
+        
+        [TestMethod]
+        public async Task TestCreateWalletWorksForEmptyType()
+        {
+            var config = JsonConvert.SerializeObject(new { id = WalletUtils.GetWalletId() });
+            await Wallet.CreateWalletAsync(config, WALLET_CREDENTIALS);
+        }
 
-            await Wallet.CreateWalletAsync(config, cred);
+
+        [TestMethod]
+        public async Task TestCreateWalletWorksForUnknownType()
+        {
+            var config = JsonConvert.SerializeObject(new {
+                id = WalletUtils.GetWalletId(),
+                storage_type = "unknown_type"
+            });
+
+            var ex = await Assert.ThrowsExceptionAsync<UnknownWalletTypeException>(() =>
+                Wallet.CreateWalletAsync(config, WALLET_CREDENTIALS)
+            );
         }
 
         [TestMethod]
-        public async Task TestCreateWalletFailsForDuplicateName()
+        public async Task TestCreateWalletWorksForEmptyName()
         {
-            WalletConfig config = new WalletConfig() { id = WALLET };
-            Credentials cred = new Credentials() { key = WALLET_KEY };
+            var config = JsonConvert.SerializeObject(new { id = string.Empty });
 
-            await Wallet.CreateWalletAsync(config, cred);
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
+                Wallet.CreateWalletAsync(config, WALLET_CREDENTIALS)
+            );
+        }
 
-            var ex = await Assert.ThrowsExceptionAsync<WalletExistsException>(async () => 
-                await Wallet.CreateWalletAsync(config, cred)
+        [TestMethod]
+        public async Task TestCreateWalletFailsForDuplicate()
+        {
+            await Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS);
+
+            var ex = await Assert.ThrowsExceptionAsync<WalletExistsException>(() =>
+               Wallet.CreateWalletAsync(WALLET_CONFIG, WALLET_CREDENTIALS)
             );
         }
     }

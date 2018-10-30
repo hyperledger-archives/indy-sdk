@@ -811,7 +811,7 @@ pub mod tests {
     #[test]
     fn test_send_payment() {
         init!("ledger");
-        let recipient = CStringUtils::string_to_cstring(::utils::constants::PAYMENT_ADDRESS.to_string());
+        let recipient = CStringUtils::string_to_cstring(build_test_address("2ZrAm5Jc3sP4NAXMQbaWzDxEa12xxJW3VgWjbbPtMPQCoznJyS"));
         println!("sending payment to {:?}", recipient);
         let balance = ::utils::libindy::payments::get_wallet_token_info().unwrap().get_balance();
         let tokens = 5;

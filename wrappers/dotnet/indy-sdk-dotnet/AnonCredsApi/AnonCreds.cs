@@ -260,7 +260,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(new CredentialSearch(search_handle, null, false));
+            taskCompletionSource.SetResult(new CredentialSearch(search_handle, null, true));
         }
         private static ProverSearchCredentialsForProofReqCompletedDelegate ProverSearchCredentialsForProofRequestCallback = ProverSearchCredentialsForProofRequestCallbackMethod;
 
