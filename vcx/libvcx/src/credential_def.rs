@@ -5,14 +5,9 @@ extern crate libc;
 use utils::error;
 use settings;
 use schema::LedgerSchema;
-use utils::constants::{ CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE, REV_REG_DEF_TXN_TYPE };
-use utils::libindy::payments::{pay_for_txn, PaymentTxn};
-use utils::libindy::anoncreds::{libindy_create_and_store_credential_def, libindy_create_and_store_revoc_reg};
-use utils::libindy::ledger::{libindy_submit_request,
-                             libindy_build_get_credential_def_txn,
-                             libindy_build_create_credential_def_txn,
-                             libindy_parse_get_cred_def_response,
-                             libindy_build_revoc_reg_def_request};
+use utils::constants::{ CRED_DEF_ID };
+use utils::libindy::payments::{PaymentTxn};
+use utils::libindy::ledger;
 use error::ToErrorCode;
 use error::cred_def::CredDefError;
 use object_cache::ObjectCache;
@@ -30,6 +25,7 @@ pub struct CredentialDef {
     issuer_did: String,
     cred_def_payment_txn: Option<PaymentTxn>,
     rev_reg_def_payment_txn: Option<PaymentTxn>,
+    rev_reg_delta_payment_txn: Option<PaymentTxn>,
     rev_reg_id: Option<String>,
     rev_reg_def: Option<String>,
     rev_reg_entry: Option<String>,
@@ -53,6 +49,7 @@ impl Default for CredentialDef {
             issuer_did: String::new(),
             cred_def_payment_txn: None,
             rev_reg_def_payment_txn: None,
+            rev_reg_delta_payment_txn: None,
             rev_reg_id: None,
             rev_reg_def: None,
             rev_reg_entry: None,
@@ -87,6 +84,8 @@ impl CredentialDef {
 
     fn get_rev_reg_def_payment_txn(&self) -> Option<PaymentTxn> { self.rev_reg_def_payment_txn.clone() }
 
+    fn get_rev_reg_delta_payment_txn(&self) -> Option<PaymentTxn> { self.rev_reg_delta_payment_txn.clone() }
+
     fn to_string_with_version(&self) -> String {
         json!({
             "version": "1.0",
@@ -117,27 +116,46 @@ pub fn create_new_credentialdef(source_id: String,
     let schema_json = LedgerSchema::new_from_ledger(&schema_id)
         .map_err(|x| CredDefError::CommonError(x.to_error_code()))?.schema_json;
 
-    let (id, cred_def_payment_txn) = _create_cred_def_on_ledger(&issuer_did,
-                                                       &schema_json,
-                                                       &tag,
-                                                       None,
-                                                       revocation_details.support_revocation)?;
+    // Creates Credential Definition in both wallet and on ledger
+    let (id, cred_def_payment_txn) = ledger::create_cred_def(&issuer_did,
+                                                             &schema_json,
+                                                             &tag,
+                                                             None,
+                                                             revocation_details.support_revocation)
+        .map_err(|err| {
+            if err == error::CREDENTIAL_DEF_ALREADY_CREATED.code_num {
+                error!("Credential Definition for issuer_did {} already in wallet", issuer_did);
+                CredDefError::CredDefAlreadyCreatedError()
+            } else {
+                error!("{} with: {}", error::CREATE_CREDENTIAL_DEF_ERR.message, err);
+                CredDefError::CreateCredDefError()
+            }
+        })?;
 
-    let (rev_reg_id, rev_reg_def, rev_reg_entry, rev_reg_def_payment_txn)
+    // Creates Revocation Definition in wallet and on ledger
+    // Posts Revocation Delta to Ledger
+    let (rev_reg_id, rev_reg_def, rev_reg_entry, rev_def_payment, rev_delta_payment)
     = match revocation_details.support_revocation {
-        Some(true) =>
+        Some(true) => {
+            let tails_file = revocation_details
+                .tails_file
+                .as_ref()
+                .ok_or(CredDefError::InvalidRevocationDetails())?;
 
-            _create_revoc_reg_def_on_ledger(
-                &issuer_did,
-                &id,
-                revocation_details.tails_file.as_ref().ok_or(CredDefError::InvalidRevocationDetails())?,
-                revocation_details.max_creds.ok_or(CredDefError::InvalidRevocationDetails())?,
-            ).map_err(|e| {
-                warn!("Unable to create revocation registry definition, err: {}", e);
-                CredDefError::CreateRevRegDefError()
-            })?,
+            let max_creds = revocation_details
+                .max_creds
+                .ok_or(CredDefError::InvalidRevocationDetails())?;
 
-        _ => (None, None, None, None),
+            let (rev_reg_id, rev_reg_def, rev_reg_entry, rev_def_payment) =
+                ledger::create_rev_reg_def(&issuer_did, &id, &tails_file, max_creds)
+                    .or(Err(CredDefError::CreateRevRegDefError()))?;
+
+            let (delta_payment, _) = ledger::post_rev_reg_delta(&issuer_did, &rev_reg_id, &rev_reg_entry)
+                .or(Err(CredDefError::InvalidRevocationEntry()))?;
+
+            (Some(rev_reg_id), Some(rev_reg_def), Some(rev_reg_entry), rev_def_payment, delta_payment)
+        }
+        _ => (None, None, None, None, None),
     };
 
     let new_cred_def = CredentialDef {
@@ -147,7 +165,8 @@ pub fn create_new_credentialdef(source_id: String,
         id,
         issuer_did,
         cred_def_payment_txn,
-        rev_reg_def_payment_txn,
+        rev_reg_def_payment_txn: rev_def_payment,
+        rev_reg_delta_payment_txn: rev_delta_payment,
         rev_reg_id,
         rev_reg_def,
         rev_reg_entry,
@@ -157,73 +176,6 @@ pub fn create_new_credentialdef(source_id: String,
     let new_handle = CREDENTIALDEF_MAP.add(new_cred_def).map_err(|key|CredDefError::CreateCredDefError())?;
 
     Ok(new_handle)
-}
-
-fn _create_cred_def_on_ledger(issuer_did: &str,
-                              schema_json: &str,
-                              tag: &str,
-                              sig_type: Option<&str>,
-                              support_revocation: Option<bool>) -> Result<(String, Option<PaymentTxn>), CredDefError> {
-    if settings::test_indy_mode_enabled() {
-        return Ok((CRED_DEF_ID.to_string(), Some(PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1, false).unwrap())));
-    }
-
-    let config_json = json!({"support_revocation": support_revocation.unwrap_or(false)}).to_string();
-
-    let (id, cred_def_json) = libindy_create_and_store_credential_def(issuer_did,
-                                                                      schema_json,
-                                                                      tag,
-                                                                      sig_type,
-                                                                      &config_json)
-        .map_err(|err| {
-            if err == error::CREDENTIAL_DEF_ALREADY_CREATED.code_num {
-                error!("cred_def for issuer_did {} already in wallet", issuer_did);
-                CredDefError::CredDefAlreadyCreatedError()
-            } else {
-                error!("{} with: {}", error::CREATE_CREDENTIAL_DEF_ERR.message, err);
-                CredDefError::CreateCredDefError()
-            }
-        })?;
-
-    let cred_def_req = libindy_build_create_credential_def_txn(issuer_did, &cred_def_json)
-        .or(Err(CredDefError::CreateCredDefError()))?;
-
-    let (payment, response) = pay_for_txn(&cred_def_req, CRED_DEF_TXN_TYPE)
-        .map_err(|err| CredDefError::CommonError(err))?;
-
-    Ok((id, payment))
-}
-
-fn _create_revoc_reg_def_on_ledger(issuer_did: &str, cred_def_id: &str, tails_file: &str, max_creds: u32)
-                                   -> Result<(Option<String>, Option<String>, Option<String>, Option<PaymentTxn>), u32> {
-    debug!("creating revocation registry definition with issuer_did: {}, cred_def_id: {}, tails_file_path: {}, max_creds: {}",
-           issuer_did, cred_def_id, tails_file, max_creds);
-
-    let (rev_reg_id, rev_reg_def_json, rev_reg_entry_json) = libindy_create_and_store_revoc_reg(
-        issuer_did,
-        cred_def_id,
-        tails_file,
-        max_creds
-    )?;
-
-    let rev_ref_def_req = libindy_build_revoc_reg_def_request(issuer_did, &rev_reg_def_json)?;
-
-    let (payment, _) = pay_for_txn(&rev_ref_def_req, REV_REG_DEF_TXN_TYPE)?;
-
-    Ok((Some(rev_reg_id), Some(rev_reg_def_json), Some(rev_reg_entry_json), payment))
-}
-
-pub fn retrieve_credential_def(cred_def_id: &str) -> Result<(String, String), CredDefError> {
-    if settings::test_indy_mode_enabled() { return Ok((CRED_DEF_ID.to_string(), CRED_DEF_JSON.to_string())); }
-
-    let get_cred_def_req = libindy_build_get_credential_def_txn(cred_def_id)
-        .or(Err(CredDefError::BuildCredDefRequestError()))?;
-
-    let get_cred_def_response = libindy_submit_request(&get_cred_def_req)
-        .map_err(|err| CredDefError::CommonError(err))?;
-
-    libindy_parse_get_cred_def_response(&get_cred_def_response)
-        .or(Err(CredDefError::RetrieveCredDefError()))
 }
 
 pub fn is_valid_handle(handle: u32) -> bool {
@@ -286,6 +238,13 @@ pub fn get_rev_reg_def_payment_txn(handle: u32) -> Result<Option<PaymentTxn>, Cr
     }).map_err(|ec|CredDefError::CommonError(ec))
 }
 
+
+pub fn get_rev_reg_delta_payment_txn(handle: u32) -> Result<Option<PaymentTxn>, CredDefError> {
+    CREDENTIALDEF_MAP.get(handle,|c| {
+        Ok(c.get_rev_reg_delta_payment_txn())
+    }).map_err(|ec|CredDefError::CommonError(ec))
+}
+
 pub fn release(handle: u32) -> Result<(), CredDefError> {
     match CREDENTIALDEF_MAP.release(handle) {
         Ok(_) => Ok(()),
@@ -316,7 +275,7 @@ pub fn release_all() {
 
 #[cfg(test)]
 pub mod tests {
-    use utils::constants::{SCHEMA_ID, SCHEMAS_JSON};
+    use utils::constants::{SCHEMA_ID};
     use super::*;
 
     static CREDENTIAL_DEF_NAME: &str = "Test Credential Definition";
@@ -351,6 +310,18 @@ pub mod tests {
     }
 
     #[test]
+    fn test_create_cred_def_without_rev_will_have_no_rev_id() {
+        init!("ledger");
+        let (_, handle) = create_cred_def_real(false);
+        let rev_reg_id = get_rev_reg_id(handle).unwrap();
+        assert!(rev_reg_id.is_none());
+
+        let (_, handle) = create_cred_def_real(true);
+        let rev_reg_id = get_rev_reg_id(handle).unwrap();
+        assert!(rev_reg_id.is_some());
+    }
+
+    #[test]
     fn test_get_cred_def() {
         init!("true");
         let (_, handle) = create_cred_def_real(false);
@@ -365,16 +336,16 @@ pub mod tests {
         settings::clear_config();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        assert!(retrieve_credential_def(CRED_DEF_ID).is_err());
+        assert!(::utils::libindy::ledger::get_cred_def(CRED_DEF_ID).is_err());
     }
 
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_get_credential_def() {
         init!("ledger");
-        let (_, _, cred_def_id, cred_def_json, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
+        let (_, _, cred_def_id, cred_def_json, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
 
-        let (id, r_cred_def_json) = retrieve_credential_def(&cred_def_id).unwrap();
+        let (id, r_cred_def_json) = ::utils::libindy::ledger::get_cred_def(&cred_def_id).unwrap();
 
         assert_eq!(id, cred_def_id);
         let def1: serde_json::Value = serde_json::from_str(&cred_def_json).unwrap();
@@ -403,22 +374,6 @@ pub mod tests {
 
     #[cfg(feature = "pool_tests")]
     #[test]
-    fn test_rev_reg_def_fails_for_cred_def_created_without_revocation() {
-        let wallet_name = "test_create_revocable_fails_with_no_tails_file";
-        init!("ledger");
-
-        let data = r#"["address1","address2","zip","city","state"]"#.to_string();
-        // Cred def is created with support_revocation=false,
-        // revoc_reg_def will fail in libindy because cred_Def doesn't have revocation keys
-        let (_, _, cred_def_id, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
-        let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let rc = _create_revoc_reg_def_on_ledger(&did, &cred_def_id, "/tmp/path.txt", 2);
-
-        assert_eq!(rc, Err(error::LIBINDY_INVALID_STRUCTURE.code_num));
-    }
-
-    #[cfg(feature = "pool_tests")]
-    #[test]
     fn test_create_revocable_cred_def_with_payments() {
         let wallet_name = "test_create_revocable_cred_def";
         init!("ledger");
@@ -438,6 +393,10 @@ pub mod tests {
         assert!(get_rev_reg_def(handle).unwrap().is_some());
         assert!(get_rev_reg_id(handle).unwrap().is_some());
         assert!(get_rev_reg_def_payment_txn(handle).unwrap().is_some());
+        assert!(get_rev_reg_delta_payment_txn(handle).unwrap().is_some());
+        let cred_id = get_cred_def_id(handle).unwrap();
+        let (_, json) = ::utils::libindy::ledger::get_cred_def(&cred_id).unwrap();
+        println!("cred_def_json: {:?}", json);
     }
 
     #[cfg(feature = "pool_tests")]
@@ -466,13 +425,6 @@ pub mod tests {
         init!("ledger");
 
         let rc = create_cred_def_real(false);
-    }
-
-    #[test]
-    fn test_create_credential_def_and_store_in_wallet() {
-        init!("true");
-        let (id, _) = _create_cred_def_on_ledger(SCHEMAS_JSON, ISSUER_DID, "tag_1", None, Some(false)).unwrap();
-        assert_eq!(id, CRED_DEF_ID);
     }
 
     #[cfg(feature = "pool_tests")]

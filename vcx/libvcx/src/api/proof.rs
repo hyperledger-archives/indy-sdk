@@ -29,8 +29,9 @@ use utils::threadpool::spawn;
 ///            "cred_def_id": string, (Optional)
 ///        },
 ///         "non_revoked": {
-///             "from": (u64) Requested time represented as a total number of seconds from Unix Epoch, Optional
-///             "to": (u64) Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             "to": Optional<(u64)>
+///                 //Requested time represented as a total number of seconds from Unix Epoch, Optional
 ///         }
 ///     }
 ///
@@ -42,10 +43,10 @@ use utils::threadpool::spawn;
 ///             "p_type": predicate type (Currently ">=" only)
 ///             "p_value": int predicate value
 ///             "restrictions": Optional<filter_json>, // see above
-///             "non_revoked": {
-///                 "from": (u64) Requested time represented as a total number of seconds from Unix Epoch, Optional
-///                 "to": (u64) Requested time represented as a total number of seconds from Unix Epoch, Optional
-///             }
+///             "non_revoked": Optional<{
+///                 "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///                 "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             }>
 ///          },
 ///
 /// # Example requested_predicates -> "[{"name":"attrName","p_type":"GE","p_value":9,"restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
@@ -54,8 +55,9 @@ use utils::threadpool::spawn;
 ///                        // If specified, prover must proof non-revocation
 ///                        // for date in this interval for each attribute
 ///                        // (can be overridden on attribute level)
-///     from: Requested time represented as a total number of seconds from Unix Epoch, Optional
-///     to: Requested time represented as a total number of seconds from Unix Epoch, Optional
+///     from: Optional<u64> // timestamp of interval beginning
+///     to: Optional<u64> // timestamp of interval beginning
+///         // Requested time represented as a total number of seconds from Unix Epoch, Optional
 /// # Examples config ->  "{}" | "{"to": 123} | "{"from": 100, "to": 123}"
 ///
 ///

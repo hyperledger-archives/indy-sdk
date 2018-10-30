@@ -30,7 +30,7 @@ pub struct AttrInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub restrictions: Option<Vec<Filter>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub non_revoked: Option<NonRevocedInterval>
+    pub non_revoked: Option<NonRevokedInterval>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -52,7 +52,7 @@ pub struct PredicateInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub restrictions: Option<Vec<Filter>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub non_revoked: Option<NonRevocedInterval>
+    pub non_revoked: Option<NonRevokedInterval>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -61,7 +61,7 @@ pub struct ProofPredicates {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, Hash)]
-pub struct NonRevocedInterval {
+pub struct NonRevokedInterval {
     pub from: Option<u64>,
     pub to: Option<u64>
 }
@@ -74,7 +74,7 @@ pub struct ProofRequestData{
     data_version: String,
     pub requested_attributes: HashMap<String, AttrInfo>,
     pub requested_predicates: HashMap<String, PredicateInfo>,
-    pub non_revoked: Option<NonRevocedInterval>
+    pub non_revoked: Option<NonRevokedInterval>
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]

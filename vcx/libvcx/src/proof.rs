@@ -15,7 +15,7 @@ use messages::GeneralMessage;
 use utils::error;
 use utils::constants::*;
 use utils::libindy::anoncreds::libindy_verifier_verify_proof;
-use credential_def::{ retrieve_credential_def };
+use utils::libindy::ledger;
 use schema::{ LedgerSchema };
 use error::proof::ProofError;
 use error::ToErrorCode;
@@ -102,8 +102,8 @@ impl Proof {
 
         for ref cred_info in credential_data.iter() {
             if !credential_json.contains_key(&cred_info.cred_def_id) {
-                let (_, credential_def) = retrieve_credential_def(&cred_info.cred_def_id)
-                    .map_err(|ec| ProofError::CommonError(ec.to_error_code()))?;
+                let (_, credential_def) = ledger::get_cred_def(&cred_info.cred_def_id)
+                    .map_err(|ec| ProofError::CommonError(ec))?;
 
                 let credential_def = serde_json::from_str(&credential_def)
                     .or(Err(ProofError::InvalidCredData()))?;

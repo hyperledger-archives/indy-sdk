@@ -23,6 +23,9 @@ extern crate serde_json;
 extern crate lazy_static;
 
 #[macro_use]
+extern crate time;
+
+#[macro_use]
 pub mod utils;
 pub mod settings;
 pub mod messages;
@@ -89,7 +92,7 @@ mod tests {
             attrs_list.as_array_mut().unwrap().push(json!(format!("key{}",i)));
         }
         let attrs_list = attrs_list.to_string();
-        let (schema_id, schema_json, cred_def_id, cred_def_json, cred_def_handle) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, false);
+        let (schema_id, schema_json, cred_def_id, cred_def_json, cred_def_handle, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, false);
         let mut credential_data = json!({});
         for i in 1..number_of_attributes {
             credential_data[format!("key{}",i)] = json!([format!("value{}",i)]);
@@ -191,7 +194,7 @@ mod tests {
             attrs_list.as_array_mut().unwrap().push(json!(format!("key{}",i)));
         }
         let attrs_list = attrs_list.to_string();
-        let (schema_id, schema_json, cred_def_id, cred_def_json, cred_def_handle) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, true);
+        let (schema_id, schema_json, cred_def_id, cred_def_json, cred_def_handle, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, true);
         let mut credential_data = json!({});
         for i in 1..number_of_attributes {
             credential_data[format!("key{}",i)] = json!([format!("value{}",i)]);

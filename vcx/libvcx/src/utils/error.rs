@@ -100,7 +100,8 @@ pub static THREAD_ERROR: Error = Error{ code_num: 1085, message: "Unable to crea
 pub static INVALID_PROOF_REQUEST: Error = Error{ code_num: 1086, message: "Proof Request Passed into Libindy Call Was Invalid"};
 pub static INVALID_REVOCATION_DETAILS: Error = Error{ code_num: 1087, message: "Invalid Revocation Details"};
 pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1087, message: "Failed to create Revocation Registration Definition"};
-pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1088, message: "Invalid Credential Revocation timestamp"};
+pub static INVALID_REV_ENTRY: Error = Error{ code_num: 1088, message: "Unable to Update Revocation Delta On Ledger"};
+pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1089, message: "Invalid Credential Revocation timestamp"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {

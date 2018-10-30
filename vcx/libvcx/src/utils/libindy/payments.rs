@@ -18,7 +18,7 @@ use serde_json::Value;
 use settings;
 
 static EMPTY_CONFIG: &str = "{}";
-static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "101":2, "10001":0, "102":42, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":2, "114":0, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
+static DEFAULT_FEES: &str = r#"{"0":0, "1":0, "101":2, "10001":0, "102":42, "103":0, "104":0, "105":0, "107":0, "108":0, "109":0, "110":0, "111":0, "112":0, "113":2, "114":2, "115":0, "116":0, "117":0, "118":0, "119":0}"#;
 static PARSED_TXN_PAYMENT_RESPONSE: &str = r#"[{"amount":4,"extra":null,"input":"["pov:null:1","pov:null:2"]"}]"#;
 
 static PAYMENT_INIT: Once = ONCE_INIT;
@@ -244,10 +244,8 @@ fn _submit_fees_request(req: &str, inputs: &str, outputs: &str) -> Result<(Strin
         Err(x) => return Err(map_rust_indy_sdk_error_code(x)),
     };
 
-    let parsed_response = match Payment::parse_response_with_fees(&payment_method, &response) {
-        Ok(x) => x,
-        Err(x) => return Err(error::INVALID_LEDGER_RESPONSE.code_num),
-    };
+    let parsed_response = Payment::parse_response_with_fees(&payment_method, &response)
+        .or(Err(error::INVALID_LEDGER_RESPONSE.code_num))?;
 
     Ok((parsed_response, response))
 }
