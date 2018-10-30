@@ -3,7 +3,7 @@
 * Make sure you have libindy installed. Checkout the guides [here](https://github.com/hyperledger/indy-sdk/tree/master/doc).
     * On Linux, export the `LD_LIBRARY_PATH` environment variable to point to the `libindy.so` parent directory, or copy libindy.so to `/usr/lib/libindy.so`.
     * On Mac OS, you must have `libindy.dylib` at `/usr/local/lib/libindy.dylib` before running npm install.
-* Inside `samples/nodejs/`
+* Inside `samples/nodejs/getting-started/`
     * Make sure you have a running ledger with `npm run ledger`. You must have docker installed.
     * Then run `npm install` and `npm start`.
  
