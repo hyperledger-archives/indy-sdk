@@ -11,6 +11,7 @@ use futures::*;
 use indy::{did, crypto, IndyError};
 use std::convert::Into;
 use utils::futures::*;
+use utils::to_i8;
 
 use base64;
 use rmp_serde;
@@ -106,7 +107,7 @@ impl AgentConnection {
                 router
                     .send(AddA2ARoute(config.agent_pairwise_did.clone(), agent_connection.clone().recipient()))
                     .from_err()
-                    .map_err(|err: Error| err.context("Can't add route for Agent Connection").into())
+                    .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
             })
             .into_box()
     }
@@ -155,7 +156,7 @@ impl AgentConnection {
                     Some(A2AMessage::UpdateMessageStatus(msg)) => {
                         slf.handle_update_message_status(msg)
                     }
-                    _ => err_act!(slf, err_msg("Unsupported message"))
+                    _ => err_act!(slf, err_msg("Unsupported message."))
                 }
                     .map(|msgs, _, _| (msgs, sender_vk))
             })
@@ -196,7 +197,7 @@ impl AgentConnection {
                                                           reply_to_msg_id.clone(),
                                                           uid,
                                                           sender_verkey),
-                    _ => err_act!(slf, err_msg("Unsupported message type."))
+                    _ => err_act!(slf, err_msg("Unsupported message."))
                 }
                     .map(|(msg_uid, a2a_msgs), _, _| (msg_uid, a2a_msgs, reply_to_msg_id))
             })
@@ -237,7 +238,7 @@ impl AgentConnection {
                                                                 &sender_did,
                                                                 None,
                                                                 None,
-                                                                Some(map! { "phone_no" => Some(msg_detail.phone_no.clone()) }));
+                                                                Some(map! { "phone_no" => msg_detail.phone_no.clone() }));
 
                 (msg, msg_detail)
             })
@@ -340,10 +341,13 @@ impl AgentConnection {
                 .map(|message| {
                     GetMessagesDetailResponse {
                         uid: message.uid.clone(),
-                        status_codes: message.status_code.clone(),
+                        status_code: message.status_code.clone(),
                         sender_did: message.sender_did.clone(),
                         type_: message._type.clone(),
-                        payload: if !exclude_payload { message.payload.clone() } else { None },
+                        payload: match exclude_payload.as_ref().map(String::as_str) {
+                            Some("Y") => None,
+                            _ => message.payload.as_ref().map(|payload| to_i8(payload))
+                        },
                         ref_msg_id: message.ref_msg_id.clone(),
                     }
                 })
@@ -566,13 +570,13 @@ impl AgentConnection {
 
         let msg_uid = msg_uid.to_string();
 
-        let msg = ftry_act!(self, self.build_payload_message(MessageType::ConnReqAnswer, &msg_detail.sender_detail));
+        let msg = ftry_act!(self, self.build_payload_message(MessageType::ConnReqAnswer, &json!({"senderDetail": msg_detail.sender_detail})));
 
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _|
                 crypto::auth_crypt(slf.wallet_handle, &slf.agent_pairwise_verkey, &slf.owner_verkey, &msg)
-                    .map_err(|err| err.context("Can't create my DID for pairwise.").into())
+                    .map_err(|err| err.context("Can't encode Answer Payload.").into())
                     .into_actor(slf)
             )
             .map(move |payload, slf, _|
@@ -613,7 +617,6 @@ impl AgentConnection {
 
         self.check_no_connection_established()?;
         self.check_no_accepted_invitation_exists()?;
-        self.check_valid_phone_no(&msg_detail.phone_no)?;
 
         Ok(())
     }
@@ -636,7 +639,7 @@ impl AgentConnection {
                     return Ok(());
                 }
             }
-            _ => return Err(err_msg("Unsupported message"))
+            _ => return Err(err_msg("Unsupported message."))
         }
         Err(err_msg("Invalid message sender."))
     }
@@ -653,7 +656,6 @@ impl AgentConnection {
         if let Some(msg) = self.messages.get(reply_to_msg_id) {
             self.check_if_message_not_already_answered(&msg.status_code)?;
         }
-        // TODO: check same endpoints?
 
         Ok(())
     }
@@ -728,7 +730,7 @@ impl AgentConnection {
         trace!("AgentConnection::check_no_connection_established >>");
 
         if self.remote_connection_detail.is_some() {
-            return Err(err_msg("Accepted connection already exists.")); //
+            return Err(err_msg("Accepted connection already exists."));
         }
         Ok(())
     }
@@ -746,16 +748,6 @@ impl AgentConnection {
         Ok(())
     }
 
-    fn check_valid_phone_no(&self, phone_no: &str) -> Result<(), Error> {
-        trace!("AgentConnection::check_valid_phone_no >> {:?}", phone_no);
-
-        let phone_no = phone_no.replace("+", "").replace("-", "").replace(" ", "").replace("(", "").replace(")", "");
-        if !phone_no.chars().all(|c| c.is_numeric()) {
-            return Err(err_msg("Invalid phone number."));
-        }
-        Ok(())
-    }
-
     fn verify_agent_key_dlg_proof(&self, sender_verkey: &str, key_dlg_proof: &KeyDlgProof) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::verify_agent_key_dlg_proof >> {:?}, {:?}",
                sender_verkey, key_dlg_proof);
@@ -763,14 +755,10 @@ impl AgentConnection {
         let signature = base64::decode(&key_dlg_proof.signature).unwrap();
 
         crypto::verify(sender_verkey, &key_dlg_proof.challenge().as_bytes(), &signature)
-            .map_err(|err| err.context("Agent key delegation proof verification failed.").into())
-            .and_then(|valid|
-                if valid {
-                    future::ok(()).into_box()
-                } else {
-                    err!(err_msg("Agent key delegation proof verification failed.")).into()
-                }
-            )
+            .then(|res| match res {
+                Ok(true) => ok!(()),
+                _ => err!(err_msg("Agent key delegation proof verification failed.")).into()
+            })
             .into_box()
     }
 
@@ -830,15 +818,14 @@ impl AgentConnection {
 
     fn send_invite_message(&mut self, _message: InternalMessage) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::send_invite_message >> {:?}", _message);
-
-        unimplemented!() // TODO: send invite sms?
+        ok!(()) // TODO: send invite sms?
     }
 
     fn send_invite_answer_message(&mut self, message: InternalMessage, reply_to: Option<String>) -> ResponseFuture<(), Error> {
         trace!("AgentConnection::send_invite_answer_message >> {:?}, {:?}",
                message, reply_to);
 
-        let reply_to = ftry!(reply_to.ok_or(err_msg("Missed required field.")));
+        let reply_to = ftry!(reply_to.ok_or(err_msg("Missed required field `reply_to_msg_id`.")));
 
         if message.status_code != MessageStatusCode::Accepted {
             return err!(err_msg("Message status isn't accepted."));
@@ -862,7 +849,7 @@ impl AgentConnection {
             self.send_remote_message(message, endpoint)
         } else {
             // TODO: Notify user
-            unimplemented!()
+            ok!(())
         }
     }
 
@@ -875,14 +862,15 @@ impl AgentConnection {
                     .send(RemoteMsg { endpoint, body: message })
                     .from_err()
                     .and_then(|res| res)
-                    .map_err(|err: Error| err.context("Can't add route for Agent Connection").into())
+                    .map_err(|err: Error| err.context("Can't send message to Remote Endpoint.").into())
             })
             .into_box()
     }
 
     fn get_remote_endpoint(&self) -> Result<String, Error> {
-        self.remote_connection_detail.as_ref().map(|detail| detail.forward_agent_detail.endpoint.to_string())
-            .ok_or(err_msg("Missed remote Forward Agent Endpoit."))
+        let endpoint = self.remote_connection_detail.as_ref().map(|detail| detail.forward_agent_detail.endpoint.to_string())
+            .ok_or(err_msg("Missed Remote Connection Details."))?;
+        Ok(format!("{}/msg", endpoint))
     }
 
     fn prepare_remote_message(&self, message: Vec<A2AMessage>) -> Result<Vec<u8>, Error> {
@@ -895,11 +883,11 @@ impl AgentConnection {
         let remote_agent_pairwise_detail = &remote_connection_detail.agent_key_dlg_proof;
 
         let message = A2AMessage::bundle_authcrypted(self.wallet_handle,
-                                                     &self.user_pairwise_verkey,
+                                                     &self.agent_pairwise_verkey,
                                                      &remote_agent_pairwise_detail.agent_delegated_key,
                                                      &message).wait()?;
 
-        let fwd_message = self.build_forward_message(&remote_agent_pairwise_detail.agent_delegated_key, message)?;
+        let fwd_message = self.build_forward_message(&remote_agent_pairwise_detail.agent_did, message)?;
 
         let message = A2AMessage::bundle_anoncrypted(&remote_forward_agent_detail.verkey, fwd_message.as_slice()).wait()?;
 
@@ -910,9 +898,14 @@ impl AgentConnection {
         trace!("AgentConnection::build_payload_message >> {:?}, {:?}",
                type_, msg);
 
-        let msg = rmp_serde::to_vec(&msg)?;
-        let payload_msg = PayloadMessage { type_, msg };
-        rmp_serde::to_vec(&payload_msg)
+        let msg = rmp_serde::to_vec_named(&msg)?;
+
+        let payload_msg = PayloadMessage {
+            type_: PayloadMessageType::new(&type_),
+            msg: to_i8(&msg)
+        };
+
+        rmp_serde::to_vec_named(&payload_msg)
             .map_err(|err| err.into())
     }
 
@@ -933,7 +926,7 @@ impl AgentConnection {
         let msg_detail = ConnectionRequestMessageDetailResp {
             invite_detail: InviteDetail {
                 conn_req_id: msg.uid.clone(),
-                target_name: msg_detail.target_name.clone(),
+                target_name: Some(String::new()),
                 sender_agency_detail: self.forward_agent_detail.clone(),
                 sender_detail: SenderDetail {
                     did: self.user_pairwise_did.clone(),
@@ -1053,21 +1046,17 @@ mod tests {
     use actors::ForwardA2AMsg;
     use super::*;
     use utils::tests::*;
-    use indy::wallet;
 
     #[test]
     fn agent_create_connection_request_works() {
-        run_test(|forward_agent| {
+        run_agent_test(|(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
             future::ok(())
-                .and_then(|()| {
-                    setup_agent(forward_agent)
-                })
-                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                .and_then(move |_| {
                     let msg = compose_create_connection_request(e_wallet_handle,
-                                                                         &agent_did,
-                                                                         &agent_verkey,
-                                                                         &agent_pw_did,
-                                                                         &agent_pw_vk).wait().unwrap();
+                                                                &agent_did,
+                                                                &agent_verkey,
+                                                                &agent_pw_did,
+                                                                &agent_pw_vk).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -1076,35 +1065,32 @@ mod tests {
                         .map(move |resp| (e_wallet_handle, resp, agent_pw_did, agent_pw_vk))
                 })
                 .map(|(e_wallet_handle, resp, agent_pw_did, agent_pw_vk)| {
-                    let (sender_vk, _, invite_detail) = decompose_connection_request_created(e_wallet_handle, &resp).wait().unwrap();
+                    let (sender_vk, msg_uid, invite_detail) = decompose_connection_request_created(e_wallet_handle, &resp).wait().unwrap();
                     assert_eq!(sender_vk, agent_pw_vk);
+                    assert!(!msg_uid.is_empty());
                     assert_eq!(FORWARD_AGENT_DID, invite_detail.sender_agency_detail.did);
                     assert_eq!(FORWARD_AGENT_DID_VERKEY, invite_detail.sender_agency_detail.verkey);
                     assert_eq!(EDGE_PAIRWISE_DID, invite_detail.sender_detail.did);
                     assert_eq!(EDGE_PAIRWISE_DID_VERKEY, invite_detail.sender_detail.verkey);
                     assert_eq!(agent_pw_did, invite_detail.sender_detail.agent_key_dlg_proof.agent_did);
                     assert_eq!(agent_pw_vk, invite_detail.sender_detail.agent_key_dlg_proof.agent_delegated_key);
-
-                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                    e_wallet_handle
                 })
         });
     }
 
     #[test]
     fn agent_create_connection_request_answer_works() {
-        run_test(|forward_agent| {
+        run_agent_test(|(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
             future::ok(())
-                .and_then(|()| {
-                    setup_agent(forward_agent)
-                })
-                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                .and_then(move |_| {
                     let reply_to_msg_id = "123456789";
                     let msg = compose_create_connection_request_answer(e_wallet_handle,
-                                                                                &agent_did,
-                                                                                &agent_verkey,
-                                                                                &agent_pw_did,
-                                                                                &agent_pw_vk,
-                                                                                reply_to_msg_id).wait().unwrap();
+                                                                       &agent_did,
+                                                                       &agent_verkey,
+                                                                       &agent_pw_did,
+                                                                       &agent_pw_vk,
+                                                                       reply_to_msg_id).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -1116,26 +1102,22 @@ mod tests {
                     let (sender_vk, msg_uid) = decompose_connection_request_answer_created(e_wallet_handle, &resp).wait().unwrap();
                     assert_eq!(sender_vk, agent_pw_vk);
                     assert_ne!(reply_to_msg_id, msg_uid);
-
-                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                    e_wallet_handle
                 })
         });
     }
 
     #[test]
     fn agent_create_general_message_works() {
-        run_test(|forward_agent| {
+        run_agent_test(|(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
             future::ok(())
-                .and_then(|()| {
-                    setup_agent(forward_agent)
-                })
-                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                .and_then(move |_| {
                     let msg = compose_create_general_message(e_wallet_handle,
-                                                                     &agent_did,
-                                                                     &agent_verkey,
-                                                                     &agent_pw_did,
-                                                                     &agent_pw_vk,
-                                                                     MessageType::CredOffer).wait().unwrap();
+                                                             &agent_did,
+                                                             &agent_verkey,
+                                                             &agent_pw_did,
+                                                             &agent_pw_vk,
+                                                             MessageType::CredOffer).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -1147,26 +1129,22 @@ mod tests {
                     let (sender_vk, msg_uid) = decompose_general_message_created(e_wallet_handle, &resp).wait().unwrap();
                     assert_eq!(sender_vk, agent_pw_vk);
                     assert!(!msg_uid.is_empty());
-
-                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                    e_wallet_handle
                 })
         });
     }
 
     #[test]
     fn agent_get_messages_works() {
-        run_test(|forward_agent| {
+        run_agent_test(|(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
             future::ok(())
-                .and_then(|()| {
-                    setup_agent(forward_agent)
-                })
-                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                .and_then(move |_| {
                     let msg = compose_create_general_message(e_wallet_handle,
-                                                                      &agent_did,
-                                                                      &agent_verkey,
-                                                                      &agent_pw_did,
-                                                                      &agent_pw_vk,
-                                                                      MessageType::CredOffer).wait().unwrap();
+                                                             &agent_did,
+                                                             &agent_verkey,
+                                                             &agent_pw_did,
+                                                             &agent_pw_vk,
+                                                             MessageType::CredOffer).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -1178,50 +1156,46 @@ mod tests {
                     let (_, msg_uid) = decompose_general_message_created(e_wallet_handle, &resp).wait().unwrap();
 
                     let msg = compose_get_messages(e_wallet_handle,
-                                                            &agent_did,
-                                                            &agent_verkey,
-                                                            &agent_pw_did,
-                                                            &agent_pw_vk).wait().unwrap();
+                                                   &agent_did,
+                                                   &agent_verkey,
+                                                   &agent_pw_did,
+                                                   &agent_pw_vk).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
                         .from_err()
                         .and_then(|res| res)
-                        .map(move |resp| (e_wallet_handle, agent_pw_vk, resp, msg_uid))
+                        .map(move |resp| (e_wallet_handle, resp, agent_pw_vk, msg_uid))
                 })
-                .map(|(e_wallet_handle, agent_pw_vk, resp, msg_uid)| {
+                .map(|(e_wallet_handle, resp, agent_pw_vk, msg_uid)| {
                     let (sender_vk, messages) = decompose_get_messages(e_wallet_handle, &resp).wait().unwrap();
                     assert_eq!(sender_vk, agent_pw_vk);
                     assert_eq!(1, messages.len());
 
                     let expected_message = GetMessagesDetailResponse {
                         uid: msg_uid,
-                        status_codes: MessageStatusCode::Created,
+                        status_code: MessageStatusCode::Created,
                         sender_did: EDGE_PAIRWISE_DID.to_string(),
                         type_: MessageType::CredOffer,
-                        payload: Some(PAYLOAD.to_vec()),
+                        payload: Some(to_i8(&PAYLOAD.to_vec())),
                         ref_msg_id: None,
                     };
                     assert_eq!(expected_message, messages[0]);
-
-                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                    e_wallet_handle
                 })
         });
     }
 
     #[test]
     fn agent_update_message_status_works() {
-        run_test(|forward_agent| {
+        run_agent_test(|(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
             future::ok(())
-                .and_then(|()| {
-                    setup_agent(forward_agent)
-                })
-                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                .and_then(move |_| {
                     let msg = compose_create_general_message(e_wallet_handle,
-                                                                      &agent_did,
-                                                                      &agent_verkey,
-                                                                      &agent_pw_did,
-                                                                      &agent_pw_vk,
+                                                             &agent_did,
+                                                             &agent_verkey,
+                                                             &agent_pw_did,
+                                                             &agent_pw_vk,
                                                              MessageType::CredOffer).wait().unwrap();
 
                     forward_agent
@@ -1249,15 +1223,15 @@ mod tests {
                     let (_, messages) = decompose_get_messages(e_wallet_handle, &get_messages).wait().unwrap();
                     assert_eq!(1, messages.len());
                     assert_eq!(msg_uid, messages[0].uid);
-                    assert_eq!(MessageStatusCode::Created,  messages[0].status_codes);
+                    assert_eq!(MessageStatusCode::Created, messages[0].status_code);
 
                     let msg = compose_update_message_status_message(e_wallet_handle,
-                                                                                  &agent_did,
-                                                                                  &agent_verkey,
-                                                                                  &agent_pw_did,
-                                                                                  &agent_pw_vk,
-                                                                                  &msg_uid,
-                                                                                  MessageStatusCode::Accepted).wait().unwrap();
+                                                                    &agent_did,
+                                                                    &agent_verkey,
+                                                                    &agent_pw_did,
+                                                                    &agent_pw_vk,
+                                                                    &msg_uid,
+                                                                    MessageStatusCode::Accepted).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -1271,25 +1245,21 @@ mod tests {
                     assert_eq!(1, resp.uids.len());
                     assert_eq!(msg_uid, resp.uids[0].clone());
                     assert_eq!(MessageStatusCode::Accepted, resp.status_code);
-
-                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                    e_wallet_handle
                 })
         });
     }
 
     #[test]
     fn agent_update_connection_status_works() {
-        run_test(|forward_agent| {
+        run_agent_test(|(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
             future::ok(())
-                .and_then(|()| {
-                    setup_agent(forward_agent)
-                })
-                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+                .and_then(move |_| {
                     let msg = compose_update_connection_status_message(e_wallet_handle,
-                                                                                          &agent_did,
-                                                                                          &agent_verkey,
-                                                                                          &agent_pw_did,
-                                                                                          &agent_pw_vk).wait().unwrap();
+                                                                       &agent_did,
+                                                                       &agent_verkey,
+                                                                       &agent_pw_did,
+                                                                       &agent_pw_vk).wait().unwrap();
 
                     forward_agent
                         .send(ForwardA2AMsg(msg))
@@ -1301,8 +1271,7 @@ mod tests {
                     let (sender_vk, msg) = decompose_connection_status_updated(e_wallet_handle, &resp).wait().unwrap();
                     assert_eq!(sender_vk, agent_pw_vk);
                     assert_eq!(ConnectionStatus::Deleted, msg.status_code);
-
-                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                    e_wallet_handle
                 })
         });
     }

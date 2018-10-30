@@ -76,9 +76,9 @@ pub struct CreateAgent {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateKey {
-    #[serde(rename = "fromDID")]
+    #[serde(rename = "forDID")]
     pub for_did: String,
-    #[serde(rename = "fromDIDVerKey")]
+    #[serde(rename = "forDIDVerKey")]
     pub for_did_verkey: String,
 }
 
@@ -103,6 +103,7 @@ pub struct CreateMessage {
     pub send_msg: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,
+    #[serde(rename = "replyToMsgId")]
     pub reply_to_msg_id: Option<String>,
 }
 
@@ -119,9 +120,9 @@ pub struct SendMessages {
 #[serde(untagged)]
 #[derive(Debug, Deserialize, Serialize)]
 pub enum MessageDetail {
+    ConnectionRequestAnswer(ConnectionRequestAnswerMessageDetail),
     ConnectionRequest(ConnectionRequestMessageDetail),
     ConnectionRequestResp(ConnectionRequestMessageDetailResp),
-    ConnectionRequestAnswer(ConnectionRequestAnswerMessageDetail),
     General(GeneralMessageDetail),
     Send(SendMessageDetail),
 }
@@ -160,9 +161,12 @@ pub struct MessageStatusUpdated {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GetMessages {
     #[serde(rename = "excludePayload")]
-    pub exclude_payload: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exclude_payload: Option<String>,
+    #[serde(default)]
     pub uids: Vec<String>,
     #[serde(rename = "statusCodes")]
+    #[serde(default)]
     pub status_codes: Vec<MessageStatusCode>,
 }
 
@@ -174,12 +178,13 @@ pub struct Messages {
 #[derive(Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct GetMessagesDetailResponse {
     pub uid: String,
-    #[serde(rename = "statusCodes")]
-    pub status_codes: MessageStatusCode,
+    #[serde(rename = "statusCode")]
+    pub status_code: MessageStatusCode,
     #[serde(rename = "senderDID")]
     pub sender_did: String,
+    #[serde(rename = "type")]
     pub type_: MessageType,
-    pub payload: Option<Vec<u8>>,
+    pub payload: Option<Vec<i8>>,
     #[serde(rename = "refMsgId")]
     pub ref_msg_id: Option<String>,
 }
@@ -202,6 +207,20 @@ pub enum MessageType {
     Proof,
 }
 
+impl ToString for MessageType{
+    fn to_string(&self) -> String {
+        match self {
+            MessageType::ConnReq => "connReq",
+            MessageType::ConnReqAnswer => "connReqAnswer",
+            MessageType::CredOffer => "credOffer",
+            MessageType::CredReq => "credReq",
+            MessageType::Cred => "cred",
+            MessageType::ProofReq => "proofReq",
+            MessageType::Proof => "proof",
+        }.to_string()
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ConnectionRequestMessageDetail {
     #[serde(rename = "keyDlgProof")]
@@ -209,7 +228,7 @@ pub struct ConnectionRequestMessageDetail {
     #[serde(rename = "targetName")]
     pub target_name: Option<String>,
     #[serde(rename = "phoneNo")]
-    pub phone_no: String,
+    pub phone_no: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -250,12 +269,30 @@ pub struct SendMessageDetail {
     pub answer_status_code: MessageStatusCode,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PayloadMessageType {
+    pub name: String,
+    pub ver: String,
+    pub fmt: String,
+}
+
+impl PayloadMessageType {
+    pub fn new(type_: &MessageType) -> PayloadMessageType {
+        PayloadMessageType {
+            name: type_.to_string(),
+            ver: "1.0".to_string(),
+            fmt: "indy.msgpack".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PayloadMessage {
     #[serde(rename = "@type")]
-    pub type_: MessageType,
+    pub type_: PayloadMessageType,
     #[serde(rename = "@msg")]
-    pub msg: Vec<u8>,
+    pub msg: Vec<i8>,
 }
 
 impl<'de> Deserialize<'de> for A2AMessage {
@@ -504,7 +541,6 @@ impl A2AMessage {
             .into_box()
     }
 
-    #[allow(unused)] // FIXME:
     pub fn bundle_anoncrypted(recipient_vk: &str,
                               msgs: &[A2AMessage]) -> BoxedFuture<Vec<u8>, Error> {
         let bundle = ftry!(Self::bundle_plain(msgs));

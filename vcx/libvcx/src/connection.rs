@@ -56,7 +56,6 @@ struct Connection {
 impl Connection {
     fn _connect_send_invite(&mut self, options: Option<String>) -> Result<u32, ConnectionError> {
         debug!("sending invite for connection {}", self.source_id);
-        println!("self {:?}", self);
 
         let options_obj: ConnectionOptions = match options {
             Some(opt) => {
@@ -441,14 +440,15 @@ fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
         Ok(_) => debug!("created pairwise key on agent"),
     };
 
-    match update_agent_profile(handle) {
-        Err(x) => {
-            error!("could not update profile on agent: {}", x);
-            release(handle)?;
-            return Err(x)
-        },
-        Ok(_) => debug!("updated profile on agent"),
-    };
+// TODO: RECOVER AFTER DUMMY CLOUD AGENT SUPPORTED IT
+//   match update_agent_profile(handle) {
+//        Err(x) => {
+//            error!("could not update profile on agent: {}", x);
+//            release(handle)?;
+//            return Err(x)
+//        },
+//        Ok(_) => debug!("updated profile on agent"),
+//    };
 
     set_state(handle, VcxStateType::VcxStateInitialized).err();
 
@@ -558,7 +558,7 @@ pub fn update_state(handle: u32) -> Result<u32, ConnectionError> {
         Ok(response) => {
             debug!("connection {} update state response: {:?}", get_source_id(handle).unwrap_or_default(), response);
             if get_state(handle) == VcxStateType::VcxStateOfferSent as u32 || get_state(handle) == VcxStateType::VcxStateInitialized as u32{
-                 for i in response {
+                for i in response {
                      if i.status_code == MessageAccepted.as_string() && i.msg_type == "connReqAnswer" {
                          // TODO: Refactor Error
                           let details = parse_acceptance_details(handle, &i)?;

@@ -45,7 +45,7 @@ pub const FORWARD_AGENT_DID_INFO: &'static str = "{\"did\": \"VsKV7grR1BUE29mG2F
 pub const FORWARD_AGENT_DID_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
 
 pub const PHONE_NO: &'static str = "80000000000";
-pub const PAYLOAD:[u8; 8] = [1, 2, 3, 4, 5, 6, 7, 8];
+pub const PAYLOAD: [u8; 8] = [1, 2, 3, 4, 5, 6, 7, 8];
 
 pub fn indy_home_path() -> PathBuf {
     // TODO: FIXME: Provide better handling for the unknown home path case!!!
@@ -120,6 +120,20 @@ pub fn run_test<F, B>(f: F)
     });
 }
 
+pub fn run_agent_test<F, B>(f: F)
+    where
+        F: FnOnce((i32, String, String, String, String, Addr<ForwardAgent>)) -> B + 'static,
+        B: IntoFuture<Item=i32, Error=Error> + 'static {
+    run_test(|forward_agent| {
+        future::ok(())
+            .and_then(|()| {
+                setup_agent(forward_agent)
+            })
+            .and_then(f)
+            .map(|wallet_handle| wallet::close_wallet(wallet_handle).wait().unwrap())
+    })
+}
+
 pub fn setup_agent(forward_agent: Addr<ForwardAgent>) -> ResponseFuture<(i32, String, String, String, String, Addr<ForwardAgent>), Error> {
     future::ok(())
         .and_then(|()| {
@@ -188,12 +202,6 @@ pub fn edge_wallet_setup() -> BoxedFuture<i32, Error> {
     future::ok(())
         .and_then(|_| {
             wallet::create_wallet(EDGE_AGENT_WALLET_CONFIG, EDGE_AGENT_WALLET_CREDENTIALS)
-                .then(|res| {
-                    match res {
-                        Err(IndyError::WalletAlreadyExistsError) => Ok(()),
-                        r => r
-                    }
-                })
                 .map_err(|err| err.context("Can't create edge agent wallet.").into())
         })
         .and_then(|_| {
@@ -202,21 +210,11 @@ pub fn edge_wallet_setup() -> BoxedFuture<i32, Error> {
         })
         .and_then(|wallet_handle| {
             did::create_and_store_my_did(wallet_handle, EDGE_AGENT_DID_INFO)
-                .then(|res| match res {
-                    Ok(_) => Ok(()),
-                    Err(IndyError::DidAlreadyExistsError) => Ok(()), // Already exists
-                    Err(err) => Err(err),
-                })
                 .map(move |_| wallet_handle)
                 .map_err(|err| err.context("Can't create edge agent did.").into())
         })
         .and_then(|wallet_handle| {
             did::create_and_store_my_did(wallet_handle, EDGE_PAIRWISE_DID_INFO)
-                .then(|res| match res {
-                    Ok(_) => Ok(()),
-                    Err(IndyError::DidAlreadyExistsError) => Ok(()), // Already exists
-                    Err(err) => Err(err),
-                })
                 .map(move |_| wallet_handle)
                 .map_err(|err| err.context("Can't create edge agent did.").into())
         })
@@ -333,7 +331,7 @@ pub fn compose_create_connection_request(wallet_handle: i32,
             ConnectionRequestMessageDetail {
                 key_dlg_proof: gen_key_delegated_proof(wallet_handle, EDGE_PAIRWISE_DID_VERKEY, &agent_pairwise_did, &agent_pairwise_verkey),
                 target_name: None,
-                phone_no: PHONE_NO.to_string(),
+                phone_no: Some(PHONE_NO.to_string()),
             }));
 
     let msgs = [create_msg, msg_details];
@@ -431,7 +429,7 @@ fn build_create_message_request(mtype: MessageType, reply_to_msg_id: Option<Stri
         mtype,
         send_msg: false,
         uid: None,
-        reply_to_msg_id: None
+        reply_to_msg_id
     })
 }
 
@@ -453,7 +451,7 @@ pub fn compose_get_messages(wallet_handle: i32,
                             agent_pairwise_did: &str,
                             agent_pairwise_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
     let msgs = [A2AMessage::GetMessages(GetMessages {
-        exclude_payload: false,
+        exclude_payload: None,
         uids: Vec::new(),
         status_codes: Vec::new(),
     })];

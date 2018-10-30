@@ -20,8 +20,10 @@ pub struct InviteDetail {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ForwardAgentDetail {
     // Forward Agent DID
+    #[serde(rename = "DID")]
     pub did: String,
     // Forward Agent Verkey
+    #[serde(rename = "verKey")]
     pub verkey: String,
     // Forward Agent Endpoint
     pub endpoint: String,
