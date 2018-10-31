@@ -91,7 +91,6 @@ pub extern fn vcx_init (command_handle: u32,
 }
 
 fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u32)) -> u32 {
-    ::utils::logger::LoggerUtils::init();
 
     ::utils::threadpool::init();
 
@@ -209,9 +208,7 @@ pub extern fn vcx_shutdown(delete: bool) -> u32 {
 
 #[no_mangle]
 pub extern fn vcx_error_c_message(error_code: u32) -> *const c_char {
-    println!("vcx_error_message stuff");
     info!("vcx_error_message(error_code: {})", error_code);
-    println!("vcx_error_message stuff over");
     error::error_c_message(&error_code).as_ptr()
 }
 

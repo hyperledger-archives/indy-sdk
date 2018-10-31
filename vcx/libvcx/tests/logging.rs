@@ -7,17 +7,33 @@ extern crate log;
 use self::libc::{c_void, c_char};
 use std::ptr::null;
 use vcx::api::logger::*;
-use vcx::utils::logger::{LOGGER_STATE, LoggerState, LibvcxDefaultLogger};
+#[allow(unused_imports)] use vcx::utils::logger::{LOGGER_STATE, LoggerState, LibvcxDefaultLogger};
 use indy::wallet;
-use vcx::utils::cstring::CStringUtils;
+use vcx::utils::{cstring::CStringUtils, error::SUCCESS};
 use vcx::api::logger::vcx_set_logger;
 /// These tests can only be run individually as initing the log crate can happen
 /// only once.
 ///
 /// These tests usually need to be run manually to verify that the standard
 /// logging is outputting to stdout.
+#[allow(unused_imports)]
 mod log_tests {
     use super::*;
+
+    pub type EnabledCB = extern fn(context: *const c_void,
+                                   level: u32,
+                                   target: *const c_char) -> bool;
+
+    pub type LogCB = extern fn(context: *const c_void,
+                               level: u32,
+                               target: *const c_char,
+                               message: *const c_char,
+                               module_path: *const c_char,
+                               file: *const c_char,
+                               line: u32);
+
+    pub type FlushCB = extern fn(context: *const c_void);
+
     static mut COUNT: u32 = 0;
     extern fn custom_log(context: *const c_void,
                          level: u32,
@@ -38,10 +54,12 @@ mod log_tests {
         assert_eq!(vcx_set_default_logger(pattern.as_ptr()), 0);
         debug!("testing debug");
         vcx_error_c_message(1000);
+
     }
 
     #[test]
     fn test_logging_default_is_warn() {
+        use std::ptr::null_mut;
         // this test should output a single warning line
         assert_eq!(vcx_set_default_logger(null()), 0);
         unsafe { assert_eq!(LOGGER_STATE, LoggerState::Default); }
