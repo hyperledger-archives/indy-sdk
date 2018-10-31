@@ -6,6 +6,7 @@ use bytes::Bytes;
 use domain::config::AppConfig;
 use futures::*;
 
+const MAX_PAYLOAD_SIZE: usize = 105_906_176;
 pub struct AppState {
     pub forward_agent: Addr<ForwardAgent>,
 }
@@ -32,6 +33,7 @@ fn _get_endpoint_details(state: State<AppState>) -> FutureResponse<HttpResponse>
 fn _forward_message((state, req): (State<AppState>, HttpRequest<AppState>)) -> FutureResponse<HttpResponse> {
     req
         .body()
+        .limit(MAX_PAYLOAD_SIZE)
         .from_err()
         .and_then(move |body| {
             state.forward_agent
