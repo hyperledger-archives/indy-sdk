@@ -171,7 +171,7 @@ impl IssuerCredential {
             return Err(IssuerCredError::InvalidHandle());
         }
 
-//        self.verify_payment().map_err(|e| IssuerCredError::CommonError(e))?; TODO: FIXME check python demo
+        self.verify_payment().map_err(|e| IssuerCredError::CommonError(e))?;
 
         let to = connection::get_pw_did(connection_handle).map_err(|e| IssuerCredError::CommonError(e.to_error_code()))?;
         let attrs_with_encodings = self.create_attributes_encodings()?;
