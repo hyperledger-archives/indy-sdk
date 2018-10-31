@@ -31,6 +31,9 @@ impl Agent {
                   router: Addr<Router>,
                   forward_agent_detail: ForwardAgentDetail,
                   wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(String, String, String, String), Error> {
+        trace!("Agent::create >> {:?}, {:?}, {:?}, {:?}",
+               owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
+
         let wallet_id = rand::rand_string(10);
         let wallet_key = rand::rand_string(10);
 
@@ -56,12 +59,12 @@ impl Agent {
             )
             .and_then(move |(wallet_config, wallet_credentials)| {
                 wallet::open_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
-                    .map_err(|err| err.context("Can't open Cloud Agent wallet.`").into())
+                    .map_err(|err| err.context("Can't open Agent wallet.`").into())
             })
             .and_then(|wallet_handle| {
                 did::create_and_store_my_did(wallet_handle, "{}")
                     .map(move |(did, verkey)| (wallet_handle, did, verkey))
-                    .map_err(|err| err.context("Can't get Cloud Agent did key").into())
+                    .map_err(|err| err.context("Can't get Agent did key").into())
             })
             .and_then(move |(wallet_handle, did, verkey)| {
                 let agent = Agent {
@@ -80,21 +83,113 @@ impl Agent {
                     .send(AddA2ARoute(did.clone(), agent.clone().recipient()))
                     .from_err()
                     .map(move |_| (wallet_id, wallet_key, did, verkey))
-                    .map_err(|err: Error| err.context("Can't add route for Forward Agent").into())
+                    .map_err(|err: Error| err.context("Can't add route for Agent").into())
             })
             .into_box()
     }
 
-    pub fn restore(_wallet_id: &str,
-                   _wallet_key: &str,
-                   _did: &str,
-                   _owner_did: &str,
-                   _owner_verkey: &str,
-                   _router: Addr<Router>,
-                   _forward_agent_detail: ForwardAgentDetail,
-                   _wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(), Error> {
-        // FIXME: Implement me!!!
-        ok!(())
+    pub fn restore(wallet_id: &str,
+                   wallet_key: &str,
+                   did: &str,
+                   owner_did: &str,
+                   owner_verkey: &str,
+                   router: Addr<Router>,
+                   forward_agent_detail: ForwardAgentDetail,
+                   wallet_storage_config: WalletStorageConfig) -> BoxedFuture<(), Error> {
+        trace!("Agent::restore >> {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
+               wallet_id, did, owner_did, owner_verkey, forward_agent_detail, wallet_storage_config);
+
+        let wallet_config = json!({
+                    "id": wallet_id.clone(),
+                    "storage_type": wallet_storage_config.xtype,
+                    "storage_config": wallet_storage_config.config,
+                 }).to_string();
+
+        let wallet_credentials = json!({
+                    "key": wallet_key.clone(),
+                    "storage_credentials": wallet_storage_config.credentials,
+                }).to_string();
+
+        let did = did.to_string();
+        let owner_did = owner_did.to_string();
+        let owner_verkey = owner_verkey.to_string();
+
+        future::ok(())
+            .and_then(move |_| {
+                wallet::open_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
+                    .map_err(|err| err.context("Can't open Agent wallet.`").into())
+            })
+            .and_then(move |wallet_handle| {
+                did::key_for_local_did(wallet_handle, &did)
+                    .map(move |verkey| (wallet_handle, did, verkey))
+                    .map_err(|err| err.context("Can't get Agent did verkey").into())
+            })
+            .and_then(move |(wallet_handle, did, verkey)| {
+                // Resolve information about existing connections from the wallet
+                // and start Agent Connection actor for each exists connection
+
+                Agent::_restore_connections(wallet_handle,
+                                            &owner_did,
+                                            &owner_verkey,
+                                            &forward_agent_detail,
+                                            router.clone())
+                    .map(move |_| (wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router))
+            })
+            .and_then(move |(wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router)| {
+                let agent = Agent {
+                    wallet_handle,
+                    verkey: verkey.clone(),
+                    did: did.clone(),
+                    owner_did,
+                    owner_verkey,
+                    router: router.clone(),
+                    forward_agent_detail,
+                };
+
+                let agent = agent.start();
+
+                router
+                    .send(AddA2ARoute(did.clone(), agent.clone().recipient()))
+                    .from_err()
+                    .map_err(|err: Error| err.context("Can't add route for Agent").into())
+            })
+            .into_box()
+    }
+
+    fn _restore_connections(wallet_handle: i32,
+                            owner_did: &str,
+                            owner_verkey: &str,
+                            forward_agent_detail: &ForwardAgentDetail,
+                            router: Addr<Router>) -> ResponseFuture<(), Error> {
+        trace!("Agent::_restore_connections >> {:?}, {:?}, {:?}, {:?}",
+               wallet_handle, owner_did, owner_verkey, forward_agent_detail);
+
+        let owner_did = owner_did.to_string();
+        let owner_verkey = owner_verkey.to_string();
+        let forward_agent_detail = forward_agent_detail.clone();
+
+        future::ok(())
+            .and_then(move |_| Self::get_pairwise_list(wallet_handle).into_box())
+            .and_then(move |pairwise_list| {
+                let futures: Vec<_> = pairwise_list
+                    .iter()
+                    .map(move |pairwise| {
+                        AgentConnection::restore(wallet_handle,
+                                                 &owner_did,
+                                                 &owner_verkey,
+                                                 &pairwise.my_did,
+                                                 &pairwise.their_did,
+                                                 &pairwise.metadata,
+                                                 &forward_agent_detail,
+                                                 router.clone())
+                    })
+                    .collect();
+
+                future::join_all(futures)
+                    .map(|_| ())
+                    .map_err(|err| err.context("Can't restore Agent connections.").into())
+            })
+            .into_box()
     }
 
     fn handle_a2a_msg(&mut self,
@@ -128,6 +223,8 @@ impl Agent {
     fn handle_agent_msg(&mut self,
                         sender_vk: String,
                         msg: A2AMessage) -> ResponseActFuture<Self, Vec<u8>, Error> {
+        trace!("Agent::handle_agent_msg >> {:?}, {:?}", sender_vk, msg);
+
         future::ok(())
             .into_actor(self)
             .and_then(move |_, slf, _|

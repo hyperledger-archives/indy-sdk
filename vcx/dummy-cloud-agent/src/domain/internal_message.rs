@@ -5,7 +5,7 @@ use utils::rand::rand_string;
 
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InternalMessage {
     pub uid: String,
     pub _type: MessageType,
@@ -14,7 +14,7 @@ pub struct InternalMessage {
     pub ref_msg_id: Option<String>,
     pub seq_no: Option<String>, // ?
     pub payload: Option<Vec<u8>>,
-    pub sending_data: HashMap<&'static str, Option<String>>
+    pub sending_data: HashMap<String, Option<String>>
 }
 
 impl InternalMessage {
@@ -24,7 +24,7 @@ impl InternalMessage {
                sender_did: &str,
                ref_msg_id: Option<&str>,
                payload: Option<Vec<u8>>,
-               sending_data: Option<HashMap<&'static str, Option<String>>>) -> InternalMessage {
+               sending_data: Option<HashMap<String, Option<String>>>) -> InternalMessage {
         InternalMessage {
             uid: uid.map(String::from).unwrap_or(rand_string(10)),
             _type: mtype.clone(),
