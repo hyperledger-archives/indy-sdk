@@ -346,7 +346,7 @@ mod tests {
     use settings;
     #[allow(unused_imports)]
     use utils::constants::{ SCHEMA_ID, SCHEMA_WITH_VERSION, DEFAULT_SCHEMA_ATTRS, DEFAULT_SCHEMA_ID, DEFAULT_SCHEMA_NAME };
-    use utils::libindy::return_types_u32;
+    use api::return_types_u32;
 
     #[test]
     fn test_vcx_create_schema_success() {
