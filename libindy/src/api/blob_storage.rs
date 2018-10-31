@@ -9,12 +9,12 @@ use utils::ctypes;
 use self::libc::c_char;
 
 #[no_mangle]
-pub extern fn indy_open_blob_storage_reader(command_handle: i32,
+pub extern fn indy_open_blob_storage_reader(command_handle: IndyHandle,
                                             type_: *const c_char,
                                             config_json: *const c_char,
-                                            cb: Option<extern fn(command_handle_: i32,
+                                            cb: Option<extern fn(command_handle_: IndyHandle,
                                                                  err: ErrorCode,
-                                                                 handle: i32)>) -> ErrorCode {
+                                                                 handle: IndyHandle)>) -> ErrorCode {
     trace!("indy_open_blob_storage_reader: >>> type_: {:?}, config_json: {:?}", type_, config_json);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam2);
@@ -42,12 +42,12 @@ pub extern fn indy_open_blob_storage_reader(command_handle: i32,
 }
 
 #[no_mangle]
-pub extern fn indy_open_blob_storage_writer(command_handle: i32,
+pub extern fn indy_open_blob_storage_writer(command_handle: IndyHandle,
                                             type_: *const c_char,
                                             config_json: *const c_char,
-                                            cb: Option<extern fn(command_handle_: i32,
+                                            cb: Option<extern fn(command_handle_: IndyHandle,
                                                                  err: ErrorCode,
-                                                                 handle: i32)>) -> ErrorCode {
+                                                                 handle: IndyHandle)>) -> ErrorCode {
     trace!("indy_open_blob_storage_writer: >>> type_: {:?}, config_json: {:?}", type_, config_json);
 
     check_useful_c_str!(type_, ErrorCode::CommonInvalidParam2);

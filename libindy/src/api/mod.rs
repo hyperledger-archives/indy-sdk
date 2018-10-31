@@ -21,6 +21,8 @@ use errors::ToErrorCode;
 
 use utils::ctypes;
 
+pub type IndyHandle = IndyHandle;
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 #[repr(i32)]
 pub enum ErrorCode

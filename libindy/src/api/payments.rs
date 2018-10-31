@@ -27,10 +27,10 @@ use utils::ctypes;
 ///
 /// #Returns
 /// payment_address - public identifier of payment address in fully resolvable payment address format
-pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
-                                            wallet_handle: i32,
+pub type CreatePaymentAddressCB = extern fn(command_handle: IndyHandle,
+                                            wallet_handle: IndyHandle,
                                             config: *const c_char,
-                                            cb: Option<extern fn(command_handle_: i32,
+                                            cb: Option<extern fn(command_handle_: IndyHandle,
                                                                  err: ErrorCode,
                                                                  payment_address: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -62,14 +62,14 @@ pub type CreatePaymentAddressCB = extern fn(command_handle: i32,
 ///
 /// #Returns
 /// req_with_fees_json - modified Indy request with added fees info
-pub type AddRequestFeesCB = extern fn(command_handle: i32,
-                                      wallet_handle: i32,
+pub type AddRequestFeesCB = extern fn(command_handle: IndyHandle,
+                                      wallet_handle: IndyHandle,
                                       submitter_did: *const c_char,
                                       req_json: *const c_char,
                                       inputs_json: *const c_char,
                                       outputs_json: *const c_char,
                                       extra: *const c_char,
-                                      cb: Option<extern fn(command_handle_: i32,
+                                      cb: Option<extern fn(command_handle_: IndyHandle,
                                                            err: ErrorCode,
                                                            req_with_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -87,9 +87,9 @@ pub type AddRequestFeesCB = extern fn(command_handle: i32,
 ///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
-pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
+pub type ParseResponseWithFeesCB = extern fn(command_handle: IndyHandle,
                                              resp_json: *const c_char,
-                                             cb: Option<extern fn(command_handle_: i32,
+                                             cb: Option<extern fn(command_handle_: IndyHandle,
                                                                   err: ErrorCode,
                                                                   receipts_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -104,11 +104,11 @@ pub type ParseResponseWithFeesCB = extern fn(command_handle: i32,
 ///
 /// #Returns
 /// get_sources_txn_json - Indy request for getting sources list for payment address
-pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: i32,
-                                                     wallet_handle: i32,
+pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: IndyHandle,
+                                                     wallet_handle: IndyHandle,
                                                      submitter_did: *const c_char,
                                                      payment_address: *const c_char,
-                                                     cb: Option<extern fn(command_handle_: i32,
+                                                     cb: Option<extern fn(command_handle_: IndyHandle,
                                                                           err: ErrorCode,
                                                                           get_sources_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -126,9 +126,9 @@ pub type BuildGetPaymentSourcesRequestCB = extern fn(command_handle: i32,
 ///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
-pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,
+pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: IndyHandle,
                                                       resp_json: *const c_char,
-                                                      cb: Option<extern fn(command_handle_: i32,
+                                                      cb: Option<extern fn(command_handle_: IndyHandle,
                                                                            err: ErrorCode,
                                                                            sources_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -156,13 +156,13 @@ pub type ParseGetPaymentSourcesResponseCB = extern fn(command_handle: i32,
 ///
 /// #Returns
 /// payment_req_json - Indy request for doing payment
-pub type BuildPaymentReqCB = extern fn(command_handle: i32,
-                                       wallet_handle: i32,
+pub type BuildPaymentReqCB = extern fn(command_handle: IndyHandle,
+                                       wallet_handle: IndyHandle,
                                        submitter_did: *const c_char,
                                        inputs_json: *const c_char,
                                        outputs_json: *const c_char,
                                        extra: *const c_char,
-                                       cb: Option<extern fn(command_handle_: i32,
+                                       cb: Option<extern fn(command_handle_: IndyHandle,
                                                             err: ErrorCode,
                                                             payment_req_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -180,9 +180,9 @@ pub type BuildPaymentReqCB = extern fn(command_handle: i32,
 ///      amount: <int>, // amount
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
-pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
+pub type ParsePaymentResponseCB = extern fn(command_handle: IndyHandle,
                                             resp_json: *const c_char,
-                                            cb: Option<extern fn(command_handle_: i32,
+                                            cb: Option<extern fn(command_handle_: IndyHandle,
                                                                  err: ErrorCode,
                                                                  receipts_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -202,12 +202,12 @@ pub type ParsePaymentResponseCB = extern fn(command_handle: i32,
 ///
 /// #Returns
 /// mint_req_json - Indy request for doing minting
-pub type BuildMintReqCB = extern fn(command_handle: i32,
-                                    wallet_handle: i32,
+pub type BuildMintReqCB = extern fn(command_handle: IndyHandle,
+                                    wallet_handle: IndyHandle,
                                     submitter_did: *const c_char,
                                     outputs_json: *const c_char,
                                     extra: *const c_char,
-                                    cb: Option<extern fn(command_handle_: i32,
+                                    cb: Option<extern fn(command_handle_: IndyHandle,
                                                          err: ErrorCode,
                                                          mint_req_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -226,11 +226,11 @@ pub type BuildMintReqCB = extern fn(command_handle: i32,
 ///
 /// # Return
 /// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
-pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
-                                          wallet_handle: i32,
+pub type BuildSetTxnFeesReqCB = extern fn(command_handle: IndyHandle,
+                                          wallet_handle: IndyHandle,
                                           submitter_did: *const c_char,
                                           fees_json: *const c_char,
-                                          cb: Option<extern fn(command_handle_: i32,
+                                          cb: Option<extern fn(command_handle_: IndyHandle,
                                                                err: ErrorCode,
                                                                set_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -243,10 +243,10 @@ pub type BuildSetTxnFeesReqCB = extern fn(command_handle: i32,
 ///
 /// # Return
 /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
-pub type BuildGetTxnFeesReqCB = extern fn(command_handle: i32,
-                                          wallet_handle: i32,
+pub type BuildGetTxnFeesReqCB = extern fn(command_handle: IndyHandle,
+                                          wallet_handle: IndyHandle,
                                           submitter_did: *const c_char,
-                                          cb: Option<extern fn(command_handle_: i32,
+                                          cb: Option<extern fn(command_handle_: IndyHandle,
                                                                err: ErrorCode,
                                                                get_txn_fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -263,9 +263,9 @@ pub type BuildGetTxnFeesReqCB = extern fn(command_handle: i32,
 ///   .................
 ///   txnTypeN: amountN,
 /// }
-pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
+pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: IndyHandle,
                                                resp_json: *const c_char,
-                                               cb: Option<extern fn(command_handle_: i32,
+                                               cb: Option<extern fn(command_handle_: IndyHandle,
                                                                     err: ErrorCode,
                                                                     fees_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -279,11 +279,11 @@ pub type ParseGetTxnFeesResponseCB = extern fn(command_handle: i32,
 ///
 /// # Return
 /// verify_txn_json -- request to be sent to ledger
-pub type BuildVerifyPaymentReqCB = extern fn(command_handle: i32,
-                                             wallet_handle: i32,
+pub type BuildVerifyPaymentReqCB = extern fn(command_handle: IndyHandle,
+                                             wallet_handle: IndyHandle,
                                              submitter_did: *const c_char,
                                              receipt: *const c_char,
-                                             cb: Option<extern fn(command_handle_: i32,
+                                             cb: Option<extern fn(command_handle_: IndyHandle,
                                                            err: ErrorCode,
                                                            verify_txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -303,9 +303,9 @@ pub type BuildVerifyPaymentReqCB = extern fn(command_handle: i32,
 ///     }, ]
 ///     extra: <str>, //optional data
 /// }
-pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: i32,
+pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: IndyHandle,
                                                   resp_json: *const c_char,
-                                                  cb: Option<extern fn(command_handle_: i32,
+                                                  cb: Option<extern fn(command_handle_: IndyHandle,
                                                                 err: ErrorCode,
                                                                 txn_json: *const c_char) -> ErrorCode>) -> ErrorCode;
 
@@ -333,7 +333,7 @@ pub type ParseVerifyPaymentResponseCB = extern fn(command_handle: i32,
 /// #Returns
 /// Error code
 #[no_mangle]
-pub extern fn indy_register_payment_method(command_handle: i32,
+pub extern fn indy_register_payment_method(command_handle: IndyHandle,
                                            payment_method: *const c_char,
                                            create_payment_address: Option<CreatePaymentAddressCB>,
                                            add_request_fees: Option<AddRequestFeesCB>,
@@ -348,7 +348,7 @@ pub extern fn indy_register_payment_method(command_handle: i32,
                                            parse_get_txn_fees_response: Option<ParseGetTxnFeesResponseCB>,
                                            build_verify_payment_req: Option<BuildVerifyPaymentReqCB>,
                                            parse_verify_payment_response: Option<ParseVerifyPaymentResponseCB>,
-                                           cb: Option<extern fn(command_handle_: i32,
+                                           cb: Option<extern fn(command_handle_: IndyHandle,
                                                                 err: ErrorCode)>) -> ErrorCode {
     trace!("indy_register_payment_method: >>> payment_method: {:?}", payment_method);
 
@@ -425,11 +425,11 @@ pub extern fn indy_register_payment_method(command_handle: i32,
 /// #Returns
 /// payment_address - public identifier of payment address in fully resolvable payment address format
 #[no_mangle]
-pub extern fn indy_create_payment_address(command_handle: i32,
-                                          wallet_handle: i32,
+pub extern fn indy_create_payment_address(command_handle: IndyHandle,
+                                          wallet_handle: IndyHandle,
                                           payment_method: *const c_char,
                                           config: *const c_char,
-                                          cb: Option<extern fn(command_handle_: i32,
+                                          cb: Option<extern fn(command_handle_: IndyHandle,
                                                                err: ErrorCode,
                                                                payment_address: *const c_char)>) -> ErrorCode {
     trace!("indy_create_payment_address: >>> wallet_handle: {:?}, payment_method: {:?}, config: {:?}", wallet_handle, payment_method, config);
@@ -471,9 +471,9 @@ pub extern fn indy_create_payment_address(command_handle: i32,
 /// #Returns
 /// payment_addresses_json - json array of string with json addresses
 #[no_mangle]
-pub extern fn indy_list_payment_addresses(command_handle: i32,
-                                          wallet_handle: i32,
-                                          cb: Option<extern fn(command_handle_: i32,
+pub extern fn indy_list_payment_addresses(command_handle: IndyHandle,
+                                          wallet_handle: IndyHandle,
+                                          cb: Option<extern fn(command_handle_: IndyHandle,
                                                                err: ErrorCode,
                                                                payment_addresses_json: *const c_char)>) -> ErrorCode {
     trace!("indy_list_payment_address: >>> wallet_handle: {:?}", wallet_handle);
@@ -533,14 +533,14 @@ pub extern fn indy_list_payment_addresses(command_handle: i32,
 /// req_with_fees_json - modified Indy request with added fees info
 /// payment_method - used payment method
 #[no_mangle]
-pub extern fn indy_add_request_fees(command_handle: i32,
-                                    wallet_handle: i32,
+pub extern fn indy_add_request_fees(command_handle: IndyHandle,
+                                    wallet_handle: IndyHandle,
                                     submitter_did: *const c_char,
                                     req_json: *const c_char,
                                     inputs_json: *const c_char,
                                     outputs_json: *const c_char,
                                     extra: *const c_char,
-                                    cb: Option<extern fn(command_handle_: i32,
+                                    cb: Option<extern fn(command_handle_: IndyHandle,
                                                          err: ErrorCode,
                                                          req_with_fees_json: *const c_char,
                                                          payment_method: *const c_char)>) -> ErrorCode {
@@ -598,10 +598,10 @@ pub extern fn indy_add_request_fees(command_handle: i32,
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 #[no_mangle]
-pub extern fn indy_parse_response_with_fees(command_handle: i32,
+pub extern fn indy_parse_response_with_fees(command_handle: IndyHandle,
                                             payment_method: *const c_char,
                                             resp_json: *const c_char,
-                                            cb: Option<extern fn(command_handle_: i32,
+                                            cb: Option<extern fn(command_handle_: IndyHandle,
                                                                  err: ErrorCode,
                                                                  receipts_json: *const c_char)>) -> ErrorCode {
     trace!("indy_parse_response_with_fees: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
@@ -642,11 +642,11 @@ pub extern fn indy_parse_response_with_fees(command_handle: i32,
 /// get_sources_txn_json - Indy request for getting sources list for payment address
 /// payment_method - used payment method
 #[no_mangle]
-pub extern fn indy_build_get_payment_sources_request(command_handle: i32,
-                                                     wallet_handle: i32,
+pub extern fn indy_build_get_payment_sources_request(command_handle: IndyHandle,
+                                                     wallet_handle: IndyHandle,
                                                      submitter_did: *const c_char,
                                                      payment_address: *const c_char,
-                                                     cb: Option<extern fn(command_handle_: i32,
+                                                     cb: Option<extern fn(command_handle_: IndyHandle,
                                                                           err: ErrorCode,
                                                                           get_sources_txn_json: *const c_char,
                                                                           payment_method: *const c_char)>) -> ErrorCode {
@@ -696,10 +696,10 @@ pub extern fn indy_build_get_payment_sources_request(command_handle: i32,
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 #[no_mangle]
-pub extern fn indy_parse_get_payment_sources_response(command_handle: i32,
+pub extern fn indy_parse_get_payment_sources_response(command_handle: IndyHandle,
                                                       payment_method: *const c_char,
                                                       resp_json: *const c_char,
-                                                      cb: Option<extern fn(command_handle_: i32,
+                                                      cb: Option<extern fn(command_handle_: IndyHandle,
                                                                            err: ErrorCode,
                                                                            sources_json: *const c_char)>) -> ErrorCode {
     trace!("indy_parse_get_payment_sources_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
@@ -756,13 +756,13 @@ pub extern fn indy_parse_get_payment_sources_response(command_handle: i32,
 /// payment_req_json - Indy request for doing payment
 /// payment_method - used payment method
 #[no_mangle]
-pub extern fn indy_build_payment_req(command_handle: i32,
-                                     wallet_handle: i32,
+pub extern fn indy_build_payment_req(command_handle: IndyHandle,
+                                     wallet_handle: IndyHandle,
                                      submitter_did: *const c_char,
                                      inputs_json: *const c_char,
                                      outputs_json: *const c_char,
                                      extra: *const c_char,
-                                     cb: Option<extern fn(command_handle_: i32,
+                                     cb: Option<extern fn(command_handle_: IndyHandle,
                                                           err: ErrorCode,
                                                           payment_req_json: *const c_char,
                                                           payment_method: *const c_char)>) -> ErrorCode {
@@ -818,10 +818,10 @@ pub extern fn indy_build_payment_req(command_handle: i32,
 ///      extra: <str>, // optional data from payment transaction
 ///   }]
 #[no_mangle]
-pub extern fn indy_parse_payment_response(command_handle: i32,
+pub extern fn indy_parse_payment_response(command_handle: IndyHandle,
                                           payment_method: *const c_char,
                                           resp_json: *const c_char,
-                                          cb: Option<extern fn(command_handle_: i32,
+                                          cb: Option<extern fn(command_handle_: IndyHandle,
                                                                err: ErrorCode,
                                                                receipts_json: *const c_char)>) -> ErrorCode {
     trace!("indy_parse_payment_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
@@ -870,12 +870,12 @@ pub extern fn indy_parse_payment_response(command_handle: i32,
 /// mint_req_json - Indy request for doing minting
 /// payment_method - used payment method
 #[no_mangle]
-pub extern fn indy_build_mint_req(command_handle: i32,
-                                  wallet_handle: i32,
+pub extern fn indy_build_mint_req(command_handle: IndyHandle,
+                                  wallet_handle: IndyHandle,
                                   submitter_did: *const c_char,
                                   outputs_json: *const c_char,
                                   extra: *const c_char,
-                                  cb: Option<extern fn(command_handle_: i32,
+                                  cb: Option<extern fn(command_handle_: IndyHandle,
                                                        err: ErrorCode,
                                                        mint_req_json: *const c_char,
                                                        payment_method: *const c_char)>) -> ErrorCode {
@@ -927,12 +927,12 @@ pub extern fn indy_build_mint_req(command_handle: i32,
 /// # Return
 /// set_txn_fees_json - Indy request for setting fees for transactions in the ledger
 #[no_mangle]
-pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
-                                          wallet_handle: i32,
+pub extern fn indy_build_set_txn_fees_req(command_handle: IndyHandle,
+                                          wallet_handle: IndyHandle,
                                           submitter_did: *const c_char,
                                           payment_method: *const c_char,
                                           fees_json: *const c_char,
-                                          cb: Option<extern fn(command_handle_: i32,
+                                          cb: Option<extern fn(command_handle_: IndyHandle,
                                                                err: ErrorCode,
                                                                set_txn_fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_set_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}, fees_json: {:?}", wallet_handle, submitter_did, payment_method, fees_json);
@@ -977,11 +977,11 @@ pub extern fn indy_build_set_txn_fees_req(command_handle: i32,
 /// # Return
 /// get_txn_fees_json - Indy request for getting fees for transactions in the ledger
 #[no_mangle]
-pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
-                                          wallet_handle: i32,
+pub extern fn indy_build_get_txn_fees_req(command_handle: IndyHandle,
+                                          wallet_handle: IndyHandle,
                                           submitter_did: *const c_char,
                                           payment_method: *const c_char,
-                                          cb: Option<extern fn(command_handle_: i32,
+                                          cb: Option<extern fn(command_handle_: IndyHandle,
                                                                err: ErrorCode,
                                                                get_txn_fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_txn_fees_req: >>> wallet_handle: {:?}, submitter_did: {:?}, payment_method: {:?}", wallet_handle, submitter_did, payment_method);
@@ -1028,10 +1028,10 @@ pub extern fn indy_build_get_txn_fees_req(command_handle: i32,
 ///   txnTypeN: amountN,
 /// }
 #[no_mangle]
-pub extern fn indy_parse_get_txn_fees_response(command_handle: i32,
+pub extern fn indy_parse_get_txn_fees_response(command_handle: IndyHandle,
                                                payment_method: *const c_char,
                                                resp_json: *const c_char,
-                                               cb: Option<extern fn(command_handle_: i32,
+                                               cb: Option<extern fn(command_handle_: IndyHandle,
                                                                     err: ErrorCode,
                                                                     fees_json: *const c_char)>) -> ErrorCode {
     trace!("indy_parse_get_txn_fees_response: >>> payment_method: {:?}, resp_json: {:?}", payment_method, resp_json);
@@ -1074,11 +1074,11 @@ pub extern fn indy_parse_get_txn_fees_response(command_handle: i32,
 /// verify_txn_json: Indy request for verification receipt
 /// payment_method: used payment method
 #[no_mangle]
-pub extern fn indy_build_verify_payment_req(command_handle: i32,
-                                            wallet_handle: i32,
+pub extern fn indy_build_verify_payment_req(command_handle: IndyHandle,
+                                            wallet_handle: IndyHandle,
                                             submitter_did: *const c_char,
                                             receipt: *const c_char,
-                                            cb: Option<extern fn(command_handle_: i32,
+                                            cb: Option<extern fn(command_handle_: IndyHandle,
                                                          err: ErrorCode,
                                                          verify_txn_json: *const c_char,
                                                          payment_method: *const c_char)>) -> ErrorCode {
@@ -1129,10 +1129,10 @@ pub extern fn indy_build_verify_payment_req(command_handle: i32,
 ///     extra: <str>, //optional data
 /// }
 #[no_mangle]
-pub extern fn indy_parse_verify_payment_response(command_handle: i32,
+pub extern fn indy_parse_verify_payment_response(command_handle: IndyHandle,
                                                  payment_method: *const c_char,
                                                  resp_json: *const c_char,
-                                                 cb: Option<extern fn(command_handle_: i32,
+                                                 cb: Option<extern fn(command_handle_: IndyHandle,
                                                               err: ErrorCode,
                                                               txn_json: *const c_char)>) -> ErrorCode {
     trace!("indy_parse_verify_payment_response: >>> resp_json: {:?}", resp_json);

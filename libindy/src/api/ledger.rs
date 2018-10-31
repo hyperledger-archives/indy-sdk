@@ -38,12 +38,12 @@ use self::libc::c_char;
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_sign_and_submit_request(command_handle: i32,
-                                           pool_handle: i32,
-                                           wallet_handle: i32,
+pub extern fn indy_sign_and_submit_request(command_handle: IndyHandle,
+                                           pool_handle: IndyHandle,
+                                           wallet_handle: IndyHandle,
                                            submitter_did: *const c_char,
                                            request_json: *const c_char,
-                                           cb: Option<extern fn(xcommand_handle: i32,
+                                           cb: Option<extern fn(command_handle_: IndyHandle,
                                                                 err: ErrorCode,
                                                                 request_result_json: *const c_char)>) -> ErrorCode {
     trace!("indy_sign_and_submit_request: >>> pool_handle: {:?}, wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}",
@@ -94,10 +94,10 @@ pub extern fn indy_sign_and_submit_request(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_submit_request(command_handle: i32,
-                                  pool_handle: i32,
+pub extern fn indy_submit_request(command_handle: IndyHandle,
+                                  pool_handle: IndyHandle,
                                   request_json: *const c_char,
-                                  cb: Option<extern fn(xcommand_handle: i32,
+                                  cb: Option<extern fn(command_handle_: IndyHandle,
                                                        err: ErrorCode,
                                                        request_result_json: *const c_char)>) -> ErrorCode {
     trace!("indy_submit_request: >>> pool_handle: {:?}, request_json: {:?}", pool_handle, request_json);
@@ -151,12 +151,12 @@ pub extern fn indy_submit_request(command_handle: i32,
 /// Common*
 /// Ledger*
 #[no_mangle]
-pub extern fn indy_submit_action(command_handle: i32,
-                                 pool_handle: i32,
+pub extern fn indy_submit_action(command_handle: IndyHandle,
+                                 pool_handle: IndyHandle,
                                  request_json: *const c_char,
                                  nodes: *const c_char,
                                  timeout: i32,
-                                 cb: Option<extern fn(xcommand_handle: i32,
+                                 cb: Option<extern fn(command_handle_: IndyHandle,
                                                       err: ErrorCode,
                                                       request_result_json: *const c_char)>) -> ErrorCode {
     trace!("indy_submit_action: >>> pool_handle: {:?}, request_json: {:?}, nodes: {:?}, timeout: {:?}", pool_handle, request_json, nodes, timeout);
@@ -212,11 +212,11 @@ pub extern fn indy_submit_action(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_sign_request(command_handle: i32,
-                                wallet_handle: i32,
+pub extern fn indy_sign_request(command_handle: IndyHandle,
+                                wallet_handle: IndyHandle,
                                 submitter_did: *const c_char,
                                 request_json: *const c_char,
-                                cb: Option<extern fn(xcommand_handle: i32,
+                                cb: Option<extern fn(command_handle_: IndyHandle,
                                                      err: ErrorCode,
                                                      signed_request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
@@ -268,11 +268,11 @@ pub extern fn indy_sign_request(command_handle: i32,
 /// Ledger*
 /// Crypto*
 #[no_mangle]
-pub extern fn indy_multi_sign_request(command_handle: i32,
-                                      wallet_handle: i32,
+pub extern fn indy_multi_sign_request(command_handle: IndyHandle,
+                                      wallet_handle: IndyHandle,
                                       submitter_did: *const c_char,
                                       request_json: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                      cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                            signed_request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_multi_sign_request: >>> wallet_handle: {:?}, submitter_did: {:?}, request_json: {:?}", wallet_handle, submitter_did, request_json);
 
@@ -317,10 +317,10 @@ pub extern fn indy_multi_sign_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_ddo_request(command_handle: i32,
+pub extern fn indy_build_get_ddo_request(command_handle: IndyHandle,
                                          submitter_did: *const c_char,
                                          target_did: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: i32,
+                                         cb: Option<extern fn(command_handle_: IndyHandle,
                                                               err: ErrorCode,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_ddo_request: >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
@@ -373,13 +373,13 @@ pub extern fn indy_build_get_ddo_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_nym_request(command_handle: i32,
+pub extern fn indy_build_nym_request(command_handle: IndyHandle,
                                      submitter_did: *const c_char,
                                      target_did: *const c_char,
                                      verkey: *const c_char,
                                      alias: *const c_char,
                                      role: *const c_char,
-                                     cb: Option<extern fn(xcommand_handle: i32,
+                                     cb: Option<extern fn(command_handle_: IndyHandle,
                                                           err: ErrorCode,
                                                           request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_nym_request: >>> submitter_did: {:?}, target_did: {:?}, verkey: {:?}, alias: {:?}, role: {:?}",
@@ -431,10 +431,10 @@ pub extern fn indy_build_nym_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_nym_request(command_handle: i32,
+pub extern fn indy_build_get_nym_request(command_handle: IndyHandle,
                                          submitter_did: *const c_char,
                                          target_did: *const c_char,
-                                         cb: Option<extern fn(xcommand_handle: i32,
+                                         cb: Option<extern fn(command_handle_: IndyHandle,
                                                               err: ErrorCode,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_nym_request: >>> submitter_did: {:?}, target_did: {:?}", submitter_did, target_did);
@@ -481,13 +481,13 @@ pub extern fn indy_build_get_nym_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_attrib_request(command_handle: i32,
+pub extern fn indy_build_attrib_request(command_handle: IndyHandle,
                                         submitter_did: *const c_char,
                                         target_did: *const c_char,
                                         hash: *const c_char,
                                         raw: *const c_char,
                                         enc: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: i32,
+                                        cb: Option<extern fn(command_handle_: IndyHandle,
                                                              err: ErrorCode,
                                                              request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_attrib_request: >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
@@ -542,13 +542,13 @@ pub extern fn indy_build_attrib_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_attrib_request(command_handle: i32,
+pub extern fn indy_build_get_attrib_request(command_handle: IndyHandle,
                                             submitter_did: *const c_char,
                                             target_did: *const c_char,
                                             raw: *const c_char,
                                             hash: *const c_char,
                                             enc: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: i32,
+                                            cb: Option<extern fn(command_handle_: IndyHandle,
                                                                  err: ErrorCode,
                                                                  request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_attrib_request: >>> submitter_did: {:?}, target_did: {:?}, hash: {:?}, raw: {:?}, enc: {:?}",
@@ -607,10 +607,10 @@ pub extern fn indy_build_get_attrib_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_schema_request(command_handle: i32,
+pub extern fn indy_build_schema_request(command_handle: IndyHandle,
                                         submitter_did: *const c_char,
                                         data: *const c_char,
-                                        cb: Option<extern fn(xcommand_handle: i32,
+                                        cb: Option<extern fn(command_handle_: IndyHandle,
                                                              err: ErrorCode,
                                                              request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_schema_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -654,10 +654,10 @@ pub extern fn indy_build_schema_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_schema_request(command_handle: i32,
+pub extern fn indy_build_get_schema_request(command_handle: IndyHandle,
                                             submitter_did: *const c_char,
                                             id: *const c_char,
-                                            cb: Option<extern fn(xcommand_handle: i32,
+                                            cb: Option<extern fn(command_handle_: IndyHandle,
                                                                  err: ErrorCode,
                                                                  request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_schema_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
@@ -707,9 +707,9 @@ pub extern fn indy_build_get_schema_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_schema_response(command_handle: i32,
+pub extern fn indy_parse_get_schema_response(command_handle: IndyHandle,
                                              get_schema_response: *const c_char,
-                                             cb: Option<extern fn(xcommand_handle: i32,
+                                             cb: Option<extern fn(command_handle_: IndyHandle,
                                                                   err: ErrorCode,
                                                                   schema_id: *const c_char,
                                                                   schema_json: *const c_char)>) -> ErrorCode {
@@ -765,10 +765,10 @@ pub extern fn indy_parse_get_schema_response(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_cred_def_request(command_handle: i32,
+pub extern fn indy_build_cred_def_request(command_handle: IndyHandle,
                                           submitter_did: *const c_char,
                                           data: *const c_char,
-                                          cb: Option<extern fn(xcommand_handle: i32,
+                                          cb: Option<extern fn(command_handle_: IndyHandle,
                                                                err: ErrorCode,
                                                                request_result_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_cred_def_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -813,10 +813,10 @@ pub extern fn indy_build_cred_def_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_cred_def_request(command_handle: i32,
+pub extern fn indy_build_get_cred_def_request(command_handle: IndyHandle,
                                               submitter_did: *const c_char,
                                               id: *const c_char,
-                                              cb: Option<extern fn(xcommand_handle: i32,
+                                              cb: Option<extern fn(command_handle_: IndyHandle,
                                                                    err: ErrorCode,
                                                                    request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_cred_def_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
@@ -870,9 +870,9 @@ pub extern fn indy_build_get_cred_def_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_cred_def_response(command_handle: i32,
+pub extern fn indy_parse_get_cred_def_response(command_handle: IndyHandle,
                                                get_cred_def_response: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: i32,
+                                               cb: Option<extern fn(command_handle_: IndyHandle,
                                                                     err: ErrorCode,
                                                                     cred_def_id: *const c_char,
                                                                     cred_def_json: *const c_char)>) -> ErrorCode {
@@ -926,11 +926,11 @@ pub extern fn indy_parse_get_cred_def_response(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_node_request(command_handle: i32,
+pub extern fn indy_build_node_request(command_handle: IndyHandle,
                                       submitter_did: *const c_char,
                                       target_did: *const c_char,
                                       data: *const c_char,
-                                      cb: Option<extern fn(xcommand_handle: i32,
+                                      cb: Option<extern fn(command_handle_: IndyHandle,
                                                            err: ErrorCode,
                                                            request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_node_request: >>> submitter_did: {:?}, target_did: {:?}, data: {:?}", submitter_did, target_did, data);
@@ -975,9 +975,9 @@ pub extern fn indy_build_node_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_validator_info_request(command_handle: i32,
+pub extern fn indy_build_get_validator_info_request(command_handle: IndyHandle,
                                                     submitter_did: *const c_char,
-                                                    cb: Option<extern fn(xcommand_handle: i32, err: ErrorCode,
+                                                    cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode,
                                                                          request_json: *const c_char)>) -> ErrorCode {
     check_useful_c_str!(submitter_did, ErrorCode::CommonInvalidParam2);
     check_useful_c_callback!(cb, ErrorCode::CommonInvalidParam4);
@@ -1014,11 +1014,11 @@ pub extern fn indy_build_get_validator_info_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_txn_request(command_handle: i32,
+pub extern fn indy_build_get_txn_request(command_handle: IndyHandle,
                                          submitter_did: *const c_char,
                                          ledger_type: *const c_char,
                                          seq_no: i32,
-                                         cb: Option<extern fn(xcommand_handle: i32,
+                                         cb: Option<extern fn(command_handle_: IndyHandle,
                                                               err: ErrorCode,
                                                               request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_txn_request: >>> submitter_did: {:?}, ledger_type: {:?}, seq_no: {:?}", submitter_did, ledger_type, seq_no);
@@ -1066,11 +1066,11 @@ pub extern fn indy_build_get_txn_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_pool_config_request(command_handle: i32,
+pub extern fn indy_build_pool_config_request(command_handle: IndyHandle,
                                              submitter_did: *const c_char,
                                              writes: bool,
                                              force: bool,
-                                             cb: Option<extern fn(xcommand_handle: i32,
+                                             cb: Option<extern fn(command_handle_: IndyHandle,
                                                                   err: ErrorCode,
                                                                   request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_pool_config_request: >>> submitter_did: {:?}, writes: {:?}, force: {:?}", submitter_did, writes, force);
@@ -1115,11 +1115,11 @@ pub extern fn indy_build_pool_config_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_pool_restart_request(command_handle: i32,
+pub extern fn indy_build_pool_restart_request(command_handle: IndyHandle,
                                               submitter_did: *const c_char,
                                               action: *const c_char,
                                               datetime: *const c_char,
-                                              cb: Option<extern fn(xcommand_handle: i32,
+                                              cb: Option<extern fn(command_handle_: IndyHandle,
                                                                    err: ErrorCode,
                                                                    request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_pool_restart_request: >>> submitter_did: {:?}, action: {:?}, datetime: {:?}", submitter_did, action, datetime);
@@ -1178,7 +1178,7 @@ pub extern fn indy_build_pool_restart_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
+pub extern fn indy_build_pool_upgrade_request(command_handle: IndyHandle,
                                               submitter_did: *const c_char,
                                               name: *const c_char,
                                               version: *const c_char,
@@ -1190,7 +1190,7 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
                                               reinstall: bool,
                                               force: bool,
                                               package: *const c_char,
-                                              cb: Option<extern fn(xcommand_handle: i32,
+                                              cb: Option<extern fn(command_handle_: IndyHandle,
                                                                    err: ErrorCode,
                                                                    request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_pool_upgrade_request: >>> submitter_did: {:?}, name: {:?}, version: {:?}, action: {:?}, sha256: {:?}, timeout: {:?}, \
@@ -1271,10 +1271,10 @@ pub extern fn indy_build_pool_upgrade_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
+pub extern fn indy_build_revoc_reg_def_request(command_handle: IndyHandle,
                                                submitter_did: *const c_char,
                                                data: *const c_char,
-                                               cb: Option<extern fn(xcommand_handle: i32,
+                                               cb: Option<extern fn(command_handle_: IndyHandle,
                                                                     err: ErrorCode,
                                                                     rev_reg_def_req: *const c_char)>) -> ErrorCode {
     trace!("indy_build_revoc_reg_def_request: >>> submitter_did: {:?}, data: {:?}", submitter_did, data);
@@ -1319,10 +1319,10 @@ pub extern fn indy_build_revoc_reg_def_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
+pub extern fn indy_build_get_revoc_reg_def_request(command_handle: IndyHandle,
                                                    submitter_did: *const c_char,
                                                    id: *const c_char,
-                                                   cb: Option<extern fn(xcommand_handle: i32,
+                                                   cb: Option<extern fn(command_handle_: IndyHandle,
                                                                         err: ErrorCode,
                                                                         request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_revoc_reg_def_request: >>> submitter_did: {:?}, id: {:?}", submitter_did, id);
@@ -1380,9 +1380,9 @@ pub extern fn indy_build_get_revoc_reg_def_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: i32,
+pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: IndyHandle,
                                                     get_revoc_reg_def_response: *const c_char,
-                                                    cb: Option<extern fn(xcommand_handle: i32,
+                                                    cb: Option<extern fn(command_handle_: IndyHandle,
                                                                          err: ErrorCode,
                                                                          revoc_reg_def_id: *const c_char,
                                                                          revoc_reg_def_json: *const c_char)>) -> ErrorCode {
@@ -1441,12 +1441,12 @@ pub extern fn indy_parse_get_revoc_reg_def_response(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_revoc_reg_entry_request(command_handle: i32,
+pub extern fn indy_build_revoc_reg_entry_request(command_handle: IndyHandle,
                                                  submitter_did: *const c_char,
                                                  revoc_reg_def_id: *const c_char,
                                                  rev_def_type: *const c_char,
                                                  value: *const c_char,
-                                                 cb: Option<extern fn(xcommand_handle: i32,
+                                                 cb: Option<extern fn(command_handle_: IndyHandle,
                                                                       err: ErrorCode,
                                                                       request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_revoc_reg_entry_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, rev_def_type: {:?}, value: {:?}",
@@ -1498,11 +1498,11 @@ pub extern fn indy_build_revoc_reg_entry_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_revoc_reg_request(command_handle: i32,
+pub extern fn indy_build_get_revoc_reg_request(command_handle: IndyHandle,
                                                submitter_did: *const c_char,
                                                revoc_reg_def_id: *const c_char,
                                                timestamp: i64,
-                                               cb: Option<extern fn(xcommand_handle: i32,
+                                               cb: Option<extern fn(command_handle_: IndyHandle,
                                                                     err: ErrorCode,
                                                                     request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_revoc_reg_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, timestamp: {:?}", submitter_did, revoc_reg_def_id, timestamp);
@@ -1552,9 +1552,9 @@ pub extern fn indy_build_get_revoc_reg_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_revoc_reg_response(command_handle: i32,
+pub extern fn indy_parse_get_revoc_reg_response(command_handle: IndyHandle,
                                                 get_revoc_reg_response: *const c_char,
-                                                cb: Option<extern fn(xcommand_handle: i32,
+                                                cb: Option<extern fn(command_handle_: IndyHandle,
                                                                      err: ErrorCode,
                                                                      revoc_reg_def_id: *const c_char,
                                                                      revoc_reg_json: *const c_char,
@@ -1605,12 +1605,12 @@ pub extern fn indy_parse_get_revoc_reg_response(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: i32,
+pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: IndyHandle,
                                                      submitter_did: *const c_char,
                                                      revoc_reg_def_id: *const c_char,
                                                      from: i64,
                                                      to: i64,
-                                                     cb: Option<extern fn(xcommand_handle: i32,
+                                                     cb: Option<extern fn(command_handle_: IndyHandle,
                                                                           err: ErrorCode,
                                                                           request_json: *const c_char)>) -> ErrorCode {
     trace!("indy_build_get_revoc_reg_request: >>> submitter_did: {:?}, revoc_reg_def_id: {:?}, from: {:?}, to: {:?}",
@@ -1668,9 +1668,9 @@ pub extern fn indy_build_get_revoc_reg_delta_request(command_handle: i32,
 /// #Errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: i32,
+pub extern fn indy_parse_get_revoc_reg_delta_response(command_handle: IndyHandle,
                                                       get_revoc_reg_delta_response: *const c_char,
-                                                      cb: Option<extern fn(xcommand_handle: i32,
+                                                      cb: Option<extern fn(command_handle_: IndyHandle,
                                                                            err: ErrorCode,
                                                                            revoc_reg_def_id: *const c_char,
                                                                            revoc_reg_delta_json: *const c_char,
@@ -1734,11 +1734,11 @@ pub type CustomFree = extern fn(data: *const c_char) -> ErrorCode;
 /// # errors
 /// Common*
 #[no_mangle]
-pub extern fn indy_register_transaction_parser_for_sp(command_handle: i32,
+pub extern fn indy_register_transaction_parser_for_sp(command_handle: IndyHandle,
                                                       txn_type: *const c_char,
                                                       parser: Option<CustomTransactionParser>,
                                                       free: Option<CustomFree>,
-                                                      cb: Option<extern fn(command_handle_: i32, err: ErrorCode)>) -> ErrorCode {
+                                                      cb: Option<extern fn(command_handle_: IndyHandle, err: ErrorCode)>) -> ErrorCode {
     trace!("indy_register_transaction_parser_for_sp: >>> txn_type {:?}, parser {:?}, free {:?}",
            txn_type, parser, free);
 
