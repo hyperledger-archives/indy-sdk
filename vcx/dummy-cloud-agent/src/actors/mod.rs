@@ -8,11 +8,19 @@ pub mod agent;
 pub mod agent_connection;
 pub mod requester;
 
+use domain::a2connection::A2ConnMessage;
+
 // Common messages
 
 pub struct AddA2ARoute(pub String, pub Recipient<HandleA2AMsg>);
 
 impl Message for AddA2ARoute {
+    type Result = ();
+}
+
+pub struct AddA2ConnRoute(pub String, pub Recipient<HandleA2ConnMsg>);
+
+impl Message for AddA2ConnRoute {
     type Result = ();
 }
 
@@ -50,6 +58,20 @@ pub struct RouteA2AMsg(pub String, pub Vec<u8>);
 
 impl Message for RouteA2AMsg {
     type Result = Result<Vec<u8>, Error>;
+}
+
+#[derive(Debug)]
+pub struct HandleA2ConnMsg(pub A2ConnMessage);
+
+impl Message for HandleA2ConnMsg {
+    type Result = Result<A2ConnMessage, Error>;
+}
+
+#[derive(Debug)]
+pub struct RouteA2ConnMsg(pub String, pub A2ConnMessage);
+
+impl Message for RouteA2ConnMsg {
+    type Result = Result<A2ConnMessage, Error>;
 }
 
 #[derive(Debug, Serialize)]

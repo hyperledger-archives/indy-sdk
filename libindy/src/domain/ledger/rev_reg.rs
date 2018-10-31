@@ -2,7 +2,7 @@ use super::constants::{REVOC_REG_ENTRY, GET_REVOC_REG, GET_REVOC_REG_DELTA};
 
 use indy_crypto::cl::{RevocationRegistry, RevocationRegistryDelta};
 
-use super::response::GetReplyResultV1;
+use super::response::{GetReplyResultV1, ReplyType};
 use super::super::anoncreds::revocation_registry::RevocationRegistryV1;
 use super::super::anoncreds::revocation_registry_delta::RevocationRegistryDeltaV1;
 
@@ -77,6 +77,12 @@ pub enum GetRevocRegReplyResult {
     GetRevocRegReplyResultV1(GetReplyResultV1<GetRevocRegDataV1>)
 }
 
+impl ReplyType for GetRevocRegReplyResult {
+    fn get_type<'a>() -> &'a str {
+        GET_REVOC_REG
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GetRevocRegResultV0 {
@@ -119,6 +125,12 @@ pub struct AccumulatorState {
 pub enum GetRevocRegDeltaReplyResult {
     GetRevocRegDeltaReplyResultV0(GetRevocRegDeltaResultV0),
     GetRevocRegDeltaReplyResultV1(GetReplyResultV1<GetRevocRegDeltaDataV1>)
+}
+
+impl ReplyType for GetRevocRegDeltaReplyResult {
+    fn get_type<'a>() -> &'a str {
+        GET_REVOC_REG_DELTA
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]

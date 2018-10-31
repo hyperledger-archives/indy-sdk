@@ -7,7 +7,7 @@ use super::IndyError;
 use utils::futures::*;
 use utils::sequence;
 
-#[allow(unused)] // FIXME: Use!
+#[allow(unused)] //FIXME:
 pub fn create_key(wallet_handle: i32,
                   key_info: &str) -> Box<Future<Item=String, Error=IndyError>> {
     lazy_static! {
@@ -56,7 +56,6 @@ pub fn create_key(wallet_handle: i32,
     }
 }
 
-#[allow(unused)] // FIXME: Use!
 pub fn auth_crypt(wallet_handle: i32,
                   sender_vk: &str,
                   recipient_vk: &str,
@@ -110,7 +109,6 @@ pub fn auth_crypt(wallet_handle: i32,
     }
 }
 
-#[allow(unused)] // FIXME: Use!
 pub fn auth_decrypt(wallet_handle: i32,
                     recipient_vk: &str,
                     encrypted_message: &[u8]) -> Box<Future<Item=(String, Vec<u8>), Error=IndyError>> {
@@ -162,7 +160,6 @@ pub fn auth_decrypt(wallet_handle: i32,
     }
 }
 
-#[allow(unused)] // FIXME: Use!
 pub fn anon_crypt(recipient_vk: &str,
                   message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {
     lazy_static! {
@@ -263,7 +260,7 @@ pub fn anon_decrypt(wallet_handle: i32,
     }
 }
 
-#[allow(unused)] // FIXME: Use!
+#[allow(unused)] //FIXME:
 pub fn sign(wallet_handle: i32,
             signer_vk: &str,
             message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=IndyError>> {

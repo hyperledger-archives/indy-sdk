@@ -1,5 +1,4 @@
 ﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.DidApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
@@ -8,64 +7,84 @@ namespace Hyperledger.Indy.Test.LedgerTests
 {
     [TestClass]
     public class GetTxnRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
-    {
-        private const string LEDGER_TYPE = "DOMAIN";
-
+    {        
         [TestMethod]
         public async Task TestBuildGetTxnRequestWorks()
         {
-            var data = 1;
+            var seq_no = 1;
 
             var expectedResult = string.Format("\"identifier\":\"{0}\"," +
                     "\"operation\":{{" +
                     "\"type\":\"3\"," +
-                    "\"data\":{1}", DID1, data);
+                    "\"data\":{1}," +
+                    "\"ledgerId\":1" +
+                    "}}", DID, seq_no);
 
-            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(DID1, LEDGER_TYPE, data);
+            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(DID, null, seq_no);
 
             Assert.IsTrue(getTxnRequest.Replace("\\", "").Contains(expectedResult));
         }
 
         [TestMethod]
+        public async Task TestBuildGetTxnRequestWorksForLedgerType()
+        {
+            var seq_no = 1;
+
+            var expectedResult = string.Format("\"identifier\":\"{0}\"," +
+                    "\"operation\":{{" +
+                    "\"type\":\"3\"," +
+                    "\"data\":{1}," +
+                    "\"ledgerId\":0" +
+                    "}}", DID, seq_no);
+
+            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(DID, "POOL", seq_no);
+
+            Assert.IsTrue(getTxnRequest.Replace("\\", "").Contains(expectedResult));
+        }
+
+        [TestMethod] //This test fails here and in the Java version.
         public async Task TestGetTxnRequestWorks()
         {
-            var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
-            var did = didResult.Did;
+            var did = await CreateStoreAndPublishDidFromTrusteeAsync();
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, SCHEMA_DATA);
             var schemaResponse = await Ledger.SignAndSubmitRequestAsync(pool, wallet, did, schemaRequest);
 
             var schemaResponseObj = JObject.Parse(schemaResponse);
 
-            var seqNo = schemaResponseObj["result"].Value<int>("seqNo");
+            var seqNo = schemaResponseObj["result"]["txnMetadata"].Value<int>("seqNo");
 
-            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(did, LEDGER_TYPE, seqNo);
-            var getTxnResponse = await Ledger.SubmitRequestAsync(pool, getTxnRequest);
+            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(did, null, seqNo);
+            var expectedData = "{\"name\":\"gvt\",\"version\":\"1.0\",\"attr_names\": [\"name\"]}";
 
-            var getTxnResponseObj = JObject.Parse(getTxnResponse);
+            var getTxnResponse = await PoolUtils.EnsurePreviousRequestAppliedAsync(pool, getTxnRequest, response => {
+                var getTxnResponseObj = JObject.Parse(response);
+                var schemaTransactionObj = getTxnResponseObj["result"]["data"]["txn"]["data"]["data"];
 
-            var returnedSchemaData = getTxnResponseObj["result"]["data"]["data"];            
-            var expectedSchemaData = JToken.Parse(SCHEMA_DATA);
+                return JValue.DeepEquals(JObject.Parse(expectedData), schemaTransactionObj);
+            });
 
-            Assert.IsTrue(JToken.DeepEquals(expectedSchemaData, returnedSchemaData));
+            Assert.IsNotNull(getTxnResponse);
         }
 
-        [TestMethod]
-        public async Task TestGetTxnRequestWorksForInvalidSeqNo1()
+        [TestMethod] 
+        public async Task TestGetTxnRequestWorksForInvalidSeqNo()
         {
-            var didResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
-            var did = didResult.Did;
+            var did = await CreateStoreAndPublishDidFromTrusteeAsync();
 
             var schemaRequest = await Ledger.BuildSchemaRequestAsync(did, SCHEMA_DATA);
+            var schemaResponse = await Ledger.SignAndSubmitRequestAsync(pool, wallet, did, schemaRequest);
 
-            var seqNo = 1; 
+            var schemaResponseObj = JObject.Parse(schemaResponse);
 
-            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(did, LEDGER_TYPE, seqNo);
+            var seqNo = (int)schemaResponseObj["result"]["txnMetadata"]["seqNo"] + 1;
+
+            var getTxnRequest = await Ledger.BuildGetTxnRequestAsync(did, null, seqNo);
             var getTxnResponse = await Ledger.SubmitRequestAsync(pool, getTxnRequest);
 
             var getTxnResponseObj = JObject.Parse(getTxnResponse);
 
-            Assert.IsNotNull(getTxnResponseObj["result"]["data"]);
+            Assert.IsTrue(getTxnResponseObj["result"]["data"] != null);
         }
     }
 }

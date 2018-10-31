@@ -20,7 +20,7 @@ pub struct PairwiseInfo {
     pub metadata: String,
 }
 
-#[allow(unused)] //FIXME:
+
 pub fn is_pairwise_exists(wallet_handle: i32, their_did: &str) -> Box<Future<Item=bool, Error=IndyError>> {
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<bool, IndyError>>>> = Default::default();
@@ -65,7 +65,6 @@ pub fn is_pairwise_exists(wallet_handle: i32, their_did: &str) -> Box<Future<Ite
     }
 }
 
-#[allow(unused)] //FIXME:
 pub fn create_pairwise(wallet_handle: i32, their_did: &str, my_did: &str, metadata: &str) -> Box<Future<Item=(), Error=IndyError>> {
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<(), IndyError>>>> = Default::default();
@@ -116,7 +115,6 @@ pub fn create_pairwise(wallet_handle: i32, their_did: &str, my_did: &str, metada
     }
 }
 
-#[allow(unused)] //FIXME:
 pub fn get_pairwise(wallet_handle: i32, their_did: &str) -> Box<Future<Item=String, Error=IndyError>> {
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<String, IndyError>>>> = Default::default();
@@ -161,7 +159,6 @@ pub fn get_pairwise(wallet_handle: i32, their_did: &str) -> Box<Future<Item=Stri
     }
 }
 
-#[allow(unused)] //FIXME:
 pub fn list_pairwise(wallet_handle: i32) -> Box<Future<Item=String, Error=IndyError>> {
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<String, IndyError>>>> = Default::default();
@@ -206,7 +203,6 @@ pub fn list_pairwise(wallet_handle: i32) -> Box<Future<Item=String, Error=IndyEr
     }
 }
 
-#[allow(unused)] //FIXME:
 pub fn set_pairwise_metadata(wallet_handle: i32, their_did: &str, metadata: &str) -> Box<Future<Item=(), Error=IndyError>> {
     lazy_static! {
         static ref CALLBACKS: Mutex<HashMap<i32, oneshot::Sender<Result<(), IndyError>>>> = Default::default();

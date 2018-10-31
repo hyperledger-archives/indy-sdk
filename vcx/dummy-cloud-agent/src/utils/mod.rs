@@ -18,3 +18,9 @@ macro_rules! map (
         }
      };
 );
+
+pub fn to_i8(bytes: &Vec<u8>) -> Vec<i8> {
+    let mut buf: Vec<i8> = Vec::new();
+    for i in bytes {buf.push(*i as i8);}
+    buf.to_owned()
+}
