@@ -14,9 +14,9 @@ from time import sleep
 from vcx.common import mint_tokens
 
 provisionConfig = {
-  'agency_url':'https://agency-sandbox.evernym.com',
-  'agency_did':'Nv9oqGX57gy15kPSJzo2i4',
-  'agency_verkey':'CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj',
+  'agency_url':'http://localhost:8080/forward_agent',
+  'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
+  'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
   'wallet_name':'alice_wallet',
   'wallet_key':'123',
   'enterprise_seed':'000000000000000000000000Trustee1'

@@ -22,9 +22,9 @@ from vcx.common import mint_tokens
 # 'wallet_name': name for newly created encrypted wallet
 # 'wallet_key': encryption key for encoding wallet
 provisionConfig = {
-  'agency_url':'https://agency-ea-sandbox.evernym.com',
-  'agency_did':'HB7qFQyFxx4ptjKqioEtd8',
-  'agency_verkey':'9pJkfHyfJMZjUjS7EZ2q2HX55CbFQPKpQ9eTjSAUMLU8',
+  'agency_url':'http://localhost:8080/forward_agent',
+  'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
+  'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
   'wallet_name':'faber_wallet',
   'wallet_key':'123',
   'enterprise_seed':'000000000000000000000000Trustee1'
