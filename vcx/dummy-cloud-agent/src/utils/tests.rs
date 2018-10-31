@@ -5,6 +5,7 @@ use actors::agent::Agent;
 use dirs;
 use base64;
 use domain::a2a::*;
+use domain::a2connection::*;
 use domain::config::*;
 use domain::key_deligation_proof::*;
 use domain::invite::*;
@@ -516,6 +517,37 @@ pub fn decompose_connection_status_updated(wallet_handle: i32, msg: &[u8]) -> Bo
             assert_eq!(1, msgs.len());
             match msgs.remove(0) {
                 A2AMessage::ConnectionStatusUpdated(msg) => Ok((sender_verkey, msg)),
+                _ => Err(err_msg("Invalid message"))
+            }
+        })
+        .into_box()
+}
+
+pub fn compose_get_messages_by_connection(wallet_handle: i32,
+                                          agent_did: &str,
+                                          agent_verkey: &str,
+                                          agent_pairwise_did: &str,
+                                          agent_pairwise_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
+    let msgs = [A2AMessage::GetMessagesByConnections(GetMessagesByConnections {
+        exclude_payload: None,
+        uids: Vec::new(),
+        status_codes: Vec::new(),
+        pairwise_dids: Vec::new(),
+    })];
+
+    let msg = A2AMessage::bundle_authcrypted(wallet_handle,
+                                             EDGE_AGENT_DID_VERKEY,
+                                             agent_verkey,
+                                             &msgs).wait().unwrap();
+    compose_forward(agent_did, FORWARD_AGENT_DID_VERKEY, msg)
+}
+
+pub fn decompose_get_messages_by_connection(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(String, Vec<MessagesByConnection>), Error> {
+    A2AMessage::unbundle_authcrypted(wallet_handle, EDGE_AGENT_DID_VERKEY, &msg)
+        .and_then(|(sender_verkey, mut msgs)| {
+            assert_eq!(1, msgs.len());
+            match msgs.remove(0) {
+                A2AMessage::MessagesByConnections(messages) => Ok((sender_verkey, messages.msgs)),
                 _ => Err(err_msg("Invalid message"))
             }
         })

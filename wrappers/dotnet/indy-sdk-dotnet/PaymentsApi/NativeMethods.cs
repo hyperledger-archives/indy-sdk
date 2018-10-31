@@ -72,7 +72,7 @@ namespace Hyperledger.Indy.PaymentsApi
 
 
         [DllImport(Consts.NATIVE_LIB_NAME, CharSet = CharSet.Ansi, BestFitMapping = false)]
-        internal static extern int indy_add_request_fees(int command_handle, IntPtr wallet_handle, string submitter_did, string req_json, string inputs_json, string outputs_json, AddRequestFeesDelegate cb);
+        internal static extern int indy_add_request_fees(int command_handle, IntPtr wallet_handle, string submitter_did, string req_json, string inputs_json, string outputs_json, string extra, AddRequestFeesDelegate cb);
 
         /// <summary>
         /// Add request fees delegate.

@@ -1,8 +1,9 @@
 use actix::prelude::*;
-use actors::{AddA2ARoute, HandleA2AMsg, RouteA2AMsg};
+use actors::{AddA2ARoute, HandleA2AMsg, RouteA2AMsg, RouteA2ConnMsg};
 use actors::agent_connection::{AgentConnection, AgentConnectionConfig};
 use actors::router::Router;
 use domain::a2a::*;
+use domain::a2connection::*;
 use domain::config::WalletStorageConfig;
 use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
@@ -11,7 +12,6 @@ use indy::{did, pairwise, wallet, pairwise::Pairwise};
 use std::convert::Into;
 use utils::futures::*;
 use utils::rand;
-
 use serde_json;
 
 #[allow(unused)] //FIXME:
@@ -169,25 +169,8 @@ impl Agent {
         let forward_agent_detail = forward_agent_detail.clone();
 
         future::ok(())
-            .and_then(move |_| {
-                pairwise::list_pairwise(wallet_handle)
-                    .map(move |pairwise_list| (pairwise_list, wallet_handle))
-                    .map_err(|err| err.context("Can't get Agent pairwise list").into())
-            })
-            .and_then(|(pairwise_list, wallet_handle)| {
-                serde_json::from_str::<Vec<String>>(&pairwise_list)
-                    .map(move |pairwise_list| (pairwise_list, wallet_handle))
-                    .map_err(|err| err.context("Can't deserialize Agent pairwise list").into())
-            })
-            .and_then(|(pairwise_list, wallet_handle)| {
-                pairwise_list
-                    .iter()
-                    .map(|pairwise| serde_json::from_str::<Pairwise>(&pairwise))
-                    .collect::<Result<Vec<_>, _>>()
-                    .map(move |pairwise_list| (pairwise_list, wallet_handle))
-                    .map_err(|err| err.context("Can't deserialize Agent pairwise").into())
-            })
-            .and_then(move |(pairwise_list, wallet_handle)| {
+            .and_then(move |_| Self::get_pairwise_list(wallet_handle).into_box())
+            .and_then(move |pairwise_list| {
                 let futures: Vec<_> = pairwise_list
                     .iter()
                     .map(move |pairwise| {
@@ -249,6 +232,12 @@ impl Agent {
                     A2AMessage::CreateKey(msg) => {
                         slf.handle_create_key(msg)
                     }
+                    A2AMessage::GetMessagesByConnections(msg) => {
+                        slf.handle_get_messages_by_connections(msg)
+                    }
+                    A2AMessage::UpdateMessageStatusByConnections(msg) => {
+                        slf.handle_update_messages_by_connections(msg)
+                    }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
             )
@@ -260,10 +249,122 @@ impl Agent {
             .into_box()
     }
 
+    fn handle_get_messages_by_connections(&mut self,
+                                          msg: GetMessagesByConnections) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        trace!("Agent::handle_get_messages_by_connections >> {:?}", msg);
+
+        let GetMessagesByConnections { exclude_payload, uids, status_codes, pairwise_dids } = msg;
+
+        let router = self.router.clone();
+        let wallet_handle = self.wallet_handle.clone();
+
+        let msg = GetMessages { exclude_payload, uids, status_codes };
+
+        future::ok(())
+            .and_then(move |_| Self::get_pairwise_list(wallet_handle).into_box())
+            .and_then(move |pairwise_list| {
+                let pairwises: Vec<_> = pairwise_list
+                    .into_iter()
+                    .filter(|pairwise| pairwise_dids.is_empty() || pairwise_dids.contains(&pairwise.their_did))
+                    .collect();
+
+                if !pairwise_dids.is_empty() && pairwises.is_empty() {
+                    return err!(err_msg("Pairwise DID not found.")).into_box();
+                }
+
+                let futures: Vec<_> = pairwises
+                    .iter()
+                    .map(move |pairwise| {
+                        router
+                            .send(RouteA2ConnMsg(pairwise.my_did.clone(), A2ConnMessage::GetMessages(msg.clone())))
+                            .from_err()
+                            .and_then(|res| res)
+                            .into_box()
+                    })
+                    .collect();
+
+                future::join_all(futures)
+                    .map(|msgs: Vec<A2ConnMessage>| {
+                        vec![A2AMessage::MessagesByConnections(
+                            MessagesByConnections {
+                                msgs: msgs.into_iter().map(|msg| msg.into()).collect()
+                            })]
+                    })
+                    .map_err(|err| err.context("Can't get Agent Connection messages").into())
+                    .into_box()
+            })
+            .into_actor(self)
+            .into_box()
+    }
+
+    fn handle_update_messages_by_connections(&mut self,
+                                             msg: UpdateMessageStatusByConnections) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+        trace!("Agent::handle_update_messages_by_connections >> {:?}", msg);
+
+        let UpdateMessageStatusByConnections { uids_by_conn, status_code } = msg;
+
+        let router = self.router.clone();
+        let wallet_handle = self.wallet_handle.clone();
+
+        future::ok(())
+            .and_then(move |_| Self::get_pairwise_list(wallet_handle).into_box())
+            .and_then(move |pairwise_list| {
+                let futures: Vec<_> = pairwise_list
+                    .iter()
+                    .filter_map(|pairwise| uids_by_conn
+                        .iter()
+                        .find(|uid_by_conn| uid_by_conn.pairwise_did == pairwise.their_did)
+                        .map(|uid_by_conn| (uid_by_conn, pairwise))
+                    )
+                    .map(move |(uid_by_conn, pairwise)|
+                        router
+                            .send(RouteA2ConnMsg(pairwise.my_did.clone(), A2ConnMessage::UpdateMessages(
+                                UpdateMessageStatus { uids: uid_by_conn.uids.clone(), status_code: status_code.clone() }
+                            )))
+                            .from_err()
+                            .and_then(|res| res)
+                            .into_box()
+                    )
+                    .collect();
+
+                future::join_all(futures)
+                    .map(|uids_by_conn: Vec<A2ConnMessage>| {
+                        vec![A2AMessage::MessageStatusUpdatedByConnections(
+                            MessageStatusUpdatedByConnections {
+                                updated_uids_by_conn: uids_by_conn.into_iter().map(|msg| msg.into()).collect(),
+                                failed: Vec::new(), // TODO: FIXME
+                            })]
+                    })
+                    .map_err(|err| err.context("Can't get Agent Connection messages").into())
+            })
+            .into_actor(self)
+            .into_box()
+    }
+
+    fn get_pairwise_list(wallet_handle: i32) -> ResponseFuture<Vec<Pairwise>, Error> {
+        future::ok(())
+            .and_then(move |_| {
+                pairwise::list_pairwise(wallet_handle)
+                    .map_err(|err| err.context("Can't get Agent pairwise list").into())
+                    .into_box()
+            })
+            .and_then(move |pairwise_list| {
+                let pairwise_list = ftry!(serde_json::from_str::<Vec<String>>(&pairwise_list));
+
+                pairwise_list
+                    .iter()
+                    .map(|pairwise| serde_json::from_str::<Pairwise>(&pairwise))
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|err| err.context("Can't deserialize Agent pairwise").into())
+                    .into_future()
+                    .into_box()
+            })
+            .into_box()
+    }
 
     fn handle_create_key(&mut self,
                          msg: CreateKey) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("Agent::_handle_create_key >> {:?}", msg);
+        trace!("Agent::handle_create_key >> {:?}", msg);
 
         let CreateKey { for_did, for_did_verkey } = msg;
 
@@ -354,7 +455,9 @@ impl Handler<HandleA2AMsg> for Agent {
 mod tests {
     use actors::ForwardA2AMsg;
     use super::*;
+    use utils::to_i8;
     use utils::tests::*;
+    use domain::status::MessageStatusCode;
 
     #[test]
     fn agent_create_key_works() {
@@ -381,6 +484,61 @@ mod tests {
                     assert!(!key.with_pairwise_did_verkey.is_empty());
 
                     wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                })
+        });
+    }
+
+    #[test]
+    fn agent_get_messages_by_connection_works() {
+        run_agent_test(|(e_wallet_handle, agent_did, agent_verkey, agent_pw_did, agent_pw_vk, forward_agent)| {
+            future::ok(())
+                .and_then(move |_| {
+                    let msg = compose_create_general_message(e_wallet_handle,
+                                                             &agent_did,
+                                                             &agent_verkey,
+                                                             &agent_pw_did,
+                                                             &agent_pw_vk,
+                                                             MessageType::CredOffer).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_did, agent_verkey, forward_agent, agent_pw_did, agent_pw_vk))
+                })
+                .and_then(move |(e_wallet_handle, resp, agent_did, agent_verkey, forward_agent, agent_pw_did, agent_pw_vk)| {
+                    let (_, msg_uid) = decompose_general_message_created(e_wallet_handle, &resp).wait().unwrap();
+
+                    let msg = compose_get_messages_by_connection(e_wallet_handle,
+                                                                 &agent_did,
+                                                                 &agent_verkey,
+                                                                 &agent_pw_did,
+                                                                 &agent_pw_vk).wait().unwrap();
+
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_verkey, msg_uid))
+                })
+                .map(|(e_wallet_handle, resp, agent_verkey, msg_uid)| {
+                    let (sender_vk, messages) = decompose_get_messages_by_connection(e_wallet_handle, &resp).wait().unwrap();
+                    assert_eq!(sender_vk, agent_verkey);
+                    assert_eq!(1, messages.len());
+
+                    let expected_message = MessagesByConnection {
+                        did: EDGE_PAIRWISE_DID.to_string(),
+                        msgs: vec![GetMessagesDetailResponse {
+                            uid: msg_uid,
+                            status_code: MessageStatusCode::Created,
+                            sender_did: EDGE_PAIRWISE_DID.to_string(),
+                            type_: MessageType::CredOffer,
+                            payload: Some(to_i8(&PAYLOAD.to_vec())),
+                            ref_msg_id: None,
+                        }]
+                    };
+                    assert_eq!(expected_message, messages[0]);
+                    e_wallet_handle
                 })
         });
     }

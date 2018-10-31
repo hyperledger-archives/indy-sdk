@@ -20,11 +20,12 @@ use self::indy_crypto::cl::{
 };
 use self::indy_crypto::cl::issuer::Issuer as CryptoIssuer;
 
-use domain::anoncreds::schema::SchemaV1;
 use domain::anoncreds::credential_definition::{CredentialDefinitionV1 as CredentialDefinition, CredentialDefinitionData};
 use domain::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValuePublicKeys};
 use domain::anoncreds::credential::AttributeValues;
 use domain::anoncreds::credential_request::CredentialRequest;
+
+use std::collections::HashSet;
 
 pub struct Issuer {}
 
@@ -33,15 +34,13 @@ impl Issuer {
         Issuer {}
     }
 
-    pub fn new_credential_definition(&self,
-                                     issuer_did: &str,
-                                     schema: &SchemaV1,
+    pub fn new_credential_definition(attr_names: &HashSet<String>,
                                      support_revocation: bool) -> Result<(CredentialDefinitionData,
                                                                           CredentialPrivateKey,
                                                                           CredentialKeyCorrectnessProof), AnoncredsError> {
-        trace!("new_credential_definition >>> issuer_did: {:?}, schema: {:?}, support_revocation: {:?}", issuer_did, schema, support_revocation);
+        trace!("new_credential_definition >>> attr_names: {:?}, support_revocation: {:?}", attr_names, support_revocation);
 
-        let credential_schema = build_credential_schema(&schema.attr_names)?;
+        let credential_schema = build_credential_schema(attr_names)?;
         let non_credential_schema = build_non_credential_schema()?;
 
         let (credential_public_key, credential_private_key, credential_key_correctness_proof) =

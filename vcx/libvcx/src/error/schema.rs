@@ -1,13 +1,13 @@
 use std::fmt;
 use error::ToErrorCode;
-use utils::error::{NO_PAYMENT_INFORMATION, INVALID_SCHEMA_CREATION, INVALID_SCHEMA_HANDLE, INVALID_SCHEMA_SEQ_NO};
+use utils::error::{NO_PAYMENT_INFORMATION, INVALID_SCHEMA_CREATION, INVALID_SCHEMA_HANDLE, INVALID_SCHEMA_SEQ_NO, DUPLICATE_SCHEMA, UKNOWN_LIBINDY_TRANSACTION_REJECTION};
 #[derive(Debug)]
 pub enum SchemaError {
     InvalidSchemaCreation(),
     InvalidHandle(),
     InvalidSchemaSeqNo(),
     DuplicateSchema(String),
-    UnknownRejection(),
+    UnknownRejection(String),
     NoPaymentInformation(),
     CommonError(u32),
 }
@@ -19,8 +19,8 @@ impl ToErrorCode for SchemaError {
             SchemaError::InvalidHandle() => INVALID_SCHEMA_HANDLE.code_num,
             SchemaError::InvalidSchemaSeqNo() => INVALID_SCHEMA_SEQ_NO.code_num,
             SchemaError::NoPaymentInformation() => NO_PAYMENT_INFORMATION.code_num,
-            SchemaError::UnknownRejection() => 8887,
-            SchemaError::DuplicateSchema(ref s) => 8888,
+            SchemaError::UnknownRejection(ref s) => UKNOWN_LIBINDY_TRANSACTION_REJECTION.code_num,
+            SchemaError::DuplicateSchema(ref s) => DUPLICATE_SCHEMA.code_num,
             SchemaError::CommonError(x) => x,
         }
     }
@@ -33,7 +33,7 @@ impl fmt::Display for SchemaError {
             SchemaError::InvalidHandle() => write!(f, "{}", INVALID_SCHEMA_HANDLE.message),
             SchemaError::InvalidSchemaSeqNo() => write!(f, "{}", INVALID_SCHEMA_SEQ_NO.message),
             SchemaError::NoPaymentInformation() => write!(f, "{}", NO_PAYMENT_INFORMATION.message),
-            SchemaError::UnknownRejection() => write!(f, "Unknown Rejection of Schema Creation, refer to libindy documentation."),
+            SchemaError::UnknownRejection(ref s) => write!(f, "Unknown Schema Rejection, refer to libindy documentation. Message Reply: {}", s),
             SchemaError::DuplicateSchema(ref s) => write!(f, "{}", s),
             SchemaError::CommonError(x) => write!(f, "This Schema Common Error had a value of {}", x),
         }

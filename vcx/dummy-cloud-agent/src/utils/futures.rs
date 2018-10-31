@@ -37,6 +37,15 @@ macro_rules! ok {
     }};
 }
 
+
+/// This is the equivalent of `Result::Ok()` adapted to deal with actor futures.
+#[macro_export]
+macro_rules! ok_act {
+    ($slf:expr, $elt:expr) => {{
+        ::futures::future::ok($elt).into_actor($slf).into_box()
+    }};
+}
+
 /// This is the equivalent of `Result::Ok()` adapted to deal with futures.
 #[macro_export]
 macro_rules! err {

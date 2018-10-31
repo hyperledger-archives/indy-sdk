@@ -9,33 +9,28 @@ use domain::wallet::export_import::{Header, EncryptionMethod, Record};
 use errors::common::CommonError;
 use utils::crypto::hash::{hash, HASHBYTES};
 use utils::crypto::{chacha20poly1305_ietf, pwhash_argon2i13};
-use services::wallet::encryption::raw_master_key;
+use services::wallet::encryption::KeyDerivationData;
 
 use super::{WalletError, Wallet, WalletRecord};
 
 const CHUNK_SIZE: usize = 1024;
 
-pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> Result<(), WalletError> {
-    if version != 0 {
-        Err(CommonError::InvalidState("Unsupported version".to_string()))?;
-    }
-
-    let salt = pwhash_argon2i13::gen_salt();
+pub(super) fn export_continue(wallet: &Wallet, writer: &mut Write, version: u32, key: chacha20poly1305_ietf::Key, key_data: &KeyDerivationData) -> Result<(), WalletError> {
     let nonce = chacha20poly1305_ietf::gen_nonce();
     let chunk_size = CHUNK_SIZE;
 
-    let encryption_method = match key_derivation_method {
-        KeyDerivationMethod::ARGON2I_MOD => EncryptionMethod::ChaCha20Poly1305IETF {
+    let encryption_method = match key_data {
+        KeyDerivationData::Argon2iMod(_, salt) => EncryptionMethod::ChaCha20Poly1305IETF {
             salt: salt[..].to_vec(),
             nonce: nonce[..].to_vec(),
             chunk_size,
         },
-        KeyDerivationMethod::ARGON2I_INT => EncryptionMethod::ChaCha20Poly1305IETFInteractive {
+        KeyDerivationData::Argon2iInt(_, salt) => EncryptionMethod::ChaCha20Poly1305IETFInteractive {
             salt: salt[..].to_vec(),
             nonce: nonce[..].to_vec(),
             chunk_size,
         },
-        KeyDerivationMethod::RAW => EncryptionMethod::ChaCha20Poly1305IETFRaw {
+        KeyDerivationData::Raw(_) => EncryptionMethod::ChaCha20Poly1305IETFRaw {
             nonce: nonce[..].to_vec(),
             chunk_size,
         }
@@ -55,14 +50,9 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
     writer.write_u32::<LittleEndian>(header.len() as u32)?;
     writer.write_all(&header)?;
 
-    let master_key = match key_derivation_method {
-        KeyDerivationMethod::ARGON2I_MOD | KeyDerivationMethod::ARGON2I_INT => chacha20poly1305_ietf::derive_key(passphrase, &salt, key_derivation_method)?,
-        KeyDerivationMethod::RAW => raw_master_key(passphrase)?
-    };
-
     // Write ecnrypted
     let mut writer = chacha20poly1305_ietf::Writer::new(writer,
-                                                        master_key,
+                                                        key,
                                                         nonce,
                                                         chunk_size);
 
@@ -90,7 +80,14 @@ pub(super) fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, vers
     Ok(())
 }
 
-pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Result<(), WalletError> {
+#[cfg(test)]
+fn import<T>(wallet: &Wallet, reader: T, passphrase: &str) -> Result<(), WalletError> where T: Read {
+    let (reader, import_key_derivation_data, nonce, chunk_size, header_bytes) = preparse_file_to_import(reader, passphrase)?;
+    let import_key = import_key_derivation_data.calc_master_key()?;
+    finish_import(wallet, reader, import_key, nonce, chunk_size, header_bytes)
+}
+
+pub(super) fn preparse_file_to_import<T>(reader: T, passphrase: &str) -> Result<(BufReader<T>, KeyDerivationData, chacha20poly1305_ietf::Nonce, usize, Vec<u8>), WalletError> where T: Read {
     // Reads plain
     let mut reader = BufReader::new(reader);
 
@@ -116,7 +113,7 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
         EncryptionMethod::ChaCha20Poly1305IETFRaw { .. } => KeyDerivationMethod::RAW,
     };
 
-    let (key, nonce, chunk_size) = match header.encryption_method {
+    let (import_key_derivation_data, nonce, chunk_size) = match header.encryption_method {
         EncryptionMethod::ChaCha20Poly1305IETF { salt, nonce, chunk_size } | EncryptionMethod::ChaCha20Poly1305IETFInteractive { salt, nonce, chunk_size } => {
             let salt = pwhash_argon2i13::Salt::from_slice(&salt)
                 .map_err(|err| CommonError::InvalidStructure(format!("Invalid salt: {:?}", err)))?;
@@ -124,20 +121,32 @@ pub(super) fn import(wallet: &Wallet, reader: &mut Read, passphrase: &str) -> Re
             let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
                 .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
 
-            let key = chacha20poly1305_ietf::derive_key(passphrase, &salt, &key_derivation_method)?;
+            let passphrase = passphrase.to_owned();
 
-            (key, nonce, chunk_size)
+            let key_data = match key_derivation_method {
+                KeyDerivationMethod::ARGON2I_INT =>
+                    KeyDerivationData::Argon2iInt(passphrase, salt),
+                KeyDerivationMethod::ARGON2I_MOD =>
+                    KeyDerivationData::Argon2iMod(passphrase, salt),
+                _ => unimplemented!("FIXME") //FIXME
+            };
+
+            (key_data, nonce, chunk_size)
         }
         EncryptionMethod::ChaCha20Poly1305IETFRaw { nonce, chunk_size } => {
             let nonce = chacha20poly1305_ietf::Nonce::from_slice(&nonce)
                 .map_err(|err| CommonError::InvalidStructure(format!("Invalid nonce: {:?}", err)))?;
 
-            let key = raw_master_key(passphrase)?;
+            let key_data = KeyDerivationData::Raw(passphrase.to_owned());
 
-            (key, nonce, chunk_size)
+            (key_data, nonce, chunk_size)
         }
     };
 
+    Ok((reader, import_key_derivation_data, nonce, chunk_size, header_bytes))
+}
+
+pub(super) fn finish_import<T>(wallet: &Wallet, reader: BufReader<T>, key: chacha20poly1305_ietf::Key, nonce: chacha20poly1305_ietf::Nonce, chunk_size: usize, header_bytes: Vec<u8>) -> Result<(), WalletError> where T: Read {
     // Reads encrypted
     let mut reader = chacha20poly1305_ietf::Reader::new(reader, key, nonce, chunk_size);
 
@@ -190,6 +199,17 @@ mod tests {
     use services::wallet::storage::WalletStorageType;
     use services::wallet::storage::default::SQLiteStorageType;
     use services::wallet::wallet::{Keys, Wallet};
+
+    fn export(wallet: &Wallet, writer: &mut Write, passphrase: &str, version: u32, key_derivation_method: &KeyDerivationMethod) -> Result<(), WalletError> {
+        if version != 0 {
+            Err(CommonError::InvalidState("Unsupported version".to_string()))?;
+        }
+
+        let key_data = KeyDerivationData::from_passphrase_with_new_salt(passphrase, key_derivation_method);
+        let key = key_data.calc_master_key()?;
+
+        export_continue(wallet, writer, version, key, &key_data)
+    }
 
     #[test]
     fn export_import_works_for_empty_wallet() {

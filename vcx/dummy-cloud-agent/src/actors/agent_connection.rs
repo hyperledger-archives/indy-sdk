@@ -1,7 +1,8 @@
 use actix::prelude::*;
-use actors::{AddA2ARoute, HandleA2AMsg, RemoteMsg};
+use actors::{AddA2ARoute, AddA2ConnRoute, HandleA2AMsg, HandleA2ConnMsg, RemoteMsg};
 use actors::router::Router;
 use domain::a2a::*;
+use domain::a2connection::*;
 use domain::status::{ConnectionStatus, MessageStatusCode};
 use domain::invite::{ForwardAgentDetail, InviteDetail, SenderDetail, AgentDetail};
 use domain::internal_message::InternalMessage;
@@ -10,15 +11,13 @@ use failure::{err_msg, Error, Fail};
 use futures::*;
 use indy::{did, crypto, pairwise, IndyError};
 use std::convert::Into;
+use std::collections::HashMap;
 use utils::futures::*;
 use utils::to_i8;
 
 use base64;
 use rmp_serde;
 use serde_json;
-
-use std::collections::HashMap;
-
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct RemoteConnectionDetail {
@@ -113,9 +112,17 @@ impl AgentConnection {
 
                 let agent_connection = agent_connection.start();
 
-                router
+                let add_route_f = router
                     .send(AddA2ARoute(config.agent_pairwise_did.clone(), agent_connection.clone().recipient()))
-                    .from_err()
+                    .from_err();
+
+                let add_conn_route_f = router
+                    .send(AddA2ConnRoute(config.agent_pairwise_did.clone(), agent_connection.clone().recipient()))
+                    .from_err();
+
+                add_route_f
+                    .join(add_conn_route_f)
+                    .map(|_| ())
                     .map_err(|err: Error| err.context("Can't add route for Agent Connection.").into())
             })
             .into_box()
@@ -135,14 +142,16 @@ impl AgentConnection {
         let owner_verkey = owner_verkey.to_string();
         let agent_pairwise_did = agent_pairwise_did.to_string();
         let user_pairwise_did = user_pairwise_did.to_string();
+        let state = state.to_string();
         let forward_agent_detail = forward_agent_detail.clone();
-
-        let pairwise::Pairwise { metadata: pairwise_metadata, .. } = ftry!(serde_json::from_str(&state)
-            .map_err(|err| err.context("Can't parse Forward Agent Connection pairwise info.")));
 
         future::ok(())
             .and_then(move |_| {
-                serde_json::from_str::<AgentConnectionState>(&pairwise_metadata)
+                serde_json::from_str::<pairwise::Pairwise>(&state)
+                    .map_err(|err| err.context("Can't parse Forward Agent Connection pairwise info.").into())
+            })
+            .and_then(move |pairwise| {
+                serde_json::from_str::<AgentConnectionState>(&pairwise.metadata)
                     .map_err(|err| err.context("Can't parse Forward Agent Connection pairwise info.").into())
             })
             .and_then(move |state| {
@@ -256,8 +265,8 @@ impl AgentConnection {
                                                                     uid,
                                                                     sender_verkey)
                     }
-                    (type_ @ _, Some(A2AMessage::MessageDetail(MessageDetail::General(detail)))) =>
-                        slf.handle_create_general_message(type_,
+                    (mtype @ _, Some(A2AMessage::MessageDetail(MessageDetail::General(detail)))) =>
+                        slf.handle_create_general_message(mtype,
                                                           detail,
                                                           reply_to_msg_id.clone(),
                                                           uid,
@@ -377,9 +386,7 @@ impl AgentConnection {
 
         let messages = vec![A2AMessage::MessageCreated(MessageCreated { uid: msg.uid.clone() })];
 
-        future::ok((msg.uid, messages))
-            .into_actor(self)
-            .into_box()
+        ok_act!(self, (msg.uid, messages))
     }
 
     fn handle_send_messages(&mut self, msg: SendMessages) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
@@ -396,35 +403,38 @@ impl AgentConnection {
     }
 
     fn handle_get_messages(&mut self, msg: GetMessages) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
-        trace!("AgentConnection::handle_get_messages >> {:?}",
-               msg);
+        trace!("AgentConnection::handle_get_messages >> {:?}", msg);
 
+        let msgs = vec![A2AMessage::Messages(
+            Messages {
+                msgs: self.get_messages(msg)
+            })];
+
+        ok_act!(self, msgs)
+    }
+
+    fn get_messages(&self, msg: GetMessages) -> Vec<GetMessagesDetailResponse> {
         let GetMessages { exclude_payload, uids, status_codes } = msg;
 
-        let msgs =
-            self.state.messages
-                .values()
-                .filter(|msg|
-                    (uids.is_empty() || uids.contains(&msg.uid)) &&
-                        (status_codes.is_empty() || status_codes.contains(&msg.status_code)))
-                .map(|message| {
-                    GetMessagesDetailResponse {
-                        uid: message.uid.clone(),
-                        status_code: message.status_code.clone(),
-                        sender_did: message.sender_did.clone(),
-                        type_: message._type.clone(),
-                        payload: match exclude_payload.as_ref().map(String::as_str) {
-                            Some("Y") => None,
-                            _ => message.payload.as_ref().map(|payload| to_i8(payload))
-                        },
-                        ref_msg_id: message.ref_msg_id.clone(),
-                    }
-                })
-                .collect::<Vec<GetMessagesDetailResponse>>();
-
-        future::ok(vec![A2AMessage::Messages(Messages { msgs })])
-            .into_actor(self)
-            .into_box()
+        self.state.messages
+            .values()
+            .filter(|msg|
+                (uids.is_empty() || uids.contains(&msg.uid)) &&
+                    (status_codes.is_empty() || status_codes.contains(&msg.status_code)))
+            .map(|message| {
+                GetMessagesDetailResponse {
+                    uid: message.uid.clone(),
+                    status_code: message.status_code.clone(),
+                    sender_did: message.sender_did.clone(),
+                    type_: message._type.clone(),
+                    payload: match exclude_payload.as_ref().map(String::as_str) {
+                        Some("Y") => None,
+                        _ => message.payload.as_ref().map(|payload| to_i8(payload))
+                    },
+                    ref_msg_id: message.ref_msg_id.clone(),
+                }
+            })
+            .collect::<Vec<GetMessagesDetailResponse>>()
     }
 
     fn handle_update_connection_status(&mut self, msg: UpdateConnectionStatus) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
@@ -439,15 +449,50 @@ impl AgentConnection {
 
         self.state.connection_status = status_code.clone();
 
-        let messages = vec![A2AMessage::ConnectionStatusUpdated(ConnectionStatusUpdated { status_code })];
+        let msgs = vec![A2AMessage::ConnectionStatusUpdated(ConnectionStatusUpdated { status_code })];
 
-        future::ok(messages)
-            .into_actor(self)
-            .into_box()
+        ok_act!(self, msgs)
     }
 
     fn handle_update_message_status(&mut self, msg: UpdateMessageStatus) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
         trace!("AgentConnection::handle_update_message_status >> {:?}",
+               msg);
+
+        self.update_messages_status(msg)
+            .map(|(uids, status_code)| vec![A2AMessage::MessageStatusUpdated(MessageStatusUpdated { uids, status_code })])
+            .into_future()
+            .into_actor(self)
+            .into_box()
+    }
+
+    fn handle_agent2conn_message(&mut self,
+                                 msg: A2ConnMessage) -> ResponseFuture<A2ConnMessage, Error> {
+        trace!("AgentConnection::handle_agent_to_connection_message >> {:?}", msg);
+
+        match msg {
+            A2ConnMessage::GetMessages(msg) => {
+                let msg = A2ConnMessage::MessagesByConnection(
+                    MessagesByConnection {
+                        did: self.user_pairwise_did.clone(),
+                        msgs: self.get_messages(msg)
+                    });
+                ok!(msg)
+            }
+            A2ConnMessage::UpdateMessages(msg) => {
+                let (uids, _) = ftry!(self.update_messages_status(msg));
+                let msg = A2ConnMessage::MessageStatusUpdatedByConnection(
+                    UidByConnection {
+                        uids,
+                        pairwise_did: self.user_pairwise_did.clone()
+                    });
+                ok!(msg)
+            }
+            _ => err!(err_msg("Unsupported message."))
+        }
+    }
+
+    fn update_messages_status(&mut self, msg: UpdateMessageStatus) -> Result<(Vec<String>, MessageStatusCode), Error> {
+        trace!("AgentConnection::update_messages_status >> {:?}",
                msg);
 
         let UpdateMessageStatus { uids, status_code } = msg;
@@ -456,17 +501,16 @@ impl AgentConnection {
             .iter()
             .all(|uid| self.check_if_message_status_can_be_updated(uid, &status_code).is_ok());
 
-        if messages_can_be_updated {
-            return err_act!(self, err_msg("Messages can't be updated."));
+        if !messages_can_be_updated {
+            return Err(err_msg("Messages can't be updated."));
         }
 
-        uids.iter()
-            .map(|uid| self.update_message_status(uid, &status_code))
+        uids
+            .into_iter()
+            .map(|uid| self.update_message_status(&uid, &status_code)
+                .map(|_| uid))
             .collect::<Result<Vec<_>, _>>()
-            .map(|_| vec![A2AMessage::MessageStatusUpdated(MessageStatusUpdated { uids, status_code })])
-            .into_future()
-            .into_actor(self)
-            .into_box()
+            .map(|uids| (uids, status_code))
     }
 
     fn sender_handle_create_connection_request_answer(&mut self,
@@ -743,7 +787,6 @@ impl AgentConnection {
         if let Some(msg) = self.state.messages.get(reply_to_msg_id) {
             self.check_if_message_not_already_answered(&msg.status_code)?;
         }
-
         Ok(())
     }
 
@@ -877,7 +920,6 @@ impl AgentConnection {
         if !send_msg {
             return future::ok(Vec::new()).into_box();
         }
-
         self.send_messages(vec![(uid.to_string(), reply_to_msg_id.map(String::from))])
     }
 
@@ -1118,8 +1160,17 @@ impl Handler<HandleA2AMsg> for AgentConnection {
     type Result = ResponseActFuture<Self, Vec<u8>, Error>;
 
     fn handle(&mut self, msg: HandleA2AMsg, _: &mut Self::Context) -> Self::Result {
-        trace!("Handler<AgentMsgsBundle>::handle >> {:?}", msg);
+        trace!("Handler<HandleA2AMsg>::handle >> {:?}", msg);
         self.handle_a2a_msg(msg.0)
+    }
+}
+
+impl Handler<HandleA2ConnMsg> for AgentConnection {
+    type Result = ResponseFuture<A2ConnMessage, Error>;
+
+    fn handle(&mut self, msg: HandleA2ConnMsg, _: &mut Self::Context) -> Self::Result {
+        trace!("Handler<HandleA2ConnectionMsg>::handle >> {:?}", msg);
+        self.handle_agent2conn_message(msg.0)
     }
 }
 

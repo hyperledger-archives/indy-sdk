@@ -9,6 +9,8 @@ export ANDROID_BUILD_FOLDER="/tmp/android_build"
 
 TARGET_ARCH=$1
 
+BUILD_TYPE=$2
+
 if [ -z "${TARGET_ARCH}" ]; then
     echo STDERR "Missing TARGET_ARCH argument"
     echo STDERR "e.g. x86 or arm"
@@ -41,11 +43,11 @@ build_test_artifacts(){
         # build - separate step to see origin build output
         # TODO move RUSTFLAGS to cargo config and do not duplicate it here
         RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-                    cargo test --release --target=${TRIPLET} ${SET_OF_TESTS} --no-run
+                    cargo test ${BUILD_TYPE} --target=${TRIPLET} ${SET_OF_TESTS} --no-run
 
         # collect items to execute tests, uses resulting files from previous step
         EXE_ARRAY=($( RUSTFLAGS="-L${TOOLCHAIN_DIR}/sysroot/usr/${TOOLCHAIN_SYSROOT_LIB} -lc -lz -L${TOOLCHAIN_DIR}/${TRIPLET}/lib -L${LIBZMQ_LIB_DIR} -L${SODIUM_LIB_DIR} -lsodium -lzmq -lgnustl_shared" \
-                    cargo test --release --target=${TRIPLET} ${SET_OF_TESTS} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
+                    cargo test ${BUILD_TYPE} --target=${TRIPLET} ${SET_OF_TESTS} --no-run --message-format=json | jq -r "select(.profile.test == true) | .filenames[]"))
     popd
 }
 
@@ -60,14 +62,18 @@ EOF
 
 execute_on_device(){
 
-    adb push \
+    set -x
+
+    adb -e push \
     "${TOOLCHAIN_DIR}/${TRIPLET}/lib/libgnustl_shared.so" "/data/local/tmp/libgnustl_shared.so"
 
-    adb push \
+    adb -e push \
     "${SODIUM_LIB_DIR}/libsodium.so" "/data/local/tmp/libsodium.so"
 
-    adb push \
+    adb -e push \
     "${LIBZMQ_LIB_DIR}/libzmq.so" "/data/local/tmp/libzmq.so"
+
+    adb -e logcat | grep indy &
 
     for i in "${EXE_ARRAY[@]}"
     do
@@ -76,11 +82,11 @@ execute_on_device(){
         EXE_NAME=`basename ${EXE}`
 
 
-        adb push "$EXE" "/data/local/tmp/$EXE_NAME"
-        adb shell "chmod 755 /data/local/tmp/$EXE_NAME"
+        adb -e push "$EXE" "/data/local/tmp/$EXE_NAME"
+        adb -e shell "chmod 755 /data/local/tmp/$EXE_NAME"
         OUT="$(mktemp)"
         MARK="ADB_SUCCESS!"
-        adb shell "TEST_POOL_IP=10.0.0.2 LD_LIBRARY_PATH=/data/local/tmp RUST_TEST_THREADS=1 RUST_LOG=debug /data/local/tmp/$EXE_NAME && echo $MARK" 2>&1 | tee $OUT
+        time adb -e shell "TEST_POOL_IP=10.0.0.2 LD_LIBRARY_PATH=/data/local/tmp RUST_TEST_THREADS=1 RUST_BACKTRACE=1 RUST_LOG=debug /data/local/tmp/$EXE_NAME && echo $MARK" 2>&1 | tee $OUT
         grep $MARK $OUT
     done
 

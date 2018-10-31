@@ -76,10 +76,14 @@ pub extern fn vcx_init (command_handle: u32,
         } else {
             match settings::process_config_file(&config_path) {
                 Err(e) => {
-                    println!("Invalid configuration specified: {}", e);
                     return error::INVALID_CONFIGURATION.code_num;
                 },
-                Ok(_) => (),
+                Ok(_) => {
+                    match settings::validate_payment_method() {
+                        Ok(_) => (),
+                        Err(e) => return e
+                    }
+                },
             };
         }
     } else {
@@ -94,11 +98,6 @@ fn _finish_init(command_handle: u32, cb: extern fn(xcommand_handle: u32, err: u3
     ::utils::logger::LoggerUtils::init();
 
     ::utils::threadpool::init();
-
-    match ::utils::libindy::payments::init_payments() {
-        Ok(_) => (),
-        Err(x) => return x,
-    };
 
     settings::log_settings();
 
@@ -265,7 +264,8 @@ mod tests {
                         "institution_name" : "evernym enterprise",
                         "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
                         "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                        "genesis_path":"/tmp/pool1.txn"}).to_string()
+                        "genesis_path":"/tmp/pool1.txn",
+                        "payment_method": "null"}).to_string()
     }
 
     #[cfg(feature = "agency")]
@@ -288,6 +288,28 @@ mod tests {
         cb.receive(Some(Duration::from_secs(10))).unwrap();
         // Assert pool was initialized
         assert_ne!(get_pool_handle().unwrap(), 0);
+    }
+
+    #[cfg(feature = "agency")]
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_init_with_file_no_payment_method() {
+        init!("false");
+        settings::clear_config();
+
+        let config_path = "/tmp/test_init.json";
+        let content = json!({
+            "wallet_name": settings::DEFAULT_WALLET_NAME,
+            "wallet_key": settings::DEFAULT_WALLET_KEY
+        }).to_string();
+
+        settings::write_config_to_file(&content, config_path).unwrap();
+
+        let cb = return_types_u32::Return_U32::new().unwrap();
+        assert_eq!(vcx_init(cb.command_handle,
+                            CString::new(config_path).unwrap().into_raw(),
+                            Some(cb.get_callback())),
+                   error::MISSING_PAYMENT_METHOD.code_num);
     }
 
     #[cfg(feature = "agency")]
