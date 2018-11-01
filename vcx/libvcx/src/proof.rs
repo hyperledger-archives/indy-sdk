@@ -213,12 +213,16 @@ impl Proof {
 
         let credential_data = proof_msg.get_credential_info()?;
 
-        let credential_defs_json = self.build_credential_defs_json(&credential_data)?;
-        let schemas_json = self.build_schemas_json(&credential_data)?;
+        let credential_defs_json = self.build_credential_defs_json(&credential_data)
+            .unwrap_or(json!({}).to_string());
+        let schemas_json = self.build_schemas_json(&credential_data)
+            .unwrap_or(json!({}).to_string());
+        let rev_reg_defs_json = self.build_rev_reg_defs_json(&credential_data)
+            .unwrap_or(json!({}).to_string());
+        let rev_regs_json = self.build_rev_reg_json(&credential_data)
+            .unwrap_or(json!({}).to_string());
         let proof_json = self.build_proof_json()?;
         let proof_req_json = self.build_proof_req_json()?;
-        let rev_reg_defs_json = self.build_rev_reg_defs_json(&credential_data)?;
-        let rev_regs_json = self.build_rev_reg_json(&credential_data)?;
 
         debug!("*******\n{}\n********", credential_defs_json);
         debug!("*******\n{}\n********", schemas_json);
@@ -597,7 +601,6 @@ mod tests {
 
         // Support Revocation Success
         let revocation_details = json!({
-            "support_revocation": true,
             "to": 1234,
         });
         create_proof("1".to_string(),
@@ -605,17 +608,6 @@ mod tests {
                      REQUESTED_PREDICATES.to_owned(),
                      revocation_details.to_string(),
                      "Optional".to_owned()).unwrap();
-
-
-        // Support Revocation Fails with no to
-        let revocation_details = json!({
-            "support_revocation": true,
-        });
-        assert_eq!(create_proof("1".to_string(),
-                     REQUESTED_ATTRS.to_owned(),
-                     REQUESTED_PREDICATES.to_owned(),
-                     revocation_details.to_string(),
-                     "Optional".to_owned()), Err(ProofError::InvalidTimestamp()));
     }
 
     #[test]

@@ -428,14 +428,12 @@ pub mod tests {
     #[test]
     fn test_delete_record_fails_with_no_record() {
         init!("false");
-        let wallet_n = "test_delete_record_fails_with_no_record";
         let record_type = "Type";
         let id = "123";
 
         let rc = delete_record(record_type, id);
         assert_eq!(rc, Err(error::WALLET_RECORD_NOT_FOUND.code_num));
 
-        delete_wallet(wallet_n).unwrap();
     }
 
     #[test]

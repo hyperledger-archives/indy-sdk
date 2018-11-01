@@ -6,7 +6,6 @@ use settings;
 use std::fmt;
 use std::string::ToString;
 use utils::error;
-use utils::constants::{ SCHEMA_ID, SCHEMA_JSON };
 use utils::libindy::ledger;
 use utils::libindy::payments::PaymentTxn;
 use error::schema::SchemaError;
@@ -220,6 +219,7 @@ pub mod tests {
     use super::*;
     #[allow(unused_imports)]
     use rand::Rng;
+    use utils::constants::{ SCHEMA_ID, SCHEMA_JSON };
 
     pub fn create_schema_real() -> u32 {
         let data = r#"["address1","address2","zip","city","state"]"#.to_string();
@@ -285,8 +285,7 @@ pub mod tests {
                                        "name".to_string(),
                                        "1.0".to_string(),
                                        "".to_string());
-
-        assert_eq!(schema.err(),Some(SchemaError::InvalidSchemaCreation()));
+        assert_eq!(schema, Err(SchemaError::CommonError(error::INVALID_LIBINDY_PARAM.code_num)))
     }
 
     #[cfg(feature = "pool_tests")]

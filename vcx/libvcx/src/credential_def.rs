@@ -3,8 +3,6 @@ extern crate rand;
 extern crate libc;
 
 use utils::error;
-use settings;
-use utils::constants::{ CRED_DEF_ID };
 use utils::libindy::payments::{PaymentTxn};
 use utils::libindy::ledger;
 use error::cred_def::CredDefError;
@@ -273,8 +271,9 @@ pub fn release_all() {
 
 #[cfg(test)]
 pub mod tests {
-    use utils::constants::{SCHEMA_ID};
+    use utils::constants::{SCHEMA_ID, CRED_DEF_ID};
     use super::*;
+    use settings;
 
     static CREDENTIAL_DEF_NAME: &str = "Test Credential Definition";
     static ISSUER_DID: &str = "4fUDR9R7fjwELRvH9JT6HH";
