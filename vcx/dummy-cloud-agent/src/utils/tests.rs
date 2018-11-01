@@ -36,6 +36,7 @@ pub const EDGE_PAIRWISE_DID_2: &'static str = "WNnf2uJPZNmvMmA6LkdVAp";
 pub const EDGE_PAIRWISE_DID_INFO_2: &'static str = "{\"did\": \"WNnf2uJPZNmvMmA6LkdVAp\", \"seed\": \"0000000000000000000EdgePairwise2\"}";
 pub const EDGE_PAIRWISE_DID_VERKEY_2: &'static str = "H1d58X25s91rTXdd46hTfn7mhtPmohQFYRHD379UtytR";
 
+pub static mut FORWARD_AGENT_WALLET_HANDLE: i32 = 0;
 pub const FORWARD_AGENT_WALLET_ID: &'static str = "forward_agent_wallet_id";
 pub const FORWARD_AGENT_WALLET_CONFIG: &'static str = "{\"id\": \"forward_agent_wallet_id\"}";
 pub const FORWARD_AGENT_WALLET_PASSPHRASE: &'static str = "forward_agent_wallet_passphrase";
@@ -113,6 +114,12 @@ pub fn run_test<F, B>(f: F)
                     ForwardAgent::create_or_restore(forward_agent_config(), wallet_storage_config())
                 })
                 .and_then(f)
+                .and_then(|wallet_handle|
+                    unsafe {
+                        wallet::close_wallet(FORWARD_AGENT_WALLET_HANDLE)
+                            .map_err(|err| err.context("Can't close Forward Agent wallet.`").into())
+                    }
+                )
                 .map(move |_| {
                     System::current().stop()
                 })
