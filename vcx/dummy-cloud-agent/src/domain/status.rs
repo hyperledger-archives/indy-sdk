@@ -50,3 +50,9 @@ pub enum ConnectionStatus {
     #[serde(rename = "CS-103")]
     Deleted,
 }
+
+impl Default for ConnectionStatus{
+    fn default() -> Self {
+        ConnectionStatus::NotConnected
+    }
+}

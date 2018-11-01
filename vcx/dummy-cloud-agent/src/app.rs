@@ -7,6 +7,7 @@ use domain::config::AppConfig;
 use futures::*;
 
 const MAX_PAYLOAD_SIZE: usize = 105_906_176;
+
 pub struct AppState {
     pub forward_agent: Addr<ForwardAgent>,
 }

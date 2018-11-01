@@ -60,8 +60,12 @@ impl ForwardAgent {
                     .map_err(|err| err.context("Can't open Forward Agent wallet.`").into())
             })
             .and_then(move |(wallet_handle, config, wallet_storage_config)| {
-                // Ensure Forward Agent DID created
+                #[cfg(test)]
+                unsafe {
+                    ::utils::tests::FORWARD_AGENT_WALLET_HANDLE = wallet_handle;
+                }
 
+                // Ensure Forward Agent DID created
                 let did_info = json!({
                     "did": config.did,
                     "seed": config.did_seed,
