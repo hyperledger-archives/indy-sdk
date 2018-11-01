@@ -55,6 +55,11 @@ pub static DEFAULT_WALLET_KEY: &str = "foobar1234";
 pub static DEFAULT_THREADPOOL_SIZE: usize = 8;
 pub static MASK_VALUE: &str = "********";
 pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "ARGON2I_INT";
+pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
+pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
+pub static DEFAULT_PAYMENT_METHOD: &str = "null";
+pub static DEFAULT_LOGGING_KEY: &str = "logging";
+
 
 pub static MAX_THREADPOOL_SIZE: usize = 128;
 
@@ -182,9 +187,20 @@ pub fn test_agency_mode_enabled() -> bool {
 }
 
 pub fn process_config_string(config: &str) -> Result<u32, u32> {
+    use utils::logger::LibvcxDefaultLogger;
+    use serde_json::Value;
     let configuration: Value = serde_json::from_str(config).or(Err(error::INVALID_JSON.code_num))?;
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {
+            if key == DEFAULT_LOGGING_KEY {
+                // dont be fooled, serde_json::Value String types contain quotes.  This really
+                // messes when you try to_string() on them, as they retain the quotes.
+                // for example Value("debug") becomes "\"debug\""...YUCK!
+                match value.as_str() {
+                    Some(level) => { LibvcxDefaultLogger::init(Some(level.to_string()))? },
+                    None => {},
+                }
+            }
             set_config_value(key, value.as_str().ok_or(error::INVALID_JSON.code_num)?);
         }
     }
@@ -493,25 +509,5 @@ pub mod tests {
         assert_eq!(get_config_value("institution_name"), Err(error::INVALID_CONFIGURATION.code_num));
         assert_eq!(get_config_value("genesis_path"), Err(error::INVALID_CONFIGURATION.code_num));
         assert_eq!(get_config_value("wallet_key"), Err(error::INVALID_CONFIGURATION.code_num));
-    }
-
-    #[test]
-    fn test_log_settings() {
-        // log settings should mask the wallet_key field
-        ::utils::logger::LoggerUtils::init_test_logging("trace");
-        set_defaults();
-        let key = "secretkeyabc123foobar";
-        {
-            let mut settings = SETTINGS.write().unwrap();
-            settings.insert(CONFIG_WALLET_KEY.to_string(), key.to_string()).unwrap();
-            let masked_settings = settings.to_string();
-            match masked_settings.get(CONFIG_WALLET_KEY) {
-                None => panic!("Test Failure"),
-                Some(value) => {
-                    assert_ne!(value, key);
-                },
-            }
-        }
-        log_settings();
     }
 }

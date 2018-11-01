@@ -975,7 +975,7 @@ pub mod tests {
             payment_required: "one-time".to_string(),
             price: 1000,
         };
-        println!("{}", serde_json::to_string(&payment_info).unwrap())
+        let _ = serde_json::to_string(&payment_info).unwrap();
     }
 
     #[test]

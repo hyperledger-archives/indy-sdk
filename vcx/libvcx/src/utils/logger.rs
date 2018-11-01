@@ -71,11 +71,18 @@ impl LibvcxLogger {
     fn new(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Self {
         LibvcxLogger { context, enabled, log, flush }
     }
-    pub fn init(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> u32 {
+    pub fn init(context: *const c_void, enabled: Option<EnabledCB>, log: LogCB, flush: Option<FlushCB>) -> Result<(), u32> {
         let logger = LibvcxLogger::new(context, enabled, log, flush);
-        log::set_boxed_logger(Box::new(logger));
+        log::set_boxed_logger(Box::new(logger)).map_err(|_| LOGGING_ERROR.code_num)?;
         log::set_max_level(LevelFilter::Trace);
-        SUCCESS.code_num
+        unsafe {
+            LOGGER_STATE = LoggerState::Custom;
+            CONTEXT = context;
+            ENABLED_CB = enabled;
+            LOG_CB = Some(log);
+            FLUSH_CB = flush
+        }
+        Ok(())
     }
 }
 
@@ -110,20 +117,21 @@ pub struct LoggerUtils {}
 pub struct LibvcxDefaultLogger;
 
 impl LibvcxDefaultLogger {
-    pub fn init(pattern: Option<String>) -> u32 {
+    pub fn init(pattern: Option<String>) -> Result<(), u32> {
         let pattern = pattern.or(env::var("RUST_LOG").ok());
         // This calls
         // log::set_max_level(logger.filter());
         // log::set_boxed_logger(Box::new(logger))
+        // which are what set the logger.
         match EnvLoggerBuilder::new()
             .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
             .filter(None, LevelFilter::Off)
             .parse(pattern.as_ref().map(String::as_str).unwrap_or("warn"))
             .try_init() {
-            Ok(_) => 0,
+            Ok(_) => Ok(()),
             Err(e) => {
                 error!("Error in logging init: {:?}", e);
-                LOGGING_ERROR.code_num
+                Err(LOGGING_ERROR.code_num)
             }
         }
     }
@@ -279,13 +287,12 @@ mod tests {
     }
 
     #[test]
-    fn test_logger() {
-        LoggerUtils::init();
-    }
-
-    #[test]
     fn test_logging_get_logger() {
-        assert_eq!(LibvcxDefaultLogger::init(Some("debug".to_string())), SUCCESS.code_num);
+        use settings::log_settings;
+        use settings::set_config_value;
+        use settings::CONFIG_WALLET_KEY;
+        use settings::set_defaults;
+        LibvcxDefaultLogger::init(Some("debug".to_string())).unwrap();
         unsafe {
             let (context, enabled_cb, log_cb, flush_cb) = LOGGER_STATE.get();
             assert_eq!(context, ptr::null());
@@ -297,12 +304,14 @@ mod tests {
         }
     }
 
+    // Can only have one test that initializes logging.
+    #[ignore]
     #[test]
-    fn test_customer_logger() {
+    fn test_custom_logger() {
         LibvcxLogger::init(get_custom_context(),
                            Some(custom_enabled),
                            custom_log,
-                           Some(custom_flush));
+                           Some(custom_flush)).unwrap();
         error!("error level message");
         unsafe {
             assert_eq!(COUNT, 1)

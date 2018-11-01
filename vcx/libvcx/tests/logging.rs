@@ -4,21 +4,32 @@ extern crate libc;
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate serde_json;
+
+
 use self::libc::{c_void, c_char};
 use std::ptr::null;
+use std::ffi::CString;
 use vcx::api::logger::*;
-#[allow(unused_imports)] use vcx::utils::logger::{LOGGER_STATE, LoggerState, LibvcxDefaultLogger};
+use vcx::utils::logger::{LOGGER_STATE, LoggerState, LibvcxDefaultLogger};
 use indy::wallet;
 use vcx::utils::{cstring::CStringUtils, error::SUCCESS};
 use vcx::api::logger::vcx_set_logger;
+use vcx::api::vcx::vcx_init_with_config;
+use vcx::utils::libindy::return_types_u32;
+use std::time::Duration;
+use vcx::settings::{ DEFAULT_PAYMENT_PLUGIN, DEFAULT_PAYMENT_INIT_FUNCTION, DEFAULT_WALLET_KEY, DEFAULT_WALLET_NAME };
+use vcx::utils::devsetup;
 /// These tests can only be run individually as initing the log crate can happen
 /// only once.
 ///
 /// These tests usually need to be run manually to verify that the standard
 /// logging is outputting to stdout.
-#[allow(unused_imports)]
 mod log_tests {
     use super::*;
+    use vcx::api::vcx::vcx_error_c_message;
+
 
     pub type EnabledCB = extern fn(context: *const c_void,
                                    level: u32,
@@ -49,7 +60,7 @@ mod log_tests {
     fn test_logging_default_debug() {
         // this test should output a single debug line
         // and a single info line (from the vcx_error_c_message call)
-        use vcx::api::vcx::vcx_error_c_message;
+
         let pattern = CStringUtils::string_to_cstring("debug".to_string());
         assert_eq!(vcx_set_default_logger(pattern.as_ptr()), 0);
         debug!("testing debug");
@@ -57,6 +68,7 @@ mod log_tests {
 
     }
 
+    #[ignore]
     #[test]
     fn test_logging_default_is_warn() {
         use std::ptr::null_mut;
@@ -66,6 +78,7 @@ mod log_tests {
         warn!("testing warning");
     }
 
+    #[ignore]
     #[test]
     fn test_logging_env_var() {
         // this test should output a single info line
@@ -90,13 +103,15 @@ mod log_tests {
         trace!("testing trace");
     }
 
+    #[ignore]
     #[test]
     fn test_set_logger() {
         let err = vcx_set_logger(null(), None, Some(custom_log), None);
         debug!("testing debug");
-        unsafe { assert_eq!(COUNT, 1); }
+        unsafe { assert!(COUNT > 1); }
 
     }
+
 }
 
 

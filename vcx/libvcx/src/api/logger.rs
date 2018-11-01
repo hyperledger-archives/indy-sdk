@@ -7,7 +7,17 @@ use utils::error::{ INVALID_CONFIGURATION, SUCCESS };
 #[no_mangle]
 pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
     check_useful_opt_c_str!(pattern, INVALID_CONFIGURATION.code_num);
-    LibvcxDefaultLogger::init(pattern)
+    let res = LibvcxDefaultLogger::init(pattern);
+    match res {
+        Ok(_) => {
+            debug!("Logger Successfully Initialized");
+            SUCCESS.code_num
+        },
+        Err(ec) => {
+            error!("Logger Failed To Initialize: {}", ec);
+            ec
+        },
+    }
 }
 
 #[no_mangle]
@@ -15,13 +25,20 @@ pub extern fn vcx_set_logger(context: *const c_void,
                              enabled: Option<EnabledCB>,
                              log: Option<LogCB>,
                              flush: Option<FlushCB>) -> u32 {
-    println!("vcx_set_logger");
     trace!("vcx_set_logger( context: {:?}, enabled: {:?}, log: {:?}, flush: {:?}",
            context, enabled, log, flush);
     check_useful_c_callback!(log, SUCCESS.code_num);
-    LibvcxLogger::init(context, enabled, log, flush);
-    println!("vcx_set_logger -> initited");
-    0
+    let res = LibvcxLogger::init(context, enabled, log, flush);
+    match res {
+        Ok(_) => {
+            debug!("Logger Successfully Initialized");
+            SUCCESS.code_num
+        },
+        Err(ec) => {
+            error!("Logger Failed To Initialize: {}", ec);
+            ec
+        },
+    }
 }
 
 /// Get the currently used logger.
@@ -36,6 +53,8 @@ pub extern fn vcx_set_logger(context: *const c_void,
 ///
 /// #Returns
 /// Error code
+///
+/// This is tested in wrapper tests (python3)
 #[no_mangle]
 pub extern fn vcx_get_logger(context_p: *mut *const c_void,
                               enabled_cb_p: *mut Option<EnabledCB>,

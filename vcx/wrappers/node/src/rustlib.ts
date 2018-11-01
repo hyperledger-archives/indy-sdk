@@ -31,6 +31,8 @@ export const FFI_SCHEMA_HANDLE = 'uint32'
 export const FFI_SCHEMA_NUMBER = 'uint32'
 export const FFI_PAYMENT_HANDLE = 'uint32'
 export const FFI_PRICE = 'uint32'
+export const FFI_LOG_FN = 'pointer'
+export const FFI_VOID_POINTER = ref.refType('void')
 
 // Rust Lib Native Types
 export type rust_did = string
@@ -143,6 +145,7 @@ export interface IFFIEntryPoint {
 
   // logger
   vcx_set_default_logger: (level: string) => number,
+  vcx_set_logger: (context: any, enabled: any, logFn: any, flush: any) => number,
 
   // mock
   vcx_set_next_agency_response: (messageIndex: number) => void,
@@ -296,6 +299,8 @@ export const FFIConfiguration: { [ Key in keyof IFFIEntryPoint ]: any } = {
 
   // logger
   vcx_set_default_logger: [FFI_ERROR_CODE, [FFI_STRING]],
+  vcx_set_logger: [FFI_ERROR_CODE, [FFI_VOID_POINTER, FFI_CALLBACK_PTR, FFI_CALLBACK_PTR, FFI_CALLBACK_PTR]],
+
   // mock
   vcx_set_next_agency_response: [FFI_VOID, [FFI_UNSIGNED_INT]],
 

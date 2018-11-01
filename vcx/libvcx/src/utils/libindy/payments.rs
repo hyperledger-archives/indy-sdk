@@ -582,8 +582,6 @@ pub mod tests {
     #[cfg(feature = "pool_tests")]
     #[test]
     fn test_build_payment_request() {
-        use utils::constants::PAYMENT_ADDRESS;
-        ::utils::logger::LoggerUtils::init_test_logging("trace");
         init!("ledger");
         let price = get_my_balance();
         let result_from_paying = pay_a_payee(price, PAYMENT_ADDRESS);
@@ -601,6 +599,21 @@ pub mod tests {
         let result_from_paying = pay_a_payee(price, PAYMENT_ADDRESS);
         assert_eq!(result_from_paying.err(), Some(PaymentError::InsufficientFunds()));
         assert_eq!(get_my_balance(), 5);
+    }
+
+
+    // this test if failing to to both changes in error codes being produced
+    // by master libindy and how wallets are deleted.
+    #[cfg(feature = "pool_tests")]
+    #[ignore]
+    #[test]
+    fn test_build_payment_request_bogus_payment_method() {
+        init!("false");
+        let payment_address = "pay:bogus:123";
+        let result_from_paying = pay_a_payee(1, payment_address);
+
+        assert!(result_from_paying.is_err());
+        assert_eq!(result_from_paying.err(), Some(PaymentError::CommonError(error::UNKNOWN_LIBINDY_ERROR.code_num)));
     }
 
     #[cfg(feature = "pool_tests")]
@@ -655,7 +668,7 @@ pub mod tests {
     #[test]
     fn test_pay_for_txn_with_empty_outputs_success() {
         init!("ledger");
-        let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema();
+        let (_, schema_json) = ::utils::libindy::anoncreds::tests::create_schema(::utils::constants::DEFAULT_SCHEMA_ATTRS);
         let req = ::utils::libindy::anoncreds::tests::create_schema_req(&schema_json);
 
         let cost = 45;
