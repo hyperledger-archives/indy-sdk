@@ -102,6 +102,8 @@ pub static INVALID_REVOCATION_DETAILS: Error = Error{ code_num: 1087, message: "
 pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1087, message: "Failed to create Revocation Registration Definition"};
 pub static INVALID_REV_ENTRY: Error = Error{ code_num: 1088, message: "Unable to Update Revocation Delta On Ledger"};
 pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1089, message: "Invalid Credential Revocation timestamp"};
+pub static DUPLICATE_SCHEMA: Error = Error{ code_num: 1090, message: "Duplicate Schema, already on ledger"};
+pub static UNKNOWN_SCHEMA_REJECTION: Error = Error{ code_num: 1091, message: "Unknown Rejection of Schema Creation, refer to libindy documentation"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {
@@ -196,6 +198,8 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_REVOCATION_DETAILS);
         insert_c_message(&mut m, &INVALID_REV_REG_DEF_CREATION);
         insert_c_message(&mut m, &INVALID_REVOCATION_TIMESTAMP);
+        insert_c_message(&mut m, &DUPLICATE_SCHEMA);
+        insert_c_message(&mut m, &UNKNOWN_SCHEMA_REJECTION);
         m
     };
 }

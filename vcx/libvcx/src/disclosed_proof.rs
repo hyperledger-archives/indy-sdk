@@ -12,8 +12,6 @@ use messages::proofs::proof_request::{ ProofRequestMessage, ProofRequestData, No
 use messages::extract_json_payload;
 use messages::to_u8;
 
-use schema::{ LedgerSchema };
-
 use utils::libindy::anoncreds;
 use utils::libindy::crypto;
 use utils::libindy::ledger;
@@ -229,10 +227,10 @@ impl DisclosedProof {
 
         for ref cred_info in credentials_identifiers {
             if rtn.get(&cred_info.schema_id).is_none() {
-                let schema = LedgerSchema::new_from_ledger(&cred_info.schema_id)
+                let (_, schema_json) = ledger::get_schema_json(&cred_info.schema_id)
                     .or( Err(ProofError::InvalidSchema()))?;
 
-                let schema_json = serde_json::from_str(&schema.schema_json)
+                let schema_json = serde_json::from_str(&schema_json)
                     .or(Err(ProofError::InvalidSchema()))?;
 
                 rtn[cred_info.schema_id.to_owned()] = schema_json;
@@ -246,7 +244,7 @@ impl DisclosedProof {
 
         for ref cred_info in credentials_identifiers {
             if rtn.get(&cred_info.cred_def_id).is_none() {
-                let (_, credential_def) = ledger::get_cred_def(&cred_info.cred_def_id)
+                let (_, credential_def) = ledger::get_cred_def_json(&cred_info.cred_def_id)
                     .or(Err(ProofError::InvalidCredData()))?;
 
                 let credential_def = serde_json::from_str(&credential_def)
@@ -294,6 +292,7 @@ impl DisclosedProof {
 
         let mut credentials_identifiers = credential_def_identifiers(credentials,
                                                                      &proof_req.proof_request_data)?;
+
         let revoc_states_json = build_rev_states_json(&mut credentials_identifiers)?;
         let requested_credentials = self.build_requested_credentials_json(&credentials_identifiers,
                                                                           self_attested_attrs)?;

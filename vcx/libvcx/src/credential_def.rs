@@ -4,11 +4,9 @@ extern crate libc;
 
 use utils::error;
 use settings;
-use schema::LedgerSchema;
 use utils::constants::{ CRED_DEF_ID };
 use utils::libindy::payments::{PaymentTxn};
 use utils::libindy::ledger;
-use error::ToErrorCode;
 use error::cred_def::CredDefError;
 use object_cache::ObjectCache;
 
@@ -113,8 +111,8 @@ pub fn create_new_credentialdef(source_id: String,
     let revocation_details: RevocationDetails = serde_json::from_str(&revocation_details)
         .or(Err(CredDefError::InvalidRevocationDetails()))?;
 
-    let schema_json = LedgerSchema::new_from_ledger(&schema_id)
-        .map_err(|x| CredDefError::CommonError(x.to_error_code()))?.schema_json;
+    let (_, schema_json) = ledger::get_schema_json(&schema_id)
+        .map_err(|x| CredDefError::CommonError(x))?;
 
     // Creates Credential Definition in both wallet and on ledger
     let (id, cred_def_payment_txn) = ledger::create_cred_def(&issuer_did,
@@ -336,7 +334,7 @@ pub mod tests {
         settings::clear_config();
         settings::set_defaults();
         settings::set_config_value(settings::CONFIG_ENABLE_TEST_MODE, "false");
-        assert!(::utils::libindy::ledger::get_cred_def(CRED_DEF_ID).is_err());
+        assert!(::utils::libindy::ledger::get_cred_def_json(CRED_DEF_ID).is_err());
     }
 
     #[cfg(feature = "pool_tests")]
@@ -345,7 +343,7 @@ pub mod tests {
         init!("ledger");
         let (_, _, cred_def_id, cred_def_json, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
 
-        let (id, r_cred_def_json) = ::utils::libindy::ledger::get_cred_def(&cred_def_id).unwrap();
+        let (id, r_cred_def_json) = ::utils::libindy::ledger::get_cred_def_json(&cred_def_id).unwrap();
 
         assert_eq!(id, cred_def_id);
         let def1: serde_json::Value = serde_json::from_str(&cred_def_json).unwrap();
@@ -395,7 +393,7 @@ pub mod tests {
         assert!(get_rev_reg_def_payment_txn(handle).unwrap().is_some());
         assert!(get_rev_reg_delta_payment_txn(handle).unwrap().is_some());
         let cred_id = get_cred_def_id(handle).unwrap();
-        let (_, json) = ::utils::libindy::ledger::get_cred_def(&cred_id).unwrap();
+        let (_, json) = ::utils::libindy::ledger::get_cred_def_json(&cred_id).unwrap();
         println!("cred_def_json: {:?}", json);
     }
 

@@ -7,7 +7,6 @@ use self::openssl::bn::{ BigNum, BigNumRef };
 use settings;
 use connection;
 use api::{ VcxStateType, ProofStateType };
-use std::collections::HashMap;
 use messages::proofs::proof_message::{ProofMessage, CredInfo};
 use messages;
 use messages::proofs::proof_request::{ ProofRequestMessage };
@@ -16,7 +15,6 @@ use utils::error;
 use utils::constants::*;
 use utils::libindy::anoncreds::libindy_verifier_verify_proof;
 use utils::libindy::ledger;
-use schema::{ LedgerSchema };
 use error::proof::ProofError;
 use error::ToErrorCode;
 use serde_json::Value;
@@ -98,23 +96,97 @@ impl Proof {
 
     fn build_credential_defs_json(&self, credential_data: &Vec<CredInfo>) -> Result<String, ProofError> {
         debug!("{} building credential_def_json for proof validation", self.source_id);
-        let mut credential_json: HashMap<String, serde_json::Value> = HashMap::new();
+        let mut credential_json = json!({});
 
         for ref cred_info in credential_data.iter() {
-            if !credential_json.contains_key(&cred_info.cred_def_id) {
-                let (_, credential_def) = ledger::get_cred_def(&cred_info.cred_def_id)
+            if credential_json.get(&cred_info.cred_def_id).is_none() {
+                let (id, credential_def) = ledger::get_cred_def_json(&cred_info.cred_def_id)
                     .map_err(|ec| ProofError::CommonError(ec))?;
 
                 let credential_def = serde_json::from_str(&credential_def)
                     .or(Err(ProofError::InvalidCredData()))?;
 
-                credential_json.insert(cred_info.cred_def_id.to_string(), credential_def);
+                credential_json[id] = credential_def;
             }
         }
 
-        serde_json::to_string(&credential_json).map_err(|err| {
-            ProofError::CommonError(error::INVALID_CREDENTIAL_DEF_JSON.code_num)
-        })
+        Ok(credential_json.to_string())
+    }
+
+    fn build_schemas_json(&self, credential_data: &Vec<CredInfo>) -> Result<String, ProofError> {
+        debug!("{} building schemas json for proof validation", self.source_id);
+
+        let mut schemas_json = json!({});
+
+        for ref cred_info in credential_data.iter() {
+            if schemas_json.get(&cred_info.schema_id).is_none() {
+                let (id, schema_json) = ledger::get_schema_json(&cred_info.schema_id)
+                    .or(Err(ProofError::InvalidSchema()))?;
+
+                let schema_val = serde_json::from_str(&schema_json)
+                    .or(Err(ProofError::InvalidSchema()))?;
+
+                schemas_json[id] = schema_val;
+            }
+        }
+
+        Ok(schemas_json.to_string())
+    }
+
+    fn build_rev_reg_defs_json(&self, credential_data: &Vec<CredInfo>) -> Result<String, ProofError> {
+        debug!("{} building rev_reg_def_json for proof validation", self.source_id);
+
+        let mut rev_reg_defs_json = json!({});
+
+        for ref cred_info in credential_data.iter() {
+            let rev_reg_id = cred_info
+                .rev_reg_id
+                .as_ref()
+                .ok_or(ProofError::InvalidRevocationInfo())?;
+
+            if rev_reg_defs_json.get(rev_reg_id).is_none() {
+                let (id, json) = ledger::get_rev_reg_def_json(rev_reg_id)
+                    .or(Err(ProofError::InvalidRevocationInfo()))?;
+
+                let rev_reg_def_json = serde_json::from_str(&json)
+                    .or(Err(ProofError::InvalidSchema()))?;
+
+                rev_reg_defs_json[id] = rev_reg_def_json;
+            }
+        }
+
+        Ok(rev_reg_defs_json.to_string())
+    }
+
+    fn build_rev_reg_json(&self, credential_data: &Vec<CredInfo>) -> Result<String, ProofError> {
+        debug!("{} building rev_reg_json for proof validation", self.source_id);
+
+        let mut rev_regs_json = json!({});
+
+        for ref cred_info in credential_data.iter() {
+            let rev_reg_id = cred_info
+                .rev_reg_id
+                .as_ref()
+                .ok_or(ProofError::InvalidRevocationInfo())?;
+
+            let timestamp = cred_info
+                .timestamp
+                .as_ref()
+                .ok_or(ProofError::InvalidTimestamp())?;
+
+            if rev_regs_json.get(rev_reg_id).is_none() {
+                let (id, json, timestamp) = ledger::get_rev_reg(rev_reg_id, timestamp.to_owned())
+                    .or(Err(ProofError::InvalidRevocationInfo()))?;
+
+                let rev_reg_json: Value = serde_json::from_str(&json)
+                    .or(Err(ProofError::InvalidJson()))?;
+
+                let rev_reg_json = json!({timestamp.to_string(): rev_reg_json});
+                rev_regs_json[id] = rev_reg_json;
+            }
+        }
+
+        Ok(rev_regs_json.to_string())
     }
 
     fn build_proof_json(&self) -> Result<String, ProofError> {
@@ -123,26 +195,6 @@ impl Proof {
             Some(ref x) => Ok(x.libindy_proof.clone()),
             None => Err(ProofError::InvalidProof()),
         }
-    }
-
-    fn build_schemas_json(&self, credential_data: &Vec<CredInfo>) -> Result<String, ProofError> {
-        debug!("{} building schemas json for proof validation", self.source_id);
-
-        let mut schema_json: HashMap<String, serde_json::Value> = HashMap::new();
-
-        for ref cred_info in credential_data.iter() {
-            if !schema_json.contains_key(&cred_info.schema_id) {
-                let schema = LedgerSchema::new_from_ledger(&cred_info.schema_id)
-                    .or(Err(ProofError::InvalidSchema()))?;
-
-                let schema_val = serde_json::from_str(&schema.schema_json)
-                    .or(Err(ProofError::InvalidSchema()))?;
-
-                schema_json.insert(cred_info.schema_id.to_string(), schema_val);
-            }
-        }
-
-        serde_json::to_string(&schema_json).or(Err(ProofError::InvalidSchema()))
     }
 
     fn build_proof_req_json(&self) -> Result<String, ProofError> {
@@ -161,22 +213,25 @@ impl Proof {
 
         let credential_data = proof_msg.get_credential_info()?;
 
-        let credential_def_msg = self.build_credential_defs_json(&credential_data)
-            .unwrap_or(format!("{{}}"));
-
-        let schemas_json = self.build_schemas_json(&credential_data)
-            .unwrap_or(format!("{{}}"));
-
+        let credential_defs_json = self.build_credential_defs_json(&credential_data)?;
+        let schemas_json = self.build_schemas_json(&credential_data)?;
         let proof_json = self.build_proof_json()?;
-
         let proof_req_json = self.build_proof_req_json()?;
+        let rev_reg_defs_json = self.build_rev_reg_defs_json(&credential_data)?;
+        let rev_regs_json = self.build_rev_reg_json(&credential_data)?;
 
-        debug!("*******\n{}\n********", credential_def_msg);
+        debug!("*******\n{}\n********", credential_defs_json);
         debug!("*******\n{}\n********", schemas_json);
         debug!("*******\n{}\n********", proof_json);
         debug!("*******\n{}\n********", proof_req_json);
-        self.validate_proof_indy(&proof_req_json, &proof_json, &schemas_json,
-                                 &credential_def_msg, "{}", "{}")
+        debug!("*******\n{}\n********", rev_reg_defs_json);
+        debug!("*******\n{}\n********", rev_regs_json);
+        self.validate_proof_indy(&proof_req_json,
+                                 &proof_json,
+                                 &schemas_json,
+                                 &credential_defs_json,
+                                 &rev_reg_defs_json,
+                                 &rev_regs_json)
     }
 
     fn send_proof_request(&mut self, connection_handle: u32) -> Result<u32, ProofError> {
@@ -757,18 +812,12 @@ mod tests {
             rev_reg_id: None,
             timestamp: None
         };
-        let cred3 = CredInfo {
-            schema_id: "schema_key3".to_string(),
-            cred_def_id: "cred_def_key3".to_string(),
-            rev_reg_id: None,
-            timestamp: None
-        };
-        let credentials = vec![cred1, cred2, cred3];
+        let credentials = vec![cred1, cred2];
         let credential_json = proof.build_credential_defs_json(&credentials).unwrap();
 
-        assert!(credential_json.contains(r#""cred_def_key1":{"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2471""#));
-        assert!(credential_json.contains(r#""cred_def_key2":{"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2471""#));
-        assert!(credential_json.contains(r#""cred_def_key3":{"id":"2hoqvcwupRTUNkXn6ArYzs:3:CL:2471""#));
+        let json: Value = serde_json::from_str(CRED_DEF_JSON).unwrap();
+        let expected = json!({CRED_DEF_ID:json}).to_string();
+        assert_eq!(credential_json, expected);
     }
 
     #[test]
@@ -787,18 +836,60 @@ mod tests {
             rev_reg_id: None,
             timestamp: None
         };
-        let cred3 = CredInfo {
-            schema_id: "schema_key3".to_string(),
-            cred_def_id: "cred_def_key3".to_string(),
-            rev_reg_id: None,
+        let credentials = vec![cred1, cred2];
+        let schema_json = proof.build_schemas_json(&credentials).unwrap();
+
+        let json: Value = serde_json::from_str(SCHEMA_JSON).unwrap();
+        let expected = json!({SCHEMA_ID:json}).to_string();
+        assert_eq!(schema_json, expected);
+    }
+
+    #[test]
+    fn test_build_rev_reg_defs_json() {
+        init!("true");
+        let proof = create_boxed_proof();
+        let cred1 = CredInfo {
+            schema_id: "schema_key1".to_string(),
+            cred_def_id: "cred_def_key1".to_string(),
+            rev_reg_id: Some("id1".to_string()),
             timestamp: None
         };
-        let credentials = vec![cred1, cred2, cred3];
-        let credential_json = proof.build_schemas_json(&credentials).unwrap();
+        let cred2 = CredInfo {
+            schema_id: "schema_key2".to_string(),
+            cred_def_id: "cred_def_key2".to_string(),
+            rev_reg_id: Some("id2".to_string()),
+            timestamp: None
+        };
+        let credentials = vec![cred1, cred2];
+        let rev_reg_defs_json = proof.build_rev_reg_defs_json(&credentials).unwrap();
 
-        assert!(credential_json.contains(r#""schema_key1":{"attrNames":["height","name","sex","age"],"id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4""#));
-        assert!(credential_json.contains(r#""schema_key2":{"attrNames":["height","name","sex","age"],"id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4""#));
-        assert!(credential_json.contains(r#""schema_key3":{"attrNames":["height","name","sex","age"],"id":"2hoqvcwupRTUNkXn6ArYzs:2:test-licence:4.4.4""#));
+        let json: Value = serde_json::from_str(REV_DEF_JSON).unwrap();
+        let expected = json!({REV_REG_ID:json}).to_string();
+        assert_eq!(rev_reg_defs_json, expected);
+    }
+
+    #[test]
+    fn test_build_rev_reg_json() {
+        init!("true");
+        let proof = create_boxed_proof();
+        let cred1 = CredInfo {
+            schema_id: "schema_key1".to_string(),
+            cred_def_id: "cred_def_key1".to_string(),
+            rev_reg_id: Some("id1".to_string()),
+            timestamp: Some(1),
+        };
+        let cred2 = CredInfo {
+            schema_id: "schema_key2".to_string(),
+            cred_def_id: "cred_def_key2".to_string(),
+            rev_reg_id: Some("id2".to_string()),
+            timestamp: Some(2),
+        };
+        let credentials = vec![cred1, cred2];
+        let rev_reg_json = proof.build_rev_reg_json(&credentials).unwrap();
+
+        let json: Value = serde_json::from_str(REV_REG_JSON).unwrap();
+        let expected = json!({REV_REG_ID:{"1":json}}).to_string();
+        assert_eq!(rev_reg_json, expected);
     }
 
     #[test]

@@ -89,7 +89,7 @@ impl Credential {
         let prover_did = self.my_did.as_ref().ok_or(CredentialError::CommonError(error::INVALID_DID.code_num))?;
         let credential_offer = self.credential_offer.as_ref().ok_or(CredentialError::InvalidCredentialJson())?;
 
-        let (cred_def_id, cred_def_json) = ledger::get_cred_def(&credential_offer.cred_def_id)
+        let (cred_def_id, cred_def_json) = ledger::get_cred_def_json(&credential_offer.cred_def_id)
             .map_err(|err| CredentialError::CommonError(err))?;
 
 /*
@@ -190,7 +190,7 @@ impl Credential {
         let cred_req: &CredentialRequest = self.credential_request.as_ref()
             .ok_or(CredentialError::InvalidCredentialJson().to_error_code())?;
 
-        let (_, cred_def_json) = ledger::get_cred_def(&cred_req.cred_def_id)?;
+        let (_, cred_def_json) = ledger::get_cred_def_json(&cred_req.cred_def_id)?;
 
         self.credential = Some(credential);
         self.cred_id = Some(libindy_prover_store_credential(None,

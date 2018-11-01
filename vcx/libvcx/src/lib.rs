@@ -61,7 +61,7 @@ mod tests {
     use std::thread;
     use std::time::Duration;
     use ::utils::devsetup::tests::{set_institution, set_consumer};
-    use utils::constants::DEFAULT_SCHEMA_ATTRS;
+    use utils::constants::{DEFAULT_SCHEMA_ATTRS, TEST_TAILS_FILE};
 
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
@@ -80,7 +80,7 @@ mod tests {
     #[cfg(feature = "sovtoken")]
     #[test]
     fn test_real_proof() {
-//        ::utils::logger::LoggerUtils::init_test_logging("trace");
+        ::utils::logger::LoggerUtils::init_test_logging("trace");
         let number_of_attributes = 10;
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
@@ -158,9 +158,13 @@ mod tests {
         let retrieved_credentials = disclosed_proof::retrieve_credentials(proof_handle).unwrap();
         let matching_credentials: Value = serde_json::from_str(&retrieved_credentials).unwrap();
         let mut credentials: Value = json!({"attrs":{}, "predicates":{}});
+
         for i in 1..number_of_attributes {
-            credentials["attrs"][format!("key{}",i)] = matching_credentials["attrs"][format!("key{}",i)][0].clone();
-        }
+            credentials["attrs"][format!("key{}",i)] = json!({
+                "credential": matching_credentials["attrs"][format!("key{}",i)][0].clone(),
+                "tails_file": ::utils::constants::TEST_TAILS_FILE,
+            });
+        };
         let selected_credentials = credentials.to_string();
         disclosed_proof::generate_proof(proof_handle, selected_credentials.to_string(), "{}".to_string()).unwrap();
         println!("sending proof");
@@ -181,25 +185,18 @@ mod tests {
     #[cfg(feature = "pool_tests")]
     #[cfg(feature = "sovtoken")]
     #[test]
-    fn test_revocation() {
+    fn test_real_proof_with_revocation() {
 //        ::utils::logger::LoggerUtils::init_test_logging("trace");
         let number_of_attributes = 10;
         init!("agency");
         let institution_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
         let (faber, alice) = ::connection::tests::create_connected_connections();
+
         // AS INSTITUTION SEND CREDENTIAL OFFER
         println!("creating schema/credential_def and paying fees");
-        let mut attrs_list:Value = serde_json::Value::Array(vec![]);
-        for i in 1..number_of_attributes {
-            attrs_list.as_array_mut().unwrap().push(json!(format!("key{}",i)));
-        }
-        let attrs_list = attrs_list.to_string();
-        let (schema_id, schema_json, cred_def_id, cred_def_json, cred_def_handle, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, true);
-        let mut credential_data = json!({});
-        for i in 1..number_of_attributes {
-            credential_data[format!("key{}",i)] = json!([format!("value{}",i)]);
-        }
-        let credential_data = credential_data.to_string();
+        let attrs_list = json!(["address1", "address2", "city", "state", "zip"]).to_string();
+        let (schema_id, schema_json, cred_def_id, cred_def_json, cred_def_handle, rev_reg_id) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(&attrs_list, true);
+        let credential_data = json!({"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}).to_string();
         let credential_offer = issuer_credential::issuer_credential_create(cred_def_handle,
                                                                            "1".to_string(),
                                                                            institution_did.clone(),
@@ -209,6 +206,7 @@ mod tests {
         println!("sending credential offer");
         issuer_credential::send_credential_offer(credential_offer, alice).unwrap();
         thread::sleep(Duration::from_millis(2000));
+
         // AS CONSUMER SEND CREDENTIAL REQUEST
         set_consumer();
         let credential_offers = credential::get_credential_offer_messages(faber).unwrap();
@@ -219,6 +217,7 @@ mod tests {
         println!("sending credential request");
         credential::send_credential_request(credential, faber).unwrap();
         thread::sleep(Duration::from_millis(2000));
+
         // AS INSTITUTION SEND CREDENTIAL
         set_institution();
         issuer_credential::update_state(credential_offer).unwrap();
@@ -233,6 +232,101 @@ mod tests {
         println!("storing credential");
         let cred_id = credential::get_credential_id(credential).unwrap();
         assert_eq!(VcxStateType::VcxStateAccepted as u32, credential::get_state(credential).unwrap());
+
+        // AS INSTITUTION SEND PROOF REQUEST
+        tests::set_institution();
+
+        let address1 = "Address1";
+        let address2 = "address2";
+        let city = "CITY";
+        let state = "State";
+        let zip = "zip";
+        let requested_time = time::get_time().sec;
+        let requested_attrs = json!([
+           {
+              "name":address1,
+               "non_revoked": {"to": requested_time},
+              "restrictions": [{
+                "issuer_did": institution_did,
+                "schema_id": schema_id,
+                "cred_def_id": cred_def_id,
+               }]
+           },
+           {
+              "name":address2,
+               "non_revoked": {"to": requested_time},
+              "restrictions": [{
+                "issuer_did": institution_did,
+                "schema_id": schema_id,
+                "cred_def_id": cred_def_id,
+               }],
+           },
+           {
+              "name":city,
+               "non_revoked": {"to": requested_time},
+              "restrictions": [{
+                "issuer_did": institution_did,
+                "schema_id": schema_id,
+                "cred_def_id": cred_def_id,
+               }]
+           },
+           {
+              "name":state,
+               "non_revoked": {"to": requested_time},
+              "restrictions": [{
+                "issuer_did": institution_did,
+                "schema_id": schema_id,
+                "cred_def_id": cred_def_id,
+               }]
+           },
+           {
+              "name":zip,
+               "non_revoked": {"to": requested_time},
+              "restrictions": [{
+                "issuer_did": institution_did,
+                "schema_id": schema_id,
+                "cred_def_id": cred_def_id,
+               }]
+           }
+        ]).to_string();
+        let proof_req_handle = proof::create_proof("1".to_string(), requested_attrs, "[]".to_string(), r#"{}"#.to_string(), "name".to_string()).unwrap();
+        println!("sending proof request");
+        proof::send_proof_request(proof_req_handle, alice).unwrap();
+        thread::sleep(Duration::from_millis(2000));
+
+        //AS Consumer - (Prover) GET PROOF REQ AND ASSOCIATED CREDENTIALS, GENERATE AND SEND PROOF
+        set_consumer();
+        let requests = disclosed_proof::get_proof_request_messages(faber, None).unwrap();
+        let requests: Value = serde_json::from_str(&requests).unwrap();
+        let requests = serde_json::to_string(&requests[0]).unwrap();
+        let proof_handle = disclosed_proof::create_proof(::utils::constants::DEFAULT_PROOF_NAME, &requests).unwrap();
+        println!("retrieving matching credentials");
+        let retrieved_credentials = disclosed_proof::retrieve_credentials(proof_handle).unwrap();
+        let matching_credentials: Value = serde_json::from_str(&retrieved_credentials).unwrap();
+        let selected_credentials = json!({
+               "attrs":{
+                  address1:{"credential": matching_credentials["attrs"][address1][0], "tails_file": TEST_TAILS_FILE},
+                  address2:{"credential": matching_credentials["attrs"][address2][0], "tails_file": TEST_TAILS_FILE},
+                  city:{"credential": matching_credentials["attrs"][city][0], "tails_file": TEST_TAILS_FILE},
+                  state:{"credential": matching_credentials["attrs"][state][0], "tails_file": TEST_TAILS_FILE},
+                  zip:{"credential": matching_credentials["attrs"][zip][0], "tails_file": TEST_TAILS_FILE},
+               },
+               "predicates":{
+               }
+            });
+        disclosed_proof::generate_proof(proof_handle, selected_credentials.to_string(), "{}".to_string()).unwrap();
+        println!("sending proof");
+        disclosed_proof::send_proof(proof_handle, faber).unwrap();
+
+        assert_eq!(VcxStateType::VcxStateAccepted as u32, disclosed_proof::get_state(proof_handle).unwrap());
+        thread::sleep(Duration::from_millis(5000));
+
+        // AS INSTITUTION VALIDATE PROOF
+        set_institution();
+        proof::update_state(proof_req_handle).unwrap();
+        assert_eq!(proof::get_proof_state(proof_req_handle).unwrap(), ProofStateType::ProofValidated as u32);
+        println!("proof validated!");
+        let wallet = ::utils::libindy::payments::get_wallet_token_info().unwrap();
         teardown!("agency");
     }
 }

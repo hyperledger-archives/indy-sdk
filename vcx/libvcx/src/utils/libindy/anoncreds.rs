@@ -31,7 +31,7 @@ pub fn libindy_create_and_store_revoc_reg(issuer_did: &str, cred_def_id: &str, t
     trace!("creating revocation: {}, {}, {}", cred_def_id, tails_path, max_creds);
     let tails_config = json!({"base_dir": tails_path,"uri_pattern": ""}).to_string();
     let writer = blob_storage::Blob::open_writer("default", &tails_config.to_string()).map_err(|ec|map_rust_indy_sdk_error_code(ec))?;
-    let revoc_config = json!({"max_cred_num": max_creds,"issuance_type": "ISSUANCE_ON_DEMAND"}).to_string();
+    let revoc_config = json!({"max_cred_num": max_creds,"issuance_type": "ISSUANCE_BY_DEFAULT"}).to_string();
 
     Issuer::create_and_store_revoc_reg(get_wallet_handle(), issuer_did, None, "tag1", cred_def_id, &revoc_config, writer).map_err(|ec|map_rust_indy_sdk_error_code(ec))
 }
@@ -238,7 +238,6 @@ pub mod tests {
     use std::time::Duration;
 
     pub fn create_schema(attr_list: &str) -> (String, String) {
-        let data = DEFAULT_SCHEMA_ATTRS.to_string();
         let data = attr_list.to_string();
         let schema_name: String = rand::thread_rng().gen_ascii_chars().take(25).collect::<String>();
         let schema_version: String = format!("{}.{}", rand::thread_rng().gen::<u32>().to_string(),
@@ -288,7 +287,7 @@ pub mod tests {
         thread::sleep(Duration::from_millis(1000));
         let cred_def_id = ::credential_def::get_cred_def_id(handle).unwrap();
         thread::sleep(Duration::from_millis(1000));
-        let (_, cred_def_json) = ::utils::libindy::ledger::get_cred_def(&cred_def_id).unwrap();
+        let (_, cred_def_json) = ::utils::libindy::ledger::get_cred_def_json(&cred_def_id).unwrap();
         let rev_reg_id = ::credential_def::get_rev_reg_id(handle).unwrap();
         (schema_id, schema_json, cred_def_id, cred_def_json, handle, rev_reg_id)
     }
