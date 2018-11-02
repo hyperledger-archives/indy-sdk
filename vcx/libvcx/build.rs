@@ -85,42 +85,16 @@ fn main() {
         println!("cargo:rustc-link-search=native={}", openssl);
         println!("cargo:rustc-link-lib=static=crypto");
         println!("cargo:rustc-link-lib=static=ssl");
-        if cfg!(feature = "nullpay") {
-            let libnullpay_lib_path = match env::var("LIBNULLPAY_DIR") {
-                Ok(val) => val,
-                Err(..) => panic!("Missing required environment variable LIBNULLPAY_DIR")
-            };
 
-            println!("cargo:rustc-link-search=native={}",libnullpay_lib_path);
-            println!("cargo:rustc-link-lib=static=nullpay");
-        } else if cfg!(feature = "sovtoken") {
-            let libsovtoken_lib_path = match env::var("LIBSOVTOKEN_DIR") {
-                Ok(val) => val,
-                Err(..) => panic!("Missing required environment variable LIBSOVTOKEN_DIR")
-            };
-
-            println!("cargo:rustc-link-search=native={}",libsovtoken_lib_path);
-            println!("cargo:rustc-link-lib=static=sovtoken");
-        }
     }else if target.contains("darwin"){
         //OSX specific logic
         println!("cargo:rustc-link-lib=indy");
         //OSX does not allow 3rd party libs to be installed in /usr/lib. Instead install it in /usr/local/lib
         println!("cargo:rustc-link-search=native=/usr/local/lib");
-        if cfg!(feature = "nullpay") {
-          println!("cargo:rustc-link-lib=nullpay");
-        } else if cfg!(feature = "sovtoken") {
-            println!("cargo:rustc-link-lib=sovtoken");
-        }
     }else if target.contains("-linux-"){
         //Linux specific logic
         println!("cargo:rustc-link-lib=indy");
         println!("cargo:rustc-link-search=native=/usr/lib");
-        if cfg!(feature = "nullpay") {
-          println!("cargo:rustc-link-lib=nullpay");
-        } else if cfg!(feature = "sovtoken") {
-            println!("cargo:rustc-link-lib=sovtoken");
-        }
     }
 
     match env::var("CARGO_FEATURE_CI") {

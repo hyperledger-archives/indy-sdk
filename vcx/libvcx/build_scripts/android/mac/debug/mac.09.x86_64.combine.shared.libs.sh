@@ -31,7 +31,6 @@ do
     rm ./libvcx.so
     $NDK_DIR/${ndk_arch}/bin/${cross_compile}-clang -v -shared -o libvcx.so -Wl,--whole-archive \
     libindy.a \
-    libnullpay.a \
     libvcx.a \
     libzmq.a \
     libsodium.a \

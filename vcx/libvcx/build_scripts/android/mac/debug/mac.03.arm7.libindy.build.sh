@@ -172,20 +172,6 @@ sed -i .bak 's/\"\"\.as_ptr() as \*const u8/\"\"\.as_ptr() as \*const i8/' src/s
 # cargo build --target x86_64-apple-darwin --release --verbose
 echo "-----------------------------------------------------------------------------------------------"
 
-#########################################################################################################################
-# Now build libnullpay
-#########################################################################################################################
-cd $WORK_DIR/vcx-indy-sdk/libnullpay
-
-# KS: Don't need to replace it now, "staticlib" is now added in cargo.toml for libNullpay
-# # Replace '\"cdylib\"' with '\"staticlib\", \"cdylib\"' in Cargo.toml
-# sed -i .bak 's/\"cdylib\"/\"staticlib\", \"cdylib\"/' Cargo.toml
-
-# !IMPORTANT STEPS NEXT -- Modify the build.rs of libnullpay to handle android shared libraries
-tail -n 1 build.rs | wc -c | xargs -I {} truncate build.rs -s -{}
-cat $START_DIR/libnullpay.build.rs.android.target.static.libs.template >> build.rs
-###################################################################################################
-
 # KS: Commenting it out because we want to debug only on armv7 based device/simulator
 
 # export PATH=$WORK_DIR/NDK/arm/bin:$ORIGINAL_PATH; echo "PATH: $PATH"
