@@ -2,9 +2,9 @@
 macro_rules! init {
     ($x:expr) => (
     ::utils::threadpool::init();
-    ::utils::libindy::wallet::tests::delete_test_wallet(::settings::DEFAULT_WALLET_NAME);
     ::settings::clear_config();
     ::settings::set_config_value(::settings::CONFIG_WALLET_KEY,::settings::DEFAULT_WALLET_KEY);
+    ::utils::libindy::wallet::tests::delete_test_wallet(::settings::DEFAULT_WALLET_NAME);
 
     match $x {
         "true" => {

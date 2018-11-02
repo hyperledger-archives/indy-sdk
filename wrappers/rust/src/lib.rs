@@ -1,3 +1,4 @@
+extern crate futures;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
@@ -321,7 +322,7 @@ impl From<mpsc::RecvTimeoutError> for ErrorCode {
         match err {
             mpsc::RecvTimeoutError::Timeout => {
                 warn!("Timed out waiting for libindy to call back");
-                ErrorCode::CommonIOError
+                ErrorCode::PoolLedgerTimeout
             }
             mpsc::RecvTimeoutError::Disconnected => {
                 warn!("Channel to libindy was disconnected unexpectedly");

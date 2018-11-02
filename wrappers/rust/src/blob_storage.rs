@@ -6,8 +6,7 @@ use std::time::Duration;
 use ffi::blob_storage;
 use ffi::ResponseI32CB;
 
-use utils::results::ResultHandler;
-use utils::callbacks::ClosureHandler;
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 pub struct Blob {}
 

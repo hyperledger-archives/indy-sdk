@@ -1,3 +1,7 @@
+extern crate futures;
+
+use futures::future::Future;
+
 use super::indy;
 
 use std::ops::{Index, IndexMut};
@@ -75,7 +79,7 @@ impl<'a> Setup<'a>
         let pool_name = pool::create_default_pool();
 
         if connect_to_pool {
-            let pool_handle = indy::pool::Pool::open_ledger(&pool_name, None).unwrap();
+            let pool_handle = indy::pool::Pool::open_ledger(&pool_name, None).wait().unwrap();
             (pool_name, Some(pool_handle))
         } else {
             (pool_name, None)

@@ -4,13 +4,14 @@ use std::ffi::CString;
 use std::ptr::null;
 use std::time::Duration;
 
-use utils::results::ResultHandler;
-use utils::callbacks::ClosureHandler;
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::pool;
 use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseI32CB};
+
+use futures::Future;
 
 pub struct Pool {}
 
@@ -91,12 +92,12 @@ impl Pool {
     ///
     /// # Returns
     /// Handle to opened pool to use in methods that require pool connection.
-    pub fn open_ledger(pool_name: &str, config: Option<&str>) -> Result<IndyHandle, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+    pub fn open_ledger(pool_name: &str, config: Option<&str>) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
         let err = Pool::_open_ledger(command_handle, pool_name, config, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_handle(command_handle, err, receiver)
     }
 
     /// Opens pool ledger and performs connecting to pool nodes.

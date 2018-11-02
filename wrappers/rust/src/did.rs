@@ -8,8 +8,7 @@ use ffi::{ResponseEmptyCB,
           ResponseStringCB,
           ResponseStringStringCB};
 
-use utils::callbacks::ClosureHandler;
-use utils::results::ResultHandler;
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 pub struct Did {}
 

@@ -1,8 +1,3 @@
-use {ErrorCode, IndyHandle};
-
-use std::ffi::CString;
-use std::time::Duration;
-
 use ffi::crypto;
 use ffi::{ResponseEmptyCB,
           ResponseStringCB,
@@ -10,8 +5,13 @@ use ffi::{ResponseEmptyCB,
           ResponseBoolCB,
           ResponseStringSliceCB};
 
-use utils::results::ResultHandler;
-use utils::callbacks::ClosureHandler;
+use futures::Future;
+
+use std::ffi::CString;
+use std::time::Duration;
+
+use {ErrorCode, IndyHandle};
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 pub struct Key {}
 
@@ -193,42 +193,12 @@ impl Crypto {
     /// * `message` - the data to be signed
     /// # Returns
     /// the signature
-    pub fn sign(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn sign(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let err = Crypto::_sign(command_handle, wallet_handle, signer_vk, message, cb);
 
-        ResultHandler::one(err, receiver)
-    }
-
-    /// Signs a message with a key
-    /// # Arguments
-    /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `signer_vk` - key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `message` - the data to be signed
-    /// * `timeout` - the maximum time this function waits for a response
-    /// # Returns
-    /// the signature
-    pub fn sign_timeout(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
-
-        let err = Crypto::_sign(command_handle, wallet_handle, signer_vk, message, cb);
-
-        ResultHandler::one_timeout(err, receiver, timeout)
-    }
-
-    /// Signs a message with a key
-    /// # Arguments
-    /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `signer_vk` - key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `message` - the data to be signed
-    /// * `closure` - The closure that is called when finished
-    /// # Returns
-    /// errorcode from calling ffi function
-    pub fn sign_async<F: 'static>(wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
-
-        Crypto::_sign(command_handle, wallet_handle, signer_vk, message, cb)
+        ResultHandler::ec_slice(command_handle, err, receiver)
     }
 
     fn _sign(command_handle: IndyHandle, wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
@@ -249,12 +219,12 @@ impl Crypto {
     /// * `signature` - the signature to verify
     /// # Returns
     /// true if signature is valid, false otherwise
-    pub fn verify(signer_vk: &str, message: &[u8], signature: &[u8]) -> Result<bool, ErrorCode> {
+    pub fn verify(signer_vk: &str, message: &[u8], signature: &[u8]) -> Box<Future<Item=bool, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
         let err = Crypto::_verify(command_handle, signer_vk, message, signature, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_bool(command_handle, err, receiver)
     }
 
      /// Verify a signature with a verkey
@@ -266,13 +236,13 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// true if signature is valid, false otherwise
-    pub fn verify_timeout(signer_vk: &str, message: &[u8], signature: &[u8], timeout: Duration) -> Result<bool, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
-
-        let err = Crypto::_verify(command_handle, signer_vk, message, signature, cb);
-
-        ResultHandler::one_timeout(err, receiver, timeout)
-    }
+//    pub fn verify_timeout(signer_vk: &str, message: &[u8], signature: &[u8], timeout: Duration) -> Result<bool, ErrorCode> {
+//        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
+//
+//        let err = Crypto::_verify(command_handle, signer_vk, message, signature, cb);
+//
+//        ResultHandler::one_timeout(err, receiver, timeout)
+//    }
 
     /// Verify a signature with a verkey
     /// # Arguments
@@ -283,11 +253,11 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
-    pub fn verify_async<F: 'static>(signer_vk: &str, message: &[u8], signature: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
-
-        Crypto::_verify(command_handle, signer_vk, message, signature, cb)
-    }
+//    pub fn verify_async<F: 'static>(signer_vk: &str, message: &[u8], signature: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
+//        let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
+//
+//        Crypto::_verify(command_handle, signer_vk, message, signature, cb)
+//    }
 
     fn _verify(command_handle: IndyHandle, signer_vk: &str, message: &[u8], signature: &[u8], cb: Option<ResponseBoolCB>) -> ErrorCode {
         let signer_vk = c_str!(signer_vk);
@@ -316,62 +286,12 @@ impl Crypto {
     /// * `message` - the data to be encrypted
     /// # Returns
     /// the encrypted message
-    pub fn auth_crypt(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn auth_crypt(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let err = Crypto::_auth_crypt(command_handle, wallet_handle, sender_vk, recipient_vk, message, cb);
 
-        ResultHandler::one(err, receiver)
-    }
-
-    /// Encrypt a message by authenticated-encryption scheme.
-    ///
-    /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
-    /// Using Recipient's public key, Sender can compute a shared secret key.
-    /// Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
-    /// That shared secret key can be used to verify that the encrypted message was not tampered with,
-    /// before eventually decrypting it.
-    ///
-    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
-    /// for specific DID.
-    /// # Arguments
-    /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `signer_vk` - key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `recipient_vk` - key id or verkey of the other party's key
-    /// * `message` - the data to be encrypted
-    /// * `timeout` - the maximum time this function waits for a response
-    /// # Returns
-    /// the encrypted message
-    pub fn auth_crypt_timeout(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
-
-        let err = Crypto::_auth_crypt(command_handle, wallet_handle, sender_vk, recipient_vk, message, cb);
-
-        ResultHandler::one_timeout(err, receiver, timeout)
-    }
-
-    /// Encrypt a message by authenticated-encryption scheme.
-    ///
-    /// Sender can encrypt a confidential message specifically for Recipient, using Sender's public key.
-    /// Using Recipient's public key, Sender can compute a shared secret key.
-    /// Using Sender's public key and his secret key, Recipient can compute the exact same shared secret key.
-    /// That shared secret key can be used to verify that the encrypted message was not tampered with,
-    /// before eventually decrypting it.
-    ///
-    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
-    /// for specific DID.
-    /// # Arguments
-    /// * `wallet_handle` - wallet handle (created by Wallet::open)
-    /// * `signer_vk` - key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `recipient_vk` - key id or verkey of the other party's key
-    /// * `message` - the data to be encrypted
-    /// * `closure` - The closure that is called when finished
-    /// # Returns
-    /// errorcode from calling ffi function
-    pub fn auth_crypt_async<F: 'static>(wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
-
-        Crypto::_auth_crypt(command_handle, wallet_handle, sender_vk, recipient_vk, message, cb)
+        ResultHandler::ec_slice(command_handle, err, receiver)
     }
 
     fn _auth_crypt(command_handle: IndyHandle, wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
@@ -488,58 +408,12 @@ impl Crypto {
     ///
     /// # Returns
     /// the encrypted message
-    pub fn anon_crypt(recipient_vk: &str, message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn anon_crypt(recipient_vk: &str, message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let err = Crypto::_anon_crypt(command_handle, recipient_vk, message, cb);
 
-        ResultHandler::one(err, receiver)
-    }
-
-    /// Encrypts a message by anonymous-encryption scheme.
-    ///
-    /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
-    /// Only the Recipient can decrypt these messages, using its private key.
-    /// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-    ///
-    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
-    /// for specific DID.
-    ///
-    /// # Arguments
-    /// * `wallet_handle`: wallet handle (created by Wallet::open)
-    /// * `recipient_vk`: verkey of message recipient
-    /// * `message`: a pointer to first byte of message that to be encrypted
-    /// * `timeout` - the maximum time this function waits for a response
-    /// # Returns
-    /// the encrypted message
-    pub fn anon_crypt_timeout(recipient_vk: &str, message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
-
-        let err = Crypto::_anon_crypt(command_handle, recipient_vk, message, cb);
-
-        ResultHandler::one_timeout(err, receiver, timeout)
-    }
-
-    /// Encrypts a message by anonymous-encryption scheme.
-    ///
-    /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
-    /// Only the Recipient can decrypt these messages, using its private key.
-    /// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-    ///
-    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
-    /// for specific DID.
-    ///
-    /// # Arguments
-    /// * `wallet_handle`: wallet handle (created by Wallet::open)
-    /// * `recipient_vk`: verkey of message recipient
-    /// * `message`: a pointer to first byte of message that to be encrypted
-    /// * `closure` - The closure that is called when finished
-    /// # Returns
-    /// errorcode from calling ffi function
-    pub fn anon_crypt_async<F: 'static>(recipient_vk: &str, message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
-
-        Crypto::_anon_crypt(command_handle, recipient_vk, message, cb)
+        ResultHandler::ec_slice(command_handle, err, receiver)
     }
 
     fn _anon_crypt(command_handle: IndyHandle, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
@@ -569,58 +443,12 @@ impl Crypto {
     ///
     /// # Returns
     /// decrypted message
-    pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<Vec<u8>, ErrorCode> {
+    pub fn anon_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
 
         let err = Crypto::_anon_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
 
-        ResultHandler::one(err, receiver)
-    }
-
-    /// Decrypts a message by anonymous-encryption scheme.
-    ///
-    /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
-    /// Only the Recipient can decrypt these messages, using its private key.
-    /// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-    ///
-    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
-    /// for specific DID.
-    ///
-    /// # Arguments
-    /// * `wallet_handle`: wallet handle (created by Wallet::open).
-    /// * `recipient_vk`: key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `encrypted_message`: a pointer to first byte of message that to be decrypted
-    /// * `timeout` - the maximum time this function waits for a response
-    /// # Returns
-    /// decrypted message
-    pub fn anon_decrypt_timeout(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], timeout: Duration) -> Result<Vec<u8>, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_slice();
-
-        let err = Crypto::_anon_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
-
-        ResultHandler::one_timeout(err, receiver, timeout)
-    }
-
-    /// Decrypts a message by anonymous-encryption scheme.
-    ///
-    /// Sealed boxes are designed to anonymously send messages to a Recipient given its public key.
-    /// Only the Recipient can decrypt these messages, using its private key.
-    /// While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.
-    ///
-    /// Note to use DID keys with this function you can call Did::get_ver_key to get key id (verkey)
-    /// for specific DID.
-    ///
-    /// # Arguments
-    /// * `wallet_handle`: wallet handle (created by Wallet::open).
-    /// * `recipient_vk`: key id or verkey of my key. The key must be created by calling Key::create or Did::new
-    /// * `encrypted_message`: a pointer to first byte of message that to be decrypted
-    /// * `closure` - The closure that is called when finished
-    /// # Returns
-    /// decrypted message
-    pub fn anon_decrypt_async<F: 'static>(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, Vec<u8>) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(Box::new(closure));
-
-        Crypto::_anon_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb)
+        ResultHandler::ec_slice(command_handle, err, receiver)
     }
 
     fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {

@@ -10,8 +10,7 @@ use ffi::{ResponseEmptyCB,
           ResponseStringStringCB,
           ResponseStringStringU64CB};
 
-use utils::results::ResultHandler;
-use utils::callbacks::ClosureHandler;
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 pub struct Ledger {}
 

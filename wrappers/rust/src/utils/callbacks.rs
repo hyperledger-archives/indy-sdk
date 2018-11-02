@@ -5,11 +5,14 @@ use utils::sequence::SequenceUtils;
 use std::os::raw::c_char;
 
 use std::collections::HashMap;
-use std::slice;
 use std::ffi::CStr;
 use std::fmt::Display;
 use std::sync::Mutex;
 use std::sync::mpsc::{channel, Receiver};
+use std::time::Duration;
+
+use futures::*;
+use futures::sync::oneshot;
 
 use ffi::{ResponseEmptyCB,
           ResponseI32CB,
@@ -18,12 +21,48 @@ use ffi::{ResponseEmptyCB,
           ResponseStringStringCB,
           ResponseStringStringStringCB,
           ResponseStringStringU64CB,
-          ResponseSliceCB,
-          ResponseStringSliceCB,
-          ResponseBoolCB};
+          ResponseStringSliceCB};
 
 fn log_error<T: Display>(e: T) {
     warn!("Unable to send through libindy callback: {}", e);
+}
+
+lazy_static! {
+    static ref CALLBACKS_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<Vec<u8>, ErrorCode>>>> = Default::default();
+    static ref CALLBACKS_HANDLE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<IndyHandle, ErrorCode>>>> = Default::default();
+    static ref CALLBACKS_BOOL: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<bool, ErrorCode>>>> = Default::default();
+}
+
+macro_rules! cb_ec {
+    ($name:ident($($cr:ident:$crt:ty),*)->$rrt:ty, $cbs:ident, $mapper:expr) => (
+    pub fn $name() -> (sync::oneshot::Receiver<Result<$rrt, ErrorCode>>,
+                          IndyHandle,
+                          Option<extern fn(command_handle: IndyHandle, err: i32, $($crt),*)>) {
+        extern fn callback(command_handle: IndyHandle, err: i32, $($cr:$crt),*) {
+            let tx = {
+                let mut callbacks = $cbs.lock().unwrap();
+                callbacks.remove(&command_handle).unwrap()
+            };
+
+            let res = if err != 0 {
+                Err(ErrorCode::from(err))
+            } else {
+                Ok($mapper($($cr),*))
+            };
+
+            tx.send(res).unwrap();
+        }
+
+        let (rx, command_handle) = {
+            let (tx, rx) = oneshot::channel();
+            let command_handle = ::utils::sequence::SequenceUtils::get_next_id();
+            let mut callbacks = $cbs.lock().unwrap();
+            callbacks.insert(command_handle, tx);
+            (rx, command_handle)
+        };
+        (rx, command_handle, Some(callback))
+    }
+    )
 }
 
 pub struct ClosureHandler {}
@@ -57,6 +96,9 @@ impl ClosureHandler {
 
         (command_handle, Some(_callback))
     }
+
+    cb_ec!(cb_ec_handle(handle:IndyHandle)->IndyHandle, CALLBACKS_HANDLE, |a| a);
+
 
     pub fn cb_ec_i32() -> (Receiver<(ErrorCode, IndyHandle)>, IndyHandle, Option<ResponseI32CB>) {
         let (sender, receiver) = channel();
@@ -309,36 +351,7 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_slice() -> (Receiver<(ErrorCode, Vec<u8>)>, IndyHandle, Option<ResponseSliceCB>) {
-        let (sender, receiver) = channel();
-
-        let closure = Box::new(move |err, sig| {
-            sender.send((err, sig)).unwrap_or_else(log_error);
-        });
-
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_slice(closure);
-
-        (receiver, command_handle, cb)
-    }
-
-    pub fn convert_cb_ec_slice(closure: Box<FnMut(ErrorCode, Vec<u8>) + Send>) -> (IndyHandle, Option<ResponseSliceCB>) {
-        lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode, Vec<u8>) + Send>>> = Default::default();
-        }
-
-        extern "C" fn _callback(command_handle: IndyHandle, err: i32, raw: *const u8, len: u32) {
-            let mut callbacks = CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            let sig = rust_slice!(raw, len);
-            cb(ErrorCode::from(err), sig.to_vec())
-        }
-
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        let command_handle = SequenceUtils::get_next_id();
-        callbacks.insert(command_handle, closure);
-
-        (command_handle, Some(_callback))
-    }
+    cb_ec!(cb_ec_slice(data:*const u8, len:u32)->Vec<u8>, CALLBACKS_SLICE, |data, len| rust_slice!(data, len).to_owned());
 
     pub fn cb_ec_string_slice() -> (Receiver<(ErrorCode, String, Vec<u8>)>, IndyHandle, Option<ResponseStringSliceCB>) {
         let (sender, receiver) = channel();
@@ -372,7 +385,8 @@ impl ClosureHandler {
         (command_handle, Some(_callback))
     }
 
-    pub fn cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, IndyHandle, Option<ResponseBoolCB>) {
+    cb_ec!(cb_ec_bool(b: u8)->bool, CALLBACKS_BOOL, |b| b > 0);
+/*    pub fn cb_ec_bool() -> (Receiver<(ErrorCode, bool)>, IndyHandle, Option<ResponseBoolCB>) {
         let (sender, receiver) = channel();
 
         let closure = Box::new(move |err, v| {
@@ -401,6 +415,129 @@ impl ClosureHandler {
         callbacks.insert(command_handle, closure);
 
         (command_handle, Some(_callback))
+    }*/
+}
+
+macro_rules! result_handler {
+    ($name:ident($res_type:ty), $map:ident) => (
+    pub fn $name(command_handle: IndyHandle,
+                 err: ErrorCode,
+                 rx: sync::oneshot::Receiver<Result<$res_type, ErrorCode>>) -> Box<Future<Item=$res_type, Error= ErrorCode>> {
+        if err != ErrorCode::Success {
+            let mut callbacks = $map.lock().unwrap();
+            callbacks.remove(&command_handle).unwrap();
+            Box::new(future::err(ErrorCode::from(err)))
+        } else {
+            Box::new(rx
+                .map_err(|_| panic!("channel error!"))
+                .and_then(|res| res))
+        }
+    }
+    )
+}
+
+pub struct ResultHandler {}
+
+impl ResultHandler {
+    result_handler!(ec_slice(Vec<u8>), CALLBACKS_SLICE);
+    result_handler!(ec_handle(IndyHandle), CALLBACKS_HANDLE);
+    result_handler!(ec_bool(bool), CALLBACKS_BOOL);
+
+    pub fn ec_test(command_handle: IndyHandle,
+                   err: ErrorCode,
+                   rx: sync::oneshot::Receiver<Result<Vec<u8>, ErrorCode>>) -> Box<Future<Item=Vec<u8>, Error=ErrorCode>> {
+        if err != ErrorCode::Success {
+            let mut callbacks = CALLBACKS_HANDLE.lock().unwrap();
+            callbacks.remove(&command_handle).unwrap();
+            Box::new(future::err(ErrorCode::from(err)))
+        } else {
+            Box::new(rx
+                .map_err(|_| panic!("channel error!"))
+                .and_then(|res| res))
+        }
+    }
+
+    pub fn empty(err: ErrorCode, receiver: Receiver<ErrorCode>) -> Result<(), ErrorCode> {
+        err.try_err()?;
+        match receiver.recv() {
+            Ok(err) => err.try_err(),
+            Err(e) => Err(ErrorCode::from(e))
+        }
+    }
+
+    pub fn empty_timeout(err: ErrorCode, receiver: Receiver<ErrorCode>, timeout: Duration) -> Result<(), ErrorCode> {
+        err.try_err()?;
+
+        match receiver.recv_timeout(timeout) {
+            Ok(err) => err.try_err(),
+            Err(e) => Err(ErrorCode::from(e))
+        }
+    }
+
+    pub fn one<T>(err: ErrorCode, receiver: Receiver<(ErrorCode, T)>) -> Result<T, ErrorCode> {
+        err.try_err()?;
+
+        let (err, val) = receiver.recv()?;
+
+        err.try_err()?;
+
+        Ok(val)
+    }
+
+    pub fn one_timeout<T>(err: ErrorCode, receiver: Receiver<(ErrorCode, T)>, timeout: Duration) -> Result<T, ErrorCode> {
+        err.try_err()?;
+
+        match receiver.recv_timeout(timeout) {
+            Ok((err, val)) => {
+                err.try_err()?;
+                Ok(val)
+            },
+            Err(e) => Err(ErrorCode::from(e))
+        }
+    }
+
+    pub fn two<T1, T2>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2)>) -> Result<(T1, T2), ErrorCode> {
+        err.try_err()?;
+
+        let (err, val, val2) = receiver.recv()?;
+
+        err.try_err()?;
+
+        Ok((val, val2))
+    }
+
+    pub fn two_timeout<T1, T2>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2)>, timeout: Duration) -> Result<(T1, T2), ErrorCode> {
+        err.try_err()?;
+
+        match receiver.recv_timeout(timeout) {
+            Ok((err, val1, val2)) => {
+                err.try_err()?;
+                Ok((val1, val2))
+            },
+            Err(e) => Err(ErrorCode::from(e))
+        }
+    }
+
+    pub fn three<T1, T2, T3>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2, T3)>) -> Result<(T1, T2, T3), ErrorCode> {
+        err.try_err()?;
+
+        let (err, val, val2, val3) = receiver.recv()?;
+
+        err.try_err()?;
+
+        Ok((val, val2, val3))
+    }
+
+    pub fn three_timeout<T1, T2, T3>(err: ErrorCode, receiver: Receiver<(ErrorCode, T1, T2, T3)>, timeout: Duration) -> Result<(T1, T2, T3), ErrorCode> {
+        err.try_err()?;
+
+        match receiver.recv_timeout(timeout) {
+            Ok((err, val1, val2, val3)) => {
+                err.try_err()?;
+                Ok((val1, val2, val3))
+            },
+            Err(e) => Err(ErrorCode::from(e))
+        }
     }
 }
 

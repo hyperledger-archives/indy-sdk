@@ -1,11 +1,12 @@
 use {ErrorCode, IndyHandle};
 
+use futures::Future;
+
 use std::ffi::CString;
 use std::time::Duration;
 use std::ptr::null;
 
-use utils::callbacks::ClosureHandler;
-use utils::results::ResultHandler;
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::pairwise;
 use ffi::{ResponseEmptyCB,
@@ -15,32 +16,32 @@ use ffi::{ResponseEmptyCB,
 pub struct Pairwise {}
 
 impl Pairwise {
-    pub fn does_exist(wallet_handle: IndyHandle, their_did: &str) -> Result<bool, ErrorCode> {
+    pub fn does_exist(wallet_handle: IndyHandle, their_did: &str) -> Box<Future<Item=bool, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
         let err = Pairwise::_does_exist(command_handle, wallet_handle, their_did, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_bool(command_handle, err, receiver)
     }
 
     /// * `timeout` - the maximum time this function waits for a response
-    pub fn does_exist_timeout(wallet_handle: IndyHandle, their_did: &str, timeout: Duration) -> Result<bool, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
-
-        let err = Pairwise::_does_exist(command_handle, wallet_handle, their_did, cb);
-
-        ResultHandler::one_timeout(err, receiver, timeout)
-    }
+//    pub fn does_exist_timeout(wallet_handle: IndyHandle, their_did: &str, timeout: Duration) -> Result<bool, ErrorCode> {
+//        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
+//
+//        let err = Pairwise::_does_exist(command_handle, wallet_handle, their_did, cb);
+//
+//        ResultHandler::one_timeout(err, receiver, timeout)
+//    }
 
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn does_exist_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
-
-        Pairwise::_does_exist(command_handle, wallet_handle, their_did, cb)
-    }
+//    pub fn does_exist_async<F: 'static>(wallet_handle: IndyHandle, their_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
+//        let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
+//
+//        Pairwise::_does_exist(command_handle, wallet_handle, their_did, cb)
+//    }
 
     fn _does_exist(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, cb: Option<ResponseBoolCB>) -> ErrorCode {
         let their_did = c_str!(their_did);

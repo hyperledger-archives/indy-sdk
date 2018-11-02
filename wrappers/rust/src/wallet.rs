@@ -4,8 +4,7 @@ use std::ffi::CString;
 use std::ptr::null;
 use std::time::Duration;
 
-use utils::callbacks::ClosureHandler;
-use utils::results::ResultHandler;
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::{wallet, non_secrets};
 use ffi::{ResponseEmptyCB,

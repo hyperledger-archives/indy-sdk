@@ -4,8 +4,9 @@ use std::ffi::CString;
 use std::time::Duration;
 use std::ptr::null;
 
-use utils::callbacks::ClosureHandler;
-use utils::results::ResultHandler;
+use futures::Future;
+
+use utils::callbacks::{ClosureHandler, ResultHandler};
 
 use ffi::anoncreds;
 use ffi::{ResponseStringStringCB,
@@ -2443,12 +2444,12 @@ impl Verifier {
     ///
     /// # Returns
     /// * `valid`: true - if signature is valid, false - otherwise
-    pub fn verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str) -> Result<bool, ErrorCode> {
+    pub fn verify_proof(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str) -> Box<Future<Item=bool, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
 
         let err = Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_bool(command_handle, err, receiver)
     }
 
     /// Verifies a proof (of multiple credential).
@@ -2533,13 +2534,13 @@ impl Verifier {
     ///
     /// # Returns
     /// * `valid`: true - if signature is valid, false - otherwise
-    pub fn verify_proof_timeout(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, timeout: Duration) -> Result<bool, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
-
-        let err = Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb);
-
-        ResultHandler::one_timeout(err, receiver, timeout)
-    }
+//    pub fn verify_proof_timeout(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, timeout: Duration) -> Result<bool, ErrorCode> {
+//        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
+//
+//        let err = Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb);
+//
+//        ResultHandler::one_timeout(err, receiver, timeout)
+//    }
 
     /// Verifies a proof (of multiple credential).
     /// All required schemas, public keys and revocation registries must be provided.
@@ -2623,11 +2624,11 @@ impl Verifier {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    pub fn verify_proof_async<F: 'static>(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
-
-        Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb)
-    }
+//    pub fn verify_proof_async<F: 'static>(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
+//        let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
+//
+//        Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb)
+//    }
 
     fn _verify_proof(command_handle: IndyHandle, proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, cb: Option<ResponseBoolCB>) -> ErrorCode {
         let proof_request_json = c_str!(proof_request_json);

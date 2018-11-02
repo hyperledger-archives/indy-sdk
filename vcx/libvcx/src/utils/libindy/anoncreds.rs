@@ -1,12 +1,12 @@
 extern crate libc;
 
+use futures::Future;
 use serde_json;
 use serde_json::{ map::Map, Value};
 use settings;
 use utils::constants::{ LIBINDY_CRED_OFFER, REQUESTED_ATTRIBUTES, ATTRS};
 use utils::error::{ INVALID_PROOF_REQUEST, INVALID_ATTRIBUTES_STRUCTURE, INVALID_CONFIGURATION } ;
 use utils::libindy::{ error_codes::map_rust_indy_sdk_error_code, mock_libindy_rc, wallet::get_wallet_handle };
-use utils::timeout::TimeoutUtils;
 use indy::anoncreds::{ Verifier, Prover, Issuer };
 
 pub fn libindy_verifier_verify_proof(proof_req_json: &str,
@@ -16,13 +16,13 @@ pub fn libindy_verifier_verify_proof(proof_req_json: &str,
                                      rev_reg_defs_json: &str,
                                      rev_regs_json: &str)  -> Result<bool, u32> {
 
-    Verifier::verify_proof_timeout(proof_req_json,
+    Verifier::verify_proof(proof_req_json,
                                    proof_json,
                                    schemas_json,
                                    credential_defs_json,
                                    rev_reg_defs_json,
-                                   rev_regs_json,
-                                   TimeoutUtils::long_timeout())
+                                   rev_regs_json)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 

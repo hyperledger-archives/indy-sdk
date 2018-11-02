@@ -2,6 +2,7 @@
 #[macro_use] extern crate serde_derive;
 extern crate rmp_serde;
 extern crate byteorder;
+extern crate futures;
 extern crate indy;
 #[macro_use]
 pub mod utils;
@@ -16,6 +17,7 @@ use indy::pool::Pool;
 #[cfg(test)]
 mod open_pool {
     use super::*;
+    use futures::future::Future;
 
     #[test]
     pub fn open_pool_works() {
@@ -27,7 +29,7 @@ mod open_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close(pool_handle).unwrap();
     }
@@ -42,9 +44,9 @@ mod open_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_secs(5)).unwrap();
+        let err = indy::pool::Pool::open_ledger_timeout(&setup.pool_name, None, Duration::from_millis(1)).unwrap_err();
 
-        indy::pool::Pool::close(pool_handle).unwrap();
+        assert_eq!(err, ErrorCode::PoolLedgerTimeout);
     }
 
     #[test]
@@ -84,7 +86,7 @@ mod open_pool {
 
         let config = Some(r#"{"timeout": 20}"#);
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, config).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, config).wait().unwrap();
 
         indy::pool::Pool::close(pool_handle).unwrap();
     }
@@ -143,9 +145,9 @@ mod open_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
-        let ec = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap_err();
+        let ec = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap_err();
         assert_eq!(ec, ErrorCode::PoolLedgerInvalidPoolHandle);
 
         indy::pool::Pool::close(pool_handle).unwrap();
@@ -215,7 +217,7 @@ mod open_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close(pool_handle).unwrap();
     }
@@ -270,7 +272,7 @@ mod open_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close(pool_handle).unwrap();
     }
@@ -326,7 +328,7 @@ mod open_pool {
         });
         utils::pool::dump_correct_genesis_txns_to_cache(&setup.pool_name).unwrap();
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close(pool_handle).unwrap();
     }
@@ -384,7 +386,7 @@ mod open_pool {
         });
         utils::pool::dump_incorrect_genesis_txns_to_cache(&setup.pool_name).unwrap();
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close(pool_handle).unwrap();
     }
@@ -435,6 +437,7 @@ mod open_pool {
 #[cfg(test)]
 mod close_pool {
     use super::*;
+    use futures::future::Future;
 
     #[test]
     pub fn close_pool_works() {
@@ -446,7 +449,7 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close(pool_handle).unwrap();
     }
@@ -461,7 +464,7 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close_timeout(pool_handle, Duration::from_secs(5)).unwrap();
     }
@@ -482,7 +485,7 @@ mod close_pool {
             sender.send(ec).unwrap();
         };
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let ec = indy::pool::Pool::close_async(pool_handle, cb);
         assert_eq!(ec, ErrorCode::Success);
@@ -501,7 +504,7 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close(pool_handle).unwrap();
         let ec = indy::pool::Pool::close(pool_handle).unwrap_err();
@@ -518,7 +521,7 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close_timeout(pool_handle, Duration::from_secs(5)).unwrap();
         let ec = indy::pool::Pool::close_timeout(pool_handle, Duration::from_secs(5)).unwrap_err();
@@ -535,7 +538,7 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let (sender, receiver) = channel();
 
@@ -574,10 +577,10 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close(pool_handle).unwrap();
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
         indy::pool::Pool::close(pool_handle).unwrap();
     }
 
@@ -591,10 +594,10 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close_timeout(pool_handle, Duration::from_secs(5)).unwrap();
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         indy::pool::Pool::close(pool_handle).unwrap();
     }
@@ -615,7 +618,7 @@ mod close_pool {
             sender.send(ec).unwrap();
         };
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let ec = indy::pool::Pool::close_async(pool_handle, cb);
         assert_eq!(ec, ErrorCode::Success);
@@ -623,7 +626,7 @@ mod close_pool {
         let ec = receiver.recv_timeout(Duration::from_secs(5)).unwrap();
         assert_eq!(ec, ErrorCode::Success);
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
         indy::pool::Pool::close(pool_handle).unwrap();
     }
 
@@ -637,7 +640,7 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let get_nym_req = indy::ledger::Ledger::build_get_nym_request(Some(DID_1), DID_1).unwrap();
 
@@ -666,7 +669,7 @@ mod close_pool {
             num_users: 0,
         });
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let get_nym_req = indy::ledger::Ledger::build_get_nym_request(Some(DID_1), DID_1).unwrap();
 
@@ -701,7 +704,7 @@ mod close_pool {
             sender.send(ec).unwrap();
         };
 
-        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).unwrap();
+        let pool_handle = indy::pool::Pool::open_ledger(&setup.pool_name, None).wait().unwrap();
 
         let get_nym_req = indy::ledger::Ledger::build_get_nym_request(Some(DID_1), DID_1).unwrap();
 
@@ -942,6 +945,8 @@ mod test_pool_create_config {
 mod test_delete_config {
     use super::*;
 
+    use futures::future::Future;
+
     use std::sync::mpsc::channel;
     use utils::pool::{PoolList, create_default_pool};
 
@@ -987,7 +992,7 @@ mod test_delete_config {
         }).to_string();
 
         Pool::set_protocol_version(2).unwrap();
-        let pool_handle = Pool::open_ledger(&pool_name, Some(&config)).unwrap();
+        let pool_handle = Pool::open_ledger(&pool_name, Some(&config)).wait().unwrap();
 
         let result = Pool::delete(&pool_name);
         assert_eq!(ErrorCode::CommonInvalidState, result.unwrap_err());
