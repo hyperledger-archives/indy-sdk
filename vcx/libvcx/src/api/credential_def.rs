@@ -370,7 +370,6 @@ mod tests {
         let cb = return_types_u32::Return_U32_STR::new().unwrap();
         assert_eq!(vcx_credentialdef_serialize(cb.command_handle, handle, Some(cb.get_callback())), error::SUCCESS.code_num);
         let cred = cb.receive(Some(Duration::from_secs(10))).unwrap();
-        println!("{:?}", cred);
         assert!(cred.is_some());
     }
 

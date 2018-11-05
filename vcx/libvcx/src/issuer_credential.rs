@@ -40,6 +40,7 @@ pub struct IssuerCredential {
     credential_name: String,
     pub credential_id: String,
     pub cred_def_id: String,
+    pub cred_def_handle: u32,
     ref_msg_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     rev_reg_id: Option<String>,
@@ -317,7 +318,7 @@ impl IssuerCredential {
         })
     }
 
-    fn revoke_cred(&mut self) -> Result<String, IssuerCredError> {
+    fn revoke_cred(&mut self) -> Result<(), IssuerCredError> {
         let tails_file = self.tails_file
             .as_ref()
             .ok_or(IssuerCredError::InvalidRevocationInfo())?;
@@ -330,11 +331,11 @@ impl IssuerCredential {
             .as_ref()
             .ok_or(IssuerCredError::InvalidRevocationInfo())?;
 
-        let (payment, delta) = ledger::revoke_credential(tails_file, rev_reg_id, cred_rev_id)
+        let (payment, _) = ledger::revoke_credential(tails_file, rev_reg_id, cred_rev_id)
             .map_err(|e| IssuerCredError::CommonError(e))?;
 
         self.rev_cred_payment_txn = payment;
-        Ok(delta)
+        Ok(())
     }
 
     fn generate_payment_info(&mut self) -> Result<Option<PaymentInfo>, IssuerCredError> {
@@ -508,7 +509,8 @@ pub fn issuer_credential_create(cred_def_handle: u32,
         remote_vk: String::new(),
         agent_did: String::new(),
         agent_vk: String::new(),
-        cred_def_id
+        cred_def_id,
+        cred_def_handle
     };
 
     new_issuer_credential.validate_credential_offer()?;
@@ -579,7 +581,7 @@ pub fn send_credential(handle: u32, connection_handle: u32) -> Result<u32,Issuer
     }).map_err(|ec|IssuerCredError::CommonError(ec))
 }
 
-pub fn revoke_credential(handle: u32) -> Result<String, u32> {
+pub fn revoke_credential(handle: u32) -> Result<(), u32> {
     ISSUER_CREDENTIAL_MAP.get_mut(handle,|i|{
         i.revoke_cred().map_err(|ec|ec.to_error_code())
     })
@@ -710,6 +712,7 @@ pub mod tests {
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
             cred_def_id: CRED_DEF_ID.to_string(),
+            cred_def_handle: 0,
         };
         issuer_credential
     }
@@ -763,7 +766,8 @@ pub mod tests {
             remote_vk: String::new(),
             agent_did: String::new(),
             agent_vk: String::new(),
-            cred_def_id
+            cred_def_id,
+            cred_def_handle
         };
 
         let payment = issuer_credential.generate_payment_info().unwrap();
@@ -920,6 +924,7 @@ pub mod tests {
             credential_name: DEFAULT_CREDENTIAL_NAME.to_owned(),
             credential_id: String::from(DEFAULT_CREDENTIAL_ID),
             cred_def_id: CRED_DEF_ID.to_string(),
+            cred_def_handle: 1,
             ref_msg_id: None,
             rev_reg_id: None,
             cred_rev_id: None,
@@ -1093,13 +1098,26 @@ pub mod tests {
     fn test_revoke_credential() {
         init!("true");
         let mut credential = create_standard_issuer_credential();
+
+        credential.tails_file = Some(TEST_TAILS_FILE.to_string());
+        credential.cred_rev_id = None;
+        credential.rev_reg_id = None;
+        assert_eq!(credential.revoke_cred(), Err(IssuerCredError::InvalidRevocationInfo()));
+        credential.tails_file = None;
+        credential.cred_rev_id = Some(CRED_REV_ID.to_string());
+        credential.rev_reg_id = None;
+        assert_eq!(credential.revoke_cred(), Err(IssuerCredError::InvalidRevocationInfo()));
+        credential.tails_file = None;
+        credential.cred_rev_id = None;
+        credential.rev_reg_id = Some(REV_REG_ID.to_string());
+        assert_eq!(credential.revoke_cred(), Err(IssuerCredError::InvalidRevocationInfo()));
+
         credential.tails_file = Some(TEST_TAILS_FILE.to_string());
         credential.cred_rev_id = Some(CRED_REV_ID.to_string());
         credential.rev_reg_id = Some(REV_REG_ID.to_string());
         credential.rev_cred_payment_txn = None;
 
-        let delta = credential.revoke_cred().unwrap();
+        credential.revoke_cred().unwrap();
         assert!(credential.rev_cred_payment_txn.is_some());
-        assert_eq!(&delta, REV_REG_DELTA_JSON);
     }
 }

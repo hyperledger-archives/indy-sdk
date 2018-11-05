@@ -236,7 +236,7 @@ mod tests {
         // GET REV REG DELTA BEFORE REVOCATION
         let (_, delta, _) = ::utils::libindy::ledger::get_rev_reg_delta_json(&rev_reg_id.clone().unwrap(), None, None).unwrap();
         println!("revoking credential");
-        let revoked_delta = ::issuer_credential::revoke_credential(issuer_handle).unwrap();
+        ::issuer_credential::revoke_credential(issuer_handle).unwrap();
         let (_, delta_after_revoke, _) = ::utils::libindy::ledger::get_rev_reg_delta_json(&rev_reg_id.unwrap(), None, None).unwrap();
         assert_ne!(delta, delta_after_revoke);
     }

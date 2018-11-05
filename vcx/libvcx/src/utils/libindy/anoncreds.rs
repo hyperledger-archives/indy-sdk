@@ -68,11 +68,7 @@ pub fn libindy_issuer_create_credential(cred_offer_json: &str,
                                         rev_reg_id: Option<String>,
                                         tails_file: Option<String>) -> Result<(String, Option<String>, Option<String>), u32>{
 
-    let revocation = if rev_reg_id.is_some() {
-        rev_reg_id.as_ref().map(String::as_str)
-    } else {
-        None
-    };
+    let revocation = rev_reg_id.as_ref().map(String::as_str);
 
     let blob_handle = match tails_file {
         Some(x) => {
@@ -191,10 +187,8 @@ pub fn libindy_prover_store_credential(cred_id: Option<&str>,
                                        cred_def_json: &str,
                                        rev_reg_def_json: Option<String>) -> Result<String, u32> {
     if settings::test_indy_mode_enabled() { return Ok("cred_id".to_string()); }
-    //Todo: refactor to use more rust like
-    let revocation = if rev_reg_def_json.is_some() {
-        rev_reg_def_json.as_ref().map(String::as_str)
-    } else { None };
+
+    let revocation = rev_reg_def_json.as_ref().map(String::as_str);
 
     Prover::store_credential(get_wallet_handle(),
                              cred_id,
