@@ -14,7 +14,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// Gets the handle.
         /// </summary>
         /// <value>The handle.</value>
-        public IntPtr Handle { get; }
+        public int Handle { get; }
 
         /// <summary>
         /// Gets the total count of items.
@@ -31,7 +31,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="handle">Handle.</param>
         /// <param name="total_count">Total count.</param>
         /// <param name="proofRequest">If set to <c>true</c> proof request.</param>
-        internal CredentialSearch(IntPtr handle, int? total_count, bool proofRequest)
+        internal CredentialSearch(int handle, int? total_count, bool proofRequest)
         {
             ProofRequest = proofRequest;
             TotalCount = total_count;

@@ -225,7 +225,7 @@ namespace Hyperledger.Indy.AnonCredsApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(ProverSearchCredentialsCompletedDelegate))]
 #endif
-        private static void ProverSearchCredentialsCallbackMethod(int xcommand_handle, int err, IntPtr search_handle, int total_count)
+        private static void ProverSearchCredentialsCallbackMethod(int xcommand_handle, int err, int search_handle, int total_count)
         {
             var taskCompletionSource = PendingCommands.Remove<CredentialSearch>(xcommand_handle);
 
@@ -253,7 +253,7 @@ namespace Hyperledger.Indy.AnonCredsApi
 #if __IOS__
         [MonoPInvokeCallback(typeof(ProverSearchCredentialsForProofReqCompletedDelegate))]
 #endif
-        private static void ProverSearchCredentialsForProofRequestCallbackMethod(int xcommand_handle, int err, IntPtr search_handle)
+        private static void ProverSearchCredentialsForProofRequestCallbackMethod(int xcommand_handle, int err, int search_handle)
         {
             var taskCompletionSource = PendingCommands.Remove<CredentialSearch>(xcommand_handle);
 
