@@ -62,6 +62,8 @@ EOF
 
 execute_on_device(){
 
+    set -x
+
     adb -e push \
     "${TOOLCHAIN_DIR}/${TRIPLET}/lib/libgnustl_shared.so" "/data/local/tmp/libgnustl_shared.so"
 

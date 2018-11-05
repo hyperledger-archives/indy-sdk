@@ -14,7 +14,7 @@ use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 use utils::timeout::TimeoutUtils;
 use utils::libindy::payments::{pay_for_txn, PaymentTxn};
 use utils::constants::{ SCHEMA_ID, SCHEMA_JSON, SCHEMA_TXN_TYPE, CRED_DEF_ID, CRED_DEF_JSON, CRED_DEF_TXN_TYPE, REV_REG_DEF_TXN_TYPE, REV_REG_DELTA_TXN_TYPE, REVOC_REG_TYPE, REV_DEF_JSON, REV_REG_ID, REV_REG_DELTA_JSON, REV_REG_JSON};
-use utils::libindy::anoncreds::{ libindy_create_and_store_credential_def, libindy_create_and_store_revoc_reg, libindy_issuer_create_schema };
+use utils::libindy::anoncreds::{ libindy_create_and_store_credential_def, libindy_create_and_store_revoc_reg, libindy_issuer_create_schema, libindy_issuer_revoke_credential };
 
 pub fn multisign_request(did: &str, request: &str) -> Result<String, u32> {
    Ledger::multi_sign_request(get_wallet_handle(), did, request)
@@ -259,10 +259,24 @@ pub fn get_rev_reg(rev_reg_id: &str, timestamp: u64) -> Result<(String, String, 
         .and_then(|response| libindy_parse_get_revoc_reg_response(&response))
 }
 
+pub fn revoke_credential(tails_file: &str, rev_reg_id: &str, cred_rev_id: &str)
+    -> Result<(Option<PaymentTxn>, String), u32> {
+    if settings::test_indy_mode_enabled() {
+        return Ok((Some(PaymentTxn::from_parts(r#"["pay:null:9UFgyjuJxi1i1HD"]"#,r#"[{"amount":4,"extra":null,"recipient":"pay:null:xkIsxem0YNtHrRO"}]"#,1, false).unwrap()), REV_REG_DELTA_JSON.to_string()));
+    }
+
+    let submitter_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID)?;
+
+    let delta = libindy_issuer_revoke_credential(tails_file, rev_reg_id, cred_rev_id)?;
+    let (payment, _) = post_rev_reg_delta(&submitter_did, rev_reg_id, &delta)?;
+
+    Ok((payment, delta))
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use utils::constants::{SCHEMAS_JSON};
+    use utils::constants::{SCHEMAS_JSON, TEST_TAILS_FILE};
 
     #[test]
     fn test_create_cred_def() {
@@ -376,5 +390,26 @@ pub mod tests {
         let (id, retrieved_schema) = get_schema_json(SCHEMA_ID).unwrap();
         assert_eq!(&retrieved_schema, SCHEMA_JSON);
         assert_eq!(&id, SCHEMA_ID);
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_revoke_credential(){
+        init!("ledger");
+        let (_, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id)
+        = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
+
+        let rev_reg_id = rev_reg_id.unwrap();
+        let (_, first_rev_reg_delta, _) = get_rev_reg_delta_json(&rev_reg_id, None, None).unwrap();
+        let (_, test_same_delta, _) = get_rev_reg_delta_json(&rev_reg_id, None, None).unwrap();
+
+        assert_eq!(first_rev_reg_delta,  test_same_delta);
+        let (payment, revoked_rev_reg_delta) = revoke_credential(TEST_TAILS_FILE, &rev_reg_id, cred_rev_id.unwrap().as_str()).unwrap();
+
+        // Delta should change after revocation
+        let (_, second_rev_reg_delta, _) = get_rev_reg_delta_json(&rev_reg_id, None, None).unwrap();
+
+        assert!(payment.is_some());
+        assert_ne!(first_rev_reg_delta, second_rev_reg_delta);
     }
 }

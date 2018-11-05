@@ -488,9 +488,8 @@ mod tests {
     use std::time::Duration;
     use settings;
     use connection;
-    use api::VcxStateType;
     use utils::constants::{DEFAULT_SERIALIZED_ISSUER_CREDENTIAL};
-    use utils::libindy::return_types_u32;
+    use api::{return_types_u32, VcxStateType};
 
     static DEFAULT_CREDENTIAL_NAME: &str = "Credential Name Default";
     static DEFAULT_DID: &str = "8XFh8yBzrpJQmNyZzgoTqB";

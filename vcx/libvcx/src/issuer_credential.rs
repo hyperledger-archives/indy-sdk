@@ -8,12 +8,14 @@ use settings;
 use messages::{ GeneralMessage, MessageResponseCode::MessageAccepted, send_message::parse_msg_uid };
 use connection;
 use credential_request::{ CredentialRequest };
-use utils::{error,
-            error::INVALID_JSON,
-            libindy::{ anoncreds::{ libindy_issuer_create_credential, libindy_issuer_create_credential_offer}, payments },
-            constants::CRED_MSG,
-            openssl::encode
-};
+use utils::error;
+use utils::error::{INVALID_JSON};
+use utils::libindy::anoncreds::{ libindy_issuer_create_credential, libindy_issuer_create_credential_offer};
+use utils::libindy::payments;
+use utils::libindy::ledger;
+use utils::constants::CRED_MSG;
+use utils::openssl::encode;
+use utils::libindy::payments::{PaymentTxn};
 use error::{ issuer_cred::IssuerCredError, ToErrorCode, payment::PaymentError};
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use serde_json::Value;
@@ -45,6 +47,10 @@ pub struct IssuerCredential {
     tails_file: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     rev_reg_def_json: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cred_rev_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rev_cred_payment_txn: Option<PaymentTxn>,
     price: u64,
     payment_address: Option<String>,
     // the following 6 are pulled from the connection object
@@ -261,7 +267,7 @@ impl IssuerCredential {
     fn get_credential_attributes(&self) -> &String { &self.credential_attributes}
     fn get_source_id(&self) -> &String { &self.source_id }
 
-    fn generate_credential(&self, credential_data: &str, did: &str) -> Result<CredentialMessage, IssuerCredError> {
+    fn generate_credential(&mut self, credential_data: &str, did: &str) -> Result<CredentialMessage, IssuerCredError> {
         let indy_cred_offer = &self.credential_offer.as_ref()
             .ok_or(IssuerCredError::InvalidCred())?.libindy_offer;
 
@@ -275,6 +281,8 @@ impl IssuerCredential {
             self.rev_reg_id.clone(),
             self.tails_file.clone())
             .map_err(|x| IssuerCredError::CommonError(x))?;
+
+        self.cred_rev_id = cred_revoc_id.clone();
 
         Ok(CredentialMessage {
             claim_offer_id: self.msg_uid.clone(),
@@ -307,6 +315,26 @@ impl IssuerCredential {
             cred_def_id: self.cred_def_id.clone(),
             libindy_offer,
         })
+    }
+
+    fn revoke_cred(&mut self) -> Result<String, IssuerCredError> {
+        let tails_file = self.tails_file
+            .as_ref()
+            .ok_or(IssuerCredError::InvalidRevocationInfo())?;
+
+        let rev_reg_id = self.rev_reg_id
+            .as_ref()
+            .ok_or(IssuerCredError::InvalidRevocationInfo())?;
+
+        let cred_rev_id = self.cred_rev_id
+            .as_ref()
+            .ok_or(IssuerCredError::InvalidRevocationInfo())?;
+
+        let (payment, delta) = ledger::revoke_credential(tails_file, rev_reg_id, cred_rev_id)
+            .map_err(|e| IssuerCredError::CommonError(e))?;
+
+        self.rev_cred_payment_txn = payment;
+        Ok(delta)
     }
 
     fn generate_payment_info(&mut self) -> Result<Option<PaymentInfo>, IssuerCredError> {
@@ -469,6 +497,8 @@ pub fn issuer_credential_create(cred_def_handle: u32,
         ref_msg_id: None,
         rev_reg_id,
         rev_reg_def_json,
+        cred_rev_id: None,
+        rev_cred_payment_txn: None,
         tails_file,
         price,
         payment_address: None,
@@ -547,6 +577,12 @@ pub fn send_credential(handle: u32, connection_handle: u32) -> Result<u32,Issuer
     ISSUER_CREDENTIAL_MAP.get_mut(handle,|i|{
         i.send_credential(connection_handle).map_err(|ec| ec.to_error_code())
     }).map_err(|ec|IssuerCredError::CommonError(ec))
+}
+
+pub fn revoke_credential(handle: u32) -> Result<String, u32> {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle,|i|{
+        i.revoke_cred().map_err(|ec|ec.to_error_code())
+    })
 }
 
 fn get_offer_details(response: &str) -> Result<String, IssuerCredError> {
@@ -662,10 +698,12 @@ pub mod tests {
             credential_offer: Some(credential_offer.to_owned()),
             credential_id: String::from(DEFAULT_CREDENTIAL_ID),
 	        price: 1,
-            payment_address: Some("pay:null:9UFgyjuJxi1i1HD".to_string()),
+            payment_address: Some(payments::build_test_address("9UFgyjuJxi1i1HD")),
             ref_msg_id: None,
             rev_reg_id: None,
             tails_file: None,
+            cred_rev_id: None,
+            rev_cred_payment_txn: None,
             rev_reg_def_json: None,
             remote_did: DID.to_string(),
             remote_vk: VERKEY.to_string(),
@@ -714,6 +752,8 @@ pub mod tests {
             ref_msg_id: None,
             rev_reg_id,
             rev_reg_def_json,
+            cred_rev_id: None,
+            rev_cred_payment_txn: None,
             tails_file,
             price: 1,
             payment_address: None,
@@ -882,6 +922,8 @@ pub mod tests {
             cred_def_id: CRED_DEF_ID.to_string(),
             ref_msg_id: None,
             rev_reg_id: None,
+            cred_rev_id: None,
+            rev_cred_payment_txn: None,
             rev_reg_def_json: None,
             tails_file: None,
             price: 0,
@@ -1012,7 +1054,7 @@ pub mod tests {
 
         // Success
         credential.price = 3;
-        credential.payment_address = Some("pay:null:9UFgyjuJxi1i1HD".to_string());
+        credential.payment_address = Some(payments::build_test_address("9UFgyjuJxi1i1HD"));
         assert!(credential.verify_payment().is_ok());
 
         // Err - Wrong payment amount
@@ -1030,7 +1072,7 @@ pub mod tests {
         let mut credential = create_standard_issuer_credential();
         credential.state = VcxStateType::VcxStateRequestReceived;
         credential.price = 3;
-        credential.payment_address = Some("pay:null:9UFgyjuJxi1i1HD".to_string());
+        credential.payment_address = Some(payments::build_test_address("9UFgyjuJxi1i1HD"));
 
         let connection_handle = build_connection("test_send_credential_offer").unwrap();
 
@@ -1045,5 +1087,19 @@ pub mod tests {
         assert!(credential.send_credential(connection_handle).is_err());
         let payment = serde_json::to_string(&credential.get_payment_txn().unwrap()).unwrap();
         assert!(payment.len() > 20);
+    }
+
+    #[test]
+    fn test_revoke_credential() {
+        init!("true");
+        let mut credential = create_standard_issuer_credential();
+        credential.tails_file = Some(TEST_TAILS_FILE.to_string());
+        credential.cred_rev_id = Some(CRED_REV_ID.to_string());
+        credential.rev_reg_id = Some(REV_REG_ID.to_string());
+        credential.rev_cred_payment_txn = None;
+
+        let delta = credential.revoke_cred().unwrap();
+        assert!(credential.rev_cred_payment_txn.is_some());
+        assert_eq!(&delta, REV_REG_DELTA_JSON);
     }
 }

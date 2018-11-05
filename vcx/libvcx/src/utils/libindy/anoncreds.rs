@@ -78,7 +78,7 @@ pub fn libindy_issuer_create_credential(cred_offer_json: &str,
         Some(x) => {
             let tails_config = json!({"base_dir": x,"uri_pattern": ""}).to_string();
             blob_storage::Blob::open_reader("default", &tails_config.to_string())
-                .map_err(|ec|map_rust_indy_sdk_error_code(ec))?
+                .map_err(map_rust_indy_sdk_error_code)?
         },
         None => -1,
     };
@@ -225,6 +225,16 @@ pub fn libindy_issuer_create_schema(issuer_did: &str,
         .map_err(map_rust_indy_sdk_error_code)
 }
 
+pub fn libindy_issuer_revoke_credential(tails_file: &str, rev_reg_id: &str, cred_rev_id: &str) -> Result<String, u32> {
+
+    let tails_config = json!({"base_dir": tails_file,"uri_pattern": ""}).to_string();
+    let blob_handle = blob_storage::Blob::open_reader("default", &tails_config)
+        .map_err(map_rust_indy_sdk_error_code)?;
+
+    Issuer::revoke_credential(get_wallet_handle(), blob_handle, rev_reg_id, cred_rev_id)
+        .map_err(map_rust_indy_sdk_error_code)
+}
+
 
 #[cfg(test)]
 pub mod tests {
@@ -306,7 +316,7 @@ pub mod tests {
         (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, rev_reg_id)
     }
 
-    pub fn create_and_store_credential(attr_list: &str, revocation: bool) -> (String, String, String, String, String, String, String, String, Option<String>) {
+    pub fn create_and_store_credential(attr_list: &str, revocation: bool) -> (String, String, String, String, String, String, String, String, Option<String>, Option<String>) {
 
         let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, rev_reg_id) = create_credential_req(attr_list, revocation);
 
@@ -318,15 +328,15 @@ pub mod tests {
             (Some(json), Some(TEST_TAILS_FILE.to_string()))
 
         } else { (None, None) };
-        let (cred, _, _) = ::utils::libindy::anoncreds::libindy_issuer_create_credential(&offer, &req, &encoded_attributes, rev_reg_id.clone(), tails_file).unwrap();
+        let (cred, cred_rev_id, _) = ::utils::libindy::anoncreds::libindy_issuer_create_credential(&offer, &req, &encoded_attributes, rev_reg_id.clone(), tails_file).unwrap();
         /* store cred */
         let cred_id = ::utils::libindy::anoncreds::libindy_prover_store_credential(None, &req_meta, &cred, &cred_def_json, rev_def_json).unwrap();
-        (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id, rev_reg_id)
+        (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id, rev_reg_id, cred_rev_id)
     }
 
     pub fn create_proof() -> (String, String, String, String) {
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id, _)
+        let (schema_id, schema_json, cred_def_id, cred_def_json, offer, req, req_meta, cred_id, _, _)
         = create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
 
         let proof_req = json!({
@@ -471,5 +481,19 @@ pub mod tests {
         let proof_req_str:String = serde_json::to_string(&proof_req).unwrap();
         assert!(result.is_ok());
         assert_eq!(result_malformed_json.err(), Some(INVALID_ATTRIBUTES_STRUCTURE.code_num));
+    }
+
+    #[cfg(feature = "pool_tests")]
+    #[test]
+    fn test_revoke_credential(){
+        init!("ledger");
+        let rc = libindy_issuer_revoke_credential(TEST_TAILS_FILE, "", "");
+        assert!(rc.is_err());
+
+        let (_, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id)
+        = create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
+
+        let rc = ::utils::libindy::anoncreds::libindy_issuer_revoke_credential(TEST_TAILS_FILE, &rev_reg_id.unwrap(), &cred_rev_id.unwrap());
+        assert!(rc.is_ok());
     }
 }

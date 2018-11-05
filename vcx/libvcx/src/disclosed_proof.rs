@@ -1089,7 +1089,7 @@ mod tests {
     fn test_generate_proof() {
         init!("ledger");
         let did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, _, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, true);
         let mut proof_req = ProofRequestMessage::create();
         let to = time::get_time().sec;
         let indy_proof_req = json!({
@@ -1219,7 +1219,7 @@ mod tests {
         assert_eq!(build_rev_states_json(vec![cred1].as_mut()), Ok("{}".to_string()));
 
         let attrs = r#"["address1","address2","city","state","zip"]"#;
-        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id) =
+        let (schema_id, _, cred_def_id, _, _, _, _, cred_id, rev_reg_id, cred_rev_id) =
             ::utils::libindy::anoncreds::tests::create_and_store_credential(attrs, true);
         let cred2 = CredInfo {
             requested_attr: "height".to_string(),
@@ -1227,7 +1227,7 @@ mod tests {
             schema_id,
             cred_def_id,
             rev_reg_id: rev_reg_id.clone(),
-            cred_rev_id: Some(CRED_REV_ID.to_string()),
+            cred_rev_id: cred_rev_id,
             tails_file: Some(TEST_TAILS_FILE.to_string()),
             revocation_interval: None,
             timestamp: None,

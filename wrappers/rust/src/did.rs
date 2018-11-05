@@ -787,6 +787,7 @@ impl Did {
     ///  * `dids` - [{
     ///     "did": string - DID stored in the wallet,
     ///     "verkey": string - The DIDs transport key (ver key, key id).,
+    ///     "tempVerkey": string - Temporary DIDs transport key (will be active after key rotation).
     ///     "metadata": string - The meta information stored with the DID
     ///   }]
     pub fn list_with_metadata(wallet_handle: IndyHandle) -> Result<String, ErrorCode> {
