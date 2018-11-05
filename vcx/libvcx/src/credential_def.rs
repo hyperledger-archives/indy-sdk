@@ -421,7 +421,7 @@ pub mod tests {
     fn test_create_credential_def_no_fees_real() {
         init!("ledger");
 
-        let rc = create_cred_def_real(false).unwrap();
+        let rc = create_cred_def_real(false);
     }
 
     #[cfg(feature = "pool_tests")]
