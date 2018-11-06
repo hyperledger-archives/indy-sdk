@@ -45,6 +45,8 @@ pub struct AgentConnectionConfig {
     pub agent_pairwise_did: String,
     // Agent pairwise DID Verkey
     pub agent_pairwise_verkey: String,
+    // Agent configs
+    pub agent_configs: HashMap<String, String>,
     // Forward Agent info
     pub forward_agent_detail: ForwardAgentDetail,
 }
@@ -65,6 +67,8 @@ pub struct AgentConnection {
     agent_pairwise_did: String,
     // User pairwise Verkey
     agent_pairwise_verkey: String,
+    // agent config
+    agent_configs: HashMap<String, String>,
     // User Forward Agent info
     forward_agent_detail: ForwardAgentDetail,
     // Connection State
@@ -102,6 +106,7 @@ impl AgentConnection {
                     user_pairwise_verkey: config.user_pairwise_verkey,
                     agent_pairwise_did: config.agent_pairwise_did.clone(),
                     agent_pairwise_verkey: config.agent_pairwise_verkey,
+                    agent_configs: config.agent_configs,
                     forward_agent_detail: config.forward_agent_detail,
                     state: AgentConnectionState {
                         agent_key_dlg_proof: None,
@@ -137,7 +142,8 @@ impl AgentConnection {
                    user_pairwise_did: &str,
                    state: &str,
                    forward_agent_detail: &ForwardAgentDetail,
-                   router: Addr<Router>) -> BoxedFuture<(), Error> {
+                   router: Addr<Router>,
+                   agent_configs: HashMap<String, String>) -> BoxedFuture<(), Error> {
         trace!("AgentConnection::restore >> {:?}", wallet_handle);
 
         let owner_did = owner_did.to_string();
@@ -170,6 +176,7 @@ impl AgentConnection {
                     user_pairwise_verkey,
                     agent_pairwise_did: agent_pairwise_did.clone(),
                     agent_pairwise_verkey,
+                    agent_configs,
                     forward_agent_detail,
                     state: AgentConnectionState {
                         agent_key_dlg_proof: state.agent_key_dlg_proof,
@@ -1047,6 +1054,16 @@ impl AgentConnection {
 
         let msg_created = MessageCreated { uid: msg.uid.clone() };
 
+        let name = match self.agent_configs.get("name") {
+            Some(v) => Some(v.clone()),
+            None => None
+        };
+
+        let logo_url = match self.agent_configs.get("logo_url") {
+            Some(v) => Some(v.clone()),
+            None => None
+        };
+
         let status_msg = msg.status_code.message().to_string();
         let msg_detail = ConnectionRequestMessageDetailResp {
             invite_detail: InviteDetail {
@@ -1057,8 +1074,8 @@ impl AgentConnection {
                     did: self.user_pairwise_did.clone(),
                     verkey: self.user_pairwise_verkey.clone(),
                     agent_key_dlg_proof: msg_detail.key_dlg_proof.clone(),
-                    name: None,
-                    logo_url: None,
+                    name,
+                    logo_url,
                 },
                 status_code: msg.status_code.clone(),
                 status_msg,

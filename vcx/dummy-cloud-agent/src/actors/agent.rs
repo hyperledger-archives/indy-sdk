@@ -128,24 +128,25 @@ impl Agent {
                     .map_err(|err| err.context("Can't get Agent did verkey.").into())
             })
             .and_then(move |(wallet_handle, did, verkey)| {
+                did::get_did_metadata(wallet_handle, &did)
+                    .map(move |metadata| (wallet_handle, did, verkey, metadata))
+                    .map_err(|err| err.context("Can't get Agent DID Metadata.").into())
+            })
+            .and_then(move |(wallet_handle, did, verkey, metadata)| {
                 // Resolve information about existing connections from the wallet
                 // and start Agent Connection actor for each exists connection
+
+                let configs: HashMap<String, String> = serde_json::from_str(&metadata).expect("Can't restore Agent config.");
 
                 Agent::_restore_connections(wallet_handle,
                                             &owner_did,
                                             &owner_verkey,
                                             &forward_agent_detail,
-                                            router.clone())
-                    .map(move |_| (wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router))
+                                            router.clone(),
+                                            configs.clone())
+                    .map(move |_| (wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, configs))
             })
-            .and_then(move |(wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router)| {
-                did::get_did_metadata(wallet_handle, &did)
-                    .map(move |metadata| (wallet_handle, did, verkey, metadata, owner_did, owner_verkey, forward_agent_detail, router))
-                    .map_err(|err| err.context("Can't get Agent DID Metadata.").into())
-            })
-            .and_then(move |(wallet_handle, did, verkey, metadata, owner_did, owner_verkey, forward_agent_detail, router)| {
-
-                let configs: HashMap<String, String> = serde_json::from_str(&metadata).expect("Can't restore Agent config.");
+            .and_then(move |(wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, configs)| {
 
                 let agent = Agent {
                     wallet_handle,
@@ -172,7 +173,8 @@ impl Agent {
                             owner_did: &str,
                             owner_verkey: &str,
                             forward_agent_detail: &ForwardAgentDetail,
-                            router: Addr<Router>) -> ResponseFuture<(), Error> {
+                            router: Addr<Router>,
+                            agent_configs: HashMap<String, String>) -> ResponseFuture<(), Error> {
         trace!("Agent::_restore_connections >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, owner_did, owner_verkey, forward_agent_detail);
 
@@ -193,7 +195,8 @@ impl Agent {
                                                  &pairwise.their_did,
                                                  &pairwise.metadata,
                                                  &forward_agent_detail,
-                                                 router.clone())
+                                                 router.clone(),
+                                                 agent_configs.clone())
                     })
                     .collect();
 
@@ -428,6 +431,7 @@ impl Agent {
                     user_pairwise_verkey: for_did_verkey.to_string(),
                     agent_pairwise_did: pairwise_did.to_string(),
                     agent_pairwise_verkey: pairwise_did_verkey.to_string(),
+                    agent_configs: slf.configs.clone(),
                     forward_agent_detail: slf.forward_agent_detail.clone(),
                 };
 
@@ -472,10 +476,8 @@ impl Agent {
 
         let configs: Vec<ConfigOption> = self.configs.iter().filter( |(k, _)| msg.configs.contains(k) ).map( |(k, v)| ConfigOption{ name: k.clone(), value: v.clone()} ).collect();
 
-        future::ok(())
-            .into_actor(self)
-            .map( |_, _, _| { vec![A2AMessage::Configs( Configs { configs } )] })
-            .into_box()
+        let messages = vec![A2AMessage::Configs( Configs { configs } )];
+        ok_act!(self,  messages)
     }
 
     fn handle_remove_configs(&mut self, msg: RemoveConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
