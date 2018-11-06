@@ -3,6 +3,9 @@ import os
 VERSION = 'VCX_VERSION'
 PKG_NAME = os.environ.get('PACKAGE_NAME') or 'python3-wrapper-vcx'
 
+def test_pkg_name():
+    print(PKG_NAME)
+
 def get_version():
     try:
         return os.environ[VERSION]

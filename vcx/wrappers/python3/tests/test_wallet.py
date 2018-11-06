@@ -1,6 +1,5 @@
 import pytest
 from vcx.error import VcxError, ErrorCode
-from vcx.common import shutdown
 from vcx.api.wallet import *
 import json
 
@@ -85,42 +84,42 @@ async def test_wallet_search():
     with pytest.raises(VcxError) as e:
         await Wallet.export("/tmp/output.wallet", "backupKey")
 
+
 @pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
-async def test_import_wallet_failures():
+async def test_import_wallet_failures(vcx_init_test_mode, cleanup):
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet('Invalid Json')
     assert ErrorCode.InvalidJson == e.value.error_code
-    shutdown(True)
+    cleanup(True)
 
     config = {'wallet_name': '', 'wallet_key': '', 'exported_wallet_path': '', 'backup_key': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
     assert ErrorCode.IOError == e.value.error_code
-    shutdown(True)
+    cleanup(True)
 
     config = {'wallet_key': '', 'exported_wallet_path': '', 'backup_key': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
     assert ErrorCode.MissingWalletName == e.value.error_code
-    shutdown(True)
+    cleanup(True)
 
     config = {'wallet_name': '', 'exported_wallet_path': '', 'backup_key': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
     assert ErrorCode.MissingWalletKey == e.value.error_code
-    shutdown(True)
+    cleanup(True)
 
     config = {'wallet_name': '', 'wallet_key': '', 'backup_key': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
     assert ErrorCode.MissingExportedWalletPath == e.value.error_code
-    shutdown(True)
+    cleanup(True)
 
     config = {'wallet_name': '', 'wallet_key': '', 'exported_wallet_path': ''}
     with pytest.raises(VcxError) as e:
         await Wallet.import_wallet(json.dumps(config))
     assert ErrorCode.MissingBackupKey == e.value.error_code
-    shutdown(True)
+    cleanup(True)
 
 

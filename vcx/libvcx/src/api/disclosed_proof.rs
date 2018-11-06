@@ -535,7 +535,7 @@ mod tests {
     use connection;
     use api::VcxStateType;
     use utils::constants::DEFAULT_SERIALIZE_VERSION;
-    use utils::libindy::return_types_u32;
+    use api::return_types_u32;
     use serde_json::Value;
 
     pub const BAD_PROOF_REQUEST: &str = r#"{"version": "0.1","to_did": "LtMgSjtFcyPwenK9SHCyb8","from_did": "LtMgSjtFcyPwenK9SHCyb8","claim": {"account_num": ["8BEaoLf8TBmK4BUyX8WWnA"],"name_on_account": ["Alice"]},"schema_seq_no": 48,"issuer_did": "Pd4fnFtRBcMKRVC2go5w3j","claim_name": "Account Certificate","claim_id": "3675417066","msg_ref_id": "ymy5nth"}"#;

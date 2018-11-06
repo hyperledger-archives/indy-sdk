@@ -45,6 +45,7 @@ def release(name, handle):
         logger.warning("release: Function %s returned error %i", name, err)
         raise VcxError(ErrorCode(err))
 
+
 def error_message(error_code: int) -> str:
     logger = logging.getLogger(__name__)
 
@@ -56,7 +57,6 @@ def error_message(error_code: int) -> str:
     logger.debug("error_message: Function %s returned error_message: %s", name, err_msg)
 
     return err_msg
-
 
 
 def get_version() -> str:
