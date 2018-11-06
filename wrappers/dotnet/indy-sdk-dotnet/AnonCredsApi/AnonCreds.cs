@@ -232,7 +232,7 @@ namespace Hyperledger.Indy.AnonCredsApi
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(new CredentialSearch(search_handle, total_count, false));
+            taskCompletionSource.SetResult(new CredentialSearch(search_handle, total_count));
         }
         private static ProverSearchCredentialsCompletedDelegate ProverSearchCredentialsCallback = ProverSearchCredentialsCallbackMethod;
 
@@ -255,12 +255,12 @@ namespace Hyperledger.Indy.AnonCredsApi
 #endif
         private static void ProverSearchCredentialsForProofRequestCallbackMethod(int xcommand_handle, int err, int search_handle)
         {
-            var taskCompletionSource = PendingCommands.Remove<CredentialSearch>(xcommand_handle);
+            var taskCompletionSource = PendingCommands.Remove<CredentialSearchForProofRequest>(xcommand_handle);
 
             if (!CallbackHelper.CheckCallback(taskCompletionSource, err))
                 return;
 
-            taskCompletionSource.SetResult(new CredentialSearch(search_handle, null, true));
+            taskCompletionSource.SetResult(new CredentialSearchForProofRequest(search_handle));
         }
         private static ProverSearchCredentialsForProofReqCompletedDelegate ProverSearchCredentialsForProofRequestCallback = ProverSearchCredentialsForProofRequestCallbackMethod;
 
@@ -1106,12 +1106,12 @@ namespace Hyperledger.Indy.AnonCredsApi
         ///         "&lt;predicate_referent>": &lt;wql query>,
         ///     }
         /// where wql query: indy-sdk/doc/design/011-wallet-query-language/README.md.</param>
-        public static Task<CredentialSearch> ProverSearchCredentialsForProofRequestAsync(Wallet wallet, string proofRequestJson, string extraQueryJson = "{}")
+        public static Task<CredentialSearchForProofRequest> ProverSearchCredentialsForProofRequestAsync(Wallet wallet, string proofRequestJson, string extraQueryJson = "{}")
         {
             ParamGuard.NotNull(wallet, "wallet");
             ParamGuard.NotNullOrWhiteSpace(proofRequestJson, "proofRequestJson");
 
-            var taskCompletionSource = new TaskCompletionSource<CredentialSearch>();
+            var taskCompletionSource = new TaskCompletionSource<CredentialSearchForProofRequest>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 
             var commandResult = NativeMethods.indy_prover_search_credentials_for_proof_req(
@@ -1158,7 +1158,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// <param name="search">Search.</param>
         /// <param name="itemReferent">Referent of attribute/predicate in the proof request.</param>
         /// <param name="count">Count of credentials to fetch.</param>
-        public static Task<string> ProverFetchCredentialsForProofRequestAsync(CredentialSearch search, string itemReferent, int count)
+        public static Task<string> ProverFetchCredentialsForProofRequestAsync(CredentialSearchForProofRequest search, string itemReferent, int count)
         {
             ParamGuard.NotNull(search, "search");
             ParamGuard.NotNullOrWhiteSpace(itemReferent, "itemReferent");
@@ -1184,7 +1184,7 @@ namespace Hyperledger.Indy.AnonCredsApi
         /// </summary>
         /// <returns></returns>
         /// <param name="search">Search.</param>
-        public static Task ProverCloseCredentialsSearchForProofRequestAsync(CredentialSearch search)
+        public static Task ProverCloseCredentialsSearchForProofRequestAsync(CredentialSearchForProofRequest search)
         {
             ParamGuard.NotNull(search, "search");
 
