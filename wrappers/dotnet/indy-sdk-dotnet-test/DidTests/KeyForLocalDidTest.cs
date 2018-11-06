@@ -3,7 +3,7 @@ using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Test.SignusTests
+namespace Hyperledger.Indy.Test.DidTests
 {
     [TestClass]
     public class KeyForLocalDidTest : IndyIntegrationTestWithSingleWallet

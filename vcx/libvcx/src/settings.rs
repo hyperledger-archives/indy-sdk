@@ -36,6 +36,7 @@ pub static CONFIG_WALLET_HANDLE: &'static str = "wallet_handle";
 pub static CONFIG_THREADPOOL_SIZE: &'static str = "threadpool_size";
 pub static CONFIG_WALLET_KEY_DERIVATION: &'static str = "wallet_key_derivation";
 pub static CONFIG_PROTOCOL_VERSION: &'static str = "protocol_version";
+pub static CONFIG_PAYMENT_METHOD: &'static str = "payment_method";
 
 pub static DEFAULT_PROTOCOL_VERSION: usize = 2;
 pub static MAX_SUPPORTED_PROTOCOL_VERSION: usize = 2;
@@ -55,6 +56,10 @@ pub static DEFAULT_WALLET_KEY: &str = "foobar1234";
 pub static DEFAULT_THREADPOOL_SIZE: usize = 8;
 pub static MASK_VALUE: &str = "********";
 pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "ARGON2I_INT";
+pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
+pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
+pub static DEFAULT_PAYMENT_METHOD: &str = "null";
+
 
 pub static MAX_THREADPOOL_SIZE: usize = 128;
 
@@ -97,6 +102,7 @@ pub fn set_defaults() -> u32 {
     settings.insert(CONFIG_EXPORTED_WALLET_PATH.to_string(), DEFAULT_EXPORTED_WALLET_PATH.to_string());
     settings.insert(CONFIG_WALLET_BACKUP_KEY.to_string(), DEFAULT_WALLET_BACKUP_KEY.to_string());
     settings.insert(CONFIG_THREADPOOL_SIZE.to_string(), DEFAULT_THREADPOOL_SIZE.to_string());
+    settings.insert(CONFIG_PAYMENT_METHOD.to_string(), DEFAULT_PAYMENT_METHOD.to_string());
 
     error::SUCCESS.code_num
 }
@@ -123,7 +129,6 @@ pub fn validate_config(config: &HashMap<String, String>) -> Result<u32, u32> {
 
     validate_optional_config_val(config.get(CONFIG_AGENCY_ENDPOINT), error::INVALID_URL.code_num, Url::parse)?;
     validate_optional_config_val(config.get(CONFIG_INSTITUTION_LOGO_URL), error::INVALID_URL.code_num, Url::parse)?;
-
 
     Ok(error::SUCCESS.code_num)
 }
@@ -245,6 +250,23 @@ pub fn get_wallet_credentials() -> String {
     credentials.to_string()
 }
 
+pub fn validate_payment_method() -> Result<(), u32> {
+    let config = SETTINGS.read().unwrap();
+    if let Some(method) = config.get(CONFIG_PAYMENT_METHOD) {
+        if !method.to_string().is_empty() {
+            return Ok(());
+        }
+    }
+    return Err(error::MISSING_PAYMENT_METHOD.code_num);
+}
+
+pub fn get_payment_method() -> String {
+
+    let payment_method = get_config_value(CONFIG_PAYMENT_METHOD).unwrap_or(DEFAULT_PAYMENT_METHOD.to_string());
+
+    payment_method
+}
+
 pub fn write_config_to_file(config: &str, path_string: &str) -> Result<(), u32> {
     let mut file = fs::File::create(Path::new(path_string))
         .or(Err(error::UNKNOWN_ERROR.code_num))?;
@@ -330,6 +352,7 @@ pub mod tests {
         write_config_to_file(&content, config_path).unwrap();
 
         assert_eq!(process_config_file(config_path), Ok(error::SUCCESS.code_num));
+
         assert_eq!(get_config_value("institution_name").unwrap(), "evernym enterprise".to_string());
     }
 
@@ -351,7 +374,6 @@ pub mod tests {
         }).to_string();
 
         assert_eq!(process_config_string(&content), Ok(error::SUCCESS.code_num));
-        assert_eq!(get_config_value("institution_name").unwrap(), "evernym enterprise".to_string());
     }
 
     #[test]
@@ -373,7 +395,7 @@ pub mod tests {
             "institution_verkey": "444MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
         }).to_string();
         let config: HashMap<String, String> = serde_json::from_str(&content).unwrap();
-        assert_eq!(validate_config(&config), Ok(error::SUCCESS.code_num))
+        assert_eq!(validate_config(&config), Ok(error::SUCCESS.code_num));
     }
 
     #[test]
@@ -461,7 +483,27 @@ pub mod tests {
         assert_eq!(get_config_value(&key), Err(error::INVALID_CONFIGURATION.code_num));
 
         set_config_value(&key, &value1);
-        assert_eq!(get_config_value(&key).unwrap(), value1)
+        assert_eq!(get_config_value(&key).unwrap(), value1);
+    }
+
+    #[test]
+    fn test_payment_plugin_validation() {
+        clear_config();
+        set_config_value(CONFIG_PAYMENT_METHOD, "null");
+        assert_eq!(validate_payment_method(), Ok(()));
+    }
+
+    #[test]
+    fn test_payment_plugin_validation_empty_string() {
+        clear_config();
+        set_config_value(CONFIG_PAYMENT_METHOD, "");
+        assert_eq!(validate_payment_method(), Err(error::MISSING_PAYMENT_METHOD.code_num));
+    }
+
+    #[test]
+    fn test_payment_plugin_validation_missing_option() {
+        clear_config();
+        assert_eq!(validate_payment_method(), Err(error::MISSING_PAYMENT_METHOD.code_num));
     }
 
     #[test]
@@ -472,7 +514,7 @@ pub mod tests {
             "wallet_name":"test_clear_config",
             "institution_name" : "evernym enterprise",
             "genesis_path":"/tmp/pool1.txn",
-            "wallet_key":"key"
+            "wallet_key":"key",
         }).to_string();
 
         assert_eq!(process_config_string(&content), Ok(error::SUCCESS.code_num));

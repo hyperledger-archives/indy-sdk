@@ -455,8 +455,8 @@ pub mod networker_tests {
             assert_eq!(1, networker.req_id_mappings.len());
             assert!(networker.req_id_mappings.contains_key(REQ_ID));
 
-            let messages = handle.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+            assert!(nodes_emulator::next(&handle).is_none());
         }
 
         #[test]
@@ -474,11 +474,10 @@ pub mod networker_tests {
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn_1, rn_2])));
             networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT, None)));
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
-
-            let messages = handle_2.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            for handle in vec![handle_1, handle_2] {
+                assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+                assert!(nodes_emulator::next(&handle).is_none());
+            }
         }
 
         #[test]
@@ -502,11 +501,15 @@ pub mod networker_tests {
                 assert_eq!(1, networker.pool_connections.len());
             }
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string(); send_cnt], messages);
 
-            let messages = handle_2.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string(); send_cnt], messages);
+            for handle in vec![handle_1, handle_2] {
+                let mut messages = Vec::new();
+                for _ in 0..send_cnt {
+                    messages.push(nodes_emulator::next(&handle).unwrap());
+                }
+                assert!(nodes_emulator::next(&handle).is_none());
+                assert_eq!(vec![MESSAGE.to_string(); send_cnt], messages);
+            }
         }
 
         #[test]
@@ -524,11 +527,10 @@ pub mod networker_tests {
             networker.process_event(Some(NetworkerEvent::NodesStateUpdated(vec![rn_1, rn_2])));
             networker.process_event(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT, Some(vec![NODE_NAME.to_string()]))));
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle_1).unwrap());
+            assert!(nodes_emulator::next(&handle_1).is_none());
 
-            let messages = handle_2.join().unwrap();
-            assert!(messages.is_empty());
+            assert!(nodes_emulator::next(&handle_2).is_none());
         }
 
         #[test]
@@ -547,6 +549,11 @@ pub mod networker_tests {
 
             networker.process_event(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), "6".to_string(), POOL_ACK_TIMEOUT)));
             assert_eq!(2, networker.pool_connections.len());
+
+            let mut pc_iter = networker.pool_connections.values();
+            let first_pc = pc_iter.next().unwrap();
+            let second_pc = pc_iter.next().unwrap();
+            assert_ne!(first_pc.key_pair.public_key, second_pc.key_pair.public_key);
         }
 
         #[test]
@@ -894,8 +901,9 @@ pub mod networker_tests {
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
             conn.send_request(Some(NetworkerEvent::SendOneRequest("msg2".to_string(), "12".to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
-            let messages = handle.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string(), "msg2".to_string()], messages);
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+            assert_eq!("msg2".to_string(), nodes_emulator::next(&handle).unwrap());
+            assert!(nodes_emulator::next(&handle).is_none());
         }
 
         #[test]
@@ -912,11 +920,10 @@ pub mod networker_tests {
 
             conn.send_request(Some(NetworkerEvent::SendOneRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle_1).unwrap());
+            assert!(nodes_emulator::next(&handle_1).is_none());
 
-            let messages = handle_2.join().unwrap();
-            assert!(messages.is_empty());
+            assert!(nodes_emulator::next(&handle_2).is_none());
         }
 
         #[test]
@@ -933,11 +940,10 @@ pub mod networker_tests {
 
             conn.send_request(Some(NetworkerEvent::SendAllRequest(MESSAGE.to_string(), REQ_ID.to_string(), POOL_ACK_TIMEOUT, None))).unwrap();
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
-
-            let messages = handle_2.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            for handle in vec![handle_1, handle_2] {
+                assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+                assert!(nodes_emulator::next(&handle).is_none());
+            }
         }
 
         #[test]
@@ -952,9 +958,9 @@ pub mod networker_tests {
 
             conn.send_request(Some(NetworkerEvent::Resend(REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
-            let messages = handle.join().unwrap();
-
-            assert_eq!(vec![MESSAGE.to_string(), MESSAGE.to_string()], messages);
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+            assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+            assert!(nodes_emulator::next(&handle).is_none());
         }
 
         #[test]
@@ -973,11 +979,10 @@ pub mod networker_tests {
 
             conn.send_request(Some(NetworkerEvent::Resend(REQ_ID.to_string(), POOL_ACK_TIMEOUT))).unwrap();
 
-            let messages = handle_1.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
-
-            let messages = handle_2.join().unwrap();
-            assert_eq!(vec![MESSAGE.to_string()], messages);
+            for handle in vec![handle_1, handle_2] {
+                assert_eq!(MESSAGE.to_string(), nodes_emulator::next(&handle).unwrap());
+                assert!(nodes_emulator::next(&handle).is_none());
+            }
         }
 
         #[test]

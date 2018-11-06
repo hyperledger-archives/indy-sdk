@@ -578,6 +578,7 @@ public class Did extends IndyJava.API {
 	 * @return A future resolving to a did data: {
 	 *     "did": string - DID stored in the wallet,
 	 *     "verkey": string - The DIDs transport key (ver key, key id),
+	 *     "tempVerkey": string - Future DIDs transport key (ver key, key id), after rotation of keys is done.
 	 *     "metadata": string - The meta information stored with the DID
 	 *   }
 	 * @throws IndyException Thrown if an error occurs when calling the underlying SDK.

@@ -1,8 +1,9 @@
 ﻿using Hyperledger.Indy.CryptoApi;
+using Hyperledger.Indy.DidApi;
 using Hyperledger.Indy.WalletApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.CryptoTests
@@ -13,44 +14,47 @@ namespace Hyperledger.Indy.Test.CryptoTests
         [TestMethod]
         public async Task TestAuthDecryptWorks()
         {
-            var senderVk = await Crypto.CreateKeyAsync(wallet, MY1_IDENTITY_KEY_JSON);
-            var recipientVk = await Crypto.CreateKeyAsync(wallet, string.Format("{{\"seed\":\"{0}\"}}", MY2_SEED));
+            var theirVk = await Crypto.CreateKeyAsync(wallet, MY1_IDENTITY_KEY_JSON);
+            var myVk = await Crypto.CreateKeyAsync(wallet, string.Format("{{\"seed\":\"{0}\"}}", MY2_SEED));
 
-            var encrypted = await Crypto.AuthCryptAsync(wallet, senderVk, recipientVk, MESSAGE);
+            var encryptedMsg = await Crypto.AuthCryptAsync(wallet, theirVk, myVk, MESSAGE);
 
-            var decryptedMessage = await Crypto.AuthDecryptAsync(wallet, recipientVk, encrypted);
+            var decryptedMessage = await Crypto.AuthDecryptAsync(wallet, myVk, encryptedMsg);
 
             Assert.IsTrue(MESSAGE.SequenceEqual(decryptedMessage.MessageData));
-            Assert.AreEqual(senderVk, decryptedMessage.TheirVk);
+            Assert.AreEqual(theirVk, decryptedMessage.TheirVk);
         }
 
         [TestMethod]
-        public async Task TestAuthDecryptWorksForUnknownMyKey()
+        public async Task TestAuthDecryptWorksForInvalidMessage()
         {
+            var result = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
+            var recipientDid = result.Did;
+            var myVk = result.VerKey;
+
+            var identityJson = string.Format(IDENTITY_JSON_TEMPLATE, recipientDid, myVk);
+            await Did.StoreTheirDidAsync(wallet, identityJson);
+
+            var msgString = "[" + string.Join(",", ENCRYPTED_MESSAGE) + "]";
+
+            var msg = string.Format("{{\"auth\":true,\"nonсe\":\"Th7MpTaRZVRYnPiabds81Y12\",\"sender\":\"{0}\",\"msg\":{1}}}", VERKEY, msgString);
+
+
+            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
+                Crypto.AuthDecryptAsync(wallet, myVk, Encoding.UTF8.GetBytes(msg))
+           );
+        }
+
+        [TestMethod]
+        public async Task TestAuthDecryptWorksForUnknownTheirVk()
+        {
+            var theirVk = await Crypto.CreateKeyAsync(wallet, MY1_IDENTITY_KEY_JSON);
+
+            var encryptedMsg = await Crypto.AuthCryptAsync(wallet, theirVk, VERKEY, MESSAGE);
+
             var ex = await Assert.ThrowsExceptionAsync<WalletItemNotFoundException>(() =>
-                Crypto.AuthDecryptAsync(wallet, VERKEY_MY1, ENCRYPTED_MESSAGE)
-           );
-        }
-
-        [TestMethod]
-        public async Task TestAuthDecryptWorksForOtherCoder()
-        {
-            var myVk = await Crypto.CreateKeyAsync(wallet, MY1_IDENTITY_KEY_JSON);
-
-            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Crypto.AuthDecryptAsync(wallet, myVk, ENCRYPTED_MESSAGE)
-           );
-        }
-
-        [TestMethod]
-        public async Task TestAuthDecryptWorksForNonceNotCorrespondMessage()
-        {
-            var nonce = (byte[])(Array)new sbyte[] { 46, 33, -4, 67, 1, 44, 57, -46, -91, 87, 14, 41, -39, 48, 42, -126, -121, 84, -58, 59, -27, 51, -32, -23};
-            var myVk = await Crypto.CreateKeyAsync(wallet, MY1_IDENTITY_KEY_JSON);
-
-            var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Crypto.AuthDecryptAsync(wallet, myVk, ENCRYPTED_MESSAGE)
-           );
+               Crypto.AuthDecryptAsync(wallet, VERKEY, encryptedMsg)
+          );
         }
     }
 }

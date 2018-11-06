@@ -95,29 +95,6 @@ if [ -d "${LIBINDY_DIR}/lib" ] ; then
             LIBINDY_DIR="${LIBINDY_DIR}/lib"
 fi
 
-if [ -z "${LIBSOVTOKEN_DIR}" ] ; then
-    LIBSOVTOKEN_DIR="libsovtoken"
-    if [ -d "${LIBSOVTOKEN_DIR}" ] ; then
-        echo "Found ${LIBSOVTOKEN_DIR}"
-    elif [ -z "$8" ] ; then
-        echo STDERR "Missing LIBSOVTOKEN_DIR argument and environment variable"
-        echo STDERR "e.g. set LIBSOVTOKEN_DIR=<path> for environment or libsovtoken"
-        exit 1
-    else
-        LIBSOVTOKEN_DIR=$8
-    fi
-    if [ -d "${LIBSOVTOKEN_DIR}/${CROSS_COMPILE}" ] ; then
-        LIBSOVTOKEN_DIR=${LIBSOVTOKEN_DIR}/${CROSS_COMPILE}
-    fi
-    export LIBSOVTOKEN_DIR=${LIBSOVTOKEN_DIR}
-fi
-if [ -d "${LIBSOVTOKEN_DIR}/lib" ] ; then
-            LIBSOVTOKEN_DIR="${LIBSOVTOKEN_DIR}/lib"
-fi
-
-
-
-
 if [ "$(uname)" == "Darwin" ]; then
     echo "Downloading NDK for OSX"
     export TOOLCHAIN_PREFIX=${WORKDIR}/toolchains/darwin
@@ -163,7 +140,6 @@ if [ "${TARGET_ARCH}" = "armv7" ]; then
     CROSS_COMPILE_DIR="arm-linux-androideabi"
 fi
 
-export PAYMENT_PLUGIN="sovtoken"
 export SODIUM_LIB_DIR=${SODIUM_DIR}/lib
 export SODIUM_INCLUDE_DIR=${SODIUM_DIR}/include
 export LIBZMQ_LIB_DIR=${LIBZMQ_DIR}/lib
@@ -198,7 +174,7 @@ rustup target add ${CROSS_COMPILE}
 pushd $LIBVCX
 export OPENSSL_STATIC=1
 #cargo clean
-cargo build --release --no-default-features --features "ci ${PAYMENT_PLUGIN}" --target=${CROSS_COMPILE}
+cargo build --release --no-default-features --features "ci" --target=${CROSS_COMPILE}
 # TEMPORARY HACK (need to build libvcx without duplicate .o object files):
 # There are duplicate .o object files inside the libvcx.a file and these
 # lines of logic remove those duplicate .o object files
@@ -221,7 +197,6 @@ ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libz.so \
 ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/libm.a \
 ${TOOLCHAIN_DIR}/sysroot/usr/${NDK_LIB_DIR}/liblog.so \
 ${LIBINDY_DIR}/libindy.a \
-${LIBSOVTOKEN_DIR}/libsovtoken.a \
 ${TOOLCHAIN_DIR}/${CROSS_COMPILE_DIR}/${NDK_LIB_DIR}/libgnustl_shared.so \
 ${OPENSSL_DIR}/lib/libssl.a \
 ${OPENSSL_DIR}/lib/libcrypto.a \
