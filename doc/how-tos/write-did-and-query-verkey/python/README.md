@@ -140,10 +140,10 @@ Error `WalletAlreadyExistsError`.
 Delete wallet before creating:
 ```python
 try:
-    await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
+    await wallet.create_wallet(wallet_config, wallet_credentials)
 except IndyError:
     await wallet.delete_wallet(wallet_name, wallet_credentials)
-    await wallet.create_wallet(pool_name, wallet_name, None, None, wallet_credentials)
+    await wallet.create_wallet(wallet_config, wallet_credentials)
 ```
 
 Error `CommonIOError`. Make sure that you have set `genesis_file_path` to point 
