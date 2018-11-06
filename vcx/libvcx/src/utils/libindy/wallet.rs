@@ -1,6 +1,8 @@
 extern crate libc;
 extern crate serde_json;
 
+use futures::Future;
+
 use settings;
 use utils::libindy::error_codes::map_rust_indy_sdk_error_code;
 use utils::error;
@@ -39,6 +41,7 @@ pub fn open_wallet(wallet_name: &str) -> Result<i32, u32> {
     let config = format!(r#"{{"id":"{}"}}"#, wallet_name);
 
     let handle = Wallet::open(&config, &settings::get_wallet_credentials())
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)?;
 
     unsafe { WALLET_HANDLE = handle; }
@@ -94,6 +97,7 @@ pub fn get_record(xtype: &str, id: &str, options: &str) -> Result<String, u32> {
     }
 
     Wallet::get_record(get_wallet_handle(), xtype, id, options)
+        .wait()
         .map_err(map_rust_indy_sdk_error_code)
 }
 

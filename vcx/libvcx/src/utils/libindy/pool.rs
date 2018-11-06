@@ -1,5 +1,7 @@
 extern crate libc;
 
+use futures::Future;
+
 use utils::{ error, timeout::TimeoutUtils };
 use std::sync::RwLock;
 use settings;
@@ -40,7 +42,8 @@ pub fn open_pool_ledger(pool_name: &str, config: Option<&str>) -> Result<u32, u3
 
     set_protocol_version();
 
-    match Pool::open_ledger_timeout(pool_name, config, TimeoutUtils::medium_timeout()).map_err(map_rust_indy_sdk_error_code) {
+    //TODO there was timeout here (before future-based Rust wrapper)
+    match Pool::open_ledger(pool_name, config).wait().map_err(map_rust_indy_sdk_error_code) {
         Ok(x) => {
             change_pool_handle(Some(x));
             Ok(x as u32)
