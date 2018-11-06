@@ -1054,16 +1054,6 @@ impl AgentConnection {
 
         let msg_created = MessageCreated { uid: msg.uid.clone() };
 
-        let name = match self.agent_configs.get("name") {
-            Some(v) => Some(v.clone()),
-            None => None
-        };
-
-        let logo_url = match self.agent_configs.get("logo_url") {
-            Some(v) => Some(v.clone()),
-            None => None
-        };
-
         let status_msg = msg.status_code.message().to_string();
         let msg_detail = ConnectionRequestMessageDetailResp {
             invite_detail: InviteDetail {
@@ -1074,8 +1064,8 @@ impl AgentConnection {
                     did: self.user_pairwise_did.clone(),
                     verkey: self.user_pairwise_verkey.clone(),
                     agent_key_dlg_proof: msg_detail.key_dlg_proof.clone(),
-                    name,
-                    logo_url,
+                    name: self.agent_configs.get("name").cloned(),
+                    logo_url: self.agent_configs.get("logo_url").cloned(),
                 },
                 status_code: msg.status_code.clone(),
                 status_msg,
