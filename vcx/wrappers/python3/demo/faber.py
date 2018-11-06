@@ -54,6 +54,7 @@ async def main():
 
     print("#4 Create a new credential definition on the ledger")
     cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0)
+    cred_def_handle = cred_def.handle
     cred_def_id = await cred_def.get_cred_def_id()
 
     print("#5 Create a connection to alice and print out the invite details")
@@ -79,7 +80,7 @@ async def main():
     }
 
     print("#12 Create an IssuerCredential object using the schema and credential definition")
-    credential = await IssuerCredential.create('alice_degree', schema_attrs, cred_def_id, 'cred', '0')
+    credential = await IssuerCredential.create('alice_degree', schema_attrs, cred_def_handle, 'cred', '0')
 
     print("#13 Issue credential offer to alice")
     await credential.send_offer(connection_to_alice)
@@ -110,7 +111,7 @@ async def main():
     ]
 
     print("#19 Create a Proof object")
-    proof = await Proof.create('proof_uuid', 'proof_from_alice', proof_attrs)
+    proof = await Proof.create('proof_uuid', 'proof_from_alice', proof_attrs, {})
 
     print("#20 Request proof of degree from alice")
     await proof.request_proof(connection_to_alice)

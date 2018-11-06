@@ -2,6 +2,7 @@
 macro_rules! init {
     ($x:expr) => (
     ::utils::threadpool::init();
+    ::settings::set_config_value(::settings::CONFIG_WALLET_KEY,::settings::DEFAULT_WALLET_KEY);
     ::utils::libindy::wallet::tests::delete_test_wallet(::settings::DEFAULT_WALLET_NAME);
     ::settings::clear_config();
     ::settings::set_config_value(::settings::CONFIG_WALLET_KEY,::settings::DEFAULT_WALLET_KEY);
@@ -90,11 +91,11 @@ pub mod tests {
     */
 
     /* sandbox */
-    pub const AGENCY_ENDPOINT: &'static str = "https://agency-ea-sandbox.evernym.com";
+    pub const AGENCY_ENDPOINT: &'static str = "http://sbx-eas.pdev.evernym.com";
     pub const AGENCY_DID: &'static str = "HB7qFQyFxx4ptjKqioEtd8";
     pub const AGENCY_VERKEY: &'static str = "9pJkfHyfJMZjUjS7EZ2q2HX55CbFQPKpQ9eTjSAUMLU8";
 
-    pub const C_AGENCY_ENDPOINT: &'static str = "https://agency-sandbox.evernym.com";
+    pub const C_AGENCY_ENDPOINT: &'static str = "http://sbx-agency.pdev.evernym.com";
     pub const C_AGENCY_DID: &'static str = "Nv9oqGX57gy15kPSJzo2i4";
     pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";
 
@@ -254,7 +255,7 @@ pub mod tests {
     #[test]
     fn test_local_env() {
         init!("ledger");
-        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS);
+        ::utils::libindy::anoncreds::tests::create_and_store_credential(::utils::constants::DEFAULT_SCHEMA_ATTRS, false);
     }
 
     pub fn setup_wallet_env(test_name: &str) -> Result<i32, String> {

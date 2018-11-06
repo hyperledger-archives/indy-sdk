@@ -8,12 +8,14 @@ use settings;
 use messages::{ GeneralMessage, MessageResponseCode::MessageAccepted, send_message::parse_msg_uid };
 use connection;
 use credential_request::{ CredentialRequest };
-use utils::{error,
-            error::INVALID_JSON,
-            libindy::{ anoncreds::{ libindy_issuer_create_credential, libindy_issuer_create_credential_offer}, payments },
-            constants::CRED_MSG,
-            openssl::encode
-};
+use utils::error;
+use utils::error::{INVALID_JSON};
+use utils::libindy::anoncreds::{ libindy_issuer_create_credential, libindy_issuer_create_credential_offer};
+use utils::libindy::payments;
+use utils::libindy::ledger;
+use utils::constants::CRED_MSG;
+use utils::openssl::encode;
+use utils::libindy::payments::{PaymentTxn};
 use error::{ issuer_cred::IssuerCredError, ToErrorCode, payment::PaymentError};
 use utils::constants::DEFAULT_SERIALIZE_VERSION;
 use serde_json::Value;
@@ -38,7 +40,18 @@ pub struct IssuerCredential {
     credential_name: String,
     pub credential_id: String,
     pub cred_def_id: String,
+    pub cred_def_handle: u32,
     ref_msg_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rev_reg_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tails_file: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rev_reg_def_json: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cred_rev_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rev_cred_payment_txn: Option<PaymentTxn>,
     price: u64,
     payment_address: Option<String>,
     // the following 6 are pulled from the connection object
@@ -68,10 +81,12 @@ pub struct CredentialOffer {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct CredentialMessage {
     pub libindy_cred: String,
-    pub rev_reg_def_json: String,
+    pub rev_reg_def_json: Option<String>,
     pub cred_def_id: String,
     pub msg_type: String,
     pub claim_offer_id: String,
+    pub cred_revoc_id: Option<String>,
+    pub revoc_reg_delta_json: Option<String>,
     pub version: String,
     pub from_did: String,
 }
@@ -253,21 +268,22 @@ impl IssuerCredential {
     fn get_credential_attributes(&self) -> &String { &self.credential_attributes}
     fn get_source_id(&self) -> &String { &self.source_id }
 
-    fn generate_credential(&self, credential_data: &str, did: &str) -> Result<CredentialMessage, IssuerCredError> {
+    fn generate_credential(&mut self, credential_data: &str, did: &str) -> Result<CredentialMessage, IssuerCredError> {
         let indy_cred_offer = &self.credential_offer.as_ref()
             .ok_or(IssuerCredError::InvalidCred())?.libindy_offer;
 
         let indy_cred_req = &self.credential_request.as_ref()
             .ok_or(IssuerCredError::InvalidCredRequest())?.libindy_cred_req;
 
-        //Todo: rev_reg_id and blob_storage need to be provided when we do revocation
         let (cred, cred_revoc_id, revoc_reg_delta_json) = libindy_issuer_create_credential(
             &indy_cred_offer,
             &indy_cred_req,
             credential_data,
-            None,
-            None)
+            self.rev_reg_id.clone(),
+            self.tails_file.clone())
             .map_err(|x| IssuerCredError::CommonError(x))?;
+
+        self.cred_rev_id = cred_revoc_id.clone();
 
         Ok(CredentialMessage {
             claim_offer_id: self.msg_uid.clone(),
@@ -275,9 +291,10 @@ impl IssuerCredential {
             version: String::from("0.1"),
             msg_type: String::from("CRED"),
             libindy_cred: cred,
-            //Todo: need to add indy api calls to populate this field
-            rev_reg_def_json: String::new(),
+            rev_reg_def_json: self.rev_reg_def_json.clone(),
             cred_def_id: self.cred_def_id.clone(),
+            cred_revoc_id,
+            revoc_reg_delta_json,
         })
     }
 
@@ -299,6 +316,26 @@ impl IssuerCredential {
             cred_def_id: self.cred_def_id.clone(),
             libindy_offer,
         })
+    }
+
+    fn revoke_cred(&mut self) -> Result<(), IssuerCredError> {
+        let tails_file = self.tails_file
+            .as_ref()
+            .ok_or(IssuerCredError::InvalidRevocationInfo())?;
+
+        let rev_reg_id = self.rev_reg_id
+            .as_ref()
+            .ok_or(IssuerCredError::InvalidRevocationInfo())?;
+
+        let cred_rev_id = self.cred_rev_id
+            .as_ref()
+            .ok_or(IssuerCredError::InvalidRevocationInfo())?;
+
+        let (payment, _) = ledger::revoke_credential(tails_file, rev_reg_id, cred_rev_id)
+            .map_err(|e| IssuerCredError::CommonError(e))?;
+
+        self.rev_cred_payment_txn = payment;
+        Ok(())
     }
 
     fn generate_payment_info(&mut self) -> Result<Option<PaymentInfo>, IssuerCredError> {
@@ -435,13 +472,16 @@ fn parse_credential_req_payload(offer_uid: String, payload: &Vec<u8>) -> Result<
     Ok(my_credential_req)
 }
 
-// TODO: The error arm of this Result is never thrown.  aka this method is never Err.
-pub fn issuer_credential_create(cred_def_id: String,
-                           source_id: String,
-                           issuer_did: String,
-                           credential_name: String,
-                           credential_data: String,
-                           price: u64) -> Result<u32, IssuerCredError> {
+pub fn issuer_credential_create(cred_def_handle: u32,
+                                source_id: String,
+                                issuer_did: String,
+                                credential_name: String,
+                                credential_data: String,
+                                price: u64) -> Result<u32, IssuerCredError> {
+    let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle).map_err(|ec|IssuerCredError::CommonError(ec.to_error_code()))?;
+    let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle).map_err(|ec|IssuerCredError::CommonError(ec.to_error_code()))?;
+    let tails_file = ::credential_def::get_tails_file(cred_def_handle).map_err(|ec|IssuerCredError::CommonError(ec.to_error_code()))?;
+    let rev_reg_def_json = ::credential_def::get_rev_reg_def(cred_def_handle).map_err(|ec|IssuerCredError::CommonError(ec.to_error_code()))?;
 
     let mut new_issuer_credential = IssuerCredential {
         credential_id: source_id.to_string(),
@@ -456,6 +496,11 @@ pub fn issuer_credential_create(cred_def_id: String,
         credential_offer: None,
         credential_name,
         ref_msg_id: None,
+        rev_reg_id,
+        rev_reg_def_json,
+        cred_rev_id: None,
+        rev_cred_payment_txn: None,
+        tails_file,
         price,
         payment_address: None,
         issued_did: String::new(),
@@ -464,7 +509,8 @@ pub fn issuer_credential_create(cred_def_id: String,
         remote_vk: String::new(),
         agent_did: String::new(),
         agent_vk: String::new(),
-        cred_def_id
+        cred_def_id,
+        cred_def_handle
     };
 
     new_issuer_credential.validate_credential_offer()?;
@@ -533,6 +579,12 @@ pub fn send_credential(handle: u32, connection_handle: u32) -> Result<u32,Issuer
     ISSUER_CREDENTIAL_MAP.get_mut(handle,|i|{
         i.send_credential(connection_handle).map_err(|ec| ec.to_error_code())
     }).map_err(|ec|IssuerCredError::CommonError(ec))
+}
+
+pub fn revoke_credential(handle: u32) -> Result<(), u32> {
+    ISSUER_CREDENTIAL_MAP.get_mut(handle,|i|{
+        i.revoke_cred().map_err(|ec|ec.to_error_code())
+    })
 }
 
 fn get_offer_details(response: &str) -> Result<String, IssuerCredError> {
@@ -650,11 +702,17 @@ pub mod tests {
 	        price: 1,
             payment_address: Some(payments::build_test_address("9UFgyjuJxi1i1HD")),
             ref_msg_id: None,
+            rev_reg_id: None,
+            tails_file: None,
+            cred_rev_id: None,
+            rev_cred_payment_txn: None,
+            rev_reg_def_json: None,
             remote_did: DID.to_string(),
             remote_vk: VERKEY.to_string(),
             agent_did: DID.to_string(),
             agent_vk: VERKEY.to_string(),
             cred_def_id: CRED_DEF_ID.to_string(),
+            cred_def_handle: 0,
         };
         issuer_credential
     }
@@ -675,7 +733,11 @@ pub mod tests {
 
     pub fn create_full_issuer_credential() -> (IssuerCredential, ::credential::Credential) {
         let issuer_did = settings::get_config_value(settings::CONFIG_INSTITUTION_DID).unwrap();
-        let (_, _, cred_def_id, _) = ::utils::libindy::anoncreds::tests::create_and_store_credential_def(::utils::constants::DEFAULT_SCHEMA_ATTRS);
+        let (_, cred_def_handle) = ::credential_def::tests::create_cred_def_real(true);
+        let cred_def_id = ::credential_def::get_cred_def_id(cred_def_handle).unwrap();
+        let rev_reg_id = ::credential_def::get_rev_reg_id(cred_def_handle).unwrap();
+        let tails_file = ::credential_def::get_tails_file(cred_def_handle).unwrap();
+        let rev_reg_def_json = ::credential_def::get_rev_reg_def(cred_def_handle).unwrap();
         let credential_data = r#"{"address1": ["123 Main St"], "address2": ["Suite 3"], "city": ["Draper"], "state": ["UT"], "zip": ["84000"]}"#;
 
         let mut issuer_credential = IssuerCredential {
@@ -691,6 +753,11 @@ pub mod tests {
             credential_name: "cred_name".to_string(),
             credential_id: String::new(),
             ref_msg_id: None,
+            rev_reg_id,
+            rev_reg_def_json,
+            cred_rev_id: None,
+            rev_cred_payment_txn: None,
+            tails_file,
             price: 1,
             payment_address: None,
             issued_did: String::new(),
@@ -699,7 +766,8 @@ pub mod tests {
             remote_vk: String::new(),
             agent_did: String::new(),
             agent_vk: String::new(),
-            cred_def_id
+            cred_def_id,
+            cred_def_handle
         };
 
         let payment = issuer_credential.generate_payment_info().unwrap();
@@ -720,7 +788,7 @@ pub mod tests {
     #[test]
     fn test_issuer_credential_create_succeeds() {
         init!("true");
-        match issuer_credential_create(CRED_DEF_ID.to_string(),
+        match issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                   "1".to_string(),
                                   "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                   "credential_name".to_string(),
@@ -734,7 +802,7 @@ pub mod tests {
     #[test]
     fn test_to_string_succeeds() {
         init!("true");
-        let handle = issuer_credential_create(CRED_DEF_ID.to_string(),
+        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                          "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "credential_name".to_string(),
@@ -751,7 +819,7 @@ pub mod tests {
 
         let credential_id = DEFAULT_CREDENTIAL_ID;
 
-        let handle = issuer_credential_create(CRED_DEF_ID.to_string(),
+        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                          "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "credential_name".to_string(),
@@ -778,7 +846,7 @@ pub mod tests {
 
         let credential_id = DEFAULT_CREDENTIAL_ID;
 
-        let handle = issuer_credential_create(CRED_DEF_ID.to_string(),
+        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                          "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "credential_name".to_string(),
@@ -820,7 +888,7 @@ pub mod tests {
     #[test]
     fn test_from_string_succeeds() {
         init!("true");
-        let handle = issuer_credential_create(CRED_DEF_ID.to_string(),
+        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                          "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "credential_name".to_string(),
@@ -856,7 +924,13 @@ pub mod tests {
             credential_name: DEFAULT_CREDENTIAL_NAME.to_owned(),
             credential_id: String::from(DEFAULT_CREDENTIAL_ID),
             cred_def_id: CRED_DEF_ID.to_string(),
+            cred_def_handle: 1,
             ref_msg_id: None,
+            rev_reg_id: None,
+            cred_rev_id: None,
+            rev_cred_payment_txn: None,
+            rev_reg_def_json: None,
+            tails_file: None,
             price: 0,
             payment_address: None,
             remote_did: DID.to_string(),
@@ -875,7 +949,7 @@ pub mod tests {
     #[test]
     fn test_issuer_credential_changes_state_after_being_validated() {
         init!("true");
-        let handle = issuer_credential_create(CRED_DEF_ID.to_string(),
+        let handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                          "1".to_string(),
                                          "8XFh8yBzrpJQmNyZzgoTqB".to_owned(),
                                          "credential_name".to_string(),
@@ -928,11 +1002,11 @@ pub mod tests {
     #[test]
     fn test_release_all() {
         init!("true");
-        let h1 = issuer_credential_create(CRED_DEF_ID.to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
-        let h2 = issuer_credential_create(CRED_DEF_ID.to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
-        let h3 = issuer_credential_create(CRED_DEF_ID.to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
-        let h4 = issuer_credential_create(CRED_DEF_ID.to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
-        let h5 = issuer_credential_create(CRED_DEF_ID.to_string(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
+        let h1 = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
+        let h2 = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
+        let h3 = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
+        let h4 = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
+        let h5 = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),"1".to_string(),"8XFh8yBzrpJQmNyZzgoTqB".to_owned(),"credential_name".to_string(),"{\"attr\":\"value\"}".to_owned(),1).unwrap();
         release_all();
         assert_eq!(release(h1),Err(IssuerCredError::InvalidHandle()));
         assert_eq!(release(h2),Err(IssuerCredError::InvalidHandle()));
@@ -951,14 +1025,14 @@ pub mod tests {
 
     #[test]
     fn test_encoding(){
-        let issuer_credential_handle = self::issuer_credential_create(CRED_DEF_ID.to_string(),
+        let issuer_credential_handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                                                       "IssuerCredentialName".to_string(),
                                                                       "000000000000000000000000Issuer02".to_string(),
                                                                       "CredentialNameHere".to_string(),
                                                                       r#"["name","gpa"]"#.to_string(),
                     						      1).unwrap();
         assert!(self::get_encoded_attributes(issuer_credential_handle).is_err());
-        let issuer_credential_handle = self::issuer_credential_create(CRED_DEF_ID.to_string(),
+        let issuer_credential_handle = issuer_credential_create(::credential_def::tests::create_cred_def_fake(),
                                                                      "IssuerCredentialName".to_string(),
                                                                      "000000000000000000000000Issuer02".to_string(),
                                                                      "CredentialNameHere".to_string(),
@@ -1018,5 +1092,32 @@ pub mod tests {
         assert!(credential.send_credential(connection_handle).is_err());
         let payment = serde_json::to_string(&credential.get_payment_txn().unwrap()).unwrap();
         assert!(payment.len() > 20);
+    }
+
+    #[test]
+    fn test_revoke_credential() {
+        init!("true");
+        let mut credential = create_standard_issuer_credential();
+
+        credential.tails_file = Some(TEST_TAILS_FILE.to_string());
+        credential.cred_rev_id = None;
+        credential.rev_reg_id = None;
+        assert_eq!(credential.revoke_cred(), Err(IssuerCredError::InvalidRevocationInfo()));
+        credential.tails_file = None;
+        credential.cred_rev_id = Some(CRED_REV_ID.to_string());
+        credential.rev_reg_id = None;
+        assert_eq!(credential.revoke_cred(), Err(IssuerCredError::InvalidRevocationInfo()));
+        credential.tails_file = None;
+        credential.cred_rev_id = None;
+        credential.rev_reg_id = Some(REV_REG_ID.to_string());
+        assert_eq!(credential.revoke_cred(), Err(IssuerCredError::InvalidRevocationInfo()));
+
+        credential.tails_file = Some(TEST_TAILS_FILE.to_string());
+        credential.cred_rev_id = Some(CRED_REV_ID.to_string());
+        credential.rev_reg_id = Some(REV_REG_ID.to_string());
+        credential.rev_cred_payment_txn = None;
+
+        credential.revoke_cred().unwrap();
+        assert!(credential.rev_cred_payment_txn.is_some());
     }
 }

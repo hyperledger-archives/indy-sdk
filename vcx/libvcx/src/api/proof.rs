@@ -17,13 +17,50 @@ use utils::threadpool::spawn;
 ///
 /// source_id: Enterprise's personal identification for the user.
 ///
-/// requested_attrs: attributes/claims prover must provide in proof
+/// requested_attrs: Describes requested attribute
+///     {
+///         "name": string, // attribute name, (case insensitive and ignore spaces)
+///         "restrictions":  (filter_json) {
+///            "schema_id": string, (Optional)
+///            "schema_issuer_did": string, (Optional)
+///            "schema_name": string, (Optional)
+///            "schema_version": string, (Optional)
+///            "issuer_did": string, (Optional)
+///            "cred_def_id": string, (Optional)
+///        },
+///         "non_revoked": {
+///             "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             "to": Optional<(u64)>
+///                 //Requested time represented as a total number of seconds from Unix Epoch, Optional
+///         }
+///     }
 ///
 /// # Example requested_attrs -> "[{"name":"attrName","restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
 ///
 /// requested_predicates: predicate specifications prover must provide claim for
+///          { // set of requested predicates
+///             "name": attribute name, (case insensitive and ignore spaces)
+///             "p_type": predicate type (Currently ">=" only)
+///             "p_value": int predicate value
+///             "restrictions": Optional<filter_json>, // see above
+///             "non_revoked": Optional<{
+///                 "from": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///                 "to": Optional<(u64)> Requested time represented as a total number of seconds from Unix Epoch, Optional
+///             }>
+///          },
 ///
 /// # Example requested_predicates -> "[{"name":"attrName","p_type":"GE","p_value":9,"restrictions":["issuer_did":"did","schema_id":"id","schema_issuer_did":"did","schema_name":"name","schema_version":"1.1.1","cred_def_id":"id"}]]"
+///
+/// revocation_interval:  Optional<<revocation_interval>>, // see below,
+///                        // If specified, prover must proof non-revocation
+///                        // for date in this interval for each attribute
+///                        // (can be overridden on attribute level)
+///     from: Optional<u64> // timestamp of interval beginning
+///     to: Optional<u64> // timestamp of interval beginning
+///         // Requested time represented as a total number of seconds from Unix Epoch, Optional
+/// # Examples config ->  "{}" | "{"to": 123} | "{"from": 100, "to": 123}"
+///
+///
 ///
 ///
 /// cb: Callback that provides proof handle and error status of request.
@@ -35,6 +72,7 @@ pub extern fn vcx_proof_create(command_handle: u32,
                                source_id: *const c_char,
                                requested_attrs: *const c_char,
                                requested_predicates: *const c_char,
+                               revocation_interval: *const c_char,
                                name: *const c_char,
                                cb: Option<extern fn(xcommand_handle: u32, err: u32, proof_handle: u32)>) -> u32 {
 
@@ -43,12 +81,13 @@ pub extern fn vcx_proof_create(command_handle: u32,
     check_useful_c_str!(requested_predicates, error::INVALID_OPTION.code_num);
     check_useful_c_str!(name, error::INVALID_OPTION.code_num);
     check_useful_c_str!(source_id, error::INVALID_OPTION.code_num);
+    check_useful_c_str!(revocation_interval, error::INVALID_OPTION.code_num);
 
-    info!("vcx_proof_create(command_handle: {}, source_id: {}, requested_attrs: {}, requested_predicates: {}, name: {})",
-          command_handle, source_id, requested_attrs, requested_predicates, name);
+    info!("vcx_proof_create(command_handle: {}, source_id: {}, requested_attrs: {}, requested_predicates: {}, revocation_interval: {}, name: {})",
+          command_handle, source_id, requested_attrs, requested_predicates, revocation_interval, name);
 
     spawn(move|| {
-        let ( rc, handle) = match proof::create_proof(source_id, requested_attrs, requested_predicates, name) {
+        let ( rc, handle) = match proof::create_proof(source_id, requested_attrs, requested_predicates, revocation_interval, name) {
             Ok(x) => {
                 info!("vcx_proof_create_cb(command_handle: {}, rc: {}, handle: {}) source_id: {}",
                       command_handle, error_string(0), x, proof::get_source_id(x).unwrap_or_default());
@@ -402,6 +441,7 @@ mod tests {
                                     CString::new(DEFAULT_PROOF_NAME).unwrap().into_raw(),
                                     CString::new(REQUESTED_ATTRS).unwrap().into_raw(),
                                     CString::new(REQUESTED_PREDICATES).unwrap().into_raw(),
+                                  CString::new(r#"{"support_revocation":false}"#).unwrap().into_raw(),
                                     CString::new("optional").unwrap().into_raw(),
                                     Some(cb.get_callback()));
         (cb, rc)
@@ -423,6 +463,7 @@ mod tests {
                                     ptr::null(),
                                     ptr::null(),
                                     ptr::null(),
+                                    CString::new(r#"{"support_revocation":false}"#).unwrap().into_raw(),
                                     ptr::null(),
                                     None),
                    error::INVALID_OPTION.code_num);
@@ -446,7 +487,7 @@ mod tests {
     fn test_vcx_proof_deserialize_succeeds() {
         init!("true");
         let cb = return_types_u32::Return_U32_U32::new().unwrap();
-        let original = r#"{"nonce":"123456","version":"1.0","handle":1,"msg_uid":"","ref_msg_id":"","name":"Name Data","prover_vk":"","agent_did":"","agent_vk":"","remote_did":"","remote_vk":"","prover_did":"8XFh8yBzrpJQmNyZzgoTqB","requested_attrs":"{\"attrs\":[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"ISSUER_DID2\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]}","requested_predicates":"{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"DID1\"}","source_id":"source id","state":2,"proof_state":0,"proof":null,"proof_request":null}"#;
+        let original = r#"{"nonce":"123456","version":"1.0","handle":1,"msg_uid":"","ref_msg_id":"","name":"Name Data","prover_vk":"","agent_did":"","agent_vk":"","remote_did":"","remote_vk":"","prover_did":"8XFh8yBzrpJQmNyZzgoTqB","requested_attrs":"{\"attrs\":[{\"name\":\"person name\"},{\"schema_seq_no\":1,\"name\":\"address_1\"},{\"schema_seq_no\":2,\"issuer_did\":\"ISSUER_DID2\",\"name\":\"address_2\"},{\"schema_seq_no\":1,\"name\":\"city\"},{\"schema_seq_no\":1,\"name\":\"state\"},{\"schema_seq_no\":1,\"name\":\"zip\"}]}","requested_predicates":"{\"attr_name\":\"age\",\"p_type\":\"GE\",\"value\":18,\"schema_seq_no\":1,\"issuer_did\":\"DID1\"}","source_id":"source id","state":2,"proof_state":0,"proof":null,"proof_request":null,"revocation_interval":{}}"#;
         assert_eq!(vcx_proof_deserialize(cb.command_handle,
                                          CString::new(PROOF_OFFER_SENT).unwrap().into_raw(),
                                          Some(cb.get_callback())),
