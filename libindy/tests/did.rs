@@ -493,6 +493,18 @@ mod high_cases {
         }
 
         #[test]
+        fn indy_get_my_did_metadata_works_with_temp_verkey() {
+            let (wallet_handle, did) = utils::setup_did();
+
+            did::set_did_metadata(wallet_handle, &did, METADATA).unwrap();
+            did::replace_keys_start(wallet_handle, &did, "{}").unwrap();
+
+            did::get_my_did_with_metadata(wallet_handle, &did).unwrap();
+
+            utils::tear_down_with_wallet(wallet_handle);
+        }
+
+        #[test]
         fn indy_get_my_did_metadata_works_for_unknown_did() {
             let wallet_handle = utils::setup_with_wallet();
 

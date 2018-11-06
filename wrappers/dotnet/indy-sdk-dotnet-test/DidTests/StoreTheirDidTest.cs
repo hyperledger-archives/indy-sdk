@@ -2,7 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading.Tasks;
 
-namespace Hyperledger.Indy.Test.SignusTests
+namespace Hyperledger.Indy.Test.DidTests
 {
     [TestClass]
     public class StoreTheirDidTest : IndyIntegrationTestWithSingleWallet
@@ -12,7 +12,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestStoreTheirDidWorks()
         {
-            await Did.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", _verkey));
+            await Did.StoreTheirDidAsync(wallet, string.Format("{{\"did\":\"{0}\"}}", DID));
         }
 
         [TestMethod]
@@ -26,7 +26,7 @@ namespace Hyperledger.Indy.Test.SignusTests
         [TestMethod]
         public async Task TestStoreTheirDidWorksWithVerkey()
         {
-            var json = string.Format(IDENTITY_JSON_TEMPLATE, DID1, _verkey);
+            var json = string.Format(IDENTITY_JSON_TEMPLATE, DID, _verkey);
 
             await Did.StoreTheirDidAsync(wallet, json);
         }

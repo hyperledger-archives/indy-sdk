@@ -17,7 +17,6 @@ namespace Hyperledger.Indy.Test.PoolTests
         [TestMethod]
         public async Task TestDeletePoolWorksForOpened()
         {
-            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
             var poolName = PoolUtils.CreatePoolLedgerConfig();
             var pool = await Pool.OpenPoolLedgerAsync(poolName, null);
 

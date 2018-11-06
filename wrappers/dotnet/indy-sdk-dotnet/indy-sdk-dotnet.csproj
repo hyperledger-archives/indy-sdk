@@ -1,11 +1,11 @@
 ﻿<Project Sdk="MSBuild.Sdk.Extras/1.6.46">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.1;xamarinios10</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net452;xamarinios10</TargetFrameworks>
     <AssemblyName>Hyperledger.Indy.Sdk</AssemblyName>
     <RootNamespace>Hyperledger.Indy</RootNamespace>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.6.4</Version>
+    <Version>1.6.7</Version>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Authors>Symon Rottem, Tomislav Markovski</Authors>
     <Company>Hyperledger Indy</Company>
@@ -19,17 +19,20 @@ Please note that to function the C-Callable Hyperledger Indy SDK and its depende
     <PackageTags>hyperledger indy sdk</PackageTags>
     <PackageLicenseUrl>https://github.com/hyperledger/indy-sdk/blob/master/LICENSE</PackageLicenseUrl>
     <PackageIconUrl></PackageIconUrl>
-    <AssemblyVersion>1.6.4</AssemblyVersion>
-    <FileVersion>1.6.4</FileVersion>
+    <AssemblyVersion>1.6.7</AssemblyVersion>
+    <FileVersion>1.6.7</FileVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>bin\Debug\netstandard1.1\Hyperledger.Indy.Sdk.xml</DocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsAsErrors></WarningsAsErrors>
+  <PropertyGroup>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Hyperledger.Indy.Sdk.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="LibLog" Version="5.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
   </ItemGroup>
+
 </Project>

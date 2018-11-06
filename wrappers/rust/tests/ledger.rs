@@ -147,6 +147,7 @@ mod test_sign_and_submit_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn sign_and_submit_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -280,6 +281,7 @@ mod test_submit_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn submit_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -433,6 +435,7 @@ mod test_submit_action {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn submit_action_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -556,6 +559,7 @@ mod test_sign_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn sign_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -676,6 +680,7 @@ mod test_multi_sign_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn multi_sign_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -810,6 +815,7 @@ mod test_build_nym_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn build_nym_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -912,6 +918,7 @@ mod test_build_get_nym_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn build_get_nym_request_timeout_times_out() {
         Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
 
@@ -989,6 +996,7 @@ mod test_build_attrib_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn build_attrib_request_timeout_times_out() {
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
@@ -1062,6 +1070,7 @@ mod test_build_get_attrib_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn build_get_attrib_request_timeout_times_out() {
         let submitter_wallet = Wallet::new();
         let wallet = Wallet::new();
@@ -1128,6 +1137,7 @@ mod test_build_schema_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn build_schema_request_timeout_times_out() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1194,6 +1204,7 @@ use super::*;
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn build_get_schema_request_timeout_times_out() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1315,6 +1326,7 @@ mod test_parse_get_schema_response {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn parse_get_schema_response_timeout_times_out() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1381,6 +1393,7 @@ mod test_build_get_ddo_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn build_get_ddo_request_timeout_times_out() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1448,6 +1461,7 @@ mod test_build_get_txn_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn build_get_txn_request_timeout_times_out() {
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
@@ -1514,6 +1528,7 @@ mod test_build_cred_def_request {
     }
 
     #[test]
+    #[cfg(feature = "timeout_tests")]
     pub fn test_build_cred_def_request_timeout_times_out(){
         let wallet = Wallet::new();
         let (did, _) = Did::new(wallet.handle, "{}").unwrap();
