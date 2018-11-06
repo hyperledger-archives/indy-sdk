@@ -15,6 +15,8 @@ from vcx.state import State, ProofState
 from time import sleep
 from vcx.api.utils import vcx_agent_provision
 from vcx.common import mint_tokens
+import vcx.api.logging as logging
+from ctypes import cdll
 
 # 'agency_url': URL of the agency
 # 'agency_did':  public DID of the agency
@@ -32,6 +34,10 @@ provisionConfig = {
 
 async def main():
 
+    payment_plugin = cdll.LoadLibrary("libnullpay.so")
+    payment_plugin.nullpay_init()
+
+    logging.default_logger()
     print("#1 Provision an agent and wallet, get back configuration details")
     config = await vcx_agent_provision(json.dumps(provisionConfig))
     config = json.loads(config)
@@ -42,6 +48,7 @@ async def main():
     
     print("#2 Initialize libvcx with new configuration")
     await vcx_init_with_config(json.dumps(config))
+
 
     print("#3 Create a new schema on the ledger")
     version = format("%d.%d.%d" % (random.randint(1,101),random.randint(1,101),random.randint(1,101)))

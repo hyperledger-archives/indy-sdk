@@ -106,6 +106,7 @@ mod log_tests {
     #[ignore]
     #[test]
     fn test_set_logger() {
+        unsafe { assert_eq!(COUNT, 0);}
         let err = vcx_set_logger(null(), None, Some(custom_log), None);
         debug!("testing debug");
         unsafe { assert!(COUNT > 1); }

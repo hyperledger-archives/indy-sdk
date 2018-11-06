@@ -12,6 +12,8 @@ from vcx.api.wallet import Wallet
 from vcx.state import State
 from time import sleep
 from vcx.common import mint_tokens
+from ctypes import cdll
+import vcx.api.logging as logging
 
 provisionConfig = {
   'agency_url':'https://agency-sandbox.evernym.com',
@@ -23,6 +25,11 @@ provisionConfig = {
 }
 
 async def main():
+
+    payment_plugin = cdll.LoadLibrary("libnullpay.so")
+    payment_plugin.nullpay_init()
+    logging.default_logger()
+
     print("#7 Provision an agent and wallet, get back configuration details")
     config = await vcx_agent_provision(json.dumps(provisionConfig))
     config = json.loads(config)

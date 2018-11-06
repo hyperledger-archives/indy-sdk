@@ -3,6 +3,7 @@ import os
 
 LIBRARY = "libvcx.so"
 
+
 def _cdll() -> CDLL:
     if not hasattr(_cdll, "cdll"):
         _cdll.cdll = _load_cdll()

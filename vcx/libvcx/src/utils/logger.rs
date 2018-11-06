@@ -94,9 +94,15 @@ impl log::Log for LibvcxLogger {
     fn enabled(&self, metadata: &Metadata) -> bool { true }
     fn log(&self, record: &Record) {
         use std::ptr::null;
+
         let log_cb = self.log;
+        let level: u32 = record.level() as u32;
+        let target = CStringUtils::string_to_cstring(record.target().to_string());
         let message = CStringUtils::string_to_cstring(record.args().to_string());
-        log_cb(self.context, 1, null(), message.as_ptr(), null(), null(), 1)
+        let module_path = CStringUtils::string_to_cstring(record.module_path().unwrap_or("").to_string());
+        let file = CStringUtils::string_to_cstring(record.file().unwrap_or("").to_string());
+        let line = record.line().unwrap_or(0);
+        log_cb(self.context, level, target.as_ptr(), message.as_ptr(), module_path.as_ptr() , file.as_ptr(), line)
     }
     fn flush(&self) {}
 }
