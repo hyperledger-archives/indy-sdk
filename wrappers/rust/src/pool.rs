@@ -100,6 +100,7 @@ impl Pool {
         ResultHandler::ec_handle(command_handle, err, receiver)
     }
 
+/*
     /// Opens pool ledger and performs connecting to pool nodes.
     ///
     /// Pool ledger configuration with corresponded name must be previously created
@@ -157,6 +158,7 @@ impl Pool {
 
         Pool::_open_ledger(command_handle, pool_name, config, cb)
     }
+*/
 
     fn _open_ledger(command_handle: IndyHandle, pool_name: &str, config: Option<&str>, cb: Option<ResponseI32CB>) -> ErrorCode {
         let pool_name = c_str!(pool_name);
@@ -209,14 +211,15 @@ impl Pool {
     }
 
     /// Lists names of created pool ledgers
-    pub fn list() -> Result<String, ErrorCode> {
+    pub fn list() -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Pool::_list(command_handle, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Lists names of created pool ledgers
     /// * `timeout` - the maximum time this function waits for a response
     pub fn list_timeout(timeout: Duration) -> Result<String, ErrorCode> {
@@ -237,6 +240,7 @@ impl Pool {
 
         Pool::_list(command_handle, cb)
     }
+*/
 
     fn _list(command_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
         ErrorCode::from(unsafe { pool::indy_list_pools(command_handle, cb) })

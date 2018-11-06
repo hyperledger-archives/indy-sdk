@@ -1,8 +1,9 @@
 use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
-use std::time::Duration;
 use std::ptr::null;
+
+use futures::Future;
 
 use ffi::ledger;
 use ffi::{ResponseEmptyCB,
@@ -29,14 +30,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn sign_and_submit_request(pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn sign_and_submit_request(pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_sign_and_submit_request(command_handle, pool_handle, wallet_handle, submitter_did, request_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Signs and submits request message to validator pool.
     ///
     /// Adds submitter information to passed request json, signs it with submitter
@@ -80,6 +82,7 @@ impl Ledger {
 
         Ledger::_sign_and_submit_request(command_handle, pool_handle, wallet_handle, submitter_did, request_json, cb)
     }
+*/
 
     fn _sign_and_submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -105,14 +108,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn submit_request(pool_handle: IndyHandle, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn submit_request(pool_handle: IndyHandle, request_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_submit_request(command_handle, pool_handle, request_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Publishes request message to validator pool (no signing, unlike Ledger::sign_and_submit_request).
     ///
     /// The request is sent to the validator pool as is. It's assumed that it's already prepared.
@@ -148,6 +152,7 @@ impl Ledger {
 
         Ledger::_submit_request(command_handle, pool_handle, request_json, cb)
     }
+*/
 
     fn _submit_request(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let request_json = c_str!(request_json);
@@ -155,14 +160,15 @@ impl Ledger {
         ErrorCode::from(unsafe { ledger::indy_submit_request(command_handle, pool_handle, request_json.as_ptr(), cb) })
     }
 
-    pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32) -> Result<String, ErrorCode> {
+    pub fn submit_action(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// * `timeout` - the maximum time this function waits for a response
     pub fn submit_action_timeout(pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
@@ -181,6 +187,7 @@ impl Ledger {
 
         Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb)
     }
+*/
 
     fn _submit_action(command_handle: IndyHandle, pool_handle: IndyHandle, request_json: &str, nodes: &str, wait_timeout: i32, cb: Option<ResponseStringCB>) -> ErrorCode {
         let request_json = c_str!(request_json);
@@ -203,14 +210,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Signed request json.
-    pub fn sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Signs request message.
     ///
     /// Adds submitter information to passed request json, signs it with submitter
@@ -250,6 +258,7 @@ impl Ledger {
 
         Ledger::_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb)
     }
+*/
 
     fn _sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -270,14 +279,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Signed request json.
-    pub fn multi_sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Result<String, ErrorCode> {
+    pub fn multi_sign_request(wallet_handle: IndyHandle, submitter_did: &str, request_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_multi_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Multi signs request message.
     ///
     /// Adds submitter information to passed request json, signs it with submitter
@@ -317,6 +327,7 @@ impl Ledger {
 
         Ledger::_multi_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb)
     }
+*/
 
     fn _multi_sign_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: &str, request_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -333,14 +344,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_ddo_request(submitter_did: Option<&str>, target_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_ddo_request(command_handle, submitter_did, target_did, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a request to get a DDO.
     ///
     /// # Arguments
@@ -372,6 +384,7 @@ impl Ledger {
 
         Ledger::_build_get_ddo_request(command_handle, submitter_did, target_did, cb)
     }
+*/
 
     fn _build_get_ddo_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -396,14 +409,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>, data: Option<&str>, role: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn build_nym_request(submitter_did: &str, target_did: &str, verkey: Option<&str>, data: Option<&str>, role: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_nym_request(command_handle, submitter_did, target_did, verkey, data, role, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a NYM request. Request to create a new NYM record for a specific user.
     ///
     /// # Arguments
@@ -451,6 +465,7 @@ impl Ledger {
 
         Ledger::_build_nym_request(command_handle, submitter_did, target_did, verkey, data, role, cb)
     }
+*/
 
     fn _build_nym_request(command_handle: IndyHandle,
                           submitter_did: &str,
@@ -485,14 +500,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_nym_request(submitter_did: Option<&str>, target_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_nym_request(command_handle, submitter_did, target_did, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a GET_NYM request. Request to get information about a DID (NYM).
     ///
     /// # Arguments
@@ -524,6 +540,7 @@ impl Ledger {
 
         Ledger::_build_get_nym_request(command_handle, submitter_did, target_did, cb)
     }
+*/
 
     fn _build_get_nym_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -544,14 +561,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_txn_request(submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32) -> Result<String, ErrorCode> {
+    pub fn build_get_txn_request(submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb);
-    
-        ResultHandler::one(err, receiver)
+
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a GET_TXN request. Request to get any transaction by its seq_no.
     ///
     /// # Arguments
@@ -569,7 +587,7 @@ impl Ledger {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb);
-    
+
         ResultHandler::one_timeout(err, receiver, timeout)
     }
 
@@ -591,6 +609,7 @@ impl Ledger {
 
         Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb)
     }
+*/
 
     fn _build_get_txn_request(command_handle: IndyHandle, submitter_did: Option<&str>, ledger_type: Option<&str>, seq_no: i32, cb: Option<ResponseStringCB>) ->  ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -610,14 +629,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn build_attrib_request(submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_attrib_request(command_handle, submitter_did, target_did, hash, raw, enc, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds an ATTRIB request. Request to add attribute to a NYM record.
     ///
     /// # Arguments
@@ -655,6 +675,7 @@ impl Ledger {
 
         Ledger::_build_attrib_request(command_handle, submitter_did, target_did, hash, raw, enc, cb)
     }
+*/
 
     fn _build_attrib_request(command_handle: IndyHandle, submitter_did: &str, target_did: &str, hash: Option<&str>, raw: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -686,14 +707,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn build_get_attrib_request(submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_attrib_request(command_handle, submitter_did, target_did, raw, hash, enc, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a GET_ATTRIB request. Request to get information about an Attribute for the specified DID.
     ///
     /// # Arguments
@@ -731,6 +753,7 @@ impl Ledger {
 
         Ledger::_build_get_attrib_request(command_handle, submitter_did, target_did, raw, hash, enc, cb)
     }
+*/
 
     fn _build_get_attrib_request(command_handle: IndyHandle, submitter_did: Option<&str>, target_did: &str, raw: Option<&str>, hash: Option<&str>, enc: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -766,14 +789,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_schema_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_schema_request(submitter_did: &str, data: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_schema_request(command_handle, submitter_did, data, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a SCHEMA request. Request to add Credential's schema.
     ///
     /// # Arguments
@@ -819,6 +843,7 @@ impl Ledger {
 
         Ledger::_build_schema_request(command_handle, submitter_did, data, cb)
     }
+*/
 
     fn _build_schema_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -835,14 +860,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_schema_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_schema_request(submitter_did: Option<&str>, id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_schema_request(command_handle, submitter_did, id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a GET_SCHEMA request. Request to get Credential's Schema.
     ///
     /// # Arguments
@@ -874,6 +900,7 @@ impl Ledger {
 
         Ledger::_build_get_schema_request(command_handle, submitter_did, id, cb)
     }
+*/
 
     fn _build_get_schema_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -896,14 +923,15 @@ impl Ledger {
     ///     version: Schema's version string
     ///     ver: Version of the Schema json
     /// }
-    pub fn parse_get_schema_response(get_schema_response: &str) -> Result<(String, String), ErrorCode> {
+    pub fn parse_get_schema_response(get_schema_response: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let err = Ledger::_parse_get_schema_response(command_handle, get_schema_response, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::ec_str_str(command_handle, err, receiver)
     }
 
+/*
     /// Parse a GET_SCHEMA response to get Schema in the format compatible with Anoncreds API.
     ///
     /// # Arguments
@@ -940,6 +968,7 @@ impl Ledger {
 
         Ledger::_parse_get_schema_response(command_handle, get_schema_response, cb)
     }
+*/
 
     fn _parse_get_schema_response(command_handle: IndyHandle, get_schema_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let get_schema_response = c_str!(get_schema_response);
@@ -967,14 +996,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_cred_def_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_cred_def_request(submitter_did: &str, data: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_cred_def_request(command_handle, submitter_did, data, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds an CRED_DEF request. Request to add a Credential Definition (in particular, public key),
     /// that Issuer creates for a particular Credential Schema.
     ///
@@ -1030,6 +1060,7 @@ impl Ledger {
 
         Ledger::_build_cred_def_request(command_handle, submitter_did, data, cb)
     }
+*/
 
     fn _build_cred_def_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -1047,14 +1078,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_cred_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_cred_def_request(submitter_did: Option<&str>, id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_cred_def_request(command_handle, submitter_did, id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a GET_CRED_DEF request. Request to get a Credential Definition (in particular, public key),
     /// that Issuer creates for a particular Credential Schema.
     ///
@@ -1088,6 +1120,7 @@ impl Ledger {
 
         Ledger::_build_get_cred_def_request(command_handle, submitter_did, id, cb)
     }
+*/
 
     fn _build_get_cred_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -1114,14 +1147,15 @@ impl Ledger {
     ///     },
     ///     ver: Version of the Credential Definition json
     /// }
-    pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Result<(String, String), ErrorCode> {
+    pub fn parse_get_cred_def_response(get_cred_def_response: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let err = Ledger::_parse_get_cred_def_response(command_handle, get_cred_def_response, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::ec_str_str(command_handle, err, receiver)
     }
 
+/*
     /// Parse a GET_CRED_DEF response to get Credential Definition in the format compatible with Anoncreds API.
     ///
     /// # Arguments
@@ -1162,6 +1196,7 @@ impl Ledger {
 
         Ledger::_parse_get_cred_def_response(command_handle, get_cred_def_response, cb)
     }
+*/
 
     fn _parse_get_cred_def_response(command_handle: IndyHandle, get_cred_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let get_cred_def_response = c_str!(get_cred_def_response);
@@ -1186,14 +1221,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_node_request(submitter_did: &str, target_did: &str, data: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_node_request(command_handle, submitter_did, target_did, data, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a NODE request. Request to add a new node to the pool, or updates existing in the pool.
     ///
     /// # Arguments
@@ -1243,6 +1279,7 @@ impl Ledger {
 
         Ledger::_build_node_request(command_handle, submitter_did, target_did, data, cb)
     }
+*/
 
     fn _build_node_request(command_handle: IndyHandle, submitter_did: &str, target_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -1259,14 +1296,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_validator_info_request(submitter_did: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_validator_info_request(submitter_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_validator_info_request(command_handle, submitter_did, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a GET_VALIDATOR_INFO request.
     ///
     /// # Arguments
@@ -1296,6 +1334,7 @@ impl Ledger {
 
         Ledger::_build_get_validator_info_request(command_handle, submitter_did, cb)
     }
+*/
 
     fn _build_get_validator_info_request(command_handle: IndyHandle, submitter_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -1316,14 +1355,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Result<String, ErrorCode> {
+    pub fn build_pool_config_request(submitter_did: &str, writes: bool, force: bool) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_pool_config_request(command_handle, submitter_did, writes, force, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a POOL_CONFIG request. Request to change Pool's configuration.
     ///
     /// # Arguments
@@ -1361,6 +1401,7 @@ impl Ledger {
 
         Ledger::_build_pool_config_request(command_handle, submitter_did, writes, force, cb)
     }
+*/
 
     fn _build_pool_config_request(command_handle: IndyHandle, submitter_did: &str, writes: bool, force: bool, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -1372,25 +1413,26 @@ impl Ledger {
     ///
     /// # Arguments
     /// * `submitter_did` - Id of Identity stored in secured Wallet.
-    /// * `action`- 
-    /// * `datetime`- 
+    /// * `action`-
+    /// * `datetime`-
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_pool_restart_request(submitter_did: &str, action: &str, datetime: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn build_pool_restart_request(submitter_did: &str, action: &str, datetime: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_pool_restart_request(command_handle, submitter_did, action, datetime, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a POOL_RESTART request.
     ///
     /// # Arguments
     /// * `submitter_did` - Id of Identity stored in secured Wallet.
-    /// * `action`- 
-    /// * `datetime`- 
+    /// * `action`-
+    /// * `datetime`-
     /// * `timeout` - the maximum time this function waits for a response
     ///
     /// # Returns
@@ -1407,8 +1449,8 @@ impl Ledger {
     ///
     /// # Arguments
     /// * `submitter_did` - Id of Identity stored in secured Wallet.
-    /// * `action`- 
-    /// * `datetime`- 
+    /// * `action`-
+    /// * `datetime`-
     /// * `closure` - the closure that is called when finished
     ///
     /// # Returns
@@ -1418,6 +1460,7 @@ impl Ledger {
 
         Ledger::_build_pool_restart_request(command_handle, submitter_did, action, datetime, cb)
     }
+*/
 
     fn _build_pool_restart_request(command_handle: IndyHandle, submitter_did: &str, action: &str, datetime: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -1462,14 +1505,15 @@ impl Ledger {
                                       justification: Option<&str>,
                                       reinstall: bool,
                                       force: bool,
-                                      package: Option<&str>) -> Result<String, ErrorCode> {
+                                      package: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_pool_upgrade_request(command_handle, submitter_did, name, version, action, sha256, upgrade_timeout, schedule, justification, reinstall, force, package, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a POOL_UPGRADE request. Request to upgrade the Pool (sent by Trustee).
     /// It upgrades the specified Nodes (either all nodes in the Pool, or some specific ones).
     ///
@@ -1545,6 +1589,7 @@ impl Ledger {
 
         Ledger::_build_pool_upgrade_request(command_handle, submitter_did, name, version, action, sha256, upgrade_timeout, schedule, justification, reinstall, force, package, cb)
     }
+*/
 
     fn _build_pool_upgrade_request(command_handle: IndyHandle,
                                    submitter_did: &str,
@@ -1610,14 +1655,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_revoc_reg_def_request(submitter_did: &str, data: &str) -> Result<String, ErrorCode> {
+    pub fn build_revoc_reg_def_request(submitter_did: &str, data: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_revoc_reg_def_request(command_handle, submitter_did, data, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a REVOC_REG_DEF request. Request to add the definition of revocation registry
     /// to an exists credential definition.
     ///
@@ -1679,6 +1725,7 @@ impl Ledger {
 
         Ledger::_build_revoc_reg_def_request(command_handle, submitter_did, data, cb)
     }
+*/
 
     fn _build_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: &str, data: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -1696,14 +1743,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_revoc_reg_def_request(submitter_did: Option<&str>, id: &str) -> Result<String, ErrorCode> {
+    pub fn build_get_revoc_reg_def_request(submitter_did: Option<&str>, id: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_revoc_reg_def_request(command_handle, submitter_did, id, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a GET_REVOC_REG_DEF request. Request to get a revocation registry definition,
     /// that Issuer creates for a particular Credential Definition.
     ///
@@ -1737,6 +1785,7 @@ impl Ledger {
 
         Ledger::_build_get_revoc_reg_def_request(command_handle, submitter_did, id, cb)
     }
+*/
 
     fn _build_get_revoc_reg_def_request(command_handle: IndyHandle, submitter_did: Option<&str>, id: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -1767,14 +1816,15 @@ impl Ledger {
     ///     },
     ///     "ver": string - version of revocation registry definition json.
     /// }
-    pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Result<(String, String), ErrorCode> {
+    pub fn parse_get_revoc_reg_def_response(get_revoc_reg_def_response: &str) -> Box<Future<Item=(String, String), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
         let err = Ledger::_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::ec_str_str(command_handle, err, receiver)
     }
 
+/*
     /// Parse a GET_REVOC_REG_DEF response to get Revocation Registry Definition in the format
     /// compatible with Anoncreds API.
     ///
@@ -1820,6 +1870,7 @@ impl Ledger {
 
         Ledger::_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response, cb)
     }
+*/
 
     fn _parse_get_revoc_reg_def_response(command_handle: IndyHandle, get_revoc_reg_def_response: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let get_revoc_reg_def_response = c_str!(get_revoc_reg_def_response);
@@ -1849,14 +1900,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_revoc_reg_entry_request(submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str) -> Result<String, ErrorCode> {
+    pub fn build_revoc_reg_entry_request(submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_revoc_reg_entry_request(command_handle, submitter_did, revoc_reg_def_id, rev_def_type, value, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a REVOC_REG_ENTRY request.  Request to add the RevocReg entry containing
     /// the new accumulator value and issued/revoked indices.
     /// This is just a delta of indices, not the whole list.
@@ -1916,6 +1968,7 @@ impl Ledger {
 
         Ledger::_build_revoc_reg_entry_request(command_handle, submitter_did, revoc_reg_def_id, rev_def_type, value, cb)
     }
+*/
 
     fn _build_revoc_reg_entry_request(command_handle: IndyHandle, submitter_did: &str, revoc_reg_def_id: &str, rev_def_type: &str, value: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did = c_str!(submitter_did);
@@ -1936,14 +1989,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_revoc_reg_request(submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64) -> Result<String, ErrorCode> {
+    pub fn build_get_revoc_reg_request(submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_revoc_reg_request(command_handle, submitter_did, revoc_reg_def_id, timestamp, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a GET_REVOC_REG request. Request to get the accumulated state of the Revocation Registry
     /// by ID. The state is defined by the given timestamp.
     ///
@@ -1979,6 +2033,7 @@ impl Ledger {
 
         Ledger::_build_get_revoc_reg_request(command_handle, submitter_did, revoc_reg_def_id, timestamp, cb)
     }
+*/
 
     fn _build_get_revoc_reg_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, timestamp: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -2000,14 +2055,15 @@ impl Ledger {
     ///     },
     ///     "ver": string - version revocation registry json
     /// }
-    pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Result<(String, String, u64), ErrorCode> {
+    pub fn parse_get_revoc_reg_response(get_revoc_reg_response: &str) -> Box<Future<Item=(String, String, u64), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_u64();
 
         let err = Ledger::_parse_get_revoc_reg_response(command_handle, get_revoc_reg_response, cb);
 
-        ResultHandler::three(err, receiver)
+        ResultHandler::ec_str_str_u64(command_handle, err, receiver)
     }
 
+/*
     /// Parse a GET_REVOC_REG response to get Revocation Registry in the format compatible with Anoncreds API.
     ///
     /// # Arguments
@@ -2043,6 +2099,7 @@ impl Ledger {
 
         Ledger::_parse_get_revoc_reg_response(command_handle, get_revoc_reg_response, cb)
     }
+*/
 
     fn _parse_get_revoc_reg_response(command_handle: IndyHandle, get_revoc_reg_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
         let get_revoc_reg_response = c_str!(get_revoc_reg_response);
@@ -2062,14 +2119,15 @@ impl Ledger {
     ///
     /// # Returns
     /// Request result as json.
-    pub fn build_get_revoc_reg_delta_request(submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64) -> Result<String, ErrorCode> {
+    pub fn build_get_revoc_reg_delta_request(submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Ledger::_build_get_revoc_reg_delta_request(command_handle, submitter_did, revoc_reg_def_id, from, to, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Builds a GET_REVOC_REG_DELTA request. Request to get the delta of the accumulated state of the Revocation Registry.
     /// The Delta is defined by from and to timestamp fields.
     /// If from is not specified, then the whole state till to will be returned.
@@ -2109,6 +2167,7 @@ impl Ledger {
 
         Ledger::_build_get_revoc_reg_delta_request(command_handle, submitter_did, revoc_reg_def_id, from, to, cb)
     }
+*/
 
     fn _build_get_revoc_reg_delta_request(command_handle: IndyHandle, submitter_did: Option<&str>, revoc_reg_def_id: &str, from: i64, to: i64, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -2133,14 +2192,15 @@ impl Ledger {
     ///     },
     ///     "ver": string - version revocation registry delta json
     /// }
-    pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Result<(String, String, u64), ErrorCode> {
+    pub fn parse_get_revoc_reg_delta_response(get_revoc_reg_delta_response: &str) -> Box<Future<Item=(String, String, u64), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string_u64();
 
         let err = Ledger::_parse_get_revoc_reg_delta_response(command_handle, get_revoc_reg_delta_response, cb);
 
-        ResultHandler::three(err, receiver)
+        ResultHandler::ec_str_str_u64(command_handle, err, receiver)
     }
 
+/*
     /// Parse a GET_REVOC_REG_DELTA response to get Revocation Registry Delta in the format compatible with Anoncreds API.
     ///
     /// # Arguments
@@ -2179,6 +2239,7 @@ impl Ledger {
 
         Ledger::_parse_get_revoc_reg_delta_response(command_handle, get_revoc_reg_delta_response, cb)
     }
+*/
 
     fn _parse_get_revoc_reg_delta_response(command_handle: IndyHandle, get_revoc_reg_delta_response: &str, cb: Option<ResponseStringStringU64CB>) -> ErrorCode {
         let get_revoc_reg_delta_response = c_str!(get_revoc_reg_delta_response);
@@ -2203,6 +2264,7 @@ impl Ledger {
         ResultHandler::empty(err, receiver)
     }
 
+/*
     /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
     ///
     /// # Arguments
@@ -2236,6 +2298,7 @@ impl Ledger {
 
         Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb)
     }
+*/
 
     fn _register_transaction_parser_for_sp(command_handle: IndyHandle, txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let txn_type = c_str!(txn_type);

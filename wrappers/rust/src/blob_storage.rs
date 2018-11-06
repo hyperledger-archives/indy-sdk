@@ -1,7 +1,8 @@
+use futures::Future;
+
 use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
-use std::time::Duration;
 
 use ffi::blob_storage;
 use ffi::ResponseI32CB;
@@ -11,14 +12,15 @@ use utils::callbacks::{ClosureHandler, ResultHandler};
 pub struct Blob {}
 
 impl Blob {
-    pub fn open_reader(xtype: &str, config_json: &str) -> Result<IndyHandle, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+    pub fn open_reader(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
         let err = Blob::_open_reader(command_handle, xtype, config_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_handle(command_handle, err, receiver)
     }
 
+/*
     pub fn open_reader_timeout(xtype: &str, config_json: &str, timeout: Duration) -> Result<IndyHandle, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
 
@@ -32,6 +34,7 @@ impl Blob {
 
         Blob::_open_reader(command_handle, xtype, config_json, cb)
     }
+*/
 
     fn _open_reader(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -40,14 +43,15 @@ impl Blob {
         ErrorCode::from(unsafe { blob_storage::indy_open_blob_storage_reader(command_handle, xtype.as_ptr(), config_json.as_ptr(), cb) })
     }
 
-    pub fn open_writer(xtype: &str, config_json: &str) -> Result<IndyHandle, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+    pub fn open_writer(xtype: &str, config_json: &str) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
         let err = Blob::_open_writer(command_handle, xtype, config_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_handle(command_handle, err, receiver)
     }
 
+/*
     pub fn open_writer_timeout(xtype: &str, config_json: &str, timeout: Duration) -> Result<IndyHandle, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
 
@@ -61,6 +65,7 @@ impl Blob {
 
         Blob::_open_writer(command_handle, xtype, config_json, cb)
     }
+*/
 
     fn _open_writer(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
         let xtype = c_str!(xtype);

@@ -30,14 +30,15 @@ impl Key {
     /// }
     /// # Returns
     /// verkey of generated key pair, also used as key identifier
-    pub fn create(wallet_handle: IndyHandle, my_key_json: Option<&str>) -> Result<String, ErrorCode> {
+    pub fn create(wallet_handle: IndyHandle, my_key_json: Option<&str>) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Key::_create(command_handle, wallet_handle, my_key_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Creates key pair in wallet
     /// # Arguments
     /// * `wallet_handle` - wallet handle (created by Wallet::open)
@@ -81,6 +82,7 @@ impl Key {
 
         Key::_create(command_handle, wallet_handle, my_key_json, cb)
     }
+*/
 
     fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, my_key_json: Option<&str>, cb: Option<ResponseStringCB>) -> ErrorCode {
         let my_key_json = opt_c_str_json!(my_key_json);
@@ -140,14 +142,15 @@ impl Key {
     /// * `verkey` - the public key or key id to retrieve metadata
     /// # Returns
     /// metadata currently stored with the key; Can be empty if no metadata was saved for this key
-    pub fn get_metadata(wallet_handle: IndyHandle, verkey: &str) -> Result<String, ErrorCode> {
+    pub fn get_metadata(wallet_handle: IndyHandle, verkey: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Key::_get_metadata(command_handle, wallet_handle, verkey, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Retrieves the metadata for the `verkey` in the wallet
     /// # Argument
     /// * `wallet_handle` - wallet handle (created by Wallet::open)
@@ -175,6 +178,7 @@ impl Key {
 
         Key::_get_metadata(command_handle, wallet_handle, verkey, cb)
     }
+*/
 
     fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, verkey: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let verkey = c_str!(verkey);
@@ -323,12 +327,12 @@ impl Crypto {
     /// * `encrypted_message`: the message to be decrypted
     /// # Returns
     /// sender's verkey and decrypted message
-    pub fn auth_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Result<(String, Vec<u8>), ErrorCode> {
+    pub fn auth_decrypt(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8]) -> Box<Future<Item=(String, Vec<u8>), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
 
         let err = Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
 
-        ResultHandler::two(err, receiver)
+        ResultHandler::ec_str_slice(command_handle, err, receiver)
     }
 
     /// Decrypt a message by authenticated-encryption scheme.
@@ -349,13 +353,13 @@ impl Crypto {
     /// * `timeout` - the maximum time this function waits for a response
     /// # Returns
     /// sender's verkey and decrypted message
-    pub fn auth_decrypt_timeout(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], timeout: Duration) -> Result<(String, Vec<u8>), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
-
-        let err = Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
-
-        ResultHandler::two_timeout(err, receiver, timeout)
-    }
+//    pub fn auth_decrypt_timeout(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], timeout: Duration) -> Result<(String, Vec<u8>), ErrorCode> {
+//        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_slice();
+//
+//        let err = Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
+//
+//        ResultHandler::two_timeout(err, receiver, timeout)
+//    }
 
     /// Decrypt a message by authenticated-encryption scheme.
     ///
@@ -375,11 +379,11 @@ impl Crypto {
     /// * `closure` - The closure that is called when finished
     /// # Returns
     /// errorcode from calling ffi function
-    pub fn auth_decrypt_async<F: 'static>(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Vec<u8>) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_slice(Box::new(closure));
-
-        Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb)
-    }
+//    pub fn auth_decrypt_async<F: 'static>(wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Vec<u8>) + Send {
+//        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_slice(Box::new(closure));
+//
+//        Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb)
+//    }
 
     fn _auth_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseStringSliceCB>) -> ErrorCode {
         let recipient_vk = c_str!(recipient_vk);

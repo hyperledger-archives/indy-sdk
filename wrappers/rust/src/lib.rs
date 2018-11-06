@@ -22,7 +22,7 @@ pub mod payments;
 pub mod pairwise;
 pub mod pool;
 pub mod wallet;
-pub mod utils;
+mod utils;
 
 use std::sync::mpsc;
 use std::ffi::CString;

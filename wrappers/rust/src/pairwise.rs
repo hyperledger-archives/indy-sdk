@@ -88,14 +88,15 @@ impl Pairwise {
         })
     }
 
-    pub fn list(wallet_handle: IndyHandle) -> Result<String, ErrorCode> {
+    pub fn list(wallet_handle: IndyHandle) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Pairwise::_list(command_handle, wallet_handle, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// * `timeout` - the maximum time this function waits for a response
     pub fn list_timeout(wallet_handle: IndyHandle, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
@@ -114,6 +115,7 @@ impl Pairwise {
 
         Pairwise::_list(command_handle, wallet_handle, cb)
     }
+*/
 
     fn _list(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
         ErrorCode::from(unsafe {
@@ -121,14 +123,15 @@ impl Pairwise {
         })
     }
 
-    pub fn get(wallet_handle: IndyHandle, their_did: &str) -> Result<String, ErrorCode> {
+    pub fn get(wallet_handle: IndyHandle, their_did: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Pairwise::_get(command_handle, wallet_handle, their_did, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// * `timeout` - the maximum time this function waits for a response
     pub fn get_timeout(wallet_handle: IndyHandle, their_did: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
@@ -147,6 +150,7 @@ impl Pairwise {
 
         Pairwise::_get(command_handle, wallet_handle, their_did, cb)
     }
+*/
 
     fn _get(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let their_did = c_str!(their_did);

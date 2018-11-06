@@ -1,3 +1,5 @@
+use futures::Future;
+
 use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
@@ -374,14 +376,15 @@ impl Wallet {
     ///
     /// # Returns
     /// Handle to opened wallet to use in methods that require wallet access.
-    pub fn open(config: &str, credentials: &str) -> Result<i32, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+    pub fn open(config: &str, credentials: &str) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
         let err = Wallet::_open(command_handle, config, credentials, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_handle(command_handle, err, receiver)
     }
 
+/*
     /// Opens the wallet with specific name.
     ///
     /// Wallet with corresponded name must be previously created with indy_create_wallet method.
@@ -429,6 +432,7 @@ impl Wallet {
 
         Wallet::_open(command_handle, config, credentials, cb)
     }
+*/
 
     fn _open(command_handle: IndyHandle, config: &str, credentials: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
         let config = c_str!(config);
@@ -1173,14 +1177,15 @@ impl Wallet {
     ///   value: "Some value", // present only if retrieveValue set to true
     ///   tags: <tags json>, // present only if retrieveTags set to true
     /// }
-    pub fn get_record(wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str) -> Result<String, ErrorCode> {
+    pub fn get_record(wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Wallet::_get_record(command_handle, wallet_handle, xtype, id, options_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Get an wallet record by id
     ///
     /// # Arguments
@@ -1231,6 +1236,7 @@ impl Wallet {
 
         Wallet::_get_record(command_handle, wallet_handle, xtype, id, options_json, cb)
     }
+*/
 
     fn _get_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -1270,14 +1276,15 @@ impl Wallet {
     /// # Returns
     /// * `search_handle` - Wallet search handle that can be used later
     ///   to fetch records by small batches (with indy_fetch_wallet_search_next_records)
-    pub fn open_search(wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str) -> Result<IndyHandle, ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
+    pub fn open_search(wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str) -> Box<Future<Item=IndyHandle, Error=ErrorCode>> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_handle();
 
         let err = Wallet::_open_search(command_handle, wallet_handle, xtype, query_json, options_json, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_handle(command_handle, err, receiver)
     }
 
+/*
     /// Search for wallet records.
     ///
     /// Note instead of immediately returning of fetched records
@@ -1349,6 +1356,7 @@ impl Wallet {
 
         Wallet::_open_search(command_handle, wallet_handle, xtype, query_json, options_json, cb)
     }
+*/
 
     fn _open_search(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -1380,14 +1388,15 @@ impl Wallet {
     ///       tags: <tags json>, // present only if retrieveTags set to true
     ///   }],
     /// }
-    pub fn fetch_search_next_records(wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize) -> Result<String, ErrorCode> {
+    pub fn fetch_search_next_records(wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize) -> Box<Future<Item=String, Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
         let err = Wallet::_fetch_search_next_records(command_handle, wallet_handle, wallet_search_handle, count, cb);
 
-        ResultHandler::one(err, receiver)
+        ResultHandler::ec_str(command_handle, err, receiver)
     }
 
+/*
     /// Fetch next records for wallet search.
     ///
     /// Not if there are no records this call returns WalletNoRecords error.
@@ -1434,6 +1443,7 @@ impl Wallet {
 
         Wallet::_fetch_search_next_records(command_handle, wallet_handle, wallet_search_handle, count, cb)
     }
+*/
 
     fn _fetch_search_next_records(command_handle: IndyHandle, wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize, cb: Option<ResponseStringCB>) -> ErrorCode {
         ErrorCode::from(unsafe {
