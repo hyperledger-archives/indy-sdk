@@ -98,14 +98,14 @@ pub static DID_ALREADY_EXISTS_IN_WALLET: Error = Error { code_num: 1083, message
 pub static DUPLICATE_MASTER_SECRET: Error = Error { code_num: 1084, message: "Attempted to add a Master Secret that already existed in wallet"};
 pub static THREAD_ERROR: Error = Error{ code_num: 1085, message: "Unable to create thread"};
 pub static INVALID_PROOF_REQUEST: Error = Error{ code_num: 1086, message: "Proof Request Passed into Libindy Call Was Invalid"};
-pub static INVALID_REVOCATION_DETAILS: Error = Error{ code_num: 1087, message: "Invalid Revocation Details"};
-pub static INVALID_REV_ENTRY: Error = Error{ code_num: 1088, message: "Unable to Update Revocation Delta On Ledger"};
-pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1089, message: "Invalid Credential Revocation timestamp"};
-pub static DUPLICATE_SCHEMA: Error = Error{ code_num: 1090, message: "Duplicate Schema: Ledger Already Contains Schema For Given DID, Version, and Name Combination"};
-pub static UNKNOWN_SCHEMA_REJECTION: Error = Error{ code_num: 1091, message: "Unknown Rejection of Schema Creation, refer to libindy documentation"};
-pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1092, message: "Failed to create Revocation Registration Definition"};
-pub static MISSING_PAYMENT_METHOD: Error = Error{ code_num: 1093, message: "Configuration is missing the Payment Method parameter"};
-pub static UKNOWN_LIBINDY_TRANSACTION_REJECTION: Error = Error{ code_num: 1094, message: "Unknown Libindy Rejection"};
+pub static MISSING_PAYMENT_METHOD: Error = Error{ code_num: 1087, message: "Configuration is missing the Payment Method parameter"};
+pub static DUPLICATE_SCHEMA: Error = Error{ code_num: 1088, message: "Duplicate Schema: Ledger Already Contains Schema For Given DID, Version, and Name Combination"};
+pub static UKNOWN_LIBINDY_TRANSACTION_REJECTION: Error = Error{ code_num: 1089, message: "Unknown Libindy Rejection"};
+pub static INVALID_REVOCATION_DETAILS: Error = Error{ code_num: 1090, message: "Invalid Revocation Details"};
+pub static INVALID_REV_ENTRY: Error = Error{ code_num: 1091, message: "Unable to Update Revocation Delta On Ledger"};
+pub static INVALID_REVOCATION_TIMESTAMP: Error = Error{ code_num: 1092, message: "Invalid Credential Revocation timestamp"};
+pub static UNKNOWN_SCHEMA_REJECTION: Error = Error{ code_num: 1093, message: "Unknown Rejection of Schema Creation, refer to libindy documentation"};
+pub static INVALID_REV_REG_DEF_CREATION: Error = Error{ code_num: 1094, message: "Failed to create Revocation Registration Definition"};
 
 lazy_static! {
     static ref ERROR_C_MESSAGES: HashMap<u32, CString> = {

@@ -96,14 +96,14 @@ class ErrorCode(IntEnum):
     DuplicateMasterSecret = 1084,
     ThreadError = 1085,
     InvalidProofRequest = 1086,
-    InvalidRevocationDetails = 1087,
-    InvalidRevEntry = 1088,
-    InvalidRevocationTimestamp = 1089,
-    DuplicateSchema = 1090,
-    UnknownSchemaRejection = 1091,
-    InvalidRevRegDefCreation = 1092,
-    MissingPaymentMethod = 1093,
-    UnknownLibindyRejection = 1094
+    MissingPaymentMethod = 1087,
+    DuplicateSchema = 1088,
+    UnknownLibindyRejection = 1089,
+    InvalidRevocationDetails = 1090,
+    InvalidRevEntry = 1091,
+    InvalidRevocationTimestamp = 1092,
+    UnknownSchemaRejection = 1093,
+    InvalidRevRegDefCreation = 1094
 
 
 class VcxError(Exception):
