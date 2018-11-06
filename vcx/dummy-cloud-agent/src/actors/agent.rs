@@ -24,7 +24,7 @@ pub struct Agent {
     verkey: String,
     forward_agent_detail: ForwardAgentDetail,
     router: Addr<Router>,
-    configs: HashMap<String, ConfigOption>
+    configs: HashMap<String, String>
 }
 
 impl Agent {
@@ -145,12 +145,7 @@ impl Agent {
             })
             .and_then(move |(wallet_handle, did, verkey, metadata, owner_did, owner_verkey, forward_agent_detail, router)| {
 
-                let mut configs: HashMap<String, ConfigOption> = HashMap::new();
-                let metadata: Vec<ConfigOption> = serde_json::from_str(&metadata).unwrap();
-
-                for config_option in metadata {
-                    configs.insert(config_option.name.clone(), config_option);
-                }
+                let configs: HashMap<String, String> = serde_json::from_str(&metadata).expect("Can't restore Agent config.");
 
                 let agent = Agent {
                     wallet_handle,
@@ -453,17 +448,16 @@ impl Agent {
 
         for config_option in msg.configs {
             match config_option.name.as_str() {
-                "name" | "logo_url" => { *self.configs.entry(config_option.name.clone()).or_insert(config_option) = config_option.clone(); },
+                "name" | "logo_url" => self.configs.insert(config_option.name, config_option.value),
                 _ => continue
-            }
+            };
         }
+
+        let config_metadata = ftry_act!(self, serde_json::to_string(&self.configs));
 
         future::ok(())
             .into_actor(self)
-            .and_then( |_, slf, _| {
-
-                let config_metadata: serde_json::Value = slf.configs.iter().map( |(_, v)| serde_json::to_value(v).unwrap() ).collect();
-
+            .and_then( move |_, slf, _| {
                 did::set_did_metadata(slf.wallet_handle, &slf.did, config_metadata.to_string().as_str())
                     .map_err(|err| err.context("Can't store config data as DID metadata.").into())
                     .into_actor(slf)
@@ -476,7 +470,7 @@ impl Agent {
 
     fn handle_get_configs(&mut self, msg: GetConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
 
-        let configs: Vec<ConfigOption> = self.configs.iter().filter( |(k, _)| msg.configs.contains(k) ).map( |(_, v)| v.clone() ).collect();
+        let configs: Vec<ConfigOption> = self.configs.iter().filter( |(k, _)| msg.configs.contains(k) ).map( |(k, v)| ConfigOption{ name: k.clone(), value: v.clone()} ).collect();
 
         future::ok(())
             .into_actor(self)
@@ -487,13 +481,11 @@ impl Agent {
     fn handle_remove_configs(&mut self, msg: RemoveConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
 
         self.configs.retain( |k, _| !msg.configs.contains(k) );
+        let config_metadata = ftry_act!(self, serde_json::to_string(&self.configs));
 
         future::ok(())
             .into_actor(self)
-            .and_then( |_, slf, _| {
-
-                let config_metadata: serde_json::Value = slf.configs.iter().map( |(_, v)| serde_json::to_value(v).unwrap() ).collect();
-
+            .and_then( move |_, slf, _| {
                 did::set_did_metadata(slf.wallet_handle, &slf.did, config_metadata.to_string().as_str())
                     .map_err(|err| err.context("Can't store config data as DID metadata.").into())
                     .into_actor(slf)
