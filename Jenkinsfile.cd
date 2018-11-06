@@ -199,9 +199,6 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                     jobs["${env_name}-python-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxPythonTesting, stashBuildResults)
                     }
-                    jobs["${env_name}-vcx-java-test"] = {
-                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
-                    }
                 }
                 parallel(jobs)
             },
@@ -225,6 +222,11 @@ def vcxTesting(file, env_name, network_name, stashBuildResults) {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxVcxNodejsTesting, stashBuildResults)
                         }
                 ]
+                if (env_name == "Ubuntu") {
+                    jobs["${env_name}-vcx-java-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
+                    }
+                }
                 parallel(jobs)
             },
     ])
@@ -264,6 +266,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
         sh "cp libindy/target/release/libindy.so libnullpay"
         sh "cp libindy/target/release/libindy.so vcx/libvcx"
         sh "cp libindy/target/release/libindy.so vcx/wrappers/node"
+        sh "cp libindy/target/release/libindy.so vcx/wrappers/java"
 
         dir('libnullpay') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
@@ -279,17 +282,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
         sh "cp libnullpay/target/release/libnullpay.so cli"
         sh "cp libnullpay/target/release/libnullpay.so vcx/libvcx"
         sh "cp libnullpay/target/release/libnullpay.so vcx/wrappers/node"
-
-        dir('vcx/libvcx') {
-            testEnv.inside {
-                echo "${env_name} Libvcx Test: Test"
-
-                echo "${env_name} Libvcx Test: Build"
-                sh "LIBRARY_PATH=./ cargo build --release --features fatal_warnings"
-            }
-        }
-
-        sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/java"
+        sh "cp libnullpay/target/release/libnullpay.so vcx/wrappers/java"
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
@@ -299,6 +292,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
         stash includes: 'vcx/libvcx/libindy.so,vcx/libvcx/libnullpay.so', name: "VCXLibindyAndLibnullpaySO${env_name}"
         stash includes: 'vcx/wrappers/node/libindy.so,vcx/wrappers/node/libnullpay.so', name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
+        stash includes: 'vcx/wrappers/java/libindy.so,vcx/wrappers/java/libnullpay.so', name: "VcxJavaLibindyAndLibnullpaySO${env_name}"
 
         libindyBuildFinished[env_name] = true
 
@@ -338,27 +332,22 @@ def linuxVcxBuild(file, env_name, stashBuildResults) {
     echo "${env_name} Test: Checkout csm"
     checkout scm
 
-    def testEnv
-
-    dir('libindy') {
-        echo "${env_name} Libindy Test: Build docker image"
-        testEnv = dockerBuild('libindy', file)
-    }
+    def testEnv = buildTestEnv(file, env_name)
 
     unstash name: "VCXLibindyAndLibnullpaySO${env_name}"
 
     dir('vcx/libvcx') {
         testEnv.inside {
-            echo "${env_name} Libvcx Test: Test"
-
             echo "${env_name} Libvcx Test: Build"
             sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
         }
     }
 
-    sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/node"
+    sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/node"
+    sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/java"
 
     stash includes: 'vcx/wrappers/node/libvcx.so', name: "VcxNodeLibvcxSO${env_name}"
+    stash includes: 'vcx/wrappers/java/libvcx.so', name: "VcxJavaLibvcxSO${env_name}"
 
     libvcxBuildFinished[env_name] = true
 
@@ -461,6 +450,19 @@ def linuxVcxNodejsTesting(env_name, network_name, testEnv, stashBuildResults) {
             npm run compile
             LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} LIBVCX_PATH=./ npm test
         '''
+    }
+}
+
+def linuxVcxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
+    unstash name: "VcxJavaLibvcxSO${env_name}"
+    unstash name: "VcxJavaLibindyAndLibnullpaySO${env_name}"
+
+    dir('vcx/wrappers/java') {
+        echo "${env_name} Vcx Test: Test java wrapper"
+
+        testEnv.inside("--network=${network_name}") {
+            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH}  ./gradlew --no-daemon test'
+        }
     }
 }
 
@@ -1177,6 +1179,13 @@ def publishDebRCtoStable(testEnv, packageName, folder, version, stashName, moveD
     }
 }
 
+def buildTestEnv(file, env_name){
+    dir('libindy') {
+        echo "${env_name} Build test environment"
+        return dockerBuild('libindy', file)
+    }
+}
+
 def downloadPackagingUtils() {
     git branch: 'master', credentialsId: 'evernym-github-machine-user', url: 'https://github.com/evernym/sovrin-packaging'
 }
@@ -1275,12 +1284,7 @@ def linuxModuleTesting(file, env_name, network_name, module_tester, stashBuildRe
 
             poolInst = openPool(env_name, network_name)
 
-            def testEnv
-
-            dir('libindy') {
-                echo "${env_name} Libindy Test: Build docker image"
-                testEnv = dockerBuild('libindy', file)
-            }
+            def testEnv = buildTestEnv(file, env_name)
 
             module_tester(env_name, network_name, testEnv, stashBuildResults)
         } finally {
