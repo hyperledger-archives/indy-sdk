@@ -10,6 +10,7 @@ use failure::{err_msg, Error, Fail};
 use futures::*;
 use indy::{did, pairwise, wallet, pairwise::Pairwise};
 use std::convert::Into;
+use std::collections::HashMap;
 use utils::futures::*;
 use utils::rand;
 use serde_json;
@@ -23,6 +24,7 @@ pub struct Agent {
     verkey: String,
     forward_agent_detail: ForwardAgentDetail,
     router: Addr<Router>,
+    configs: HashMap<String, String>
 }
 
 impl Agent {
@@ -75,6 +77,7 @@ impl Agent {
                     owner_verkey,
                     router: router.clone(),
                     forward_agent_detail,
+                    configs: HashMap::new()
                 };
 
                 let agent = agent.start();
@@ -117,25 +120,34 @@ impl Agent {
         future::ok(())
             .and_then(move |_| {
                 wallet::open_wallet(wallet_config.as_ref(), wallet_credentials.as_ref())
-                    .map_err(|err| err.context("Can't open Agent wallet.`").into())
+                    .map_err(|err| err.context("Can't open Agent wallet.").into())
             })
             .and_then(move |wallet_handle| {
                 did::key_for_local_did(wallet_handle, &did)
                     .map(move |verkey| (wallet_handle, did, verkey))
-                    .map_err(|err| err.context("Can't get Agent did verkey").into())
+                    .map_err(|err| err.context("Can't get Agent did verkey.").into())
             })
             .and_then(move |(wallet_handle, did, verkey)| {
+                did::get_did_metadata(wallet_handle, &did)
+                    .map(move |metadata| (wallet_handle, did, verkey, metadata))
+                    .map_err(|err| err.context("Can't get Agent DID Metadata.").into())
+            })
+            .and_then(move |(wallet_handle, did, verkey, metadata)| {
                 // Resolve information about existing connections from the wallet
                 // and start Agent Connection actor for each exists connection
+
+                let configs: HashMap<String, String> = serde_json::from_str(&metadata).expect("Can't restore Agent config.");
 
                 Agent::_restore_connections(wallet_handle,
                                             &owner_did,
                                             &owner_verkey,
                                             &forward_agent_detail,
-                                            router.clone())
-                    .map(move |_| (wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router))
+                                            router.clone(),
+                                            configs.clone())
+                    .map(move |_| (wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, configs))
             })
-            .and_then(move |(wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router)| {
+            .and_then(move |(wallet_handle, did, verkey, owner_did, owner_verkey, forward_agent_detail, router, configs)| {
+
                 let agent = Agent {
                     wallet_handle,
                     verkey: verkey.clone(),
@@ -144,6 +156,7 @@ impl Agent {
                     owner_verkey,
                     router: router.clone(),
                     forward_agent_detail,
+                    configs
                 };
 
                 let agent = agent.start();
@@ -151,7 +164,7 @@ impl Agent {
                 router
                     .send(AddA2ARoute(did.clone(), agent.clone().recipient()))
                     .from_err()
-                    .map_err(|err: Error| err.context("Can't add route for Agent").into())
+                    .map_err(|err: Error| err.context("Can't add route for Agent.").into())
             })
             .into_box()
     }
@@ -160,7 +173,8 @@ impl Agent {
                             owner_did: &str,
                             owner_verkey: &str,
                             forward_agent_detail: &ForwardAgentDetail,
-                            router: Addr<Router>) -> ResponseFuture<(), Error> {
+                            router: Addr<Router>,
+                            agent_configs: HashMap<String, String>) -> ResponseFuture<(), Error> {
         trace!("Agent::_restore_connections >> {:?}, {:?}, {:?}, {:?}",
                wallet_handle, owner_did, owner_verkey, forward_agent_detail);
 
@@ -181,7 +195,8 @@ impl Agent {
                                                  &pairwise.their_did,
                                                  &pairwise.metadata,
                                                  &forward_agent_detail,
-                                                 router.clone())
+                                                 router.clone(),
+                                                 agent_configs.clone())
                     })
                     .collect();
 
@@ -237,6 +252,15 @@ impl Agent {
                     }
                     A2AMessage::UpdateMessageStatusByConnections(msg) => {
                         slf.handle_update_messages_by_connections(msg)
+                    }
+                    A2AMessage::UpdateConfigs(msg) => {
+                        slf.handle_update_configs(msg)
+                    }
+                    A2AMessage::GetConfigs(msg) => {
+                        slf.handle_get_configs(msg)
+                    }
+                    A2AMessage::RemoveConfigs(msg) => {
+                        slf.handle_remove_configs(msg)
                     }
                     _ => err_act!(slf, err_msg("Unsupported message"))
                 }
@@ -407,6 +431,7 @@ impl Agent {
                     user_pairwise_verkey: for_did_verkey.to_string(),
                     agent_pairwise_did: pairwise_did.to_string(),
                     agent_pairwise_verkey: pairwise_did_verkey.to_string(),
+                    agent_configs: slf.configs.clone(),
                     forward_agent_detail: slf.forward_agent_detail.clone(),
                 };
 
@@ -419,6 +444,56 @@ impl Agent {
                     with_pairwise_did: pairwise_did,
                     with_pairwise_did_verkey: pairwise_did_verkey,
                 })]
+            })
+            .into_box()
+    }
+
+    fn handle_update_configs(&mut self, msg: UpdateConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+
+        for config_option in msg.configs {
+            match config_option.name.as_str() {
+                "name" | "logo_url" => self.configs.insert(config_option.name, config_option.value),
+                _ => continue
+            };
+        }
+
+        let config_metadata = ftry_act!(self, serde_json::to_string(&self.configs));
+
+        future::ok(())
+            .into_actor(self)
+            .and_then( move |_, slf, _| {
+                did::set_did_metadata(slf.wallet_handle, &slf.did, config_metadata.to_string().as_str())
+                    .map_err(|err| err.context("Can't store config data as DID metadata.").into())
+                    .into_actor(slf)
+            })
+            .map( |_, _, _| {
+                vec![A2AMessage::ConfigsUpdated( ConfigsUpdated {} )]
+            })
+            .into_box()
+    }
+
+    fn handle_get_configs(&mut self, msg: GetConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+
+        let configs: Vec<ConfigOption> = self.configs.iter().filter( |(k, _)| msg.configs.contains(k) ).map( |(k, v)| ConfigOption{ name: k.clone(), value: v.clone()} ).collect();
+
+        let messages = vec![A2AMessage::Configs( Configs { configs } )];
+        ok_act!(self,  messages)
+    }
+
+    fn handle_remove_configs(&mut self, msg: RemoveConfigs) -> ResponseActFuture<Self, Vec<A2AMessage>, Error> {
+
+        self.configs.retain( |k, _| !msg.configs.contains(k) );
+        let config_metadata = ftry_act!(self, serde_json::to_string(&self.configs));
+
+        future::ok(())
+            .into_actor(self)
+            .and_then( move |_, slf, _| {
+                did::set_did_metadata(slf.wallet_handle, &slf.did, config_metadata.to_string().as_str())
+                    .map_err(|err| err.context("Can't store config data as DID metadata.").into())
+                    .into_actor(slf)
+            })
+            .map( |_, _, _| {
+                vec![A2AMessage::ConfigsRemoved( ConfigsRemoved {} )]
             })
             .into_box()
     }
@@ -542,4 +617,70 @@ mod tests {
                 })
         });
     }
+
+    #[test]
+    fn agent_configs_happy_path() {
+        run_test(|forward_agent| {
+            future::ok(())
+                .and_then(|()| {
+                    setup_agent(forward_agent)
+                })
+                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, _, _, forward_agent)| {
+                    let msg = compose_update_configs(e_wallet_handle,
+                                                     &agent_did,
+                                                     &agent_verkey).wait().unwrap();
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |_| (e_wallet_handle, agent_did, agent_verkey, forward_agent))
+                })
+                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, forward_agent)| {
+                    let msg = compose_get_configs(e_wallet_handle,
+                                                  &agent_did,
+                                                  &agent_verkey).wait().unwrap();
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp, agent_did, agent_verkey, forward_agent))
+                })
+                .and_then(move |(e_wallet_handle, resp, agent_did, agent_verkey, forward_agent)| {
+                    let configs = decompose_configs(e_wallet_handle, &resp).wait().unwrap();
+
+                    assert_eq!(configs.len(), 2);
+                    assert!(configs.contains( &ConfigOption {name: "name".to_string(), value: "super agent".to_string()} ));
+                    assert!(configs.contains( &ConfigOption {name: "logo_url".to_string(), value: "http://logo.url".to_string()} ));
+
+                    let msg = compose_remove_configs(e_wallet_handle,
+                                                  &agent_did,
+                                                  &agent_verkey).wait().unwrap();
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |_| (e_wallet_handle, agent_did, agent_verkey, forward_agent))
+                })
+                .and_then(move |(e_wallet_handle, agent_did, agent_verkey, forward_agent)| {
+                    let msg = compose_get_configs(e_wallet_handle,
+                                                  &agent_did,
+                                                  &agent_verkey).wait().unwrap();
+                    forward_agent
+                        .send(ForwardA2AMsg(msg))
+                        .from_err()
+                        .and_then(|res| res)
+                        .map(move |resp| (e_wallet_handle, resp))
+                })
+                .map(|(e_wallet_handle, resp)| {
+                    let configs = decompose_configs(e_wallet_handle, &resp).wait().unwrap();
+
+                    assert_eq!(configs.len(), 1);
+                    assert!(!configs.contains( &ConfigOption {name: "name".to_string(), value: "super agent".to_string()} ));
+                    assert!(configs.contains( &ConfigOption {name: "logo_url".to_string(), value: "http://logo.url".to_string()} ));
+
+                    wallet::close_wallet(e_wallet_handle).wait().unwrap();
+                })
+        });
+    }
+
 }

@@ -42,6 +42,12 @@ pub enum A2AMessage {
     MessagesByConnections(MessagesByConnections),
     UpdateMessageStatusByConnections(UpdateMessageStatusByConnections),
     MessageStatusUpdatedByConnections(MessageStatusUpdatedByConnections),
+    UpdateConfigs(UpdateConfigs),
+    ConfigsUpdated(ConfigsUpdated),
+    GetConfigs(GetConfigs),
+    Configs(Configs),
+    RemoveConfigs(RemoveConfigs),
+    ConfigsRemoved(ConfigsRemoved),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -308,7 +314,7 @@ pub struct GeneralMessageDetail {
     #[serde(rename = "@msg")]
     pub msg: Vec<u8>,
     pub title: Option<String>,
-    pub detail: Option<String>
+    pub detail: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -346,6 +352,38 @@ pub struct PayloadMessage {
     #[serde(rename = "@msg")]
     pub msg: Vec<i8>,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct ConfigOption {
+    pub name: String,
+    pub value: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpdateConfigs {
+    pub configs: Vec<ConfigOption>
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConfigsUpdated {}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GetConfigs {
+    pub configs: Vec<String>
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Configs {
+    pub configs: Vec<ConfigOption>
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RemoveConfigs {
+    pub configs: Vec<String>
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ConfigsRemoved {}
 
 impl<'de> Deserialize<'de> for A2AMessage {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
@@ -470,6 +508,36 @@ impl<'de> Deserialize<'de> for A2AMessage {
             (Some("MSG_STATUS_UPDATED_BY_CONNS"), Some("1.0")) => {
                 MessageStatusUpdatedByConnections::deserialize(value)
                     .map(|msg| A2AMessage::MessageStatusUpdatedByConnections(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("UPDATE_CONFIGS"), Some("1.0")) => {
+                UpdateConfigs::deserialize(value)
+                    .map(|msg| A2AMessage::UpdateConfigs(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("CONFIGS_UPDATED"), Some("1.0")) => {
+                ConfigsUpdated::deserialize(value)
+                    .map(|msg| A2AMessage::ConfigsUpdated(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("GET_CONFIGS"), Some("1.0")) => {
+                GetConfigs::deserialize(value)
+                    .map(|msg| A2AMessage::GetConfigs(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("CONFIGS"), Some("1.0")) => {
+                Configs::deserialize(value)
+                    .map(|msg| A2AMessage::Configs(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("REMOVE_CONFIGS"), Some("1.0")) => {
+                RemoveConfigs::deserialize(value)
+                    .map(|msg| A2AMessage::RemoveConfigs(msg))
+                    .map_err(de::Error::custom)
+            }
+            (Some("CONFIGS_REMOVED"), Some("1.0")) => {
+                ConfigsRemoved::deserialize(value)
+                    .map(|msg| A2AMessage::ConfigsRemoved(msg))
                     .map_err(de::Error::custom)
             }
             _ => Err(de::Error::custom("Unexpected @type field structure."))
@@ -598,6 +666,36 @@ impl Serialize for A2AMessage {
             A2AMessage::MessageStatusUpdatedByConnections(msg) => {
                 let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
                 value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "MSG_STATUS_UPDATED_BY_CONNS", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::UpdateConfigs(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "UPDATE_CONFIGS", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::ConfigsUpdated(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONFIGS_UPDATED", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::GetConfigs(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "GET_CONFIGS", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::Configs(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONFIGS", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::RemoveConfigs(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "REMOVE_CONFIGS", "ver": "1.0"}));
+                value
+            }
+            A2AMessage::ConfigsRemoved(msg) => {
+                let mut value = serde_json::to_value(msg).map_err(ser::Error::custom)?;
+                value.as_object_mut().unwrap().insert("@type".into(), json!({"name": "CONFIGS_REMOVED", "ver": "1.0"}));
                 value
             }
         };

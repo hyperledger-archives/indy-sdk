@@ -541,14 +541,12 @@ pub fn compose_get_messages_by_connection(wallet_handle: i32,
         status_codes: Vec::new(),
         pairwise_dids: Vec::new(),
     })];
-
     let msg = A2AMessage::bundle_authcrypted(wallet_handle,
                                              EDGE_AGENT_DID_VERKEY,
                                              agent_verkey,
                                              &msgs).wait().unwrap();
     compose_forward(agent_did, FORWARD_AGENT_DID_VERKEY, msg)
 }
-
 pub fn decompose_get_messages_by_connection(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<(String, Vec<MessagesByConnection>), Error> {
     A2AMessage::unbundle_authcrypted(wallet_handle, EDGE_AGENT_DID_VERKEY, &msg)
         .and_then(|(sender_verkey, mut msgs)| {
@@ -559,6 +557,64 @@ pub fn decompose_get_messages_by_connection(wallet_handle: i32, msg: &[u8]) -> B
             }
         })
         .into_box()
+}
+
+pub fn compose_update_configs(wallet_handle: i32, agent_did: &str, agent_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
+    let msgs = [A2AMessage::UpdateConfigs(
+        UpdateConfigs {
+            configs: vec![
+                ConfigOption {name: "zoom_zoom".to_string(), value: "value".to_string()},
+                ConfigOption {name: "name".to_string(), value: "super agent".to_string()},
+                ConfigOption {name: "logo_url".to_string(), value: "http://logo.url".to_string()}
+            ]
+        })];
+
+    let msg = A2AMessage::bundle_authcrypted(wallet_handle,
+                                             EDGE_AGENT_DID_VERKEY,
+                                             agent_verkey,
+                                             &msgs).wait().unwrap();
+
+    compose_forward(agent_did, FORWARD_AGENT_DID_VERKEY, msg)
+}
+
+pub fn compose_get_configs(wallet_handle: i32, agent_did: &str, agent_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
+    let msgs = [A2AMessage::GetConfigs(
+        GetConfigs {
+            configs: vec![String::from("name"), String::from("logo_url")]
+        })];
+
+    let msg = A2AMessage::bundle_authcrypted(wallet_handle,
+                                             EDGE_AGENT_DID_VERKEY,
+                                             agent_verkey,
+                                             &msgs).wait().unwrap();
+
+    compose_forward(agent_did, FORWARD_AGENT_DID_VERKEY, msg)
+}
+
+pub fn decompose_configs(wallet_handle: i32, msg: &[u8]) -> BoxedFuture<Vec<ConfigOption>, Error> {
+    A2AMessage::unbundle_authcrypted(wallet_handle, EDGE_AGENT_DID_VERKEY, &msg)
+        .and_then(|(sender_verkey, mut msgs)| {
+            if let Some(A2AMessage::Configs(configs)) = msgs.pop() {
+                Ok((configs.configs))
+            } else {
+                Err(err_msg("Invalid message"))
+            }
+        })
+        .into_box()
+}
+
+pub fn compose_remove_configs(wallet_handle: i32, agent_did: &str, agent_verkey: &str) -> BoxedFuture<Vec<u8>, Error> {
+    let msgs = [A2AMessage::RemoveConfigs(
+        RemoveConfigs {
+            configs: vec![String::from("name")]
+        })];
+
+    let msg = A2AMessage::bundle_authcrypted(wallet_handle,
+                                             EDGE_AGENT_DID_VERKEY,
+                                             agent_verkey,
+                                             &msgs).wait().unwrap();
+
+    compose_forward(agent_did, FORWARD_AGENT_DID_VERKEY, msg)
 }
 
 pub fn compose_forward(recipient_did: &str, recipient_vk: &str, msg: Vec<u8>) -> BoxedFuture<Vec<u8>, Error> {
