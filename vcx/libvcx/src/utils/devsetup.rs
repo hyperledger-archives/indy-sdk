@@ -99,11 +99,11 @@ pub mod tests {
     pub const C_AGENCY_VERKEY: &'static str = "CwpcjCc6MtVNdQgwoonNMFoR6dhzmRXHHaUCRSrjh8gj";*/
 
     /* dummy */
-    pub const AGENCY_ENDPOINT: &'static str = "http://localhost:8080/forward_agent";
+    pub const AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
     pub const AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
     pub const AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
 
-    pub const C_AGENCY_ENDPOINT: &'static str = "http://localhost:8080/forward_agent";
+    pub const C_AGENCY_ENDPOINT: &'static str = "http://localhost:8080";
     pub const C_AGENCY_DID: &'static str = "VsKV7grR1BUE29mG2Fm2kX";
     pub const C_AGENCY_VERKEY: &'static str = "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR";
 

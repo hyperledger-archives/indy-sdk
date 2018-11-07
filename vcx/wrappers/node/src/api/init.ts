@@ -50,7 +50,7 @@ export async function initVcx (configPath: string, options: IInitVCXOptions = {}
  * config = {
  *   "agency_did": "VsKV7grR1BUE29mG2Fm2kX",
  *   "agency_verkey": "Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR",
- *   "agency_endpoint": "http://localhost:8080/forward_agent",
+ *   "agency_endpoint": "http://localhost:8080",
  *   "genesis_path":"/var/lib/indy/verity-staging/pool_transactions_genesis",
  *   "institution_name": "institution",
  *   "institution_logo_url": "http://robohash.org/234",

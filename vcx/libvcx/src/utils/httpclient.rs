@@ -11,7 +11,7 @@ lazy_static!{
 //Todo: change this RC to a u32
 pub fn post_u8(body_content: &Vec<u8>) -> Result<Vec<u8>,String> {
 
-    let url = format!("{}/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).or(Err("Invalid Configuration".to_string()))?);
+    let url = format!("{}/agency/msg", settings::get_config_value(settings::CONFIG_AGENCY_ENDPOINT).or(Err("Invalid Configuration".to_string()))?);
 
     //Setting SSL Certs location. This is needed on android platform. Or openssl will fail to verify the certs
     if cfg!(target_os = "android") {

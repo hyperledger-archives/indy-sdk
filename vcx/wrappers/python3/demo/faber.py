@@ -22,7 +22,7 @@ from vcx.common import mint_tokens
 # 'wallet_name': name for newly created encrypted wallet
 # 'wallet_key': encryption key for encoding wallet
 provisionConfig = {
-  'agency_url':'http://localhost:8080/forward_agent',
+  'agency_url':'http://localhost:8080',
   'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
   'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
   'wallet_name':'faber_wallet',

@@ -14,7 +14,7 @@ from time import sleep
 from vcx.common import mint_tokens
 
 provisionConfig = {
-  'agency_url':'http://localhost:8080/forward_agent',
+  'agency_url':'http://localhost:8080',
   'agency_did':'VsKV7grR1BUE29mG2Fm2kX',
   'agency_verkey':'Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR',
   'wallet_name':'alice_wallet',

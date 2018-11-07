@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String VCX_CONFIG = "{\n" +
             "\"agency_did\": \"VsKV7grR1BUE29mG2Fm2kX\",\n" +
             "\"agency_verkey\": \"Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR\",\n" +
-            "\"agency_endpoint\": \"http://localhost:8080/forward_agent\",\n" +
+            "\"agency_endpoint\": \"http://localhost:8080\",\n" +
             "\"genesis_path\":\"" + POOL_CONFIG + "\",\n" +
             "\"institution_name\": \"institution\",\n" +
             "\"institution_logo_url\": \"http://robohash.org/234\",\n" +
@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
             vcx_fw.write("{\n" +
                     "\"agency_did\": \"VsKV7grR1BUE29mG2Fm2kX\",\n" +
                     "\"agency_verkey\": \"Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR\",\n" +
-                    "\"agency_endpoint\": \"http://localhost:8080/forward_agent\",\n" +
+                    "\"agency_endpoint\": \"http://localhost:8080\",\n" +
                     "\"genesis_path\":\"" + pool_config.getAbsolutePath() + "\",\n" +
                     "\"institution_name\": \"institution\",\n" +
                     "\"institution_logo_url\": \"http://robohash.org/234\",\n" +
