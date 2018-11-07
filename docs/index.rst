@@ -10,8 +10,7 @@ Welcome to Hyperledger Indy SDK's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
-
+   building
 
 Indices and tables
 ==================
