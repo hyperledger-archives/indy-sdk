@@ -1,0 +1,295 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Setup Indy SDK build environment for MacOS &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Setup Indy SDK build environment for Windows" href="windows-build.html" />
+    <link rel="prev" title="Setup Indy SDK build environment for Ubuntu based distro (Ubuntu 16.04)" href="ubuntu-build.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="rtd-building.html">Building Indy SDK</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="ubuntu-build.html">Setup Indy SDK build environment for Ubuntu based distro (Ubuntu 16.04)</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Setup Indy SDK build environment for MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#note-on-running-local-nodes">Note on running local nodes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ioerror-while-running-of-whole-set-of-tests-on-macos">IOError while running of whole set of tests on MacOS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="windows-build.html">Setup Indy SDK build environment for Windows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rhel-build.html">Setup Indy SDK build environment for RHEL-based distributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="android-build.html">Building binaries of LibIndy for Android</a></li>
+<li class="toctree-l2"><a class="reference internal" href="android-build.html#building-binaries-of-libnullpay-for-android">Building binaries of Libnullpay for Android</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="rtd-index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="rtd-building.html">Building Indy SDK</a> &raquo;</li>
+        
+      <li>Setup Indy SDK build environment for MacOS</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mac-build.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="setup-indy-sdk-build-environment-for-macos">
+<span id="setup-indy-sdk-build-environment-for-macos"></span><h1>Setup Indy SDK build environment for MacOS<a class="headerlink" href="#setup-indy-sdk-build-environment-for-macos" title="Permalink to this headline">¶</a></h1>
+<ol>
+<li><p class="first">Install Rust and rustup (https://www.rust-lang.org/install.html).</p>
+</li>
+<li><p class="first">Install required native libraries and utilities (libsodium is added with URL to homebrew since version&lt;1.0.15 is required)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">brew</span> <span class="n">install</span> <span class="n">pkg</span><span class="o">-</span><span class="n">config</span>
+<span class="n">brew</span> <span class="n">install</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Homebrew</span><span class="o">/</span><span class="n">homebrew</span><span class="o">-</span><span class="n">core</span><span class="o">/</span><span class="mi">65</span><span class="n">effd2b617bade68a8a2c5b39e1c3089cc0e945</span><span class="o">/</span><span class="n">Formula</span><span class="o">/</span><span class="n">libsodium</span><span class="o">.</span><span class="n">rb</span>   
+<span class="n">brew</span> <span class="n">install</span> <span class="n">automake</span> 
+<span class="n">brew</span> <span class="n">install</span> <span class="n">autoconf</span>
+<span class="n">brew</span> <span class="n">install</span> <span class="n">cmake</span>
+<span class="n">brew</span> <span class="n">install</span> <span class="n">openssl</span>
+<span class="n">brew</span> <span class="n">install</span> <span class="n">zeromq</span>
+<span class="n">brew</span> <span class="n">install</span> <span class="n">zmq</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<ol>
+<li><p class="first">Setup environment variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">PKG_CONFIG_ALLOW_CROSS</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">export</span> <span class="n">CARGO_INCREMENTAL</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">export</span> <span class="n">RUST_LOG</span><span class="o">=</span><span class="n">indy</span><span class="o">=</span><span class="n">trace</span>
+<span class="n">export</span> <span class="n">RUST_TEST_THREADS</span><span class="o">=</span><span class="mi">1</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Setup OPENSSL_DIR variable: path to installed openssl library</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">OPENSSL_DIR</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">Cellar</span><span class="o">/</span><span class="n">openssl</span><span class="o">/</span><span class="mf">1.0</span><span class="o">.</span><span class="mi">2</span><span class="n">n</span>   <span class="c1"># path changes with version number</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Checkout and build the library:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">hyperledger</span><span class="o">/</span><span class="n">indy</span><span class="o">-</span><span class="n">sdk</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="o">./</span><span class="n">indy</span><span class="o">-</span><span class="n">sdk</span><span class="o">/</span><span class="n">libindy</span>
+<span class="n">cargo</span> <span class="n">build</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">To compile the CLI, libnullpay, or other items that depend on libindy:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">LIBRARY_PATH</span><span class="o">=/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">sdk</span><span class="o">/</span><span class="n">libindy</span><span class="o">/</span><span class="n">target</span><span class="o">/&lt;</span><span class="n">config</span><span class="o">&gt;</span>
+<span class="n">cd</span> <span class="o">../</span><span class="n">cli</span>
+<span class="n">cargo</span> <span class="n">build</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="note-on-running-local-nodes">
+<span id="note-on-running-local-nodes"></span><h1>Note on running local nodes<a class="headerlink" href="#note-on-running-local-nodes" title="Permalink to this headline">¶</a></h1>
+<p>In order to run local nodes on MacOS, it may be necessary to set up port mapping between the Docker container
+and local host. Follow the instructions in <a class="reference external" href="https://github.com/hyperledger/indy-sdk#how-to-start-local-nodes-pool-with-docker">Indy SDK README</a></p>
+</div>
+<div class="section" id="ioerror-while-running-of-whole-set-of-tests-on-macos">
+<span id="ioerror-while-running-of-whole-set-of-tests-on-macos"></span><h1>IOError while running of whole set of tests on MacOS<a class="headerlink" href="#ioerror-while-running-of-whole-set-of-tests-on-macos" title="Permalink to this headline">¶</a></h1>
+<p>There is a possible case when some tests are failed if whole set of tests is run (<code class="docutils literal notranslate"><span class="pre">cargo</span> <span class="pre">test</span></code>).
+But failed tests will be successful in case of separate runs.
+If an error message like <code class="docutils literal notranslate"><span class="pre">IOError</span></code> <code class="docutils literal notranslate"><span class="pre">Too</span> <span class="pre">many</span> <span class="pre">open</span> <span class="pre">files</span></code> is present in logs when fails can be fixed by changing default limit.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ulimit</span> <span class="pre">-n</span> <span class="pre">&lt;new</span> <span class="pre">limit</span> <span class="pre">value&gt;</span></code></p>
+<p>https://jira.hyperledger.org/browse/IS-1038</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="windows-build.html" class="btn btn-neutral float-right" title="Setup Indy SDK build environment for Windows" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="ubuntu-build.html" class="btn btn-neutral" title="Setup Indy SDK build environment for Ubuntu based distro (Ubuntu 16.04)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

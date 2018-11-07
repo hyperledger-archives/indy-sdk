@@ -1,0 +1,367 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Wallet Export/Import Design &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>Wallet Export/Import Design</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/design/009-wallet-export-import/README.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="wallet-export-import-design">
+<span id="wallet-export-import-design"></span><h1>Wallet Export/Import Design<a class="headerlink" href="#wallet-export-import-design" title="Permalink to this headline">¶</a></h1>
+<p>Currently all encryption of the wallet is performed in libindy. Storage implementations may be plugged in.
+This design proposes portable export/import functionality so the “lock-in” of the user to the software
+which created the wallet is avoided.</p>
+<div class="section" id="goals-and-ideas">
+<span id="goals-and-ideas"></span><h2>Goals and ideas<a class="headerlink" href="#goals-and-ideas" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Alow users to export their wallets so the can do the backup  or move their secret data to different agency or different device.<ul>
+<li>Export file will be encrypted with export key.</li>
+<li>Export should contain the whole wallet data (including secrets).</li>
+<li>Export should be done in a streaming way so big wallets may be exported on machines with conservative memory.</li>
+</ul>
+</li>
+<li>Alow users to import exported wallet.<ul>
+<li>Import is alowed only on empty wallet - Therefore import is done with one create + import operation.</li>
+<li>User should provide key used for export, so export file may be decrypted.</li>
+<li>User should provide new master key used for opening newly created wallet from import.</li>
+<li>Import should be done in a streaming way so big wallets may be imported on machines with conservative memory.</li>
+</ul>
+</li>
+<li>Export/Import should work for all storage implementations.</li>
+<li>Expose two public API functions, for export and for create + import wallet.</li>
+</ul>
+</div>
+<div class="section" id="public-api">
+<span id="public-api"></span><h2>Public API<a class="headerlink" href="#public-api" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-Rust notranslate"><div class="highlight"><pre><span></span><span class="sd">/// Exports opened wallet&#39;s content using key and path provided in export_config_json</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to caller context</span>
+<span class="sd">/// wallet_handle: wallet handle (created by open_wallet)</span>
+<span class="sd">/// export_config_json: JSON containing settings for input operation.</span>
+<span class="sd">///   {</span>
+<span class="sd">///     &quot;path&quot;: path of the file in which the wallet will be exported</span>
+<span class="sd">///     &quot;key&quot;: passphrase used to derive export key</span>
+<span class="sd">///   }</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// Error code</span>
+<span class="sd">///</span>
+<span class="sd">/// #Errors</span>
+<span class="sd">/// Common*</span>
+<span class="sd">/// Wallet*</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_error_t</span><span class="w"> </span><span class="n">indy_export_wallet</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                              </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                              </span><span class="n">export_config_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                              </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">xcommand_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Creates a new secure wallet with the given unique name and then imports its content</span>
+<span class="sd">/// according to fields provided in import_config</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to caller context</span>
+<span class="sd">/// pool_name: Name of the pool that corresponds to this wallet</span>
+<span class="sd">/// name: Name of the wallet</span>
+<span class="sd">/// storage_type(optional): Type of the wallet storage. Defaults to &#39;default&#39;.</span>
+<span class="sd">///                  Custom storage types can be registered with indy_register_wallet_storage call.</span>
+<span class="sd">/// config(optional): Wallet configuration json.</span>
+<span class="sd">///   {</span>
+<span class="sd">///       &quot;storage&quot;: &lt;object&gt;  List of supported keys are defined by wallet type.</span>
+<span class="sd">///   }</span>
+<span class="sd">/// credentials: Wallet credentials json</span>
+<span class="sd">///   {</span>
+<span class="sd">///       &quot;key&quot;: string,</span>
+<span class="sd">///       &quot;storage&quot;: Optional&lt;object&gt;  List of supported keys are defined by wallet type.</span>
+<span class="sd">///</span>
+<span class="sd">///   }</span>
+<span class="sd">/// import_config_json: JSON containing settings for input operation.</span>
+<span class="sd">///   {</span>
+<span class="sd">///     &quot;path&quot;: path of the file that contains exported wallet content</span>
+<span class="sd">///     &quot;key&quot;: passphrase used to derive export key</span>
+<span class="sd">///   }</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// Error code</span>
+<span class="sd">///</span>
+<span class="sd">/// #Errors</span>
+<span class="sd">/// Common*</span>
+<span class="sd">/// Wallet*</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_import_wallet</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">pool_name</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">name</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">storage_type</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">credentials</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">import_config_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">xcommand_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="deriving-the-key-from-passphrase">
+<span id="deriving-the-key-from-passphrase"></span><h2>Deriving the key from passphrase<a class="headerlink" href="#deriving-the-key-from-passphrase" title="Permalink to this headline">¶</a></h2>
+<p>For deriving keys from passphrase <strong>Argon2</strong> memory-hard function is used with random salt.</p>
+</div>
+<div class="section" id="file-format">
+<span id="file-format"></span><h2>File format<a class="headerlink" href="#file-format" title="Permalink to this headline">¶</a></h2>
+<p>— plain stream —</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">header_length</span></code>: length of the serialized header as 4b unsigned little endian integer</li>
+<li><code class="docutils literal notranslate"><span class="pre">header</span></code>: MessagePack serialized header entity</li>
+</ul>
+<p>— encrypted stream —</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">header_hash</span></code>: 32B <strong>SHA-256</strong> hash of the header.</li>
+<li><code class="docutils literal notranslate"><span class="pre">record1_length</span></code>: length the serialized record as 4b unsigned little endian integer</li>
+<li><code class="docutils literal notranslate"><span class="pre">record1</span></code>: MessagePack serialized record entity</li>
+<li>…</li>
+<li><code class="docutils literal notranslate"><span class="pre">recordN_length</span></code>: length the serialized record as 4b unsigned little endian integer</li>
+<li><code class="docutils literal notranslate"><span class="pre">recordN</span></code>: MessagePack serialized record entity</li>
+<li><code class="docutils literal notranslate"><span class="pre">STOP</span></code>: 4 zero bytes. Allows to make sure that there was no truncation of export file</li>
+</ul>
+<p>Where:</p>
+<div class="highlight-Rust notranslate"><div class="highlight"><pre><span></span><span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">Header</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">encryption_method</span>: <span class="nc">EncryptionMethod</span><span class="p">,</span><span class="w"> </span><span class="c1">// Method of encryption for encrypted stram</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">time</span>: <span class="kt">u64</span><span class="p">,</span><span class="w"> </span><span class="c1">// Export time in seconds from UNIX Epoch</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">version</span>: <span class="kt">u32</span><span class="p">,</span><span class="w"> </span><span class="c1">// Version of header</span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">pub</span><span class="w"> </span><span class="k">enum</span> <span class="nc">EncryptionMethod</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">ChaCha20Poly1305IETF</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// **ChaCha20-Poly1305-IETF** cypher in blocks per chunk_size bytes</span>
+<span class="w">        </span><span class="n">salt</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;</span><span class="p">,</span><span class="w">  </span><span class="c1">// pwhash_argon2i13::Salt as bytes. Random salt used for deriving of key from passphrase</span>
+<span class="w">        </span><span class="n">nonce</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="c1">// chacha20poly1305_ietf::Nonce as bytes. Random start nonce. We increment nonce for each chunk to be sure in export file consistency</span>
+<span class="w">        </span><span class="n">chunk_size</span>: <span class="kt">usize</span><span class="p">,</span><span class="w"> </span><span class="c1">// size of encrypted chunk</span>
+<span class="w">    </span><span class="p">},</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="c1">// Note that we use externally tagged enum serialization and header will be represented as:</span>
+<span class="c1">//</span>
+<span class="c1">// {</span>
+<span class="c1">//   &quot;encryption_method&quot;: {</span>
+<span class="c1">//     &quot;ChaCha20Poly1305IETF&quot;: {</span>
+<span class="c1">//       &quot;salt&quot;: ..,</span>
+<span class="c1">//       &quot;nonce&quot;: ..,</span>
+<span class="c1">//       &quot;chunk_size&quot;: ..,</span>
+<span class="c1">//     },</span>
+<span class="c1">//   },</span>
+<span class="c1">//   &quot;time&quot;: ..,</span>
+<span class="c1">//   &quot;version&quot;: ..,</span>
+<span class="c1">// }</span>
+
+<span class="k">pub</span><span class="w"> </span><span class="k">struct</span> <span class="nc">Record</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="cp">#[serde(rename = </span><span class="s">&quot;type&quot;</span><span class="cp">)]</span><span class="w"></span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">type_</span>: <span class="nb">String</span><span class="p">,</span><span class="w"> </span><span class="c1">// Wallet record type</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">id</span>: <span class="nb">String</span><span class="p">,</span><span class="w"> </span><span class="c1">// Wallet record id</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">value</span>: <span class="nb">String</span><span class="p">,</span><span class="w"> </span><span class="c1">// Wallet record value</span>
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="n">tags</span>: <span class="nc">HashMap</span><span class="o">&lt;</span><span class="nb">String</span><span class="p">,</span><span class="w"> </span><span class="nb">String</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Wallet record tags</span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The only supported from the beginning encryption method is <strong>ChaCha20-Poly1305-IETF</strong> cypher in blocks per 1024 bytes (to allow streaming).
+This is similar encryption as recommended in libsodium secretstream but secretstream was not available in Rust wrapper.
+Random salt used for deriving of key from passphrase. We increment nonce for each block to be sure in export file consistency.
+Also we use STOP message in encrypted stream that allows to make sure that there was no truncation of export file.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

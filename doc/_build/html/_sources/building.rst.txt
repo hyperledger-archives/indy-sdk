@@ -1,0 +1,11 @@
+Building Indy SDK
+=================
+
+.. toctree::
+   :maxdepth: 1
+
+   ubuntu-build.md 
+   mac-build.md 
+   windows-build.md
+   rhel-build.md 
+   android-build.md

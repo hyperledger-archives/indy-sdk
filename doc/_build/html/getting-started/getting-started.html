@@ -1,0 +1,1097 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Getting Started with Libindy &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Tutorials" href="../rtd-tutorials.html" />
+    <link rel="prev" title="Hyperledger Indy SDK" href="../rtd-index.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started with Libindy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#a-developer-guide-for-building-indy-clients-using-libindy">A Developer Guide for Building Indy Clients Using Libindy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-indy-and-libindy-are-and-why-they-matter">What Indy and Libindy are and Why They Matter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-well-cover">What We’ll Cover</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#about-alice">About Alice</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#infrastructure-preparation">Infrastructure Preparation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government">Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-2-connecting-to-the-indy-nodes-pool">Step 2: Connecting to the Indy Nodes Pool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-3-getting-the-ownership-for-steward-s-verinym">Step 3: Getting the ownership for Steward’s Verinym</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-4-onboarding-faber-acme-thrift-and-government-by-steward">Step 4: Onboarding Faber, Acme, Thrift and Government by Steward</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#connecting-the-establishment">Connecting the Establishment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#getting-verinym">Getting Verinym</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#step-5-credential-schemas-setup">Step 5: Credential Schemas Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-6-credential-definition-setup">Step 6: Credential Definition Setup</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#alice-gets-a-transcript">Alice Gets a Transcript</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#apply-for-a-job">Apply for a Job</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#apply-for-a-loan">Apply for a Loan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#explore-the-code">Explore the Code</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>Getting Started with Libindy</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/getting-started/getting-started.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="getting-started-with-libindy">
+<span id="getting-started-with-libindy"></span><h1>Getting Started with Libindy<a class="headerlink" href="#getting-started-with-libindy" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="a-developer-guide-for-building-indy-clients-using-libindy">
+<span id="a-developer-guide-for-building-indy-clients-using-libindy"></span><h2>A Developer Guide for Building Indy Clients Using Libindy<a class="headerlink" href="#a-developer-guide-for-building-indy-clients-using-libindy" title="Permalink to this headline">¶</a></h2>
+<p><img alt="logo" src="https://raw.githubusercontent.com/hyperledger/indy-node/master/collateral/logos/indy-logo.png" /></p>
+<ul class="simple">
+<li><a class="reference external" href="#getting-started-with-libindy">Getting Started with Libindy</a><ul>
+<li><a class="reference external" href="#a-developer-guide-for-building-indy-clients-using-libindy">A Developer Guide for Building Indy Clients Using Libindy</a></li>
+<li><a class="reference external" href="#what-indy-and-libindy-are-and-why-they-matter">What Indy and Libindy are and Why They Matter</a></li>
+<li><a class="reference external" href="#what-well-cover">What We’ll Cover</a></li>
+<li><a class="reference external" href="#about-alice">About Alice</a></li>
+<li><a class="reference external" href="#infrastructure-preparation">Infrastructure Preparation</a><ul>
+<li><a class="reference external" href="#step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government">Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government</a></li>
+<li><a class="reference external" href="#step-2-connecting-to-the-indy-nodes-pool">Step 2: Connecting to the Indy Nodes Pool</a></li>
+<li><a class="reference external" href="#step-3-getting-the-ownership-for-stewards-verinym">Step 3: Getting the ownership for Steward’s Verinym</a></li>
+<li><a class="reference external" href="#step-4-onboarding-faber-acme-thrift-and-government-by-steward">Step 4: Onboarding Faber, Acme, Thrift and Government by Steward</a><ul>
+<li><a class="reference external" href="#connecting-the-establishment">Connecting the Establishment</a></li>
+<li><a class="reference external" href="#getting-verinym">Getting Verinym</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#step-5-credential-schemas-setup">Step 5: Credential Schemas Setup</a></li>
+<li><a class="reference external" href="#step-6-credential-definition-setup">Step 6: Credential Definition Setup</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#alice-gets-a-transcript">Alice Gets a Transcript</a></li>
+<li><a class="reference external" href="#apply-for-a-job">Apply for a Job</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="what-indy-and-libindy-are-and-why-they-matter">
+<span id="what-indy-and-libindy-are-and-why-they-matter"></span><h2>What Indy and Libindy are and Why They Matter<a class="headerlink" href="#what-indy-and-libindy-are-and-why-they-matter" title="Permalink to this headline">¶</a></h2>
+<p>Indy provides a software ecosystem for private, secure, and powerful identity, and libindy enables clients for it. Indy puts people — not the organizations that traditionally centralize identity — in charge of decisions about their own privacy and disclosure. This enables all kinds of rich innovation: connection contracts, revocation, novel payment workflows, asset and document management features, creative forms of escrow, curated reputation, integrations with other cool technologies, and so on.</p>
+<p>Indy uses open-source, distributed ledger technology. These ledgers are a form of database that is provided cooperatively by a pool of participants, instead of by a giant database with a central admin. Data lives redundantly in many places, and it accrues in transactions orchestrated by many machines. Strong, industry-standard cryptography protects it. Best practices in key management and cybersecurity pervade its design. The result is a reliable, public source of truth under no single entity’s control, robust to system failure, resilient to hacking, and highly immune to subversion by hostile entities.</p>
+<p>If the concepts of cryptography and blockchain details feel mysterious, fear not: this guide will help introduce you to key concepts within Indy. You’re starting in the right place.</p>
+</div>
+<div class="section" id="what-well-cover">
+<span id="what-well-cover"></span><h2>What We’ll Cover<a class="headerlink" href="#what-well-cover" title="Permalink to this headline">¶</a></h2>
+<p>Our goal is to introduce you to many of the concepts of Indy and give you some idea of what happens behind the scenes to make it all work.</p>
+<p>We’re going to frame the exploration with a story. Alice, a graduate of the fictional Faber College, wants to apply for a job at the fictional company Acme Corp. As soon as she has the job, she wants to apply for a loan in Thrift Bank so she can buy a car. She would like to use her college transcript as proof of her education on the job application and once hired, Alice would like to use the fact of employment as evidence of her creditworthiness for the loan.</p>
+<p>The sorts of identity and trust interactions required to pull this off are messy in the world today; they are slow, they violate privacy, and they are susceptible to fraud. We’ll show you how Indy is a quantum leap forward.</p>
+<p>Ready?</p>
+</div>
+<div class="section" id="about-alice">
+<span id="about-alice"></span><h2>About Alice<a class="headerlink" href="#about-alice" title="Permalink to this headline">¶</a></h2>
+<p>As a graduate of Faber College, Alice receives an alumni newsletter where she learns that her alma mater is offering digital transcripts. She logs in to the college alumni website and requests her transcript by clicking <strong>Get Transcript</strong>.  (Other ways to initiate this request might include scanning a QR code, downloading a transcript package from a published URL, etc.)</p>
+<p>Alice doesn’t realize it yet, but to use this digital transcript she will need a new type of identity — not the traditional identity that Faber College has built for her in its on-campus database, but a new and portable one that belongs to her, independent of all past and future relationships, that nobody can revoke or co-opt or correlate without her permission. This is a <strong><em>self-sovereign identity</em></strong> and it is the core feature of Indy.</p>
+<p>In normal contexts, managing a self-sovereign identity will require a tool such as a desktop or mobile application. It might be a standalone app or it might leverage a third party service provider that the ledger calls an <strong>agency</strong>. The Sovrin Foundation publishes reference versions of such tools. Faber College will have studied these requirements and will recommend an <strong><em>Indy app</em></strong> to Alice if she doesn’t already have one. This app will install as part of the workflow from the <strong>Get Transcript</strong> button.</p>
+<p>When Alice clicks <strong>Get Transcript</strong>, she will download a file that holds an Indy <strong>connection request</strong>. This connection request file, having an .indy extension and associated with her Indy app, will allow her to establish a secure channel of communication with another party in the ledger ecosystem — Faber College.</p>
+<p>So when Alice clicks <strong>Get Transcript</strong>, she will normally end up installing an app (if needed), launching it, and then being asked by the app whether she wants to accept a request to connect with Faber.</p>
+<p>For this guide, however, we’ll be using an <strong>Indy SDK API</strong> (as provided by libindy) instead of an app, so we can see what happens behind the scenes. We will pretend to be a particularly curious and technically adventurous Alice…</p>
+</div>
+<div class="section" id="infrastructure-preparation">
+<span id="infrastructure-preparation"></span><h2>Infrastructure Preparation<a class="headerlink" href="#infrastructure-preparation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government">
+<span id="step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government"></span><h3>Step 1: Getting Trust Anchor Credentials for Faber, Acme, Thrift and Government<a class="headerlink" href="#step-1-getting-trust-anchor-credentials-for-faber-acme-thrift-and-government" title="Permalink to this headline">¶</a></h3>
+<p>Faber College and other actors have done some preparation to offer this service to Alice. To understand these steps let’s start with some definitions.</p>
+<p>The ledger is intended to store <strong>Identity Records</strong> that describe a <strong>Ledger Entity</strong>. Identity Records are public data and may include Public Keys, Service Endpoints, Credential Schemas, and Credential Definitions. Every <strong>Identity Record</strong> is associated with exactly one <strong>DID</strong> (Decentralized Identifier) that is globally unique and resolvable (via a ledger) without requiring any centralized resolution authority. To maintain privacy each <strong>Identity Owner</strong> can own multiple DIDs.</p>
+<p>In this tutorial we will use two types of DIDs. The first one is a <strong>Verinym</strong>. A <strong>Verinym</strong> is associated with the <strong>Legal Identity</strong> of the <strong>Identity Owner</strong>. For example, all parties should be able to verify that some DID is used by a Government to publish schemas for some document type. The second type is a <strong>Pseudonym</strong> - a <strong>Blinded Identifier</strong> used to maintain privacy in the context of an ongoing digital relationship (<strong>Connection</strong>). If the Pseudonym is used to maintain only one digital relationship we will call it a Pairwise-Unique Identifier. We will use Pairwise-Unique Identifiers to maintain secure connections between actors in this tutorial.</p>
+<p>The creation of a DID known to the Ledger is an <strong>Identity Record</strong> itself (NYM transaction). The NYM transaction can be used for creation of new DIDs that is known to that ledger, the setting and rotation of a verification key, and the setting and changing of roles. The most important fields of this transaction are <code class="docutils literal notranslate"><span class="pre">dest</span></code> (target DID), <code class="docutils literal notranslate"><span class="pre">role</span></code> (role of a user NYM record being created for) and the <code class="docutils literal notranslate"><span class="pre">verkey</span></code> (target verification key). See <a class="reference external" href="https://github.com/hyperledger/indy-node/blob/master/docs/requests.md">Requests</a> to get more information about supported ledger transactions.</p>
+<p>Publishing with a DID verification key allows a person, organization or thing, to verify that someone owns this DID as that person, organization or thing is the only one who knows the corresponding signing key and any DID-related operations requiring signing with this key.</p>
+<p>Our ledger is public permissioned and anyone who wants to publish DIDs needs to get the role of <strong>Trust Anchor</strong> on the ledger. A <strong>Trust Anchor</strong> is a person or organization that the ledger already knows about, that is able to help bootstrap others. (It is <em>not</em> the same as what cybersecurity experts call a “trusted third party”; think of it more like a facilitator). See <a class="reference external" href="https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit#gid=0">Roles</a> to get more information about roles.</p>
+<p><strong>The first step towards being able to place transactions on the ledger involves getting the role of Trust Anchor on the ledger. Faber College, Acme Corp and Thrift Bank will need to get the role of Trust Anchor on the ledger so they can create Verinyms and Pairwise-Unique Identifiers to provide the service to Alice.</strong></p>
+<p>Becoming a <strong>Trust Anchor</strong> requires contacting a person or organization who already has the <strong>Trust Anchor</strong> role on the ledger. For the sake of the demo, in our empty test ledger we have only NYMs with the <strong>Steward</strong> role, but all <strong>Stewards</strong> are automatically <strong>Trust Anchors</strong>.</p>
+</div>
+<div class="section" id="step-2-connecting-to-the-indy-nodes-pool">
+<span id="step-2-connecting-to-the-indy-nodes-pool"></span><h3>Step 2: Connecting to the Indy Nodes Pool<a class="headerlink" href="#step-2-connecting-to-the-indy-nodes-pool" title="Permalink to this headline">¶</a></h3>
+<p>We are ready to start writing the code that will cover Alice’s use case from start to finish. It is important to note that for demo purposes it will be a single test that will contain the code intended to be executed on different agents. We will always point to what Agent is intended to execute each code part. Also we will use different wallets to store the DID and keys of different Agents. Let’s begin.</p>
+<p>The first code block will contain the code of the <strong>Steward’s</strong> agent.</p>
+<p><strong>To write and read the ledger’s transactions after gaining the proper role, you’ll need to make a connection to the Indy nodes pool. To make a connection to the different pools that exist, like the Sovrin pool or the <a class="reference external" href="../../README.md#how-to-start-local-nodes-pool-with-docker">local pool we started by ourselves</a> as part of this tutorial, you’ll need to set up a pool configuration.</strong></p>
+<p>The list of nodes in the pool is stored in the ledger as NODE transactions. Libindy allows you to restore the actual list of NODE transactions by a few known transactions that we call genesis transactions. Each <strong>Pool Configuration</strong> is defined as a pair of pool configuration name and pool configuration JSON. The most important field in pool configuration json is the path to the file with the list of genesis transactions. Make sure this path is correct.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">pool.create_pool_ledger_config</span></code> call allows you to create a named pool configuration. After the pool configuration is created we can connect to the nodes pool that this configuration describes by calling <code class="docutils literal notranslate"><span class="pre">pool.open_pool_ledger</span></code>. This call returns the pool handle that can be used to reference this opened connection in future libindy calls.</p>
+<p>The code block below contains each of these items. Note how the comments denote that this is the code for the “Steward Agent.”</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Steward Agent</span>
+  <span class="n">pool_name</span> <span class="o">=</span> <span class="s1">&#39;pool1&#39;</span>
+  <span class="n">pool_genesis_txn_path</span> <span class="o">=</span> <span class="n">get_pool_genesis_txn_path</span><span class="p">(</span><span class="n">pool_name</span><span class="p">)</span>
+  <span class="n">pool_config</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;genesis_txn&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">pool_genesis_txn_path</span><span class="p">)})</span>
+  <span class="n">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">create_pool_ledger_config</span><span class="p">(</span><span class="n">pool_name</span><span class="p">,</span> <span class="n">pool_config</span><span class="p">)</span>
+  <span class="n">pool_handle</span> <span class="o">=</span> <span class="n">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">open_pool_ledger</span><span class="p">(</span><span class="n">pool_name</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-3-getting-the-ownership-for-steward-s-verinym">
+<span id="step-3-getting-the-ownership-for-steward-s-verinym"></span><h3>Step 3: Getting the ownership for Steward’s Verinym<a class="headerlink" href="#step-3-getting-the-ownership-for-steward-s-verinym" title="Permalink to this headline">¶</a></h3>
+<p><strong>Next, the Steward’s agent should get the ownership for the DID that has corresponding NYM transactions with the Steward role on the ledger.</strong></p>
+<p>The test ledger we use was pre-configured to store some known <strong>Steward</strong> NYMs. Also we know <strong>seed</strong> values for the random number generator that were used to generate keys for these NYMs. These <strong>seed</strong> values allow us to restore signing keys for these DIDs on the <strong>Steward’s</strong> agent side and as a result get the DID ownership.</p>
+<p>Libindy has a concept of the <strong>Wallet</strong>. The wallet is secure storage for crypto materials like DIDs, keys, etc… To store the <strong>Steward’s</strong> DID and corresponding signkey, the agent should create a named wallet first by calling <code class="docutils literal notranslate"><span class="pre">wallet.create_wallet</span></code>. After this the named wallet can be opened by calling <code class="docutils literal notranslate"><span class="pre">wallet.open_wallet</span></code>. This call returns the wallet handle that can be used to reference this opened wallet in future libindy calls.</p>
+<p>After the wallet is opened we can create a DID record in this wallet by calling <code class="docutils literal notranslate"><span class="pre">did.create_and_store_my_did</span></code> that returns the generated DID and verkey part of the generated key. The signkey part for this DID will be stored in the wallet too, but it is impossible to read it directly.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Steward Agent</span>
+  <span class="n">steward_wallet_name</span> <span class="o">=</span> <span class="s1">&#39;sovrin_steward_wallet&#39;</span>
+  <span class="n">await</span> <span class="n">wallet</span><span class="o">.</span><span class="n">create_wallet</span><span class="p">(</span><span class="n">pool_name</span><span class="p">,</span> <span class="n">steward_wallet_name</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+  <span class="n">steward_wallet</span> <span class="o">=</span> <span class="n">await</span> <span class="n">wallet</span><span class="o">.</span><span class="n">open_wallet</span><span class="p">(</span><span class="n">steward_wallet_name</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+  <span class="n">steward_did_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;seed&#39;</span><span class="p">:</span> <span class="s1">&#39;000000000000000000000000Steward1&#39;</span><span class="p">}</span>
+  <span class="p">(</span><span class="n">steward_did</span><span class="p">,</span> <span class="n">steward_key</span><span class="p">)</span> <span class="o">=</span> <span class="n">await</span> <span class="n">did</span><span class="o">.</span><span class="n">create_and_store_my_did</span><span class="p">(</span><span class="n">steward_wallet</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">steward_did_info</span><span class="p">))</span>
+</pre></div>
+</div>
+<p><strong>Please note:</strong> We provided only information about the seed to <code class="docutils literal notranslate"><span class="pre">did.create_and_store_my_did</span></code>, but not any information about the Steward’s DID. By default DID’s are generated as the first 16 bytes of the verkey. For such DID’s, when dealing with operations that require both a DID and the verkey we can use the verkey in an abbreviated form. In this form the verkey starts with a tilde ‘~’ followed by 22 or 23 characters. The tilde indicates that the DID itself represents the first 16 bytes of the verkey and the string following the tilde represents the second 16 bytes of the verkey, both using base58Check encoding.</p>
+</div>
+<div class="section" id="step-4-onboarding-faber-acme-thrift-and-government-by-steward">
+<span id="step-4-onboarding-faber-acme-thrift-and-government-by-steward"></span><h3>Step 4: Onboarding Faber, Acme, Thrift and Government by Steward<a class="headerlink" href="#step-4-onboarding-faber-acme-thrift-and-government-by-steward" title="Permalink to this headline">¶</a></h3>
+<p><strong>Faber, Acme, Thrift and Government should now establish a Connection with the Steward.</strong></p>
+<p>Each connection is actually a pair of Pairwise-Unique Identifiers (DIDs). The one DID is owned by one party to the connection and the second by another.</p>
+<p>Both parties know both DIDs and understand what connection this pair describes.</p>
+<p>The relationship between them is not shareable with others; it is unique to those two parties in that each pairwise relationship uses different DIDs.</p>
+<p>We call the process of establish a connection <strong>Onboarding</strong>.</p>
+<p>In this tutorial we will describe the simple version of onboarding process.
+In our case, one party will always be the Trust Anchor. Real enterprise scenarios can use a more complex version.</p>
+<div class="section" id="connecting-the-establishment">
+<span id="connecting-the-establishment"></span><h4>Connecting the Establishment<a class="headerlink" href="#connecting-the-establishment" title="Permalink to this headline">¶</a></h4>
+<p>Let’s look the process of connection establishment between <strong>Steward</strong> and <strong>Faber College</strong>.</p>
+<ol>
+<li><p class="first"><strong>Faber</strong> and <strong>Steward</strong> contact in some way to initiate onboarding process.
+It can be filling the form on web site or a phone call.</p>
+</li>
+<li><p class="first"><strong>Steward</strong> creates a new DID record in the wallet by calling <code class="docutils literal notranslate"><span class="pre">did.create_and_store_my_did</span></code> that he will use for secure interactions only with <strong>Faber</strong>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steward Agent</span>
+<span class="p">(</span><span class="n">steward_faber_did</span><span class="p">,</span> <span class="n">steward_faber_key</span><span class="p">)</span> <span class="o">=</span> <span class="n">await</span> <span class="n">did</span><span class="o">.</span><span class="n">create_and_store_my_did</span><span class="p">(</span><span class="n">steward_wallet</span><span class="p">,</span> <span class="s2">&quot;{}&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Steward</strong> sends the corresponding <code class="docutils literal notranslate"><span class="pre">NYM</span></code> transaction to the Ledger by consistently calling <code class="docutils literal notranslate"><span class="pre">ledger.build_nym_request</span></code> to build the NYM request and <code class="docutils literal notranslate"><span class="pre">ledger.sign_and_submit_request</span></code> to send the created request.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steward Agent</span>
+<span class="n">nym_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_nym_request</span><span class="p">(</span><span class="n">steward_did</span><span class="p">,</span> <span class="n">steward_faber_did</span><span class="p">,</span> <span class="n">steward_faber_key</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">role</span><span class="p">)</span>
+<span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">sign_and_submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">steward_wallet</span><span class="p">,</span> <span class="n">steward_did</span><span class="p">,</span> <span class="n">nym_request</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Steward</strong> creates the connection request which contains the created <code class="docutils literal notranslate"><span class="pre">DID</span></code> and <code class="docutils literal notranslate"><span class="pre">Nonce</span></code>.
+This nonce is just a big random number generated to track the unique connection request. A nonce is a random arbitrary number that can only be used one time. When a connection request is accepted, the invitee digitally signs the nonce so that the inviter can match the response with a prior request.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steward Agent</span>
+<span class="n">connection_request</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;did&#39;</span><span class="p">:</span> <span class="n">steward_faber_did</span><span class="p">,</span>
+    <span class="s1">&#39;nonce&#39;</span><span class="p">:</span> <span class="mi">123456789</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Steward</strong> sends the connection request to <strong>Faber</strong>.</p>
+</li>
+<li><p class="first"><strong>Faber</strong> accepts the connection request from <strong>Steward</strong>.</p>
+</li>
+<li><p class="first"><strong>Faber</strong> creates a wallet if it does not exist yet.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent</span>
+<span class="n">await</span> <span class="n">wallet</span><span class="o">.</span><span class="n">create_wallet</span><span class="p">(</span><span class="n">pool_name</span><span class="p">,</span> <span class="s1">&#39;faber_wallet&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+<span class="n">faber_wallet</span> <span class="o">=</span> <span class="n">await</span> <span class="n">wallet</span><span class="o">.</span><span class="n">open_wallet</span><span class="p">(</span><span class="s1">&#39;faber_wallet&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Faber</strong> creates a new DID record in its wallet by calling <code class="docutils literal notranslate"><span class="pre">did.create_and_store_my_did</span></code> that it will use only for secure interactions with the <strong>Steward</strong>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent</span>
+<span class="p">(</span><span class="n">faber_steward_did</span><span class="p">,</span> <span class="n">faber_steward_key</span><span class="p">)</span> <span class="o">=</span> <span class="n">await</span> <span class="n">did</span><span class="o">.</span><span class="n">create_and_store_my_did</span><span class="p">(</span><span class="n">faber_wallet</span><span class="p">,</span> <span class="s2">&quot;{}&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Faber</strong> creates the connection response which contains the created <code class="docutils literal notranslate"><span class="pre">DID</span></code>, <code class="docutils literal notranslate"><span class="pre">Verkey</span></code> and <code class="docutils literal notranslate"><span class="pre">Nonce</span></code> from the received connection request.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent</span>
+<span class="n">connection_response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+    <span class="s1">&#39;did&#39;</span><span class="p">:</span> <span class="n">faber_steward_did</span><span class="p">,</span>
+    <span class="s1">&#39;verkey&#39;</span><span class="p">:</span> <span class="n">faber_steward_key</span><span class="p">,</span>
+    <span class="s1">&#39;nonce&#39;</span><span class="p">:</span> <span class="n">connection_request</span><span class="p">[</span><span class="s1">&#39;nonce&#39;</span><span class="p">]</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Faber</strong> asks the ledger for the Verification key of the <strong>Steward’s</strong> DID by calling <code class="docutils literal notranslate"><span class="pre">did.key_for_did</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent</span>
+<span class="n">steward_faber_verkey</span> <span class="o">=</span> <span class="n">await</span> <span class="n">did</span><span class="o">.</span><span class="n">key_for_did</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">faber_wallet</span><span class="p">,</span> <span class="n">connection_request</span><span class="p">[</span><span class="s1">&#39;did&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Faber</strong> anonymously encrypts the connection response by calling <code class="docutils literal notranslate"><span class="pre">crypto.anon_crypt</span></code> with the <strong>Steward</strong> verkey.
+The Anonymous-encryption schema is designed for the sending of messages to a Recipient which has been given its public key. Only the Recipient can decrypt these messages, using its private key. While the Recipient can verify the integrity of the message, it cannot verify the identity of the Sender.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent</span>
+<span class="n">anoncrypted_connection_response</span> <span class="o">=</span> <span class="n">await</span> <span class="n">crypto</span><span class="o">.</span><span class="n">anon_crypt</span><span class="p">(</span><span class="n">steward_faber_verkey</span><span class="p">,</span> <span class="n">connection_response</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Faber</strong> sends the anonymously encrypted connection response to the <strong>Steward</strong>.</p>
+</li>
+<li><p class="first"><strong>Steward</strong> anonymously decrypts the connection response by calling <code class="docutils literal notranslate"><span class="pre">crypto.anon_decrypt</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steward Agent</span>
+<span class="n">decrypted_connection_response</span> <span class="o">=</span> \
+    <span class="p">(</span><span class="n">await</span> <span class="n">crypto</span><span class="o">.</span><span class="n">anon_decrypt</span><span class="p">(</span><span class="n">steward_wallet</span><span class="p">,</span> <span class="n">steward_faber_key</span><span class="p">,</span> <span class="n">anoncrypted_connection_response</span><span class="p">))</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Steward</strong> authenticates <strong>Faber</strong> by the comparison of Nonce.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steward Agent</span>
+<span class="k">assert</span> <span class="n">connection_request</span><span class="p">[</span><span class="s1">&#39;nonce&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">decrypted_connection_response</span><span class="p">[</span><span class="s1">&#39;nonce&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Steward</strong> sends the <code class="docutils literal notranslate"><span class="pre">NYM</span></code> transaction for <strong>Faber’s</strong> DID to the Ledger.
+Please note that despite the fact that the Steward is the sender of this transaction the owner of the DID will be Faber as it uses the verkey as provided by Faber.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steward Agent</span>
+<span class="n">nym_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_nym_request</span><span class="p">(</span><span class="n">steward_did</span><span class="p">,</span> <span class="n">decrypted_connection_response</span><span class="p">[</span><span class="s1">&#39;did&#39;</span><span class="p">],</span> <span class="n">decrypted_connection_response</span><span class="p">[</span><span class="s1">&#39;verkey&#39;</span><span class="p">],</span> <span class="bp">None</span><span class="p">,</span> <span class="n">role</span><span class="p">)</span>
+<span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">sign_and_submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">steward_wallet</span><span class="p">,</span> <span class="n">steward_did</span><span class="p">,</span> <span class="n">nym_request</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>At this point <strong>Faber</strong> is connected to the <strong>Steward</strong> and can interact in a secure peer-to-peer way. <strong>Faber</strong> can trust the response is from <strong>Steward</strong> because:</p>
+<ul class="simple">
+<li>it connects to the current endpoint</li>
+<li>no replay - attack is possible, due to her random challenge</li>
+<li>it knows the verification key used to verify <strong>Steward</strong> digital signature is the correct one because it just confirmed it on the ledger</li>
+</ul>
+<p><strong>Note:</strong> All parties must not use the same DID’s to establish other relationships.
+By having independent pairwise relationships, you’re reducing the ability for others to correlate your activities across multiple interactions.</p>
+</div>
+<div class="section" id="getting-verinym">
+<span id="getting-verinym"></span><h4>Getting Verinym<a class="headerlink" href="#getting-verinym" title="Permalink to this headline">¶</a></h4>
+<p>It is important to understand that earlier created <strong>Faber</strong> DID is not, in and of itself, the same thing as self-sovereign identity. This DID must be used only for secure interaction with the <strong>Steward</strong>.
+After the connection is established <strong>Faber</strong> must create new DID record that he will use as Verinym in the Ledger.</p>
+<ol>
+<li><p class="first"><strong>Faber</strong> creates a new DID in its wallet by calling <code class="docutils literal notranslate"><span class="pre">did.create_and_store_my_did</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent</span>
+<span class="p">(</span><span class="n">faber_did</span><span class="p">,</span> <span class="n">faber_key</span><span class="p">)</span> <span class="o">=</span> <span class="n">await</span> <span class="n">did</span><span class="o">.</span><span class="n">create_and_store_my_did</span><span class="p">(</span><span class="n">faber_wallet</span><span class="p">,</span> <span class="s2">&quot;{}&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Faber</strong> prepares the message that will contain the created DID and verkey.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent</span>
+<span class="n">faber_did_info_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+    <span class="s1">&#39;did&#39;</span><span class="p">:</span> <span class="n">faber_did</span><span class="p">,</span>
+    <span class="s1">&#39;verkey&#39;</span><span class="p">:</span> <span class="n">faber_key</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Faber</strong> authenticates and encrypts the message by calling <code class="docutils literal notranslate"><span class="pre">crypto.auth_crypt</span></code> function, which is an implementation of the authenticated-encryption schema. Authenticated encryption is designed for sending of a confidential message specifically for the Recipient. The Sender can compute a shared secret key using the Recipient’s public key (verkey) and his secret (signing) key. The Recipient can compute exactly the same shared secret key using the Sender’s public key (verkey) and his secret (signing) key. That shared secret key can be used to verify that the encrypted message was not tampered with, before eventually decrypting it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent</span>
+<span class="n">authcrypted_faber_did_info_json</span> <span class="o">=</span> \
+    <span class="n">await</span> <span class="n">crypto</span><span class="o">.</span><span class="n">auth_crypt</span><span class="p">(</span><span class="n">faber_wallet</span><span class="p">,</span> <span class="n">faber_steward_key</span><span class="p">,</span> <span class="n">steward_faber_key</span><span class="p">,</span> <span class="n">faber_did_info_json</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Faber</strong> sends the encrypted message to the <strong>Steward</strong>.</p>
+</li>
+<li><p class="first"><strong>Steward</strong> decrypts the received message by calling <code class="docutils literal notranslate"><span class="pre">crypto.auth_decrypt</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steward Agent    </span>
+<span class="n">sender_verkey</span><span class="p">,</span> <span class="n">authdecrypted_faber_did_info_json</span> <span class="o">=</span> \
+    <span class="n">await</span> <span class="n">crypto</span><span class="o">.</span><span class="n">auth_decrypt</span><span class="p">(</span><span class="n">steward_handle</span><span class="p">,</span> <span class="n">steward_faber_key</span><span class="p">,</span> <span class="n">authcrypted_faber_did_info_json</span><span class="p">)</span>
+<span class="n">faber_did_info</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">authdecrypted_faber_did_info_json</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Steward</strong> asks the ledger for the Verification key of <strong>Faber’s</strong> DID by calling <code class="docutils literal notranslate"><span class="pre">did.key_for_did</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steward Agent    </span>
+<span class="n">faber_verkey</span> <span class="o">=</span> <span class="n">await</span> <span class="n">did</span><span class="o">.</span><span class="n">key_for_did</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">from_wallet</span><span class="p">,</span> <span class="n">faber_did_info</span><span class="p">[</span><span class="s1">&#39;did&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Steward</strong> authenticates <strong>Faber</strong> by comparison of the Message Sender Verkey and the <strong>Faber</strong> Verkey received from the Ledger.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steward Agent    </span>
+<span class="k">assert</span> <span class="n">sender_verkey</span> <span class="o">==</span> <span class="n">faber_verkey</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><strong>Steward</strong> sends the corresponded NYM transaction to the Ledger with <code class="docutils literal notranslate"><span class="pre">TRUST</span> <span class="pre">ANCHOR</span></code> role.
+Please note that despite the fact that the Steward is the sender of this transaction the owner of DID will be Faber as it uses Verkey provided by Faber.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Steward Agent</span>
+<span class="n">nym_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_nym_request</span><span class="p">(</span><span class="n">steward_did</span><span class="p">,</span> <span class="n">decrypted_faber_did_info_json</span><span class="p">[</span><span class="s1">&#39;did&#39;</span><span class="p">],</span>
+                                             <span class="n">decrypted_faber_did_info_json</span><span class="p">[</span><span class="s1">&#39;verkey&#39;</span><span class="p">],</span> <span class="bp">None</span><span class="p">,</span> <span class="s1">&#39;TRUST_ANCHOR&#39;</span><span class="p">)</span>
+<span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">sign_and_submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">steward_wallet</span><span class="p">,</span> <span class="n">steward_did</span><span class="p">,</span> <span class="n">nym_request</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>At this point <strong>Faber</strong> has a DID related to his identity in the Ledger.</p>
+<p><strong>Acme</strong>, <strong>Thrift Bank</strong>, and <strong>Government</strong> must pass the same Onboarding process connection establishment with <strong>Steward</strong>.</p>
+</div>
+</div>
+<div class="section" id="step-5-credential-schemas-setup">
+<span id="step-5-credential-schemas-setup"></span><h3>Step 5: Credential Schemas Setup<a class="headerlink" href="#step-5-credential-schemas-setup" title="Permalink to this headline">¶</a></h3>
+<p><strong>Credential Schema</strong> is the base semantic structure that describes the list of attributes which one particular Credential can contain.</p>
+<p><strong>Note:</strong> It’s not possible to update an existing Schema. So, if the Schema needs to be evolved, a new Schema with a new version or name needs to be created.</p>
+<p>A <strong>Credential Schema</strong> can be created and saved in the Ledger by any <strong>Trust Anchor</strong>.</p>
+<p>Here is where the <strong>Government</strong> creates and publishes the <strong>Transcript</strong> Credential Schema to the Ledger:</p>
+<ol>
+<li><p class="first">The <strong>Trust Anchor</strong> creates the <strong>Credential Schema</strong> by calling the <code class="docutils literal notranslate"><span class="pre">anoncreds.issuer_create_schema</span></code> that returns the generated <strong>Credential Schema</strong>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Government Agent</span>
+<span class="p">(</span><span class="n">transcript_schema_id</span><span class="p">,</span> <span class="n">transcript_schema</span><span class="p">)</span> <span class="o">=</span> \
+    <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">issuer_create_schema</span><span class="p">(</span><span class="n">government_did</span><span class="p">,</span>
+                                         <span class="s1">&#39;Transcript&#39;</span><span class="p">,</span>
+                                         <span class="s1">&#39;1.2&#39;</span><span class="p">,</span>
+                                         <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">([</span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span> <span class="s1">&#39;last_name&#39;</span><span class="p">,</span> <span class="s1">&#39;degree&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">,</span> <span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="s1">&#39;average&#39;</span><span class="p">,</span> <span class="s1">&#39;ssn&#39;</span><span class="p">]))</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">The <strong>Trust Anchor</strong> sends the corresponding Schema transaction to the Ledger by consistently calling the <code class="docutils literal notranslate"><span class="pre">ledger.build_schema_request</span></code> to build the Schema request and <code class="docutils literal notranslate"><span class="pre">ledger.sign_and_submit_request</span></code> to send the created request.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Government Agent</span>
+<span class="n">schema_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_schema_request</span><span class="p">(</span><span class="n">government_did</span><span class="p">,</span> <span class="n">transcript_schema</span><span class="p">)</span>
+<span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">sign_and_submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">government_wallet</span><span class="p">,</span> <span class="n">government_did</span><span class="p">,</span> <span class="n">schema_request</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>In the same way <strong>Government</strong> creates and publishes the <strong>Job-Certificate</strong> Credential Schema to the Ledger:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Government Agent</span>
+    <span class="p">(</span><span class="n">job_certificate_schema_id</span><span class="p">,</span> <span class="n">job_certificate_schema</span><span class="p">)</span> <span class="o">=</span> \
+        <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">issuer_create_schema</span><span class="p">(</span><span class="n">government_did</span><span class="p">,</span>
+                                             <span class="s1">&#39;Job-Certificate&#39;</span><span class="p">,</span>
+                                             <span class="s1">&#39;0.2&#39;</span><span class="p">,</span>
+                                             <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">([</span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span> <span class="s1">&#39;last_name&#39;</span><span class="p">,</span> <span class="s1">&#39;salary&#39;</span><span class="p">,</span> <span class="s1">&#39;employee_status&#39;</span><span class="p">,</span> <span class="s1">&#39;experience&#39;</span><span class="p">]))</span>
+  <span class="n">schema_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_schema_request</span><span class="p">(</span><span class="n">government_did</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">to</span> <span class="n">the</span> <span class="n">Ledger</span><span class="p">))</span>
+  <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">sign_and_submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">government_wallet</span><span class="p">,</span> <span class="n">government_did</span><span class="p">,</span> <span class="n">schema_request</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>At this point we have the <strong>Transcript</strong> and the <strong>Job-Certificate</strong> Credential Schemas published by <strong>Government</strong> to the Ledger.</p>
+</div>
+<div class="section" id="step-6-credential-definition-setup">
+<span id="step-6-credential-definition-setup"></span><h3>Step 6: Credential Definition Setup<a class="headerlink" href="#step-6-credential-definition-setup" title="Permalink to this headline">¶</a></h3>
+<p><strong>Credential Definition</strong> is similar in that the keys that the Issuer uses for the signing of Credentials also satisfies a specific Credential Schema.</p>
+<p><strong>Note</strong> It’s not possible to update data in an existing Credential Definition. So, if a <code class="docutils literal notranslate"><span class="pre">CredDef</span></code> needs to be evolved (for example, a key needs to be rotated), then a new Credential Definition needs to be created by a new Issuer DID.</p>
+<p>A Credential Definition can be created and saved in the Ledger by any <strong>Trust Anchor</strong>. Here <strong>Faber</strong> creates and publishes a Credential Definition for the known <strong>Transcript</strong> Credential Schema to the Ledger.</p>
+<ol>
+<li><p class="first">The <strong>Trust Anchor</strong> gets the specific <strong>Credential Schema</strong> from the Ledger by consistently calling the <code class="docutils literal notranslate"><span class="pre">ledger.build_get_schema_request</span></code> to build the <code class="docutils literal notranslate"><span class="pre">GetSchema</span></code> request, <code class="docutils literal notranslate"><span class="pre">ledger.sign_and_submit_request</span></code> to send the created request and the <code class="docutils literal notranslate"><span class="pre">ledger.parse_get_schema_response</span></code> to get the <code class="docutils literal notranslate"><span class="pre">Schema</span></code> in the format required by Anoncreds API from the <code class="docutils literal notranslate"><span class="pre">GetSchema</span></code> response.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent</span>
+<span class="n">get_schema_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_get_schema_request</span><span class="p">(</span><span class="n">faber_did</span><span class="p">,</span> <span class="n">transcript_schema_id</span><span class="p">)</span>
+<span class="n">get_schema_response</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">get_schema_request</span><span class="p">)</span> 
+<span class="p">(</span><span class="n">transcript_schema_id</span><span class="p">,</span> <span class="n">transcript_schema</span><span class="p">)</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">parse_get_schema_response</span><span class="p">(</span><span class="n">get_schema_response</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">The <strong>Trust Anchor</strong> creates the <strong>Credential Definition</strong> related to the received <strong>Credential Schema</strong> by calling <code class="docutils literal notranslate"><span class="pre">anoncreds.issuer_create_and_store_credential_def</span></code> that returns the generated public <strong>Credential Definition</strong>.
+The private Credential Definition part for this <strong>Credential Schema</strong> will be stored in the wallet too, but it is impossible to read it directly.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent</span>
+<span class="p">(</span><span class="n">faber_transcript_cred_def_id</span><span class="p">,</span> <span class="n">faber_transcript_cred_def_json</span><span class="p">)</span> <span class="o">=</span> \
+    <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">issuer_create_and_store_credential_def</span><span class="p">(</span><span class="n">faber_wallet</span><span class="p">,</span> <span class="n">faber_did</span><span class="p">,</span> <span class="n">transcript_schema</span><span class="p">,</span> <span class="s1">&#39;TAG1&#39;</span><span class="p">,</span> <span class="s1">&#39;CL&#39;</span><span class="p">,</span> <span class="s1">&#39;{&quot;support_revocation&quot;: false}&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">The <strong>Trust Anchor</strong> sends the corresponding <code class="docutils literal notranslate"><span class="pre">CredDef</span></code> transaction to the Ledger by consistently calling the <code class="docutils literal notranslate"><span class="pre">ledger.build_cred_def_request</span></code> to build the <code class="docutils literal notranslate"><span class="pre">CredDef</span></code> request and the <code class="docutils literal notranslate"><span class="pre">ledger.sign_and_submit_request</span></code> to send the created request.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Faber Agent     </span>
+<span class="n">cred_def_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_cred_def_request</span><span class="p">(</span><span class="n">faber_did</span><span class="p">,</span> <span class="n">faber_transcript_cred_def_json</span><span class="p">)</span>
+<span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">sign_and_submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">faber_wallet</span><span class="p">,</span> <span class="n">faber_did</span><span class="p">,</span> <span class="n">cred_def_request</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>The same way <strong>Acme</strong> creates and publishes a <strong>Credential Definition</strong> for the known <strong>Job-Certificate</strong> Credential Schema to the Ledger.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Acme Agent</span>
+  <span class="n">get_schema_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_get_schema_request</span><span class="p">(</span><span class="n">acme_did</span><span class="p">,</span> <span class="n">job_certificate_schema_id</span><span class="p">)</span>
+  <span class="n">get_schema_response</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">get_schema_request</span><span class="p">)</span>
+  <span class="p">(</span><span class="n">job_certificate_schema_id</span><span class="p">,</span> <span class="n">job_certificate_schema</span><span class="p">)</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">parse_get_schema_response</span><span class="p">(</span><span class="n">get_schema_response</span><span class="p">)</span>
+
+  <span class="p">(</span><span class="n">acme_job_certificate_cred_def_id</span><span class="p">,</span> <span class="n">acme_job_certificate_cred_def_json</span><span class="p">)</span> <span class="o">=</span> \
+      <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">issuer_create_and_store_credential_def</span><span class="p">(</span><span class="n">acme_wallet</span><span class="p">,</span> <span class="n">acme_did</span><span class="p">,</span> <span class="n">job_certificate_schema</span><span class="p">,</span> <span class="s1">&#39;TAG1&#39;</span><span class="p">,</span> <span class="s1">&#39;CL&#39;</span><span class="p">,</span> <span class="s1">&#39;{&quot;support_revocation&quot;: false}&#39;</span><span class="p">)</span>
+
+    <span class="n">cred_def_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_cred_def_request</span><span class="p">(</span><span class="n">acme_did</span><span class="p">,</span> <span class="n">acme_job_certificate_cred_def_json</span><span class="p">)</span>
+    <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">sign_and_submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">acme_wallet</span><span class="p">,</span> <span class="n">acme_did</span><span class="p">,</span> <span class="n">cred_def_request</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>At this point we have a <strong>Credential Definition</strong> for the <strong>Job-Certificate</strong> Credential Schema published by <strong>Acme</strong> and a
+<strong>Credential Definition</strong> for the <strong>Transcript</strong> Credential Schema published by <strong>Faber</strong>.</p>
+</div>
+</div>
+<div class="section" id="alice-gets-a-transcript">
+<span id="alice-gets-a-transcript"></span><h2>Alice Gets a Transcript<a class="headerlink" href="#alice-gets-a-transcript" title="Permalink to this headline">¶</a></h2>
+<p>A credential is a piece of information about an identity — a name, an age, a credit score… It is information claimed to be true. In this case, the credential is named, “Transcript”.</p>
+<p>Credentials are offered by an issuer.</p>
+<p>An issuer may be any identity owner known to the Ledger and any issuer may issue a credential about any identity owner it can identify.</p>
+<p>The usefulness and reliability of a credential are tied to the reputation of the issuer with respect to the credential at hand.
+For Alice to self-issue a credential that she likes chocolate ice cream may be perfectly reasonable, but for her to self-issue a credential that she graduated from Faber College should not impress anyone.</p>
+<p>As we mentioned in <a class="reference external" href="#about-alice">About Alice</a>, <strong>Alice</strong> graduated from <strong>Faber College</strong>.
+After <strong>Faber College</strong> had established a connection with Alice, it created for her a Credential Offer about the issuance of the <strong>Transcript</strong> Credential.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Faber Agent</span>
+  <span class="n">transcript_cred_offer_json</span> <span class="o">=</span> <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">issuer_create_credential_offer</span><span class="p">(</span><span class="n">faber_wallet</span><span class="p">,</span> <span class="n">faber_transcript_cred_def_id</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Note:</strong> All messages sent between actors are encrypted using <code class="docutils literal notranslate"><span class="pre">Authenticated-encryption</span></code> scheme.</p>
+<p>The value of this <strong>Transcript</strong> Credential is that it is provably issued by <strong>Faber College</strong>.</p>
+<p><strong>Alice</strong> wants to see the attributes that the <strong>Transcript</strong> Credential contains.
+These attributes are known because a Credential Schema for <strong>Transcript</strong> has been written to the Ledger.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="n">get_schema_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_get_schema_request</span><span class="p">(</span><span class="n">alice_faber_did</span><span class="p">,</span> <span class="n">transcript_cred_offer</span><span class="p">[</span><span class="s1">&#39;schema_id&#39;</span><span class="p">])</span>
+  <span class="n">get_schema_response</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">get_schema_request</span><span class="p">)</span>
+  <span class="n">transcript_schema</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">parse_get_schema_response</span><span class="p">(</span><span class="n">get_schema_response</span><span class="p">)</span>
+
+  <span class="k">print</span><span class="p">(</span><span class="n">transcript_schema</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
+  <span class="c1"># Transcript Schema:</span>
+  <span class="p">{</span>
+      <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Transcript&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="s1">&#39;1.2&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;attr_names&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span> <span class="s1">&#39;last_name&#39;</span><span class="p">,</span> <span class="s1">&#39;degree&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">,</span> <span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="s1">&#39;average&#39;</span><span class="p">,</span> <span class="s1">&#39;ssn&#39;</span><span class="p">]</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p>However, the <strong>Transcript</strong> Credential has not been delivered to Alice yet in a usable form. Alice wants to use that Credential.
+To get it, Alice needs to request it, but first she must create a <strong>Master Secret</strong>.</p>
+<p><strong>Note:</strong> A Master Secret is an item of Private Data used by a Prover to guarantee that a credential uniquely applies to them. The Master Secret is an input that combines data from multiple Credentials to prove that the Credentials have a common subject (the Prover). A Master Secret should be known only to the Prover.</p>
+<p>Alice creates Master Secret in her wallet.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="n">alice_master_secret_id</span> <span class="o">=</span> <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">prover_create_master_secret</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Alice also needs to get the Credential Definition corresponding to the <code class="docutils literal notranslate"><span class="pre">cred_def_id</span></code> in the <strong>Transcript</strong> Credential Offer.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="n">get_cred_def_request</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">build_get_cred_def_request</span><span class="p">(</span><span class="n">alice_faber_did</span><span class="p">,</span> <span class="n">transcript_cred_offer</span><span class="p">[</span><span class="s1">&#39;cred_def_id&#39;</span><span class="p">])</span>
+  <span class="n">get_cred_def_response</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">submit_request</span><span class="p">(</span><span class="n">pool_handle</span><span class="p">,</span> <span class="n">get_cred_def_request</span><span class="p">)</span>
+  <span class="n">faber_transcript_cred_def</span> <span class="o">=</span> <span class="n">await</span> <span class="n">ledger</span><span class="o">.</span><span class="n">parse_get_cred_def_response</span><span class="p">(</span><span class="n">get_cred_def_response</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now Alice has everything to create a Credential Request of the issuance of the <strong>Faber Transcript</strong> Credential.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+    <span class="p">(</span><span class="n">transcript_cred_request_json</span><span class="p">,</span> <span class="n">transcript_cred_request_metadata_json</span><span class="p">)</span> <span class="o">=</span> \
+        <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">prover_create_credential_req</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">,</span> <span class="n">alice_faber_did</span><span class="p">,</span> <span class="n">transcript_cred_offer_json</span><span class="p">,</span>
+                                                     <span class="n">faber_transcript_cred_def</span><span class="p">,</span> <span class="n">alice_master_secret_id</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Faber</strong> prepares both raw and encoded values for each attribute in the <strong>Transcript</strong> Credential Schema.
+<strong>Faber</strong> creates the <strong>Transcript</strong> Credential for Alice.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Faber Agent</span>
+  <span class="c1"># note that encoding is not standardized by Indy except that 32-bit integers are encoded as themselves. IS-786</span>
+  <span class="n">transcript_cred_values</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+      <span class="s2">&quot;first_name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;1139481716457488690172217916278103335&quot;</span><span class="p">},</span>
+      <span class="s2">&quot;last_name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;Garcia&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;5321642780241790123587902456789123452&quot;</span><span class="p">},</span>
+      <span class="s2">&quot;degree&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;Bachelor of Science, Marketing&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;12434523576212321&quot;</span><span class="p">},</span>
+      <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;graduated&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;2213454313412354&quot;</span><span class="p">},</span>
+      <span class="s2">&quot;ssn&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;123-45-6789&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;3124141231422543541&quot;</span><span class="p">},</span>
+      <span class="s2">&quot;year&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;2015&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;2015&quot;</span><span class="p">},</span>
+      <span class="s2">&quot;average&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;5&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;5&quot;</span><span class="p">}</span>
+  <span class="p">})</span>
+
+  <span class="n">transcript_cred_json</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> \
+      <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">issuer_create_credential</span><span class="p">(</span><span class="n">faber_wallet</span><span class="p">,</span> <span class="n">transcript_cred_offer_json</span><span class="p">,</span> <span class="n">transcript_cred_request_json</span><span class="p">,</span>
+                                               <span class="n">transcript_cred_values</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now the <strong>Transcript</strong> Credential has been issued. Alice stores it in her wallet.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">prover_store_credential</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">transcript_cred_request_json</span><span class="p">,</span> <span class="n">transcript_cred_request_metadata_json</span><span class="p">,</span>
+                                          <span class="n">transcript_cred_json</span><span class="p">,</span> <span class="n">faber_transcript_cred_def</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Alice has it in her possession, in much the same way that she would hold a physical transcript that had been mailed to her.</p>
+</div>
+<div class="section" id="apply-for-a-job">
+<span id="apply-for-a-job"></span><h2>Apply for a Job<a class="headerlink" href="#apply-for-a-job" title="Permalink to this headline">¶</a></h2>
+<p>At some time in the future, Alice would like to work for the fictional company, Acme Corp.
+Normally she would browse to their website, where she would click on a hyperlink to apply for a job.
+Her browser would download a connection request in which her Indy app would open; this would trigger a prompt to Alice, asking her to accept the connection with Acme Corp.
+Because we’re using an Indy-SDK, the process is different, but the steps are the same.
+The process of the connection establishment is the same as when Faber was accepting the Steward connection request.</p>
+<p>After Alice had established connection with Acme, she got the <strong>Job-Application</strong> Proof Request.
+A proof request is a request made by the party who needs verifiable proof of having certain attributes and the solving of predicates that can be provided by other verified credentials.</p>
+<p>In this case, Acme Corp is requesting that Alice provide a <strong>Job Application</strong>.
+The Job Application requires a name, degree, status, SSN and also the satisfaction of the condition about the average mark or grades.</p>
+<p>In this case, <strong>Job-Application</strong> Proof Request looks like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Acme Agent</span>
+  <span class="n">job_application_proof_request_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+      <span class="s1">&#39;nonce&#39;</span><span class="p">:</span> <span class="s1">&#39;1432422343242122312411212&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Job-Application&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="s1">&#39;0.1&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;requested_attributes&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;first_name&#39;</span>
+          <span class="p">},</span>
+          <span class="s1">&#39;attr2_referent&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;last_name&#39;</span>
+          <span class="p">},</span>
+          <span class="s1">&#39;attr3_referent&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;degree&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;restrictions&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">faber_transcript_cred_def_id</span><span class="p">}]</span>
+          <span class="p">},</span>
+          <span class="s1">&#39;attr4_referent&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;status&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;restrictions&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">faber_transcript_cred_def_id</span><span class="p">}]</span>
+          <span class="p">},</span>
+          <span class="s1">&#39;attr5_referent&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;ssn&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;restrictions&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">faber_transcript_cred_def_id</span><span class="p">}]</span>
+          <span class="p">},</span>
+          <span class="s1">&#39;attr6_referent&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;phone_number&#39;</span>
+          <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="s1">&#39;requested_predicates&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;predicate1_referent&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;average&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;p_type&#39;</span><span class="p">:</span> <span class="s1">&#39;&gt;=&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;p_value&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+              <span class="s1">&#39;restrictions&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">faber_transcript_cred_def_id</span><span class="p">}]</span>
+          <span class="p">}</span>
+      <span class="p">}</span>
+  <span class="p">})</span>
+</pre></div>
+</div>
+<p>Notice that some attributes are verifiable and some are not.</p>
+<p>The proof request says that SSN, degree, and graduation status in the Credential must be formally asserted by an issuer and schema_key. Notice also that the first_name, last_name and phone_number are not required to be verifiable.
+By not tagging these credentials with a verifiable status, Acme’s credential request is saying it will accept Alice’s own credential about her names and phone numbers.</p>
+<p>To show Credentials that Alice can use for the creating of Proof for the <strong>Job-Application</strong> Proof Request Alice calls <code class="docutils literal notranslate"><span class="pre">anoncreds.prover_get_credentials_for_proof_req</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+    <span class="n">creds_for_job_application_proof_request</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span>
+        <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">prover_get_credentials_for_proof_req</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">,</span> <span class="n">job_application_proof_request_json</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Alice has only one credential that meets proof the requirements for this <strong>Job Application</strong>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="p">{</span>
+    <span class="s1">&#39;referent&#39;</span><span class="p">:</span> <span class="s1">&#39;Transcript Credential Referent&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;attrs&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;first_name&#39;</span><span class="p">:</span> <span class="s1">&#39;Alice&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;last_name&#39;</span><span class="p">:</span> <span class="s1">&#39;Garcia&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;graduated&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;degree&#39;</span><span class="p">:</span> <span class="s1">&#39;Bachelor of Science, Marketing&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;ssn&#39;</span><span class="p">:</span> <span class="s1">&#39;123-45-6789&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;year&#39;</span><span class="p">:</span> <span class="s1">&#39;2015&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;average&#39;</span><span class="p">:</span> <span class="s1">&#39;5&#39;</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;schema_id&#39;</span><span class="p">:</span> <span class="n">job_certificate_schema_id</span><span class="p">,</span>
+    <span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">faber_transcript_cred_def_id</span><span class="p">,</span>
+    <span class="s1">&#39;rev_reg_id&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="s1">&#39;cred_rev_id&#39;</span><span class="p">:</span> <span class="bp">None</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p>Now Alice can divide these attributes into the three groups:</p>
+<ol class="simple">
+<li>attributes values of which will be revealed</li>
+<li>attributes values of which will be unrevealed</li>
+<li>attributes for which creating of verifiable proof is not required</li>
+</ol>
+<p>For the <strong>Job-Application</strong> Proof Request Alice divided the attributes as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+    <span class="n">job_application_requested_creds_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+        <span class="s1">&#39;self_attested_attributes&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="s1">&#39;Alice&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;attr2_referent&#39;</span><span class="p">:</span> <span class="s1">&#39;Garcia&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;attr6_referent&#39;</span><span class="p">:</span> <span class="s1">&#39;123-45-6789&#39;</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;requested_attributes&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;attr3_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;cred_id&#39;</span><span class="p">:</span> <span class="n">cred_for_attr3</span><span class="p">[</span><span class="s1">&#39;referent&#39;</span><span class="p">],</span> <span class="s1">&#39;revealed&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">},</span>
+            <span class="s1">&#39;attr4_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;cred_id&#39;</span><span class="p">:</span> <span class="n">cred_for_attr4</span><span class="p">[</span><span class="s1">&#39;referent&#39;</span><span class="p">],</span> <span class="s1">&#39;revealed&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">},</span>
+            <span class="s1">&#39;attr5_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;cred_id&#39;</span><span class="p">:</span> <span class="n">cred_for_attr5</span><span class="p">[</span><span class="s1">&#39;referent&#39;</span><span class="p">],</span> <span class="s1">&#39;revealed&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">},</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;requested_predicates&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;predicate1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;cred_id&#39;</span><span class="p">:</span> <span class="n">cred_for_predicate1</span><span class="p">[</span><span class="s1">&#39;referent&#39;</span><span class="p">]}}</span>
+    <span class="p">})</span>
+</pre></div>
+</div>
+<p>In addition, Alice must get the Credential Schema and corresponding Credential Definition for each used Credential, the same way, as on the step used to in the creation of the Credential Request.</p>
+<p>Now Alice has everything to create the Proof for <strong>Acme Job-Application</strong> Proof Request.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="n">apply_job_proof_json</span> <span class="o">=</span> \
+        <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">prover_create_proof</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">,</span> <span class="n">job_application_proof_request_json</span><span class="p">,</span> <span class="n">job_application_requested_creds_json</span><span class="p">,</span>
+                                            <span class="n">alice_master_secret_id</span><span class="p">,</span> <span class="n">schemas_json</span><span class="p">,</span> <span class="n">cred_defs_json</span><span class="p">,</span> <span class="n">revoc_states_json</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When <strong>Acme</strong> inspects the received Proof he will see following structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Acme Agent</span>
+  <span class="p">{</span>
+      <span class="s1">&#39;requested_proof&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;revealed_attrs&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;attr4_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;sub_proof_index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;raw&#39;</span><span class="p">:</span><span class="s1">&#39;graduated&#39;</span><span class="p">,</span> <span class="s1">&#39;encoded&#39;</span><span class="p">:</span><span class="s1">&#39;2213454313412354&#39;</span><span class="p">},</span>
+              <span class="s1">&#39;attr5_referent&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;sub_proof_index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;raw&#39;</span><span class="p">:</span><span class="s1">&#39;123-45-6789&#39;</span><span class="p">,</span> <span class="s1">&#39;encoded&#39;</span><span class="p">:</span><span class="s1">&#39;3124141231422543541&#39;</span><span class="p">},</span>
+              <span class="s1">&#39;attr3_referent&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;sub_proof_index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;raw&#39;</span><span class="p">:</span><span class="s1">&#39;Bachelor of Science, Marketing&#39;</span><span class="p">,</span> <span class="s1">&#39;encoded&#39;</span><span class="p">:</span><span class="s1">&#39;12434523576212321&#39;</span><span class="p">}</span>
+          <span class="p">},</span>
+          <span class="s1">&#39;self_attested_attrs&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="s1">&#39;Alice&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;attr2_referent&#39;</span><span class="p">:</span> <span class="s1">&#39;Garcia&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;attr6_referent&#39;</span><span class="p">:</span> <span class="s1">&#39;123-45-6789&#39;</span>
+          <span class="p">},</span>
+          <span class="s1">&#39;unrevealed_attrs&#39;</span><span class="p">:</span> <span class="p">{},</span>
+          <span class="s1">&#39;predicates&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;predicate1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;sub_proof_index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+          <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="s1">&#39;proof&#39;</span> <span class="p">:</span> <span class="p">[]</span> <span class="c1"># Validity Proof that Acme can check</span>
+      <span class="s1">&#39;identifiers&#39;</span> <span class="p">:</span> <span class="p">[</span> <span class="c1"># Identifiers of credentials were used for Proof building</span>
+          <span class="p">{</span>
+            <span class="s1">&#39;schema_id&#39;</span><span class="p">:</span> <span class="n">job_certificate_schema_id</span><span class="p">,</span>
+            <span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">faber_transcript_cred_def_id</span><span class="p">,</span>
+            <span class="s1">&#39;rev_reg_id&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="kc">None</span>
+          <span class="p">}</span>
+      <span class="p">}</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Acme</strong> got all the requested attributes. Now <strong>Acme</strong> wants to check the Validity Proof.
+To do it <strong>Acme</strong> first must get every Credential Schema and corresponding Credential Definition for each identifier presented in the Proof, the same way that Alice did it.
+Now <strong>Acme</strong> has everything to check <strong>Job-Application</strong> Proof from Alice.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="c1"># Acme Agent</span>
+ <span class="k">assert</span> <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">verifier_verify_proof</span><span class="p">(</span><span class="n">job_application_proof_request_json</span><span class="p">,</span> <span class="n">apply_job_proof_json</span><span class="p">,</span>
+                                              <span class="n">schemas_json</span><span class="p">,</span> <span class="n">cred_defs_json</span><span class="p">,</span> <span class="n">revoc_ref_defs_json</span><span class="p">,</span> <span class="n">revoc_regs_json</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here, we’ll assume the application is accepted and Alice ends up getting the job.
+<strong>Acme</strong> creates new Credential Offer for Alice.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Acme Agent</span>
+  <span class="n">job_certificate_cred_offer_json</span> <span class="o">=</span> <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">issuer_create_credential_offer</span><span class="p">(</span><span class="n">acme_wallet</span><span class="p">,</span> <span class="n">acme_job_certificate_cred_def_id</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When Alice inspects her connection with Acme, she sees that a new Credential Offer is available.</p>
+</div>
+<div class="section" id="apply-for-a-loan">
+<span id="apply-for-a-loan"></span><h2>Apply for a Loan<a class="headerlink" href="#apply-for-a-loan" title="Permalink to this headline">¶</a></h2>
+<p>Now that Alice has a job, she’d like to apply for a loan. That will require a proof of employment.
+She can get this from the <strong>Job-Certificate</strong> credential offered by Acme.
+Alice goes through a familiar sequence of interactions.</p>
+<ol class="simple">
+<li>First she creates a Credential Request.</li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="c1"># Alice Agent</span>
+   <span class="p">(</span><span class="n">job_certificate_cred_request_json</span><span class="p">,</span> <span class="n">job_certificate_cred_request_metadata_json</span><span class="p">)</span> <span class="o">=</span> \
+       <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">prover_create_credential_req</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">,</span> <span class="n">alice_acme_did</span><span class="p">,</span> <span class="n">job_certificate_cred_offer_json</span><span class="p">,</span>
+                                                    <span class="n">acme_job_certificate_cred_def</span><span class="p">,</span> <span class="n">alice_master_secret_id</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="simple">
+<li>Acme issues a <strong>Job-Certificate</strong> Credential for Alice.</li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="c1"># Acme Agent</span>
+ <span class="n">alice_job_certificate_cred_values_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+     <span class="s2">&quot;first_name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;245712572474217942457235975012103335&quot;</span><span class="p">},</span>
+     <span class="s2">&quot;last_name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;Garcia&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;312643218496194691632153761283356127&quot;</span><span class="p">},</span>
+     <span class="s2">&quot;employee_status&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;Permanent&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;2143135425425143112321314321&quot;</span><span class="p">},</span>
+     <span class="s2">&quot;salary&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;2400&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;2400&quot;</span><span class="p">},</span>
+     <span class="s2">&quot;experience&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;10&quot;</span><span class="p">,</span> <span class="s2">&quot;encoded&quot;</span><span class="p">:</span> <span class="s2">&quot;10&quot;</span><span class="p">}</span>
+ <span class="p">})</span>
+ <span class="n">job_certificate_cred_json</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> \
+     <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">issuer_create_credential</span><span class="p">(</span><span class="n">acme_wallet</span><span class="p">,</span> <span class="n">job_certificate_cred_offer_json</span><span class="p">,</span><span class="n">job_certificate_cred_request_json</span><span class="p">,</span>
+                                              <span class="n">alice_job_certificate_cred_values_json</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now the <strong>Job-Certificate</strong> Credential has been issued and Alice now has it in her possession. Alice stores <strong>Job-Certificate</strong> Credential in her wallet.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">prover_store_credential</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">job_certificate_cred_request_json</span><span class="p">,</span> <span class="n">job_certificate_cred_request_metadata_json</span><span class="p">,</span>
+                                          <span class="n">job_certificate_cred_request_json</span><span class="p">,</span> <span class="n">acme_job_certificate_cred_def_json</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>She can use it when she applies for her loan, in much the same way that she used her transcript when applying for a job.</p>
+<p>There is a disadvantage in this approach to data sharing though, — it may disclose more data than what is strictly necessary. If all Alice needs to do is provide proof of employment, this can be done with an anonymous credential instead. Anonymous credentials may prove certain predicates without disclosing actual values (e.g., Alice is employed full-time, with a salary greater than X, along with her hire date, but her actually salary remains hidden). A compound proof can be created, drawing from credentials from both Faber College and Acme Corp, that discloses only what is necessary.</p>
+<p>Alice now establishes connection with Thrift Bank.</p>
+<p>Alice gets a <strong>Loan-Application-Basic</strong> Proof Request from Thrift Bank that looks like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Thrift Agent</span>
+  <span class="n">apply_loan_proof_request_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+      <span class="s1">&#39;nonce&#39;</span><span class="p">:</span> <span class="s1">&#39;123432421212&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Loan-Application-Basic&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="s1">&#39;0.1&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;requested_attributes&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;employee_status&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;restrictions&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">acme_job_certificate_cred_def_id</span><span class="p">}]</span>
+          <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="s1">&#39;requested_predicates&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;predicate1_referent&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;salary&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;p_type&#39;</span><span class="p">:</span> <span class="s1">&#39;&gt;=&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;p_value&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
+              <span class="s1">&#39;restrictions&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">acme_job_certificate_cred_def_id</span><span class="p">}]</span>
+          <span class="p">},</span>
+          <span class="s1">&#39;predicate2_referent&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;experience&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;p_type&#39;</span><span class="p">:</span> <span class="s1">&#39;&gt;=&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;p_value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+              <span class="s1">&#39;restrictions&#39;</span><span class="p">:</span> <span class="p">[{</span><span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">acme_job_certificate_cred_def_id</span><span class="p">}]</span>
+          <span class="p">}</span>
+      <span class="p">}</span>
+  <span class="p">})</span>
+</pre></div>
+</div>
+<p>Alice has only one credential that meets the proof requirements for this <strong>Loan-Application-Basic</strong> Proof Request.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="p">{</span>
+      <span class="s1">&#39;referent&#39;</span><span class="p">:</span> <span class="s1">&#39;Job-Certificate Credential Referent&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;revoc_reg_seq_no&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+      <span class="s1">&#39;schema_id&#39;</span><span class="p">:</span> <span class="n">job_certificate_schema_id</span><span class="p">,</span>
+      <span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">acme_job_certificate_cred_def_id</span><span class="p">,</span>
+      <span class="s1">&#39;attrs&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;employee_status&#39;</span><span class="p">:</span> <span class="s1">&#39;Permanent&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;last_name&#39;</span><span class="p">:</span> <span class="s1">&#39;Garcia&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;experience&#39;</span><span class="p">:</span> <span class="s1">&#39;10&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;first_name&#39;</span><span class="p">:</span> <span class="s1">&#39;Alice&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;salary&#39;</span><span class="p">:</span> <span class="s1">&#39;2400&#39;</span>
+      <span class="p">}</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p>For the <strong>Loan-Application-Basic</strong> Proof Request Alice divided attributes as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="n">apply_loan_requested_creds_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+      <span class="s1">&#39;self_attested_attributes&#39;</span><span class="p">:</span> <span class="p">{},</span>
+      <span class="s1">&#39;requested_attributes&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;cred_id&#39;</span><span class="p">:</span> <span class="n">cred_for_attr1</span><span class="p">[</span><span class="s1">&#39;referent&#39;</span><span class="p">],</span> <span class="s1">&#39;revealed&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">}</span>
+      <span class="p">},</span>
+      <span class="s1">&#39;requested_predicates&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;predicate1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;cred_id&#39;</span><span class="p">:</span> <span class="n">cred_for_predicate1</span><span class="p">[</span><span class="s1">&#39;referent&#39;</span><span class="p">]},</span>
+          <span class="s1">&#39;predicate2_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;cred_id&#39;</span><span class="p">:</span> <span class="n">cred_for_predicate2</span><span class="p">[</span><span class="s1">&#39;referent&#39;</span><span class="p">]}</span>
+      <span class="p">}</span>
+  <span class="p">})</span>
+</pre></div>
+</div>
+<p>Alice creates the Proof for the <strong>Loan-Application-Basic</strong> Proof Request.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="n">alice_apply_loan_proof_json</span> <span class="o">=</span> \
+      <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">prover_create_proof</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">,</span> <span class="n">authdecrypted_apply_loan_proof_request_json</span><span class="p">,</span> <span class="n">apply_loan_requested_creds_json</span><span class="p">,</span>
+                                          <span class="n">alice_master_secret_id</span><span class="p">,</span> <span class="n">schemas_json</span><span class="p">,</span> <span class="n">cred_defs_json</span><span class="p">,</span> <span class="n">revoc_states_json</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Alice sends just the <strong>Loan-Application-Basic</strong> proof to the bank.
+This allows her to minimize the PII (personally identifiable information) that she has to share when all she’s trying to do right now is prove basic eligibility.</p>
+<p>When <strong>Thrift</strong> inspects the received Proof he will see following structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Thrift Agent</span>
+  <span class="p">{</span>
+      <span class="s1">&#39;requested_proof&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;revealed_attributess&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;sub_proof_index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;raw&#39;</span><span class="p">:</span><span class="s1">&#39;Permanent&#39;</span><span class="p">,</span> <span class="s1">&#39;encoded&#39;</span><span class="p">:</span><span class="s1">&#39;2143135425425143112321314321&#39;</span><span class="p">},</span>
+          <span class="p">},</span>
+          <span class="s1">&#39;self_attested_attrs&#39;</span><span class="p">:</span> <span class="p">{},</span>
+          <span class="s1">&#39;unrevealed_attrs&#39;</span><span class="p">:</span> <span class="p">{},</span>
+          <span class="s1">&#39;predicates&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;predicate1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;sub_proof_index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+              <span class="s1">&#39;predicate2_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;sub_proof_index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+          <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="s1">&#39;proof&#39;</span> <span class="p">:</span> <span class="p">[]</span> <span class="c1"># Validity Proof that Thrift can check</span>
+      <span class="s1">&#39;identifiers&#39;</span> <span class="p">:</span> <span class="p">[</span> <span class="c1"># Identifiers of credentials were used for Proof building</span>
+          <span class="s1">&#39;schema_id&#39;</span><span class="p">:</span> <span class="n">job_certificate_schema_id</span><span class="p">,</span>
+          <span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">acme_job_certificate_cred_def_id</span><span class="p">,</span>
+          <span class="s1">&#39;revoc_reg_seq_no&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+          <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="kc">None</span>
+      <span class="p">]</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Thrift Bank</strong> successfully verified the <strong>Loan-Application-Basic</strong> Proof from Alice.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Thrift Agent</span>
+  <span class="k">assert</span> <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">verifier_verify_proof</span><span class="p">(</span><span class="n">apply_loan_proof_request_json</span><span class="p">,</span> <span class="n">alice_apply_loan_proof_json</span><span class="p">,</span>
+                                               <span class="n">schemas_json</span><span class="p">,</span> <span class="n">cred_defs_json</span><span class="p">,</span> <span class="n">revoc_defs_json</span><span class="p">,</span> <span class="n">revoc_regs_json</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Thrift Bank sends the second Proof Request where Alice needs to share her personal information with the bank.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Thrift Agent</span>
+  <span class="n">apply_loan_kyc_proof_request_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+      <span class="s1">&#39;nonce&#39;</span><span class="p">:</span> <span class="s1">&#39;123432421212&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Loan-Application-KYC&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="s1">&#39;0.1&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;requested_attributes&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;first_name&#39;</span><span class="p">},</span>
+          <span class="s1">&#39;attr2_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;last_name&#39;</span><span class="p">},</span>
+          <span class="s1">&#39;attr3_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;ssn&#39;</span><span class="p">}</span>
+      <span class="p">},</span>
+      <span class="s1">&#39;requested_predicates&#39;</span><span class="p">:</span> <span class="p">{}</span>
+  <span class="p">})</span>
+</pre></div>
+</div>
+<p>Alice has two credentials that meets the proof requirements for this <strong>Loan-Application-KYC</strong> Proof Request.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="p">{</span>
+    <span class="s1">&#39;referent&#39;</span><span class="p">:</span> <span class="s1">&#39;Transcript Credential Referent&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;schema_id&#39;</span><span class="p">:</span> <span class="n">transcript_schema_id</span><span class="p">,</span>
+    <span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">faber_transcript_cred_def_id</span><span class="p">,</span>
+    <span class="s1">&#39;attrs&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;first_name&#39;</span><span class="p">:</span> <span class="s1">&#39;Alice&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;last_name&#39;</span><span class="p">:</span> <span class="s1">&#39;Garcia&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;graduated&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;degree&#39;</span><span class="p">:</span> <span class="s1">&#39;Bachelor of Science, Marketing&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;ssn&#39;</span><span class="p">:</span> <span class="s1">&#39;123-45-6789&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;year&#39;</span><span class="p">:</span> <span class="s1">&#39;2015&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;average&#39;</span><span class="p">:</span> <span class="s1">&#39;5&#39;</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;rev_reg_id&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+    <span class="s1">&#39;cred_rev_id&#39;</span><span class="p">:</span> <span class="bp">None</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+      <span class="s1">&#39;referent&#39;</span><span class="p">:</span> <span class="s1">&#39;Job-Certificate Credential Referent&#39;</span><span class="p">,</span>
+      <span class="s1">&#39;schema_key&#39;</span><span class="p">:</span> <span class="n">job_certificate_schema_id</span><span class="p">,</span>
+      <span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">acme_job_certificate_cred_def_id</span><span class="p">,</span>
+      <span class="s1">&#39;attrs&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;employee_status&#39;</span><span class="p">:</span> <span class="s1">&#39;Permanent&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;last_name&#39;</span><span class="p">:</span> <span class="s1">&#39;Garcia&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;experience&#39;</span><span class="p">:</span> <span class="s1">&#39;10&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;first_name&#39;</span><span class="p">:</span> <span class="s1">&#39;Alice&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;salary&#39;</span><span class="p">:</span> <span class="s1">&#39;2400&#39;</span>
+      <span class="p">},</span>
+      <span class="s1">&#39;rev_reg_id&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+      <span class="s1">&#39;revoc_reg_seq_no&#39;</span><span class="p">:</span> <span class="bp">None</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p>For the <strong>Loan-Application-KYC</strong> Proof Request Alice divided attributes as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="n">apply_loan_kyc_requested_creds_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+      <span class="s1">&#39;self_attested_attributes&#39;</span><span class="p">:</span> <span class="p">{},</span>
+      <span class="s1">&#39;requested_attributes&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;cred_id&#39;</span><span class="p">:</span> <span class="n">cred_for_attr1</span><span class="p">[</span><span class="s1">&#39;referent&#39;</span><span class="p">],</span> <span class="s1">&#39;revealed&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">},</span>
+          <span class="s1">&#39;attr2_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;cred_id&#39;</span><span class="p">:</span> <span class="n">cred_for_attr2</span><span class="p">[</span><span class="s1">&#39;referent&#39;</span><span class="p">],</span> <span class="s1">&#39;revealed&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">},</span>
+          <span class="s1">&#39;attr3_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;cred_id&#39;</span><span class="p">:</span> <span class="n">cred_for_attr3</span><span class="p">[</span><span class="s1">&#39;referent&#39;</span><span class="p">],</span> <span class="s1">&#39;revealed&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">}</span>
+      <span class="p">},</span>
+      <span class="s1">&#39;requested_predicates&#39;</span><span class="p">:</span> <span class="p">{}</span>
+  <span class="p">})</span>
+</pre></div>
+</div>
+<p>Alice creates the Proof for <strong>Loan-Application-KYC</strong> Proof Request.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Alice Agent</span>
+  <span class="n">alice_apply_loan_kyc_proof_json</span> <span class="o">=</span> \
+      <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">prover_create_proof</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">,</span> <span class="n">apply_loan_kyc_proof_request_json</span><span class="p">,</span> <span class="n">apply_loan_kyc_requested_creds_json</span><span class="p">,</span>
+                                          <span class="n">alice_master_secret_id</span><span class="p">,</span> <span class="n">schemas_json</span><span class="p">,</span> <span class="n">cred_defs_json</span><span class="p">,</span> <span class="n">revoc_states_json</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When <strong>Thrift</strong> inspects the received Proof he will see following structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Thrift Agent</span>
+  <span class="p">{</span>
+      <span class="s1">&#39;requested_proof&#39;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="s1">&#39;revealed_attributes&#39;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;sub_proof_index&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;raw&#39;</span><span class="p">:</span><span class="s1">&#39;123-45-6789&#39;</span><span class="p">,</span> <span class="s1">&#39;encoded&#39;</span><span class="p">:</span><span class="s1">&#39;3124141231422543541&#39;</span><span class="p">},</span>
+              <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;sub_proof_index&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;raw&#39;</span><span class="p">:</span><span class="s1">&#39;Alice&#39;</span><span class="p">,</span> <span class="s1">&#39;encoded&#39;</span><span class="p">:</span><span class="s1">&#39;245712572474217942457235975012103335&#39;</span><span class="p">},</span>
+              <span class="s1">&#39;attr1_referent&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;sub_proof_index&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;raw&#39;</span><span class="p">:</span><span class="s1">&#39;Garcia&#39;</span><span class="p">,</span> <span class="s1">&#39;encoded&#39;</span><span class="p">:</span><span class="s1">&#39;312643218496194691632153761283356127&#39;</span><span class="p">},</span>
+          <span class="p">},</span>
+          <span class="s1">&#39;self_attested_attrs&#39;</span><span class="p">:</span> <span class="p">{},</span>
+          <span class="s1">&#39;unrevealed_attrs&#39;</span><span class="p">:</span> <span class="p">{},</span>
+          <span class="s1">&#39;predicates&#39;</span><span class="p">:</span> <span class="p">{}</span>
+      <span class="p">},</span>
+      <span class="s1">&#39;proof&#39;</span> <span class="p">:</span> <span class="p">[]</span> <span class="c1"># Validity Proof that Thrift can check</span>
+      <span class="s1">&#39;identifiers&#39;</span> <span class="p">:</span> <span class="p">[</span> <span class="c1"># Identifiers of credentials were used for Proof building</span>
+          <span class="p">{</span>
+            <span class="s1">&#39;schema_id&#39;</span><span class="p">:</span> <span class="n">transcript_schema_id</span><span class="p">,</span>
+            <span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">faber_transcript_cred_def_id</span><span class="p">,</span>
+            <span class="s1">&#39;rev_reg_id&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="kc">None</span>
+          <span class="p">},</span>
+          <span class="p">{</span>
+            <span class="s1">&#39;schema_key&#39;</span><span class="p">:</span> <span class="n">job_certificate_schema_id</span><span class="p">,</span>
+            <span class="s1">&#39;cred_def_id&#39;</span><span class="p">:</span> <span class="n">acme_job_certificate_cred_def_id</span><span class="p">,</span>
+            <span class="s1">&#39;rev_reg_id&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="kc">None</span>
+          <span class="p">}</span>
+      <span class="p">]</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Thrift Bank</strong> has successfully validated the <strong>Loan-Application-KYC</strong> Proof from Alice.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  <span class="c1"># Thrift Agent</span>
+  <span class="k">assert</span> <span class="n">await</span> <span class="n">anoncreds</span><span class="o">.</span><span class="n">verifier_verify_proof</span><span class="p">(</span><span class="n">apply_loan_kyc_proof_request_json</span><span class="p">,</span> <span class="n">alice_apply_loan_kyc_proof_json</span><span class="p">,</span>
+                                               <span class="n">schemas_json</span><span class="p">,</span> <span class="n">cred_defs_json</span><span class="p">,</span> <span class="n">revoc_defs_json</span><span class="p">,</span> <span class="n">revoc_regs_json</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Both of Alice’s Proofs have been successfully verified and she got loan from <strong>Thrift Bank</strong>.</p>
+</div>
+<div class="section" id="explore-the-code">
+<span id="explore-the-code"></span><h2>Explore the Code<a class="headerlink" href="#explore-the-code" title="Permalink to this headline">¶</a></h2>
+<p>Now that you’ve had a chance to see how the Libindy implementation works from the outside, perhaps you’d like to see how it works underneath, from code?
+If so, please run <a class="reference external" href="run-getting-started.md">Simulating Getting Started in the Jupiter</a>.
+You may need to be signed into GitHub to view this link.
+Also you can find the source code <a class="reference external" href="https://github.com/hyperledger/indy-sdk/blob/master/samples/python/src/getting_started.py">here</a></p>
+<p>If demo gives an error when executing check <a class="reference external" href="Trouble_shoot_GSG.md">Trouble Shooting Guide</a>.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../rtd-tutorials.html" class="btn btn-neutral float-right" title="Tutorials" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../rtd-index.html" class="btn btn-neutral" title="Hyperledger Indy SDK" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

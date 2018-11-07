@@ -1,0 +1,957 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Payment Interface &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>Payment Interface</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/design/004-payment-interface/README.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="payment-interface">
+<span id="payment-interface"></span><h1>Payment Interface<a class="headerlink" href="#payment-interface" title="Permalink to this headline">¶</a></h1>
+<p>This design proposes to make libindy aware about payments and tokens that can be implemented with Indy infrastructure.</p>
+<div class="section" id="goals-and-ideas">
+<span id="goals-and-ideas"></span><h2>Goals and ideas<a class="headerlink" href="#goals-and-ideas" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Libindy should be aware about some details of payments in Indy infrastructure:<ul>
+<li>The idea of payments in general. Transactions might need to be paid for, transactions
+can be used for money/tokens transfer.</li>
+<li>Concept of different Payment Methods that can be plugged to libindy
+(like Sovrin tokens, Bitcoin tokens, Visa and etc…). A payment method in libindy might be
+identified by prefix: “pay:sov” could be the prefix for the Sovrin token payment method,
+and “pay:xyz” could be the prefix for a different payment method.</li>
+<li>Concept of Payment Address that is common for supported Payment Methods. Different
+payment use different format of Payment Address, but there is agreement on fully resolvable
+payment address format.  This is very much like the notion of the general DID spec with
+sub-specs called DID method specs that are associated with a name.
+Payment addresses would be things like “pay:sov:12345”.</li>
+<li>The idea of payments take inputs and outputs.</li>
+<li>General payment errors that might happen (e.g., “insufficient funds”).</li>
+</ul>
+</li>
+<li>Out-of-box libindy will not provide support of any payment method, but there will be
+API to register payment methods.</li>
+<li>Each payment method should be aware about:<ul>
+<li>Its payment method prefix, and the format of its payment addresses.</li>
+<li>How to create pure payment transactions, such as those that transfers sources, mint sources,
+or lookup balances.</li>
+<li>How to modify an unsigned non-payment transaction (e.g., NYM) to pay fees.</li>
+<li>How to modify transaction signing in a way that satisfies its payment method.</li>
+<li>Possibly, special payment addresses that are significant to its method
+(e.g., the payment address at which the Sovrin Foundation receives fees).</li>
+</ul>
+</li>
+<li>Libindy should provide generic API for payment addresses creation, building of payment-related transactions,
+assigning fees to transactions. This API will look to registered payment methods and call corresponded
+handlers.</li>
+<li>Payments interface must be interoperable as possible between different payment methods.</li>
+</ul>
+<p><img alt="Payment Interface" src="../../_images/payment-interface.svg" /></p>
+</div>
+<div class="section" id="payment-method-api">
+<span id="payment-method-api"></span><h2>Payment Method API<a class="headerlink" href="#payment-method-api" title="Permalink to this headline">¶</a></h2>
+<p>Payment Method API will allow to register custom payment method implementation
+by calling <code class="docutils literal notranslate"><span class="pre">indy_register_payment_method</span></code> call:</p>
+<div class="highlight-Rust notranslate"><div class="highlight"><pre><span></span><span class="sd">/// Register custom payment implementation.</span>
+<span class="sd">///</span>
+<span class="sd">/// It allows library user to provide custom payment method implementation as set of handlers.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// payment_method: The type of payment method also used as sub-prefix for fully resolvable payment address format (&quot;sov&quot; - for example)</span>
+<span class="sd">/// create_payment_address: &quot;create_payment_address&quot; operation handler</span>
+<span class="sd">/// add_request_fees: &quot;add_request_fees&quot; operation handler</span>
+<span class="sd">/// parse_response_with_fees: &quot;parse_response_with_fees&quot; operation handler</span>
+<span class="sd">/// build_get_payment_sources_request: &quot;build_get_payment_sources_request&quot; operation handler</span>
+<span class="sd">/// parse_get_payment_sources_response: &quot;parse_get_payment_sources_response&quot; operation handler</span>
+<span class="sd">/// build_payment_req: &quot;build_payment_req&quot; operation handler</span>
+<span class="sd">/// parse_payment_response: &quot;parse_payment_response&quot; operation handler</span>
+<span class="sd">/// build_mint_req: &quot;build_mint_req&quot; operation handler</span>
+<span class="sd">/// build_set_txn_fees_req: &quot;build_set_txn_fees_req&quot; operation handler</span>
+<span class="sd">/// build_get_txn_fees_req: &quot;build_get_txn_fees_req&quot; operation handler</span>
+<span class="sd">/// parse_get_txn_fees_response: &quot;parse_get_txn_fees_response&quot; operation handler</span>
+<span class="sd">/// build_verify_payment_req: &quot;build_verify_payment_req&quot; operation handler</span>
+<span class="sd">/// parse_verify_payment_response: &quot;parse_verify_payment_response&quot; operation handler</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// Error code</span>
+<span class="cp">#[no_mangle]</span><span class="w"></span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_register_payment_method</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="n">create_payment_address</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">CreatePaymentAddressCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">add_request_fees</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">AddRequestFeesCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">parse_response_with_fees</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">ParseResponseWithFeesCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">build_get_payment_sources_request</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">BuildGetPaymentSourcesRequestCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">parse_get_payment_sources_response</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">ParseGetPaymentSourcesResponseCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">build_payment_req</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">BuildPaymentReqCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">parse_payment_response</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">ParsePaymentResponseCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">build_mint_req</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">BuildMintReqCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">build_set_txn_fees_req</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">BuildSetTxnFeesReqCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">build_get_txn_fees_req</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">BuildGetTxnFeesReqCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">parse_get_txn_fees_response</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">ParseGetTxnFeesResponseCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">build_verify_req</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">BuildVerifyReqCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">parse_verify_response</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">ParseVerifyResponseCB</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+</pre></div>
+</div>
+<div class="section" id="payment-method-handler-interface">
+<span id="payment-method-handler-interface"></span><h3>Payment Method Handler Interface<a class="headerlink" href="#payment-method-handler-interface" title="Permalink to this headline">¶</a></h3>
+<p>Registered functions will be called by libindy as part of processing libindy API calls.
+Libindy will pass its own callback to the functions to retrieve result of the 3rd party function implementation.
+The list below is type description for registered calls.</p>
+<div class="highlight-Rust notranslate"><div class="highlight"><pre><span></span><span class="sd">/// Create the payment address for this payment method.</span>
+<span class="sd">///</span>
+<span class="sd">/// This method generates private part of payment address</span>
+<span class="sd">/// and stores it in a secure place. Ideally it should be</span>
+<span class="sd">/// secret in libindy wallet (see crypto module).</span>
+<span class="sd">///</span>
+<span class="sd">/// Note that payment method should be able to resolve this</span>
+<span class="sd">/// secret by fully resolvable payment address format.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// wallet_handle: wallet handle where keys for signature are stored</span>
+<span class="sd">/// config: payment address config as json:</span>
+<span class="sd">///   {</span>
+<span class="sd">///     seed: &lt;str&gt;, // allows deterministic creation of payment address</span>
+<span class="sd">///   }</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// payment_address - public identifier of payment address in fully resolvable payment address format</span>
+<span class="k">type</span> <span class="nc">CreatePaymentAddressCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                             </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                             </span><span class="n">payment_address</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+
+<span class="sd">/// Modifies Indy request by adding information how to pay fees for this transaction</span>
+<span class="sd">/// according to this payment method.</span>
+<span class="sd">///</span>
+<span class="sd">/// This method consumes set of inputs and outputs. The difference between inputs balance</span>
+<span class="sd">/// and outputs balance is the fee for this transaction.</span>
+<span class="sd">///</span>
+<span class="sd">/// Not that this method also produces correct fee signatures.</span>
+<span class="sd">///</span>
+<span class="sd">/// Format of inputs is specific for payment method. Usually it should reference payment transaction</span>
+<span class="sd">/// with at least one output that corresponds to payment address that user owns.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// req_json: initial transaction request as json</span>
+<span class="sd">/// inputs_json: The list of payment sources as json array:</span>
+<span class="sd">///   [&quot;source1&quot;, ...]</span>
+<span class="sd">///   Note that each source should reference payment address</span>
+<span class="sd">/// outputs_json: The list of outputs as json array:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///     recipient: &lt;str&gt;, // payment address of recipient</span>
+<span class="sd">///     amount: &lt;int&gt;, // amount</span>
+<span class="sd">///   }]</span>
+<span class="sd">/// extra: // optional information for payment operation</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// req_with_fees_json - modified Indy request with added fees info</span>
+<span class="k">type</span> <span class="nc">AddRequestFeesCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">req_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">inputs_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">outputs_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">req_with_fees_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+
+<span class="sd">/// Parses response for Indy request with fees.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// resp_json: response for Indy request with fees</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// receipts_json - parsed (payment method and node version agnostic) receipts info as json:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///      receipt: &lt;str&gt;, // receipt that can be used for payment referencing and verification</span>
+<span class="sd">///      recipient: &lt;str&gt;, //payment address for this recipient</span>
+<span class="sd">///      amount: &lt;int&gt;, // amount</span>
+<span class="sd">///      extra: &lt;str&gt;, // optional data from payment transaction</span>
+<span class="sd">///   }]</span>
+<span class="k">type</span> <span class="nc">ParseResponseWithFeesCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                         </span><span class="n">resp_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                         </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                              </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                              </span><span class="n">receipts_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+<span class="w">                                                       </span>
+<span class="sd">/// Builds Indy request for getting sources list for payment address</span>
+<span class="sd">/// according to this payment method.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// payment_address: target payment address</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// get_sources_txn_json - Indy request for getting sources list for payment address</span>
+<span class="k">type</span> <span class="nc">BuildGetPaymentSourcesRequestCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                       </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                       </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                       </span><span class="n">payment_address</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                       </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                            </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                            </span><span class="n">get_sources_txn_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+
+<span class="sd">/// Parses response for Indy request for getting sources list.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// resp_json: response for Indy request for getting sources list</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// sources_json - parsed (payment method and node version agnostic) sources info as json:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///      source: &lt;str&gt;, // source input</span>
+<span class="sd">///      paymentAddress: &lt;str&gt;, //payment address for this source</span>
+<span class="sd">///      amount: &lt;int&gt;, // amount</span>
+<span class="sd">///      extra: &lt;str&gt;, // optional data from payment transaction</span>
+<span class="sd">///   }]</span>
+<span class="k">type</span> <span class="nc">ParseGetPaymentSourcesResponseCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">resp_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                             </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                             </span><span class="n">sources_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+
+<span class="sd">/// Builds Indy request for doing payment</span>
+<span class="sd">/// according to this payment method.</span>
+<span class="sd">///</span>
+<span class="sd">/// This method consumes set of inputs and outputs.</span>
+<span class="sd">///</span>
+<span class="sd">/// Format of inputs is specific for payment method. Usually it should reference payment transaction</span>
+<span class="sd">/// with at least one output that corresponds to payment address that user owns.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// inputs_json: The list of payment sources as json array:</span>
+<span class="sd">///   [&quot;source1&quot;, ...]</span>
+<span class="sd">///   Note that each source should reference payment address</span>
+<span class="sd">/// outputs_json: The list of outputs as json array:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///     recipient: &lt;str&gt;, // payment address of recipient</span>
+<span class="sd">///     amount: &lt;int&gt;, // amount</span>
+<span class="sd">///   }]</span>
+<span class="sd">/// extra: // optional information for payment operation</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// payment_req_json - Indy request for doing payment</span>
+<span class="k">type</span> <span class="nc">BuildPaymentReqCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                   </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                   </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                   </span><span class="n">inputs_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                   </span><span class="n">outputs_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                   </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                        </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                        </span><span class="n">payment_req_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+
+<span class="sd">/// Parses response for Indy request for payment txn.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// resp_json: response for Indy request for payment txn</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// receipts_json - parsed (payment method and node version agnostic) receipts info as json:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///      receipt: &lt;str&gt;, // receipt that can be used for payment referencing and verification</span>
+<span class="sd">///      recipient: &lt;str&gt;, //payment address for this receipt</span>
+<span class="sd">///      amount: &lt;int&gt;, // amount</span>
+<span class="sd">///      extra: &lt;str&gt;, // optional data from payment transaction</span>
+<span class="sd">///   }]</span>
+<span class="k">type</span> <span class="nc">ParsePaymentResponseCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">resp_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                             </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                             </span><span class="n">receipts_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+
+<span class="sd">/// Builds Indy request for doing minting</span>
+<span class="sd">/// according to this payment method.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// outputs_json: The list of outputs as json array:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///     recipient: &lt;str&gt;, // payment address of recipient</span>
+<span class="sd">///     amount: &lt;int&gt;, // amount</span>
+<span class="sd">///   }]</span>
+<span class="sd">/// extra: // optional information for payment operation</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// mint_req_json - Indy request for doing minting</span>
+<span class="k">type</span> <span class="nc">BuildMintReqCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                </span><span class="n">outputs_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                     </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                     </span><span class="n">mint_req_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+
+<span class="sd">/// Builds Indy request for setting fees for transactions in the ledger</span>
+<span class="sd">///</span>
+<span class="sd">/// # Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// fees_json {</span>
+<span class="sd">///   txnType1: amount1,</span>
+<span class="sd">///   txnType2: amount2,</span>
+<span class="sd">///   .................</span>
+<span class="sd">///   txnTypeN: amountN,</span>
+<span class="sd">/// }</span>
+<span class="sd">///</span>
+<span class="sd">/// # Return</span>
+<span class="sd">/// set_txn_fees_json - Indy request for setting fees for transactions in the ledger</span>
+<span class="k">type</span> <span class="nc">BuildSetTxnFeesReqCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">fees_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                           </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                           </span><span class="n">set_txn_fees_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+
+<span class="sd">/// Builds Indy get request for getting fees for transactions in the ledger</span>
+<span class="sd">///</span>
+<span class="sd">/// # Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">///</span>
+<span class="sd">/// # Return</span>
+<span class="sd">/// get_txn_fees_json - Indy request for getting fees for transactions in the ledger</span>
+<span class="k">type</span> <span class="nc">BuildGetTxnFeesReqCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                           </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                           </span><span class="n">get_txn_fees_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+
+<span class="sd">/// Parses response for Indy request for getting fees</span>
+<span class="sd">///</span>
+<span class="sd">/// # Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// resp_json: response for Indy request for getting fees</span>
+<span class="sd">///</span>
+<span class="sd">/// # Return</span>
+<span class="sd">/// fees_json {</span>
+<span class="sd">///   txnType1: amount1,</span>
+<span class="sd">///   txnType2: amount2,</span>
+<span class="sd">///   .................</span>
+<span class="sd">///   txnTypeN: amountN,</span>
+<span class="sd">/// }                                          </span>
+<span class="k">type</span> <span class="nc">ParseGetTxnFeesResponseCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">resp_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                </span><span class="n">fees_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w">                                                       </span>
+
+<span class="sd">/// Builds Indy request for getting information to verify the payment receipt</span>
+<span class="sd">///</span>
+<span class="sd">/// # Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// receipt: payment receipt to verify</span>
+<span class="sd">///</span>
+<span class="sd">/// # Return</span>
+<span class="sd">/// verify_txn_json -- request to be sent to ledger</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">type</span> <span class="nc">BuildVerifyPaymentReqCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">receipt</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                  </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                  </span><span class="n">verify_txn_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+
+<span class="sd">/// Parses Indy response with information to verify receipt</span>
+<span class="sd">///</span>
+<span class="sd">/// # Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// resp_json: response for Indy request for information to verify the payment receipt</span>
+<span class="sd">///</span>
+<span class="sd">/// # Return</span>
+<span class="sd">/// txn_json: {</span>
+<span class="sd">///     sources: [&lt;str&gt;, ]</span>
+<span class="sd">///     receipts: [ {</span>
+<span class="sd">///         recipient: &lt;str&gt;, // payment address of recipient</span>
+<span class="sd">///         receipt: &lt;str&gt;, // receipt that can be used for payment referencing and verification</span>
+<span class="sd">///         amount: &lt;int&gt;, // amount</span>
+<span class="sd">///     }, ]</span>
+<span class="sd">///     extra: &lt;str&gt;, //optional data</span>
+<span class="sd">/// }</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">type</span> <span class="nc">ParseVerifyPaymentResponseCB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                  </span><span class="n">resp_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                  </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                       </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                       </span><span class="n">txn_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="payment-api">
+<span id="payment-api"></span><h2>Payment API<a class="headerlink" href="#payment-api" title="Permalink to this headline">¶</a></h2>
+<p>Some API calls have dedicated parameter to determine payment_method.
+Another part of calls use assumptions about input parameters format to determine payment_method</p>
+<div class="highlight-Rust notranslate"><div class="highlight"><pre><span></span><span class="sd">/// Create the payment address for specified payment method</span>
+<span class="sd">///</span>
+<span class="sd">///</span>
+<span class="sd">/// This method generates private part of payment address</span>
+<span class="sd">/// and stores it in a secure place. Ideally it should be</span>
+<span class="sd">/// secret in libindy wallet (see crypto module).</span>
+<span class="sd">///</span>
+<span class="sd">/// Note that payment method should be able to resolve this</span>
+<span class="sd">/// secret by fully resolvable payment address format.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// wallet_handle: wallet handle where to save new address</span>
+<span class="sd">/// payment_method: Payment method to use (for example, &#39;sov&#39;)</span>
+<span class="sd">/// config: payment address config as json:</span>
+<span class="sd">///   {</span>
+<span class="sd">///     seed: &lt;str&gt;, // allows deterministic creation of payment address</span>
+<span class="sd">///   }</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// payment_address - public identifier of payment address in fully resolvable payment address format</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_create_payment_address</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">payment_address</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">                                                               </span>
+<span class="sd">/// Lists all payment addresses that are stored in the wallet</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to context</span>
+<span class="sd">/// wallet_handle: wallet to search for payment_addresses in</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// payment_addresses_json - json array of string with json addresses</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_list_payment_addresses</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">payment_addresses_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Modifies Indy request by adding information how to pay fees for this transaction</span>
+<span class="sd">/// according to this payment method.</span>
+<span class="sd">///</span>
+<span class="sd">/// This method consumes set of inputs and outputs. The difference between inputs balance</span>
+<span class="sd">/// and outputs balance is the fee for this transaction.</span>
+<span class="sd">///</span>
+<span class="sd">/// Not that this method also produces correct fee signatures.</span>
+<span class="sd">///</span>
+<span class="sd">/// Format of inputs is specific for payment method. Usually it should reference payment transaction</span>
+<span class="sd">/// with at least one output that corresponds to payment address that user owns.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// req_json: initial transaction request as json</span>
+<span class="sd">/// inputs_json: The list of payment sources as json array:</span>
+<span class="sd">///   [&quot;source1&quot;, ...]</span>
+<span class="sd">///     - each input should reference paymentAddress</span>
+<span class="sd">///     - this param will be used to determine payment_method</span>
+<span class="sd">/// outputs_json: The list of outputs as json array:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///     recipient: &lt;str&gt;, // payment address of recipient</span>
+<span class="sd">///     amount: &lt;int&gt;, // amount</span>
+<span class="sd">///   }]</span>
+<span class="sd">/// extra: // optional information for payment operation</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// req_with_fees_json - modified Indy request with added fees info</span>
+<span class="sd">/// payment_method - used payment method</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_add_request_fees</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                    </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                    </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                    </span><span class="n">req_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                    </span><span class="n">inputs_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                    </span><span class="n">outputs_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                    </span><span class="n">extra</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                    </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                         </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                         </span><span class="n">req_with_fees_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                         </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Parses response for Indy request with fees.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// payment_method: payment method to use</span>
+<span class="sd">/// resp_json: response for Indy request with fees</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// receipts_json - parsed (payment method and node version agnostic) receipts info as json:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///      receipt: &lt;str&gt;, // receipt that can be used for payment referencing and verification</span>
+<span class="sd">///      recipient: &lt;str&gt;, //payment address of recipient</span>
+<span class="sd">///      amount: &lt;int&gt;, // amount</span>
+<span class="sd">///      extra: &lt;str&gt;, // optional data from payment transaction</span>
+<span class="sd">///   }]</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_parse_response_with_fees</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                            </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                            </span><span class="n">resp_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                            </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                 </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                 </span><span class="n">receipts_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Builds Indy request for getting sources list for payment address</span>
+<span class="sd">/// according to this payment method.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// payment_address: target payment address</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// get_sources_txn_json - Indy request for getting sources list for payment address</span>
+<span class="sd">/// payment_method - used payment method</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_build_get_payment_sources_request</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                     </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                     </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                     </span><span class="n">payment_address</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                     </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                          </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                          </span><span class="n">get_sources_txn_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                          </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Parses response for Indy request for getting sources list.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// payment_method: payment method to use.</span>
+<span class="sd">/// resp_json: response for Indy request for getting sources list</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// sources_json - parsed (payment method and node version agnostic) sources info as json:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///      source: &lt;str&gt;, // source input</span>
+<span class="sd">///      paymentAddress: &lt;str&gt;, //payment address for this source</span>
+<span class="sd">///      amount: &lt;int&gt;, // amount</span>
+<span class="sd">///      extra: &lt;str&gt;, // optional data from payment transaction</span>
+<span class="sd">///   }]</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_parse_get_payment_sources_response</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                      </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                      </span><span class="n">resp_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                      </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                           </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                           </span><span class="n">sources_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Builds Indy request for doing payment</span>
+<span class="sd">/// according to this payment method.</span>
+<span class="sd">///</span>
+<span class="sd">/// This method consumes set of inputs and outputs.</span>
+<span class="sd">///</span>
+<span class="sd">/// Format of inputs is specific for payment method. Usually it should reference payment transaction</span>
+<span class="sd">/// with at least one output that corresponds to payment address that user owns.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// inputs_json: The list of payment sources as json array:</span>
+<span class="sd">///   [&quot;source1&quot;, ...]</span>
+<span class="sd">///   Note that each source should reference payment address</span>
+<span class="sd">/// outputs_json: The list of outputs as json array:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///     recipient: &lt;str&gt;, // payment address of recipient</span>
+<span class="sd">///     amount: &lt;int&gt;, // amount</span>
+<span class="sd">///   }]</span>
+<span class="sd">/// extra: // optional information for payment operation</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// payment_req_json - Indy request for doing payment</span>
+<span class="sd">/// payment_method - used payment method</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_build_payment_req</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">inputs_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">outputs_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">extra</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                          </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                          </span><span class="n">payment_req_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                          </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Parses response for Indy request for payment txn.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// payment_method: payment method to use</span>
+<span class="sd">/// resp_json: response for Indy request for payment txn</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// receipts_json - parsed (payment method and node version agnostic) receipts info as json:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///      receipt: &lt;str&gt;, // receipt that can be used for payment referencing and verification</span>
+<span class="sd">///      recipient: &lt;str&gt;, // payment address of recipient</span>
+<span class="sd">///      amount: &lt;int&gt;, // amount</span>
+<span class="sd">///      extra: &lt;str&gt;, // optional data from payment transaction</span>
+<span class="sd">///   }]</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_parse_payment_response</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">resp_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">receipts_json_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Builds Indy request for doing minting</span>
+<span class="sd">/// according to this payment method.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// outputs_json: The list of outputs as json array:</span>
+<span class="sd">///   [{</span>
+<span class="sd">///     recipient: &lt;str&gt;, // payment address of recipient</span>
+<span class="sd">///     amount: &lt;int&gt;, // amount</span>
+<span class="sd">///   }]</span>
+<span class="sd">/// extra: // optional information for mint operation</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// mint_req_json - Indy request for doing minting</span>
+<span class="sd">/// payment_method - used payment method</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_build_mint_req</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">outputs_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">extra</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                  </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">mint_req_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Builds Indy request for setting fees for transactions in the ledger</span>
+<span class="sd">///</span>
+<span class="sd">/// # Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// payment_method: payment method to use</span>
+<span class="sd">/// fees_json {</span>
+<span class="sd">///   txnType1: amount1,</span>
+<span class="sd">///   txnType2: amount2,</span>
+<span class="sd">///   .................</span>
+<span class="sd">///   txnTypeN: amountN,</span>
+<span class="sd">/// }</span>
+<span class="sd">/// # Return</span>
+<span class="sd">/// set_txn_fees_json - Indy request for setting fees for transactions in the ledger</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_build_set_txn_fees_req</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">fees_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">set_txn_fees_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Builds Indy get request for getting fees for transactions in the ledger</span>
+<span class="sd">///</span>
+<span class="sd">/// # Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// payment_method: payment method to use</span>
+<span class="sd">///</span>
+<span class="sd">/// # Return</span>
+<span class="sd">/// get_txn_fees_json - Indy request for getting fees for transactions in the ledger</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_build_get_txn_fees_req</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">get_txn_fees_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Parses response for Indy request for getting fees</span>
+<span class="sd">///</span>
+<span class="sd">/// # Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// payment_method: payment method to use</span>
+<span class="sd">/// resp_json: response for Indy request for getting fees</span>
+<span class="sd">///</span>
+<span class="sd">/// # Return</span>
+<span class="sd">/// fees_json {</span>
+<span class="sd">///   txnType1: amount1,</span>
+<span class="sd">///   txnType2: amount2,</span>
+<span class="sd">///   .................</span>
+<span class="sd">///   txnTypeN: amountN,</span>
+<span class="sd">/// }</span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_parse_get_txn_fees_response</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                               </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                               </span><span class="n">resp_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                               </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                    </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                    </span><span class="n">fees_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Builds Indy request for information to verify the payment receipt</span>
+<span class="sd">///</span>
+<span class="sd">/// # Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// wallet_handle: wallet handle</span>
+<span class="sd">/// submitter_did : DID of request sender</span>
+<span class="sd">/// receipt: payment receipt to verify</span>
+<span class="sd">///</span>
+<span class="sd">/// # Return</span>
+<span class="sd">/// verify_txn_json: Indy request for verification receipt</span>
+<span class="sd">/// payment_method: used payment method</span>
+<span class="cp">#[no_mangle]</span><span class="w"></span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_build_verify_payment_req</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                            </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                            </span><span class="n">submitter_did</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                            </span><span class="n">receipt</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                            </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                 </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                 </span><span class="n">verify_txn_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                 </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Parses Indy response with information to verify receipt</span>
+<span class="sd">///</span>
+<span class="sd">/// # Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// payment_method: payment method to use</span>
+<span class="sd">/// resp_json: response of the ledger for verify txn</span>
+<span class="sd">///</span>
+<span class="sd">/// # Return</span>
+<span class="sd">/// txn_json: {</span>
+<span class="sd">///     sources: [&lt;str&gt;, ]</span>
+<span class="sd">///     receipts: [ {</span>
+<span class="sd">///         recipient: &lt;str&gt;, // payment address of recipient</span>
+<span class="sd">///         receipt: &lt;str&gt;, // receipt that can be used for payment referencing and verification</span>
+<span class="sd">///         amount: &lt;int&gt;, // amount</span>
+<span class="sd">///     } ],</span>
+<span class="sd">///     extra: &lt;str&gt;, //optional data</span>
+<span class="sd">/// }</span>
+<span class="cp">#[no_mangle]</span><span class="w"></span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_parse_verify_payment_response</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                 </span><span class="n">payment_method</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                 </span><span class="n">resp_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                 </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                      </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                      </span><span class="n">txn_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

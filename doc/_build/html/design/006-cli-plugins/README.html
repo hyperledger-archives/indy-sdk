@@ -1,0 +1,254 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>CLI plugins &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>CLI plugins</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/design/006-cli-plugins/README.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="cli-plugins">
+<span id="cli-plugins"></span><h1>CLI plugins<a class="headerlink" href="#cli-plugins" title="Permalink to this headline">¶</a></h1>
+<p>This design proposes the way to support plugins in Indy CLI.</p>
+<div class="section" id="goals-and-ideas">
+<span id="goals-and-ideas"></span><h2>Goals and ideas<a class="headerlink" href="#goals-and-ideas" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Libindy now allows to plug 2 type of functionality for the moment:<ul>
+<li>Custom wallet storage</li>
+<li>Custom payment methods</li>
+</ul>
+</li>
+<li>To register plugins libindy provides API calls that allows to register C-handlers for each type of plugged operation</li>
+<li>In current vision libraries that implement libindy plugins should provide some kind of public “init” function that will call internally libindy API to register handlers. So registration of plugin is just calling of C function.</li>
+<li>“Init” function should have just one param. It is callback that returns libindy error code.</li>
+<li>CLI can provide command line option that will allow to point the name of plugin dynamic library and the name of “init” function. On start CLI will call dlopen (or LoadLibrary) with right options to perform names linking. CLI will lookup for init function by name and call it.</li>
+<li>Also we need to provide CLI command to load plugin similar way</li>
+</ul>
+</div>
+<div class="section" id="linking">
+<span id="linking"></span><h2>Linking<a class="headerlink" href="#linking" title="Permalink to this headline">¶</a></h2>
+<p><img alt="Linking" src="../../_images/cli-plugins.svg" /></p>
+</div>
+<div class="section" id="command-line-param-to-load-plugins-on-start">
+<span id="command-line-param-to-load-plugins-on-start"></span><h2>Command line param to load plugins on start<a class="headerlink" href="#command-line-param-to-load-plugins-on-start" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>indy-cli --plugins &lt;lib-1-name&gt;:&lt;init-func-1-name&gt;,...,&lt;lib-n-name&gt;:&lt;init-func-n-name&gt;
+</pre></div>
+</div>
+<p>Example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>indy-cli --plugins libnullpay:nullpay_init,libstorage:storage_init
+</pre></div>
+</div>
+</div>
+<div class="section" id="command-to-load-plugin">
+<span id="command-to-load-plugin"></span><h2>Command to load plugin<a class="headerlink" href="#command-to-load-plugin" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>indy&gt; load-plugin <span class="nv">library</span><span class="o">=</span>&lt;library-name&gt; <span class="nv">initializer</span><span class="o">=</span>&lt;init-func-name&gt;
+</pre></div>
+</div>
+<p>Example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>indy&gt; load-plugin <span class="nv">library</span><span class="o">=</span>libnullpay <span class="nv">initializer</span><span class="o">=</span>nullpay_init
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

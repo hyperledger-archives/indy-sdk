@@ -1,0 +1,260 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Connections optimization design &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>Connections optimization design</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/design/009-efficient-connections/README.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="connections-optimization-design">
+<span id="connections-optimization-design"></span><h1>Connections optimization design<a class="headerlink" href="#connections-optimization-design" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="summary">
+<span id="summary"></span><h2>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h2>
+<p>This design proposes enhancements of pool connection logic in libindy for
+reducing of pool load and better pool DDoS protection.</p>
+</div>
+<div class="section" id="motivation">
+<span id="motivation"></span><h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>For current moment <code class="docutils literal notranslate"><span class="pre">indy_pool_open</span></code> endpoint performs CatchUp process and after this
+creates zmq sockets for each pool node and keep sockets connected until calling
+of <code class="docutils literal notranslate"><span class="pre">indy_pool_close</span></code> endpoint.</p>
+<p>This behavior causes the most of clients connected for the most of the time. As result
+we have obvious problem as each node can open only limited amount of sockets for
+the same time. Only first n clients can connect because n+1 connection will just
+cause error about limit of opened file descriptors.</p>
+<p>Additionally it makes easy to perform DDoS attack by justs calling <code class="docutils literal notranslate"><span class="pre">indy_pool_open</span></code>
+in a cycle.</p>
+<p>Note that problem is complex and requires corresponded solution in Node codebase and
+pool network infrastructure, but this proposal is focused on libindy (client) side.</p>
+</div>
+<div class="section" id="proposed-changes">
+<span id="proposed-changes"></span><h2>Proposed changes<a class="headerlink" href="#proposed-changes" title="Permalink to this headline">¶</a></h2>
+<p>The main idea of proposal is force libindy to close sockets as soon as possible, but
+still provide very limited keep-alive ability to avoid unnecessary CurveCP and TCP
+handshakes:</p>
+<ol class="simple">
+<li>Change <code class="docutils literal notranslate"><span class="pre">indy_pool_open</span></code> endpoint behavior. Instead keep sockets connected it will only perform CatchUp
+and keep only information about nodes of this pool. Sockets creation will be performed when application
+sends request with some limitations and optimizations (see details below).</li>
+<li>Persist <code class="docutils literal notranslate"><span class="pre">indy_pool_open</span></code> CatchUp results to start from updated pool ledger next time.</li>
+<li>Introduce internal “pool connection” entity. Each “pool connection” is intended to be used with a specific pool only.</li>
+<li>“Pool connection” owns sockets and can be used to execute one or multiple requests.</li>
+<li>After creation “pool connection” becomes “active” for some pre-defined timeout (5 sec) or until some pre-defined amount
+of requests (5) were started through this “pool connection”.</li>
+<li>“Active” means that context can be used to start execution of     new requests to pool.</li>
+<li>When application tries to send request to pool libindy checks for already exists “pool connection” for target pool in “active” state.</li>
+<li>If there is no active “pool connection” then libindy creates a new one and uses it for sending request.</li>
+<li>If there is active “pool connection” then libindy re-uses it for sending request.</li>
+<li>“pool connection” opens sockets only “by request”. if requests execution requires connection to only one node than only one socket will be created.</li>
+<li>“pool connection” determines node to perform new connection with round robin. If connection is already established than sockets will be re-used.</li>
+<li>libindy keep opened sockets connected until “pool connection” is active (5s from “pool connection” creation or 5 requests started) or there is request    that waits for response on this socket. As soon as “pool connection” is switched from active state and sockets isn’t needed for request it will be
+immediately closed.</li>
+<li>libindy waits for response on the socket only limited amount of time. There are 2 pre-defined timeouts. First one for getting of “Ack” message
+is short (10s). Second one for getting “Reply” message is significantly longer (100s). If node is health in a 99.9% cases it will
+send “ACK” message in a short period of time (the reason for small timeout).</li>
+</ol>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

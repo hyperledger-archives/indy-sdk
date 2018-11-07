@@ -1,0 +1,1013 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Wallet Storage Design &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>Wallet Storage Design</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/design/003-wallet-storage/README.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="wallet-storage-design">
+<span id="wallet-storage-design"></span><h1>Wallet Storage Design<a class="headerlink" href="#wallet-storage-design" title="Permalink to this headline">¶</a></h1>
+<p>In current state libindy allows to plug different wallet implementations. Plugged wallet now handles both security
+and storage layers. This design proposes to restrict our plugged interface by handling only storage layer.
+All encryption will be performed in libindy. It will simplify plugged wallets and warranty good security level
+for 3d party wallets implementations.</p>
+<p>Also proposals enhances our API for efficient and flexible search with paging support.</p>
+<p>Also proposals enhances our API to support storing of application specific
+data into the wallet.</p>
+<div class="section" id="goals-and-ideas">
+<span id="goals-and-ideas"></span><h2>Goals and ideas<a class="headerlink" href="#goals-and-ideas" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Simplify plugged wallets and warranty security level for 3d party wallets implementation by perform all
+encryption on libindy level:<ul>
+<li>Record ids will be always encrypted.</li>
+<li>Record values will be always encrypted.</li>
+<li>Tag names will be always encrypted.</li>
+<li>Tag values will be <strong>optionally</strong> encrypted. If user wants to perform some complex searches it can
+be possible to include some additional un-encrypted tags.</li>
+</ul>
+</li>
+<li>Allow plugging of different storages with native OpenSSL style object-oriented C interface for.
+Try to avoid unnecessary json and re-allocation.</li>
+<li>Allow efficient and flexible search for entities with pagination support.</li>
+<li>Expose public API to store application specific data into the wallet. This API shouldn’t
+have an access to secrets stored by libindy.</li>
+</ul>
+</div>
+<div class="section" id="wallet-components">
+<span id="wallet-components"></span><h2>Wallet Components<a class="headerlink" href="#wallet-components" title="Permalink to this headline">¶</a></h2>
+<p><img alt="Wallet Components" src="../../_images/wallet-components.svg" /></p>
+</div>
+<div class="section" id="secrets-api">
+<span id="secrets-api"></span><h2>Secrets API<a class="headerlink" href="#secrets-api" title="Permalink to this headline">¶</a></h2>
+<p>It is our existing endpoints for secrets creation and access like <code class="docutils literal notranslate"><span class="pre">indy_create_and_store_did</span></code> or <code class="docutils literal notranslate"><span class="pre">indy_create_and_store_cred_def</span></code>:</p>
+<ol class="simple">
+<li>Allow to create a secret into the wallet</li>
+<li>Return record id and optionally public part (if needed)</li>
+<li>Allow to search for stored secrets ids (if needed)</li>
+<li>Allow to reference secret by id in crypto calls that require this secret</li>
+<li>Don’t allow to get stored secret back</li>
+</ol>
+</div>
+<div class="section" id="non-secrets-api">
+<span id="non-secrets-api"></span><h2>Non-secrets API<a class="headerlink" href="#non-secrets-api" title="Permalink to this headline">¶</a></h2>
+<p>This API is intended to store and read application specific identity data in the wallet.
+This API shouldn’t have an access to secrets stored by Secret Entities API.</p>
+<div class="highlight-Rust notranslate"><div class="highlight"><pre><span></span><span class="sd">/// Create a new non-secret record in the wallet</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to caller context</span>
+<span class="sd">/// wallet_handle: wallet handle (created by open_wallet)</span>
+<span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="sd">/// id: the id of record</span>
+<span class="sd">/// value: the value of record</span>
+<span class="sd">/// tags_json: the record tags used for search and storing meta information as json:</span>
+<span class="sd">///   {</span>
+<span class="sd">///     &quot;tagName1&quot;: &lt;str&gt;, // string tag (will be stored encrypted)</span>
+<span class="sd">///     &quot;tagName2&quot;: &lt;int&gt;, // int tag (will be stored encrypted)</span>
+<span class="sd">///     &quot;~tagName3&quot;: &lt;str&gt;, // string tag (will be stored un-encrypted)</span>
+<span class="sd">///     &quot;~tagName4&quot;: &lt;int&gt;, // int tag (will be stored un-encrypted)</span>
+<span class="sd">///   }</span>
+<span class="sd">///   Note that null means no tags</span>
+<span class="sd">///   If tag name starts with &quot;~&quot; the tag will be stored un-encrypted that will allow</span>
+<span class="sd">///   usage of this tag in complex search queries (comparison, predicates)</span>
+<span class="sd">///   Encrypted tags can be searched only for exact matching</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_add_wallet_record</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">value</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">tags_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Update a non-secret wallet record value</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to caller context</span>
+<span class="sd">/// wallet_handle: wallet handle (created by open_wallet)</span>
+<span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="sd">/// id: the id of record</span>
+<span class="sd">/// value: the new value of record</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_update_wallet_record_value</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                              </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                              </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                              </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                              </span><span class="n">value</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                              </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Update a non-secret wallet record tags</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to caller context</span>
+<span class="sd">/// wallet_handle: wallet handle (created by open_wallet)</span>
+<span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="sd">/// id: the id of record</span>
+<span class="sd">/// tags_json: the record tags used for search and storing meta information as json:</span>
+<span class="sd">///   {</span>
+<span class="sd">///     &quot;tagName1&quot;: &lt;str&gt;, // string tag (will be stored encrypted)</span>
+<span class="sd">///     &quot;tagName2&quot;: &lt;int&gt;, // int tag (will be stored encrypted)</span>
+<span class="sd">///     &quot;~tagName3&quot;: &lt;str&gt;, // string tag (will be stored un-encrypted)</span>
+<span class="sd">///     &quot;~tagName4&quot;: &lt;int&gt;, // int tag (will be stored un-encrypted)</span>
+<span class="sd">///   }</span>
+<span class="sd">///   Note that null means no tags</span>
+<span class="sd">///   If tag name starts with &quot;~&quot; the tag will be stored un-encrypted that will allow</span>
+<span class="sd">///   usage of this tag in complex search queries (comparison, predicates)</span>
+<span class="sd">///   Encrypted tags can be searched only for exact matching</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_update_wallet_record_tags</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">tags_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Add new tags to the wallet record</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to caller context</span>
+<span class="sd">/// wallet_handle: wallet handle (created by open_wallet)</span>
+<span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="sd">/// id: the id of record</span>
+<span class="sd">/// tags_json: the record tags used for search and storing meta information as json:</span>
+<span class="sd">///   {</span>
+<span class="sd">///     &quot;tagName1&quot;: &lt;str&gt;, // string tag (will be stored encrypted)</span>
+<span class="sd">///     &quot;tagName2&quot;: &lt;int&gt;, // int tag (will be stored encrypted)</span>
+<span class="sd">///     &quot;~tagName3&quot;: &lt;str&gt;, // string tag (will be stored un-encrypted)</span>
+<span class="sd">///     &quot;~tagName4&quot;: &lt;int&gt;, // int tag (will be stored un-encrypted)</span>
+<span class="sd">///   }</span>
+<span class="sd">///   Note that null means no tags</span>
+<span class="sd">///   If tag name starts with &quot;~&quot; the tag will be stored un-encrypted that will allow</span>
+<span class="sd">///   usage of this tag in complex search queries (comparison, predicates)</span>
+<span class="sd">///   Encrypted tags can be searched only for exact matching</span>
+<span class="sd">///   Note if some from provided tags already assigned to the record than</span>
+<span class="sd">///     corresponding tags values will be replaced</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_add_wallet_record_tags</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">tags_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                          </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Delete tags from the wallet record</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to caller context</span>
+<span class="sd">/// wallet_handle: wallet handle (created by open_wallet)</span>
+<span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="sd">/// id: the id of record</span>
+<span class="sd">/// tag_names_json: the list of tag names to remove from the record as json array:</span>
+<span class="sd">///   [&quot;tagName1&quot;, &quot;tagName2&quot;, ...]</span>
+<span class="sd">///   Note that null means no tag names</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_delete_wallet_record_tags</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">tag_names_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                             </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Delete an existing wallet record in the wallet</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to caller context</span>
+<span class="sd">/// wallet_handle: wallet handle (created by open_wallet)</span>
+<span class="sd">/// type_: record type</span>
+<span class="sd">/// id: the id of record</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_delete_wallet_record</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                        </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Get an wallet record by id</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: command handle to map callback to caller context</span>
+<span class="sd">/// wallet_handle: wallet handle (created by open_wallet)</span>
+<span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="sd">/// id: the id of record</span>
+<span class="sd">/// options_json: //TODO: FIXME: Think about replacing by bitmask</span>
+<span class="sd">///  {</span>
+<span class="sd">///    retrieveType: (optional, false by default) Retrieve record type,</span>
+<span class="sd">///    retrieveValue: (optional, true by default) Retrieve record value,</span>
+<span class="sd">///    retrieveTags: (optional, false by default) Retrieve record tags</span>
+<span class="sd">///  }</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// wallet record json:</span>
+<span class="sd">/// {</span>
+<span class="sd">///   id: &quot;Some id&quot;,</span>
+<span class="sd">///   value: &quot;Some value&quot;, // present only if retrieveValue set to true</span>
+<span class="sd">///   tags: &lt;tags json&gt;, // present only if retrieveTags set to true</span>
+<span class="sd">/// }</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_get_wallet_record</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">options_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                     </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                          </span><span class="n">record_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="sd">/// Search for wallet records.</span>
+<span class="sd">///</span>
+<span class="sd">/// Note instead of immediately returning of fetched records</span>
+<span class="sd">/// this call returns wallet_search_handle that can be used later</span>
+<span class="sd">/// to fetch records by small batches (with indy_fetch_wallet_search_next_records).</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// wallet_handle: wallet handle (created by open_wallet)</span>
+<span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="sd">/// query_json: MongoDB style query to wallet record tags:</span>
+<span class="sd">///  {</span>
+<span class="sd">///    &quot;tagName&quot;: &quot;tagValue&quot;,</span>
+<span class="sd">///    $or: {</span>
+<span class="sd">///      &quot;tagName2&quot;: { $regex: &#39;pattern&#39; },</span>
+<span class="sd">///      &quot;tagName3&quot;: { $gte: 123 },</span>
+<span class="sd">///    },</span>
+<span class="sd">///  }</span>
+<span class="sd">/// options_json: //TODO: FIXME: Think about replacing by bitmask</span>
+<span class="sd">///  {</span>
+<span class="sd">///    retrieveRecords: (optional, true by default) If false only &quot;counts&quot; will be calculated,</span>
+<span class="sd">///    retrieveTotalCount: (optional, false by default) Calculate total count,</span>
+<span class="sd">///    retrieveValue: (optional, true by default) Retrieve record value,</span>
+<span class="sd">///    retrieveTags: (optional, false by default) Retrieve record tags,</span>
+<span class="sd">///  }</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// wallet_search_handle: Wallet search handle that can be used later</span>
+<span class="sd">///   to fetch records by small batches (with indy_fetch_wallet_search_next_records)</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_open_wallet_search</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">query_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">options_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                      </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                           </span><span class="n">wallet_search_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+
+<span class="sd">/// Fetch next records for wallet search.</span>
+<span class="sd">///</span>
+<span class="sd">/// Not if there are no records this call returns WalletNoRecords error.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// wallet_handle: wallet handle (created by open_wallet)</span>
+<span class="sd">/// wallet_search_handle: wallet wallet handle (created by indy_open_wallet_search)</span>
+<span class="sd">/// count: Count of records to fetch</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// wallet records json:</span>
+<span class="sd">/// {</span>
+<span class="sd">///   totalCount: &lt;int&gt;, // present only if retrieveTotalCount set to true</span>
+<span class="sd">///   records: [{ // present only if retrieveRecords set to true</span>
+<span class="sd">///       id: &quot;Some id&quot;,</span>
+<span class="sd">///       value: &quot;Some value&quot;, // present only if retrieveValue set to true</span>
+<span class="sd">///       tags: &lt;tags json&gt;, // present only if retrieveTags set to true</span>
+<span class="sd">///   }],</span>
+<span class="sd">/// }</span>
+<span class="k">extern</span><span class="w"> </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_fetch_wallet_search_next_records</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                    </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                    </span><span class="n">wallet_search_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                    </span><span class="n">count</span>: <span class="kt">usize</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                    </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                         </span><span class="n">records_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="wallet-api-and-storage-interface">
+<span id="wallet-api-and-storage-interface"></span><h2>Wallet API and Storage Interface<a class="headerlink" href="#wallet-api-and-storage-interface" title="Permalink to this headline">¶</a></h2>
+<p>Wallet API already exists and allows wallet management. It requires to be update to allow plugging different storages implementation to libindy. For example, to allow storing
+of wallet records in SQL database. To achieve this we will replace existing <code class="docutils literal notranslate"><span class="pre">indy_register_wallet_type</span></code> call with <code class="docutils literal notranslate"><span class="pre">indy_register_wallet_storage</span></code> call:</p>
+<div class="highlight-Rust notranslate"><div class="highlight"><pre><span></span><span class="sd">/// Register custom wallet storage implementation.</span>
+<span class="sd">///</span>
+<span class="sd">/// It allows library user to provide custom wallet storage implementation as set of handlers.</span>
+<span class="sd">///</span>
+<span class="sd">/// #Params</span>
+<span class="sd">/// command_handle: Command handle to map callback to caller context.</span>
+<span class="sd">/// type_: Wallet storage name.</span>
+<span class="sd">/// create: Wallet storage &quot;create&quot; operation handler</span>
+<span class="sd">/// delete: Wallet storage &quot;delete&quot; operation handler</span>
+<span class="sd">/// open: Wallet storage &quot;open&quot; operation handler</span>
+<span class="sd">/// close: Wallet storage &quot;close&quot; operation handler</span>
+<span class="sd">/// add_record: Wallet storage &quot;add_record&quot; operation handler</span>
+<span class="sd">/// update_record_value: Wallet storage &quot;update_record_value&quot; operation handler</span>
+<span class="sd">/// update_record_tags: Wallet storage &quot;update_record_tags&quot; operation handler</span>
+<span class="sd">/// add_record_tags: Wallet storage &quot;add_record_tags&quot; operation handler</span>
+<span class="sd">/// delete_record_tags: Wallet storage &quot;delete_record_tags&quot; operation handler</span>
+<span class="sd">/// delete_record: Wallet storage &quot;delete_record&quot; operation handler</span>
+<span class="sd">/// get_record: Wallet storage &quot;get_record&quot; operation handler</span>
+<span class="sd">/// get_record_id: Wallet storage &quot;get_record_id&quot; operation handler</span>
+<span class="sd">/// get_record_value: Wallet storage &quot;get_record_value&quot; operation handler</span>
+<span class="sd">/// get_record_tags: Wallet storage &quot;get_record_tags&quot; operation handler</span>
+<span class="sd">/// free_record: Wallet storage &quot;free_record&quot; operation handler</span>
+<span class="sd">/// search_records: Wallet storage &quot;search_records&quot; operation handler</span>
+<span class="sd">/// get_search_total_count: Wallet storage &quot;get_search_total_count&quot; operation handler</span>
+<span class="sd">/// get_search_count: Wallet storage &quot;get_search_count&quot; operation handler</span>
+<span class="sd">/// get_search_next_record: Wallet storage &quot;get_search_next_record&quot; operation handler</span>
+<span class="sd">/// free_search: Wallet storage &quot;free_search&quot; operation handler</span>
+<span class="sd">///</span>
+<span class="sd">/// #Returns</span>
+<span class="sd">/// Error code</span>
+<span class="cp">#[no_mangle]</span><span class="w"></span>
+<span class="k">pub</span><span class="w"> </span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span> <span class="nf">indy_register_wallet_storage</span><span class="p">(</span><span class="n">command_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                           </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Create the wallet storage (For example, database creation)</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// name: wallet storage name (the same as wallet name)</span>
+<span class="w">                                           </span><span class="sd">/// config: wallet storage config (For example, database config)</span>
+<span class="w">                                           </span><span class="sd">/// credentials: wallet storage credentials (For example, database credentials)</span>
+<span class="w">                                           </span><span class="n">create</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">name</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                    </span><span class="n">config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                    </span><span class="n">credentials</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Delete the wallet storage (For example, database deletion)</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// name: wallet storage name (the same as wallet name)</span>
+<span class="w">                                           </span><span class="sd">/// config: wallet storage config (For example, database config)</span>
+<span class="w">                                           </span><span class="sd">/// credentials: wallet storage credentials (For example, database credentials)</span>
+<span class="w">                                           </span><span class="n">delete</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">name</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                    </span><span class="n">config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                    </span><span class="n">credentials</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Open the wallet storage (For example, opening database connection)</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// name: wallet storage name (the same as wallet name)</span>
+<span class="w">                                           </span><span class="sd">/// config: wallet storage config (For example, database config)</span>
+<span class="w">                                           </span><span class="sd">/// runtime_config: wallet storage runtime config (For example, connection config)</span>
+<span class="w">                                           </span><span class="sd">/// credentials: wallet storage credentials (For example, database credentials)</span>
+<span class="w">                                           </span><span class="sd">/// storage_handle_p: pointer to store opened storage handle</span>
+<span class="w">                                           </span><span class="n">open</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">name</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                  </span><span class="n">config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                  </span><span class="n">runtime_config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                  </span><span class="n">credentials</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                  </span><span class="n">storage_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Close the opened walled storage (For example, closing database connection)</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                           </span><span class="n">close</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">handle</span>: <span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Create a new record in the wallet storage</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                           </span><span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="w">                                           </span><span class="sd">/// id: the id of record</span>
+<span class="w">                                           </span><span class="sd">/// value: the value of record (pointer to buffer)</span>
+<span class="w">                                           </span><span class="sd">/// value_len: the value of record (buffer size)</span>
+<span class="w">                                           </span><span class="sd">/// tags_json: the record tags used for search and storing meta information as json:</span>
+<span class="w">                                           </span><span class="sd">///   {</span>
+<span class="w">                                           </span><span class="sd">///     &quot;tagName1&quot;: &quot;tag value 1&quot;, // string value</span>
+<span class="w">                                           </span><span class="sd">///     &quot;tagName2&quot;: 123, // numeric value</span>
+<span class="w">                                           </span><span class="sd">///   }</span>
+<span class="w">                                           </span><span class="sd">///   Note that null means no tags</span>
+<span class="w">                                           </span><span class="n">add_record</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">value</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">value_len</span>: <span class="kt">usize</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">tags_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Update a record value</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                           </span><span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="w">                                           </span><span class="sd">/// id: the id of record</span>
+<span class="w">                                           </span><span class="sd">/// value: the value of record (pointer to buffer)</span>
+<span class="w">                                           </span><span class="sd">/// value_len: the value of record (buffer size)</span>
+<span class="w">                                           </span><span class="n">update_record_value</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                 </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                 </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                 </span><span class="n">value</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                 </span><span class="n">value_len</span>: <span class="kt">usize</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Update a record tags</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                           </span><span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="w">                                           </span><span class="sd">/// id: the id of record</span>
+<span class="w">                                           </span><span class="sd">/// tags_json: the new record tags used for search and storing meta information as json:</span>
+<span class="w">                                           </span><span class="sd">///   {</span>
+<span class="w">                                           </span><span class="sd">///     &quot;tagName1&quot;: &quot;tag value 1&quot;, // string value</span>
+<span class="w">                                           </span><span class="sd">///     &quot;tagName2&quot;: 123, // numeric value</span>
+<span class="w">                                           </span><span class="sd">///   }</span>
+<span class="w">                                           </span><span class="sd">///   Note that null means no tags</span>
+<span class="w">                                           </span><span class="n">update_record_tags</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                </span><span class="n">tags_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Add new tags to the record</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                           </span><span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="w">                                           </span><span class="sd">/// id: the id of record</span>
+<span class="w">                                           </span><span class="sd">/// tags_json: the additional record tags as json:</span>
+<span class="w">                                           </span><span class="sd">///   {</span>
+<span class="w">                                           </span><span class="sd">///     &quot;tagName1&quot;: &quot;tag value 1&quot;, // string value</span>
+<span class="w">                                           </span><span class="sd">///     &quot;tagName2&quot;: 123, // numeric value,</span>
+<span class="w">                                           </span><span class="sd">///     ...</span>
+<span class="w">                                           </span><span class="sd">///   }</span>
+<span class="w">                                           </span><span class="sd">///   Note that null means no tags</span>
+<span class="w">                                           </span><span class="sd">///   Note if some from provided tags already assigned to the record than</span>
+<span class="w">                                           </span><span class="sd">///     corresponding tags values will be replaced</span>
+<span class="w">                                           </span><span class="n">add_record_tags</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                             </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                             </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                             </span><span class="n">tags_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Delete tags from the record</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                           </span><span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="w">                                           </span><span class="sd">/// id: the id of record</span>
+<span class="w">                                           </span><span class="sd">/// tag_names_json: the list of tag names to remove from the record as json array:</span>
+<span class="w">                                           </span><span class="sd">///   [&quot;tagName1&quot;, &quot;tagName2&quot;, ...]</span>
+<span class="w">                                           </span><span class="sd">///   Note that null means no tag names</span>
+<span class="w">                                           </span><span class="n">delete_record_tags</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                </span><span class="n">tag_names_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Delete an existing record in the wallet storage</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                           </span><span class="sd">/// type_: record type</span>
+<span class="w">                                           </span><span class="sd">/// id: the id of record</span>
+<span class="w">                                           </span><span class="n">delete_record</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                           </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                           </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                           </span><span class="sd">/// Get an wallet storage record by id</span>
+<span class="w">                                           </span><span class="sd">///</span>
+<span class="w">                                           </span><span class="sd">/// #Params</span>
+<span class="w">                                           </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                           </span><span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="w">                                           </span><span class="sd">/// id: the id of record</span>
+<span class="w">                                           </span><span class="sd">/// options_json: //TODO: FIXME: Think about replacing by bitmask</span>
+<span class="w">                                           </span><span class="sd">///  {</span>
+<span class="w">                                           </span><span class="sd">///    retrieveType: (optional, false by default) Retrieve record type,</span>
+<span class="w">                                           </span><span class="sd">///    retrieveValue: (optional, true by default) Retrieve record value,</span>
+<span class="w">                                           </span><span class="sd">///    retrieveTags: (optional, false by default) Retrieve record tags</span>
+<span class="w">                                           </span><span class="sd">///  }</span>
+<span class="w">                                           </span><span class="sd">/// record_handle_p: pointer to store retrieved record handle</span>
+<span class="w">                                           </span><span class="n">get_record</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">options_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">record_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="sd">/// Get an id for retrieved wallet storage record</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// #Params</span>
+<span class="w">                                          </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                          </span><span class="sd">/// record_handle: retrieved record handle (See get_record handler)</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// returns: record id</span>
+<span class="w">                                          </span><span class="sd">///          Note that pointer lifetime the same as retrieved record lifetime</span>
+<span class="w">                                          </span><span class="sd">///            (until record_free called)</span>
+<span class="w">                                          </span><span class="n">get_record_id</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                          </span><span class="n">record_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                          </span><span class="n">record_id_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="sd">/// Get an type for retrieved wallet storage record</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// #Params</span>
+<span class="w">                                          </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                          </span><span class="sd">/// record_handle: retrieved record handle (See get_record handler)</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// returns: record id</span>
+<span class="w">                                          </span><span class="sd">///          Note that pointer lifetime the same as retrieved record lifetime</span>
+<span class="w">                                          </span><span class="sd">///            (until record_free called)</span>
+<span class="w">                                          </span><span class="sd">///          Note that null be returned if no type retrieved</span>
+<span class="w">                                          </span><span class="n">get_record_type</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                            </span><span class="n">record_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                            </span><span class="n">record_type_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="sd">/// Get an value for retrieved wallet storage record</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// #Params</span>
+<span class="w">                                          </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                          </span><span class="sd">/// record_handle: retrieved record handle (See get_record handler)</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// returns: record value</span>
+<span class="w">                                          </span><span class="sd">///          Note that pointer lifetime the same as retrieved record lifetime</span>
+<span class="w">                                          </span><span class="sd">///            (until record_free called)</span>
+<span class="w">                                          </span><span class="sd">///          Note that null be returned if no value retrieved</span>
+<span class="w">                                          </span><span class="n">get_record_value</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                             </span><span class="n">record_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                             </span><span class="n">record_value_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                             </span><span class="n">record_value_len_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="sd">/// Get an tags for retrieved wallet record</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// #Params</span>
+<span class="w">                                          </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                          </span><span class="sd">/// record_handle: retrieved record handle (See get_record handler)</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// returns: record tags as json</span>
+<span class="w">                                          </span><span class="sd">///          Note that pointer lifetime the same as retrieved record lifetime</span>
+<span class="w">                                          </span><span class="sd">///            (until record_free called)</span>
+<span class="w">                                          </span><span class="sd">///          Note that null be returned if no tags retrieved</span>
+<span class="w">                                          </span><span class="n">get_record_tags</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                            </span><span class="n">record_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                            </span><span class="n">record_tags_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="sd">/// Free retrieved wallet record (make retrieved record handle invalid)</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// #Params</span>
+<span class="w">                                          </span><span class="sd">/// storage_handle: opened storage handle (See open_wallet_storage)</span>
+<span class="w">                                          </span><span class="sd">/// record_handle: retrieved record handle (See wallet_storage_get_wallet_record)</span>
+<span class="w">                                          </span><span class="n">free_record</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">record_handle</span>: <span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="sd">/// Search for wallet storage records</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// #Params</span>
+<span class="w">                                          </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                          </span><span class="sd">/// type_: allows to separate different record types collections</span>
+<span class="w">                                          </span><span class="sd">/// query_json: MongoDB style query to wallet record tags:</span>
+<span class="w">                                          </span><span class="sd">///  {</span>
+<span class="w">                                          </span><span class="sd">///    &quot;tagName&quot;: &quot;tagValue&quot;,</span>
+<span class="w">                                          </span><span class="sd">///    $or: {</span>
+<span class="w">                                          </span><span class="sd">///      &quot;tagName2&quot;: { $regex: &#39;pattern&#39; },</span>
+<span class="w">                                          </span><span class="sd">///      &quot;tagName3&quot;: { $gte: 123 },</span>
+<span class="w">                                          </span><span class="sd">///    },</span>
+<span class="w">                                          </span><span class="sd">///  }</span>
+<span class="w">                                          </span><span class="sd">/// options_json: //TODO: FIXME: Think about replacing by bitmask</span>
+<span class="w">                                          </span><span class="sd">///  {</span>
+<span class="w">                                          </span><span class="sd">///    retrieveRecords: (optional, true by default) If false only &quot;counts&quot; will be calculated,</span>
+<span class="w">                                          </span><span class="sd">///    retrieveTotalCount: (optional, false by default) Calculate total count,</span>
+<span class="w">                                          </span><span class="sd">///    retrieveType: (optional, false by default) Retrieve record type,</span>
+<span class="w">                                          </span><span class="sd">///    retrieveValue: (optional, true by default) Retrieve record value,</span>
+<span class="w">                                          </span><span class="sd">///    retrieveTags: (optional, false by default) Retrieve record tags,</span>
+<span class="w">                                          </span><span class="sd">///  }</span>
+<span class="w">                                          </span><span class="sd">/// search_handle_p: pointer to store wallet search handle</span>
+<span class="w">                                          </span><span class="n">search_records</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                           </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                           </span><span class="n">query_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                           </span><span class="n">options_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                           </span><span class="n">search_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="sd">/// Search for wallet storage records</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// Note that for each record id, type, value and tags will be retrieved</span>
+<span class="w">                                          </span><span class="sd">/// Note that total count will not be calculated</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// #Params</span>
+<span class="w">                                          </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                          </span><span class="sd">/// search_handle_p: pointer to store wallet search handle</span>
+<span class="w">                                          </span><span class="n">search_all_records</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                               </span><span class="n">search_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="sd">/// Get total count of records that corresponds to wallet storage search query</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// #Params</span>
+<span class="w">                                          </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                          </span><span class="sd">/// search_handle: wallet search handle (See search_records handler)</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// returns: total count of records that corresponds to wallet storage search query</span>
+<span class="w">                                          </span><span class="sd">///          Note -1 will be returned if retrieveTotalCount set to false for search_records</span>
+<span class="w">                                          </span><span class="n">get_search_total_count</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                   </span><span class="n">search_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                   </span><span class="n">total_count_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">usize</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="sd">/// Get the next wallet storage record handle retrieved by this wallet search.</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// #Params</span>
+<span class="w">                                          </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                          </span><span class="sd">/// search_handle: wallet search handle (See search_records handler)</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// returns: record handle (the same as for get_record handler)</span>
+<span class="w">                                          </span><span class="sd">///          Note if no more records WalletNoRecords error will be returned</span>
+<span class="w">                                          </span><span class="n">fetch_search_next_record</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                     </span><span class="n">search_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                                     </span><span class="n">record_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="sd">/// Free wallet search (make search handle invalid)</span>
+<span class="w">                                          </span><span class="sd">///</span>
+<span class="w">                                          </span><span class="sd">/// #Params</span>
+<span class="w">                                          </span><span class="sd">/// storage_handle: opened storage handle (See open handler)</span>
+<span class="w">                                          </span><span class="sd">/// search_handle: wallet search handle (See search_records handler)</span>
+<span class="w">                                          </span><span class="n">free_search</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                        </span><span class="n">search_handle</span>: <span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">                                          </span><span class="n">cb</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">command_handle_</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">err</span>: <span class="nc">ErrorCode</span><span class="p">)</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Storage Interface entities are:</p>
+<p><img alt="Storage Interface entities" src="../../_images/storage-interface.svg" /></p>
+</div>
+<div class="section" id="wallet-service-interface">
+<span id="wallet-service-interface"></span><h2>Wallet Service Interface<a class="headerlink" href="#wallet-service-interface" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-Rust notranslate"><div class="highlight"><pre><span></span><span class="k">impl</span><span class="w"> </span><span class="n">WalletService</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">new</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nc">WalletService</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">register_wallet_storage</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">create</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">name</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                   </span><span class="n">config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w">  </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">delete</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">name</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                   </span><span class="n">config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                   </span><span class="n">credentials</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">open</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">name</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                 </span><span class="n">config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                 </span><span class="n">runtime_config</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                 </span><span class="n">credentials</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                 </span><span class="n">storage_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">close</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">handle</span>: <span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">add_record</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">value</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">value_len</span>: <span class="kt">usize</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">tags_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">update_record_value</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                </span><span class="n">value</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                </span><span class="n">value_len</span>: <span class="kt">usize</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">update_record_tags</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">tags_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">add_record_tags</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                            </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                            </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                            </span><span class="n">tags_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">delete_record_tags</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                               </span><span class="n">tag_names_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">delete_record</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                          </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                          </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">get_record</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">id</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">options_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                       </span><span class="n">record_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">get_record_id</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                          </span><span class="n">record_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                          </span><span class="n">record_id_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">get_record_value</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                             </span><span class="n">record_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                             </span><span class="n">record_value_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="kt">u8</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                             </span><span class="n">record_value_len_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">usize</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">get_record_tags</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                            </span><span class="n">record_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                            </span><span class="n">record_tags_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">free_record</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                        </span><span class="n">record_handle</span>: <span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">search_records</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                           </span><span class="n">type_</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                           </span><span class="n">query_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                           </span><span class="n">options_json</span>: <span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">c_char</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                           </span><span class="n">search_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                </span><span class="n">search_all_records</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                              </span><span class="n">search_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">get_search_total_count</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                   </span><span class="n">search_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                   </span><span class="n">total_count_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">usize</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">fetch_search_next_record</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="k">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                            </span><span class="n">search_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                                            </span><span class="n">record_handle_p</span>: <span class="o">*</span><span class="k">mut</span><span class="w"> </span><span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                 </span><span class="n">free_search</span>: <span class="nc">extern</span><span class="w"> </span><span class="k">fn</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                                                        </span><span class="n">search_handle</span>: <span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">ErrorCode</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">create_wallet</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">pool_name</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">name</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">storage_type</span>: <span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="kt">str</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">storage_config</span>: <span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="kt">str</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">credentials</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">delete_wallet</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">name</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">credentials</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">open_wallet</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"></span>
+<span class="w">                      </span><span class="n">name</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                      </span><span class="n">credentials</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="kt">i32</span><span class="p">,</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">close_wallet</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"></span>
+<span class="w">                       </span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">list_wallets</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="n">WalletMetadata</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">add_record</span><span class="p">(</span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="n">type_</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="n">id</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="n">tags_json</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">update_record_value</span><span class="p">(</span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                              </span><span class="n">type_</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                              </span><span class="n">id</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                              </span><span class="n">value</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">update_record_tags</span><span class="p">(</span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                             </span><span class="n">type_</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                             </span><span class="n">id</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                             </span><span class="n">tags_json</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">add_record_tags</span><span class="p">(</span><span class="n">wallet_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                          </span><span class="n">type_</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                          </span><span class="n">id</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                          </span><span class="n">tags_json</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">delete_record_tags</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                             </span><span class="n">type_</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                             </span><span class="n">id</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                             </span><span class="n">tag_names_json</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">delete_record</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">type_</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                        </span><span class="n">id</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="p">(),</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">   </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">get_record</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="n">type_</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="n">id</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                     </span><span class="n">options_json</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="n">WalletRecord</span><span class="p">,</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">search_records</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">,</span><span class="w"></span>
+<span class="w">                          </span><span class="n">type_</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                          </span><span class="n">query_json</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"></span>
+<span class="w">                          </span><span class="n">options_json</span>: <span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="n">WalletSearch</span><span class="p">,</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">search_all_records</span><span class="p">(</span><span class="n">storage_handle</span>: <span class="kt">i32</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="n">WalletSearch</span><span class="p">,</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">WalletRecord</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">get_id</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="kt">str</span> <span class="p">{}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">get_type</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="kt">str</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">get_value</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="kt">str</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">get_tags</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nb">Option</span><span class="o">&lt;&amp;</span><span class="kt">str</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">impl</span><span class="w"> </span><span class="n">WalletSearch</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">get_total_count</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="nb">Option</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">fetch_next_record</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="nb">Option</span><span class="o">&lt;</span><span class="n">WalletRecord</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">WalletError</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="wallet-query-language">
+<span id="wallet-query-language"></span><h2>Wallet Query Language<a class="headerlink" href="#wallet-query-language" title="Permalink to this headline">¶</a></h2>
+<p>This language will be used to define queries in Non-secrets API, Wallet Service and
+Wallet Storage Interface.</p>
+<div class="highlight-Rust notranslate"><div class="highlight"><pre><span></span><span class="n">query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">subquery</span><span class="p">}</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">subquery</span><span class="p">,</span><span class="w"> </span><span class="p">...,</span><span class="w"> </span><span class="n">subquery</span><span class="p">}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">subquery</span><span class="w"> </span><span class="n">AND</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">AND</span><span class="w"> </span><span class="n">subquery</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="cp">$or</span>: <span class="p">[{</span><span class="n">subquery</span><span class="p">},...,</span><span class="w"> </span><span class="p">{</span><span class="n">subquery</span><span class="p">}]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">subquery</span><span class="w"> </span><span class="n">OR</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">OR</span><span class="w"> </span><span class="n">subquery</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="cp">$not</span>: <span class="p">{</span><span class="n">subquery</span><span class="p">}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">Where</span><span class="w"> </span><span class="n">NOT</span><span class="w"> </span><span class="p">(</span><span class="n">subquery</span><span class="p">)</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;tagName&quot;</span>: <span class="nc">tagValue</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">tagName</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">tagValue</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;tagName&quot;</span>: <span class="p">{</span><span class="cp">$neq</span>: <span class="nc">tagValue</span><span class="p">}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">tagName</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">tagValue</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;tagName&quot;</span>: <span class="p">{</span><span class="cp">$gt</span>: <span class="nc">tagValue</span><span class="p">}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">tagName</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">tagValue</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;tagName&quot;</span>: <span class="p">{</span><span class="cp">$gte</span>: <span class="nc">tagValue</span><span class="p">}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">tagName</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">tagValue</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;tagName&quot;</span>: <span class="p">{</span><span class="cp">$lt</span>: <span class="nc">tagValue</span><span class="p">}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">tagName</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">tagValue</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;tagName&quot;</span>: <span class="p">{</span><span class="cp">$lte</span>: <span class="nc">tagValue</span><span class="p">}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">tagName</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">tagValue</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;tagName&quot;</span>: <span class="p">{</span><span class="cp">$like</span>: <span class="nc">tagValue</span><span class="p">}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">tagName</span><span class="w"> </span><span class="n">LIKE</span><span class="w"> </span><span class="n">tagValue</span><span class="w"></span>
+<span class="n">subquery</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;tagName&quot;</span>: <span class="p">{</span><span class="cp">$in</span>: <span class="p">[</span><span class="n">tagValue</span><span class="p">,</span><span class="w"> </span><span class="p">...,</span><span class="w"> </span><span class="n">tagValue</span><span class="p">]}</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">tagName</span><span class="w"> </span><span class="n">IN</span><span class="w"> </span><span class="p">(</span><span class="n">tagValue</span><span class="p">,</span><span class="w"> </span><span class="p">...,</span><span class="w"> </span><span class="n">tagValue</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="separation-of-libindy-secrets-from-non-secrets">
+<span id="separation-of-libindy-secrets-from-non-secrets"></span><h2>Separation of libindy secrets from non-secrets<a class="headerlink" href="#separation-of-libindy-secrets-from-non-secrets" title="Permalink to this headline">¶</a></h2>
+<p>The idea is the following:</p>
+<ul class="simple">
+<li>libindy will use specific prefix for all internal record types like “~did”</li>
+<li>For non-secret interface it will be impossible to use this prefix</li>
+<li>If user passes value with this prefix as entity type libindy will return validation error</li>
+</ul>
+</div>
+<div class="section" id="separation-of-libindy-defined-tags-from-user-defined-tags">
+<span id="separation-of-libindy-defined-tags-from-user-defined-tags"></span><h2>Separation of libindy defined tags from user defined tags<a class="headerlink" href="#separation-of-libindy-defined-tags-from-user-defined-tags" title="Permalink to this headline">¶</a></h2>
+<p>The idea is the following:</p>
+<ul class="simple">
+<li>libindy will use specific prefix for all internal record tags like “indy:tagName”</li>
+<li>For all user interfaces it will be impossible to modify tags with this prefix</li>
+<li>If user passes tag with this prefix to any function that modifies tags libindy will return validation error</li>
+<li>Note that it will be possible for user application to read libindy defined tags and use these tags for searching</li>
+</ul>
+</div>
+<div class="section" id="wallet-encryption">
+<span id="wallet-encryption"></span><h2>Wallet Encryption<a class="headerlink" href="#wallet-encryption" title="Permalink to this headline">¶</a></h2>
+<p>Encryption schema is the following:</p>
+<p><img alt="Encryption Schema" src="../../_images/wallet-encryption.svg" /></p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

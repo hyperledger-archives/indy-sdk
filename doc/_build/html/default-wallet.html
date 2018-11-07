@@ -1,0 +1,295 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Indy-SDK Default Wallet Implementation &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>Indy-SDK Default Wallet Implementation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/default-wallet.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="indy-sdk-default-wallet-implementation">
+<span id="indy-sdk-default-wallet-implementation"></span><h1>Indy-SDK Default Wallet Implementation<a class="headerlink" href="#indy-sdk-default-wallet-implementation" title="Permalink to this headline">¶</a></h1>
+<p>The purpose of this implementation is to provide a default encrypted wallet for <strong>indy-sdk</strong>.</p>
+<p>The <strong>indy-sdk</strong> default wallet implementation uses hardened version of <a class="reference external" href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>:</p>
+<ul class="simple">
+<li>HMAC-SHA256 instead of HMAC-SHA1.</li>
+<li>PBKDF2 100K rounds for passphrase key data instead of 64K.</li>
+<li>PBKDF2 10 rounds for HMAC key derivation instead of 2.</li>
+<li>Page size 2K instead of 1K.</li>
+</ul>
+<div class="section" id="key-credentials">
+<span id="key-credentials"></span><h2>Key Credentials<a class="headerlink" href="#key-credentials" title="Permalink to this headline">¶</a></h2>
+<p>The default wallet allows an optional passphrase to used for encrypting the data.
+If no passphrase is provided either by leaving the key blank or omitting the key, the wallet will not be encrypted but stored in <a class="reference external" href="https://www.sqlite.org/index.html">SQLite3</a> format.
+The passphrase to open the wallet is stored outside of <strong>indy-sdk</strong> and is left to the consumer’s security preference such as HSMs, TEEs, or offline methods.</p>
+<p><strong>indy-sdk</strong> supports a JSON parameter, <em>credentials</em>, for opening or creating a wallet:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+   <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;passphrase&gt;&quot;</span>
+   <span class="s2">&quot;rekey&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;passphrase&gt;&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>If the <em>credentials</em> parameter is omitted or if <em>key</em> is an empty string, the wallet is left unencrypted.</p>
+<p><em>key</em> is the passphrase for opening the wallet and will be run through 100K rounds of PBKDF2.</p>
+<p>If <em>rekey</em> is provided, the wallet will be opened using <em>key</em> and change the passphrase to the <em>rekey</em> value for future open calls.
+<em>rekey</em> is only required for an existing wallet and throws an error when attempting to create a new wallet.</p>
+<p>If <em>rekey</em> is included with [<em>null</em>, <em>“”</em>], the wallet will be decrypted.</p>
+<p>If <em>key</em> is [<em>null</em>, <em>“”</em>] and <em>rekey</em> contains a non-empty value, the wallet will now be encrypted.</p>
+<div class="section" id="note">
+<span id="note"></span><h3>NOTE<a class="headerlink" href="#note" title="Permalink to this headline">¶</a></h3>
+<p><em>rekey</em> is only necessary when changing <em>key</em>. Otherwise it should be omitted.</p>
+</div>
+</div>
+<div class="section" id="cases">
+<span id="cases"></span><h2>Cases<a class="headerlink" href="#cases" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="normal-wallet-no-passphrase">
+<span id="normal-wallet-no-passphrase"></span><h3>Normal wallet / No passphrase<a class="headerlink" href="#normal-wallet-no-passphrase" title="Permalink to this headline">¶</a></h3>
+<p>To create a non-encrypted wallet, <em>credentials</em> can be empty or not specified. <em>key</em> may also be [<em>null</em>, <em>“”</em>].</p>
+</div>
+<div class="section" id="encrypted-wallet-a-key">
+<span id="encrypted-wallet-a-key"></span><h3>Encrypted wallet / A Key<a class="headerlink" href="#encrypted-wallet-a-key" title="Permalink to this headline">¶</a></h3>
+<p>Encrypted wallets require a passphrase to be specified in the <em>key</em> field.
+Passphrase can be any non-blank value.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+   <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;Th1sIsArEALLY$3cuR3PassW0RD&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="normal-wallet-to-encrypted-wallet-adding-a-key">
+<span id="normal-wallet-to-encrypted-wallet-adding-a-key"></span><h3>Normal wallet to encrypted wallet / Adding a Key<a class="headerlink" href="#normal-wallet-to-encrypted-wallet-adding-a-key" title="Permalink to this headline">¶</a></h3>
+<p>To add encryption to an existing non-encrypted wallet, <em>key</em> must be set to [<em>null</em>, <em>“”</em>] and <em>rekey</em> must be set to a valid passphrase.
+Then wallet open calls are the same as the <em>Encrypted Wallet</em> section.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+   <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="n">null</span><span class="p">,</span>
+   <span class="s2">&quot;rekey&quot;</span><span class="p">:</span> <span class="s2">&quot;il0V3MyN3WpA$SworD&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="encrypted-wallet-to-normal-wallet-removing-a-key">
+<span id="encrypted-wallet-to-normal-wallet-removing-a-key"></span><h3>Encrypted wallet to normal wallet / Removing a Key<a class="headerlink" href="#encrypted-wallet-to-normal-wallet-removing-a-key" title="Permalink to this headline">¶</a></h3>
+<p>To remove encryption from an existing encrypted wallet, <em>key</em> must be set to the current value and <em>rekey</em> must be set to a blank value [<em>null</em>, <em>“”</em>].
+Then wallet open calls are the same as the <em>Normal wallet</em> section.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+   <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;Th1sIsArEALLY$3cuR3PassW0RD&quot;</span><span class="p">,</span>
+   <span class="s2">&quot;rekey&quot;</span><span class="p">:</span> <span class="n">null</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="updating-passphrase-changing-a-key">
+<span id="updating-passphrase-changing-a-key"></span><h3>Updating passphrase / Changing a Key<a class="headerlink" href="#updating-passphrase-changing-a-key" title="Permalink to this headline">¶</a></h3>
+<p>Rotating wallet passphrases is recommended. <em>key</em> must be set to the current value and <em>rekey</em> must be set to the new value.
+Then wallet open calls are the same as the <em>Encrypted wallet</em> section.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+   <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;Th1sIsArEALLY$3cuR3PassW0RD&quot;</span><span class="p">,</span>
+   <span class="s2">&quot;rekey&quot;</span><span class="p">:</span> <span class="s2">&quot;s8c0R31tYi$hARd&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

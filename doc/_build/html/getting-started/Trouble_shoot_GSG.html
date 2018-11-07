@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>TROUBLE SHOOTING Getting - Started Guide (GSG) &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>TROUBLE SHOOTING Getting - Started Guide (GSG)</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/getting-started/Trouble_shoot_GSG.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="trouble-shooting-getting-started-guide-gsg">
+<span id="trouble-shooting-getting-started-guide-gsg"></span><h1>TROUBLE SHOOTING Getting - Started Guide (GSG)<a class="headerlink" href="#trouble-shooting-getting-started-guide-gsg" title="Permalink to this headline">¶</a></h1>
+<p>If you setup the demo and encounter a 307 error recommend to take the following steps to cleanup and start over. The communication with the ledger is affected and it is not possible to run the demo. Here are some recommendations for other errors.</p>
+<ul class="simple">
+<li>306: you already have a configured ledger. Perform clean start.</li>
+<li>301: you are trying to create a ledger but it is already configured. A single failure will cause a problem when opening the ledger. Perform clean install.</li>
+<li>212: wallet is not found. When this occur stop and start container: Ctrl-C, docker-compose down, docker-compose up</li>
+</ul>
+<div class="section" id="overview-steps-for-clean-start">
+<span id="overview-steps-for-clean-start"></span><h2>Overview steps  for clean start<a class="headerlink" href="#overview-steps-for-clean-start" title="Permalink to this headline">¶</a></h2>
+<ol class="simple">
+<li>Remove existing instances</li>
+<li>Reset source files</li>
+<li>Perform a new build</li>
+<li>Start demo</li>
+</ol>
+</div>
+<div class="section" id="steps-in-detail">
+<span id="steps-in-detail"></span><h2>Steps in detail<a class="headerlink" href="#steps-in-detail" title="Permalink to this headline">¶</a></h2>
+<ol class="simple">
+<li>Make sure containers are closed</li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="o">-</span><span class="n">compose</span> <span class="n">down</span>   <span class="c1"># to make sure containers are closed</span>
+<span class="n">docker</span> <span class="n">image</span> <span class="n">ls</span>       <span class="c1"># find image names that need to be removed in next step</span>
+<span class="n">docker</span> <span class="n">image</span> <span class="n">rm</span> <span class="n">getting</span><span class="o">-</span><span class="n">started</span>
+<span class="n">docker</span> <span class="n">image</span> <span class="n">rm</span> <span class="n">indy_pool</span>
+<span class="n">docker</span> <span class="n">volume</span> <span class="n">ls</span>      <span class="c1"># find volume name that needs to be removed in next step</span>
+<span class="n">docker</span> <span class="n">volume</span> <span class="n">rm</span> <span class="n">gettingstarted_sandbox</span>
+</pre></div>
+</div>
+<ol class="simple">
+<li>Reset source files</li>
+</ol>
+<div class="highlight-git tag # choose the latest version and use it as &lt;branch_name&gt; notranslate"><div class="highlight"><pre><span></span>git checkout &lt;branch_name&gt;
+git reset --hard     **WARNING** : make copies of any changes you want to keep prior to taking this step
+git fetch --all
+git pull
+</pre></div>
+</div>
+<ol class="simple">
+<li>Perform a new build</li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="o">-</span><span class="n">compose</span> <span class="n">build</span> <span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">cache</span>    <span class="c1"># adding no cache to make clean build</span>
+</pre></div>
+</div>
+<ol class="simple">
+<li>Start demo</li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="o">-</span><span class="n">compose</span> <span class="n">up</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

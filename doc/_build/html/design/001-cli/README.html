@@ -1,0 +1,744 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Indy CLI Design &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Anoncreds Design" href="../002-anoncreds/README.html" />
+    <link rel="prev" title="Indy SDK Design" href="../../rtd-design.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../rtd-index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../rtd-design.html">Indy SDK Design</a> &raquo;</li>
+        
+      <li>Indy CLI Design</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/design/001-cli/README.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="indy-cli-design">
+<span id="indy-cli-design"></span><h1>Indy CLI Design<a class="headerlink" href="#indy-cli-design" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="re-implementation-of-cli">
+<span id="re-implementation-of-cli"></span><h2>Re-implementation of CLI<a class="headerlink" href="#re-implementation-of-cli" title="Permalink to this headline">¶</a></h2>
+<p>This proposal follow the idea to re-implement CLI from scratch. Main reasons are:</p>
+<ul class="simple">
+<li>Existing code base is written in hard-to support way.</li>
+<li>Existing code base is too far from libindy entities model.</li>
+<li>Existing code base requires complex runtime (python) and additional dependencies (python libindy wrapper) that complicates deployment.</li>
+<li>It is just cheaper to re-implement CLI than to perform deep refactoring.</li>
+</ul>
+</div>
+<div class="section" id="use-rust-language">
+<span id="use-rust-language"></span><h2>Use Rust language<a class="headerlink" href="#use-rust-language" title="Permalink to this headline">¶</a></h2>
+<p>We propose to re-implement CLI in Rust. Main reasons are:</p>
+<ul class="simple">
+<li>Main libindy code base uses Rust. Team has deep Rust experience.</li>
+<li>No need to big runtime, small list of dependencies. As result simple packaging and deployment.</li>
+<li>Rust is nice and reliable cross-platform solution for native apps.</li>
+</ul>
+</div>
+<div class="section" id="terminal-input-output-handling">
+<span id="terminal-input-output-handling"></span><h2>Terminal input-output handling<a class="headerlink" href="#terminal-input-output-handling" title="Permalink to this headline">¶</a></h2>
+<p>To handle complex terminal input, history and autocompletion support on different terminals linefeed crate will be used (few additional alternatives are also available). To handle colored terminal output ansi_term crate will be used.</p>
+</div>
+<div class="section" id="auto-completion">
+<span id="auto-completion"></span><h2>Auto completion<a class="headerlink" href="#auto-completion" title="Permalink to this headline">¶</a></h2>
+<p>The following autocompletion will be provided through readline infrastructure:</p>
+<ul class="simple">
+<li>Command group name completion</li>
+<li>Command name completion</li>
+<li>Command param name completion</li>
+</ul>
+</div>
+<div class="section" id="libindy-wrapper">
+<span id="libindy-wrapper"></span><h2>Libindy wrapper<a class="headerlink" href="#libindy-wrapper" title="Permalink to this headline">¶</a></h2>
+<p>CLI project will contain simple synchronous libindy wrapper:</p>
+<ul class="simple">
+<li>Code from libindy tests that provides similar wrapper will be partially reused.</li>
+<li>Synchronization will be performed through Rust channels:<ul>
+<li>Main thread creates channel and closure that will send message to this channel.</li>
+<li>Calls libindy and puts this closure as callback.</li>
+<li>Blocks on reading from channel.</li>
+</ul>
+</li>
+</ul>
+<p>As channel reading assumes timeouts it will be possible to emulate progress updating .</p>
+</div>
+<div class="section" id="threading-model">
+<span id="threading-model"></span><h2>Threading model<a class="headerlink" href="#threading-model" title="Permalink to this headline">¶</a></h2>
+<p>There will be one main thread that will perform io operations with terminal and libindy calls synchronized through Rust’s channel. Blocking will be limited by small channel read timeout.</p>
+</div>
+<div class="section" id="execution-modes">
+<span id="execution-modes"></span><h2>Execution modes<a class="headerlink" href="#execution-modes" title="Permalink to this headline">¶</a></h2>
+<p>CLI will support 2 execution modes:</p>
+<ul class="simple">
+<li>Interactive. In this mode CLI will read commands from terminal interactively.</li>
+<li>Batch. In this code all commands will be read from file or pipe and executed in series.</li>
+</ul>
+</div>
+<div class="section" id="code-structure">
+<span id="code-structure"></span><h2>Code structure<a class="headerlink" href="#code-structure" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>CLI code will define “Command” structure that will be container for:<ul>
+<li>Command meta information (name, command help, supported params, params help)</li>
+<li>“Executor” function that will contain command execution logic</li>
+<li>“Cleaner” function that will contain command cleanup logic</li>
+</ul>
+</li>
+<li>Each command will be implemented as Rust module with one public “new” function that returns configured “Command” instance</li>
+<li>All commands will share one “CommandContext”. “CommandContext” will hold application state and contain 2 parts:<ul>
+<li>Pre-defined application part. Part that holds application-level state like command prompt, isExit flag and etc…</li>
+<li>Generic command specific part. This part will be key-value storage that will allow commands to store command-specific data like Indy SDK handles, used DID and etc…</li>
+</ul>
+</li>
+<li>“Executor” and “Cleaner” functions will get CommandContext as parameter</li>
+<li>Actual execution of commands will be performed by CommandExecutor class. This class will:<ul>
+<li>Instantiation of shared “CommandContext”</li>
+<li>Hold all commands and command grouping info</li>
+<li>Parse command lines according to commands meta information and search for relevant command</li>
+<li>Triggering of command execution</li>
+<li>Provide line auto completion logic</li>
+<li>Triggerid of command cleanup
+Command instances will optionally share few contexts:</li>
+</ul>
+</li>
+<li>EntryPoint will:</li>
+<li>Instantiate CommandExecutor and provide commands to command executor instance.</li>
+<li>Determine execution mode.<ul>
+<li>In interactive mode it will start readline cycle and execute each line with CommandExecutor until Exit command received.</li>
+<li>In batch mode it will execute each command in the list and finish execution after completion of all commands.</li>
+</ul>
+</li>
+</ul>
+<p>See diagram:</p>
+<p><img src="./cli-components.svg"></p>
+</div>
+<div class="section" id="commands">
+<span id="commands"></span><h2>Commands<a class="headerlink" href="#commands" title="Permalink to this headline">¶</a></h2>
+<p>Command format</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">&lt;</span><span class="n">command</span><span class="o">&gt;</span> <span class="p">[[</span><span class="o">&lt;</span><span class="n">main_param_name</span><span class="o">&gt;=</span><span class="p">]</span><span class="o">&lt;</span><span class="n">main_param_value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">param_name1</span><span class="o">&gt;=&lt;</span><span class="n">param_value1</span><span class="o">&gt;</span><span class="p">]</span> <span class="o">...</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">param_nameN</span><span class="o">&gt;=&lt;</span><span class="n">param_valueN</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="section" id="common-commands">
+<span id="common-commands"></span><h3>Common commands<a class="headerlink" href="#common-commands" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="help">
+<span id="help"></span><h4>Help<a class="headerlink" href="#help" title="Permalink to this headline">¶</a></h4>
+<p>Print list of groups with group help:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">help</span>
+</pre></div>
+</div>
+<p>Print list of group commands with command help:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="n">help</span>
+</pre></div>
+</div>
+<p>Print command help, list of command param and help for each param:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">group</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">command</span><span class="o">&gt;</span> <span class="n">help</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="about">
+<span id="about"></span><h4>About<a class="headerlink" href="#about" title="Permalink to this headline">¶</a></h4>
+<p>Print about and license info:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">about</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="exit">
+<span id="exit"></span><h4>Exit<a class="headerlink" href="#exit" title="Permalink to this headline">¶</a></h4>
+<p>Exit from CLI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">exit</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="prompt">
+<span id="prompt"></span><h4>Prompt<a class="headerlink" href="#prompt" title="Permalink to this headline">¶</a></h4>
+<p>Change command prompt:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">prompt</span> <span class="o">&lt;</span><span class="n">new_prompt</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="show">
+<span id="show"></span><h4>Show<a class="headerlink" href="#show" title="Permalink to this headline">¶</a></h4>
+<p>Print content of file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">show</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">file_path</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="load-plugin">
+<span id="load-plugin"></span><h4>Load Plugin<a class="headerlink" href="#load-plugin" title="Permalink to this headline">¶</a></h4>
+<p>Load plugin in Libindy:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">load</span><span class="o">-</span><span class="n">plugin</span> <span class="n">library</span><span class="o">=&lt;</span><span class="n">name</span><span class="o">/</span><span class="n">path</span><span class="o">&gt;</span> <span class="n">initializer</span><span class="o">=&lt;</span><span class="n">init_function</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="wallets-management-commands-wallet-group">
+<span id="wallets-management-commands-wallet-group"></span><h3>Wallets management commands (wallet group)<a class="headerlink" href="#wallets-management-commands-wallet-group" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="o">&lt;</span><span class="n">command</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="wallet-create">
+<span id="wallet-create"></span><h4>Wallet create<a class="headerlink" href="#wallet-create" title="Permalink to this headline">¶</a></h4>
+<p>Create new wallet and attach to Indy CLI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="n">create</span> <span class="o">&lt;</span><span class="n">wallet</span> <span class="n">name</span><span class="o">&gt;</span> <span class="n">key</span> <span class="p">[</span><span class="n">key_derivation_method</span><span class="o">=&lt;</span><span class="n">key_derivation_method</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">storage_type</span><span class="o">=&lt;</span><span class="n">storage_type</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">storage_config</span><span class="o">=</span><span class="p">{</span><span class="n">config</span> <span class="n">json</span><span class="p">}]</span>
+</pre></div>
+</div>
+<p>TODO: Think about custom wallet types support. Now we force default wallet security model..</p>
+</div>
+<div class="section" id="wallet-attach">
+<span id="wallet-attach"></span><h4>Wallet attach<a class="headerlink" href="#wallet-attach" title="Permalink to this headline">¶</a></h4>
+<p>Attach existing wallet to Indy CLI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="n">attach</span> <span class="o">&lt;</span><span class="n">wallet</span> <span class="n">name</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">storage_type</span><span class="o">=&lt;</span><span class="n">storage_type</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">storage_config</span><span class="o">=</span><span class="p">{</span><span class="n">config</span> <span class="n">json</span><span class="p">}]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="wallet-open">
+<span id="wallet-open"></span><h4>Wallet open<a class="headerlink" href="#wallet-open" title="Permalink to this headline">¶</a></h4>
+<p>Open the wallet with specified name and make it available for commands that require wallet. If there was opened wallet it will be closed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="nb">open</span> <span class="o">&lt;</span><span class="n">wallet</span> <span class="n">name</span><span class="o">&gt;</span> <span class="n">key</span> <span class="p">[</span><span class="n">key_derivation_method</span><span class="o">=&lt;</span><span class="n">key_derivation_method</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">rekey</span><span class="p">]</span> <span class="p">[</span><span class="n">rekey_derivation_method</span><span class="o">=&lt;</span><span class="n">rekey_derivation_method</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="wallet-close">
+<span id="wallet-close"></span><h4>Wallet close<a class="headerlink" href="#wallet-close" title="Permalink to this headline">¶</a></h4>
+<p>Close the opened wallet</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="n">close</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="wallet-delete">
+<span id="wallet-delete"></span><h4>Wallet delete<a class="headerlink" href="#wallet-delete" title="Permalink to this headline">¶</a></h4>
+<p>Delete the wallet</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="n">delete</span> <span class="o">&lt;</span><span class="n">wallet</span> <span class="n">name</span><span class="o">&gt;</span> <span class="n">key</span> <span class="p">[</span><span class="n">key_derivation_method</span><span class="o">=&lt;</span><span class="n">key_derivation_method</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="wallet-detach">
+<span id="wallet-detach"></span><h4>Wallet detach<a class="headerlink" href="#wallet-detach" title="Permalink to this headline">¶</a></h4>
+<p>Detach wallet from Indy CLI</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="n">detach</span> <span class="o">&lt;</span><span class="n">wallet</span> <span class="n">name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="wallet-list">
+<span id="wallet-list"></span><h4>Wallet list<a class="headerlink" href="#wallet-list" title="Permalink to this headline">¶</a></h4>
+<p>List all attached wallets with corresponded status (indicates opened one):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="nb">list</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="export-wallet">
+<span id="export-wallet"></span><h3>Export wallet<a class="headerlink" href="#export-wallet" title="Permalink to this headline">¶</a></h3>
+<p>Exports opened wallet to the specified file.</p>
+<div class="highlight-indy-cli notranslate"><div class="highlight"><pre><span></span>indy&gt; wallet export export_path=&lt;path-to-file&gt; export_key=[&lt;export key&gt;] [export_key_derivation_method=&lt;export_key_derivation_method&gt;]
+</pre></div>
+</div>
+</div>
+<div class="section" id="import-wallet">
+<span id="import-wallet"></span><h3>Import wallet<a class="headerlink" href="#import-wallet" title="Permalink to this headline">¶</a></h3>
+<p>Create new wallet and then import content from the specified file.</p>
+<div class="highlight-indy-cli notranslate"><div class="highlight"><pre><span></span>indy&gt; wallet import &lt;wallet name&gt; key=&lt;key&gt; [key_derivation_method=&lt;key_derivation_method&gt;] export_path=&lt;path-to-file&gt; export_key=&lt;key used for export&gt;  [storage_type=&lt;storage_type&gt;] [storage_config={config json}]
+</pre></div>
+</div>
+</div>
+<div class="section" id="pool-management-commands">
+<span id="pool-management-commands"></span><h3>Pool management commands<a class="headerlink" href="#pool-management-commands" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="o">&lt;</span><span class="n">subcommand</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="create-config">
+<span id="create-config"></span><h4>Create config<a class="headerlink" href="#create-config" title="Permalink to this headline">¶</a></h4>
+<p>Create name pool (network) configuration</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="n">create</span> <span class="p">[</span><span class="n">name</span><span class="o">=</span><span class="p">]</span><span class="o">&lt;</span><span class="n">pool</span> <span class="n">name</span><span class="o">&gt;</span> <span class="n">gen_txn_file</span><span class="o">=&lt;</span><span class="n">gen</span> <span class="n">txn</span> <span class="n">file</span> <span class="n">path</span><span class="o">&gt;</span> 
+</pre></div>
+</div>
+</div>
+<div class="section" id="connect">
+<span id="connect"></span><h4>Connect<a class="headerlink" href="#connect" title="Permalink to this headline">¶</a></h4>
+<p>Connect to Indy nodes pool and make it available for operation that require pool access. If there was pool connection it will be disconnected.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="n">connect</span> <span class="p">[</span><span class="n">name</span><span class="o">=</span><span class="p">]</span><span class="o">&lt;</span><span class="n">pool</span> <span class="n">name</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">protocol</span><span class="o">-</span><span class="n">version</span><span class="o">=&lt;</span><span class="n">version</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">timeout</span><span class="o">=&lt;</span><span class="n">timeout</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">extended</span><span class="o">-</span><span class="n">timeout</span><span class="o">=&lt;</span><span class="n">timeout</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">pre</span><span class="o">-</span><span class="n">ordered</span><span class="o">-</span><span class="n">nodes</span><span class="o">=&lt;</span><span class="n">node</span> <span class="n">names</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="refresh">
+<span id="refresh"></span><h4>Refresh<a class="headerlink" href="#refresh" title="Permalink to this headline">¶</a></h4>
+<p>Refresh a local copy of a pool ledger and updates pool nodes connections.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="n">refresh</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="disconnect">
+<span id="disconnect"></span><h4>Disconnect<a class="headerlink" href="#disconnect" title="Permalink to this headline">¶</a></h4>
+<p>Disconnect from Indy nodes pool</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="n">disconnect</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="list">
+<span id="list"></span><h4>List<a class="headerlink" href="#list" title="Permalink to this headline">¶</a></h4>
+<p>List all created pools configurations with status (indicates connected one)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="nb">list</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="identity-management">
+<span id="identity-management"></span><h3>Identity Management<a class="headerlink" href="#identity-management" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">did</span> <span class="o">&lt;</span><span class="n">subcommand</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="new">
+<span id="new"></span><h4>New<a class="headerlink" href="#new" title="Permalink to this headline">¶</a></h4>
+<p>Create and store my DID in the opened wallet. Requires opened wallet.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">did</span> <span class="n">new</span> <span class="p">[</span><span class="n">did</span><span class="o">=&lt;</span><span class="n">did</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">seed</span><span class="o">=&lt;</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span> <span class="n">base64</span> <span class="ow">or</span> <span class="nb">hex</span> <span class="n">string</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">metadata</span><span class="o">=&lt;</span><span class="n">metadata</span> <span class="n">string</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="list">
+<span id="id1"></span><h4>List<a class="headerlink" href="#list" title="Permalink to this headline">¶</a></h4>
+<p>List my DIDs stored in the opened wallet as table (did, verkey, metadata). Requires wallet to be opened.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">did</span> <span class="nb">list</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="use">
+<span id="use"></span><h4>Use<a class="headerlink" href="#use" title="Permalink to this headline">¶</a></h4>
+<p>Use the DID as identity owner for commands that require identity owner:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">did</span> <span class="n">use</span> <span class="p">[</span><span class="n">did</span><span class="o">=</span><span class="p">]</span><span class="o">&lt;</span><span class="n">did</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rotate-key">
+<span id="rotate-key"></span><h4>Rotate key<a class="headerlink" href="#rotate-key" title="Permalink to this headline">¶</a></h4>
+<p>Rotate keys for used DID. Sends NYM to the ledger with updated keys. Requires opened wallet and connection to pool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">did</span> <span class="n">rotate</span><span class="o">-</span><span class="n">key</span> <span class="p">[</span><span class="n">seed</span><span class="o">=&lt;</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span> <span class="n">base64</span> <span class="ow">or</span> <span class="nb">hex</span> <span class="n">string</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">fees_inputs</span><span class="o">=&lt;</span><span class="n">source</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">..</span><span class="p">,</span><span class="n">source</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">fees_outputs</span><span class="o">=</span><span class="p">(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">),</span><span class="o">..</span><span class="p">,(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">)]</span> <span class="p">[</span><span class="n">extra</span><span class="o">=&lt;</span><span class="n">extra</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="ledger-transactions-messages">
+<span id="ledger-transactions-messages"></span><h3>Ledger transactions/messages<a class="headerlink" href="#ledger-transactions-messages" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">ledger</span> <span class="o">&lt;</span><span class="n">subcommand</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="nym-transaction">
+<span id="nym-transaction"></span><h4>NYM transaction<a class="headerlink" href="#nym-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send NYM transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">nym</span> <span class="n">did</span><span class="o">=&lt;</span><span class="n">did</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">verkey</span><span class="o">=&lt;</span><span class="n">verkey</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">role</span><span class="o">=&lt;</span><span class="n">role</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">fees_inputs</span><span class="o">=&lt;</span><span class="n">source</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">..</span><span class="p">,</span><span class="n">source</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">fees_outputs</span><span class="o">=</span><span class="p">(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">),</span><span class="o">..</span><span class="p">,(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">)]</span> <span class="p">[</span><span class="n">extra</span><span class="o">=&lt;</span><span class="n">extra</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="get-nym-transaction">
+<span id="get-nym-transaction"></span><h4>GET_NYM transaction<a class="headerlink" href="#get-nym-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send GET_NYM transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">get</span><span class="o">-</span><span class="n">nym</span> <span class="n">did</span><span class="o">=&lt;</span><span class="n">did</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="attrib-transaction">
+<span id="attrib-transaction"></span><h4>ATTRIB transaction<a class="headerlink" href="#attrib-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send ATTRIB transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">attrib</span> <span class="n">did</span><span class="o">=&lt;</span><span class="n">did</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="p">[</span><span class="nb">hash</span><span class="o">=&lt;</span><span class="nb">hash</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">raw</span><span class="o">=&lt;</span><span class="n">raw</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">enc</span><span class="o">=&lt;</span><span class="n">enc</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span>  <span class="p">[</span><span class="n">fees_inputs</span><span class="o">=&lt;</span><span class="n">source</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">..</span><span class="p">,</span><span class="n">source</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">fees_outputs</span><span class="o">=</span><span class="p">(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">),</span><span class="o">..</span><span class="p">,(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">)]</span> <span class="p">[</span><span class="n">extra</span><span class="o">=&lt;</span><span class="n">extra</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="get-attrib-transaction">
+<span id="get-attrib-transaction"></span><h4>GET_ATTRIB transaction<a class="headerlink" href="#get-attrib-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send GET_ATTRIB transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">get</span><span class="o">-</span><span class="n">attrib</span> <span class="n">did</span><span class="o">=&lt;</span><span class="n">did</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">raw</span><span class="o">=&lt;</span><span class="n">raw</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="nb">hash</span><span class="o">=&lt;</span><span class="nb">hash</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">enc</span><span class="o">=&lt;</span><span class="n">enc</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="schema-transaction">
+<span id="schema-transaction"></span><h4>SCHEMA transaction<a class="headerlink" href="#schema-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send SCHEMA transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">schema</span> <span class="n">name</span><span class="o">=&lt;</span><span class="n">name</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="n">version</span><span class="o">=&lt;</span><span class="n">version</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="n">attr_names</span><span class="o">=&lt;</span><span class="n">attr_names</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span>  <span class="p">[</span><span class="n">fees_inputs</span><span class="o">=&lt;</span><span class="n">source</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">..</span><span class="p">,</span><span class="n">source</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">fees_outputs</span><span class="o">=</span><span class="p">(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">),</span><span class="o">..</span><span class="p">,(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">)]</span> <span class="p">[</span><span class="n">extra</span><span class="o">=&lt;</span><span class="n">extra</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="get-schema-transaction">
+<span id="get-schema-transaction"></span><h4>GET_SCHEMA transaction<a class="headerlink" href="#get-schema-transaction" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">get</span><span class="o">-</span><span class="n">schema</span> <span class="n">did</span><span class="o">=&lt;</span><span class="n">did</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="n">name</span><span class="o">=&lt;</span><span class="n">name</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="n">version</span><span class="o">=&lt;</span><span class="n">version</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="cred-def-transaction">
+<span id="cred-def-transaction"></span><h4>CRED_DEF transaction<a class="headerlink" href="#cred-def-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send CRED_DEF transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">cred</span><span class="o">-</span><span class="k">def</span> <span class="nf">schema_id</span><span class="o">=&lt;</span><span class="n">schema_id</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="n">signature_type</span><span class="o">=&lt;</span><span class="n">signature_type</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">tag</span><span class="o">=&lt;</span><span class="n">tag</span><span class="o">&gt;</span><span class="p">]</span> <span class="n">primary</span><span class="o">=&lt;</span><span class="n">primary</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">revocation</span><span class="o">=&lt;</span><span class="n">revocation</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span>  <span class="p">[</span><span class="n">fees_inputs</span><span class="o">=&lt;</span><span class="n">source</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">..</span><span class="p">,</span><span class="n">source</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">fees_outputs</span><span class="o">=</span><span class="p">(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">),</span><span class="o">..</span><span class="p">,(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">)]</span> <span class="p">[</span><span class="n">extra</span><span class="o">=&lt;</span><span class="n">extra</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="get-cred-def-transaction">
+<span id="get-cred-def-transaction"></span><h4>GET_CRED_DEF transaction<a class="headerlink" href="#get-cred-def-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send GET_CRED_DEF transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">get</span><span class="o">-</span><span class="n">cred</span><span class="o">-</span><span class="k">def</span> <span class="nf">schema_id</span><span class="o">=&lt;</span><span class="n">schema_id</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="n">signature_type</span><span class="o">=&lt;</span><span class="n">signature_type</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="n">origin</span><span class="o">=&lt;</span><span class="n">origin</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="node-transaction">
+<span id="node-transaction"></span><h4>NODE transaction<a class="headerlink" href="#node-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send NODE transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">node</span> <span class="n">target</span><span class="o">=&lt;</span><span class="n">target</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="n">alias</span><span class="o">=&lt;</span><span class="n">alias</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">node_ip</span><span class="o">=&lt;</span><span class="n">node_ip</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">node_port</span><span class="o">=&lt;</span><span class="n">node_port</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">client_ip</span><span class="o">=&lt;</span><span class="n">client_ip</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">client_port</span><span class="o">=&lt;</span><span class="n">client_port</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">blskey</span><span class="o">=&lt;</span><span class="n">blskey</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">blskey_pop</span><span class="o">=&lt;</span><span class="n">blskey</span><span class="o">-</span><span class="n">proof</span><span class="o">-</span><span class="n">of</span><span class="o">-</span><span class="n">possession</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">services</span><span class="o">=&lt;</span><span class="n">services</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="get-validator-info-transaction">
+<span id="get-validator-info-transaction"></span><h4>GET_VALIDATOR_INFO transaction<a class="headerlink" href="#get-validator-info-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send GET_VALIDATOR_INFO transaction to get info from all nodes</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">get</span><span class="o">-</span><span class="n">validator</span><span class="o">-</span><span class="n">info</span> <span class="p">[</span><span class="n">nodes</span><span class="o">=&lt;</span><span class="n">node</span> <span class="n">names</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">timeout</span><span class="o">=&lt;</span><span class="n">timeout</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="pool-upgrade-transaction">
+<span id="pool-upgrade-transaction"></span><h4>POOL_UPGRADE transaction<a class="headerlink" href="#pool-upgrade-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send POOL_UPGRADE transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">pool</span><span class="o">-</span><span class="n">upgrade</span> <span class="n">name</span><span class="o">=&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="n">version</span><span class="o">=&lt;</span><span class="n">version</span><span class="o">&gt;</span> <span class="n">action</span><span class="o">=&lt;</span><span class="n">start</span> <span class="ow">or</span> <span class="n">cancel</span><span class="o">&gt;</span> <span class="n">sha256</span><span class="o">=&lt;</span><span class="n">sha256</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">timeout</span><span class="o">=&lt;</span><span class="n">timeout</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">schedule</span><span class="o">=&lt;</span><span class="n">schedule</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">justification</span><span class="o">=&lt;</span><span class="n">justification</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">reinstall</span><span class="o">=&lt;</span><span class="n">true</span> <span class="ow">or</span> <span class="n">false</span> <span class="p">(</span><span class="n">default</span> <span class="n">false</span><span class="p">)</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">force</span><span class="o">=&lt;</span><span class="n">true</span> <span class="ow">or</span> <span class="n">false</span> <span class="p">(</span><span class="n">default</span> <span class="n">false</span><span class="p">)</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">package</span><span class="o">=&lt;</span><span class="n">package</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="pool-config-transaction">
+<span id="pool-config-transaction"></span><h4>POOL_CONFIG transaction<a class="headerlink" href="#pool-config-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send POOL_CONFIG transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">pool</span><span class="o">-</span><span class="n">config</span> <span class="n">writes</span><span class="o">=&lt;</span><span class="n">true</span> <span class="ow">or</span> <span class="n">false</span> <span class="p">(</span><span class="n">default</span> <span class="n">false</span><span class="p">)</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">force</span><span class="o">=&lt;</span><span class="n">true</span> <span class="ow">or</span> <span class="n">false</span> <span class="p">(</span><span class="n">default</span> <span class="n">false</span><span class="p">)</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="pool-restart-transaction">
+<span id="pool-restart-transaction"></span><h4>POOL_RESTART transaction<a class="headerlink" href="#pool-restart-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send POOL_RESTART transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">pool</span><span class="o">-</span><span class="n">restart</span> <span class="n">action</span><span class="o">=&lt;</span><span class="n">start</span> <span class="ow">or</span> <span class="n">cancel</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">datetime</span><span class="o">=&lt;</span><span class="n">datetime</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">nodes</span><span class="o">=&lt;</span><span class="n">node</span> <span class="n">names</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="n">timeout</span><span class="o">=&lt;</span><span class="n">timeout</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="custom-transaction">
+<span id="custom-transaction"></span><h4>Custom transaction<a class="headerlink" href="#custom-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send custom transaction with user defined json body and optional signature</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">custom</span> <span class="p">[</span><span class="n">txn</span><span class="o">=</span><span class="p">]</span><span class="o">&lt;</span><span class="n">txn</span><span class="o">-</span><span class="n">json</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">sign</span><span class="o">=&lt;</span><span class="n">true</span><span class="o">|</span><span class="n">false</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="get-payment-sources-transaction">
+<span id="get-payment-sources-transaction"></span><h4>GET_PAYMENT_SOURCES transaction<a class="headerlink" href="#get-payment-sources-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send GET_PAYMENT_SOURCES transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">get</span><span class="o">-</span><span class="n">payment</span><span class="o">-</span><span class="n">sources</span> <span class="n">payment_address</span><span class="o">=&lt;</span><span class="n">payment_address</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="payment-transaction">
+<span id="payment-transaction"></span><h4>PAYMENT transaction<a class="headerlink" href="#payment-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send PAYMENT transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">payment</span> <span class="n">inputs</span><span class="o">=&lt;</span><span class="n">source</span><span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">..</span><span class="p">,</span><span class="o">&lt;</span><span class="n">source</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span> <span class="n">outputs</span><span class="o">=</span><span class="p">(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">),</span><span class="o">..</span><span class="p">,(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">[</span><span class="n">extra</span><span class="o">=&lt;</span><span class="n">extra</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="get-fees-transaction">
+<span id="get-fees-transaction"></span><h4>GET_FEES transaction<a class="headerlink" href="#get-fees-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Send GET_FEES transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">get</span><span class="o">-</span><span class="n">fees</span> <span class="n">payment_method</span><span class="o">=&lt;</span><span class="n">payment_method</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="mint-transaction">
+<span id="mint-transaction"></span><h4>MINT transaction<a class="headerlink" href="#mint-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Prepare MINT transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">mint</span><span class="o">-</span><span class="n">prepare</span> <span class="n">outputs</span><span class="o">=</span><span class="p">(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">),</span><span class="o">..</span><span class="p">,(</span><span class="o">&lt;</span><span class="n">recipient</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">[</span><span class="n">extra</span><span class="o">=&lt;</span><span class="n">extra</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="set-fees-transaction">
+<span id="set-fees-transaction"></span><h4>SET_FEES transaction<a class="headerlink" href="#set-fees-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Prepare SET_FEES transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="nb">set</span><span class="o">-</span><span class="n">fees</span><span class="o">-</span><span class="n">prepare</span> <span class="n">payment_method</span><span class="o">=&lt;</span><span class="n">payment_method</span><span class="o">&gt;</span> <span class="n">fees</span><span class="o">=&lt;</span><span class="n">txn</span><span class="o">-</span><span class="nb">type</span><span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">-</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">..</span><span class="p">,</span><span class="o">&lt;</span><span class="n">txn</span><span class="o">-</span><span class="nb">type</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">-</span><span class="n">n</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="verify-payment-receipt-transaction">
+<span id="verify-payment-receipt-transaction"></span><h4>VERIFY_PAYMENT_RECEIPT transaction<a class="headerlink" href="#verify-payment-receipt-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Prepare VERIFY_PAYMENT_RECEIPT transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">verify</span><span class="o">-</span><span class="n">payment</span><span class="o">-</span><span class="n">receipt</span> <span class="o">&lt;</span><span class="n">receipt</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="add-multi-signature-to-transaction">
+<span id="add-multi-signature-to-transaction"></span><h4>Add multi signature to transaction<a class="headerlink" href="#add-multi-signature-to-transaction" title="Permalink to this headline">¶</a></h4>
+<p>Add multi signature by current DID to transaction</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ledger</span> <span class="n">sign</span><span class="o">-</span><span class="n">multi</span> <span class="n">txn</span><span class="o">=&lt;</span><span class="n">txn_json</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="payment-address-commands">
+<span id="payment-address-commands"></span><h3>Payment Address commands<a class="headerlink" href="#payment-address-commands" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">payment</span><span class="o">-</span><span class="n">address</span> <span class="o">&lt;</span><span class="n">subcommand</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="create">
+<span id="create"></span><h4>Create<a class="headerlink" href="#create" title="Permalink to this headline">¶</a></h4>
+<p>Create the payment address for specified payment method. Requires opened wallet.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">payment</span><span class="o">-</span><span class="n">address</span> <span class="n">create</span> <span class="n">payment_method</span><span class="o">=&lt;</span><span class="n">payment_method</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">seed</span><span class="o">=&lt;</span><span class="n">seed</span><span class="o">-</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="list">
+<span id="id2"></span><h4>List<a class="headerlink" href="#list" title="Permalink to this headline">¶</a></h4>
+<p>Lists all payment addresses. Requires opened wallet.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">payment</span><span class="o">-</span><span class="n">address</span> <span class="nb">list</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="examples">
+<span id="examples"></span><h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="create-pool-configuration-and-connect-to-pool">
+<span id="create-pool-configuration-and-connect-to-pool"></span><h3>Create pool configuration and connect to pool<a class="headerlink" href="#create-pool-configuration-and-connect-to-pool" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="n">create</span> <span class="n">sandbox</span> <span class="n">gen_txn_file</span><span class="o">=/</span><span class="n">etc</span><span class="o">/</span><span class="n">sovrin</span><span class="o">/</span><span class="n">sandbox</span><span class="o">.</span><span class="n">txn</span>
+<span class="n">indy</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="n">connect</span> <span class="n">sandbox</span>
+<span class="n">pool</span><span class="p">(</span><span class="n">sandbox</span><span class="p">):</span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">pool</span> <span class="nb">list</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-and-open-wallet">
+<span id="create-and-open-wallet"></span><h3>Create and open wallet<a class="headerlink" href="#create-and-open-wallet" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sandbox</span><span class="o">|</span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="n">create</span> <span class="n">alice_wallet</span> <span class="n">key</span>
+<span class="n">sandbox</span><span class="o">|</span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="nb">open</span> <span class="n">alice_wallet</span> <span class="n">key</span>
+<span class="n">pool</span><span class="p">(</span><span class="n">sandbox</span><span class="p">):</span><span class="n">wallet</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">):</span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">wallet</span> <span class="nb">list</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-did-in-the-wallet-from-seed-and-use-it-for-the-next-commands">
+<span id="create-did-in-the-wallet-from-seed-and-use-it-for-the-next-commands"></span><h3>Create DID in the wallet from seed and use it for the next commands<a class="headerlink" href="#create-did-in-the-wallet-from-seed-and-use-it-for-the-next-commands" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span><span class="p">(</span><span class="n">sandbox</span><span class="p">):</span><span class="n">wallet</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">):</span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">did</span> <span class="n">new</span> <span class="n">seed</span><span class="o">=</span><span class="n">SEED0000000000000000000000000001</span> <span class="n">metadata</span><span class="o">=</span><span class="s2">&quot;Alice DID&quot;</span>
+<span class="n">pool</span><span class="p">(</span><span class="n">sandbox</span><span class="p">):</span><span class="n">wallet</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">):</span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">did</span> <span class="n">use</span> <span class="n">MYDID000000000000000000001</span>
+<span class="n">pool</span><span class="p">(</span><span class="n">sandbox</span><span class="p">):</span><span class="n">wallet</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">):</span><span class="n">did</span><span class="p">(</span><span class="n">MYD</span><span class="o">...</span><span class="mi">001</span><span class="p">):</span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">did</span> <span class="nb">list</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="create-new-did-for-bob">
+<span id="create-new-did-for-bob"></span><h3>Create new DID for BOB<a class="headerlink" href="#create-new-did-for-bob" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span><span class="p">(</span><span class="n">sandbox</span><span class="p">):</span><span class="n">wallet</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">):</span><span class="n">did</span><span class="p">(</span><span class="n">MYD</span><span class="o">...</span><span class="mi">001</span><span class="p">):</span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">did</span> <span class="n">new</span> <span class="n">metadata</span><span class="o">=</span><span class="s2">&quot;Bob DID&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="post-new-nym-to-the-ledger">
+<span id="post-new-nym-to-the-ledger"></span><h3>Post new NYM to the ledger<a class="headerlink" href="#post-new-nym-to-the-ledger" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span><span class="p">(</span><span class="n">sandbox</span><span class="p">):</span><span class="n">wallet</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">):</span><span class="n">did</span><span class="p">(</span><span class="n">MYD</span><span class="o">...</span><span class="mi">001</span><span class="p">):</span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">ledger</span> <span class="n">nym</span> <span class="n">did</span><span class="o">=</span><span class="n">MYDID000000000000000000001</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="send-get-nym-transaction">
+<span id="send-get-nym-transaction"></span><h3>Send GET_NYM transaction<a class="headerlink" href="#send-get-nym-transaction" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pool</span><span class="p">(</span><span class="n">sandbox</span><span class="p">):</span><span class="n">wallet</span><span class="p">(</span><span class="n">alice_wallet</span><span class="p">):</span><span class="n">did</span><span class="p">(</span><span class="n">MYD</span><span class="o">...</span><span class="mi">001</span><span class="p">):</span><span class="n">indy</span><span class="o">&gt;</span> <span class="n">ledger</span> <span class="n">get</span><span class="o">-</span><span class="n">nym</span> <span class="n">did</span><span class="o">=</span><span class="n">MYDID000000000000000000001</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../002-anoncreds/README.html" class="btn btn-neutral float-right" title="Anoncreds Design" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../../rtd-design.html" class="btn btn-neutral" title="Indy SDK Design" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

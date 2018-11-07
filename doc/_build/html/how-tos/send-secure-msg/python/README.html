@@ -1,0 +1,347 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Send a Secure Message &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../../../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>Send a Secure Message</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/how-tos/send-secure-msg/python/README.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="send-a-secure-message">
+<span id="send-a-secure-message"></span><h1>Send a Secure Message<a class="headerlink" href="#send-a-secure-message" title="Permalink to this headline">¶</a></h1>
+<p>Indy-SDK Developer Walkthrough #3, Python Edition</p>
+<p>[ <a class="reference external" href="../../not-yet-written.md">Java</a> | <a class="reference external" href="../../not-yet-written.md">.NET</a> | <a class="reference external" href="../../not-yet-written.md">Node.js</a> | <a class="reference external" href="../../not-yet-written.md">Objective C</a> ]</p>
+<div class="section" id="prerequisites">
+<span id="prerequisites"></span><h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>Setup your workstation and indy development virtual machine. See <a class="reference external" href="../../prerequisites.md">prerequisites</a>.</p>
+</div>
+<div class="section" id="steps">
+<span id="steps"></span><h2>Steps<a class="headerlink" href="#steps" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="step-1">
+<span id="step-1"></span><h3>Step 1<a class="headerlink" href="#step-1" title="Permalink to this headline">¶</a></h3>
+<p>In your normal workstation OS (not the VM), open a python editor of your
+choice and paste the code from <a class="reference external" href="template.py">template.py</a>
+into a new doc. We will be modifying this code in later steps.</p>
+<p>Save the doc as <code class="docutils literal notranslate"><span class="pre">msgme.py</span></code></p>
+<p>This is a very simple app that allows you to act as a sender or a receiver
+of a message. Take a minute to understand its basic structure: it runs a
+loop, asking you for input.</p>
+<p>It recognizes three commands: <code class="docutils literal notranslate"><span class="pre">read</span></code>, <code class="docutils literal notranslate"><span class="pre">prep</span></code>, and <code class="docutils literal notranslate"><span class="pre">quit</span></code>.</p>
+</div>
+<div class="section" id="step-2">
+<span id="step-2"></span><h3>Step 2<a class="headerlink" href="#step-2" title="Permalink to this headline">¶</a></h3>
+<p>Run the app on your workstation if you have python3 installed there, or
+in your indy development VM, otherwise: <code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">msgme.py</span></code>.</p>
+<p>You should see some simple text output. Try a few commands.</p>
+<p>Type <code class="docutils literal notranslate"><span class="pre">quit</span></code> when you’re done.</p>
+</div>
+<div class="section" id="step-3">
+<span id="step-3"></span><h3>Step 3<a class="headerlink" href="#step-3" title="Permalink to this headline">¶</a></h3>
+<p>Now we get to begin adding interesting features.</p>
+<p>The first thing we need to do is give the app the DIDs and the keys it
+needs to communicate. Open <a class="reference external" href="step3.py">step3.py</a> in a text editor and copy
+its contents into <code class="docutils literal notranslate"><span class="pre">msgme.py</span></code>, replacing the stub of
+the <code class="docutils literal notranslate"><span class="pre">init()</span></code> function from your template.</p>
+<p>We will also have to import some dependencies, since this function uses
+indy and thus depends on the SDK. Go to the top of <code class="docutils literal notranslate"><span class="pre">msgme.py</span></code> and add
+a new import statement:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">indy</span> <span class="kn">import</span> <span class="n">crypto</span><span class="p">,</span> <span class="n">did</span><span class="p">,</span> <span class="n">wallet</span>
+</pre></div>
+</div>
+<p>Save the updated version of <code class="docutils literal notranslate"><span class="pre">msgme.py</span></code>. Now take a minute and study the changes.</p>
+<p>First <code class="docutils literal notranslate"><span class="pre">init()</span></code> asks the user for their name. It then invokes indy-sdk’s
+<code class="docutils literal notranslate"><span class="pre">create_wallet()</span></code> function to make a wallet associated with a fictional
+pool (ledger). It records the wallet handle. Once the wallet has been
+created, it opens the wallet and asks indy-sdk to generate a DID and a
+public verkey + private signing key pair, storing all that information
+in the wallet.</p>
+<p>Finally, <code class="docutils literal notranslate"><span class="pre">init()</span></code> asks the user to provide the DID and verkey of the
+other party that will be exchanging messages, and it returns a tuple of
+all the information it’s accumulated, except for the secret signing key
+that remains in the wallet.</p>
+</div>
+<div class="section" id="step-4">
+<span id="step-4"></span><h3>Step 4<a class="headerlink" href="#step-4" title="Permalink to this headline">¶</a></h3>
+<p>In your development VM, run the app again.</p>
+<p>You should be prompted for a name. Say “Alice”. Then the app should show you the DID and verkey it generated, and ask you for the DID and verkey of the other party.</p>
+<p>Press <strong>CTRL+C</strong> to kill the app.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>vagrant@development:/src/indy-sdk/samples/python/src$ python3 msgme1.py
+Who are you? Alice
+wallet = 1
+my_did and verkey = ChST7uE2KH3hscqycs5mVf 7NmnhUTnqqh1xydTSZNZCp1wTt3HAua7gA5T2odzLSTf
+Other party&#39;s DID and verkey? ^C
+</pre></div>
+</div>
+<p>We will eventually run this app twice–in one window as Alice, and in another
+window as Bob. Each instance of the app will generate its own keys and
+you can use copy/paste to share them with the other window.</p>
+</div>
+<div class="section" id="step-5">
+<span id="step-5"></span><h3>Step 5<a class="headerlink" href="#step-5" title="Permalink to this headline">¶</a></h3>
+<p>Now we need to add secure encryption using indy crypto’s <a class="reference external" href="https://github.com/hyperledger/indy-sdk/blob/master/libindy/src/api/crypto.rs#L272"><code class="docutils literal notranslate"><span class="pre">auth_crypt()</span></code></a>
+primitive.</p>
+<p>Copy the contents of <a class="reference external" href="step5.py">step5.py</a> into <code class="docutils literal notranslate"><span class="pre">msgme.py</span></code>, replacing the stub of
+the <code class="docutils literal notranslate"><span class="pre">prep()</span></code> function from your template.</p>
+<p>Save the updated version of <code class="docutils literal notranslate"><span class="pre">msgme.py</span></code>. Now take a minute and study the changes.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">prep()</span></code> function is designed to be called with a string argument entered
+on the command line.</p>
+<p>For example, when the user types <code class="docutils literal notranslate"><span class="pre">prep</span> <span class="pre">Hello,</span> <span class="pre">world</span></code>, the <code class="docutils literal notranslate"><span class="pre">msg</span></code> parameter of <code class="docutils literal notranslate"><span class="pre">prep()</span></code> receives the value <code class="docutils literal notranslate"><span class="pre">&quot;Hello,</span> <span class="pre">world&quot;</span></code>. Prep saves this message into a text file (so you can inspect it–not because it needs to do any file I/O). It then turns around and reads the bytes it has just written, and calls <code class="docutils literal notranslate"><span class="pre">auth_crypt()</span></code> to convert those bytes into a version that is encrypted especially for the private channel between two identities. The receiver will know that the sender created the message, that only the receiver can interpret it, and that it has not been tampered with.</p>
+<p>If you like, try running the updated app in your development VM again. When
+prompted for the DID and verkey of the other party, just paste values produced
+during a previous run (e.g., <code class="docutils literal notranslate"><span class="pre">ChST7uE2KH3hscqycs5mVf</span> <span class="pre">7NmnhUTnqqh1xydTSZNZCp1wTt3HAua7gA5T2odzLSTf</span></code>) and press enter. Then try typing <code class="docutils literal notranslate"><span class="pre">prep</span> <span class="pre">Hello,</span> <span class="pre">world</span></code> and inspecting the <code class="docutils literal notranslate"><span class="pre">input.txt</span></code> and <code class="docutils literal notranslate"><span class="pre">encrypted.dat</span></code> files that are created.</p>
+<p>Press <strong>CTRL+C</strong> to kill the app.</p>
+</div>
+<div class="section" id="step-6">
+<span id="step-6"></span><h3>Step 6<a class="headerlink" href="#step-6" title="Permalink to this headline">¶</a></h3>
+<p>The final feature that our app needs is the ability to read encrypted data.
+Copy the contents of <a class="reference external" href="step6.py">step6.py</a> into <code class="docutils literal notranslate"><span class="pre">msgme.py</span></code>, replacing the stub of the <code class="docutils literal notranslate"><span class="pre">prep()</span></code>
+function from your template.</p>
+<p>Save the updated version of <code class="docutils literal notranslate"><span class="pre">msgme.py</span></code>. Now take a minute and study the
+changes.</p>
+<p>The read function is very simple. It just copies the content of the
+<code class="docutils literal notranslate"><span class="pre">encrypted.dat</span></code> file from disk into memory and then calls indy crypto’s
+<code class="docutils literal notranslate"><span class="pre">auth_decrypt()</span></code> function on the byte array. The output is a tuple that
+contains the verkey of the sender and the decrypted value if the
+message was encrypted for the key of the recipient–or an exception if
+not.</p>
+</div>
+<div class="section" id="step-7">
+<span id="step-7"></span><h3>Step 7<a class="headerlink" href="#step-7" title="Permalink to this headline">¶</a></h3>
+<p>Now let’s put this all together.</p>
+<p>In your indy development VM, create two shells (command prompts). Both should have the location of your code as their current working directory. Start one copy of your scripts in the first window (<code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">msgme.py</span></code>), and another copy in the second window.</p>
+<p>In the first window, when prompted for your name, say “Alice”.  In the
+second window, say “Bob”.</p>
+<p>In the Alice window, you should now see a line that specifies a DID and
+verkey for Alice. It should look something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">my_did</span> <span class="ow">and</span> <span class="n">verkey</span> <span class="o">=</span> <span class="n">ChST7uE2KH3hscqycs5mVf</span> <span class="mi">7</span><span class="n">NmnhUTnqqh1xydTSZNZCp1wTt3HAua7gA5T2odzLSTf</span>
+</pre></div>
+</div>
+<p>Copy these two strings (everything after <code class="docutils literal notranslate"><span class="pre">&quot;my_did</span> <span class="pre">and</span> <span class="pre">verkey</span> <span class="pre">=</span> <span class="pre">&quot;</span></code>) to your
+clipboard.</p>
+<p>Navigate to the Bob window. Bob’s window should have a different did and verkey displayed, and should be prompting for Alice’s info.</p>
+<p>Paste Alice’s information into Bob’s window and press Enter.</p>
+<p>Copy Bob’s information and paste it into Alice’s window.</p>
+<p><strong>Note:</strong> The process of copying and pasting between two windows is a simplistic way to model more sophisticated onboarding workflows in the Sovrin ecosystem. Within the Sovrin ecosystem parties receive a trusted mutual introduction, or where one scans a QR code from the other, or where they exchange information over the phone or face to face.</p>
+<p>Both windows should now be displaying a prompt again.</p>
+<p>In the Alice window, type <code class="docutils literal notranslate"><span class="pre">prep</span> <span class="pre">Hi,</span> <span class="pre">Bob.</span></code> and press <strong>Enter</strong>.</p>
+<p>In the Bob window, type <code class="docutils literal notranslate"><span class="pre">read</span></code> and press <strong>Enter</strong>.</p>
+<p>Bob’s window should display a tuple that it decrypts from Alice; the first
+element in the tuple is Alice’s verkey (check its value to confirm); the
+second is the text, <code class="docutils literal notranslate"><span class="pre">&quot;Hi,</span> <span class="pre">Bob.&quot;</span></code>. Alice has sent Bob an encrypted message.</p>
+</div>
+</div>
+<div class="section" id="more-experiments">
+<span id="more-experiments"></span><h2>More Experiments<a class="headerlink" href="#more-experiments" title="Permalink to this headline">¶</a></h2>
+<p>Try modifying <code class="docutils literal notranslate"><span class="pre">encrypted.dat</span></code> with a binary editor. This simulates tampering by
+an eavesdropper. When Bob attempts to decrypt the message, decryption should
+fail.</p>
+<p>Try transmitting the encrypted message over a different channel. For example,
+after Alice writes the message, email <code class="docutils literal notranslate"><span class="pre">encrypted.dat</span></code> or copy it over the network
+or send it as an attachment via Skype or Slack. Then copy the received package
+into the correct folder with the name <code class="docutils literal notranslate"><span class="pre">encrypted.dat</span></code> and ask Bob to read it.</p>
+<p>Try modifying the script so it uses <code class="docutils literal notranslate"><span class="pre">anon_crypt()</span></code> instead of <code class="docutils literal notranslate"><span class="pre">auth_crypt()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">anon_decrypt()</span></code> instead of <code class="docutils literal notranslate"><span class="pre">auth_decrypt()</span></code>. Notice the outcome.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

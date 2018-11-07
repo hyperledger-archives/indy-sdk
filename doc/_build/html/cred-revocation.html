@@ -1,0 +1,385 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>How Credential Revocation Works &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>How Credential Revocation Works</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/cred-revocation.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="how-credential-revocation-works">
+<span id="how-credential-revocation-works"></span><h1>How Credential Revocation Works<a class="headerlink" href="#how-credential-revocation-works" title="Permalink to this headline">¶</a></h1>
+<p>This doc aims to explain credential revocation at a conceptual level.
+If this doc still feels too low-level, you might consider watching <a class="reference external" href="https://drive.google.com/open?id=1FxdgkYwwLfpln6MnsZJAwnYjM6LpCoP0">this
+introductory video</a> from time offset 0:30 to 4:30.</p>
+<div class="section" id="background-cryptographic-accumulators">
+<span id="background-cryptographic-accumulators"></span><h2>Background: Cryptographic Accumulators<a class="headerlink" href="#background-cryptographic-accumulators" title="Permalink to this headline">¶</a></h2>
+<p>Before explaining the mechanism in detail, it’s necessary to understand
+<strong>cryptographic accumulators</strong> at a very high level.
+We will try to avoid daunting math in our explanation.</p>
+<p>You can think of an accumulator as the product of multiplying many numbers
+together. In the equation <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">*</span> <span class="pre">b</span> <span class="pre">*</span> <span class="pre">c</span> <span class="pre">*</span> <span class="pre">d</span> <span class="pre">=</span></code> <strong><code class="docutils literal notranslate"><span class="pre">e</span></code></strong>,
+the accumulator would be <strong><code class="docutils literal notranslate"><span class="pre">e</span></code></strong>;
+it <em>accumulates</em> a value as each new factor is multiplied in. We could
+plug in numbers; if <code class="docutils literal notranslate"><span class="pre">a</span></code>=2 and <code class="docutils literal notranslate"><span class="pre">b</span></code>=3 and <code class="docutils literal notranslate"><span class="pre">c</span></code>=5 and <code class="docutils literal notranslate"><span class="pre">d</span></code>=7, then our accumulator
+<strong><code class="docutils literal notranslate"><span class="pre">e</span></code></strong> has a value of 210. If <code class="docutils literal notranslate"><span class="pre">e</span></code> has this value, we
+say that 3 is “in” <code class="docutils literal notranslate"><span class="pre">e</span></code> because it is a factor. If we want to take 3 out
+of the accumulator, we divide 210 by 3 and get 70 (=2<em>5</em>7); 3 has now been
+“removed”.</p>
+<p>Notice that you can also produce <strong><code class="docutils literal notranslate"><span class="pre">e</span></code></strong> by multiplying any single
+factor such as <code class="docutils literal notranslate"><span class="pre">a</span></code> by the product of all the other factors (<code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">*</span> <span class="pre">c</span> <span class="pre">*</span> <span class="pre">d</span></code>).
+This is a useful characteristic; it means you can tell someone else
+the value of <code class="docutils literal notranslate"><span class="pre">a</span></code> and <em>the product of all the other inputs to the accumulator,
+but not the other inputs themselves</em>, and they can produce the output.</p>
+</div>
+<div class="section" id="background-tails-files">
+<span id="background-tails-files"></span><h2>Background: Tails Files<a class="headerlink" href="#background-tails-files" title="Permalink to this headline">¶</a></h2>
+<p>In our simple example above, we only have 4 factors, and we are using small
+numbers. We are also using standard arithmetic, where you can reverse
+multiplication by dividing. In such a system, the contents of an accumulator
+can be reverse-engineered by simple prime factorization.</p>
+<p>To be useful for revocation, Indy’s accumulators can’t be reversible; that is,
+it must be the case that the only way to derive the accumulator
+value is to know the factors.
+We accomplish this by using modular arithmetic (where division is undefined),
+and by using massive numbers for the factors and accumulators.</p>
+<p>A <strong>tails file</strong> is associated with an accumulator
+and its factors. It is a binary file that contains an
+array of randomly generated factors for an accumulator. Instead of small
+numbers like 2 and 3 and 7, these factors are massive numbers, far too
+big to display conveniently on a screen. Typically the quantity of these
+numeric factors in a tails file is large–hundreds of thousands to tens of
+millions.</p>
+<p>A tails file is not secret; it is published as plain text to the world
+and freely downloadable by anyone. The contents of this file never change.</p>
+<p>Each potential or actual credential issued by a particular issuer is
+assigned an index to an accumulator factor in a tails file. However,
+only credentials that have not been revoked contribute to the value of the
+accumulator. We will see how this works, below.</p>
+<p><img alt="tails file and accumulator" src="_images/tails.png" /></p>
+</div>
+<div class="section" id="setup">
+<span id="setup"></span><h2>Setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h2>
+<p>Before revocable credentials can be issued, a number of things must be
+true about the ecosystem:</p>
+<ol class="simple">
+<li>A <strong>schema</strong> for each credential type
+must be written to the ledger.
+For example, if companies wish to issue proof of employment, then
+a “Employee Credential” schema would need to be published. Similarly,
+before birth certificate credentials can be issued, a “Birth Certificate”
+schema would need to be defined and made available to the public. Any number
+of issuers can reference the same schema. Schemas can be versioned and
+evolved over time. Any individual or institution can write a schema
+to the ledger; it does not require special privileges.</li>
+<li>Each issuer must publish on the ledger one <strong>credential
+definition</strong> for each credential type they intend
+to create. The definition announces the issuer’s intention to
+create credentials that match a particular schema, and specifies the
+keys that the issuer will use to sign such credentials. (The verkey+
+signing key pair used to authenticate the issuer’s DID should be kept
+separate from the keys used to sign credentials, so that each key
+pair can be rotated independently; it would be bad if a sysadmin
+rotated a DID keypair and accidentally invalidated all credentials
+issued by an institution…)</li>
+<li>Each issuer must also publish on the ledger a <strong>revocation
+registry</strong>. This metadata references a credential definition and
+specifies how revocation for that credential type will be handled.
+The revocation registry tells which cryptographic <strong>accumulator</strong>
+can be used to test revocation, and gives the URI and
+hash of the associated <strong>tails file</strong>.</li>
+<li>Each issuer must publish on the ledger an accumulator value that
+describes the revocation status for all associated credentials. This
+accumulator must be updated on a periodic or as-needed basis. For
+example, if a driver’s license division revokes 3 licenses during a
+given work day, then when they close their doors at 5 pm, they might
+issue a ledger transaction that updates the accumulator value for
+their driver’s license credentials, removing the 3 revoked credentials
+from the accumulator. What we mean by “removing” is as described above–
+the factors listed in the tails file for the indexes associated with
+the 3 revoked credentials are no longer multiplied into the accumulator.</li>
+</ol>
+<p><img alt="before and after revocation" src="_images/before-and-after.png" /></p>
+</div>
+<div class="section" id="how-revocation-will-be-tested">
+<span id="how-revocation-will-be-tested"></span><h2>How Revocation Will Be Tested<a class="headerlink" href="#how-revocation-will-be-tested" title="Permalink to this headline">¶</a></h2>
+<p>Let us now skip ahead to think about what needs to happen much later.
+When a prover gives proof to a verifier, we normally think about the proof
+as focusing on core information demands: <em>What is your birthdate?</em> <em>Please
+disclose your address</em>. This is <strong>primary proof</strong>.</p>
+<p>But there is another dimension of proof that’s also necessary: <em>The prover
+must demonstrate that the credentials behind the primary proof have not
+been revoked.</em> This is called <strong>proof of non-revocation</strong>.</p>
+<p>In Indy, proof of non-revocation is accomplished by having provers show
+that they can derive the value of the accumulator for their credential
+using a factor for the accumulator that they know, plus the product of
+all other factors.
+The verifier can see that the prover produces the right answer (because
+the answer is on the ledger), but does not know certain details of how the
+prover derived it. The issuer can revoke by changing the answer to the
+math problem in a way that defeats the prover.</p>
+</div>
+<div class="section" id="preparing-for-revocation-at-issuance">
+<span id="preparing-for-revocation-at-issuance"></span><h2>Preparing for Revocation at Issuance<a class="headerlink" href="#preparing-for-revocation-at-issuance" title="Permalink to this headline">¶</a></h2>
+<p>When a credential is issued, the actual credential file is transmitted
+to the holder (who will later become a prover). In addition, the issuer
+communicates two other pieces of vital information:</p>
+<ul class="simple">
+<li>The index corresponding to this credential, in the tails file. This
+lets the holder look up their private factor, which we could map to
+<code class="docutils literal notranslate"><span class="pre">a</span></code> in the simple equation from the accumulator background section
+at the top of the doc.</li>
+<li>The product of the <em>other</em> factors contributing to the accumulator (all
+factors except the private one for this credential).
+This value is like <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">*</span> <span class="pre">c</span> <span class="pre">*</span> <span class="pre">d</span></code> from the simple equation above, and
+is called a <strong>witness</strong>.</li>
+</ul>
+</div>
+<div class="section" id="presenting-proof-of-non-revocation">
+<span id="presenting-proof-of-non-revocation"></span><h2>Presenting Proof of Non-Revocation<a class="headerlink" href="#presenting-proof-of-non-revocation" title="Permalink to this headline">¶</a></h2>
+<p>When the prover needs to demonstrate that her credential is not revoked,
+she shows that she can provide math that derives the accumulator value
+on the ledger using her private factor times the witness. She does this
+without actually disclosing what her private value is; this is important
+to avoid correlation.</p>
+<p>But there is a complication: what if the accumulator has changed value
+since the time the credential was issued? In this case, the private
+factor times the witness will not equal the accumulator…</p>
+<p>This is handled by requiring accumulator updates to also publish a
+<strong>witness delta</strong> as part of the same transaction.
+This tells provers how to adjust their witness (referencing other indexes
+in the public tails file) to bring it back into
+harmony with the current value of the accumulator. Updating witnesses
+requires the prover (but not the verifier) to download the tails file.</p>
+</div>
+<div class="section" id="putting-it-all-together">
+<span id="putting-it-all-together"></span><h2>Putting It All Together<a class="headerlink" href="#putting-it-all-together" title="Permalink to this headline">¶</a></h2>
+<p>This discussion has suppressed some details. The math has been simplified,
+and we haven’t discussed how an issuer copes with multiple tails files
+and revocation registries, or why that might be desirable. However, the
+broad flow of the mechanism should be apparent, and its features are
+now easy to summarize:</p>
+<ul class="simple">
+<li>Issuers revoke by changing a number on the ledger. They can revoke
+as many credentials as they want in a single transaction, since
+they are just changing the answer to a math problem that either does
+or doesn’t include the factors they choose. Issuers do not have to
+contact anybody–provers or verifiers–to revoke. Changes take place
+globally, the instant the accumulator update transaction appears
+on the ledger.</li>
+<li>Revocation is reversible.</li>
+<li>Provers demonstrate proof of non-revocation in a privacy-preserving
+way. They cannot be correlated by something like a credential ID or
+a tails index. This is radically different from a revocation list
+approach, which requires correlation to test.</li>
+<li>Verification of proof of non-revocation is extremely easy and cheap.
+No tails files are needed by verifiers, and computation is trivial.
+Proving non-revocation is somewhat more expensive for provers, but
+is also not overly complex.</li>
+<li>Verifiers do not need to contact issuers or consult a revocation list
+to test revocation.</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,311 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Write a DID and Query Its Verkey &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../../../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>Write a DID and Query Its Verkey</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../../_sources/how-tos/write-did-and-query-verkey/java/README.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="write-a-did-and-query-its-verkey">
+<span id="write-a-did-and-query-its-verkey"></span><h1>Write a DID and Query Its Verkey<a class="headerlink" href="#write-a-did-and-query-its-verkey" title="Permalink to this headline">¶</a></h1>
+<p>Indy-SDK Developer Walkthrough #1, Java Edition</p>
+<p>[ <a class="reference external" href="../../not-yet-written.md">Python</a> | <a class="reference external" href="../../not-yet-written.md">.NET</a> | <a class="reference external" href="../../not-yet-written.md">Node.js</a> | <a class="reference external" href="../../not-yet-written.md">Objective C</a> ]</p>
+<div class="section" id="prerequisites">
+<span id="prerequisites"></span><h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>Setup your workstation with an indy development virtual machine (VM). See <a class="reference external" href="../../prerequisites.md">prerequisites</a>.</p>
+</div>
+<div class="section" id="steps">
+<span id="steps"></span><h2>Steps<a class="headerlink" href="#steps" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="step-1">
+<span id="step-1"></span><h3>Step 1<a class="headerlink" href="#step-1" title="Permalink to this headline">¶</a></h3>
+<p>In your normal workstation operating system (not the VM), open a java editor of your
+choice and paste the code from <a class="reference external" href="template.java">template.java</a>
+into a new doc. We will be modifying this code in later steps.</p>
+<p>Save the doc as <code class="docutils literal notranslate"><span class="pre">WriteDIDAndQueryVerkey.java</span></code></p>
+<p>This is a very simple app framework into which you’ll plug the code
+you’ll be writing.</p>
+</div>
+<div class="section" id="step-2">
+<span id="step-2"></span><h3>Step 2<a class="headerlink" href="#step-2" title="Permalink to this headline">¶</a></h3>
+<p>Now we need to give the SDK some context that it will need
+to deal with an indy ledger. This requires us to point the SDK at some
+<em>genesis transactions</em> that tell the SDK how to contact the ledger on
+the network, and how to trust that the nodes it contacts possess
+appropriate keys.</p>
+<p>We also need to create an <em><a class="reference external" href="https://docs.google.com/presentation/d/1X6F9QVG8M4PqQQLLL_5I6aQ5z7CCpYyYHBNKYMlsqXc/edit#slide=id.g32295399e3_0_73">identity wallet</a></em>, so the SDK can store the DID and key
+material generated during the tutorial.</p>
+<p><img alt="more info on wallets" src="../../../_images/wallet-slide1.png" /></p>
+<p>Copy the contents of <a class="reference external" href="step2.java">step2.java</a> into
+<code class="docutils literal notranslate"><span class="pre">WriteDIDAndQueryVerkey.java</span></code> on top of the <code class="docutils literal notranslate"><span class="pre">Step</span> <span class="pre">2</span> <span class="pre">code</span> <span class="pre">goes</span> <span class="pre">here</span></code> placeholder comment.</p>
+<p>Save the updated version of <code class="docutils literal notranslate"><span class="pre">WriteDIDAndQueryVerkey.java</span></code>.</p>
+<p>Study the changes. Scaffolding code like this is likely to appear in anything
+that uses indy.</p>
+</div>
+<div class="section" id="step-3">
+<span id="step-3"></span><h3>Step 3<a class="headerlink" href="#step-3" title="Permalink to this headline">¶</a></h3>
+<p>Now we need to put some DIDs and keys in our identity
+wallet. Copy the contents of <a class="reference external" href="step3.java">step3.java</a> into
+<code class="docutils literal notranslate"><span class="pre">WriteDIDAndQueryVerkey.java</span></code> on top of the <code class="docutils literal notranslate"><span class="pre">Step</span> <span class="pre">3</span> <span class="pre">code</span> <span class="pre">goes</span> <span class="pre">here</span></code> placeholder comment.</p>
+<p>Save the updated version of <code class="docutils literal notranslate"><span class="pre">WriteDIDAndQueryVerkey.java</span></code>.</p>
+<p>Study the changes.</p>
+<p>A few operations in indy <a class="reference external" href="https://docs.google.com/spreadsheets/d/1TWXF7NtBjSOaUIBeIH77SyZnawfo91cJ_ns4TR-wsq4/edit?usp=sharing">can only be done by identities (DIDs) with
+special roles</a>. For example, an DID that is a <em>steward</em> can add a node (the one
+they own) to the validator pool, and can create DIDs with a <em>trust anchor</em>
+role. A trust anchor DID can add arbitrary DIDs to the ledger.</p>
+<p>Here, we are populating our identity wallet with DID+keypair material for
+one steward identity and one trust anchor identity. The steward identity is
+a bootstrapping step, whereas the trust anchor DID is the one we will query
+later.</p>
+<p>Notice that the steward DID is created with a seed, but the trust anchor DID is not.
+This is because the steward DID and its verkey are already in the ledger;
+they were part of the genesis transactions we told the SDK to start with
+in the previous step. But we have to also put the DID, verkey, and <em>private</em>
+signing key (which the ledger doesn’t know) into our wallet, so we can use
+the signing key to submit an acceptably signed transaction to the ledger.
+We will use this steward’s signing key to create our <em>next</em> DID–the
+one for our trust anchor, which is truly new. This is why we use a hard-coded seed
+when creating the steward DID–it guarantees that the same DID and key
+material are created that the genesis transactions expect. In a production indy pool
+such as the Sovrin “live” network, the bootstrapping steward identities
+would not have known the seeds.</p>
+</div>
+</div>
+<div class="section" id="step-4">
+<span id="step-4"></span><h2>Step 4<a class="headerlink" href="#step-4" title="Permalink to this headline">¶</a></h2>
+<p>Now that preparations are complete, we can finally write the DID and verkey
+for our trust anchor identity to the ledger.</p>
+<p>Copy the contents of <a class="reference external" href="step4.java">step4.java</a> into
+<code class="docutils literal notranslate"><span class="pre">WriteDIDAndQueryVerkey.java</span></code> on top of the <code class="docutils literal notranslate"><span class="pre">Step</span> <span class="pre">4</span> <span class="pre">code</span> <span class="pre">goes</span> <span class="pre">here</span></code> placeholder comment.</p>
+<p>Save the updated version of <code class="docutils literal notranslate"><span class="pre">WriteDIDAndQueryVerkey.java</span></code>.</p>
+</div>
+<div class="section" id="step-5">
+<span id="step-5"></span><h2>Step 5<a class="headerlink" href="#step-5" title="Permalink to this headline">¶</a></h2>
+<p>Once we have an identity on the ledger, we can query it.</p>
+<p>Copy the contents of <a class="reference external" href="step5.java">step5.java</a> into
+<code class="docutils literal notranslate"><span class="pre">WriteDIDAndQueryVerkey.java</span></code> on top of the <code class="docutils literal notranslate"><span class="pre">Step</span> <span class="pre">5</span> <span class="pre">code</span> <span class="pre">goes</span> <span class="pre">here</span></code> placeholder comment.</p>
+<p>Save the updated version of <code class="docutils literal notranslate"><span class="pre">WriteDIDAndQueryVerkey.java</span></code>.</p>
+<p>Only a handful of lines of code matter to our goal here; the rest of
+this block is comments and boilerplate cleanup <strong>(which you should not omit!)</strong>.
+You should see similarities between the way this query “transaction” and
+the preceding write transaction are bundled and sent.</p>
+</div>
+<div class="section" id="step-6">
+<span id="step-6"></span><h2>Step 6<a class="headerlink" href="#step-6" title="Permalink to this headline">¶</a></h2>
+<p>Run the completed demo and observe the whole sequence.</p>
+</div>
+<div class="section" id="more-experiments">
+<span id="more-experiments"></span><h2>More experiments<a class="headerlink" href="#more-experiments" title="Permalink to this headline">¶</a></h2>
+<p>Most of the code in this how-to exists to satisfy some preconditions.
+Now that you have a trust anchor identity, you can write or query
+any number of additional identities to the ledger, with just a handful of
+lines of code. Try creating some.</p>
+<p>You might try the <a class="reference external" href="../../rotate-key/../not-yet-written.md">“Rotate a Key”</a>
+how-to, which can be done in only once step one you complete this one.</p>
+<p>You could also try to create a new steward identity without a seed, or
+with a different seed, and see what kind of error you get. Only identities
+with a trustee role can create stewards.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

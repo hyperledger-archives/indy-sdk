@@ -1,0 +1,388 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Trustee Setup Protocol &mdash; Hyperledger Indy SDK  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/custom.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+
+          
+            <a href="../../rtd-index.html" class="icon icon-home"> Hyperledger Indy SDK
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+
+<br><img style="background-color: #fff; height: unset; width: unset;" alt="Hyperledger Indy" src="_static/images/indy-logo.png" />
+<br>
+<a href="https://github.com/hyperledger/indy-sdk.git"><img style="padding: 0px; margin: auto auto auto auto;" alt="GitHub" src="_static/images/github_button.png"/></a>
+&nbsp;<a href="https://stackoverflow.com/questions/tagged/hyperledger-fabric"><img style="padding: 0px; margin: auto auto auto auto;" alt="StackOverflow" src="_static/images/stackoverflow_button.png"/></a>
+&nbsp;<a href="https://chat.hyperledger.org"><img style="padding: 0px; margin: auto auto auto auto;" alt="Rocket Chat" src="_static/images/rocketchat_button.png"/></a>
+
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/getting-started.html">Getting Started with Libindy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-design.html">Indy SDK Design</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-building.html">Building Indy SDK</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../rtd-migration-guides.html">Libindy Migration Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release-workflow.html">Release process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../signing-commits.html">Signing commits</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../rtd-index.html">Hyperledger Indy SDK</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../rtd-index.html">Docs</a> &raquo;</li>
+        
+      <li>Trustee Setup Protocol</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/design/005-dkms/trustee_protocols.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="trustee-setup-protocol">
+<span id="trustee-setup-protocol"></span><h1>Trustee Setup Protocol<a class="headerlink" href="#trustee-setup-protocol" title="Permalink to this headline">¶</a></h1>
+<p><strong>Objective</strong>: Provide the messages and data formats so an identity owner can choose, update, remove trustees and their delegated capabilities.</p>
+<div class="section" id="assumptions">
+<span id="assumptions"></span><h2>Assumptions<a class="headerlink" href="#assumptions" title="Permalink to this headline">¶</a></h2>
+<ol class="simple">
+<li>An identity owner selects a connection to become a trustee</li>
+<li>Trustees can be granted various capabilities by identity owners<ol>
+<li>Safeguarding a recovery share. This will be the most common</li>
+<li>Revoke an authorized agent on behalf of an identity owner</li>
+<li>Provision a new agent on behalf of an identity owner</li>
+<li>Be an administrator for managing identity owner agents</li>
+</ol>
+</li>
+<li>Trustees agree to any new specified capabilities before any action is taken</li>
+<li>Trustees will safeguard recovery shares. Their app will encrypt the share and not expose it to anyone else</li>
+<li>Trustees authenticate out-of-band an identity owner when a recovery event occurs</li>
+<li>The Trustees’ app should only send a recovery share to an identity owner after they have been authenticated</li>
+<li>All messages will use <a class="reference external" href="https://github.com/evernym/protocol/blob/master/message-packaging.md">Message Packaging</a>.</li>
+</ol>
+</div>
+<div class="section" id="messages-and-structures">
+<span id="messages-and-structures"></span><h2>Messages and Structures<a class="headerlink" href="#messages-and-structures" title="Permalink to this headline">¶</a></h2>
+<p>Messages are formatted as JSON. All binary encodings use base64url.
+All messages include the following fields:</p>
+<ol class="simple">
+<li><em>version</em> &lt;string&gt;: The semantic version of the message data format.</li>
+<li><em>type</em> &lt;string&gt;: The message type.</li>
+</ol>
+<div class="section" id="capabilty-offer">
+<span id="capabilty-offer"></span><h3>CAPABILTY_OFFER<a class="headerlink" href="#capabilty-offer" title="Permalink to this headline">¶</a></h3>
+<p>Informs a connection that the identity owner wishes to make them a trustee. The message includes information about what
+capabilities the identity owner has chosen to grant a trustee and how long the offer is valid.
+This message adds the following fields</p>
+<p><em>expires</em> &lt;string&gt;: 64-bit unsigned big-endian integer. The number of seconds elapsed between January 1, 1970 UTC and the time the offer will expire if no request message is received. This value is purely informative.<em>capabilities</em> &lt;list[string]&gt;: A list of capabilities that the trustee will be granted. They can include</p>
+<ol class="simple">
+<li>RECOVERY_SHARE: The trustee will be given a recovery share</li>
+<li>REVOKE_AUTHZ: The trustee can revoke agents</li>
+<li>PROVISION_AUTHZ: The trustee can provision new agents</li>
+<li>ADMIN_AUTHZ: The trustee is an administrator of agents</li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;CAPABILITY_OFFER&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;capabilities&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;RECOVERY_SHARE&quot;</span><span class="p">,</span> <span class="s2">&quot;REVOKE_AUTHZ&quot;</span><span class="p">,</span> <span class="s2">&quot;PROVISION_AUTHZ&quot;</span><span class="p">]</span>
+  <span class="s2">&quot;expires&quot;</span><span class="p">:</span> <span class="mi">1517428815</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="capabilty-request">
+<span id="capabilty-request"></span><h3>CAPABILTY_REQUEST<a class="headerlink" href="#capabilty-request" title="Permalink to this headline">¶</a></h3>
+<p>Sent to an identity owner in response to a TRUSTEE_OFFER message. The message includes includes information
+for which capabilities the trustee has agreed. This message adds the following fields</p>
+<p><em>for_id</em> &lt;string&gt;: The nonce sent in the TRUSTEE_OFFER message.<em>capabilities</em> &lt;object[string,string]&gt;: A name value object that contains the trustee’s response for each privilege.<em>authorizationKeys</em> &lt;list[string]&gt;: The public keys that the trustee will use to verify her actions with the authz policy registry on behalf of the identity owner.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;CAPABILITY_REQUEST&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;authorizationKeys&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Rtna123KPuQWEcxzbNMjkb&quot;</span><span class="p">]</span>
+  <span class="s2">&quot;capabilities&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;RECOVERY_SHARE&quot;</span><span class="p">,</span> <span class="s2">&quot;REVOKE_AUTHZ&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="capability-response">
+<span id="capability-response"></span><h3>CAPABILITY_RESPONSE<a class="headerlink" href="#capability-response" title="Permalink to this headline">¶</a></h3>
+<p>Sends the identity owner policy address and/or recovery data and metadata to a recovery trustee. A trustee should send a confirmation message that this message was received.</p>
+<p><em>address</em> &lt;string&gt;: The identity owner’s policy address. Only required if the trustee has a key in the authz policy registry.<em>share</em> &lt;object&gt;: The actual recovery share data in the format given in the next section. Only required if the trustee has the RECOVERY_SHARE privilege.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;CAPABILITY_RESPONSE&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;address&quot;</span><span class="p">:</span> <span class="s2">&quot;b3AFkei98bf3R2s&quot;</span>
+  <span class="s2">&quot;share&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="o">...</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="trust-ping">
+<span id="trust-ping"></span><h3>TRUST_PING<a class="headerlink" href="#trust-ping" title="Permalink to this headline">¶</a></h3>
+<p>Authenticates a party to the identity owner for out of band communication.</p>
+<p><em>challenge</em> &lt;object&gt;: A message that a party should respond to so the identity owner can be authenticated. Contains a <em>question</em> field for the other party to answer
+and a list of <em>valid_responses</em>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;TRUST_PING&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;challenge&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="o">...</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><em>challenge</em> will look like the example below but allows for future changes as needed.<em>question</em> &lt;string&gt;: The question for the other party to answer.<em>valid_responses</em> &lt;list[string]&gt;: A list of valid responses that the party can give in return.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;Are you on a call with CULedger?&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;valid_responses&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Yes&quot;</span><span class="p">,</span> <span class="s2">&quot;No&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="trust-pong">
+<span id="trust-pong"></span><h3>TRUST_PONG<a class="headerlink" href="#trust-pong" title="Permalink to this headline">¶</a></h3>
+<p>The response message for the TRUST_PING message.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;TRUST_PONG&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;answerValue&quot;</span><span class="p">:</span> <span class="s2">&quot;Yes&quot;</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="key-heartbeat-request">
+<span id="key-heartbeat-request"></span><h3>KEY_HEARTBEAT_REQUEST<a class="headerlink" href="#key-heartbeat-request" title="Permalink to this headline">¶</a></h3>
+<p>Future_Work: Verifies a trustee/agent has and is using the public keys that were given to the identity owner. These keys</p>
+<p><em>authorizationKeys</em> &lt;list[string]&gt;: Public keys the identity owner knows that belong to the trustee/agent.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;KEY_HEARTBEAT_REQUEST&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;authorizationKeys&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Rtna123KPuQWEcxzbNMjkb&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="key-heartbeat-response">
+<span id="key-heartbeat-response"></span><h3>KEY_HEARTBEAT_RESPONSE<a class="headerlink" href="#key-heartbeat-response" title="Permalink to this headline">¶</a></h3>
+<p>Future_Work: The updated keys sent back from the trustee/agent</p>
+</div>
+<div class="section" id="recovery-share-response">
+<span id="recovery-share-response"></span><h3>RECOVERY_SHARE_RESPONSE<a class="headerlink" href="#recovery-share-response" title="Permalink to this headline">¶</a></h3>
+<p>Future_Work: After an identity owner receives a challenge from a trustee, an application prompts her to complete the challenge. This message contains her response.</p>
+<p><em>for_id</em> &lt;string&gt;: The nonce sent in the RECOVERY_SHARE_CHALLENGE message.<em>response</em> &lt;object&gt;: The response from the identity owner.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;RECOVERY_SHARE_RESPONSE&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="o">...</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><em>response</em> will look like the example below but allows for future changes as needed.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;pin&quot;</span><span class="p">:</span> <span class="s2">&quot;3qA5h7&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="recovery-share-data-structure">
+<span id="recovery-share-data-structure"></span><h2>Recovery Share Data Structure<a class="headerlink" href="#recovery-share-data-structure" title="Permalink to this headline">¶</a></h2>
+<p>Recovery shares are formatted in JSON with the following fields:</p>
+<ol class="simple">
+<li><em>version</em> &lt;string&gt;: The semantic version of the recovery share data format.</li>
+<li><em>source_did</em>: The identity owner DID that sent this share to the trustee</li>
+<li><em>tag</em> &lt;string&gt;: A value used to verify that all the shares are for the same secret. The identity owner compares this to every share to make sure they are the same.</li>
+<li><em>shareValue</em> &lt;string&gt;: The share binary value.</li>
+<li><em>hint</em> &lt;object&gt;: Hint data that contains the following fields:<ol>
+<li><em>trustees</em> &lt;list[string]&gt;: A list of all the recovery trustee names associated with this share. These names are only significant to the identity owner. Helps to aid in recovery by providing some metadata for the identity owner and the application.</li>
+<li><em>threshold</em> &lt;integer&gt;: The minimum number of shares needed to recover the key. Helps to aid in recovery by providing some metadata for the identity owner and the application.</li>
+</ol>
+</li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;source_did&quot;</span><span class="p">:</span> <span class="s2">&quot;did:sov:asbdfa32135&quot;</span>
+  <span class="s2">&quot;tag&quot;</span><span class="p">:</span> <span class="s2">&quot;ze4152Bsxo90&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;shareValue&quot;</span><span class="p">:</span> <span class="s2">&quot;abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789&quot;</span>
+  <span class="s2">&quot;hint&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;theshold&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;trustees&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Mike L&quot;</span><span class="p">,</span> <span class="s2">&quot;Lovesh&quot;</span><span class="p">,</span> <span class="s2">&quot;Corin&quot;</span><span class="p">,</span> <span class="s2">&quot;Devin&quot;</span><span class="p">,</span> <span class="s2">&quot;Drummond&quot;</span><span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Hyperledger
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
