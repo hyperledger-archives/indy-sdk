@@ -254,7 +254,8 @@ mod tests {
     use std::ptr;
     use std::thread;
     use utils::libindy::wallet::{import, tests::export_test_wallet, tests::delete_import_wallet_path};
-    use utils::libindy::{ pool::get_pool_handle, return_types_u32 };
+    use utils::libindy::pool::get_pool_handle;
+    use api::return_types_u32;
 
     fn create_config_util() -> String {
         json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
