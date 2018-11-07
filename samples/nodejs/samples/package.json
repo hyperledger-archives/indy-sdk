@@ -1,0 +1,30 @@
+{
+  "name": "samples",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node.js samples for the indy-sdk",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "ledger": "cd ../../ && docker build -f ci/indy-pool.dockerfile -t indy_pool . && docker run --name indy_pool -itd -p 9701-9708:9701-9708 indy_pool"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyperledger/indy-sdk.git"
+  },
+  "contributors": [
+    {
+      "name": "Xavier NOPRE",
+      "email": "xnopre@twinpeek.net"
+    }
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/hyperledger/indy-sdk/issues"
+  },
+  "homepage": "https://github.com/hyperledger/indy-sdk#readme",
+  "dependencies": {
+    "indy-sdk": "file:../../../wrappers/nodejs"
+  },
+  "devDependencies": {
+  }
+}
