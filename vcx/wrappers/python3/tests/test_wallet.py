@@ -73,7 +73,6 @@ async def test_wallet_storage():
     assert (json.loads(await Wallet.get_record(TYPE, ID, OPTIONS)) == record)
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures('vcx_init_test_mode')
 async def test_wallet_search():
     search_handle = await Wallet.open_search(TYPE, QUERY_JSON, None)
     assert (search_handle == 1)
