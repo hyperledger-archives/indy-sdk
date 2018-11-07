@@ -32,7 +32,7 @@ export const FFI_SCHEMA_NUMBER = 'uint32'
 export const FFI_PAYMENT_HANDLE = 'uint32'
 export const FFI_PRICE = 'uint32'
 export const FFI_LOG_FN = 'pointer'
-export const FFI_VOID_POINTER = ref.refType('void')
+export const FFI_VOID_POINTER = 'void *'
 
 // Rust Lib Native Types
 export type rust_did = string

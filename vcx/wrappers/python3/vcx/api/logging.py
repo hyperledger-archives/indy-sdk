@@ -34,7 +34,6 @@ def set_logger_fn(context, _level, _target, _message, _module_path, _file, _line
 def flush_cb(void_pointer_context):
     _logger = cast(void_pointer_context, ctypes.POINTER(Logger))
     _logger[0].flush_cb()
-    pass
 
 
 def set_logger(user_set_logger_fn):
