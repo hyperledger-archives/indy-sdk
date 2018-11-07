@@ -1,7 +1,6 @@
 use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
-use std::time::Duration;
 use std::ptr::null;
 
 use futures::Future;
@@ -29,7 +28,7 @@ impl Payment {
                            build_get_txn_fees_req: Option<payments::BuildGetTxnFeesReqCB>,
                            parse_get_txn_fees_response: Option<payments::ParseGetTxnFeesResponseCB>,
                            build_verify_payment_req: Option<payments::BuildVerifyPaymentReqCB>,
-                           parse_verify_payment_response: Option<payments::ParseVerifyPaymentResponseCB>) -> Result<(), ErrorCode> {
+                           parse_verify_payment_response: Option<payments::ParseVerifyPaymentResponseCB>) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Payment::_register_method(command_handle,
@@ -49,9 +48,10 @@ impl Payment {
                                                       parse_verify_payment_response,
                                                       cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// * `timeout` - the maximum time this function waits for a response
     pub fn register_method_timeout(payment_method: &str,
                                    create_payment_address: Option<payments::CreatePaymentAddressCB>,
@@ -128,6 +128,7 @@ impl Payment {
                                   parse_verify_payment_response,
                                   cb)
     }
+*/
 
     fn _register_method(command_handle: IndyHandle,
                         payment_method: &str,

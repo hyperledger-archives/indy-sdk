@@ -8,7 +8,6 @@ use ffi::{ResponseEmptyCB,
 use futures::Future;
 
 use std::ffi::CString;
-use std::time::Duration;
 
 use {ErrorCode, IndyHandle};
 use utils::callbacks::{ClosureHandler, ResultHandler};
@@ -95,14 +94,15 @@ impl Key {
     /// * `wallet_handle` - wallet handle (created by Wallet::open)
     /// * `verkey` - the public key or key id where to store the metadata
     /// * `metadata` - the metadata that will be stored with the key, can be empty string
-    pub fn set_metadata(wallet_handle: IndyHandle, verkey: &str, metadata: &str) -> Result<(), ErrorCode> {
+    pub fn set_metadata(wallet_handle: IndyHandle, verkey: &str, metadata: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Key::_set_metadata(command_handle, wallet_handle, verkey, metadata, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Saves/replaces the metadata for the `verkey` in the wallet
     /// # Arguments
     /// * `wallet_handle` - wallet handle (created by Wallet::open)
@@ -128,6 +128,7 @@ impl Key {
 
         Key::_set_metadata(command_handle, wallet_handle, verkey, metadata, cb)
     }
+*/
 
     fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, verkey: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let verkey = c_str!(verkey);

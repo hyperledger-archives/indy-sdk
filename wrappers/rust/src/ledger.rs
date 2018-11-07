@@ -2256,12 +2256,12 @@ impl Ledger {
     ///
     /// # Returns
     /// Status of callbacks registration.
-    pub fn register_transaction_parser_for_sp(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>) -> Result<(), ErrorCode> {
+    pub fn register_transaction_parser_for_sp(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
 /*

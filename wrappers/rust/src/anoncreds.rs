@@ -1,7 +1,6 @@
 use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
-use std::time::Duration;
 use std::ptr::null;
 
 use futures::Future;
@@ -1334,14 +1333,15 @@ impl Prover {
     ///
     /// # Arguments
     /// * `search_handle`: Search handle (created by Prover::search_credentials)
-    pub fn close_credentials_search(search_handle: IndyHandle) -> Result<(), ErrorCode> {
+    pub fn close_credentials_search(search_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Prover::_close_credentials_search(command_handle, search_handle, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Close credentials search (make search handle invalid)
     ///
     /// # Arguments
@@ -1368,6 +1368,7 @@ impl Prover {
 
         Prover::_close_credentials_search(command_handle, search_handle, cb)
     }
+*/
 
     fn _close_credentials_search(command_handle: IndyHandle, search_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
 
@@ -1954,14 +1955,15 @@ impl Prover {
     ///
     /// # Arguments
     /// * `search_handle`: Search handle (created by Prover::search_credentials_for_proof_req)
-    pub fn _close_credentials_search_for_proof_req(search_handle: IndyHandle) -> Result<(), ErrorCode> {
+    pub fn _close_credentials_search_for_proof_req(search_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Prover::__close_credentials_search_for_proof_req(command_handle, search_handle, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Close credentials search for proof request (make search handle invalid)
     ///
     /// # Arguments
@@ -1988,6 +1990,7 @@ impl Prover {
 
         Prover::__close_credentials_search_for_proof_req(command_handle, search_handle, cb)
     }
+*/
 
     fn __close_credentials_search_for_proof_req(command_handle: IndyHandle, search_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
 

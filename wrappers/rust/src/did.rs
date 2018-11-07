@@ -1,7 +1,6 @@
 use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
-use std::time::Duration;
 
 use futures::Future;
 
@@ -218,14 +217,15 @@ impl Did {
     /// # Arguments
     /// * `wallet_handle` - wallet handler (created by Wallet::open).
     /// * `tgt_did` - DID stored in the wallet
-    pub fn replace_keys_apply(wallet_handle: IndyHandle, tgt_did: &str) -> Result<(), ErrorCode> {
+    pub fn replace_keys_apply(wallet_handle: IndyHandle, tgt_did: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Did::_replace_keys_apply(command_handle, wallet_handle, tgt_did, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Apply temporary keys as main for an existing DID (owned by the caller of the library).
     ///
     /// # Arguments
@@ -254,6 +254,7 @@ impl Did {
 
         Did::_replace_keys_apply(command_handle, wallet_handle, tgt_did, cb)
     }
+*/
     
     fn _replace_keys_apply(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
@@ -273,14 +274,15 @@ impl Did {
     ///        "did": string, (required)
     ///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
     ///     }
-    pub fn store_their_did(wallet_handle: IndyHandle, identity_json: &str) -> Result<(), ErrorCode> {
+    pub fn store_their_did(wallet_handle: IndyHandle, identity_json: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Did::_store_their_did(command_handle, wallet_handle, identity_json, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Saves their DID for a pairwise connection in a secured Wallet,
     /// so that it can be used to verify transaction.
     ///
@@ -323,6 +325,7 @@ impl Did {
 
         Did::_store_their_did(command_handle, wallet_handle, identity_json, cb)
     }
+*/
 
     fn _store_their_did(command_handle: IndyHandle, wallet_handle: IndyHandle, identity_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let identity_json = c_str!(identity_json);
@@ -512,14 +515,15 @@ impl Did {
     /// * `did` - The DID to resolve endpoint.
     /// * `address` -  The DIDs endpoint address.
     /// * `transport_key` - The DIDs transport key (ver key, key id).
-    pub fn set_endpoint(wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str) -> Result<(), ErrorCode> {
+    pub fn set_endpoint(wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Did::_set_endpoint(command_handle, wallet_handle, did, address, transport_key, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Set/replaces endpoint information for the given DID.
     ///
     /// # Arguments
@@ -552,6 +556,7 @@ impl Did {
 
         Did::_set_endpoint(command_handle, wallet_handle, did, address, transport_key, cb)
     }
+*/
     
     fn _set_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let did = c_str!(did);
@@ -625,14 +630,15 @@ impl Did {
     /// * `wallet_handle` - Wallet handle (created by Wallet::open).
     /// * `did` - the DID to store metadata.
     /// * `metadata`  - the meta information that will be store with the DID.
-    pub fn set_metadata(wallet_handle: IndyHandle, tgt_did: &str, metadata: &str) -> Result<(), ErrorCode> {
+    pub fn set_metadata(wallet_handle: IndyHandle, tgt_did: &str, metadata: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Did::_set_metadata(command_handle, wallet_handle, tgt_did, metadata, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Saves/replaces the meta information for the giving DID in the wallet.
     ///
     /// # Arguments
@@ -663,6 +669,7 @@ impl Did {
 
         Did::_set_metadata(command_handle, wallet_handle, tgt_did, metadata, cb)
     }
+*/
     
     fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);

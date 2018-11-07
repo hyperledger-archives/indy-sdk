@@ -1,27 +1,17 @@
 #![warn(dead_code)]
 use {ErrorCode, IndyHandle};
 
-use utils::sequence::SequenceUtils;
-
 use std::os::raw::c_char;
 
 use std::collections::HashMap;
 use std::ffi::CStr;
-use std::fmt::Display;
 use std::sync::Mutex;
-use std::sync::mpsc::{channel, Receiver};
-use std::time::Duration;
 
 use futures::*;
 use futures::sync::oneshot;
 
-use ffi::{ResponseEmptyCB};
-
-fn log_error<T: Display>(e: T) {
-    warn!("Unable to send through libindy callback: {}", e);
-}
-
 lazy_static! {
+    static ref CALLBACKS_EMPTY: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<(), ErrorCode>>>> = Default::default();
     static ref CALLBACKS_SLICE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<Vec<u8>, ErrorCode>>>> = Default::default();
     static ref CALLBACKS_HANDLE: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<IndyHandle, ErrorCode>>>> = Default::default();
     static ref CALLBACKS_BOOL: Mutex<HashMap<IndyHandle, oneshot::Sender<Result<bool, ErrorCode>>>> = Default::default();
@@ -70,34 +60,7 @@ macro_rules! cb_ec {
 pub struct ClosureHandler {}
 
 impl ClosureHandler {
-    pub fn cb_ec() -> (Receiver<ErrorCode>, IndyHandle, Option<ResponseEmptyCB>) {
-        let (sender, receiver) = channel();
-
-        let closure = Box::new(move |err| {
-            sender.send(err).unwrap_or_else(log_error);
-        });
-
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec(closure);
-
-        (receiver, command_handle, cb)
-    }
-
-    pub fn convert_cb_ec(closure: Box<FnMut(ErrorCode) + Send>) -> (IndyHandle, Option<ResponseEmptyCB>) {
-        lazy_static! {
-            static ref CALLBACKS: Mutex<HashMap<i32, Box<FnMut(ErrorCode) + Send>>> = Default::default();
-        }
-        extern "C" fn _callback(command_handle: IndyHandle, err: i32) {
-            let mut callbacks = CALLBACKS.lock().unwrap();
-            let mut cb = callbacks.remove(&command_handle).unwrap();
-            cb(ErrorCode::from(err))
-        }
-
-        let mut callbacks = CALLBACKS.lock().unwrap();
-        let command_handle = SequenceUtils::get_next_id();
-        callbacks.insert(command_handle, closure);
-
-        (command_handle, Some(_callback))
-    }
+    cb_ec!(cb_ec()->(), CALLBACKS_EMPTY, ());
 
     cb_ec!(cb_ec_handle(handle:IndyHandle)->IndyHandle, CALLBACKS_HANDLE, handle);
 
@@ -157,6 +120,7 @@ macro_rules! result_handler {
 pub struct ResultHandler {}
 
 impl ResultHandler {
+    result_handler!(ec_empty(()), CALLBACKS_EMPTY);
     result_handler!(ec_handle(IndyHandle), CALLBACKS_HANDLE);
     result_handler!(ec_slice(Vec<u8>), CALLBACKS_SLICE);
     result_handler!(ec_bool(bool), CALLBACKS_BOOL);
@@ -168,24 +132,6 @@ impl ResultHandler {
     result_handler!(ec_str_optstr_optstr((String, Option<String>, Option<String>)), CALLBACKS_STR_OPTSTR_OPTSTR);
     result_handler!(ec_str_str_str((String, String, String)), CALLBACKS_STR_STR_STR);
     result_handler!(ec_str_str_u64((String, String, u64)), CALLBACKS_STR_STR_U64);
-
-
-    pub fn empty(err: ErrorCode, receiver: Receiver<ErrorCode>) -> Result<(), ErrorCode> {
-        err.try_err()?;
-        match receiver.recv() {
-            Ok(err) => err.try_err(),
-            Err(e) => Err(ErrorCode::from(e))
-        }
-    }
-
-    pub fn empty_timeout(err: ErrorCode, receiver: Receiver<ErrorCode>, timeout: Duration) -> Result<(), ErrorCode> {
-        err.try_err()?;
-
-        match receiver.recv_timeout(timeout) {
-            Ok(err) => err.try_err(),
-            Err(e) => Err(ErrorCode::from(e))
-        }
-    }
 }
 
 #[cfg(test)]

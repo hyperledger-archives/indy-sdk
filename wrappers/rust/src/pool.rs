@@ -2,7 +2,6 @@ use {ErrorCode, IndyHandle};
 
 use std::ffi::CString;
 use std::ptr::null;
-use std::time::Duration;
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
 
@@ -24,14 +23,15 @@ impl Pool {
     /// {
     ///     "genesis_txn": string (required), A path to genesis transaction file.
     /// }
-    pub fn create_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn create_ledger_config(pool_name: &str, pool_config: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_create_ledger_config(command_handle, pool_name, pool_config, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Creates a new local pool ledger configuration that can be used later to connect pool nodes.
     ///
     /// # Arguments
@@ -63,6 +63,7 @@ impl Pool {
 
         Pool::_create_ledger_config(command_handle, pool_name, pool_config, cb)
     }
+*/
 
     fn _create_ledger_config(command_handle: IndyHandle, pool_name: &str, pool_config: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let pool_name = c_str!(pool_name);
@@ -171,14 +172,15 @@ impl Pool {
     ///
     /// # Arguments
     /// * `handle` - pool handle returned by Pool::open_ledger
-    pub fn refresh(pool_handle: IndyHandle) -> Result<(), ErrorCode> {
+    pub fn refresh(pool_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_refresh(command_handle, pool_handle, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Refreshes a local copy of a pool ledger and updates pool nodes connections.
     ///
     /// # Arguments
@@ -205,6 +207,7 @@ impl Pool {
 
         Pool::_refresh(command_handle, pool_handle, cb)
     }
+*/
 
     fn _refresh(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         ErrorCode::from(unsafe { pool::indy_refresh_pool_ledger(command_handle, pool_handle, cb) })
@@ -250,14 +253,15 @@ impl Pool {
     ///
     /// # Arguments
     /// * `handle` - pool handle returned by Pool::open_ledger.
-    pub fn close(pool_handle: IndyHandle) -> Result<(), ErrorCode> {
+    pub fn close(pool_handle: IndyHandle) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_close(command_handle, pool_handle, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Closes opened pool ledger, opened nodes connections and frees allocated resources.
     ///
     /// # Arguments
@@ -284,6 +288,7 @@ impl Pool {
 
         Pool::_close(command_handle, pool_handle, cb)
     }
+*/
 
     fn _close(command_handle: IndyHandle, pool_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         ErrorCode::from(unsafe { pool::indy_close_pool_ledger(command_handle, pool_handle, cb) })
@@ -293,14 +298,15 @@ impl Pool {
     ///
     /// # Arguments
     /// * `config_name` - Name of the pool ledger configuration to delete.
-    pub fn delete(pool_name: &str) -> Result<(), ErrorCode> {
+    pub fn delete(pool_name: &str) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_delete(command_handle, pool_name, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Deletes created pool ledger configuration.
     ///
     /// # Arguments
@@ -327,6 +333,7 @@ impl Pool {
 
         Pool::_delete(command_handle, pool_name, cb)
     }
+*/
 
     fn _delete(command_handle: IndyHandle, pool_name: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let pool_name = c_str!(pool_name);
@@ -345,14 +352,15 @@ impl Pool {
     /// * `protocol_version` - Protocol version will be used:
     ///     1 - for Indy Node 1.3
     ///     2 - for Indy Node 1.4
-    pub fn set_protocol_version(protocol_version: usize) -> Result<(), ErrorCode> {
+    pub fn set_protocol_version(protocol_version: usize) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pool::_set_protocol_version(command_handle, protocol_version, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// Set PROTOCOL_VERSION to specific version.
     ///
     /// There is a global property PROTOCOL_VERSION that used in every request to the pool and
@@ -393,6 +401,7 @@ impl Pool {
 
         Pool::_set_protocol_version(command_handle, protocol_version, cb)
     }
+*/
 
     fn _set_protocol_version(command_handle: IndyHandle, protocol_version: usize, cb: Option<ResponseEmptyCB>) -> ErrorCode {
 

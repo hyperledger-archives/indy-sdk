@@ -3,7 +3,6 @@ use {ErrorCode, IndyHandle};
 use futures::Future;
 
 use std::ffi::CString;
-use std::time::Duration;
 use std::ptr::null;
 
 use utils::callbacks::{ClosureHandler, ResultHandler};
@@ -51,14 +50,15 @@ impl Pairwise {
         })
     }
 
-    pub fn create(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn create(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pairwise::_create(command_handle, wallet_handle, their_did, my_did, metadata, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// * `timeout` - the maximum time this function waits for a response
     pub fn create_timeout(wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
@@ -77,6 +77,7 @@ impl Pairwise {
 
         Pairwise::_create(command_handle, wallet_handle, their_did, my_did, metadata, cb)
     }
+*/
 
     fn _create(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, my_did: &str, metadata: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let their_did = c_str!(their_did);
@@ -160,14 +161,15 @@ impl Pairwise {
         })
     }
 
-    pub fn set_metadata(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>) -> Result<(), ErrorCode> {
+    pub fn set_metadata(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>) -> Box<Future<Item=(), Error=ErrorCode>> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
         let err = Pairwise::_set_metadata(command_handle, wallet_handle, their_did, metadata, cb);
 
-        ResultHandler::empty(err, receiver)
+        ResultHandler::ec_empty(command_handle, err, receiver)
     }
 
+/*
     /// * `timeout` - the maximum time this function waits for a response
     pub fn set_metadata_timeout(wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
@@ -186,6 +188,7 @@ impl Pairwise {
 
         Pairwise::_set_metadata(command_handle, wallet_handle, their_did, metadata, cb)
     }
+*/
 
     fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, their_did: &str, metadata: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let their_did = c_str!(their_did);
