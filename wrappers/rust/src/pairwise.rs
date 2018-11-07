@@ -20,7 +20,7 @@ impl Pairwise {
 
         let err = Pairwise::_does_exist(command_handle, wallet_handle, their_did, cb);
 
-        ResultHandler::ec_bool(command_handle, err, receiver)
+        ResultHandler::bool(command_handle, err, receiver)
     }
 
     /// * `timeout` - the maximum time this function waits for a response
@@ -55,7 +55,7 @@ impl Pairwise {
 
         let err = Pairwise::_create(command_handle, wallet_handle, their_did, my_did, metadata, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -94,7 +94,7 @@ impl Pairwise {
 
         let err = Pairwise::_list(command_handle, wallet_handle, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -129,7 +129,7 @@ impl Pairwise {
 
         let err = Pairwise::_get(command_handle, wallet_handle, their_did, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -166,7 +166,7 @@ impl Pairwise {
 
         let err = Pairwise::_set_metadata(command_handle, wallet_handle, their_did, metadata, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*

@@ -48,7 +48,7 @@ impl Payment {
                                                       parse_verify_payment_response,
                                                       cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -194,7 +194,7 @@ impl Payment {
 
         let err = Payment::_create_payment_address(command_handle, wallet_handle, payment_method, config, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -278,7 +278,7 @@ impl Payment {
 
         let err = Payment::_list_payment_addresses(command_handle, wallet_handle, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -362,7 +362,7 @@ impl Payment {
 
         let err = Payment::_add_request_fees(command_handle, wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
 /*
@@ -512,7 +512,7 @@ impl Payment {
 
         let err = Payment::_parse_response_with_fees(command_handle, payment_method, resp_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -582,7 +582,7 @@ impl Payment {
 
         let err = Payment::_build_get_payment_sources_request(command_handle, wallet_handle, submitter_did, payment_address, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
 /*
@@ -651,7 +651,7 @@ impl Payment {
 
         let err = Payment::_parse_get_payment_sources_response(command_handle, payment_method, resp_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -732,7 +732,7 @@ impl Payment {
         
         let err = Payment::_build_payment_req(command_handle, wallet_handle, submitter_did, inputs, outputs, extra, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
 /*
@@ -837,7 +837,7 @@ impl Payment {
 
         let err = Payment::_parse_payment_response(command_handle, payment_method, resp_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -912,7 +912,7 @@ impl Payment {
 
         let err = Payment::_build_mint_req(command_handle, wallet_handle, submitter_did, outputs_json, extra, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
 /*
@@ -992,7 +992,7 @@ impl Payment {
 
         let err = Payment::_build_set_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, fees_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1066,7 +1066,7 @@ impl Payment {
 
         let err = Payment::_build_get_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1132,7 +1132,7 @@ impl Payment {
 
         let err = Payment::_parse_get_txn_fees_response(command_handle, payment_method, resp_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1188,7 +1188,7 @@ impl Payment {
 
         let err = Payment::_build_verify_req(command_handle, wallet_handle, submitter_did, receipt, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
 /*
@@ -1226,7 +1226,7 @@ impl Payment {
 
         let err = Payment::_parse_verify_response(command_handle, payment_method, resp_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*

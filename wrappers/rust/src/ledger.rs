@@ -35,7 +35,7 @@ impl Ledger {
 
         let err = Ledger::_sign_and_submit_request(command_handle, pool_handle, wallet_handle, submitter_did, request_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -113,7 +113,7 @@ impl Ledger {
 
         let err = Ledger::_submit_request(command_handle, pool_handle, request_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -165,7 +165,7 @@ impl Ledger {
 
         let err = Ledger::_submit_action(command_handle, pool_handle, request_json, nodes, wait_timeout, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -215,7 +215,7 @@ impl Ledger {
 
         let err = Ledger::_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -284,7 +284,7 @@ impl Ledger {
 
         let err = Ledger::_multi_sign_request(command_handle, wallet_handle, submitter_did, request_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -349,7 +349,7 @@ impl Ledger {
 
         let err = Ledger::_build_get_ddo_request(command_handle, submitter_did, target_did, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -414,7 +414,7 @@ impl Ledger {
 
         let err = Ledger::_build_nym_request(command_handle, submitter_did, target_did, verkey, data, role, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -505,7 +505,7 @@ impl Ledger {
 
         let err = Ledger::_build_get_nym_request(command_handle, submitter_did, target_did, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -566,7 +566,7 @@ impl Ledger {
 
         let err = Ledger::_build_get_txn_request(command_handle, submitter_did, ledger_type, seq_no, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -634,7 +634,7 @@ impl Ledger {
 
         let err = Ledger::_build_attrib_request(command_handle, submitter_did, target_did, hash, raw, enc, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -712,7 +712,7 @@ impl Ledger {
 
         let err = Ledger::_build_get_attrib_request(command_handle, submitter_did, target_did, raw, hash, enc, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -794,7 +794,7 @@ impl Ledger {
 
         let err = Ledger::_build_schema_request(command_handle, submitter_did, data, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -865,7 +865,7 @@ impl Ledger {
 
         let err = Ledger::_build_get_schema_request(command_handle, submitter_did, id, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -928,7 +928,7 @@ impl Ledger {
 
         let err = Ledger::_parse_get_schema_response(command_handle, get_schema_response, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
 /*
@@ -1001,7 +1001,7 @@ impl Ledger {
 
         let err = Ledger::_build_cred_def_request(command_handle, submitter_did, data, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1083,7 +1083,7 @@ impl Ledger {
 
         let err = Ledger::_build_get_cred_def_request(command_handle, submitter_did, id, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1152,7 +1152,7 @@ impl Ledger {
 
         let err = Ledger::_parse_get_cred_def_response(command_handle, get_cred_def_response, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
 /*
@@ -1226,7 +1226,7 @@ impl Ledger {
 
         let err = Ledger::_build_node_request(command_handle, submitter_did, target_did, data, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1301,7 +1301,7 @@ impl Ledger {
 
         let err = Ledger::_build_get_validator_info_request(command_handle, submitter_did, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1360,7 +1360,7 @@ impl Ledger {
 
         let err = Ledger::_build_pool_config_request(command_handle, submitter_did, writes, force, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1423,7 +1423,7 @@ impl Ledger {
 
         let err = Ledger::_build_pool_restart_request(command_handle, submitter_did, action, datetime, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1510,7 +1510,7 @@ impl Ledger {
 
         let err = Ledger::_build_pool_upgrade_request(command_handle, submitter_did, name, version, action, sha256, upgrade_timeout, schedule, justification, reinstall, force, package, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1660,7 +1660,7 @@ impl Ledger {
 
         let err = Ledger::_build_revoc_reg_def_request(command_handle, submitter_did, data, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1748,7 +1748,7 @@ impl Ledger {
 
         let err = Ledger::_build_get_revoc_reg_def_request(command_handle, submitter_did, id, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1821,7 +1821,7 @@ impl Ledger {
 
         let err = Ledger::_parse_get_revoc_reg_def_response(command_handle, get_revoc_reg_def_response, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
 /*
@@ -1905,7 +1905,7 @@ impl Ledger {
 
         let err = Ledger::_build_revoc_reg_entry_request(command_handle, submitter_did, revoc_reg_def_id, rev_def_type, value, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1994,7 +1994,7 @@ impl Ledger {
 
         let err = Ledger::_build_get_revoc_reg_request(command_handle, submitter_did, revoc_reg_def_id, timestamp, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -2060,7 +2060,7 @@ impl Ledger {
 
         let err = Ledger::_parse_get_revoc_reg_response(command_handle, get_revoc_reg_response, cb);
 
-        ResultHandler::ec_str_str_u64(command_handle, err, receiver)
+        ResultHandler::str_str_u64(command_handle, err, receiver)
     }
 
 /*
@@ -2124,7 +2124,7 @@ impl Ledger {
 
         let err = Ledger::_build_get_revoc_reg_delta_request(command_handle, submitter_did, revoc_reg_def_id, from, to, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -2197,7 +2197,7 @@ impl Ledger {
 
         let err = Ledger::_parse_get_revoc_reg_delta_response(command_handle, get_revoc_reg_delta_response, cb);
 
-        ResultHandler::ec_str_str_u64(command_handle, err, receiver)
+        ResultHandler::str_str_u64(command_handle, err, receiver)
     }
 
 /*
@@ -2261,7 +2261,7 @@ impl Ledger {
 
         let err = Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*

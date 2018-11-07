@@ -34,7 +34,7 @@ impl Key {
 
         let err = Key::_create(command_handle, wallet_handle, my_key_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -99,7 +99,7 @@ impl Key {
 
         let err = Key::_set_metadata(command_handle, wallet_handle, verkey, metadata, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -148,7 +148,7 @@ impl Key {
 
         let err = Key::_get_metadata(command_handle, wallet_handle, verkey, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -203,7 +203,7 @@ impl Crypto {
 
         let err = Crypto::_sign(command_handle, wallet_handle, signer_vk, message, cb);
 
-        ResultHandler::ec_slice(command_handle, err, receiver)
+        ResultHandler::slice(command_handle, err, receiver)
     }
 
     fn _sign(command_handle: IndyHandle, wallet_handle: IndyHandle, signer_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
@@ -229,7 +229,7 @@ impl Crypto {
 
         let err = Crypto::_verify(command_handle, signer_vk, message, signature, cb);
 
-        ResultHandler::ec_bool(command_handle, err, receiver)
+        ResultHandler::bool(command_handle, err, receiver)
     }
 
      /// Verify a signature with a verkey
@@ -296,7 +296,7 @@ impl Crypto {
 
         let err = Crypto::_auth_crypt(command_handle, wallet_handle, sender_vk, recipient_vk, message, cb);
 
-        ResultHandler::ec_slice(command_handle, err, receiver)
+        ResultHandler::slice(command_handle, err, receiver)
     }
 
     fn _auth_crypt(command_handle: IndyHandle, wallet_handle: IndyHandle, sender_vk: &str, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
@@ -333,7 +333,7 @@ impl Crypto {
 
         let err = Crypto::_auth_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
 
-        ResultHandler::ec_str_slice(command_handle, err, receiver)
+        ResultHandler::str_slice(command_handle, err, receiver)
     }
 
     /// Decrypt a message by authenticated-encryption scheme.
@@ -418,7 +418,7 @@ impl Crypto {
 
         let err = Crypto::_anon_crypt(command_handle, recipient_vk, message, cb);
 
-        ResultHandler::ec_slice(command_handle, err, receiver)
+        ResultHandler::slice(command_handle, err, receiver)
     }
 
     fn _anon_crypt(command_handle: IndyHandle, recipient_vk: &str, message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {
@@ -453,7 +453,7 @@ impl Crypto {
 
         let err = Crypto::_anon_decrypt(command_handle, wallet_handle, recipient_vk, encrypted_message, cb);
 
-        ResultHandler::ec_slice(command_handle, err, receiver)
+        ResultHandler::slice(command_handle, err, receiver)
     }
 
     fn _anon_decrypt(command_handle: IndyHandle, wallet_handle: IndyHandle, recipient_vk: &str, encrypted_message: &[u8], cb: Option<ResponseSliceCB>) -> ErrorCode {

@@ -17,7 +17,7 @@ impl Blob {
 
         let err = Blob::_open_reader(command_handle, xtype, config_json, cb);
 
-        ResultHandler::ec_handle(command_handle, err, receiver)
+        ResultHandler::handle(command_handle, err, receiver)
     }
 
 /*
@@ -48,7 +48,7 @@ impl Blob {
 
         let err = Blob::_open_writer(command_handle, xtype, config_json, cb);
 
-        ResultHandler::ec_handle(command_handle, err, receiver)
+        ResultHandler::handle(command_handle, err, receiver)
     }
 
 /*

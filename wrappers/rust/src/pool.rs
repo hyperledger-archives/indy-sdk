@@ -28,7 +28,7 @@ impl Pool {
 
         let err = Pool::_create_ledger_config(command_handle, pool_name, pool_config, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -98,7 +98,7 @@ impl Pool {
 
         let err = Pool::_open_ledger(command_handle, pool_name, config, cb);
 
-        ResultHandler::ec_handle(command_handle, err, receiver)
+        ResultHandler::handle(command_handle, err, receiver)
     }
 
 /*
@@ -177,7 +177,7 @@ impl Pool {
 
         let err = Pool::_refresh(command_handle, pool_handle, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -219,7 +219,7 @@ impl Pool {
 
         let err = Pool::_list(command_handle, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -258,7 +258,7 @@ impl Pool {
 
         let err = Pool::_close(command_handle, pool_handle, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -303,7 +303,7 @@ impl Pool {
 
         let err = Pool::_delete(command_handle, pool_name, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -357,7 +357,7 @@ impl Pool {
 
         let err = Pool::_set_protocol_version(command_handle, protocol_version, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*

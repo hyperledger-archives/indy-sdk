@@ -86,7 +86,7 @@ impl Wallet {
                                             free_search,
                                             cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -316,7 +316,7 @@ impl Wallet {
 
         let err = Wallet::_create(command_handle, config, credentials, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -384,7 +384,7 @@ impl Wallet {
 
         let err = Wallet::_open(command_handle, config, credentials, cb);
 
-        ResultHandler::ec_handle(command_handle, err, receiver)
+        ResultHandler::handle(command_handle, err, receiver)
     }
 
 /*
@@ -463,7 +463,7 @@ impl Wallet {
 
         let err = Wallet::_export(command_handle, wallet_handle, export_config, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -547,7 +547,7 @@ impl Wallet {
 
         let err = Wallet::_import(command_handle, config, credentials, import_config, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -633,7 +633,7 @@ impl Wallet {
 
         let err = Wallet::_delete(command_handle, config, credentials, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -681,7 +681,7 @@ impl Wallet {
 
         let err = Wallet::_close(command_handle, wallet_handle, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -740,7 +740,7 @@ impl Wallet {
 
         let err = Wallet::_add_record(command_handle, wallet_handle, xtype, id, value, tags_json, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -828,7 +828,7 @@ impl Wallet {
 
         let err = Wallet::_update_record_value(command_handle, wallet_handle, xtype, id, value, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -902,7 +902,7 @@ impl Wallet {
 
         let err = Wallet::_update_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -991,7 +991,7 @@ impl Wallet {
 
         let err = Wallet::_add_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -1074,7 +1074,7 @@ impl Wallet {
 
         let err = Wallet::_delete_record_tags(command_handle, wallet_handle, xtype, id, tag_names_json, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -1135,7 +1135,7 @@ impl Wallet {
 
         let err = Wallet::_delete_record(command_handle, wallet_handle, xtype, id, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -1205,7 +1205,7 @@ impl Wallet {
 
         let err = Wallet::_get_record(command_handle, wallet_handle, xtype, id, options_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1304,7 +1304,7 @@ impl Wallet {
 
         let err = Wallet::_open_search(command_handle, wallet_handle, xtype, query_json, options_json, cb);
 
-        ResultHandler::ec_handle(command_handle, err, receiver)
+        ResultHandler::handle(command_handle, err, receiver)
     }
 
 /*
@@ -1416,7 +1416,7 @@ impl Wallet {
 
         let err = Wallet::_fetch_search_next_records(command_handle, wallet_handle, wallet_search_handle, count, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1483,7 +1483,7 @@ impl Wallet {
 
         let err = Wallet::_close_search(command_handle, wallet_search_handle, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*

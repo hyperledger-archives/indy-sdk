@@ -46,7 +46,7 @@ impl Did {
 
         let err = Did::_new(command_handle, wallet_handle, did_json, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
     /// Creates keys (signing and encryption keys) for a new
@@ -146,7 +146,7 @@ impl Did {
 
         let err = Did::_replace_keys_start(command_handle, wallet_handle, tgt_did, identity_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -222,7 +222,7 @@ impl Did {
 
         let err = Did::_replace_keys_apply(command_handle, wallet_handle, tgt_did, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -279,7 +279,7 @@ impl Did {
 
         let err = Did::_store_their_did(command_handle, wallet_handle, identity_json, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -358,7 +358,7 @@ impl Did {
 
         let err = Did::_get_ver_key(command_handle, pool_handle, wallet_handle, did, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -447,7 +447,7 @@ impl Did {
 
         let err = Did::_get_ver_key_local(command_handle, wallet_handle, did, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -520,7 +520,7 @@ impl Did {
 
         let err = Did::_set_endpoint(command_handle, wallet_handle, did, address, transport_key, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -580,7 +580,7 @@ impl Did {
 
         let err = Did::_get_endpoint(command_handle, wallet_handle, pool_handle, did, cb);
 
-        ResultHandler::ec_str_optstr(command_handle, err, receiver)
+        ResultHandler::str_optstr(command_handle, err, receiver)
     }
 
 /*
@@ -635,7 +635,7 @@ impl Did {
 
         let err = Did::_set_metadata(command_handle, wallet_handle, tgt_did, metadata, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -691,7 +691,7 @@ impl Did {
 
         let err = Did::_get_metadata(command_handle, wallet_handle, tgt_did, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -751,7 +751,7 @@ impl Did {
 
         let err = Did::_get_my_metadata(command_handle, wallet_handle, my_did, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -815,7 +815,7 @@ impl Did {
 
         let err = Did::_list_with_metadata(command_handle, wallet_handle, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -871,7 +871,7 @@ impl Did {
 
         let err = Did::_abbreviate_verkey(command_handle, tgt_did, verkey, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*

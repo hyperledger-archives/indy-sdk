@@ -120,18 +120,18 @@ macro_rules! result_handler {
 pub struct ResultHandler {}
 
 impl ResultHandler {
-    result_handler!(ec_empty(()), CALLBACKS_EMPTY);
-    result_handler!(ec_handle(IndyHandle), CALLBACKS_HANDLE);
-    result_handler!(ec_slice(Vec<u8>), CALLBACKS_SLICE);
-    result_handler!(ec_bool(bool), CALLBACKS_BOOL);
-    result_handler!(ec_str(String), CALLBACKS_STR);
-    result_handler!(ec_handle_usize((IndyHandle, usize)), CALLBACKS_HANDLE_USIZE);
-    result_handler!(ec_str_slice((String, Vec<u8>)), CALLBACKS_STR_SLICE);
-    result_handler!(ec_str_str((String, String)), CALLBACKS_STR_STR);
-    result_handler!(ec_str_optstr((String, Option<String>)), CALLBACKS_STR_OPTSTR);
-    result_handler!(ec_str_optstr_optstr((String, Option<String>, Option<String>)), CALLBACKS_STR_OPTSTR_OPTSTR);
-    result_handler!(ec_str_str_str((String, String, String)), CALLBACKS_STR_STR_STR);
-    result_handler!(ec_str_str_u64((String, String, u64)), CALLBACKS_STR_STR_U64);
+    result_handler!(empty(()), CALLBACKS_EMPTY);
+    result_handler!(handle(IndyHandle), CALLBACKS_HANDLE);
+    result_handler!(slice(Vec<u8>), CALLBACKS_SLICE);
+    result_handler!(bool(bool), CALLBACKS_BOOL);
+    result_handler!(str(String), CALLBACKS_STR);
+    result_handler!(handle_usize((IndyHandle, usize)), CALLBACKS_HANDLE_USIZE);
+    result_handler!(str_slice((String, Vec<u8>)), CALLBACKS_STR_SLICE);
+    result_handler!(str_str((String, String)), CALLBACKS_STR_STR);
+    result_handler!(str_optstr((String, Option<String>)), CALLBACKS_STR_OPTSTR);
+    result_handler!(str_optstr_optstr((String, Option<String>, Option<String>)), CALLBACKS_STR_OPTSTR_OPTSTR);
+    result_handler!(str_str_str((String, String, String)), CALLBACKS_STR_STR_STR);
+    result_handler!(str_str_u64((String, String, u64)), CALLBACKS_STR_STR_U64);
 }
 
 #[cfg(test)]

@@ -44,7 +44,7 @@ impl Issuer {
 
         let err = Issuer::_create_schema(command_handle, issuer_did, name, version, attrs, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
     /// Create credential schema entity that describes credential attributes list and allows credentials
@@ -141,7 +141,7 @@ impl Issuer {
 
         let err = Issuer::_create_and_store_credential_def(command_handle, wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
     /// Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
@@ -260,7 +260,7 @@ impl Issuer {
 
         let err = Issuer::_create_and_store_revoc_reg(command_handle, wallet_handle, issuer_did, revoc_def_type, tag, cred_def_id, config_json, tails_writer_handle, cb);
 
-        ResultHandler::ec_str_str_str(command_handle, err, receiver)
+        ResultHandler::str_str_str(command_handle, err, receiver)
     }
 
 /*
@@ -388,7 +388,7 @@ impl Issuer {
 
         let err = Issuer::_create_credential_offer(command_handle, wallet_handle, cred_def_id, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -485,7 +485,7 @@ impl Issuer {
 
         let err = Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb);
 
-        ResultHandler::ec_str_optstr_optstr(command_handle, err, receiver)
+        ResultHandler::str_optstr_optstr(command_handle, err, receiver)
     }
 
     /// Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
@@ -599,7 +599,7 @@ impl Issuer {
 
         let err = Issuer::_revoke_credential(command_handle, wallet_handle, blob_storage_reader_cfg_handle, rev_reg_id, cred_revoc_id, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -675,7 +675,7 @@ impl Issuer {
 
         let err = Issuer::_merge_revocation_registry_deltas(command_handle, rev_reg_delta_json, other_rev_reg_delta_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -741,7 +741,7 @@ impl Prover {
 
         let err = Prover::_create_master_secret(command_handle, wallet_handle, master_secret_id, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -808,7 +808,7 @@ impl Prover {
 
         let err = Prover::_get_credential(command_handle, wallet_handle, cred_id, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -889,7 +889,7 @@ impl Prover {
 
         let err = Prover::_create_credential_req(command_handle, wallet_handle, prover_did, cred_offer_json, cred_def_json, master_secret_id, cb);
 
-        ResultHandler::ec_str_str(command_handle, err, receiver)
+        ResultHandler::str_str(command_handle, err, receiver)
     }
 
 /*
@@ -992,7 +992,7 @@ impl Prover {
 
         let err = Prover::_store_credential(command_handle, wallet_handle, cred_id, cred_req_metadata_json, cred_json, cred_def_json, rev_reg_def_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1108,7 +1108,7 @@ impl Prover {
 
         let err = Prover::_get_credentials(command_handle, wallet_handle, filter_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1198,7 +1198,7 @@ impl Prover {
 
         let err = Prover::_search_credentials(command_handle, wallet_handle, query_json, cb);
 
-        ResultHandler::ec_handle_usize(command_handle, err, receiver)
+        ResultHandler::handle_usize(command_handle, err, receiver)
     }
 
 /*
@@ -1277,7 +1277,7 @@ impl Prover {
 
         let err = Prover::_fetch_credentials(command_handle, search_handle, count, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1338,7 +1338,7 @@ impl Prover {
 
         let err = Prover::_close_credentials_search(command_handle, search_handle, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -1457,7 +1457,7 @@ impl Prover {
 
         let err = Prover::_get_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1687,7 +1687,7 @@ impl Prover {
 
         let err = Prover::_search_credentials_for_proof_req(command_handle, wallet_handle, proof_request_json, extra_query_json, cb);
 
-        ResultHandler::ec_handle(command_handle, err, receiver)
+        ResultHandler::handle(command_handle, err, receiver)
     }
 
 /*
@@ -1881,7 +1881,7 @@ impl Prover {
 
         let err = Prover::__fetch_credentials_for_proof_req(command_handle, search_handle, item_referent, count, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -1960,7 +1960,7 @@ impl Prover {
 
         let err = Prover::__close_credentials_search_for_proof_req(command_handle, search_handle, cb);
 
-        ResultHandler::ec_empty(command_handle, err, receiver)
+        ResultHandler::empty(command_handle, err, receiver)
     }
 
 /*
@@ -2131,7 +2131,7 @@ impl Prover {
 
         let err = Prover::_create_proof(command_handle, wallet_handle, proof_req_json, requested_credentials_json, master_secret_id, schemas_json, credential_defs_json, rev_states_json, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -2482,7 +2482,7 @@ impl Verifier {
 
         let err = Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb);
 
-        ResultHandler::ec_bool(command_handle, err, receiver)
+        ResultHandler::bool(command_handle, err, receiver)
     }
 
     /// Verifies a proof (of multiple credential).
@@ -2701,7 +2701,7 @@ impl AnonCreds {
 
         let err = AnonCreds::_create_revocation_state(command_handle, blob_storage_reader_handle, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
@@ -2782,7 +2782,7 @@ impl AnonCreds {
 
         let err = AnonCreds::_update_revocation_state(command_handle, blob_storage_reader_handle, rev_state_json, rev_reg_def_json, rev_reg_delta_json, timestamp, cred_rev_id, cb);
 
-        ResultHandler::ec_str(command_handle, err, receiver)
+        ResultHandler::str(command_handle, err, receiver)
     }
 
 /*
