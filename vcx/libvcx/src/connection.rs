@@ -442,14 +442,13 @@ fn init_connection(handle: u32) -> Result<u32, ConnectionError> {
         Ok(_) => debug!("created pairwise key on agent"),
     };
 
-//    TODO: RESTORE IT AFTER DUMMY AGENT HAD SUPPORTED
-//    match update_agent_profile(handle) {
-//        Err(x) => {
-//            error!("could not update profile on agent: {}", x);
-//            return Err(x)
-//        },
-//        Ok(_) => debug!("updated profile on agent"),
-//    };
+    match update_agent_profile(handle) {
+        Err(x) => {
+            error!("could not update profile on agent: {}", x);
+            return Err(x)
+        },
+        Ok(_) => debug!("updated profile on agent"),
+    };
 
     set_state(handle, VcxStateType::VcxStateInitialized).err();
 
