@@ -474,7 +474,7 @@ def linuxVcxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
     }
 }
 
-def linuxVcxPythonTesting(env_name, network_name, testEnv) {
+def linuxVcxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
     unstash name: "VcxPythonLibvcxSO${env_name}"
     unstash name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
 
