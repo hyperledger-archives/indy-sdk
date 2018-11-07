@@ -1,6 +1,7 @@
 use super::environment;
 
 use byteorder::{LittleEndian, WriteBytesExt};
+use futures::Future;
 use indy::ErrorCode;
 use indy::pool::Pool;
 use rmp_serde;
@@ -50,7 +51,7 @@ pub fn create_default_pool() -> String {
     let name = test_pool_name();
     let (config, _genesis_file) = test_genesis_config();
 
-    Pool::create_ledger_config(&name, Some(&config)).unwrap();
+    Pool::create_ledger_config(&name, Some(&config)).wait().unwrap();
 
     name
 }
@@ -120,7 +121,7 @@ pub struct PoolList(Vec<PoolItem>);
 
 impl PoolList {
     pub fn new() -> Self {
-        let json_pools = Pool::list().unwrap();
+        let json_pools = Pool::list().wait().unwrap();
         Self::from_json(&json_pools)
     }
 

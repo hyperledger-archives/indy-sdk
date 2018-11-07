@@ -1,6 +1,6 @@
 extern crate futures;
 
-use futures::future::Future;
+use self::futures::future::Future;
 
 use super::indy;
 
@@ -74,7 +74,7 @@ impl<'a> Setup<'a>
 
     fn setup_pool(connect_to_pool: bool) -> (String, Option<i32>)
     {
-        indy::pool::Pool::set_protocol_version(PROTOCOL_VERSION as usize).unwrap();
+        indy::pool::Pool::set_protocol_version(PROTOCOL_VERSION as usize).wait().unwrap();
 
         let pool_name = pool::create_default_pool();
 
@@ -108,9 +108,9 @@ impl<'a> Setup<'a>
 impl<'a> Drop for Setup<'a> {
     fn drop(&mut self) {
         self.pool_handle.map(|handle| {
-            indy::pool::Pool::close(handle).unwrap()
+            indy::pool::Pool::close(handle).wait().unwrap()
         });
-        indy::pool::Pool::delete(self.pool_name.as_str()).unwrap();
+        indy::pool::Pool::delete(self.pool_name.as_str()).wait().unwrap();
     }
 }
 

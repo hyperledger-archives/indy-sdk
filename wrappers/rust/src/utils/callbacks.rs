@@ -149,8 +149,7 @@ mod test {
         let callback = cb.unwrap();
         callback(command_handle, 0, test_vec.as_ptr(), test_vec.len() as u32);
 
-        let (err, slice1) = receiver.recv().unwrap();
-        assert_eq!(err, ErrorCode::Success);
+        let slice1 = receiver.wait().unwrap().unwrap();
         assert_eq!(test_vec, slice1);
     }
 
@@ -161,8 +160,7 @@ mod test {
         let callback = cb.unwrap();
         callback(command_handle, 0, CString::new("This is a test").unwrap().as_ptr(), null());
 
-        let (err, str1, str2) = receiver.recv().unwrap();
-        assert_eq!(err, ErrorCode::Success);
+        let (str1, str2) = receiver.wait().unwrap().unwrap();
         assert_eq!(str1, "This is a test".to_string());
         assert_eq!(str2, None);
     }
@@ -174,8 +172,7 @@ mod test {
         let callback = cb.unwrap();
         callback(command_handle, 0, CString::new("This is a test").unwrap().as_ptr(), CString::new("The second string has something").unwrap().as_ptr());
 
-        let (err, str1, str2) = receiver.recv().unwrap();
-        assert_eq!(err, ErrorCode::Success);
+        let (str1, str2) = receiver.wait().unwrap().unwrap();
         assert_eq!(str1, "This is a test".to_string());
         assert_eq!(str2, Some("The second string has something".to_string()));
     }

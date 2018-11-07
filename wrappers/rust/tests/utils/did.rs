@@ -1,3 +1,5 @@
+use futures::Future;
+
 use super::indy;
 
 use indy::ErrorCode;
@@ -31,7 +33,7 @@ pub fn create_nym(
     did_trustee: &str,
     role: NymRole
 ) -> Result<DidAndVerKey, ErrorCode> {
-    let (did, verkey) = indy::did::Did::new(wallet_handle, "{}").unwrap();
+    let (did, verkey) = indy::did::Did::new(wallet_handle, "{}").wait().unwrap();
 
     let req_nym = indy::ledger::Ledger::build_nym_request(
         did_trustee,
@@ -39,9 +41,9 @@ pub fn create_nym(
         Some(&verkey),
         None,
         role.prepare()
-    )?;
+    ).wait()?;
 
-    indy::ledger::Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did_trustee, &req_nym)?;
+    indy::ledger::Ledger::sign_and_submit_request(pool_handle, wallet_handle, &did_trustee, &req_nym).wait()?;
 
     Ok((did, verkey))
 }
@@ -93,7 +95,7 @@ pub fn initial_trustee(wallet_handle: i32) -> DidAndVerKey {
         "seed":"000000000000000000000000Trustee1"
     }).to_string();
 
-    indy::did::Did::new(wallet_handle, &first_json_seed).unwrap()
+    indy::did::Did::new(wallet_handle, &first_json_seed).wait().unwrap()
 }
 
 /**
