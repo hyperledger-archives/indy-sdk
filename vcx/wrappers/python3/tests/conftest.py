@@ -31,4 +31,4 @@ async def cleanup():
 @pytest.fixture(scope='session', autouse=True)
 def wait_libindy():
     yield
-    time.sleep(1)
+    time.sleep(1) # FIXME IS-1060
