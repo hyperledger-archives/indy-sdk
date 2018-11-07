@@ -104,7 +104,7 @@ fn fetch_credentials(search_handle: i32, requested_attributes: Map<String, Value
 }
 
 fn close_search_handle(search_handle: i32) -> Result<(), u32> {
-    Prover::_close_credentials_search_for_proof_req(search_handle).map_err(|ec| {
+    Prover::_close_credentials_search_for_proof_req(search_handle).wait().map_err(|ec| {
         error!("Error closing search handle");
         map_rust_indy_sdk_error_code(ec)
     })
