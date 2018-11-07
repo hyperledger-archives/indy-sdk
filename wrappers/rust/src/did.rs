@@ -49,6 +49,7 @@ impl Did {
         ResultHandler::str_str(command_handle, err, receiver)
     }
 
+/*
     /// Creates keys (signing and encryption keys) for a new
     /// DID (owned by the caller of the library).
     /// Identity's DID must be either explicitly provided, or taken as the first 16 bit of verkey.
@@ -76,13 +77,13 @@ impl Did {
     /// # Returns
     ///   * `did` - DID generated and stored in the wallet
     ///   * `verkey` - The DIDs verification key
-//    pub fn new_timeout(wallet_handle: IndyHandle, did_json: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
-//        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
-//
-//        let err = Did::_new(command_handle, wallet_handle, did_json, cb);
-//
-//        ResultHandler::two_timeout(err, receiver, timeout)
-//    }
+    pub fn new_timeout(wallet_handle: IndyHandle, did_json: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
+
+        let err = Did::_new(command_handle, wallet_handle, did_json, cb);
+
+        ResultHandler::two_timeout(err, receiver, timeout)
+    }
 
     /// Creates keys (signing and encryption keys) for a new
     /// DID (owned by the caller of the library).
@@ -111,11 +112,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-//    pub fn new_async<F: 'static>(wallet_handle: IndyHandle, did_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
-//        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
-//
-//        Did::_new(command_handle, wallet_handle, did_json, cb)
-//    }
+    pub fn new_async<F: 'static>(wallet_handle: IndyHandle, did_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
+
+        Did::_new(command_handle, wallet_handle, did_json, cb)
+    }
+*/
 
     fn _new(command_handle: IndyHandle, wallet_handle: IndyHandle, did_json: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let did_json = c_str!(did_json);

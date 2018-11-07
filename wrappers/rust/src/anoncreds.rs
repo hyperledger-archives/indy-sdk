@@ -47,6 +47,7 @@ impl Issuer {
         ResultHandler::str_str(command_handle, err, receiver)
     }
 
+/*
     /// Create credential schema entity that describes credential attributes list and allows credentials
     /// interoperability.
     ///
@@ -68,13 +69,13 @@ impl Issuer {
     /// # Returns
     /// * `schema_id`: identifier of created schema
     /// * `schema_json`: schema as json
-//    pub fn create_schema_timeout(issuer_did: &str, name: &str, version: &str, attrs: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
-//        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
-//
-//        let err = Issuer::_create_schema(command_handle, issuer_did, name, version, attrs, cb);
-//
-//        ResultHandler::two_timeout(err, receiver, timeout)
-//    }
+    pub fn create_schema_timeout(issuer_did: &str, name: &str, version: &str, attrs: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
+
+        let err = Issuer::_create_schema(command_handle, issuer_did, name, version, attrs, cb);
+
+        ResultHandler::two_timeout(err, receiver, timeout)
+    }
 
     /// Create credential schema entity that describes credential attributes list and allows credentials
     /// interoperability.
@@ -96,11 +97,12 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-//    pub fn create_schema_async<F: 'static>(issuer_did: &str, name: &str, version: &str, attrs: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
-//        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
-//
-//        Issuer::_create_schema(command_handle, issuer_did, name, version, attrs, cb)
-//    }
+    pub fn create_schema_async<F: 'static>(issuer_did: &str, name: &str, version: &str, attrs: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
+
+        Issuer::_create_schema(command_handle, issuer_did, name, version, attrs, cb)
+    }
+*/
 
     fn _create_schema(command_handle: IndyHandle, issuer_did: &str, name: &str, version: &str, attrs: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let issuer_did = c_str!(issuer_did);
@@ -144,6 +146,7 @@ impl Issuer {
         ResultHandler::str_str(command_handle, err, receiver)
     }
 
+/*
     /// Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
     /// and secrets used for credentials revocation.
     ///
@@ -168,13 +171,13 @@ impl Issuer {
     /// # Returns
     /// * `cred_def_id`: identifier of created credential definition
     /// * `cred_def_json`: public part of created credential definition
-//    pub fn create_and_store_credential_def_timeout(wallet_handle: IndyHandle, issuer_did: &str, schema_json: &str, tag: &str, signature_type: Option<&str>, config_json: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
-//        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
-//
-//        let err = Issuer::_create_and_store_credential_def(command_handle, wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb);
-//
-//        ResultHandler::two_timeout(err, receiver, timeout)
-//    }
+    pub fn create_and_store_credential_def_timeout(wallet_handle: IndyHandle, issuer_did: &str, schema_json: &str, tag: &str, signature_type: Option<&str>, config_json: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
+
+        let err = Issuer::_create_and_store_credential_def(command_handle, wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb);
+
+        ResultHandler::two_timeout(err, receiver, timeout)
+    }
 
     /// Create credential definition entity that encapsulates credentials issuer DID, credential schema, secrets used for signing credentials
     /// and secrets used for credentials revocation.
@@ -199,11 +202,12 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-//    pub fn create_and_store_credential_def_async<F: 'static>(wallet_handle: IndyHandle, issuer_did: &str, schema_json: &str, tag: &str, signature_type: Option<&str>, config_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
-//        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
-//
-//        Issuer::_create_and_store_credential_def(command_handle, wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb)
-//    }
+    pub fn create_and_store_credential_def_async<F: 'static>(wallet_handle: IndyHandle, issuer_did: &str, schema_json: &str, tag: &str, signature_type: Option<&str>, config_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
+
+        Issuer::_create_and_store_credential_def(command_handle, wallet_handle, issuer_did, schema_json, tag, signature_type, config_json, cb)
+    }
+*/
 
     fn _create_and_store_credential_def(command_handle: IndyHandle, wallet_handle: IndyHandle, issuer_did: &str, schema_json: &str, tag: &str, signature_type: Option<&str>, config_json: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let issuer_did = c_str!(issuer_did);
@@ -488,6 +492,7 @@ impl Issuer {
         ResultHandler::str_optstr_optstr(command_handle, err, receiver)
     }
 
+/*
     /// Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
     ///
     /// Cred Request must match Cred Offer. The credential definition and revocation registry definition
@@ -526,13 +531,13 @@ impl Issuer {
     ///     }
     /// * `cred_revoc_id`: local id for revocation info (Can be used for revocation of this credential)
     /// * `revoc_reg_delta_json`: Revocation registry delta json with a newly issued credential
-//    pub fn create_credential_timeout(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, timeout: Duration) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
-//        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string_opt_string();
-//
-//        let err = Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb);
-//
-//        ResultHandler::three_timeout(err, receiver, timeout)
-//    }
+    pub fn create_credential_timeout(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, timeout: Duration) -> Result<(String, Option<String>, Option<String>), ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string_opt_string();
+
+        let err = Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb);
+
+        ResultHandler::three_timeout(err, receiver, timeout)
+    }
 
     /// Check Cred Request for the given Cred Offer and issue Credential for the given Cred Request.
     ///
@@ -561,11 +566,12 @@ impl Issuer {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-//    pub fn create_credential_async<F: 'static>(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Option<String>, Option<String>) + Send {
-//        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_opt_string_opt_string(Box::new(closure));
-//
-//        Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb)
-//    }
+    pub fn create_credential_async<F: 'static>(wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Option<String>, Option<String>) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_opt_string_opt_string(Box::new(closure));
+
+        Issuer::_create_credential(command_handle, wallet_handle, cred_offer_json, cred_req_json, cred_values_json, rev_reg_id, blob_storage_reader_handle, cb)
+    }
+*/
 
     fn _create_credential(command_handle: IndyHandle, wallet_handle: IndyHandle, cred_offer_json: &str, cred_req_json: &str, cred_values_json: &str, rev_reg_id: Option<&str>, blob_storage_reader_handle: IndyHandle, cb: Option<ResponseStringStringStringCB>) -> ErrorCode {
         let cred_offer_json = c_str!(cred_offer_json);
@@ -2485,6 +2491,7 @@ impl Verifier {
         ResultHandler::bool(command_handle, err, receiver)
     }
 
+/*
     /// Verifies a proof (of multiple credential).
     /// All required schemas, public keys and revocation registries must be provided.
     ///
@@ -2567,13 +2574,13 @@ impl Verifier {
     ///
     /// # Returns
     /// * `valid`: true - if signature is valid, false - otherwise
-//    pub fn verify_proof_timeout(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, timeout: Duration) -> Result<bool, ErrorCode> {
-//        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
-//
-//        let err = Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb);
-//
-//        ResultHandler::one_timeout(err, receiver, timeout)
-//    }
+    pub fn verify_proof_timeout(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, timeout: Duration) -> Result<bool, ErrorCode> {
+        let (receiver, command_handle, cb) = ClosureHandler::cb_ec_bool();
+
+        let err = Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb);
+
+        ResultHandler::one_timeout(err, receiver, timeout)
+    }
 
     /// Verifies a proof (of multiple credential).
     /// All required schemas, public keys and revocation registries must be provided.
@@ -2657,11 +2664,12 @@ impl Verifier {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-//    pub fn verify_proof_async<F: 'static>(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
-//        let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
-//
-//        Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb)
-//    }
+    pub fn verify_proof_async<F: 'static>(proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, bool) + Send {
+        let (command_handle, cb) = ClosureHandler::convert_cb_ec_bool(Box::new(closure));
+
+        Verifier::_verify_proof(command_handle, proof_request_json, proof_json, schemas_json, credential_defs_json, rev_reg_defs_json, rev_regs_json, cb)
+    }
+*/
 
     fn _verify_proof(command_handle: IndyHandle, proof_request_json: &str, proof_json: &str, schemas_json: &str, credential_defs_json: &str, rev_reg_defs_json: &str, rev_regs_json: &str, cb: Option<ResponseBoolCB>) -> ErrorCode {
         let proof_request_json = c_str!(proof_request_json);

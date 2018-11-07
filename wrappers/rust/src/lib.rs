@@ -322,7 +322,7 @@ impl From<mpsc::RecvTimeoutError> for ErrorCode {
         match err {
             mpsc::RecvTimeoutError::Timeout => {
                 warn!("Timed out waiting for libindy to call back");
-                ErrorCode::PoolLedgerTimeout
+                ErrorCode::CommonIOError
             }
             mpsc::RecvTimeoutError::Disconnected => {
                 warn!("Channel to libindy was disconnected unexpectedly");
