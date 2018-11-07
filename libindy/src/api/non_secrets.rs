@@ -1,6 +1,6 @@
 extern crate libc;
 
-use api::ErrorCode;
+use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::non_secrets::NonSecretsCommand;
 use domain::wallet::Tags;

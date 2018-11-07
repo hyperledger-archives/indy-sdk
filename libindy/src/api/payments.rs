@@ -1,7 +1,7 @@
 extern crate libc;
 
 use self::libc::c_char;
-use api::ErrorCode;
+use api::{ErrorCode, IndyHandle};
 use commands::{Command, CommandExecutor};
 use commands::payments::PaymentsCommand;
 use errors::ToErrorCode;

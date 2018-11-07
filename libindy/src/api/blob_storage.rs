@@ -1,6 +1,6 @@
 extern crate libc;
 
-use api::ErrorCode;
+use api::{ErrorCode, IndyHandle};
 use errors::ToErrorCode;
 use commands::{Command, CommandExecutor};
 use commands::blob_storage::BlobStorageCommand;
