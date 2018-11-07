@@ -249,6 +249,18 @@ pub mod rotate_key_command {
 
             match ledger_verkey {
                 Some(ledger_verkey) => {
+                    // if ledger verkey is abbreviated, abbreviate other also.
+                    let (temp_verkey, curr_verkey) = if ledger_verkey.starts_with('~') {
+                        let temp_verkey = Did::abbreviate_verkey(&did, &temp_verkey)
+                            .map_err(|_e|println_err!("Invalid temp verkey: {}", temp_verkey))?;
+                        let curr_verkey = Did::abbreviate_verkey(&did, &curr_verkey)
+                            .map_err(|_e|println_err!("Invalid current verkey: {}", curr_verkey))?;
+                        Ok((temp_verkey, curr_verkey))
+                    }
+                    else {
+                        Ok((temp_verkey, curr_verkey))
+                    }?;
+
                     println_succ!("Verkey on ledger: {}", ledger_verkey);
                     println_succ!("Current verkey in wallet: {}", curr_verkey);
                     println_succ!("Temp verkey in wallet: {}", temp_verkey);
