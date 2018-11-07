@@ -16,6 +16,7 @@ pub fn libindy_verifier_verify_proof(proof_req_json: &str,
                                      rev_reg_defs_json: &str,
                                      rev_regs_json: &str)  -> Result<bool, u32> {
 
+    //TODO there was timeout here (before future-based Rust wrapper)
     Verifier::verify_proof(proof_req_json,
                                    proof_json,
                                    schemas_json,
