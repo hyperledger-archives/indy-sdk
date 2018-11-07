@@ -767,10 +767,13 @@ pub mod tests {
     extern crate serde_json;
 
     use super::*;
+    use api::return_types_u32;
     use std::ptr;
     use std::ffi::CString;
     use std::time::Duration;
-    use utils::libindy::{ return_types_u32, wallet::delete_wallet};
+    use utils::libindy::wallet::delete_wallet;
+    #[cfg(feature = "pool_tests")]
+    use utils::libindy::payments::build_test_address;
 
     #[test]
     fn test_get_token_info() {
@@ -1031,7 +1034,6 @@ pub mod tests {
         use std::env;
         use std::fs;
         use std::path::Path;
-        use utils::libindy::return_types_u32;
         use std::time::Duration;
         use settings;
 
