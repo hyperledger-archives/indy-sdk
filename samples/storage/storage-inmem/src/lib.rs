@@ -13,4 +13,3 @@ extern crate indy_common;
 extern crate indy_crypto;
 extern crate libc;
 extern crate rand;
-
