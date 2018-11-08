@@ -2,10 +2,10 @@ extern crate owning_ref;
 extern crate sodiumoxide;
 extern crate r2d2;
 extern crate r2d2_postgres;
+extern crate indy_common;
 
 mod query;
 mod transaction;
-pub mod language;
 pub mod storage;
 
 use postgres;
@@ -15,10 +15,12 @@ use serde_json;
 use self::owning_ref::OwningHandle;
 use std::rc::Rc;
 
-use indy::errors::wallet::WalletStorageError;
-use indy::errors::common::CommonError;
+use indy_common::errors::wallet::WalletStorageError;
+use indy_common::errors::common::CommonError;
+use indy_common::wallet_storage::language;
 
-use self::storage::{StorageIterator, WalletStorageType, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
+use indy_common::wallet_storage::storage::{StorageIterator, WalletStorage, StorageRecord, EncryptedValue, Tag, TagName};
+use self::storage::WalletStorageType;
 
 fn default_true() -> bool { true }
 
@@ -1098,7 +1100,7 @@ impl WalletStorageType for PostgresStorageType {
 mod tests {
     use super::*;
 
-    use utils::test;
+    use indy_common::utils::test;
 
     #[test]
     fn postgres_storage_type_create_works() {

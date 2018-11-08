@@ -1,12 +1,12 @@
 extern crate libc;
 extern crate time;
-extern crate indy;
+extern crate indy_common;
 extern crate indy_crypto;
 extern crate serde_json;
 
-use indy::api::ErrorCode;
-use utils::cstring::CStringUtils;
-use utils::sequence::SequenceUtils;
+use indy_common::api::ErrorCode;
+use indy_common::utils::cstring::CStringUtils;
+use indy_common::utils::sequence::SequenceUtils;
 
 use self::libc::c_char;
 

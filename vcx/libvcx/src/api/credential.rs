@@ -599,7 +599,7 @@ mod tests {
     use std::time::Duration;
     use connection;
     use api::VcxStateType;
-    use utils::libindy::return_types_u32;
+    use api::return_types_u32;
     use serde_json::Value;
     use utils::constants::{DEFAULT_SERIALIZED_CREDENTIAL, DEFAULT_SERIALIZE_VERSION};
 

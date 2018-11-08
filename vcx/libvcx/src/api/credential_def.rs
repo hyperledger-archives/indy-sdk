@@ -314,7 +314,7 @@ mod tests {
     use std::ffi::CString;
     use std::time::Duration;
     use settings;
-    use utils::libindy::return_types_u32;
+    use api::return_types_u32;
     use utils::constants::{SCHEMA_ID};
 
     #[test]
