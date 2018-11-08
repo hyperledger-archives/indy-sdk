@@ -300,7 +300,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
 
         poolInst = openPool(env_name, network_name)
 
-        def testEnv = buildTestEnv(file, network_name)
+        def testEnv = buildTestEnv(file, env_name)
         def additionalFeatures = "sodium_static"
 
         dir('libindy') {

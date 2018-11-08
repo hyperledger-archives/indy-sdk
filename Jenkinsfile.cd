@@ -477,8 +477,9 @@ def linuxVcxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
 def linuxVcxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
     unstash name: "VcxPythonLibvcxSO${env_name}"
     unstash name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
-
     dir('vcx/wrappers/python3') {
+
+
         testEnv.inside {
             echo "${env_name} Vcx Test: Test python wrapper"
 
