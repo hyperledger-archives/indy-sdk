@@ -1002,7 +1002,7 @@ impl AgentConnection {
     fn get_remote_endpoint(&self) -> Result<String, Error> {
         let endpoint = self.state.remote_connection_detail.as_ref().map(|detail| detail.forward_agent_detail.endpoint.to_string())
             .ok_or(err_msg("Missed Remote Connection Details."))?;
-        Ok(format!("{}/msg", endpoint))
+        Ok(format!("{}/agency/msg", endpoint))
     }
 
     fn prepare_remote_message(&self, message: Vec<A2AMessage>) -> Result<Vec<u8>, Error> {

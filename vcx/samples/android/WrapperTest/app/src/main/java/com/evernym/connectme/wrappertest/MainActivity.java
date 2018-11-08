@@ -31,9 +31,9 @@ public class MainActivity extends AppCompatActivity {
             + "{\"data\":{\"alias\":\"Node3\",\"blskey\":\"3WFpdbg7C5cnLYZwFZevJqhubkFALBfCBBok15GdrKMUhUjGsk3jV6QKj6MZgEubF7oqCafxNdkm7eswgA4sdKTRc82tLGzZBd6vNqU8dupzup6uYUf32KTHTPQbuUM8Yk4QFXjEf2Usu2TJcNkdgpyeUSX42u5LqdDDpNSWUK5deC5\",\"client_ip\":\"35.164.240.131\",\"client_port\":9706,\"node_ip\":\"35.164.240.131\",\"node_port\":9705,\"services\":[\"VALIDATOR\"]},\"dest\":\"DKVxG2fXXTU8yT5N7hGEbXB3dfdAnYv1JczDUHpmDxya\",\"identifier\":\"4cU41vWW82ArfxJxHkzXPG\",\"txnId\":\"7e9f355dffa78ed24668f0e0e369fd8c224076571c51e2ea8be5f26479edebe4\",\"type\":\"0\"\n}"
             + "{\"data\":{\"alias\":\"Node4\",\"blskey\":\"2zN3bHM1m4rLz54MJHYSwvqzPchYp8jkHswveCLAEJVcX6Mm1wHQD1SkPYMzUDTZvWvhuE6VNAkK3KxVeEmsanSmvjVkReDeBEMxeDaayjcZjFGPydyey1qxBHmTvAnBKoPydvuTAqx5f7YNNRAdeLmUi99gERUU7TD8KfAa6MpQ9bw\",\"client_ip\":\"35.164.240.131\",\"client_port\":9708,\"node_ip\":\"35.164.240.131\",\"node_port\":9707,\"services\":[\"VALIDATOR\"]},\"dest\":\"4PS3EDQ3dW1tci1Bp6543CfuuebjFrg36kLAUcskGfaA\",\"identifier\":\"TWwCRQRZ2ZHMJFn9TzLp7W\",\"txnId\":\"aa5e817d7cc626170eca175822029339a444eb0ee8f0bd20d3b0b76e566fb008\",\"type\":\"0\"}";
     public static final String VCX_CONFIG = "{\n" +
-            "\"agency_did\": \"dTLdJqRZLwMuWSogcKfBT\",\n" +
-            "\"agency_verkey\": \"LsPQTDHi294TexkFmZK9Q9vW4YGtQRuLV8wuyZi94yH\",\n" +
-            "\"agency_endpoint\": \"https://cagency.pdev.evernym.com\",\n" +
+            "\"agency_did\": \"VsKV7grR1BUE29mG2Fm2kX\",\n" +
+            "\"agency_verkey\": \"Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR\",\n" +
+            "\"agency_endpoint\": \"http://localhost:8080\",\n" +
             "\"genesis_path\":\"" + POOL_CONFIG + "\",\n" +
             "\"institution_name\": \"institution\",\n" +
             "\"institution_logo_url\": \"http://robohash.org/234\",\n" +
@@ -81,9 +81,9 @@ public class MainActivity extends AppCompatActivity {
             vcx_config = File.createTempFile("vcx_config", ".json", this.getBaseContext().getCacheDir());
             FileWriter vcx_fw = new FileWriter(vcx_config);
             vcx_fw.write("{\n" +
-                    "\"agency_did\": \"dTLdJqRZLwMuWSogcKfBT\",\n" +
-                    "\"agency_verkey\": \"LsPQTDHi294TexkFmZK9Q9vW4YGtQRuLV8wuyZi94yH\",\n" +
-                    "\"agency_endpoint\": \"https://cagency.pdev.evernym.com\",\n" +
+                    "\"agency_did\": \"VsKV7grR1BUE29mG2Fm2kX\",\n" +
+                    "\"agency_verkey\": \"Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR\",\n" +
+                    "\"agency_endpoint\": \"http://localhost:8080\",\n" +
                     "\"genesis_path\":\"" + pool_config.getAbsolutePath() + "\",\n" +
                     "\"institution_name\": \"institution\",\n" +
                     "\"institution_logo_url\": \"http://robohash.org/234\",\n" +

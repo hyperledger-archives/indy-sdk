@@ -8,7 +8,7 @@ use domain::config::WalletStorageConfig;
 use domain::invite::ForwardAgentDetail;
 use failure::{err_msg, Error, Fail};
 use futures::*;
-use indy::{did, pairwise, wallet, pairwise::Pairwise};
+use indy::{did, pairwise, wallet, pairwise::Pairwise, IndyError};
 use std::convert::Into;
 use std::collections::HashMap;
 use utils::futures::*;
@@ -129,6 +129,10 @@ impl Agent {
             })
             .and_then(move |(wallet_handle, did, verkey)| {
                 did::get_did_metadata(wallet_handle, &did)
+                    .then(|res| match res {
+                        Err(IndyError::WalletItemNotFound) => Ok("{}".to_string()),
+                        r => r
+                    })
                     .map(move |metadata| (wallet_handle, did, verkey, metadata))
                     .map_err(|err| err.context("Can't get Agent DID Metadata.").into())
             })

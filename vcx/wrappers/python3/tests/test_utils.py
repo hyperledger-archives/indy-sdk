@@ -4,7 +4,7 @@ from vcx.common import error_message, get_version, update_institution_info
 from vcx.api.utils import vcx_agent_provision, vcx_agent_update_info, vcx_messages_download, vcx_messages_update_status
 from ctypes import *
 
-provisionString = "{\"agency_url\":\"http://localhost:8080/forward_agent\",\"agency_did\":\"VsKV7grR1BUE29mG2Fm2kX\",\"agency_verkey\":\"Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR\",\"wallet_name\":\"test_provision_agent\",\"agent_seed\":null,\"enterprise_seed\":null,\"wallet_key\":\"123\"}"
+provisionString = "{\"agency_url\":\"http://localhost:8080\",\"agency_did\":\"VsKV7grR1BUE29mG2Fm2kX\",\"agency_verkey\":\"Hezce2UWMZ3wUhVkh2LfKSs8nDzWwzs2Win7EzNN3YaR\",\"wallet_name\":\"test_provision_agent\",\"agent_seed\":null,\"enterprise_seed\":null,\"wallet_key\":\"123\"}"
 agentUpdateString = "{\"id\":\"123\",\"value\":\"value\"}"
 updateMessagesString = "[{\"pairwiseDID\":\"QSrw8hebcvQxiwBETmAaRs\",\"uids\":[\"mgrmngq\"]}]"
 

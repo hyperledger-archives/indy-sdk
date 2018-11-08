@@ -30,7 +30,7 @@ pub const EDGE_AGENT_DID_VERKEY: &'static str = "B4aUxMQdPFkwBtcNUgs4fAbJhLSbXjQ
 pub const EDGE_PAIRWISE_DID: &'static str = "BJ8T5EQm8QoVopUR2sd5L2";
 pub const EDGE_PAIRWISE_DID_INFO: &'static str = "{\"did\": \"BJ8T5EQm8QoVopUR2sd5L2\", \"seed\": \"00000000000000000000EdgePairwise\"}";
 pub const EDGE_PAIRWISE_DID_VERKEY: &'static str = "6cTQci8sG8CEr3pNz71yqxbEch8CiNwoNhoUE7unpWkS";
-pub const FORWARD_AGENT_ENDPOINT: &'static str = "http://localhost:8080/forward_agent";
+pub const FORWARD_AGENT_ENDPOINT: &'static str = "http://localhost:8080";
 
 pub const EDGE_PAIRWISE_DID_2: &'static str = "WNnf2uJPZNmvMmA6LkdVAp";
 pub const EDGE_PAIRWISE_DID_INFO_2: &'static str = "{\"did\": \"WNnf2uJPZNmvMmA6LkdVAp\", \"seed\": \"0000000000000000000EdgePairwise2\"}";
