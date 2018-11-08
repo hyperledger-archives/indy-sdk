@@ -4,6 +4,19 @@ use utils::cstring::CStringUtils;
 use self::libc::{c_char, c_void};
 
 use utils::error::{ INVALID_CONFIGURATION, SUCCESS };
+
+/// Set default logger implementation.
+///
+/// Allows library user use `env_logger` logger as default implementation.
+/// More details about `env_logger` and its customization can be found here: https://crates.io/crates/env_logger
+///
+/// #Params
+/// pattern: (optional) pattern that corresponds with the log messages to show.
+///
+/// NOTE: You should specify either `pattern` parameter or `RUST_LOG` environment variable to init logger.
+///
+/// #Returns
+/// u32 error code
 #[no_mangle]
 pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
     check_useful_opt_c_str!(pattern, INVALID_CONFIGURATION.code_num);
@@ -20,6 +33,18 @@ pub extern fn vcx_set_default_logger(pattern: *const c_char) -> u32 {
     }
 }
 
+/// Set custom logger implementation.
+///
+/// Allows library user to provide custom logger implementation as set of handlers.
+///
+/// #Params
+/// context: pointer to some logger context that will be available in logger handlers.
+/// enabled: (optional) "enabled" operation handler - calls to determines if a log record would be logged. (false positive if not specified)
+/// log: "log" operation handler - calls to logs a record.
+/// flush: (optional) "flush" operation handler - calls to flushes buffered records (in case of crash or signal).
+///
+/// #Returns
+/// u32 Error Code
 #[no_mangle]
 pub extern fn vcx_set_logger(context: *const c_void,
                              enabled: Option<EnabledCB>,

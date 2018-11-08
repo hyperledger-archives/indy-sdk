@@ -9,7 +9,6 @@ use url::Url;
 use messages::validation;
 use std::fs;
 use std::io::prelude::*;
-use serde_json::Value;
 
 pub static CONFIG_POOL_NAME: &'static str = "pool_name";
 pub static CONFIG_AGENCY_ENDPOINT: &'static str = "agency_endpoint";

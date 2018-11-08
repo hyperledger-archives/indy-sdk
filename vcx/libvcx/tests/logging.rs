@@ -4,23 +4,15 @@ extern crate libc;
 #[macro_use]
 extern crate log;
 
-#[macro_use]
-extern crate serde_json;
 
 
 use self::libc::{c_void, c_char};
 use std::ptr::null;
-use std::ffi::CString;
 use vcx::api::logger::*;
-use vcx::utils::logger::{LOGGER_STATE, LoggerState, LibvcxDefaultLogger};
+use vcx::utils::logger::{LOGGER_STATE, LoggerState};
 use indy::wallet;
-use vcx::utils::{cstring::CStringUtils, error::SUCCESS};
+use vcx::utils::cstring::CStringUtils;
 use vcx::api::logger::vcx_set_logger;
-use vcx::api::vcx::vcx_init_with_config;
-use vcx::utils::libindy::return_types_u32;
-use std::time::Duration;
-use vcx::settings::{ DEFAULT_PAYMENT_PLUGIN, DEFAULT_PAYMENT_INIT_FUNCTION, DEFAULT_WALLET_KEY, DEFAULT_WALLET_NAME };
-use vcx::utils::devsetup;
 /// These tests can only be run individually as initing the log crate can happen
 /// only once.
 ///
@@ -30,30 +22,15 @@ mod log_tests {
     use super::*;
     use vcx::api::vcx::vcx_error_c_message;
 
-
-    pub type EnabledCB = extern fn(context: *const c_void,
-                                   level: u32,
-                                   target: *const c_char) -> bool;
-
-    pub type LogCB = extern fn(context: *const c_void,
-                               level: u32,
-                               target: *const c_char,
-                               message: *const c_char,
-                               module_path: *const c_char,
-                               file: *const c_char,
-                               line: u32);
-
-    pub type FlushCB = extern fn(context: *const c_void);
-
     static mut COUNT: u32 = 0;
-    extern fn custom_log(context: *const c_void,
-                         level: u32,
-                         target: *const c_char,
+    extern fn custom_log(_context: *const c_void,
+                         _level: u32,
+                         _target: *const c_char,
                          message: *const c_char,
-                         module_path: *const c_char,
-                         file: *const c_char,
-                         line: u32) {
-        let message = CStringUtils::c_str_to_string(message).unwrap();
+                         _module_path: *const c_char,
+                         _file: *const c_char,
+                         _line: u32) {
+        let _message = CStringUtils::c_str_to_string(message).unwrap();
         unsafe { COUNT = COUNT + 1 }
     }
     #[test]
@@ -71,7 +48,6 @@ mod log_tests {
     #[ignore]
     #[test]
     fn test_logging_default_is_warn() {
-        use std::ptr::null_mut;
         // this test should output a single warning line
         assert_eq!(vcx_set_default_logger(null()), 0);
         unsafe { assert_eq!(LOGGER_STATE, LoggerState::Default); }
@@ -107,7 +83,7 @@ mod log_tests {
     #[test]
     fn test_set_logger() {
         unsafe { assert_eq!(COUNT, 0);}
-        let err = vcx_set_logger(null(), None, Some(custom_log), None);
+        let _err = vcx_set_logger(null(), None, Some(custom_log), None);
         debug!("testing debug");
         unsafe { assert!(COUNT > 1); }
 

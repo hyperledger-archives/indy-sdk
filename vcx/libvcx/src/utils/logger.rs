@@ -11,7 +11,6 @@ use std::io::Write;
 #[allow(unused_imports)] use utils::logger;
 use self::env_logger::Builder as EnvLoggerBuilder;
 use self::log::{Level, LevelFilter, Metadata, Record};
-use settings;
 use std::sync::{Once, ONCE_INIT};
 use self::libc::{c_char, c_void};
 use std::env;
@@ -23,7 +22,7 @@ use std::ptr;
 use self::android_logger::Filter;
 use utils::cstring::CStringUtils;
 
-use utils::error::{ SUCCESS, LOGGING_ERROR };
+use utils::error::LOGGING_ERROR;
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
 static LOGGER_INIT: Once = ONCE_INIT;
 static mut CONTEXT: *const c_void = ptr::null();
@@ -93,8 +92,6 @@ impl log::Log for LibvcxLogger {
 
     fn enabled(&self, metadata: &Metadata) -> bool { true }
     fn log(&self, record: &Record) {
-        use std::ptr::null;
-
         let log_cb = self.log;
         let level: u32 = record.level() as u32;
         let target = CStringUtils::string_to_cstring(record.target().to_string());
@@ -106,10 +103,6 @@ impl log::Log for LibvcxLogger {
     }
     fn flush(&self) {}
 }
-
-// going away
-pub struct LoggerUtils {}
-
 
 // From: https://www.tutorialspoint.com/log4j/log4j_logging_levels.htm
 //
@@ -125,19 +118,40 @@ pub struct LibvcxDefaultLogger;
 impl LibvcxDefaultLogger {
     pub fn init(pattern: Option<String>) -> Result<(), u32> {
         let pattern = pattern.or(env::var("RUST_LOG").ok());
-        // This calls
-        // log::set_max_level(logger.filter());
-        // log::set_boxed_logger(Box::new(logger))
-        // which are what set the logger.
-        match EnvLoggerBuilder::new()
-            .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
-            .filter(None, LevelFilter::Off)
-            .parse(pattern.as_ref().map(String::as_str).unwrap_or("warn"))
-            .try_init() {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                error!("Error in logging init: {:?}", e);
-                Err(LOGGING_ERROR.code_num)
+        if cfg!(target_os = "android") {
+            #[cfg(target_os = "android")]
+            let log_filter = match pattern {
+                Some(val) => match val.to_lowercase().as_ref() {
+                    "error" => Filter::default().with_min_level(log::Level::Error),
+                    "warn" => Filter::default().with_min_level(log::Level::Warn),
+                    "info" => Filter::default().with_min_level(log::Level::Info),
+                    "debug" => Filter::default().with_min_level(log::Level::Debug),
+                    "trace" => Filter::default().with_min_level(log::Level::Trace),
+                    _ => Filter::default().with_min_level(log::Level::Error),
+                },
+                None => Filter::default().with_min_level(log::Level::Error)
+            };
+
+            //Set logging to off when deploying production android app.
+            #[cfg(target_os = "android")]
+            android_logger::init_once(log_filter);
+            info!("Logging for Android");
+            Ok(())
+        } else {
+            // This calls
+            // log::set_max_level(logger.filter());
+            // log::set_boxed_logger(Box::new(logger))
+            // which are what set the logger.
+            match EnvLoggerBuilder::new()
+                .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
+                .filter(None, LevelFilter::Off)
+                .parse(pattern.as_ref().map(String::as_str).unwrap_or("warn"))
+                .try_init() {
+                Ok(_) => Ok(()),
+                Err(e) => {
+                    error!("Error in logging init: {:?}", e);
+                    Err(LOGGING_ERROR.code_num)
+                }
             }
         }
     }
@@ -187,78 +201,6 @@ impl LibvcxDefaultLogger {
     }
 }
 
-//impl LoggerUtils {
-//    pub fn init_test_logging(level: &str) {
-//        // logger for testing purposes, sends to stdout (set env RUST_LOG to configure log level
-//        let level = match env::var("RUST_LOG") {
-//            Err(_) => level.to_string(),
-//            Ok(value) =>  value,
-//        };
-//        env::set_var("RUST_LOG", &level);
-//        LOGGER_INIT.call_once(|| {
-//            env_logger::init();
-//        });
-//    }
-//
-//    pub fn init() {
-//
-//        match settings::get_config_value(settings::CONFIG_ENABLE_TEST_MODE) {
-//            Ok(_) => return LoggerUtils::init_test_logging("off"),
-//            Err(x) => (),
-//        };
-//
-//        // turn libindy logging off if RUST_LOG is not specified
-//
-//        match env::var("RUST_LOG") {
-//            Err(_) => {
-//                env::set_var("RUST_LOG", "off");
-//            },
-//            Ok(value) =>  (),
-//        };
-//
-//        LOGGER_INIT.call_once(|| {
-//            // Logging of panics is essential for android. As android does not log to stdout for native code
-//            log_panics::init();
-//            if cfg!(target_os = "android") {
-//                #[cfg(target_os = "android")]
-//                let log_filter = match env::var("RUST_LOG") {
-//                    Ok(val) => match val.to_lowercase().as_ref(){
-//                        "error" => Filter::default().with_min_level(log::Level::Error),
-//                        "warn" => Filter::default().with_min_level(log::Level::Warn),
-//                        "info" => Filter::default().with_min_level(log::Level::Info),
-//                        "debug" => Filter::default().with_min_level(log::Level::Debug),
-//                        "trace" => Filter::default().with_min_level(log::Level::Trace),
-//                        _ => Filter::default().with_min_level(log::Level::Error)
-//                    }
-//                    Err(..) => Filter::default().with_min_level(log::Level::Error)
-//                };
-//
-//                #[cfg(target_os = "android")]
-//                android_logger::init_once(log_filter);
-//                info!("Logging for Android");
-//            } else if cfg!(target_os = "ios") {
-//                #[cfg(target_os = "ios")]
-//                env_logger::Builder::new()
-//                    .format(|buf, record| writeln!(buf, "{:>5}|{:<30}|{:>35}:{:<4}| {}", record.level(), record.target(), record.file().get_or_insert(""), record.line().get_or_insert(0), record.args()))
-//                    .filter(None, LevelFilter::Off)
-//                    .parse(env::var("RUST_LOG").as_ref().map(String::as_str).unwrap_or(""))
-//                    .try_init()
-//                    .ok();
-//                info!("Logging for iOS");
-//            } else {
-//                match settings::get_config_value(settings::CONFIG_LOG_CONFIG) {
-//                    Err(_) => {/* NO-OP - no logging configured */},
-//                    Ok(x) => {
-//                        match log4rs::init_file(&x, Default::default()) {
-//                            Err(e) => println!("invalid log configuration: {}", e),
-//                            Ok(_) => {},
-//                        }
-//                    }
-//                }
-//            }
-//        });
-//    }
-//}
 fn get_level(level: u32) -> Level {
     match level {
         1 => Level::Error,
@@ -269,9 +211,9 @@ fn get_level(level: u32) -> Level {
         _ => unreachable!(),
     }
 }
+
 #[cfg(test)]
 mod tests {
-
     use super::*;
     fn get_custom_context() -> *const c_void {
         ptr::null()
@@ -294,10 +236,6 @@ mod tests {
 
     #[test]
     fn test_logging_get_logger() {
-        use settings::log_settings;
-        use settings::set_config_value;
-        use settings::CONFIG_WALLET_KEY;
-        use settings::set_defaults;
         LibvcxDefaultLogger::init(Some("debug".to_string())).unwrap();
         unsafe {
             let (context, enabled_cb, log_cb, flush_cb) = LOGGER_STATE.get();

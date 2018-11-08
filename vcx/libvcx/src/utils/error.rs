@@ -193,14 +193,11 @@ lazy_static! {
         insert_c_message(&mut m, &INVALID_LEDGER_RESPONSE);
         insert_c_message(&mut m, &THREAD_ERROR);
         insert_c_message(&mut m, &INVALID_PROOF_REQUEST);
-<<<<<<< HEAD
-=======
         insert_c_message(&mut m, &DUPLICATE_SCHEMA);
         insert_c_message(&mut m, &UKNOWN_LIBINDY_TRANSACTION_REJECTION);
         insert_c_message(&mut m, &MISSING_PAYMENT_METHOD);
         insert_c_message(&mut m, &LOGGING_ERROR);
 
->>>>>>> e84b89b93... Adds Logging To Node and Python
         m
     };
 }
