@@ -89,7 +89,6 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Registers custom wallet implementation.
     ///
     /// It allows library user to provide custom wallet implementation.
@@ -107,6 +106,7 @@ impl Wallet {
     /// * `delete` - WalletType delete operation handler
     /// * `free` - Handler that allows to de-allocate strings allocated in caller code
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn register_storage_timeout(xtype: &str,
                                     create: Option<wallet::WalletCreate>,
                                     open: Option<wallet::WalletOpen>,
@@ -186,6 +186,7 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn register_storage_async<F: 'static>(xtype: &str,
                                               create: Option<wallet::WalletCreate>,
                                               open: Option<wallet::WalletOpen>,
@@ -242,7 +243,6 @@ impl Wallet {
                                   free_search,
                                   cb)
     }
-*/
 
     fn _register_storage(command_handle: IndyHandle,
                          xtype: &str,
@@ -319,7 +319,6 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Creates a new secure wallet with the given unique name.
     ///
     /// # Arguments
@@ -328,6 +327,7 @@ impl Wallet {
     /// * `credentials` - Wallet credentials json. List of supported keys are defined by wallet type.
     ///                    if NULL, then default config will be used.
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn create_timeout(config: &str, credentials: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -347,12 +347,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_async<F: 'static>(config: &str, credentials: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_create(command_handle, config, credentials, cb)
     }
-*/
 
     fn _create(command_handle: IndyHandle, config: &str, credentials: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let config = c_str!(config);
@@ -387,7 +387,6 @@ impl Wallet {
         ResultHandler::handle(command_handle, err, receiver)
     }
 
-/*
     /// Opens the wallet with specific name.
     ///
     /// Wallet with corresponded name must be previously created with indy_create_wallet method.
@@ -405,6 +404,7 @@ impl Wallet {
     ///
     /// # Returns
     /// Handle to opened wallet to use in methods that require wallet access.
+    #[cfg(feature="extended_api_types")]
     pub fn open_timeout(config: &str, credentials: &str, timeout: Duration) -> Result<i32, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
 
@@ -430,12 +430,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn open_async<F: 'static>(config: &str, credentials: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, i32) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
 
         Wallet::_open(command_handle, config, credentials, cb)
     }
-*/
 
     fn _open(command_handle: IndyHandle, config: &str, credentials: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
         let config = c_str!(config);
@@ -466,7 +466,6 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Exports opened wallet
     ///
     /// Note this endpoint is EXPERIMENTAL. Function signature and behaviour may change
@@ -480,6 +479,7 @@ impl Wallet {
     ///     "key": passphrase used to derive export key
     ///   }
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn export_timeout(wallet_handle: IndyHandle, export_config: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -504,12 +504,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn export_async<F: 'static>(wallet_handle: IndyHandle, export_config: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_export(command_handle, wallet_handle, export_config, cb)
     }
-*/
 
     fn _export(command_handle: IndyHandle, wallet_handle: IndyHandle, export_config: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let export_config = c_str!(export_config);
@@ -550,7 +550,6 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Creates a new secure wallet with the given unique name and then imports its content
     /// according to fields provided in import_config
     /// This can be seen as an Wallet::create call with additional content import
@@ -575,6 +574,7 @@ impl Wallet {
     ///     "key": passphrase used to derive export key
     ///   }
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn import_timeout(config: &str, credentials: &str, import_config: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -610,12 +610,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn import_async<F: 'static>(config: &str, credentials: &str, import_config: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_import(command_handle, config, credentials, import_config, cb)
     }
-*/
 
     fn _import(command_handle: IndyHandle, config: &str, credentials: &str, import_config: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let config = c_str!(config);
@@ -636,11 +636,11 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Deletes created wallet.
     ///
     /// # Arguments
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn delete_timeout(config: &str, credentials: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -656,12 +656,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn delete_async<F: 'static>(config: &str, credentials: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_delete(command_handle, config, credentials, cb)
     }
-*/
 
     fn _delete(command_handle: IndyHandle, config: &str, credentials: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let config = c_str!(config);
@@ -684,12 +684,12 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Closes opened wallet and frees allocated resources.
     ///
     /// # Arguments
     /// * `handle` - wallet handle returned by Wallet::open.
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn close_timeout(wallet_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -706,12 +706,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn close_async<F: 'static>(wallet_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_close(command_handle, wallet_handle, cb)
     }
-*/
 
     fn _close(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         ErrorCode::from(unsafe { wallet::indy_close_wallet(command_handle, wallet_handle, cb) })
@@ -743,7 +743,6 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Create a new non-secret record in the wallet
     ///
     /// # Arguments
@@ -763,6 +762,7 @@ impl Wallet {
     ///   usage of this tag in complex search queries (comparison, predicates)
     ///   Encrypted tags can be searched only for exact matching
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn add_record_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, tags_json: Option<&str>, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -793,12 +793,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn add_record_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, tags_json: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_add_record(command_handle, wallet_handle, xtype, id, value, tags_json, cb)
     }
-*/
 
     fn _add_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, tags_json: Option<&str>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -831,7 +831,6 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Update a non-secret wallet record value
     ///
     /// # Arguments
@@ -840,6 +839,7 @@ impl Wallet {
     /// * `id` - the id of record
     /// * `value` - the new value of record
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn update_record_value_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -859,12 +859,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn update_record_value_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_update_record_value(command_handle, wallet_handle, xtype, id, value, cb)
     }
-*/
 
     fn _update_record_value(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, value: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -905,7 +905,6 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Update a non-secret wallet record tags
     ///
     /// # Arguments
@@ -923,6 +922,7 @@ impl Wallet {
     ///   usage of this tag in complex search queries (comparison, predicates)
     ///   Encrypted tags can be searched only for exact matching
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn update_record_tags_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -951,12 +951,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn update_record_tags_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_update_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb)
     }
-*/
 
     fn _update_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -994,7 +994,6 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Add new tags to the wallet record
     ///
     /// # Arguments
@@ -1014,6 +1013,7 @@ impl Wallet {
     ///   Note if some from provided tags already assigned to the record than
     ///     corresponding tags values will be replaced
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn add_record_tags_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -1044,12 +1044,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn add_record_tags_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_add_record_tags(command_handle, wallet_handle, xtype, id, tags_json, cb)
     }
-*/
 
     fn _add_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tags_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -1077,7 +1077,6 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Delete tags from the wallet record
     ///
     /// # Arguments
@@ -1087,6 +1086,7 @@ impl Wallet {
     /// * `tag_names_json` - the list of tag names to remove from the record as json array:
     ///   ["tagName1", "tagName2", ...]
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn delete_record_tags_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, tag_names_json: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -1107,12 +1107,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn delete_record_tags_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, tag_names_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_delete_record_tags(command_handle, wallet_handle, xtype, id, tag_names_json, cb)
     }
-*/
 
     fn _delete_record_tags(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, tag_names_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -1138,7 +1138,6 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Delete an existing wallet record in the wallet
     ///
     /// # Arguments
@@ -1146,6 +1145,7 @@ impl Wallet {
     /// * `xtype` - record type
     /// * `id` - the id of record
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn delete_record_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -1164,12 +1164,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn delete_record_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_delete_record(command_handle, wallet_handle, xtype, id, cb)
     }
-*/
 
     fn _delete_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -1208,7 +1208,6 @@ impl Wallet {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Get an wallet record by id
     ///
     /// # Arguments
@@ -1230,6 +1229,7 @@ impl Wallet {
     ///   value: "Some value", // present only if retrieveValue set to true
     ///   tags: <tags json>, // present only if retrieveTags set to true
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn get_record_timeout(wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1254,12 +1254,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn get_record_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Wallet::_get_record(command_handle, wallet_handle, xtype, id, options_json, cb)
     }
-*/
 
     fn _get_record(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, id: &str, options_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -1307,7 +1307,6 @@ impl Wallet {
         ResultHandler::handle(command_handle, err, receiver)
     }
 
-/*
     /// Search for wallet records.
     ///
     /// Note instead of immediately returning of fetched records
@@ -1337,6 +1336,7 @@ impl Wallet {
     /// # Returns
     /// * `search_handle` - Wallet search handle that can be used later
     ///   to fetch records by small batches (with indy_fetch_wallet_search_next_records)
+    #[cfg(feature="extended_api_types")]
     pub fn open_search_timeout(wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str, timeout: Duration) -> Result<IndyHandle, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
 
@@ -1374,12 +1374,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn open_search_async<F: 'static>(wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, IndyHandle) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
 
         Wallet::_open_search(command_handle, wallet_handle, xtype, query_json, options_json, cb)
     }
-*/
 
     fn _open_search(command_handle: IndyHandle, wallet_handle: IndyHandle, xtype: &str, query_json: &str, options_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -1419,7 +1419,6 @@ impl Wallet {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Fetch next records for wallet search.
     ///
     /// Not if there are no records this call returns WalletNoRecords error.
@@ -1441,6 +1440,7 @@ impl Wallet {
     ///       tags: <tags json>, // present only if retrieveTags set to true
     ///   }],
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn fetch_search_next_records_timeout(wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1461,12 +1461,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn fetch_search_next_records_async<F: 'static>(wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Wallet::_fetch_search_next_records(command_handle, wallet_handle, wallet_search_handle, count, cb)
     }
-*/
 
     fn _fetch_search_next_records(command_handle: IndyHandle, wallet_handle: IndyHandle, wallet_search_handle: IndyHandle, count: usize, cb: Option<ResponseStringCB>) -> ErrorCode {
         ErrorCode::from(unsafe {
@@ -1486,12 +1486,12 @@ impl Wallet {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Close wallet search (make search handle invalid)
     ///
     /// # Arguments
     /// * `wallet_search_handle` - wallet search handle
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn close_search_timeout(wallet_search_handle: IndyHandle, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -1508,12 +1508,12 @@ impl Wallet {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn close_search_async<F: 'static>(wallet_search_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Wallet::_close_search(command_handle, wallet_search_handle, cb)
     }
-*/
 
     fn _close_search(command_handle: IndyHandle, wallet_search_handle: IndyHandle, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         ErrorCode::from(unsafe {

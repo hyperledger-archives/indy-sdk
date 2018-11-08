@@ -51,8 +51,8 @@ impl Payment {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn register_method_timeout(payment_method: &str,
                                    create_payment_address: Option<payments::CreatePaymentAddressCB>,
                                    add_request_fees: Option<payments::AddRequestFeesCB>,
@@ -94,6 +94,7 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn register_method_async<F: 'static>(payment_method: &str,
                                              create_payment_address: Option<payments::CreatePaymentAddressCB>,
                                              add_request_fees: Option<payments::AddRequestFeesCB>,
@@ -128,7 +129,6 @@ impl Payment {
                                   parse_verify_payment_response,
                                   cb)
     }
-*/
 
     fn _register_method(command_handle: IndyHandle,
                         payment_method: &str,
@@ -197,7 +197,6 @@ impl Payment {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Create the payment address for specified payment method
     ///
     /// This method generates private part of payment address
@@ -221,6 +220,7 @@ impl Payment {
     ///
     /// # Returns
     /// * `payment_address` - public identifier of payment address in fully resolvable payment address format
+    #[cfg(feature="extended_api_types")]
     pub fn create_payment_address_timeout(wallet_handle: IndyHandle, payment_method: &str, config: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -252,12 +252,12 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn create_payment_address_async<F: 'static>(wallet_handle: IndyHandle, payment_method: &str, config: &str, closure: F) -> ErrorCode where F:FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_create_payment_address(command_handle, wallet_handle, payment_method, config, cb)
     }
-*/
 
     fn _create_payment_address(command_handle: IndyHandle, wallet_handle: IndyHandle, payment_method: &str, config: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let payment_method = c_str!(payment_method);
@@ -281,7 +281,6 @@ impl Payment {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Lists all payment addresses that are stored in the wallet
     ///
     /// # Arguments
@@ -290,6 +289,7 @@ impl Payment {
     ///
     /// # Returns
     /// * `payment_addresses_json` - json array of string with json addresses
+    #[cfg(feature="extended_api_types")]
     pub fn list_payment_addresses_timeout(wallet_handle: IndyHandle, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -306,12 +306,12 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn list_payment_addresses_async<F: 'static>(wallet_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_list_payment_addresses(command_handle, wallet_handle, cb)
     }
-*/
 
     fn _list_payment_addresses(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
         ErrorCode::from(unsafe { payments::indy_list_payment_addresses(command_handle, wallet_handle, cb) })
@@ -365,7 +365,6 @@ impl Payment {
         ResultHandler::str_str(command_handle, err, receiver)
     }
 
-/*
     /// Modifies Indy request by adding information how to pay fees for this transaction
     /// according to selected payment method.
     ///
@@ -402,6 +401,7 @@ impl Payment {
     /// # Returns
     /// * `req_with_fees_json` - modified Indy request with added fees info
     /// * `payment_method`
+    #[cfg(feature="extended_api_types")]
     pub fn add_request_fees_timeout(wallet_handle: IndyHandle,
                                     submitter_did: Option<&str>,
                                     req_json: &str,
@@ -451,6 +451,7 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn add_request_fees_async<F: 'static>(wallet_handle: IndyHandle,
                                               submitter_did: Option<&str>,
                                               req_json: &str,
@@ -462,7 +463,6 @@ impl Payment {
 
         Payment::_add_request_fees(command_handle, wallet_handle, submitter_did, req_json, inputs_json, outputs_json, extra, cb)
     }
-*/
 
     fn _add_request_fees(command_handle: IndyHandle,
                          wallet_handle: IndyHandle,
@@ -515,7 +515,6 @@ impl Payment {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Parses response for Indy request with fees.
     ///
     /// # Arguments
@@ -534,6 +533,7 @@ impl Payment {
     ///      amount: <int>, // amount of tokens in this input
     ///      extra: <str>, // optional data from payment transaction
     ///   }]
+    #[cfg(feature="extended_api_types")]
     pub fn parse_response_with_fees_timeout(payment_method: &str, resp_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -552,11 +552,11 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn parse_response_with_fees_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
         Payment::_parse_response_with_fees(command_handle, payment_method, resp_json, cb)
     }
-*/
 
     fn _parse_response_with_fees(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let payment_method = c_str!(payment_method);
@@ -585,7 +585,6 @@ impl Payment {
         ResultHandler::str_str(command_handle, err, receiver)
     }
 
-/*
     /// Builds Indy request for getting UTXO list for payment address
     /// according to this payment method.
     ///
@@ -598,6 +597,7 @@ impl Payment {
     /// # Returns
     /// * `get_utxo_txn_json` - Indy request for getting UTXO list for payment address
     /// * `payment_method`
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_payment_sources_request_timeout(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_address: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) =
             ClosureHandler::cb_ec_string_string();
@@ -618,11 +618,11 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_payment_sources_request_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_address: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
         Payment::_build_get_payment_sources_request(command_handle, wallet_handle, submitter_did, payment_address, cb)
     }
-*/
 
     fn _build_get_payment_sources_request(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_address: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -654,7 +654,6 @@ impl Payment {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Parses response for Indy request for getting UTXO list.
     ///
     /// # Arguments
@@ -671,6 +670,7 @@ impl Payment {
     ///      amount: <int>, // amount of tokens in this input
     ///      extra: <str>, // optional data from payment transaction
     ///   }]
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_payment_sources_response_timeout(payment_method: &str, resp_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -689,12 +689,12 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_payment_sources_response_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send{
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_parse_get_payment_sources_response(command_handle, payment_method, resp_json, cb)
     }
-*/
 
     fn _parse_get_payment_sources_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let payment_method = c_str!(payment_method);
@@ -735,7 +735,6 @@ impl Payment {
         ResultHandler::str_str(command_handle, err, receiver)
     }
 
-/*
     /// Builds Indy request for doing tokens payment
     /// according to this payment method.
     ///
@@ -761,6 +760,7 @@ impl Payment {
     /// # Returns
     /// * `payment_req_json` - Indy request for doing tokens payment
     /// * `payment_method` 
+    #[cfg(feature="extended_api_types")]
     pub fn build_payment_req_timeout(wallet_handle: IndyHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
         
@@ -793,12 +793,12 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_payment_req_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
         
         Payment::_build_payment_req(command_handle, wallet_handle, submitter_did, inputs, outputs, extra, cb)
     }
-*/
 
     fn _build_payment_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, inputs: &str, outputs: &str, extra: Option<&str>, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -840,7 +840,6 @@ impl Payment {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Parses response for Indy request for payment txn.
     ///
     /// # Arguments
@@ -857,6 +856,7 @@ impl Payment {
     ///      amount: <int>, // amount of tokens in this input
     ///      extra: <str>, // optional data from payment transaction
     ///   }]
+    #[cfg(feature="extended_api_types")]
     pub fn parse_payment_response_timeout(payment_method: &str, resp_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -876,12 +876,12 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn parse_payment_response_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_parse_payment_response(command_handle, payment_method, resp_json, cb)
     }
-*/
 
     fn _parse_payment_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let payment_method = c_str!(payment_method);
@@ -915,7 +915,6 @@ impl Payment {
         ResultHandler::str_str(command_handle, err, receiver)
     }
 
-/*
     /// Builds Indy request for doing tokens minting
     /// according to this payment method.
     ///
@@ -933,6 +932,7 @@ impl Payment {
     /// # Returns
     /// * `mint_req_json`  - Indy request for doing tokens minting
     /// * `payment_method` 
+    #[cfg(feature="extended_api_types")]
     pub fn build_mint_req_timeout(wallet_handle: IndyHandle, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -957,12 +957,12 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_mint_req_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
         Payment::_build_mint_req(command_handle, wallet_handle, submitter_did, outputs_json, extra, cb)
     }
-*/
 
     fn _build_mint_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, outputs_json: &str, extra: Option<&str>, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -995,7 +995,6 @@ impl Payment {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Builds Indy request for setting fees for transactions in the ledger
     ///
     /// # Arguments
@@ -1012,6 +1011,7 @@ impl Payment {
     ///
     /// # Returns
     /// * `set_txn_fees_json`  - Indy request for setting fees for transactions in the ledger
+    #[cfg(feature="extended_api_types")]
     pub fn build_set_txn_fees_req_timeout(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, fees_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1036,12 +1036,12 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_set_txn_fees_req_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, fees_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_build_set_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, fees_json, cb)
     }
-*/
 
     fn _build_set_txn_fees_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, fees_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -1069,7 +1069,6 @@ impl Payment {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Builds Indy get request for getting fees for transactions in the ledger
     ///
     /// # Arguments
@@ -1081,6 +1080,7 @@ impl Payment {
     ///
     /// # Returns
     /// * `get_txn_fees_json` - Indy request for getting fees for transactions in the ledger
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_txn_fees_req_timeout(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1100,11 +1100,11 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_get_txn_fees_req_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
         Payment::_build_get_txn_fees_req(command_handle, wallet_handle, submitter_did, payment_method, cb)
     }
-*/
 
     fn _build_get_txn_fees_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, payment_method: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -1135,7 +1135,6 @@ impl Payment {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Parses response for Indy request for getting fees
     ///
     /// # Arguments
@@ -1151,6 +1150,7 @@ impl Payment {
     ///   .................
     ///   txnTypeN: amountN,
     /// }
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_txn_fees_response_timeout(payment_method: &str, resp_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1169,12 +1169,12 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn parse_get_txn_fees_response_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_parse_get_txn_fees_response(command_handle, payment_method, resp_json, cb)
     }
-*/
 
     fn _parse_get_txn_fees_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let payment_method = c_str!(payment_method);
@@ -1191,8 +1191,8 @@ impl Payment {
         ResultHandler::str_str(command_handle, err, receiver)
     }
 
-/*
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn build_verify_req_timeout(wallet_handle: IndyHandle, submitter_did: Option<&str>, receipt: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -1205,12 +1205,12 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn build_verify_req_async<F: 'static>(wallet_handle: IndyHandle, submitter_did: Option<&str>, receipt: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
         Payment::_build_verify_req(command_handle, wallet_handle, submitter_did, receipt, cb)
     }
-*/
 
     fn _build_verify_req(command_handle: IndyHandle, wallet_handle: IndyHandle, submitter_did: Option<&str>, receipt: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let submitter_did_str = opt_c_str!(submitter_did);
@@ -1229,8 +1229,8 @@ impl Payment {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn parse_verify_response_timeout(payment_method: &str, resp_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -1243,12 +1243,12 @@ impl Payment {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn parse_verify_response_async<F: 'static>(payment_method: &str, resp_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Payment::_parse_verify_response(command_handle, payment_method, resp_json, cb)
     }
-*/
 
     fn _parse_verify_response(command_handle: IndyHandle, payment_method: &str, resp_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let payment_method = c_str!(payment_method);

@@ -24,6 +24,7 @@ use utils::constants::{INVALID_TIMEOUT, VALID_TIMEOUT};
 use utils::constants::PROTOCOL_VERSION;
 use utils::setup::{Setup, SetupConfig};
 use utils::wallet::Wallet;
+#[allow(unused_imports)]
 use futures::Future;
 
 const REQUEST_JSON: &str = r#"{

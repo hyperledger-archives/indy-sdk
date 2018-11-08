@@ -21,6 +21,7 @@ mod utils;
 use utils::constants::{DEFAULT_CREDENTIALS, INVALID_HANDLE, METADATA};
 use utils::file::{TempDir, TempFile};
 use utils::rand;
+#[allow(unused_imports)]
 use futures::Future;
 
 #[cfg(feature="extended_api_types")]
@@ -91,6 +92,7 @@ mod test_wallet_register {
 mod test_wallet_create {
     use super::*;
     const CREDENTIALS: &str = r#"{"key":"9DXvkIMD7iSgD&RT$XYjHo0t"}"#;
+    use futures::Future;
 
     #[test]
     fn create_default_wallet() {
@@ -248,6 +250,7 @@ mod test_wallet_create {
 #[cfg(test)]
 mod test_wallet_delete {
     use super::*;
+    use futures::Future;
 
     #[inline]
     fn assert_wallet_deleted(config: &str, credentials: &str) {

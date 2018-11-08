@@ -25,6 +25,7 @@ use utils::constants::{
 use utils::setup::{Setup, SetupConfig};
 use utils::wallet::Wallet;
 
+#[allow(unused_imports)]
 use futures::Future;
 
 #[cfg(feature="extended_api_types")]

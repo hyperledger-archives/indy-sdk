@@ -49,7 +49,6 @@ impl Did {
         ResultHandler::str_str(command_handle, err, receiver)
     }
 
-/*
     /// Creates keys (signing and encryption keys) for a new
     /// DID (owned by the caller of the library).
     /// Identity's DID must be either explicitly provided, or taken as the first 16 bit of verkey.
@@ -77,6 +76,7 @@ impl Did {
     /// # Returns
     ///   * `did` - DID generated and stored in the wallet
     ///   * `verkey` - The DIDs verification key
+    #[cfg(feature="extended_api_types")]
     pub fn new_timeout(wallet_handle: IndyHandle, did_json: &str, timeout: Duration) -> Result<(String, String), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_string();
 
@@ -112,12 +112,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn new_async<F: 'static>(wallet_handle: IndyHandle, did_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_string(Box::new(closure));
 
         Did::_new(command_handle, wallet_handle, did_json, cb)
     }
-*/
 
     fn _new(command_handle: IndyHandle, wallet_handle: IndyHandle, did_json: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let did_json = c_str!(did_json);
@@ -151,7 +151,6 @@ impl Did {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Generated temporary keys (signing and encryption keys) for an existing
     /// DID (owned by the caller of the library).
     ///
@@ -172,6 +171,7 @@ impl Did {
     ///
     /// # Returns
     /// * `verkey` - The DIDs verification key
+    #[cfg(feature="extended_api_types")]
     pub fn replace_keys_start_timeout(wallet_handle: IndyHandle, tgt_did: &str, identity_json: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -200,12 +200,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn replace_keys_start_async<F: 'static>(wallet_handle: IndyHandle, tgt_did: &str, identity_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_replace_keys_start(command_handle, wallet_handle, tgt_did, identity_json, cb)
     }
-*/
 
     fn _replace_keys_start(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, identity_json: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
@@ -227,13 +227,13 @@ impl Did {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Apply temporary keys as main for an existing DID (owned by the caller of the library).
     ///
     /// # Arguments
     /// * `wallet_handle` - wallet handler (created by Wallet::open).
     /// * `tgt_did` - DID stored in the wallet
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn replace_keys_apply_timeout(wallet_handle: IndyHandle, tgt_did: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -251,12 +251,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn replace_keys_apply_async<F: 'static>(wallet_handle: IndyHandle, tgt_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Did::_replace_keys_apply(command_handle, wallet_handle, tgt_did, cb)
     }
-*/
     
     fn _replace_keys_apply(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
@@ -284,7 +284,6 @@ impl Did {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Saves their DID for a pairwise connection in a secured Wallet,
     /// so that it can be used to verify transaction.
     ///
@@ -298,6 +297,7 @@ impl Did {
     ///        "did": string, (required)
     ///        "verkey": string (optional, can be avoided if did is cryptonym: did == verkey),
     ///     }
+    #[cfg(feature="extended_api_types")]
     pub fn store_their_did_timeout(wallet_handle: IndyHandle, identity_json: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -322,12 +322,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn store_their_did_async<F: 'static>(wallet_handle: IndyHandle, identity_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Did::_store_their_did(command_handle, wallet_handle, identity_json, cb)
     }
-*/
 
     fn _store_their_did(command_handle: IndyHandle, wallet_handle: IndyHandle, identity_json: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let identity_json = c_str!(identity_json);
@@ -363,7 +363,6 @@ impl Did {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Returns ver key (key id) for the given DID.
     ///
     /// "Did::get_ver_key" call follow the idea that we resolve information about their DID from
@@ -385,6 +384,7 @@ impl Did {
     ///
     /// # Returns
     /// * `key` - The DIDs ver key (key id).
+    #[cfg(feature="extended_api_types")]
     pub fn get_ver_key_timeout(pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -414,12 +414,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn get_ver_key_async<F: 'static>(pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_get_ver_key(command_handle, pool_handle, wallet_handle, did, cb)
     }
-*/
 
     fn _get_ver_key(command_handle: IndyHandle, pool_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let did = c_str!(did);
@@ -452,7 +452,6 @@ impl Did {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Returns ver key (key id) for the given DID.
     ///
     /// "Did::get_ver_key_did" call looks data stored in the local wallet only and skips freshness
@@ -471,6 +470,7 @@ impl Did {
     ///
     /// # Returns
     /// * `key` - The DIDs ver key (key id).
+    #[cfg(feature="extended_api_types")]
     pub fn get_ver_key_local_timeout(wallet_handle: IndyHandle, did: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -497,12 +497,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn get_ver_key_local_async<F: 'static>(wallet_handle: IndyHandle, did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_get_ver_key_local(command_handle, wallet_handle, did, cb)
     }
-*/
     
     fn _get_ver_key_local(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let did = c_str!(did);
@@ -525,7 +525,6 @@ impl Did {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Set/replaces endpoint information for the given DID.
     ///
     /// # Arguments
@@ -534,6 +533,7 @@ impl Did {
     /// * `address` -  The DIDs endpoint address.
     /// * `transport_key` - The DIDs transport key (ver key, key id).
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn set_endpoint_timeout(wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -553,12 +553,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn set_endpoint_async<F: 'static>(wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Did::_set_endpoint(command_handle, wallet_handle, did, address, transport_key, cb)
     }
-*/
     
     fn _set_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, did: &str, address: &str, transport_key: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let did = c_str!(did);
@@ -585,7 +585,6 @@ impl Did {
         ResultHandler::str_optstr(command_handle, err, receiver)
     }
 
-/*
     /// Returns endpoint information for the given DID.
     ///
     /// # Arguments
@@ -596,6 +595,7 @@ impl Did {
     /// # Returns
     /// * `endpoint` - The DIDs endpoint.
     /// * `transport_vk` - The DIDs transport key (ver key, key id).
+    #[cfg(feature="extended_api_types")]
     pub fn get_endpoint_timeout(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, timeout: Duration) -> Result<(String, Option<String>), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string_opt_string();
 
@@ -613,12 +613,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn get_endpoint_async<F: 'static>(wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String, Option<String>) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string_opt_string(Box::new(closure));
 
         Did::_get_endpoint(command_handle, wallet_handle, pool_handle, did, cb)
     }
-*/
 
     fn _get_endpoint(command_handle: IndyHandle, wallet_handle: IndyHandle, pool_handle: IndyHandle, did: &str, cb: Option<ResponseStringStringCB>) -> ErrorCode {
         let did = c_str!(did);
@@ -640,7 +640,6 @@ impl Did {
         ResultHandler::empty(command_handle, err, receiver)
     }
 
-/*
     /// Saves/replaces the meta information for the giving DID in the wallet.
     ///
     /// # Arguments
@@ -648,6 +647,7 @@ impl Did {
     /// * `did` - the DID to store metadata.
     /// * `metadata`  - the meta information that will be store with the DID.
     /// * `timeout` - the maximum time this function waits for a response
+    #[cfg(feature="extended_api_types")]
     pub fn set_metadata_timeout(wallet_handle: IndyHandle, tgt_did: &str, metadata: &str, timeout: Duration) -> Result<(), ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
 
@@ -666,12 +666,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn set_metadata_async<F: 'static>(wallet_handle: IndyHandle, tgt_did: &str, metadata: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
 
         Did::_set_metadata(command_handle, wallet_handle, tgt_did, metadata, cb)
     }
-*/
     
     fn _set_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, metadata: &str, cb: Option<ResponseEmptyCB>) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
@@ -696,7 +696,6 @@ impl Did {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Retrieves the meta information for the giving DID in the wallet.
     ///
     /// # Arguments
@@ -706,6 +705,7 @@ impl Did {
     ///
     /// #Returns
     /// * `metadata`  - The meta information stored with the DID; Can be null if no metadata was saved for this DID.
+    #[cfg(feature="extended_api_types")]
     pub fn get_metadata_timeout(wallet_handle: IndyHandle, tgt_did: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -723,12 +723,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn get_metadata_async<F: 'static>(wallet_handle: IndyHandle, tgt_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_get_metadata(command_handle, wallet_handle, tgt_did, cb)
     }
-*/
     
     fn _get_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, tgt_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);
@@ -756,7 +756,6 @@ impl Did {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Retrieves the information about the giving DID in the wallet.
     ///
     /// # Arguments
@@ -770,6 +769,7 @@ impl Did {
     ///     "verkey": string - The DIDs transport key (ver key, key id),
     ///     "metadata": string - The meta information stored with the DID
     ///   }
+    #[cfg(feature="extended_api_types")]
     pub fn get_my_metadata_timeout(wallet_handle: IndyHandle, my_did: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -787,12 +787,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn get_my_metadata_async<F: 'static>(wallet_handle: IndyHandle, my_did: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_get_my_metadata(command_handle, wallet_handle, my_did, cb)
     }
-*/
     
     fn _get_my_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, my_did: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let my_did = c_str!(my_did);
@@ -820,7 +820,6 @@ impl Did {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Retrieves the information about all DIDs stored in the wallet.
     ///
     /// # Arguments
@@ -833,6 +832,7 @@ impl Did {
     ///     "verkey": string - The DIDs transport key (ver key, key id).,
     ///     "metadata": string - The meta information stored with the DID
     ///   }]
+    #[cfg(feature="extended_api_types")]
     pub fn list_with_metadata_timeout(wallet_handle: IndyHandle, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -849,12 +849,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn list_with_metadata_async<F: 'static>(wallet_handle: IndyHandle, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_list_with_metadata(command_handle, wallet_handle, cb)
     }
-*/
     
     fn _list_with_metadata(command_handle: IndyHandle, wallet_handle: IndyHandle, cb: Option<ResponseStringCB>) -> ErrorCode {
         ErrorCode::from(unsafe { did::indy_list_my_dids_with_meta(command_handle, wallet_handle, cb) })
@@ -876,7 +876,6 @@ impl Did {
         ResultHandler::str(command_handle, err, receiver)
     }
 
-/*
     /// Retrieves abbreviated verkey if it is possible otherwise return full verkey.
     ///
     /// # Arguments
@@ -886,6 +885,7 @@ impl Did {
     ///
     /// #Returns
     ///  * `verkey` - The DIDs verification key in either abbreviated or full form
+    #[cfg(feature="extended_api_types")]
     pub fn abbreviate_verkey_timeout(tgt_did: &str, verkey: &str, timeout: Duration) -> Result<String, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
 
@@ -903,12 +903,12 @@ impl Did {
     ///
     /// # Returns
     /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
+    #[cfg(feature="extended_api_types")]
     pub fn abbreviate_verkey_async<F: 'static>(tgt_did: &str, verkey: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, String) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
 
         Did::_abbreviate_verkey(command_handle, tgt_did, verkey, cb)
     }
-*/
     
     fn _abbreviate_verkey(command_handle: IndyHandle, tgt_did: &str, verkey: &str, cb: Option<ResponseStringCB>) -> ErrorCode {
         let tgt_did = c_str!(tgt_did);

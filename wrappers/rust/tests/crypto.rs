@@ -9,11 +9,15 @@ mod utils;
 
 use indy::crypto::{Key, Crypto};
 use indy::wallet::Wallet;
+#[cfg(feature="extended_api_types")]
 use indy::ErrorCode;
 
+#[cfg(feature="extended_api_types")]
 use std::time::Duration;
+#[cfg(feature="extended_api_types")]
 use std::sync::mpsc::channel;
 
+#[allow(unused_imports)]
 use futures::Future;
 
 use utils::constants::DEFAULT_CREDENTIALS;

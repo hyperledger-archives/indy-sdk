@@ -20,7 +20,7 @@ impl Blob {
         ResultHandler::handle(command_handle, err, receiver)
     }
 
-/*
+    #[cfg(feature="extended_api_types")]
     pub fn open_reader_timeout(xtype: &str, config_json: &str, timeout: Duration) -> Result<IndyHandle, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
 
@@ -29,12 +29,12 @@ impl Blob {
         ResultHandler::one_timeout(err, receiver, timeout)
     }
 
+    #[cfg(feature="extended_api_types")]
     pub fn open_reader_async<F: 'static>(xtype: &str, config_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, IndyHandle) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
 
         Blob::_open_reader(command_handle, xtype, config_json, cb)
     }
-*/
 
     fn _open_reader(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
         let xtype = c_str!(xtype);
@@ -51,7 +51,7 @@ impl Blob {
         ResultHandler::handle(command_handle, err, receiver)
     }
 
-/*
+    #[cfg(feature="extended_api_types")]
     pub fn open_writer_timeout(xtype: &str, config_json: &str, timeout: Duration) -> Result<IndyHandle, ErrorCode> {
         let (receiver, command_handle, cb) = ClosureHandler::cb_ec_i32();
 
@@ -60,12 +60,12 @@ impl Blob {
         ResultHandler::one_timeout(err, receiver, timeout)
     }
 
+    #[cfg(feature="extended_api_types")]
     pub fn open_writer_async<F: 'static>(xtype: &str, config_json: &str, closure: F) -> ErrorCode where F: FnMut(ErrorCode, IndyHandle) + Send {
         let (command_handle, cb) = ClosureHandler::convert_cb_ec_i32(Box::new(closure));
 
         Blob::_open_writer(command_handle, xtype, config_json, cb)
     }
-*/
 
     fn _open_writer(command_handle: IndyHandle, xtype: &str, config_json: &str, cb: Option<ResponseI32CB>) -> ErrorCode {
         let xtype = c_str!(xtype);

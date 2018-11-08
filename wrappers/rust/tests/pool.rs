@@ -15,6 +15,7 @@ use std::time::Duration;
 use std::sync::mpsc::channel;
 use indy::ErrorCode;
 use indy::pool::Pool;
+#[allow(unused_imports)]
 use futures::Future;
 
 #[cfg(test)]

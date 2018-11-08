@@ -7,6 +7,7 @@ extern crate futures;
 #[macro_use]
 mod utils;
 
+#[allow(unused_imports)]
 use futures::Future;
 
 use utils::wallet::Wallet;
