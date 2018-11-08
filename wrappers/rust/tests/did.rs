@@ -1794,11 +1794,13 @@ mod test_list_with_metadata {
             json!({
                 "did": did1,
                 "verkey": verkey1,
-                "metadata": Some(METADATA.to_string())
+                "tempVerkey": null,
+                "metadata": Some(METADATA.to_string()),
             }),
             json!({
                 "did": did2,
                 "verkey": verkey2,
+                "tempVerkey": null,
                 "metadata": null
             })
         ];
@@ -1848,6 +1850,7 @@ mod test_list_with_metadata {
         let expected = json!([{
             "did": VERKEY_1,
             "verkey": VERKEY_1,
+            "tempVerkey": null,
             "metadata": null
         }]);
 
@@ -1867,6 +1870,7 @@ mod test_list_with_metadata {
         let expected = json!([{
             "did": DID_1,
             "verkey": VERKEY_1,
+            "tempVerkey": null,
             "metadata": METADATA
         }]);
 

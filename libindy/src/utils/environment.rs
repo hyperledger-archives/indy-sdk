@@ -2,7 +2,6 @@ extern crate dirs;
 
 use std::env;
 use std::path::PathBuf;
-use std::fs;
 
 pub fn indy_home_path() -> PathBuf {
     // TODO: FIXME: Provide better handling for the unknown home path case!!!
@@ -14,7 +13,6 @@ pub fn indy_home_path() -> PathBuf {
     path.push(indy_client_dir);
 
     if cfg!(target_os = "android") {
-        android_create_indy_client_dir();
         path = android_indy_client_dir_path();
     }
     path
@@ -31,11 +29,6 @@ pub fn android_indy_client_dir_path() -> PathBuf {
     }
 
     PathBuf::from(android_dir)
-}
-
-pub fn android_create_indy_client_dir() {
-    //Creates directory only if it is not present.
-    fs::create_dir_all(android_indy_client_dir_path().as_path()).unwrap();
 }
 
 pub fn wallet_home_path() -> PathBuf {
@@ -84,6 +77,12 @@ mod tests {
         assert!(path.is_absolute());
         assert!(path.has_root());
         assert!(path.to_string_lossy().contains(".indy_client"));
+    }
+
+    #[test]
+    fn indy_home_path_works_twice() {
+        indy_home_path();
+        indy_home_path();
     }
 
     #[test]

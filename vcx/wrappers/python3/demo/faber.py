@@ -1,8 +1,8 @@
 import asyncio
 import json
-import os
-import sys
 import random
+from ctypes import cdll
+from time import sleep
 
 from vcx.api.vcx_init import vcx_init_with_config
 from vcx.api.connection import Connection
@@ -10,11 +10,8 @@ from vcx.api.issuer_credential import IssuerCredential
 from vcx.api.proof import Proof
 from vcx.api.schema import Schema
 from vcx.api.credential_def import CredentialDef
-from vcx.api.wallet import Wallet
 from vcx.state import State, ProofState
-from time import sleep
 from vcx.api.utils import vcx_agent_provision
-from vcx.common import mint_tokens
 import vcx.api.logging as logging
 from ctypes import cdll
 
@@ -23,14 +20,17 @@ from ctypes import cdll
 # 'agency_verkey': public verkey of the agency
 # 'wallet_name': name for newly created encrypted wallet
 # 'wallet_key': encryption key for encoding wallet
+# 'payment_method': method that will be used for payments
 provisionConfig = {
-  'agency_url':'https://agency-ea-sandbox.evernym.com',
-  'agency_did':'HB7qFQyFxx4ptjKqioEtd8',
-  'agency_verkey':'9pJkfHyfJMZjUjS7EZ2q2HX55CbFQPKpQ9eTjSAUMLU8',
-  'wallet_name':'faber_wallet',
-  'wallet_key':'123',
-  'enterprise_seed':'000000000000000000000000Trustee1'
+  'agency_url': 'http://sbx-eas.pdev.evernym.com',
+  'agency_did': 'HB7qFQyFxx4ptjKqioEtd8',
+  'agency_verkey': '9pJkfHyfJMZjUjS7EZ2q2HX55CbFQPKpQ9eTjSAUMLU8',
+  'wallet_name': 'faber_wallet',
+  'wallet_key': '123',
+  'enterprise_seed': '000000000000000000000000Trustee1',
+  'payment_method': 'null',
 }
+
 
 async def main():
 
@@ -51,12 +51,12 @@ async def main():
 
 
     print("#3 Create a new schema on the ledger")
-    version = format("%d.%d.%d" % (random.randint(1,101),random.randint(1,101),random.randint(1,101)))
-    schema = await Schema.create('schema_uuid','degree schema',version,['name','date','degree'],0)
+    version = format("%d.%d.%d" % (random.randint(1, 101), random.randint(1, 101), random.randint(1, 101)))
+    schema = await Schema.create('schema_uuid', 'degree schema', version, ['name', 'date', 'degree'], 0)
     schema_id = await schema.get_schema_id()
 
     print("#4 Create a new credential definition on the ledger")
-    cred_def = await CredentialDef.create('credef_uuid','degree',schema_id,0)
+    cred_def = await CredentialDef.create('credef_uuid', 'degree', schema_id, 0)
     cred_def_id = await cred_def.get_cred_def_id()
 
     print("#5 Create a connection to alice and print out the invite details")
@@ -82,7 +82,7 @@ async def main():
     }
 
     print("#12 Create an IssuerCredential object using the schema and credential definition")
-    credential = await IssuerCredential.create('alice_degree',schema_attrs,cred_def_id,'cred',0)
+    credential = await IssuerCredential.create('alice_degree', schema_attrs, cred_def_id, 'cred', '0')
 
     print("#13 Issue credential offer to alice")
     await credential.send_offer(connection_to_alice)
@@ -113,7 +113,7 @@ async def main():
     ]
 
     print("#19 Create a Proof object")
-    proof = await Proof.create('proof_uuid','proof_from_alice', proof_attrs)
+    proof = await Proof.create('proof_uuid', 'proof_from_alice', proof_attrs)
 
     print("#20 Request proof of degree from alice")
     await proof.request_proof(connection_to_alice)

@@ -17,14 +17,11 @@ if [ "$BUILD_UNDERWAY" != "-" ]; then
     echo "The output from this script will not reflect the correct status of the full build!"
 fi
 
-# Verify that libindy, libnullpay, and libvcx built correctly for android...
+# Verify that libindy, and libvcx built correctly for android...
 cd $START_DIR
 grep "error:" ./mac.03.libindy.build.sh.out
 echo "-----------------------------------------------------------------------------------------------------------------------------------------------"
 cd $WORK_DIR/vcx-indy-sdk/libindy/target
-ls -al `find . -name "*.so"`
-echo "-----------------------------------------------------------------------------------------------------------------------------------------------"
-cd $WORK_DIR/vcx-indy-sdk/libnullpay/target
 ls -al `find . -name "*.so"`
 echo "-----------------------------------------------------------------------------------------------------------------------------------------------"
 cd $START_DIR

@@ -275,10 +275,12 @@ impl DidCommandExecutor {
 
         let did = self.wallet_service.get_indy_object::<Did>(wallet_handle, &my_did, &RecordOptions::id_value())?;
         let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did, &RecordOptions::id_value())?;
+        let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did, &RecordOptions::id_value())?;
 
         let did_with_meta = DidWithMeta {
             did: did.did,
             verkey: did.verkey,
+            temp_verkey: temp_verkey.map(|tv| tv.verkey),
             metadata: metadata.map(|m|m.value)
         };
 
@@ -307,10 +309,12 @@ impl DidCommandExecutor {
                 .ok_or(CommonError::InvalidStructure(format!("Cannot deserialize Did: {:?}", did_id)))?;
 
             let metadata = self.wallet_service.get_indy_opt_object::<DidMetadata>(wallet_handle, &did.did, &RecordOptions::id_value())?;
+            let temp_verkey = self.wallet_service.get_indy_opt_object::<TemporaryDid>(wallet_handle, &did.did, &RecordOptions::id_value())?;
 
             let did_with_meta = DidWithMeta {
                 did: did.did,
                 verkey: did.verkey,
+                temp_verkey: temp_verkey.map(|tv| tv.verkey),
                 metadata: metadata.map(|m|m.value)
             };
 
