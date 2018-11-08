@@ -283,6 +283,9 @@ def vcxTesting(file, env_name, network_name) {
                     jobs["${env_name}-vcx-java-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting)
                     }
+                    jobs["${env_name}-vcx-python-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting)
+                    }
                 }
                 parallel(jobs)
             },
@@ -316,6 +319,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
         sh "cp libindy/target/debug/libindy.so vcx/libvcx"
         sh "cp libindy/target/debug/libindy.so vcx/wrappers/node"
         sh "cp libindy/target/debug/libindy.so vcx/wrappers/java"
+        sh "cp libindy/target/debug/libindy.so vcx/wrappers/python3"
 
         dir('libnullpay') {
             echo "${env_name} Libnullpay Test: Build docker image"
@@ -330,6 +334,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
         sh "cp libnullpay/target/debug/libnullpay.so vcx/libvcx"
         sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/node"
         sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/java"
+        sh "cp libnullpay/target/debug/libnullpay.so vcx/wrappers/python3"
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
@@ -340,6 +345,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
         stash includes: 'vcx/libvcx/libindy.so,vcx/libvcx/libnullpay.so', name: "VCXLibindyAndLibnullpaySO${env_name}"
         stash includes: 'vcx/wrappers/node/libindy.so,vcx/wrappers/node/libnullpay.so', name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
         stash includes: 'vcx/wrappers/java/libindy.so,vcx/wrappers/java/libnullpay.so', name: "VcxJavaLibindyAndLibnullpaySO${env_name}"
+        stash includes: 'vcx/wrappers/python3/libindy.so,vcx/wrappers/python3/libnullpay.so', name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
 
         libindyBuildFinished[env_name] = true
 
@@ -389,9 +395,11 @@ def linuxVcxBuild(file, env_name) {
 
     sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/node"
     sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/java"
+    sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/python3"
 
     stash includes: 'vcx/wrappers/node/libvcx.so', name: "VcxNodeLibvcxSO${env_name}"
     stash includes: 'vcx/wrappers/java/libvcx.so', name: "VcxJavaLibvcxSO${env_name}"
+    stash includes: 'vcx/wrappers/python3/libvcx.so', name: "VcxPythonLibvcxSO${env_name}"
 
     libvcxBuildFinished[env_name] = true
 
@@ -500,6 +508,22 @@ def linuxVcxJavaTesting(env_name, network_name, testEnv) {
 
         testEnv.inside("--network=${network_name}") {
             sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH}  ./gradlew --no-daemon test'
+        }
+    }
+}
+
+def linuxVcxPythonTesting(env_name, network_name, testEnv) {
+    unstash name: "VcxPythonLibvcxSO${env_name}"
+    unstash name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
+
+    dir('vcx/wrappers/python3') {
+        testEnv.inside("--network=${network_name}") {
+            echo "${env_name} Vcx Test: Test python wrapper"
+
+            sh '''
+                    python3.5 -m pip install --user pytest==3.4.2 qrcode pytest-asyncio
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest -s
+            '''
         }
     }
 }

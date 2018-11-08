@@ -226,6 +226,9 @@ def vcxTesting(file, env_name, network_name, stashBuildResults) {
                     jobs["${env_name}-vcx-java-test"] = {
                         linuxModuleTesting(file, env_name, network_name, this.&linuxVcxJavaTesting, stashBuildResults)
                     }
+                    jobs["${env_name}-vcx-python-test"] = {
+                        linuxModuleTesting(file, env_name, network_name, this.&linuxVcxPythonTesting, stashBuildResults)
+                    }
                 }
                 parallel(jobs)
             },
@@ -267,6 +270,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
         sh "cp libindy/target/release/libindy.so vcx/libvcx"
         sh "cp libindy/target/release/libindy.so vcx/wrappers/node"
         sh "cp libindy/target/release/libindy.so vcx/wrappers/java"
+        sh "cp libindy/target/release/libindy.so vcx/wrappers/python3"
 
         dir('libnullpay') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
@@ -283,6 +287,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
         sh "cp libnullpay/target/release/libnullpay.so vcx/libvcx"
         sh "cp libnullpay/target/release/libnullpay.so vcx/wrappers/node"
         sh "cp libnullpay/target/release/libnullpay.so vcx/wrappers/java"
+        sh "cp libnullpay/target/release/libnullpay.so vcx/wrappers/python3"
 
         stash includes: 'wrappers/java/lib/libindy.so', name: "LibindyJavaSO${env_name}"
         stash includes: 'wrappers/python/libindy.so', name: "LibindyPythonSO${env_name}"
@@ -293,6 +298,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
         stash includes: 'vcx/libvcx/libindy.so,vcx/libvcx/libnullpay.so', name: "VCXLibindyAndLibnullpaySO${env_name}"
         stash includes: 'vcx/wrappers/node/libindy.so,vcx/wrappers/node/libnullpay.so', name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
         stash includes: 'vcx/wrappers/java/libindy.so,vcx/wrappers/java/libnullpay.so', name: "VcxJavaLibindyAndLibnullpaySO${env_name}"
+        stash includes: 'vcx/wrappers/python3/libindy.so,vcx/wrappers/python3/libnullpay.so', name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
 
         libindyBuildFinished[env_name] = true
 
@@ -345,9 +351,11 @@ def linuxVcxBuild(file, env_name, stashBuildResults) {
 
     sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/node"
     sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/java"
+    sh "cp vcx/libvcx/target/release/libvcx.so vcx/wrappers/python3"
 
     stash includes: 'vcx/wrappers/node/libvcx.so', name: "VcxNodeLibvcxSO${env_name}"
     stash includes: 'vcx/wrappers/java/libvcx.so', name: "VcxJavaLibvcxSO${env_name}"
+    stash includes: 'vcx/wrappers/python3/libvcx.so', name: "VcxPythonLibvcxSO${env_name}"
 
     libvcxBuildFinished[env_name] = true
 
@@ -462,6 +470,23 @@ def linuxVcxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
 
         testEnv.inside("--network=${network_name}") {
             sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH}  ./gradlew --no-daemon test'
+        }
+    }
+}
+
+def linuxVcxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
+    unstash name: "VcxPythonLibvcxSO${env_name}"
+    unstash name: "VcxPythonLibindyAndLibnullpaySO${env_name}"
+    dir('vcx/wrappers/python3') {
+
+
+        testEnv.inside {
+            echo "${env_name} Vcx Test: Test python wrapper"
+
+            sh '''
+                    python3.5 -m pip install --user pytest==3.4.2 qrcode pytest-asyncio
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} python3.5 -m pytest -s
+            '''
         }
     }
 }
@@ -733,13 +758,14 @@ def ubuntuPublishing() {
                 testEnv = dockerHelpers.build('indy-sdk', 'libindy/ci/ubuntu.dockerfile libindy/ci')
 
                 libindyDebPublishing(testEnv, libindyVersion)
-                pythonWrapperPublishing(testEnv, false)
+                pythonWrapperPublishing(testEnv, false, 'wrappers/python')
                 javaWrapperPublishing(testEnv, false)
                 rustWrapperPublishing(testEnv, false)
                 libindyCliDebPublishing(testEnv, libindyVersion)
                 libnullpayDebPublishing(testEnv)
                 libvcxDebPublishing(testEnv)
                 vcxJavaWrapperPublishing(testEnv, false)
+                pythonWrapperPublishing(testEnv, false, 'vcx/wrappers/python3')
             }
             finally {
                 echo 'Publish Ubuntu files: Cleanup'
@@ -948,8 +974,8 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
 }
 
 
-def pythonWrapperPublishing(testEnv, isRelease) {
-    dir('wrappers/python') {
+def pythonWrapperPublishing(testEnv, isRelease, directory) {
+    dir(directory) {
         def suffix = getSuffix(isRelease, "Pypi")
 
         testEnv.inside {
@@ -1029,7 +1055,7 @@ def publishingRCtoStable() {
                 publishLibindyDebRCtoStable(testEnv, libindyVersion)
 
                 echo 'Moving Ubuntu RC artifacts to Stable: python wrapper'
-                pythonWrapperPublishing(testEnv, true)
+                pythonWrapperPublishing(testEnv, true, 'wrappers/python')
 
                 echo 'Moving Ubuntu RC artifacts to Stable: java wrapper'
                 javaWrapperPublishing(testEnv, true)
@@ -1052,8 +1078,11 @@ def publishingRCtoStable() {
                 echo 'Moving Ubuntu RC artifacts to Stable: libvcx'
                 publishLibvcxDebRCtoStable(testEnv)
 
-                echo 'Moving Ubuntu RC artifacts to Stable: libvcx java wrapper'
+                echo 'Moving Ubuntu RC artifacts to Stable: vcx java wrapper'
                 vcxJavaWrapperPublishing(testEnv, true)
+
+                echo 'Moving Ubuntu RC artifacts to Stable: vcx python wrapper'
+                pythonWrapperPublishing(testEnv, true, 'vcx/wrappers/python3')
 
                 echo 'Moving Android RC artifacts to Stable: libindy'
                 publishLibindAndroidFilesRCtoStable(libindyVersion)
