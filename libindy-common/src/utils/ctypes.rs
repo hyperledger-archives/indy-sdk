@@ -26,7 +26,7 @@ pub fn string_to_cstring(s: String) -> CString {
 
 pub fn str_to_cstring(s: &str) -> CString { CString::new(s).unwrap() }
 
-
+#[allow(unused_macros)]
 macro_rules! check_useful_c_str {
     ($x:ident, $e:expr) => {
         let $x = match ctypes::c_str_to_string($x) {

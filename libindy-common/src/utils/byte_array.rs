@@ -1,3 +1,5 @@
+#[allow(unused_macros)]
+#[macro_export]
 macro_rules! check_useful_c_byte_array {
     ($ptr:ident, $len:expr, $err1:expr, $err2:expr) => {
         if $ptr.is_null() {
@@ -8,7 +10,7 @@ macro_rules! check_useful_c_byte_array {
             return $err2
         }
 
-        let $ptr = unsafe { $crate::std::slice::from_raw_parts($ptr, $len as usize) };
+        let $ptr = unsafe { ::std::slice::from_raw_parts($ptr, $len as usize) };
         let $ptr = $ptr.to_vec();
     }
 }

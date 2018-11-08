@@ -2,7 +2,7 @@ use std::string;
 
 use serde_json;
 
-use indy::errors::wallet::WalletQueryError;
+use errors::wallet::WalletQueryError;
 use utils::crypto::base64;
 
 

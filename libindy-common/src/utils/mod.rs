@@ -15,6 +15,5 @@ pub mod sequence;
 pub mod crypto;
 pub mod environment;
 
-#[cfg(test)]
 #[macro_use]
 pub mod test;

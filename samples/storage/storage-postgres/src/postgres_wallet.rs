@@ -1,16 +1,17 @@
 extern crate libc;
 extern crate time;
-extern crate indy;
+extern crate indy_common;
 extern crate indy_crypto;
 extern crate serde_json;
 
-use indy::api::ErrorCode;
-use utils::sequence::SequenceUtils;
-use utils::ctypes;
-use utils::crypto::base64;
-use postgres_storage::storage::{WalletStorage, WalletStorageType, StorageRecord, StorageIterator, Tag, TagName, EncryptedValue};
-use postgres_storage::language;
-use indy::errors::wallet::WalletStorageError;
+use indy_common::api::ErrorCode;
+use indy_common::utils::sequence::SequenceUtils;
+use indy_common::utils::cstring::CStringUtils;
+use indy_common::utils::crypto::base64;
+use indy_common::wallet_storage::storage::{WalletStorage, StorageRecord, StorageIterator, Tag, TagName, EncryptedValue};
+use postgres_storage::storage::WalletStorageType;
+use indy_common::wallet_storage::language;
+use indy_common::errors::wallet::WalletStorageError;
 
 use self::libc::c_char;
 
@@ -924,7 +925,7 @@ mod tests {
     use super::*;
     use std::ffi::{CString, CStr};
     use std::{slice, ptr};
-    use postgres_storage::storage::ENCRYPTED_KEY_LEN;
+    use indy_common::wallet_storage::storage::ENCRYPTED_KEY_LEN;
 
     #[test]
     fn postgres_wallet_crud_works() {
