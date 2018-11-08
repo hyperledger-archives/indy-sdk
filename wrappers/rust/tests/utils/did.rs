@@ -1,4 +1,6 @@
-use futures::Future;
+extern crate futures;
+
+use self::futures::Future;
 
 use super::indy;
 

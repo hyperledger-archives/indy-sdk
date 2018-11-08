@@ -1,7 +1,9 @@
+extern crate futures;
+
 use super::environment;
+use self::futures::Future;
 
 use byteorder::{LittleEndian, WriteBytesExt};
-use futures::Future;
 use indy::ErrorCode;
 use indy::pool::Pool;
 use rmp_serde;
