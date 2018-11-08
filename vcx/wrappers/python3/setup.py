@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 VERSION = 'VCX_VERSION'
-PKG_NAME = os.getenv('PACKAGE_NAME') if os.getenv('PACKAGE_NAME') else 'python3-wrapper-vcx'
+PKG_NAME = os.environ.get('PACKAGE_NAME') or 'python3-wrapper-vcx'
 
 def test_pkg_name():
     print(PKG_NAME)
