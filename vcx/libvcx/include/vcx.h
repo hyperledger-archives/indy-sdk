@@ -19,7 +19,7 @@ typedef unsigned int vcx_wallet_search_handle_t;
 typedef unsigned int vcx_bool_t;
 typedef unsigned int count_t;
 typedef unsigned long vcx_price_t;
-typedef unsinged int vcx_u32_t;
+typedef unsigned int vcx_u32_t;
 
 typedef enum
 {
