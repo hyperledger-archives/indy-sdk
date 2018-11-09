@@ -298,7 +298,7 @@ pub mod export_command {
     );
 
     fn execute(ctx: &CommandContext, params: &CommandParams) -> Result<(), ()> {
-        trace!("execute >> ctx {:?} params {:?}", ctx, params);
+        trace!("execute >> ctx {:?} params {:?}", ctx, secret!(params));
 
         let (wallet_handle, wallet_name) = ensure_opened_wallet(&ctx)?;
 
@@ -362,7 +362,7 @@ pub mod import_command {
         let credentials: String = json!({ "key": key.clone(), "key_derivation_method": map_key_derivation_method(key_derivation_method)? }).to_string();
         let import_config: String = json!({ "path": export_path.clone(), "key": export_key.clone()}).to_string();
 
-        trace!("Wallet::import_wallet try: config {}, import_config {}", config, import_config);
+        trace!("Wallet::import_wallet try: config {}, import_config {}", config, secret!(&import_config));
 
         let res = Wallet::import_wallet(config.as_str(),
                                         credentials.as_str(),
