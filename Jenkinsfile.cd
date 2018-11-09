@@ -188,6 +188,9 @@ def linuxTesting(file, env_name, network_name, stashBuildResults) {
                         "${env_name}-nodejs-test": {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting, stashBuildResults)
                         },
+                        "${env_name}-cloud-agent-test": {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting, stashBuildResults)
+                        },
                         "${env_name}-vcx-test"   : {
                             vcxTesting(file, env_name, network_name, stashBuildResults)
                         }
@@ -261,11 +264,12 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
         sh "cp libindy/target/release/libindy.so libnullpay"
         sh "cp libindy/target/release/libindy.so vcx/libvcx"
         sh "cp libindy/target/release/libindy.so vcx/wrappers/node"
+        sh "cp libindy/target/release/libindy.so vcx/dummy-cloud-agent"
 
         dir('libnullpay') {
             testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
                 echo "${env_name} Libnullpay Test: Build"
-                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run"
+                sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release"
 
                 if (stashBuildResults) {
                     stash includes: 'target/release/libnullpay.so', name: 'LibnullpayUbuntuBuildResult'
@@ -285,6 +289,7 @@ def linuxLibindyBuild(file, env_name, network_name, stashBuildResults) {
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
         stash includes: 'vcx/libvcx/libindy.so,vcx/libvcx/libnullpay.so', name: "VCXLibindyAndLibnullpaySO${env_name}"
         stash includes: 'vcx/wrappers/node/libindy.so,vcx/wrappers/node/libnullpay.so', name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
+        stash includes: 'vcx/dummy-cloud-agent/libindy.so', name: "LibindyCloudAgentSO${env_name}"
 
         libindyBuildFinished[env_name] = true
 
@@ -403,6 +408,23 @@ def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
             if (stashBuildResults) {
                 stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
             }
+        }
+    }
+}
+
+def linuxCloudAgentTesting(env_name, network_name, testEnv, stashBuildResults) {
+    unstash name: "LibindyCloudAgentSO${env_name}"
+
+    dir('vcx/dummy-cloud-agent') {
+        testEnv.inside {
+            echo "${env_name} Cloud Agent Testt: Build"
+            sh "LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo build --release --features fatal_warnings"
+
+            echo "${env_name} Cloud Agent Test: Build"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run'
+
+            echo "${env_name} Indy Cli Test: Run tests"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 cargo test --release'
         }
     }
 }

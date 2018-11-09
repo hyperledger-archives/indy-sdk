@@ -247,6 +247,9 @@ def linuxTesting(file, env_name, network_name) {
                         },
                         "${env_name}-vcx-test"   : {
                             vcxTesting(file, env_name, network_name)
+                        },
+                        "${env_name}-cloud-agent-test"   : {
+                            linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
                         }
                 ]
                 if (env_name == "Ubuntu") {
@@ -313,6 +316,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
         sh "cp libindy/target/debug/libindy.so libnullpay"
         sh "cp libindy/target/debug/libindy.so vcx/libvcx"
         sh "cp libindy/target/debug/libindy.so vcx/wrappers/node"
+        sh "cp libindy/target/debug/libindy.so vcx/dummy-cloud-agent"
 
         dir('libnullpay') {
             echo "${env_name} Libnullpay Test: Build docker image"
@@ -335,6 +339,7 @@ def linuxLibindyBuild(file, env_name, network_name) {
         stash includes: 'cli/libnullpay.so', name: "LibnullpayCliSO${env_name}"
         stash includes: 'vcx/libvcx/libindy.so,vcx/libvcx/libnullpay.so', name: "VCXLibindyAndLibnullpaySO${env_name}"
         stash includes: 'vcx/wrappers/node/libindy.so,vcx/wrappers/node/libnullpay.so', name: "VcxNodeLibindyAndLibnullpaySO${env_name}"
+        stash includes: 'vcx/dummy-cloud-agent/libindy.so', name: "LibindyCloudAgentSO${env_name}"
 
         libindyBuildFinished[env_name] = true
 
@@ -521,6 +526,20 @@ def linuxRustTesting(env_name, network_name, testEnv) {
 
             echo "${env_name} Indy Rust wrupper Test: Run tests"
             sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test'
+        }
+    }
+}
+
+def linuxCloudAgentTesting(env_name, network_name, testEnv) {
+    unstash name: "LibindyCloudAgentSO${env_name}"
+
+    dir('vcx/dummy-cloud-agent') {
+        testEnv.inside {
+            echo "${env_name} Cloud Agent Test: Build"
+            sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --no-run'
+
+            echo "${env_name} Cloud Agent Test: Run tests"
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 cargo test'
         }
     }
 }
