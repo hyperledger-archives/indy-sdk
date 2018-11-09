@@ -975,17 +975,18 @@ def debPublishing(testEnv, directory, packageName, version, inStashName, outStas
 
 
 def pythonWrapperPublishing(testEnv, isRelease, directory) {
+    def version = getSrcVersion("libindy")
+
     dir(directory) {
         def suffix = getSuffix(isRelease, "Pypi")
 
         testEnv.inside {
             withCredentials([file(credentialsId: 'pypi_credentials', variable: 'credentialsFile')]) {
                 sh 'cp $credentialsFile ./'
-                sh "sed -i -E \"s/version='([0-9,.]+).*/version='\\1$suffix',/\" setup.py"
-                sh '''
-                    python3.5 setup.py sdist
-                    python3.5 -m twine upload dist/* --config-file .pypirc
-                '''
+
+                sh "PACKAGE_VERSION=$version$suffix python3.5 setup.py sdist"
+                sh "python3.5 -m twine upload dist/* --config-file .pypirc"
+
             }
         }
     }
