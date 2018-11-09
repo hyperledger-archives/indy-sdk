@@ -236,19 +236,19 @@ def linuxTesting(file, env_name, network_name) {
                     libindyBuildFinished[env_name]
                 }
                 def jobs = [
-                        "${env_name}-nodejs-test": {
+                        "${env_name}-nodejs-test"     : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxNodejsTesting)
                         },
-                        "${env_name}-cli-test"   : {
+                        "${env_name}-cli-test"        : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCLITesting)
                         },
-                        "${env_name}-rust-test"  : {
+                        "${env_name}-rust-test"       : {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxRustTesting)
                         },
-                        "${env_name}-vcx-test"   : {
+                        "${env_name}-vcx-test"        : {
                             vcxTesting(file, env_name, network_name)
                         },
-                        "${env_name}-cloud-agent-test"   : {
+                        "${env_name}-cloud-agent-test": {
                             linuxModuleTesting(file, env_name, network_name, this.&linuxCloudAgentTesting)
                         }
                 ]
@@ -270,7 +270,7 @@ def vcxTesting(file, env_name, network_name) {
             failFast                                     : true,
             "${env_name} Test: build and test libvcx"    : {
                 node('ubuntu') {
-                    linuxVcxBuild(file, env_name)
+                    linuxVcxBuild(file, env_name, network_name)
                 }
             },
             "${env_name} Test: test other vcx components": {
@@ -383,38 +383,50 @@ def linuxLibindyBuild(file, env_name, network_name) {
     }
 }
 
-def linuxVcxBuild(file, env_name) {
-    echo "${env_name} Test: Checkout csm"
-    checkout scm
+def linuxVcxBuild(file, env_name, network_name) {
+    def poolInst
+    try {
+        echo "${env_name} Test: Checkout csm"
+        checkout scm
 
-    def testEnv = buildTestEnv(file, env_name)
+        poolInst = openPool(env_name, network_name)
 
-    unstash name: "VCXLibindyAndLibnullpaySO${env_name}"
+        def testEnv = buildTestEnv(file, env_name)
 
-    dir('vcx/libvcx') {
-        testEnv.inside {
-            echo "${env_name} Libvcx Test: Build"
-            sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
+        unstash name: "VCXLibindyAndLibnullpaySO${env_name}"
+
+        dir('vcx/libvcx') {
+            testEnv.inside {
+                echo "${env_name} Libvcx Test: Build"
+                sh "LIBRARY_PATH=./ cargo build --features fatal_warnings"
+            }
+        }
+
+        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/node"
+        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/java"
+        sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/python3"
+
+        stash includes: 'vcx/wrappers/node/libvcx.so', name: "VcxNodeLibvcxSO${env_name}"
+        stash includes: 'vcx/wrappers/java/libvcx.so', name: "VcxJavaLibvcxSO${env_name}"
+        stash includes: 'vcx/wrappers/python3/libvcx.so', name: "VcxPythonLibvcxSO${env_name}"
+        
+        libvcxBuildFinished[env_name] = true
+
+        dir('vcx') {
+            testEnv.inside("--network=${network_name}") {
+                echo "${env_name} Libvcx Test: Run Cloud Agent"
+                sh 'cp libvcx/libindy.so dummy-cloud-agent'
+                sh 'cd dummy-cloud-agent && LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=info ' +
+                        'cargo run sample-config.json &'
+
+                echo "${env_name} Libvcx Test: Run tests"
+                sh 'cd libvcx && LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 ' +
+                        'cargo test --features "pool_tests agency"'
+            }
         }
     }
-
-    sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/node"
-    sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/java"
-    sh "cp vcx/libvcx/target/debug/libvcx.so vcx/wrappers/python3"
-
-    stash includes: 'vcx/wrappers/node/libvcx.so', name: "VcxNodeLibvcxSO${env_name}"
-    stash includes: 'vcx/wrappers/java/libvcx.so', name: "VcxJavaLibvcxSO${env_name}"
-    stash includes: 'vcx/wrappers/python3/libvcx.so', name: "VcxPythonLibvcxSO${env_name}"
-
-    libvcxBuildFinished[env_name] = true
-
-    dir('vcx/libvcx') {
-        testEnv.inside {
-            echo "${env_name} Libvcx Test: Test"
-
-            echo "${env_name} Libvcx Test: Run tests"
-            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test'
-        }
+    finally {
+        closePool(env_name, network_name, poolInst)
     }
 }
 
