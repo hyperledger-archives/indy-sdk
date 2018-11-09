@@ -1,0 +1,33 @@
+
+<!-- RTD Extra Head -->
+
+{%- if pagename == "index" %}
+    {%- set canonical_page = "" %}
+{%- elif pagename.endswith("/index") %}
+    {%- set canonical_page = pagename[:-("/index"|length)] + "/" %}
+{%- else %}
+    {%- set ending = "/" if builder == "readthedocsdirhtml" else ".html" %}
+    {%- set canonical_page = pagename + ending %}
+{%- endif %}
+
+<!-- 
+Always link to the latest version, as canonical.
+http://docs.readthedocs.org/en/latest/canonical.html
+-->
+<link rel="canonical" href="{{ canonical_url }}{{ canonical_page }}" />
+
+<link rel="stylesheet" href="{{ rtd_css_url }}" type="text/css" />
+
+<script type="text/javascript" src="{{ pathto('_static/readthedocs-data.js', 1) }}"></script>
+
+<!-- Add page-specific data, which must exist in the page js, not global -->
+<script type="text/javascript">
+READTHEDOCS_DATA['page'] = '{{ pagename }}'
+{%- if page_source_suffix %}
+READTHEDOCS_DATA['source_suffix'] = '{{ page_source_suffix }}'
+{%- endif %}
+</script>
+
+<script type="text/javascript" src="{{ rtd_analytics_url }}"></script>
+
+<!-- end RTD <extrahead> -->

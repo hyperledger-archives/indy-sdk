@@ -5,4 +5,4 @@ Indy Node
     :project: 'Hyperledger Indy Node'
     :version: 'master'
     :doc: 'index'
-    :section: ''
+    
