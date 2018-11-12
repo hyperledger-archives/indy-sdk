@@ -58,7 +58,6 @@ pub static DEFAULT_WALLET_KEY_DERIVATION: &str = "ARGON2I_INT";
 pub static DEFAULT_PAYMENT_PLUGIN: &str = "libnullpay.so";
 pub static DEFAULT_PAYMENT_INIT_FUNCTION: &str = "nullpay_init";
 pub static DEFAULT_PAYMENT_METHOD: &str = "null";
-pub static DEFAULT_LOGGING_KEY: &str = "logging";
 pub static MAX_THREADPOOL_SIZE: usize = 128;
 
 lazy_static! {
@@ -190,15 +189,6 @@ pub fn process_config_string(config: &str) -> Result<u32, u32> {
     let configuration: Value = serde_json::from_str(config).or(Err(error::INVALID_JSON.code_num))?;
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {
-            if key == DEFAULT_LOGGING_KEY {
-                // dont be fooled, serde_json::Value String types contain quotes.  This really
-                // messes when you try to_string() on them, as they retain the quotes.
-                // for example Value("debug") becomes "\"debug\""...YUCK!
-                match value.as_str() {
-                    Some(level) => { LibvcxDefaultLogger::init(Some(level.to_string()))? },
-                    None => {},
-                }
-            }
             set_config_value(key, value.as_str().ok_or(error::INVALID_JSON.code_num)?);
         }
     }
