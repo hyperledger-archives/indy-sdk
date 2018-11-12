@@ -1,5 +1,5 @@
-﻿using Hyperledger.Indy.LedgerApi;
-using Hyperledger.Indy.DidApi;
+﻿using Hyperledger.Indy.DidApi;
+using Hyperledger.Indy.LedgerApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
@@ -8,11 +8,12 @@ namespace Hyperledger.Indy.Test.LedgerTests
 {
     [TestClass]
     public class AttribRequestTest : IndyIntegrationTestWithPoolAndSingleWallet
-    {        
-        private const string _identifier = "Th7MpTaRZVRYnPiabds81Y";
-        private const string _dest = "FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4";
-        private const string _endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
-               
+    {
+        private string endpoint = "{\"endpoint\":{\"ha\":\"127.0.0.1:5555\"}}";
+        private string hash = "83d907821df1c87db829e96569a11f6fc2e7880acba5e43d07ab786959e13bd3";
+        private string enc = "aa3f41f619aa7e5e6b6d0de555e05331787f9bf9aa672b94b57ab65b9b66c3ea960b18a98e3834b1fc6cebf49f463b81fd6e3181";
+
+
         [TestMethod]
         public async Task TestBuildAttribRequestWorksForRawData()
         {
@@ -21,9 +22,39 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"type\":\"100\"," +
                     "\"dest\":\"{1}\"," +
                     "\"raw\":\"{2}\"" +
-                    "}}", _identifier, _dest, _endpoint);
+                    "}}", DID_TRUSTEE, DID_TRUSTEE, endpoint);
 
-            string attribRequest = await Ledger.BuildAttribRequestAsync(_identifier, _dest, null, _endpoint, null);
+            string attribRequest = await Ledger.BuildAttribRequestAsync(DID_TRUSTEE, DID_TRUSTEE, null, endpoint, null);
+
+            Assert.IsTrue(attribRequest.Replace("\\", "").Contains(expectedResult));
+        }
+
+        [TestMethod]
+        public async Task TestBuildAttribRequestWorksForHashValue()
+        {
+            string expectedResult = string.Format("\"identifier\":\"{0}\"," +
+                    "\"operation\":{{" +
+                    "\"type\":\"100\"," +
+                    "\"dest\":\"{1}\"," +
+                    "\"hash\":\"{2}\"" +
+                    "}}", DID_TRUSTEE, DID_TRUSTEE, hash);
+
+            string attribRequest = await Ledger.BuildAttribRequestAsync(DID_TRUSTEE, DID_TRUSTEE, hash, null, null);
+
+            Assert.IsTrue(attribRequest.Replace("\\", "").Contains(expectedResult));
+        }
+
+        [TestMethod]
+        public async Task TestBuildAttribRequestWorksForEncValue()
+        {
+            string expectedResult = string.Format("\"identifier\":\"{0}\"," +
+                    "\"operation\":{{" +
+                    "\"type\":\"100\"," +
+                    "\"dest\":\"{1}\"," +
+                    "\"enc\":\"{2}\"" +
+                    "}}", DID_TRUSTEE, DID_TRUSTEE, enc);
+
+            string attribRequest = await Ledger.BuildAttribRequestAsync(DID_TRUSTEE, DID_TRUSTEE, null, null, enc);
 
             Assert.IsTrue(attribRequest.Replace("\\", "").Contains(expectedResult));
         }
@@ -32,12 +63,12 @@ namespace Hyperledger.Indy.Test.LedgerTests
         public async Task TestBuildAttribRequestWorksForMissedAttribute()
         {
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Ledger.BuildAttribRequestAsync(_identifier, _dest, null, null, null)
+                Ledger.BuildAttribRequestAsync(DID_TRUSTEE, DID_TRUSTEE, null, null, null)
             );
         }
 
         [TestMethod]
-        public async Task  TestBuildGetAttribRequestWorks()
+        public async Task TestBuildGetAttribRequestWorksForRawValue()
         {
             string raw = "endpoint";
 
@@ -45,55 +76,67 @@ namespace Hyperledger.Indy.Test.LedgerTests
                     "\"operation\":{{" +
                     "\"type\":\"104\"," +
                     "\"dest\":\"{1}\"," +
-                    "\"raw\":\"{2}\"", _identifier, _dest, raw);
+                    "\"raw\":\"{2}\"" +
+                    "}}", DID_TRUSTEE, DID_TRUSTEE, raw);
 
-            string attribRequest = await Ledger.BuildGetAttribRequestAsync(_identifier, _dest, raw, string.Empty, string.Empty);
-
-            /*
-             * BuildGetAttribRequestAsync returns
-                {
-                    "reqId":1536952084743836000,
-                    "identifier":"Th7MpTaRZVRYnPiabds81Y",
-                    "operation":
-                    {
-                        "type":"104",
-                        "dest":"FYmoFw55GeQH7SRFa37dkx1d2dZ3zUF8ckg7wmL7ofN4",
-                        "raw":"endpoint",
-                        "hash":"",
-                        "enc":""
-                    },
-                    "protocolVersion":2
-                }
-
-            */
-
+            string attribRequest = await Ledger.BuildGetAttribRequestAsync(DID_TRUSTEE, DID_TRUSTEE, raw, null, null);
 
             Assert.IsTrue(attribRequest.Contains(expectedResult));
         }
 
         [TestMethod]
-        public async Task TestSendAttribRequestWithoutSignatureReturnsReqNack()
+        public async Task TestBuildGetAttribRequestWorksForHashValue()
+        {
+            string raw = "endpoint";
+
+            string expectedResult = string.Format("\"identifier\":\"{0}\"," +
+                    "\"operation\":{{" +
+                    "\"type\":\"104\"," +
+                    "\"dest\":\"{1}\"," +
+                    "\"hash\":\"{2}\"" +
+                    "}}", DID_TRUSTEE, DID_TRUSTEE, hash);
+
+            string attribRequest = await Ledger.BuildGetAttribRequestAsync(DID_TRUSTEE, DID_TRUSTEE, null, hash, null);
+
+            Assert.IsTrue(attribRequest.Contains(expectedResult));
+        }
+
+        [TestMethod]
+        public async Task TestBuildGetAttribRequestWorksForEncValue()
+        {
+            string raw = "endpoint";
+
+            string expectedResult = string.Format("\"identifier\":\"{0}\"," +
+                    "\"operation\":{{" +
+                    "\"type\":\"104\"," +
+                    "\"dest\":\"{1}\"," +
+                    "\"enc\":\"{2}\"" +
+                    "}}", DID_TRUSTEE, DID_TRUSTEE, enc);
+
+            string attribRequest = await Ledger.BuildGetAttribRequestAsync(DID_TRUSTEE, DID_TRUSTEE, null, null, enc);
+
+            Assert.IsTrue(attribRequest.Contains(expectedResult));
+        }
+
+        [TestMethod]
+        public async Task TestBuildGetAttribRequestWorksForDefaultSubmitter()
+        {
+            await Ledger.BuildGetAttribRequestAsync(null, DID_TRUSTEE, "endpoint", null, null);
+        }
+
+        [TestMethod]
+        public async Task TestSendAttribRequestWorksWithoutSignature()
         {
             var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
 
-            var attribRequest = await Ledger.BuildAttribRequestAsync(trusteeDid, trusteeDid, null, _endpoint, null);
-
-            var attribRequestResponse = await Ledger.SubmitRequestAsync(pool, attribRequest);
-
-            Assert.IsTrue(attribRequestResponse.Contains("\"op\":\"REQNACK\""));
-            Assert.IsTrue(attribRequestResponse.Contains("client request invalid: MissingSignature()"));
+            var attribRequest = await Ledger.BuildAttribRequestAsync(trusteeDid, trusteeDid, null, endpoint, null);
+            var response = await Ledger.SubmitRequestAsync(pool, attribRequest);
+            CheckResponseType(response, "REQNACK");
         }
 
-        /// <summary>
-        /// This test fails (when ignore attribute removed). SubmitRequestAsync returns ReqNack as it doesn't like
-        /// the input used (which comes from BuildGetAttribRequestAsync).  The test doesn't really say what it meant
-        /// to test so its marked as ignore for now
-        /// </summary>
-        /// <returns>The attrib request works.</returns>
         [TestMethod]
-        [Ignore]
-        public async Task  TestAttribRequestWorks()
+        public async Task TestAttribRequestWorksForRawValue()
         {
             var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
             var trusteeDid = trusteeDidResult.Did;
@@ -105,21 +148,74 @@ namespace Hyperledger.Indy.Test.LedgerTests
             var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null);
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
 
-            var attribRequest = await Ledger.BuildAttribRequestAsync(myDid, myDid, null, _endpoint, null);
+            var attribRequest = await Ledger.BuildAttribRequestAsync(myDid, myDid, null, endpoint, null);
             await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, attribRequest);
 
-            var getAttribRequest = await Ledger.BuildGetAttribRequestAsync(myDid, myDid, "endpoint", string.Empty, string.Empty);
-            var getAttribResponse = await Ledger.SubmitRequestAsync(pool, getAttribRequest);
+            var getAttribRequest = await Ledger.BuildGetAttribRequestAsync(myDid, myDid, "endpoint", null, null);
+            var getAttribResponse = await PoolUtils.EnsurePreviousRequestAppliedAsync(pool, getAttribRequest, response => {
+                var getAttribResponseObject = JObject.Parse(response);
+                return endpoint == getAttribResponseObject["result"]["data"].ToString();
+            });
 
-            var jsonObject = JObject.Parse(getAttribResponse);
-            Assert.AreEqual(_endpoint, jsonObject["result"]["data"]);
+            Assert.IsNotNull(getAttribResponse);
         }
+
+        [TestMethod]
+        public async Task TestAttribRequestWorksForHashValue()
+        {
+            var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var trusteeDid = trusteeDidResult.Did;
+
+            var myDidResult = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
+            var myDid = myDidResult.Did;
+            var myVerkey = myDidResult.VerKey;
+
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null);
+            await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
+
+            var attribRequest = await Ledger.BuildAttribRequestAsync(myDid, myDid, hash, null, null);
+            await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, attribRequest);
+
+            var getAttribRequest = await Ledger.BuildGetAttribRequestAsync(myDid, myDid, null, hash, null);
+            var getAttribResponse = await PoolUtils.EnsurePreviousRequestAppliedAsync(pool, getAttribRequest, response => {
+                var getAttribResponseObject = JObject.Parse(response);
+                return hash == getAttribResponseObject["result"]["data"].ToString();
+            });
+
+            Assert.IsNotNull(getAttribResponse);
+        }
+
+        [TestMethod]
+        public async Task TestAttribRequestWorksForEncValue()
+        {
+            var trusteeDidResult = await Did.CreateAndStoreMyDidAsync(wallet, TRUSTEE_IDENTITY_JSON);
+            var trusteeDid = trusteeDidResult.Did;
+
+            var myDidResult = await Did.CreateAndStoreMyDidAsync(wallet, "{}");
+            var myDid = myDidResult.Did;
+            var myVerkey = myDidResult.VerKey;
+
+            var nymRequest = await Ledger.BuildNymRequestAsync(trusteeDid, myDid, myVerkey, null, null);
+            await Ledger.SignAndSubmitRequestAsync(pool, wallet, trusteeDid, nymRequest);
+
+            var attribRequest = await Ledger.BuildAttribRequestAsync(myDid, myDid, null, null, enc);
+            await Ledger.SignAndSubmitRequestAsync(pool, wallet, myDid, attribRequest);
+
+            var getAttribRequest = await Ledger.BuildGetAttribRequestAsync(myDid, myDid, null, null, enc);
+            var getAttribResponse = await PoolUtils.EnsurePreviousRequestAppliedAsync(pool, getAttribRequest, response => {
+                var getAttribResponseObject = JObject.Parse(response);
+                return enc == getAttribResponseObject["result"]["data"].ToString();
+            });
+
+            Assert.IsNotNull(getAttribResponse);
+        }
+
 
         [TestMethod]
         public async Task TestBuildAttribRequestWorksForInvalidIdentifier()
         {
             var ex = await Assert.ThrowsExceptionAsync<InvalidStructureException>(() =>
-                Ledger.BuildAttribRequestAsync("invalid_base58_identifier", _dest, null, _endpoint, null)
+                Ledger.BuildAttribRequestAsync("invalid_base58_identifier", DID_TRUSTEE, null, endpoint, null)
             );
         }
     }

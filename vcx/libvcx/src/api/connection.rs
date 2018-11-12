@@ -461,10 +461,9 @@ mod tests {
     use std::ptr;
     use utils::error;
     use std::time::Duration;
-    use api::VcxStateType;
+    use api::{return_types_u32, VcxStateType};
     use utils::httpclient;
     use utils::constants::GET_MESSAGES_RESPONSE;
-    use utils::libindy::return_types_u32;
     use utils::error::SUCCESS;
 
     #[test]

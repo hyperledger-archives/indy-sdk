@@ -1,9 +1,5 @@
 ﻿using Hyperledger.Indy.PoolApi;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Hyperledger.Indy.Test.PoolTests
@@ -11,12 +7,6 @@ namespace Hyperledger.Indy.Test.PoolTests
     [TestClass]
     public class DisposePoolTest : IndyIntegrationTestBase
     {
-        [TestInitialize]
-        public async Task SetProtocolVersion()
-        {
-            Pool.SetProtocolVersionAsync(PoolUtils.PROTOCOL_VERSION).Wait();
-        }
-
         [TestMethod]
         public async Task CanDisposeClosedPool()
         {

@@ -1,5 +1,5 @@
 use super::constants::{REVOC_REG_DEF, GET_REVOC_REG_DEF};
-use super::response::GetReplyResultV1;
+use super::response::{GetReplyResultV1, ReplyType};
 use super::super::anoncreds::revocation_registry_definition::{RevocationRegistryDefinitionV1, RevocationRegistryDefinitionValue};
 
 #[derive(Serialize, Debug)]
@@ -50,6 +50,12 @@ impl GetRevRegDefOperation {
 pub enum GetRevocRegDefReplyResult {
     GetRevocRegDefReplyResultV0(GetRevocRegDefResultV0),
     GetRevocRegDefReplyResultV1(GetReplyResultV1<RevocationRegistryDefinitionV1>)
+}
+
+impl ReplyType for GetRevocRegDefReplyResult {
+    fn get_type<'a>() -> &'a str {
+        GET_REVOC_REG_DEF
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]

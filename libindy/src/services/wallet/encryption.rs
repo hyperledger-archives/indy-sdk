@@ -5,10 +5,11 @@ use utils::crypto::{chacha20poly1305_ietf, hmacsha256, pwhash_argon2i13, base58}
 
 use super::{Keys, WalletRecord};
 use super::storage::{Tag, TagName, StorageRecord};
-use domain::wallet::KeyDerivationMethod;
+use domain::wallet::{KeyDerivationMethod, Metadata};
 
 use errors::wallet::WalletError;
 
+#[cfg(test)]
 pub(super) fn gen_master_key_salt() -> Result<pwhash_argon2i13::Salt, WalletError> {
     Ok(pwhash_argon2i13::gen_salt())
 }
@@ -20,12 +21,62 @@ pub(super) fn master_key_salt_from_slice(slice: &[u8]) -> Result<pwhash_argon2i1
     Ok(salt)
 }
 
-pub(super) fn derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> Result<chacha20poly1305_ietf::Key, WalletError> {
+//TODO memzero for passphrase
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum KeyDerivationData {
+    Raw(String),
+    Argon2iMod(String, pwhash_argon2i13::Salt),
+    Argon2iInt(String, pwhash_argon2i13::Salt),
+}
+
+impl KeyDerivationData {
+    pub fn from_passphrase_with_new_salt(passphrase: &str, derivation_method: &KeyDerivationMethod) -> Self {
+        let salt = pwhash_argon2i13::gen_salt();
+        let passphrase = passphrase.to_owned();
+        match *derivation_method {
+            KeyDerivationMethod::ARGON2I_INT =>
+                KeyDerivationData::Argon2iInt(passphrase, salt),
+            KeyDerivationMethod::ARGON2I_MOD =>
+                KeyDerivationData::Argon2iMod(passphrase, salt),
+            KeyDerivationMethod::RAW =>
+                KeyDerivationData::Raw(passphrase)
+        }
+    }
+
+    pub(super) fn from_passphrase_and_metadata(passphrase: &str, metadata: &Metadata, derivation_method: &KeyDerivationMethod) -> Result<Self, WalletError> {
+        let passphrase = passphrase.to_owned();
+        let data = match (derivation_method, metadata) {
+            (KeyDerivationMethod::RAW, &Metadata::MetadataRaw(_)) => {
+                KeyDerivationData::Raw(passphrase)
+            }
+            (KeyDerivationMethod::ARGON2I_INT, &Metadata::MetadataArgon(ref metadata)) => {
+                let master_key_salt = master_key_salt_from_slice(&metadata.master_key_salt)?;
+                KeyDerivationData::Argon2iInt(passphrase, master_key_salt)
+            }
+            (KeyDerivationMethod::ARGON2I_MOD, &Metadata::MetadataArgon(ref metadata)) => {
+                let master_key_salt = master_key_salt_from_slice(&metadata.master_key_salt)?;
+                KeyDerivationData::Argon2iMod(passphrase, master_key_salt)
+            }
+            _ => return Err(WalletError::AccessFailed("Invalid combination of KeyDerivationMethod and Metadata".to_string()))
+        };
+        Ok(data)
+    }
+
+    pub fn calc_master_key(&self) -> Result<chacha20poly1305_ietf::Key, ::errors::common::CommonError> {
+        match self {
+            KeyDerivationData::Raw(passphrase) => _raw_master_key(passphrase),
+            KeyDerivationData::Argon2iInt(passphrase, salt) => _derive_master_key(passphrase, &salt, &KeyDerivationMethod::ARGON2I_INT),
+            KeyDerivationData::Argon2iMod(passphrase, salt) => _derive_master_key(passphrase, &salt, &KeyDerivationMethod::ARGON2I_MOD),
+        }
+    }
+}
+
+fn _derive_master_key(passphrase: &str, salt: &pwhash_argon2i13::Salt, key_derivation_method: &KeyDerivationMethod) -> Result<chacha20poly1305_ietf::Key, ::errors::common::CommonError> {
     let key = chacha20poly1305_ietf::derive_key(passphrase, salt, key_derivation_method)?;
     Ok(key)
 }
 
-pub(super) fn raw_master_key(passphrase: &str) -> Result<chacha20poly1305_ietf::Key, WalletError> {
+fn _raw_master_key(passphrase: &str) -> Result<chacha20poly1305_ietf::Key, ::errors::common::CommonError> {
     let bytes = &base58::decode(passphrase)?;
     let key = chacha20poly1305_ietf::Key::from_slice(&bytes)
         .map_err(|_| ::errors::common::CommonError::InvalidStructure("Invalid Master Key length".to_string()))?;
@@ -159,8 +210,150 @@ pub(super) fn decrypt_storage_record(record: &StorageRecord, keys: &Keys) -> Res
 
 #[cfg(test)]
 mod tests {
+    extern crate serde_json;
+
+    use utils::crypto::hmacsha256;
+    use services::wallet::wallet::Keys;
     use super::*;
-    use serde_json;
+
+    use services::wallet::wallet::EncryptedValue;
+    
+    #[test]
+    fn test_encrypt_decrypt_searchable() {
+        let key = chacha20poly1305_ietf::gen_key();
+        let hmac_key = hmacsha256::gen_key();
+        let data = "test_data";
+
+        let encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
+        let decrypted_data = decrypt_merged(&encrypted_data, &key).unwrap();
+
+        assert_eq!(&decrypted_data[..], data.as_bytes());
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_searchable_returns_error_if_wrong_key() {
+        let key = chacha20poly1305_ietf::gen_key();
+        let key2 = chacha20poly1305_ietf::gen_key();
+        let hmac_key = hmacsha256::gen_key();
+        let data = "test_data";
+
+        let encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
+        let res = decrypt_merged(&encrypted_data, &key2);
+
+        assert_match!(Err(WalletError::CommonError(_)), res);
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_searchable_returns_error_if_nonce_modified() {
+        let key = chacha20poly1305_ietf::gen_key();
+        let hmac_key = hmacsha256::gen_key();
+        let data = "test_data";
+
+        let mut encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
+        let byte_value = encrypted_data[3];
+        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+        encrypted_data[3] = new_byte_value;
+        let res = decrypt_merged(&encrypted_data, &key);
+
+        assert_match!(Err(WalletError::CommonError(_)), res);
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_searchable_returns_error_if_data_modified() {
+        let key = chacha20poly1305_ietf::gen_key();
+        let hmac_key = hmacsha256::gen_key();
+        let data = "12345678901234567890123456789012345678901234567890";
+
+        let mut encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
+        let index = encrypted_data.len() - 1;
+        let byte_value = encrypted_data[index];
+        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+        encrypted_data[index] = new_byte_value;
+        let res = decrypt_merged(&encrypted_data, &key);
+
+        assert_match!(Err(WalletError::CommonError(_)), res);
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_searchable_returns_error_if_tag_modified() {
+        let key = chacha20poly1305_ietf::gen_key();
+        let hmac_key = hmacsha256::gen_key();
+        let data = "12345678901234567890123456789012345678901234567890";
+
+        let mut encrypted_data = encrypt_as_searchable(data.as_bytes(), &key, &hmac_key);
+        let byte_value = encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1];
+        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+        encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1] = new_byte_value;
+        let res = decrypt_merged(&encrypted_data, &key);
+
+        assert_match!(Err(WalletError::CommonError(_)), res);
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_not_searchable() {
+        let key = chacha20poly1305_ietf::gen_key();
+        let data = "test_data";
+
+        let encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
+        let decrypted_data = decrypt_merged(&encrypted_data, &key).unwrap();
+
+        assert_eq!(&decrypted_data[..], data.as_bytes());
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_not_searchable_returns_error_if_wrong_key() {
+        let key = chacha20poly1305_ietf::gen_key();
+        let key2 = chacha20poly1305_ietf::gen_key();
+        let data = "test_data";
+
+        let encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
+        let res = decrypt_merged(&encrypted_data, &key2);
+
+        assert_match!(Err(WalletError::CommonError(_)), res);
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_not_searchable_returns_error_if_nonce_modified() {
+        let key = chacha20poly1305_ietf::gen_key();
+        let data = "test_data";
+
+        let mut encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
+        let byte_value = encrypted_data[3];
+        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+        encrypted_data[3] = new_byte_value;
+        let res = decrypt_merged(&encrypted_data, &key);
+
+        assert_match!(Err(WalletError::CommonError(_)), res);
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_not_searchable_returns_error_if_data_modified() {
+        let key = chacha20poly1305_ietf::gen_key();
+        let data = "12345678901234567890123456789012345678901234567890";
+
+        let mut encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
+        let index = encrypted_data.len() - 1;
+        let byte_value = encrypted_data[index];
+        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+        encrypted_data[index] = new_byte_value;
+        let res = decrypt_merged(&encrypted_data, &key);
+
+        assert_match!(Err(WalletError::CommonError(_)), res);
+    }
+
+    #[test]
+    fn test_encrypt_decrypt_not_searchable_returns_error_if_tag_modified() {
+        let key = chacha20poly1305_ietf::gen_key();
+        let data = "12345678901234567890123456789012345678901234567890";
+
+        let mut encrypted_data = encrypt_as_not_searchable(data.as_bytes(), &key);
+        let byte_value = encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1];
+        let new_byte_value = if byte_value == 255 { 0 } else { byte_value + 1 };
+        encrypted_data[chacha20poly1305_ietf::NONCEBYTES + 1] = new_byte_value;
+        let res = decrypt_merged(&encrypted_data, &key);
+
+        assert_match!(Err(WalletError::CommonError(_)), res);
+    }
 
     #[test]
     fn test_encrypt_decrypt_tags() {
@@ -182,5 +375,59 @@ mod tests {
 
         let u = decrypt_tags(&None, &tag_name_key, &tag_value_key).unwrap();
         assert!(u.is_none());
+    }
+
+    #[test]
+    fn test_decrypt_storage_record_works() {
+        let keys = Keys::new();
+        let name = "test_name";
+        let value = "test_value";
+        let encrypted_value = EncryptedValue::encrypt(value, &keys.value_key);
+        let type_ = "test_type";
+        let encrypted_name = encrypt_as_searchable(name.as_bytes(), &keys.name_key, &keys.item_hmac_key);
+        let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &keys.type_key, &keys.item_hmac_key);
+        let mut tags = HashMap::new();
+        tags.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+        tags.insert("~tag_name_2".to_string(), "tag_value_2".to_string());
+        let encrypted_tags = encrypt_tags(&tags, &keys.tag_name_key, &keys.tag_value_key, &keys.tags_hmac_key);
+
+        let storage_record = StorageRecord{
+            id: encrypted_name,
+            value: Some(encrypted_value),
+            type_: Some(encrypted_type),
+            tags: Some(encrypted_tags)
+        };
+        let decrypted_wallet_record = decrypt_storage_record(&storage_record, &keys).unwrap();
+
+        assert_eq!(&decrypted_wallet_record.id, name);
+        assert_eq!(&decrypted_wallet_record.value.unwrap(), value);
+        assert_eq!(&decrypted_wallet_record.type_.unwrap(), type_);
+        assert_eq!(&decrypted_wallet_record.tags.unwrap(), &tags);
+    }
+
+    #[test]
+    fn test_decrypt_storage_record_fails_if_wrong_keys() {
+        let keys = Keys::new();
+        let keys2 = Keys::new();
+        let name = "test_name";
+        let value = "test_value";
+        let encrypted_value = EncryptedValue::encrypt(value, &keys.value_key);
+        let type_ = "test_type";
+        let encrypted_name = encrypt_as_searchable(name.as_bytes(), &keys.name_key, &keys.item_hmac_key);
+        let encrypted_type = encrypt_as_searchable(type_.as_bytes(), &keys.type_key, &keys.item_hmac_key);
+        let mut tags = HashMap::new();
+        tags.insert("tag_name_1".to_string(), "tag_value_1".to_string());
+        tags.insert("~tag_name_2".to_string(), "tag_value_2".to_string());
+        let encrypted_tags = encrypt_tags(&tags, &keys.tag_name_key, &keys.tag_value_key, &keys.tags_hmac_key);
+
+        let storage_record = StorageRecord{
+            id: encrypted_name,
+            value: Some(encrypted_value),
+            type_: Some(encrypted_type),
+            tags: Some(encrypted_tags)
+        };
+        let res = decrypt_storage_record(&storage_record, &keys2);
+
+        assert_match!(Err(WalletError::CommonError(_)), res);
     }
 }

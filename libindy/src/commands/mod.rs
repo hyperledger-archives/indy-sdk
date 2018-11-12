@@ -10,6 +10,11 @@ pub mod non_secrets;
 pub mod payments;
 pub mod route;
 
+extern crate indy_crypto;
+extern crate threadpool;
+
+use self::threadpool::ThreadPool;
+
 use commands::anoncreds::{AnoncredsCommand, AnoncredsCommandExecutor};
 use commands::blob_storage::{BlobStorageCommand, BlobStorageCommandExecutor};
 use commands::crypto::{CryptoCommand, CryptoCommandExecutor};
@@ -33,6 +38,9 @@ use services::crypto::CryptoService;
 use services::ledger::LedgerService;
 use services::route::RouteService;
 
+use domain::IndyConfig;
+
+
 use std::error::Error;
 use std::sync::mpsc::{Sender, channel};
 use std::rc::Rc;
@@ -52,6 +60,14 @@ pub enum Command {
     NonSecrets(NonSecretsCommand),
     Payments(PaymentsCommand),
     Route(RouteCommand)
+}
+
+lazy_static! {
+    static ref THREADPOOL: Mutex<ThreadPool> = Mutex::new(ThreadPool::new(4));
+}
+
+pub fn indy_set_runtime_config(config: IndyConfig) {
+    THREADPOOL.lock().unwrap().set_num_threads(config.crypto_thread_pool_size)
 }
 
 pub struct CommandExecutor {

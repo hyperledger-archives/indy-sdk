@@ -126,6 +126,7 @@ pub mod connect_command {
                     Err(ErrorCode::PoolLedgerTimeout) => Err(println_err!("Pool \"{}\" has not been connected.", name)),
                     Err(ErrorCode::PoolIncompatibleProtocolVersion) =>
                         Err(println_err!("Pool \"{}\" is not compatible with Protocol Version \"{}\".", name, protocol_version)),
+                    Err(ErrorCode::LedgerNotFound) => Err(println_err!("Item not found in pool \"{}\"", name)),
                     Err(err) => Err(println_err!("Indy SDK error occurred {:?}", err)),
                 }
             });

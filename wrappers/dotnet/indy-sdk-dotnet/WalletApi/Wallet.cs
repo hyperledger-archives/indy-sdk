@@ -1,5 +1,4 @@
 ﻿using Hyperledger.Indy.Utils;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
@@ -108,19 +107,20 @@ namespace Hyperledger.Indy.WalletApi
             return taskCompletionSource.Task;
         }
 
-        /// <summary>
-        /// Same as CreateWalletAsync(string config, string credentials)
-        /// </summary>
-        /// <returns>The wallet async.</returns>
-        /// <param name="config">Config.</param>
-        /// <param name="cred">Cred.</param>
-        public static Task CreateWalletAsync(WalletConfig config, Credentials cred) 
-        {
-            string configStr = JsonConvert.SerializeObject(config, Formatting.Indented); 
-            string credStr = JsonConvert.SerializeObject(cred, Formatting.Indented);
+        ///// <summary>
+        ///// Same as CreateWalletAsync(string config, string credentials)
+        ///// </summary>
+        ///// <returns>The wallet async.</returns>
+        ///// <param name="config">Config.</param>
+        ///// <param name="cred">Cred.</param>
+        //public static Task CreateWalletAsync(WalletConfig config, Credentials cred) 
+        //{
+        //    var json = new JavaScriptSerializer().Serialize(obj);
+        //    string configStr = JsonConvert.SerializeObject(config, Formatting.Indented); 
+        //    string credStr = JsonConvert.SerializeObject(cred, Formatting.Indented);
 
-            return CreateWalletAsync(configStr, credStr);
-        }
+        //    return CreateWalletAsync(configStr, credStr);
+        //}
 
         /// <summary>
         /// Open the wallet.
@@ -180,19 +180,19 @@ namespace Hyperledger.Indy.WalletApi
             return taskCompletionSource.Task;
         }
 
-        /// <summary>
-        /// Same as OpenWalletAsync(string config, string credentials)
-        /// </summary>
-        /// <returns>The wallet async.</returns>
-        /// <param name="config">Config.</param>
-        /// <param name="cred">Cred.</param>
-        public static Task<Wallet> OpenWalletAsync(WalletConfig config, Credentials cred) 
-        {
-            string configStr = JsonConvert.SerializeObject(config, Formatting.Indented);
-            string credStr = JsonConvert.SerializeObject(cred, Formatting.Indented);
+        ///// <summary>
+        ///// Same as OpenWalletAsync(string config, string credentials)
+        ///// </summary>
+        ///// <returns>The wallet async.</returns>
+        ///// <param name="config">Config.</param>
+        ///// <param name="cred">Cred.</param>
+        //public static Task<Wallet> OpenWalletAsync(WalletConfig config, Credentials cred) 
+        //{
+        //    string configStr = JsonConvert.SerializeObject(config, Formatting.Indented);
+        //    string credStr = JsonConvert.SerializeObject(cred, Formatting.Indented);
 
-            return OpenWalletAsync(configStr, credStr);
-        }
+        //    return OpenWalletAsync(configStr, credStr);
+        //}
 
         /// <summary>
         /// Exports opened wallet
@@ -348,8 +348,6 @@ namespace Hyperledger.Indy.WalletApi
         /// }</param>
         public static Task<string> GenerateWalletKeyAsync(string config)
         {
-            ParamGuard.NotNullOrWhiteSpace(config, "config");
-
             var taskCompletionSource = new TaskCompletionSource<string>();
             var commandHandle = PendingCommands.Add(taskCompletionSource);
 

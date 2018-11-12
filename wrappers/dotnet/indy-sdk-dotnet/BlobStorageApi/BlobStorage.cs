@@ -1,5 +1,5 @@
-﻿using System.Threading.Tasks;
-using Hyperledger.Indy.Utils;
+﻿using Hyperledger.Indy.Utils;
+using System.Threading.Tasks;
 using static Hyperledger.Indy.BlobStorageApi.NativeMethods;
 #if __IOS__
 using ObjCRuntime;
