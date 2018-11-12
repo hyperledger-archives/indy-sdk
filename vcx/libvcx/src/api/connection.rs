@@ -582,6 +582,7 @@ mod tests {
 
     #[test]
     fn test_vcx_connection_delete_connection() {
+        use utils::logger::LibvcxDefaultLogger;
         init!("true");
         let test_name = "test_vcx_connection_delete_connection";
         let connection_handle = build_connection(test_name).unwrap();

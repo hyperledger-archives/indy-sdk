@@ -8,14 +8,16 @@ extern crate libc;
 extern crate android_logger;
 
 use std::io::Write;
-#[allow(unused_imports)] use utils::logger;
+#[allow(unused_imports)]
+use utils::logger;
 use self::env_logger::Builder as EnvLoggerBuilder;
 use self::log::{Level, LevelFilter, Metadata, Record};
 use std::sync::{Once, ONCE_INIT};
 use self::libc::{c_char, c_void};
 use std::env;
 use std::ptr;
-#[allow(unused_imports)] use api::logger::vcx_set_default_logger;
+#[allow(unused_imports)]
+use api::logger::vcx_set_default_logger;
 
 #[allow(unused_imports)]
 #[cfg(target_os = "android")]
@@ -23,6 +25,7 @@ use self::android_logger::Filter;
 use utils::cstring::CStringUtils;
 
 use utils::error::LOGGING_ERROR;
+
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
 static LOGGER_INIT: Once = ONCE_INIT;
 static mut CONTEXT: *const c_void = ptr::null();
@@ -33,7 +36,7 @@ static mut FLUSH_CB: Option<FlushCB> = None;
 #[derive(Debug, PartialEq)]
 pub enum LoggerState {
     Default,
-    Custom
+    Custom,
 }
 
 impl LoggerState {
@@ -81,15 +84,16 @@ impl LibvcxLogger {
             LOG_CB = Some(log);
             FLUSH_CB = flush
         }
+
         Ok(())
     }
 }
 
 unsafe impl Sync for LibvcxLogger {}
+
 unsafe impl Send for LibvcxLogger {}
 
 impl log::Log for LibvcxLogger {
-
     fn enabled(&self, metadata: &Metadata) -> bool { true }
     fn log(&self, record: &Record) {
         let log_cb = self.log;
@@ -99,7 +103,7 @@ impl log::Log for LibvcxLogger {
         let module_path = CStringUtils::string_to_cstring(record.module_path().unwrap_or("").to_string());
         let file = CStringUtils::string_to_cstring(record.file().unwrap_or("").to_string());
         let line = record.line().unwrap_or(0);
-        log_cb(self.context, level, target.as_ptr(), message.as_ptr(), module_path.as_ptr() , file.as_ptr(), line)
+        log_cb(self.context, level, target.as_ptr(), message.as_ptr(), module_path.as_ptr(), file.as_ptr(), line)
     }
     fn flush(&self) {}
 }
@@ -116,6 +120,15 @@ impl log::Log for LibvcxLogger {
 pub struct LibvcxDefaultLogger;
 
 impl LibvcxDefaultLogger {
+    pub fn init_testing_logger() {
+        // ensures that the test that is calling this wont fail simply because
+        // the user did not set the RUST_LOG env var.
+        let pattern = env::var("RUST_LOG").unwrap_or("warn".to_string());
+        match LibvcxDefaultLogger::init(Some(pattern)) {
+            Ok(_) => (),
+            Err(_) => (),
+        }
+    }
     pub fn init(pattern: Option<String>) -> Result<(), u32> {
         let pattern = pattern.or(env::var("RUST_LOG").ok());
         if cfg!(target_os = "android") {
@@ -215,25 +228,30 @@ fn get_level(level: u32) -> Level {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     fn get_custom_context() -> *const c_void {
         ptr::null()
     }
+
     static mut CHANGED: Option<String> = None;
     static mut COUNT: u32 = 0;
 
     extern fn custom_enabled(context: *const c_void, level: u32, target: *const c_char) -> bool { true }
-    extern fn custom_flush(context: *const c_void){}
+
+    extern fn custom_flush(context: *const c_void) {}
+
     extern fn custom_log(context: *const c_void,
-                  level: u32,
-                  target: *const c_char,
-                  message: *const c_char,
-                  module_path: *const c_char,
-                  file: *const c_char,
-                  line: u32) {
+                         level: u32,
+                         target: *const c_char,
+                         message: *const c_char,
+                         module_path: *const c_char,
+                         file: *const c_char,
+                         line: u32) {
         let message = CStringUtils::c_str_to_string(message).unwrap();
         unsafe { COUNT = COUNT + 1 }
     }
 
+    #[ignore]
     #[test]
     fn test_logging_get_logger() {
         LibvcxDefaultLogger::init(Some("debug".to_string())).unwrap();
@@ -260,6 +278,12 @@ mod tests {
         unsafe {
             assert_eq!(COUNT, 1)
         }
-
     }
+
+    #[test]
+    fn test_logger_for_testing() {
+        LibvcxDefaultLogger::init_testing_logger();
+        LibvcxDefaultLogger::init_testing_logger();
+    }
+
 }
