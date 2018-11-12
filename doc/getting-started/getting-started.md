@@ -275,13 +275,13 @@ After the connection is established **Faber** must create new DID record that he
 6. **Steward** asks the ledger for the Verification key of **Faber's** DID by calling ``did.key_for_did``.
     ```python        
     # Steward Agent    
-    faber_verkey = await did.key_for_did(pool_handle, from_wallet, faber_did_info['did'])
+    faber_steward_verkey = await did.key_for_did(pool_handle, from_wallet, faber_steward_did)
     ```
 
 7. **Steward** authenticates **Faber** by comparison of the Message Sender Verkey and the **Faber** Verkey received from the Ledger.
     ```python        
     # Steward Agent    
-    assert sender_verkey == faber_verkey
+    assert sender_verkey == faber_steward_verkey
     ```
 
 8. **Steward** sends the corresponded NYM transaction to the Ledger with `TRUST ANCHOR` role.
