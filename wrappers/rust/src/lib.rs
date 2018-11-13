@@ -17,6 +17,7 @@ pub mod blob_storage;
 pub mod crypto;
 pub mod did;
 pub mod ledger;
+pub mod logger;
 pub mod payments;
 pub mod pairwise;
 pub mod pool;
