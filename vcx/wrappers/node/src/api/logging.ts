@@ -71,7 +71,7 @@ let pointer
  *
  * Example:
  * ```
- * var _logFn = (level: number, target: string, message: string, modulePath: string, file: string, line: number) => {
+ * var logFn = (level: number, target: string, message: string, modulePath: string, file: string, line: number) => {
  *   count = count + 1
  *   console.log('level: ' + level)
  *   console.log('target: ' + target)

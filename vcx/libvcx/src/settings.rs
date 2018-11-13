@@ -9,6 +9,7 @@ use url::Url;
 use messages::validation;
 use std::fs;
 use std::io::prelude::*;
+use serde_json::Value;
 
 pub static CONFIG_POOL_NAME: &'static str = "pool_name";
 pub static CONFIG_AGENCY_ENDPOINT: &'static str = "agency_endpoint";
@@ -184,8 +185,6 @@ pub fn test_agency_mode_enabled() -> bool {
 }
 
 pub fn process_config_string(config: &str) -> Result<u32, u32> {
-    use utils::logger::LibvcxDefaultLogger;
-    use serde_json::Value;
     let configuration: Value = serde_json::from_str(config).or(Err(error::INVALID_JSON.code_num))?;
     if let Value::Object(ref map) = configuration {
         for (key, value) in map {

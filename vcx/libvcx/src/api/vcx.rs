@@ -256,20 +256,16 @@ mod tests {
     use utils::libindy::pool::get_pool_handle;
     use api::return_types_u32;
 
-    fn create_config_util(logging:Option<&str>) -> String {
-        let mut config = json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
-                        "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
-                        "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
-                        "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                        "institution_name" : "evernym enterprise",
-                        "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                        "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
-                        "genesis_path":"/tmp/pool1.txn",
-                        "payment_method": "null"});
-        if let Some(level) = logging {
-            config["logging"] = json!(level);
-        };
-        config.to_string()
+    fn create_config_util(logging: Option<&str>) -> String {
+        json!({"agency_did" : "72x8p4HubxzUK1dwxcc5FU",
+               "remote_to_sdk_did" : "UJGjM6Cea2YVixjWwHN9wq",
+               "sdk_to_remote_did" : "AB3JM851T4EQmhh8CdagSP",
+               "sdk_to_remote_verkey" : "888MFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+               "institution_name" : "evernym enterprise",
+               "agency_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+               "remote_to_sdk_verkey" : "91qMFrZjXDoi2Vc8Mm14Ys112tEZdDegBZZoembFEATE",
+               "genesis_path":"/tmp/pool1.txn",
+               "payment_method": "null"}).to_string()
     }
 
     #[cfg(feature = "agency")]
@@ -720,17 +716,15 @@ mod tests {
 
     // This test is ignored because it sets up logging, which can only be done
     // once per process.
+    #[ignore]
     #[cfg(feature = "agency")]
     #[cfg(feature = "pool_tests")]
-    #[ignore]
     #[test]
     fn test_init_with_logging_config() {
         init!("ledger");
         wallet::close_wallet().unwrap();
         pool::close().unwrap();
-
         let content = create_config_util(Some("debug"));
-
         let cb = return_types_u32::Return_U32::new().unwrap();
         assert_eq!(vcx_init_with_config(cb.command_handle,
                                         CString::new(content).unwrap().into_raw(),

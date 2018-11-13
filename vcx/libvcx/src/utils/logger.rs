@@ -8,14 +8,13 @@ extern crate libc;
 extern crate android_logger;
 
 use std::io::Write;
-#[allow(unused_imports)]
-use utils::logger;
 use self::env_logger::Builder as EnvLoggerBuilder;
 use self::log::{Level, LevelFilter, Metadata, Record};
 use std::sync::{Once, ONCE_INIT};
 use self::libc::{c_char, c_void};
 use std::env;
 use std::ptr;
+
 #[allow(unused_imports)]
 use api::logger::vcx_set_default_logger;
 
@@ -23,7 +22,6 @@ use api::logger::vcx_set_default_logger;
 #[cfg(target_os = "android")]
 use self::android_logger::Filter;
 use utils::cstring::CStringUtils;
-
 use utils::error::LOGGING_ERROR;
 
 pub static mut LOGGER_STATE: LoggerState = LoggerState::Default;
@@ -129,6 +127,7 @@ impl LibvcxDefaultLogger {
             Err(_) => (),
         }
     }
+
     pub fn init(pattern: Option<String>) -> Result<(), u32> {
         let pattern = pattern.or(env::var("RUST_LOG").ok());
         if cfg!(target_os = "android") {
