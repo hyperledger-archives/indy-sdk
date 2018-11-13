@@ -132,6 +132,3 @@ def _cxs_loop_callback(command_handle: int, err, *args):
 
             future.set_result(res)
 
-
-
-
