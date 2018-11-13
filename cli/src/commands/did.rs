@@ -234,7 +234,7 @@ pub mod rotate_key_command {
                         .and_then(|did_info| {
                             let temp_verkey = match did_info["tempVerkey"].as_str() {
                                 Some(temp_verkey) => Ok(temp_verkey.to_owned()),
-                                None => Err(println_err!("Unable to resume, did you started rotate-key previously?"))
+                                None => Err(println_err!("Unable to resume, have you already run rotate-key?"))
                             }?;
                             let verkey = match did_info["verkey"].as_str() {
                                 Some(verkey) => Ok(verkey.to_owned()),
