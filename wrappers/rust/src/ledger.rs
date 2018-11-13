@@ -6,8 +6,7 @@ use std::ptr::null;
 use futures::Future;
 
 use ffi::ledger;
-use ffi::{ResponseEmptyCB,
-          ResponseStringCB,
+use ffi::{ResponseStringCB,
           ResponseStringStringCB,
           ResponseStringStringU64CB};
 
@@ -2245,67 +2244,6 @@ impl Ledger {
         let get_revoc_reg_delta_response = c_str!(get_revoc_reg_delta_response);
 
         ErrorCode::from(unsafe { ledger::indy_parse_get_revoc_reg_delta_response(command_handle,get_revoc_reg_delta_response.as_ptr(), cb) })
-    }
-
-    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
-    ///
-    /// # Arguments
-    /// * `txn_type` - type of transaction to apply `parse` callback.
-    /// * `parse` - required callback to parse reply for state proof.
-    /// * `free` - required callback to deallocate memory.
-    ///
-    /// # Returns
-    /// Status of callbacks registration.
-    pub fn register_transaction_parser_for_sp(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>) -> Box<Future<Item=(), Error=ErrorCode>> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
-
-        let err = Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb);
-
-        ResultHandler::empty(command_handle, err, receiver)
-    }
-
-    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
-    ///
-    /// # Arguments
-    /// * `txn_type` - type of transaction to apply `parse` callback.
-    /// * `parse` - required callback to parse reply for state proof.
-    /// * `free` - required callback to deallocate memory.
-    /// * `timeout` - the maximum time this function waits for a response
-    ///
-    /// # Returns
-    /// Status of callbacks registration.
-    #[cfg(feature="extended_api_types")]
-    pub fn register_transaction_parser_for_sp_timeout(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, timeout: Duration) -> Result<(), ErrorCode> {
-        let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
-
-        let err = Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb);
-
-        ResultHandler::empty_timeout(err, receiver, timeout)
-    }
-
-    /// Register callbacks (see type description for `CustomTransactionParser` and `CustomFree`
-    ///
-    /// # Arguments
-    /// * `txn_type` - type of transaction to apply `parse` callback.
-    /// * `parse` - required callback to parse reply for state proof.
-    /// * `free` - required callback to deallocate memory.
-    /// * `closure` - the closure that is called when finished
-    ///
-    /// # Returns
-    /// * `errorcode` - errorcode from calling ffi function. The closure receives the return result
-    #[cfg(feature="extended_api_types")]
-    pub fn register_transaction_parser_for_sp_async<F: 'static>(txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, closure: F) -> ErrorCode where F: FnMut(ErrorCode) + Send {
-        let (command_handle, cb) = ClosureHandler::convert_cb_ec(Box::new(closure));
-
-        Ledger::_register_transaction_parser_for_sp(command_handle, txn_type, parser, free, cb)
-    }
-
-    fn _register_transaction_parser_for_sp(command_handle: IndyHandle, txn_type: &str, parser: Option<ledger::CustomTransactionParser>, free: Option<ledger::CustomFree>, cb: Option<ResponseEmptyCB>) -> ErrorCode {
-        let txn_type = c_str!(txn_type);
-
-        ErrorCode::from(unsafe {
-          ledger::indy_register_transaction_parser_for_sp(command_handle, txn_type.as_ptr(), parser, free, cb)
-        })
     }
 }
 
