@@ -344,7 +344,9 @@ mod tests {
                     assert_eq!(sender_verkey, FORWARD_AGENT_DID_VERKEY);
                     assert!(!pairwise_did.is_empty());
                     assert!(!pairwise_verkey.is_empty());
+                    e_wallet_handle
                 })
+                .map(|e_wallet_handle| ::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
         });
     }
 }

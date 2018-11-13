@@ -15,7 +15,8 @@ use utils::futures::*;
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ForwardAgentConnectionState {
     pub is_signed_up: bool,
-    pub agent: Option<(String, String, String)>, //  agent's (wallet_id, wallet_key, did)
+    pub agent: Option<(String, String, String)>,
+    //  agent's (wallet_id, wallet_key, did)
 }
 
 pub struct ForwardAgentConnection {
@@ -331,7 +332,9 @@ mod tests {
                 .map(|(e_wallet_handle, signedup_msg, pairwise_verkey)| {
                     let sender_verkey = decompose_signedup(e_wallet_handle, &signedup_msg).wait().unwrap();
                     assert_eq!(sender_verkey, pairwise_verkey);
+                    e_wallet_handle
                 })
+                .map(|e_wallet_handle| ::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
         });
     }
 
@@ -376,8 +379,10 @@ mod tests {
                             assert_eq!(sender_vk, pairwise_verkey);
                             assert!(!pw_did.is_empty());
                             assert!(!pw_vk.is_empty());
+                            e_wallet_handle
                         })
                 })
+                .map(|e_wallet_handle| ::indy::wallet::close_wallet(e_wallet_handle).wait().unwrap())
         });
     }
 }
