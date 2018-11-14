@@ -15,6 +15,9 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
+use indy::ledger::Ledger;
+use indy::did::Did;
+
 const PROTOCOL_VERSION: usize = 2;
 static USEFUL_CREDENTIALS : &'static str = r#"
    {
@@ -62,5 +65,97 @@ fn write_genesis_txn_to_file(pool_name: &str,
 
 
 fn main() {
-    println!("Hello, world!");
+    
+    let wallet_name = "wallet";
+    let pool_name = "pool";
+
+    // 1. Creating a new local pool ledger configuration that can be used later to connect pool nodes.
+    let pool_config_pathbuf = create_genesis_txn_file_for_pool(pool_name);
+    let pool_config_file = pool_config_pathbuf.as_os_str().to_str().unwrap().to_string();
+    indy::pool::Pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+
+    println!("1. Creating a new local pool ledger configuration");
+    println!("   pool: {} and file: {}", &pool_name, pool_config_file);
+    indy::pool::Pool::create_ledger_config(&pool_name, Some(&pool_config_file)).unwrap();
+
+    // 2. Open pool ledger and get the pool handle from libindy.
+    println!("2. Open pool ledger");
+    let pool_handle : i32 = indy::pool::Pool::open_ledger(&pool_name, None).unwrap();
+
+    // 3. Creates a new wallet
+    println!("3. Creates a new wallet");
+    let config = json!({ "id" : wallet_name.to_string() }).to_string();
+    indy::wallet::Wallet::create(&config, USEFUL_CREDENTIALS).unwrap();
+
+    // 4. Open wallet and get the wallet handle from libindy
+    println!("4. Open wallet");
+    let wallet_handle : i32 = indy::wallet::Wallet::open(&config, USEFUL_CREDENTIALS).unwrap();
+
+    // 5. Generating and storing steward DID and Verkey
+    println!("5. Generating and storing steward DID and Verkey");
+    let first_json_seed = json!({
+        "seed":"000000000000000000000000Steward1"
+    }).to_string();
+    let (steward_did, steward_verkey) = Did::new(wallet_handle, &first_json_seed).unwrap();
+
+    // 6. Generating and storing Trust Anchor DID and Verkey
+    println!("6. Generating and storing Trust Anchor DID and Verkey");
+    let (trustee_did, trustee_verkey) = Did::new(wallet_handle, &"{}".to_string()).unwrap();
+
+    // 7. Build NYM request to add Trust Anchor to the ledger
+    println!("7. Build NYM request");
+    let build_nym_request : String = Ledger::build_nym_request(&steward_did, &trustee_did, Some(&trustee_verkey), None, Some("TRUST_ANCHOR")).unwrap();
+
+    // 8. Sending the nym request to ledger
+    println!("8. Sending the nym request to ledger");
+    let build_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &steward_did, &build_nym_request).unwrap();
+
+    // 9. Generating new Verkey of Trust Anchor in the wallet
+    println!("9. Generating new Verkey of Trust Anchor in the wallet");
+    let trustee_temp_verkey = Did::replace_keys_start(wallet_handle, &trustee_did, &"{}").unwrap();
+
+    // 10. Building NYM request to update new verkey to ledger
+    println!("10. Building NYM request to update new verkey to ledger");
+    let replace_key_nym_request : String = Ledger::build_nym_request(&trustee_did, &trustee_did, Some(&trustee_temp_verkey), None, Some("TRUST_ANCHOR")).unwrap();
+
+    // 11. Sending NYM request to the ledger
+    println!("11. Sending NYM request to the ledger");
+    let replace_key_nym_sign_submit_result : String = Ledger::sign_and_submit_request(pool_handle, wallet_handle, &trustee_did, &replace_key_nym_request).unwrap();
+
+    // 12. Applying new Trust Anchor's Verkey in wallet
+    println!("12. Applying new Trust Anchor's Verkey in wallet");
+    Did::replace_keys_apply(wallet_handle, &trustee_did);
+
+    // 13. Reading new Verkey from wallet
+    println!("13. Reading new Verkey from wallet");
+    let trustee_verkey_from_wallet = Did::get_ver_key_local(wallet_handle, &trustee_did).unwrap();
+
+    // 14. Building GET_NYM request to get Trust Anchor from Verkey
+    println!("14. Building GET_NYM request to get Trust Anchor from Verkey");
+    let refresh_build_nym_request : String = Ledger::build_nym_request(&trustee_did, &trustee_did, None, None, None).unwrap();
+
+    // 15. Sending GET_NYM request to ledger
+    println!("15. Sending GET_NYM request to ledger");
+    let refresh_build_nym_response = Ledger::submit_request(pool_handle, &refresh_build_nym_request).unwrap();
+
+    // 16. Comparing Trust Anchor verkeys
+    println!("16. Comparing Trust Anchor verkeys");
+    println!("    Trustee Did {}", &trustee_did);
+    println!("    Trustee VerkKey from wallet {}", &trustee_verkey_from_wallet);
+
+
+    // clean up
+    // Close and delete wallet
+    println!("Close and delete wallet");
+    indy::wallet::Wallet::close(wallet_handle).unwrap();
+    indy::wallet::Wallet::delete(&config, USEFUL_CREDENTIALS).unwrap();
+
+    // Close pool
+    println!("Close pool");
+    indy::pool::Pool::close(pool_handle).unwrap();
+
+    // Delete pool ledger config
+    println!("Delete pool ledger config");
+    indy::pool::Pool::delete(&pool_name).unwrap();
+    fs::remove_file(pool_config_pathbuf).unwrap();
 }
