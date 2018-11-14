@@ -1,13 +1,10 @@
-extern crate log;
-extern crate libc;
-
 use ErrorCode;
 
 use std::ffi::CString;
 
 use ffi::{logger, CVoid, CString as IndyCString};
 
-use self::log::{Log, Record, Metadata, Level};
+use log::{Log, Record, Metadata, Level};
 
 use std::ptr::null;
 
@@ -41,12 +38,12 @@ impl Logger {
     /// Set application logger implementation to Libindy.
     ///
     /// # Arguments
-    /// * `pattern` - (optional) pattern that corresponds with the log messages to show.
-    pub fn set_indy_logger(l: &'static Log) -> Result<(), ErrorCode> {
+    /// * `logger` - reference to logger used by application.
+    pub fn set_indy_logger(logger: &'static Log) -> Result<(), ErrorCode> {
         {
             unsafe {
                 if LOGGER.is_some() { return Err(ErrorCode::CommonInvalidState); }
-                LOGGER = Some(Box::new(l));
+                LOGGER = Some(Box::new(logger));
             }
         }
 
