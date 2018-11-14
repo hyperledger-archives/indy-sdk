@@ -17,8 +17,9 @@ use std::path::PathBuf;
 
 use serde_json::{Value};
 
-use indy::ledger::Ledger;
 use indy::did::Did;
+use indy::ledger::Ledger;
+use indy::pool::Pool;
 
 const PROTOCOL_VERSION: usize = 2;
 static USEFUL_CREDENTIALS : &'static str = r#"
@@ -74,11 +75,14 @@ fn main() {
     // 1. Creating a new local pool ledger configuration that can be used later to connect pool nodes.
     let pool_config_pathbuf = create_genesis_txn_file_for_pool(pool_name);
     let pool_config_file = pool_config_pathbuf.as_os_str().to_str().unwrap().to_string();
-    indy::pool::Pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+    Pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
     println!("1. Creating a new local pool ledger configuration");
     println!("   pool: {} and file: {}", &pool_name, pool_config_file);
-    indy::pool::Pool::create_ledger_config(&pool_name, Some(&pool_config_file)).unwrap();
+    let pool_config = json!({
+        "genesis_txn" : &pool_config_file
+    });
+    Pool::create_ledger_config(&pool_name, Some(&pool_config.to_string())).unwrap();
 
     // 2. Open pool ledger and get the pool handle from libindy.
     println!("2. Open pool ledger");
