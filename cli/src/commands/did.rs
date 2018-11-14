@@ -234,7 +234,7 @@ pub mod rotate_key_command {
                         .and_then(|did_info| {
                             let temp_verkey = match did_info["tempVerkey"].as_str() {
                                 Some(temp_verkey) => Ok(temp_verkey.to_owned()),
-                                None => Err(println_err!("Unable to resume, did you started rotate-key previously?"))
+                                None => Err(println_err!("Unable to resume, have you already run rotate-key?"))
                             }?;
                             let verkey = match did_info["verkey"].as_str() {
                                 Some(verkey) => Ok(verkey.to_owned()),
@@ -249,6 +249,22 @@ pub mod rotate_key_command {
 
             match ledger_verkey {
                 Some(ledger_verkey) => {
+                    // if ledger verkey is abbreviated, abbreviate other also.
+                    let (temp_verkey, curr_verkey) = if ledger_verkey.starts_with('~') {
+                        let temp_verkey = Did::abbreviate_verkey(&did, &temp_verkey)
+                            .map_err(|_e|println_err!("Invalid temp verkey: {}", temp_verkey))?;
+                        let curr_verkey = Did::abbreviate_verkey(&did, &curr_verkey)
+                            .map_err(|_e|println_err!("Invalid current verkey: {}", curr_verkey))?;
+                        Ok((temp_verkey, curr_verkey))
+                    }
+                    else {
+                        Ok((temp_verkey, curr_verkey))
+                    }?;
+
+                    println_succ!("Verkey on ledger: {}", ledger_verkey);
+                    println_succ!("Current verkey in wallet: {}", curr_verkey);
+                    println_succ!("Temp verkey in wallet: {}", temp_verkey);
+
                     if ledger_verkey == temp_verkey {
                         // ledger is updated, need to apply change to wallet.
                         Ok((temp_verkey, false))
@@ -291,7 +307,7 @@ pub mod rotate_key_command {
                     match err {
                         ErrorCode::PoolLedgerTimeout => {
                             println_err!("Transaction response has not beed received");
-                            println_err!("Use command `did rotate-key resume={}` to complete", new_verkey);
+                            println_err!("Use command `did rotate-key resume=true` to complete");
                         }
                         err => handle_transaction_error(err, Some(&did), Some(&pool_name), Some(&wallet_name))
                     }
@@ -329,7 +345,8 @@ fn _get_current_verkey(pool_handle: i32, pool_name: &str, wallet_handle: i32, wa
     let response: Response<serde_json::Value> = serde_json::from_str::<Response<serde_json::Value>>(&response_json)
         .map_err(|err| println_err!("Invalid data has been received: {:?}", err))?;
     let result = handle_transaction_response(response)?;
-    let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or("")).unwrap();
+    let data = serde_json::from_str::<serde_json::Value>(&result["data"].as_str().unwrap_or(""))
+        .map_err(|_| println_err!("Wrong data has been received"))?;
     let verkey = data["verkey"].as_str().map(String::from);
     Ok(verkey)
 }

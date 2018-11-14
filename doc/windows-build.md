@@ -44,8 +44,6 @@ git clone https://github.com/hyperledger/indy-sdk.git
 
 - https://www.npcglib.org/~stathis/downloads/openssl-1.0.2k-vs2017.7z
 - https://download.libsodium.org/libsodium/releases/libsodium-1.0.14-msvc.zip
-  - versions from 1.0.15 onwards dropped the required `crypto_stream_aes128ctr_*` methods
-  - please note that in the future this release might be moved to subdirectory `old`
 
 ### Source deps
 

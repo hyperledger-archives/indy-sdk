@@ -90,6 +90,7 @@ rusqlite = { version = "0.13.0", features=["bundled"] }
 
 [dev-dependencies]
 criterion = "0.2"
+indy = {path = "../wrappers/rust"}
 
 [[bench]]
 name = "wallet"

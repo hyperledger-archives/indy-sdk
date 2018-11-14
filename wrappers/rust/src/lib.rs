@@ -3,6 +3,7 @@ extern crate futures;
 extern crate lazy_static;
 #[macro_use]
 extern crate log;
+extern crate libc;
 
 extern crate num_traits;
 #[macro_use]
@@ -18,6 +19,7 @@ pub mod blob_storage;
 pub mod crypto;
 pub mod did;
 pub mod ledger;
+pub mod logger;
 pub mod payments;
 pub mod pairwise;
 pub mod pool;
