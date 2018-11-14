@@ -13,24 +13,24 @@ _futures_counter = itertools.count()
 
 def do_call(name: str, *args):
     logger = logging.getLogger(__name__)
-    logger.debug("do_call: >>> name: %s, args: %s", name, args)
+    print("do_call: >>> name: %s, args: %s", name, args)
 
     event_loop = asyncio.get_event_loop()
     future = event_loop.create_future()
     command_handle = next(_futures_counter)
-
+    print('Command Handle %s' % command_handle)
     _futures[command_handle] = (event_loop, future)
 
     err = getattr(_cdll(), name)(command_handle,
                                  *args)
 
-    logger.debug("do_call: Function %s returned err: %i", name, err)
+    print("do_call: Function %s returned err: %i" % (name, err))
 
     if err != ErrorCode.Success:
-        logger.warning("_do_call: Function %s returned error %i", name, err)
+        print("_do_call: Function %s returned error %i", name, err)
         future.set_exception(VcxError(ErrorCode(err)))
 
-    logger.debug("do_call: <<< %s", future)
+    print("do_call: <<< %s", future)
     return future
 
 
@@ -49,12 +49,14 @@ def release(name, handle):
 def error_message(error_code: int) -> str:
     logger = logging.getLogger(__name__)
 
+    print("error message")
     name = 'vcx_error_c_message'
     c_error_code = c_uint32(error_code)
     c_err_msg = getattr(_cdll(), name)(c_error_code)
 
+    print("c error message: " % c_err_msg)
     err_msg = cast(c_err_msg , c_char_p).value.decode()
-    logger.debug("error_message: Function %s returned error_message: %s", name, err_msg)
+    print("error_message: Function %s returned error_message: %s", name, err_msg)
 
     return err_msg
 

@@ -1,6 +1,8 @@
 import pytest
 from vcx.error import ErrorCode, VcxError
 from vcx.common import error_message
+from vcx.api.logging import default_logger
+
 
 
 def test_error():
@@ -12,6 +14,7 @@ def test_c_error_msg():
 
 
 def test_all_error_codes():
+    default_logger("info")
     max = 0
     assert(VcxError(1079).error_msg == "Wallet Not Found")
     for e in ErrorCode:

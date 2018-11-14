@@ -6,8 +6,7 @@ import ctypes
 import sys
 
 
-def default_logger():
-    pattern = "info"
+def default_logger(pattern):
     c_pattern = c_char_p(pattern.encode('utf-8'))
     name = 'vcx_set_default_logger'
     err = getattr(_cdll(), name)(c_pattern)

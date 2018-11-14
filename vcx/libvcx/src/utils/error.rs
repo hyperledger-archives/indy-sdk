@@ -224,7 +224,7 @@ fn insert_message(map: &mut HashMap<u32, &'static str>, error: &Error) {
 
 pub struct Error {
     pub code_num: u32,
-    pub message: &'static str
+    pub message: &'static str,
 }
 
 impl fmt::Display for Error {
@@ -236,7 +236,7 @@ impl fmt::Display for Error {
 
 pub fn error_c_message(code_num:&u32) -> &CString {
     match ERROR_C_MESSAGES.get(code_num) {
-        Some(msg) => &msg,
+        Some(msg) => { println!("Message: {:?}", msg); &msg },
         None => error_c_message(&UNKNOWN_ERROR.code_num),
     }
 }
@@ -439,5 +439,10 @@ mod tests {
         assert_eq!(fn_map_err(Ok(0)).map_err(|x| map_libindy_err(x, default)), Ok(0));
         // map_libindy_err called with Err returned
         assert_eq!(fn_map_err(Err(0)).map_err(|x| map_libindy_err(x, default)), Err(default))
+    }
+
+    #[test]
+    fn test_error_is_reference(){
+        println!("{}", error_message(&1035))
     }
 }

@@ -62,6 +62,7 @@ pub extern fn vcx_provision_agent(config: *const c_char) -> *mut c_char {
 pub extern fn vcx_agent_provision_async(command_handle : u32,
                                config: *const c_char,
                                cb: Option<extern fn(xcommand_handle: u32, err: u32, _config: *const c_char)>) -> u32 {
+    use std::ffi::CString;
     check_useful_c_callback!(cb, error::INVALID_OPTION.code_num);
     check_useful_c_str!(config, error::INVALID_OPTION.code_num);
 
@@ -71,8 +72,9 @@ pub extern fn vcx_agent_provision_async(command_handle : u32,
     thread::spawn(move|| {
         match messages::agent_utils::connect_register_provision(&config) {
             Err(e) => {
-                error!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: NULL", command_handle, error_string(e));
-                cb(command_handle, e, ptr::null_mut());
+                error!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: NULL)", command_handle, error_string(e));
+                let msg = CString::new("NULL POINTER?").unwrap();
+                cb(command_handle, e, msg.as_ptr());
             },
             Ok(s) => {
                 info!("vcx_agent_provision_async_cb(command_handle: {}, rc: {}, config: {})",

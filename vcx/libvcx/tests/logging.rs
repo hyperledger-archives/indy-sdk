@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate vcx;
 extern crate indy;
 extern crate libc;
@@ -11,7 +12,7 @@ use std::ptr::null;
 use vcx::api::logger::*;
 use vcx::utils::logger::{LOGGER_STATE, LoggerState};
 use indy::wallet;
-use vcx::utils::cstring::CStringUtils;
+
 use vcx::api::logger::vcx_set_logger;
 /// These tests can only be run individually as initing the log crate can happen
 /// only once.
@@ -20,6 +21,7 @@ use vcx::api::logger::vcx_set_logger;
 /// logging is outputting to stdout.
 mod log_tests {
     use super::*;
+    use vcx::utils::cstring::CStringUtils;
     use vcx::api::vcx::vcx_error_c_message;
 
     static mut COUNT: u32 = 0;
@@ -41,7 +43,7 @@ mod log_tests {
         let pattern = CStringUtils::string_to_cstring("debug".to_string());
         assert_eq!(vcx_set_default_logger(pattern.as_ptr()), 0);
         debug!("testing debug");
-        vcx_error_c_message(1000);
+//        vcx_error_c_message(1000);
 
     }
 
@@ -88,6 +90,25 @@ mod log_tests {
         unsafe { assert!(COUNT > 1); }
 
     }
+
+    #[test]
+    fn test_error_code() {
+        use vcx::api::vcx::vcx_error_c_message;
+        use vcx::utils::error;
+        use std::ffi::CString;
+        let mut buf:Vec<u8> = vec![0x0; 256];
+        let error_code = 1035;
+        let err = vcx_error_c_message(error_code, buf.as_mut_ptr(), 256);
+        assert_eq!(err, error::SUCCESS.code_num);
+        let mut s = String::from_utf8(buf).unwrap().shrink_to_fit();
+        println!("{:?}", &s);
+        println!("size: {}", s.len())
+//        unsafe {
+//            let c_s = CString::from_vec_unchecked(buf);
+//            println!("after: {:?}", c_s);
+//        }
+    }
+
 
 }
 

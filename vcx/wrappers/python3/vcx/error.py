@@ -112,9 +112,12 @@ class VcxError(Exception):
 
 def error_message(error_code: int) -> str:
     logger = logging.getLogger(__name__)
+    print("VCX_ERRROR_C_MESSAGE")
     name = 'vcx_error_c_message'
     c_error_code = c_uint32(error_code)
     c_err_msg = getattr(_cdll(), name)(c_error_code)
+    print("c_err_msg: %s" % c_err_msg)
     err_msg = cast(c_err_msg , c_char_p).value.decode()
+    print("err_msg: %s" % err_msg)
     logger.debug("error_message: Function %s[%s] returned error_message: %s", name, error_code, err_msg)
     return err_msg
