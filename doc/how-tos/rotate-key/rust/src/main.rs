@@ -15,6 +15,8 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
+use serde_json::{Value};
+
 use indy::ledger::Ledger;
 use indy::did::Did;
 
@@ -65,7 +67,7 @@ fn write_genesis_txn_to_file(pool_name: &str,
 
 
 fn main() {
-    
+
     let wallet_name = "wallet";
     let pool_name = "pool";
 
@@ -142,7 +144,11 @@ fn main() {
     println!("16. Comparing Trust Anchor verkeys");
     println!("    Trustee Did {}", &trustee_did);
     println!("    Trustee VerkKey from wallet {}", &trustee_verkey_from_wallet);
+    let refresh_json : Value = serde_json::from_str(&refresh_build_nym_response).unwrap();
+    let refresh_data = &refresh_json["result"]["data"];
+    let trustee_verkey_from_ledger = refresh_data["verkey"].to_string();
 
+    assert_eq!(trustee_verkey_from_wallet, trustee_verkey_from_ledger, "verkeys did not match as expected");
 
     // clean up
     // Close and delete wallet
