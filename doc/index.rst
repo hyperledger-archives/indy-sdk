@@ -53,6 +53,4 @@ here are some resources to increase your understanding:
    rtd-building
    rtd-migration-guides
    release-workflow.md
-   signing-commits.md
-   rtd-node-index
-   
+   signing-commits.md   
