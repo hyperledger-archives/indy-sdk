@@ -1,0 +1,6 @@
+[package]
+name = "save-schema-and-cred-def"
+version = "0.1.0"
+authors = ["matt raffel <matt.raffel@evernym.com>"]
+
+[dependencies]
