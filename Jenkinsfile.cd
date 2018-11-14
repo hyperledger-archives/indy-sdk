@@ -362,7 +362,7 @@ def linuxVcxBuild(file, env_name, stashBuildResults) {
     dir('vcx/libvcx') {
         testEnv.inside {
             echo "${env_name} Libvcx Test: Run tests"
-            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test --release'
+            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 cargo test --release'
 
             if (stashBuildResults) {
                 stash includes: 'target/release/libvcx.so', name: 'LibvcxUbuntuBuildResult'
@@ -377,7 +377,7 @@ def linuxJavaTesting(env_name, network_name, testEnv, stashBuildResults) {
         testEnv.inside("--ip=\"10.0.0.3\" --network=${network_name}") {
             echo "${env_name} Libindy Test: Test java wrapper"
 
-            sh "RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 mvn clean test"
+            sh "RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 mvn clean test"
         }
     }
 }
@@ -390,7 +390,7 @@ def linuxPythonTesting(env_name, network_name, testEnv, stashBuildResults) {
 
             sh '''
                     python3.5 -m pip install --user -e .
-                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug,zmq=trace TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
+                    LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 python3.5 -m pytest
                 '''
         }
     }
@@ -409,7 +409,7 @@ def linuxCLITesting(env_name, network_name, testEnv, stashBuildResults) {
             sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --features "nullpay_plugin" --no-run'
 
             echo "${env_name} Indy Cli Test: Run tests"
-            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test  --release --features "nullpay_plugin"'
 
             if (stashBuildResults) {
                 stash includes: 'target/release/indy-cli', name: 'IndyCliUbuntuBuildResult'
@@ -427,7 +427,7 @@ def linuxRustTesting(env_name, network_name, testEnv, stashBuildResults) {
             sh 'LIBRARY_PATH=./ RUST_BACKTRACE=1 cargo test --release --no-run'
 
             echo "${env_name} Indy Rust wrapper Test: Run tests"
-            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug,zmq=trace RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
+            sh 'LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 TEST_POOL_IP=10.0.0.2 cargo test --release'
         }
     }
 }
@@ -441,7 +441,7 @@ def linuxNodejsTesting(env_name, network_name, testEnv, stashBuildResults) {
                 cd wrappers/nodejs
                 npm run prepare
                 npm install
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH}RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 npm test
             '''
     }
 }

@@ -408,7 +408,7 @@ def linuxVcxBuild(file, env_name) {
             echo "${env_name} Libvcx Test: Test"
 
             echo "${env_name} Libvcx Test: Run tests"
-            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=debug RUST_TEST_THREADS=1 cargo test'
+            sh 'LIBRARY_PATH=./ LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_BACKTRACE=1 RUST_LOG=indy::=debug RUST_TEST_THREADS=1 cargo test'
         }
     }
 }
@@ -479,7 +479,7 @@ def linuxNodejsTesting(env_name, network_name, testEnv) {
                 cd wrappers/nodejs
                 npm run prepare
                 npm install
-                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=trace TEST_POOL_IP=10.0.0.2 npm test
+                LD_LIBRARY_PATH=./:${LD_LIBRARY_PATH} RUST_LOG=indy::=debug TEST_POOL_IP=10.0.0.2 npm test
             '''
     }
 }
